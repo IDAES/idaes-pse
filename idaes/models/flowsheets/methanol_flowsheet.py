@@ -671,14 +671,12 @@ def report(m):
     m.fs.F101.report()
 
 
-if __name__ == "__main__":
-
+def main(m):
     solver = get_solver()
-    m = ConcreteModel()
-    build_model(m)  # build flowsheet
     optarg = {'tol': 1e-6,
               'max_iter': 5000}
     solver.options = optarg
+    build_model(m)  # build flowsheet
     set_inputs(m)  # unit and stream specifications
     scale_flowsheet(m)
     initialize_flowsheet(m)  # rigorous initialization scheme
@@ -729,3 +727,10 @@ if __name__ == "__main__":
     assert opt_res.solver.termination_condition == TerminationCondition.optimal
     print('Optimal solution process results:')
     report(m)
+
+    return m
+
+
+if __name__ == "__main__":
+    m = ConcreteModel()
+    m = main(m)

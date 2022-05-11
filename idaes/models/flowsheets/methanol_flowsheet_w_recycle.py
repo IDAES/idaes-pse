@@ -735,15 +735,11 @@ def report(m):
     m.fs.S101.report()
 
 
-if __name__ == "__main__":
-
+def main(m):
     solver = get_solver()  # IPOPT
     optarg = {'tol': 1e-6,
-              'max_iter': 5000,
-              'halt_on_ampl_error': 'yes'}
+              'max_iter': 5000}
     solver.options = optarg
-
-    m = ConcreteModel()
     build_model(m)  # build flowsheet
     set_inputs(m)  # unit and stream specifications
     scale_flowsheet(m)
@@ -806,3 +802,10 @@ if __name__ == "__main__":
     assert opt_res.solver.termination_condition == TerminationCondition.optimal
     print('Optimal solution process results:')
     report(m)
+
+    return m
+
+
+if __name__ == "__main__":
+    m = ConcreteModel()
+    m = main(m)    

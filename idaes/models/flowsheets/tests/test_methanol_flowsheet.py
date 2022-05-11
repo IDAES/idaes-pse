@@ -22,7 +22,7 @@ import sys
 
 from idaes.models.flowsheets.methanol_flowsheet import (
     build_model, set_inputs, scale_flowsheet, initialize_flowsheet,
-    add_costing, report)
+    add_costing, report, main)
 
 from pyomo.environ import (Constraint,
                            ConcreteModel,
@@ -379,7 +379,7 @@ def test_scaling(model):
                          get_constraint_transform_applied_scaling_factor(c))
 
 
-@pytest.mark.integration
+@pytest.mark.component
 def test_initialize_flowsheet(model):
     solver = get_solver()
     optarg = {'tol': 1e-6,
@@ -406,7 +406,7 @@ def test_unit_consistency(model):
     assert_units_consistent(model)
 
 
-@pytest.mark.integration
+@pytest.mark.component
 def test_solve_flowsheet(model):
     solver = get_solver()
     optarg = {'tol': 1e-6,
@@ -518,7 +518,7 @@ def test_add_costing(model):
     assert degrees_of_freedom(model) == 0
 
 
-@pytest.mark.integration
+@pytest.mark.component
 def test_optimize_with_costing(model):
 
     # Set up Optimization Problem (Maximize Revenue)
@@ -580,18 +580,12 @@ def test_optimize_with_costing(model):
 
 @pytest.mark.unit
 def test_report(model):
-    # output is different for unit/integration test runs in order to test
-    # report method during unit tests, and actual solution during integration
+    stream = StringIO()
+    sys.stdout = stream
+    report(model)
+    sys.stdout = sys.__stdout__
 
-    if value(model.fs.R101.rate_reaction_extent[0, "R1"]) != 0.0:
-
-        stream = StringIO()
-        sys.stdout = stream
-        report(model)
-        sys.stdout = sys.__stdout__
-
-        # this case contains solved solution values
-        output = """
+    output = """
 Extent of reaction:  269.28054478798873
 Stoichiometry of each component normalized by the extent:
 CH4 :  0.0
@@ -658,89 +652,22 @@ Unit : fs.F101                                                             Time:
     pressure              1.4277e+06   1.1547e+07    1.1547e+07
 ====================================================================================
 """
-        output_string = output.replace(" ", "").replace("\n", "")
-        stream_string = str(stream.getvalue()).replace(" ", "").replace("\n", "")
-        assert output_string == stream_string
-            
-    else:
-        # model is not solved when integration tests are skipped, so need to
-        # set a temporary nonzero extent value to allow unit testing of report
-        # method and increase total code coverage from test module
-        model.fs.R101.rate_reaction_extent[0, "R1"].fix(0.01)
-
-        stream = StringIO()
-        sys.stdout = stream
-        report(model)
-        sys.stdout = sys.__stdout__
-
-        # this case is pre-initialization, pre-solve and contain defaults
-        output = """
-Extent of reaction:  0.01
-Stoichiometry of each component normalized by the extent:
-CH4 :  0.0
-H2 :  0.0
-CH3OH :  0.0
-CO :  0.0
-These coefficients should follow 1*CO + 2*H2 => 1*CH3OH
-
-Reaction conversion:  0.75
-Reactor duty (MW):  0.0
-Duty from Reaction (MW)): 0.0009064
-Turbine work (MW):  0.0
-Mixer outlet temperature (C)):  25.0
-Compressor outlet temperature (C)):  25.0
-Compressor outlet pressure (Pa)):  5100000.0
-Heater outlet temperature (C)):  25.0
-Reactor outlet temperature (C)):  25.0
-Turbine outlet temperature (C)):  25.0
-Turbine outlet pressure (Pa)):  100000.0
-Cooler outlet temperature (C)):  25.0
-Flash outlet temperature (C)):  25.0
-Methanol recovery(%):  1.0
-annualized capital cost ($/year) = 121776.27770012307
-operating cost ($/year) =  0.0
-sales ($/year) =  5671299423.599999
-raw materials cost ($/year) = 35229454878.16397
-revenue (1000$/year)=  -29558277.23084167
+    output_string = output.replace(" ", "").replace("\n", "")
+    stream_string = str(stream.getvalue()).replace(" ", "").replace("\n", "")
+    assert output_string == stream_string
 
 
-====================================================================================
-Unit : fs.M101                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Stream Table
-                                  Units        H2_WGS      CO_WGS     Outlet
-    Total Molar Flowrate       mole / second     637.20      316.80     100.00
-    Total Mole Fraction CH4    dimensionless 1.0000e-06  1.0000e-06    0.25000
-    Total Mole Fraction CO     dimensionless 1.0000e-06      1.0000    0.25000
-    Total Mole Fraction H2     dimensionless     1.0000  1.0000e-06    0.25000
-    Total Mole Fraction CH3OH  dimensionless 1.0000e-06  1.0000e-06    0.25000
-    Molar Enthalpy              joule / mole    -142.40 -1.1068e+05     100.00
-    Pressure                          pascal 3.0000e+06  3.0000e+06 1.0000e+05
-====================================================================================
+@pytest.mark.component
+def test_main():
+    m = ConcreteModel()
+    m = main(m)
 
-====================================================================================
-Unit : fs.F101                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables:
-
-    Key             : Value  : Units  : Fixed : Bounds
-          Heat Duty : 0.0000 :   watt : False : (None, None)
-    Pressure Change : 0.0000 : pascal :  True : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                            Inlet    Vapor Outlet  Liquid Outlet
-    flow_mol                 100.00       50.000        50.000
-    mole_frac_comp CH4      0.25000      0.25000    1.0000e-08
-    mole_frac_comp CO       0.25000      0.25000    1.0000e-08
-    mole_frac_comp H2       0.25000      0.25000    1.0000e-08
-    mole_frac_comp CH3OH    0.25000      0.25000       0.25000
-    enth_mol                 100.00      -97532.       -59600.
-    pressure             1.0000e+05   1.0000e+05    1.0000e+05
-====================================================================================
-"""
-        output_string = output.replace(" ", "").replace("\n", "")
-        stream_string = str(stream.getvalue()).replace(" ", "").replace("\n", "")
-        assert output_string == stream_string
+    assert hasattr(m.fs.R101, 'conversion_lb')
+    assert hasattr(m.fs.R101, 'conversion_ub')
+    assert hasattr(m.fs.R101, 'outlet_t_lb')
+    assert hasattr(m.fs.R101, 'outlet_t_ub')
+    assert hasattr(m.fs.T101, 'outlet_p_lb')
+    assert hasattr(m.fs.T101, 'outlet_p_ub')
+    assert hasattr(m.fs.H102, 'outlet_t_ub')
+    assert hasattr(m.fs.H102, 'outlet_t_ub')
+    assert hasattr(m.fs.F101, 'isothermal')
