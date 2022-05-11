@@ -134,32 +134,6 @@ class TestSaponification(object):
 
         assert perf_dict is None
 
-    @pytest.mark.ui
-    @pytest.mark.component
-    def test_report(self, sapon):
-        stream = StringIO()
-
-        sapon.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Stream Table
-                                             Units            Inlet     Outlet  
-    Volumetric Flowrate                meter ** 3 / second  0.0010000  0.0010000
-    Molar Concentration H2O              mole / meter ** 3     55388.     55388.
-    Molar Concentration NaOH             mole / meter ** 3     100.00     100.00
-    Molar Concentration EthylAcetate     mole / meter ** 3     100.00     100.00
-    Molar Concentration SodiumAcetate    mole / meter ** 3     0.0000     0.0000
-    Molar Concentration Ethanol          mole / meter ** 3     0.0000     0.0000
-    Temperature                                     kelvin     303.15     303.15
-    Pressure                                        pascal 1.0132e+05 1.0132e+05
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
-
 
 # -----------------------------------------------------------------------------
 class TestBTX(object):
@@ -241,29 +215,6 @@ class TestBTX(object):
 
         assert perf_dict is None
 
-    @pytest.mark.ui
-    @pytest.mark.component
-    def test_report(self, btx):
-        stream = StringIO()
-
-        btx.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Stream Table
-                               Units         Inlet     Outlet  
-    flow_mol                mole / second     5.0000     5.0000
-    mole_frac_comp benzene  dimensionless    0.50000    0.50000
-    mole_frac_comp toluene  dimensionless    0.50000    0.50000
-    temperature                    kelvin     365.00     365.00
-    pressure                       pascal 1.0132e+05 1.0132e+05
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
-
 
 # -----------------------------------------------------------------------------
 @pytest.mark.iapws
@@ -326,28 +277,3 @@ class TestIAPWS(object):
         perf_dict = iapws.fs.unit._get_performance_contents()
 
         assert perf_dict is None
-
-    @pytest.mark.ui
-    @pytest.mark.component
-    def test_report(self, iapws):
-        stream = StringIO()
-
-        iapws.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Stream Table
-                                     Units           Inlet     Outlet  
-    Molar Flow (mol/s)              mole / second     100.00     100.00
-    Mass Flow (kg/s)            kilogram / second     1.8015     1.8015
-    T (K)                                  kelvin     326.17     326.17
-    P (Pa)                                 pascal 1.0132e+05 1.0132e+05
-    Vapor Fraction                  dimensionless     0.0000     0.0000
-    Molar Enthalpy (J/mol) Vap       joule / mole     42031.     42031.
-    Molar Enthalpy (J/mol) Liq       joule / mole     4000.0     4000.0
-====================================================================================
-"""
-
-        assert output in stream.getvalue()

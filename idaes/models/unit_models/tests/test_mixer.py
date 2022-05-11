@@ -675,6 +675,50 @@ class TestMixer(object):
         assert m.fs.mix.inlet_2_state[0].check is True
         assert m.fs.mix.mixed_state[0].check is True
 
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = PhysicalParameterTestBlock()
+        m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+        m.fs.mix = Mixer(default={"property_package": m.fs.pp})
+
+        stable = m.fs.mix._get_stream_table_contents()
+
+        expected = {
+            'Units': {
+                "component_flow_phase ('p1', 'c1')": getattr(pyunits.pint_registry, "mole/second"),
+                "component_flow_phase ('p1', 'c2')": getattr(pyunits.pint_registry, "mole/second"),
+                "component_flow_phase ('p2', 'c1')": getattr(pyunits.pint_registry, "mole/second"),
+                "component_flow_phase ('p2', 'c2')": getattr(pyunits.pint_registry, "mole/second"),
+                'temperature': getattr(pyunits.pint_registry, "K"),
+                'pressure': getattr(pyunits.pint_registry, "Pa")},
+            'inlet_1': {
+                "component_flow_phase ('p1', 'c1')": pytest.approx(2.00, rel=1e-4),
+                "component_flow_phase ('p1', 'c2')": pytest.approx(2.00, rel=1e-4),
+                "component_flow_phase ('p2', 'c1')": pytest.approx(2.00, rel=1e-4),
+                "component_flow_phase ('p2', 'c2')": pytest.approx(2.00, rel=1e-4),
+                'temperature': pytest.approx(300, rel=1e-4),
+                'pressure': pytest.approx(1e5, rel=1e-4)},
+            'inlet_2': {
+                "component_flow_phase ('p1', 'c1')": pytest.approx(2.00, rel=1e-4),
+                "component_flow_phase ('p1', 'c2')": pytest.approx(2.00, rel=1e-4),
+                "component_flow_phase ('p2', 'c1')": pytest.approx(2.00, rel=1e-4),
+                "component_flow_phase ('p2', 'c2')": pytest.approx(2.00, rel=1e-4),
+                'temperature': pytest.approx(300, rel=1e-4),
+                'pressure': pytest.approx(1e5, rel=1e-4)},
+            'Outlet': {
+                "component_flow_phase ('p1', 'c1')": pytest.approx(2.00, rel=1e-4),
+                "component_flow_phase ('p1', 'c2')": pytest.approx(2.00, rel=1e-4),
+                "component_flow_phase ('p2', 'c1')": pytest.approx(2.00, rel=1e-4),
+                "component_flow_phase ('p2', 'c2')": pytest.approx(2.00, rel=1e-4),
+                'temperature': pytest.approx(300, rel=1e-4),
+                'pressure': pytest.approx(1e5, rel=1e-4)}}
+
+        assert stable.to_dict() == expected
+
     @pytest.mark.initialization
     @pytest.mark.component
     def test_initialize(self):
@@ -713,41 +757,6 @@ class TestMixer(object):
         assert m.fs.mix.inlet_1_state[0].hold_state is False
         assert m.fs.mix.inlet_2_state[0].hold_state is False
         assert m.fs.sb[0].hold_state is False
-
-    @pytest.mark.ui
-    @pytest.mark.component
-    def test_report(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.pp = PhysicalParameterTestBlock()
-        m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
-
-        m.fs.mix = Mixer(default={"property_package": m.fs.pp})
-
-        perf_dict = m.fs.mix._get_performance_contents()
-
-        assert perf_dict is None
-
-        stream = StringIO()
-
-        m.fs.mix.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.mix                                                              Time: 0.0
-------------------------------------------------------------------------------------
-    Stream Table
-                                          Units        inlet_1    inlet_2    Outlet  
-    component_flow_phase ('p1', 'c1')  mole / second     2.0000     2.0000     2.0000
-    component_flow_phase ('p1', 'c2')  mole / second     2.0000     2.0000     2.0000
-    component_flow_phase ('p2', 'c1')  mole / second     2.0000     2.0000     2.0000
-    component_flow_phase ('p2', 'c2')  mole / second     2.0000     2.0000     2.0000
-    temperature                               kelvin     300.00     300.00     300.00
-    pressure                                  pascal 1.0000e+05 1.0000e+05 1.0000e+05
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
 
 
 # -----------------------------------------------------------------------------
@@ -811,6 +820,39 @@ class TestBTX(object):
     def test_dof(self, btx):
         assert degrees_of_freedom(btx) == 0
 
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, btx):
+        stable = btx.fs.unit._get_stream_table_contents()
+
+        expected = {
+            'Units': {
+                'flow_mol': getattr(pyunits.pint_registry, "mole/second"),
+                'mole_frac_comp benzene': getattr(pyunits.pint_registry, "dimensionless"),
+                'mole_frac_comp toluene': getattr(pyunits.pint_registry, "dimensionless"),
+                'temperature': getattr(pyunits.pint_registry, "kelvin"),
+                'pressure': getattr(pyunits.pint_registry, "Pa")},
+            'inlet_1': {
+                'flow_mol': pytest.approx(5.0, rel=1e-4),
+                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
+                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
+                'temperature': pytest.approx(365, rel=1e-4),
+                'pressure': pytest.approx(2e5, rel=1e-4)},
+            'inlet_2': {
+                'flow_mol': pytest.approx(1.0, rel=1e-4),
+                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
+                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
+                'temperature': pytest.approx(300, rel=1e-4),
+                'pressure': pytest.approx(101325.0, rel=1e-4)},
+            'Outlet': {
+                'flow_mol': pytest.approx(1.0, rel=1e-4),
+                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
+                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
+                'temperature': pytest.approx(298.15, rel=1e-4),
+                'pressure': pytest.approx(101325.0, rel=1e-4)}}
+
+        assert stable.to_dict() == expected
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -861,11 +903,6 @@ class TestBTX(object):
                 * btx.fs.unit.mixed_state[0].enth_mol_phase["Liq"]
             )
         )
-
-    @pytest.mark.ui
-    @pytest.mark.unit
-    def test_report(self, btx):
-        btx.fs.unit.report()
 
 
 # -----------------------------------------------------------------------------
@@ -1075,6 +1112,47 @@ class TestIAPWS(object):
     def test_dof(self, iapws):
         assert degrees_of_freedom(iapws) == 0
 
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, iapws):
+        stable = iapws.fs.unit._get_stream_table_contents()
+
+        expected = {
+            'Units': {
+                'Molar Flow (mol/s)': getattr(pyunits.pint_registry, "mole/second"),
+                'Mass Flow (kg/s)': getattr(pyunits.pint_registry, "kg/second"),
+                'T (K)': getattr(pyunits.pint_registry, "K"),
+                'P (Pa)': getattr(pyunits.pint_registry, "Pa"),
+                'Vapor Fraction': getattr(pyunits.pint_registry, "dimensionless"),
+                'Molar Enthalpy (J/mol) Vap': getattr(pyunits.pint_registry, "J/mole"),
+                'Molar Enthalpy (J/mol) Liq': getattr(pyunits.pint_registry, "J/mole")},
+            'inlet_1': {
+                'Molar Flow (mol/s)': pytest.approx(100, rel=1e-4),
+                'Mass Flow (kg/s)': pytest.approx(1.8015, rel=1e-4),
+                'T (K)': pytest.approx(326.17, rel=1e-4),
+                'P (Pa)': pytest.approx(101325, rel=1e-4),
+                'Vapor Fraction': pytest.approx(0, abs=1e-4),
+                'Molar Enthalpy (J/mol) Vap': pytest.approx(42031, rel=1e-4),
+                'Molar Enthalpy (J/mol) Liq': pytest.approx(4000, rel=1e-4)},
+            'inlet_2': {
+                'Molar Flow (mol/s)': pytest.approx(100, rel=1e-4),
+                'Mass Flow (kg/s)': pytest.approx(1.8015, rel=1e-4),
+                'T (K)': pytest.approx(319.53, rel=1e-4),
+                'P (Pa)': pytest.approx(1e5, rel=1e-4),
+                'Vapor Fraction': pytest.approx(0, abs=1e-4),
+                'Molar Enthalpy (J/mol) Vap': pytest.approx(-1.5704e+05, rel=1e-4),
+                'Molar Enthalpy (J/mol) Liq': pytest.approx(3500, rel=1e-4)},
+            'Outlet': {
+                'Molar Flow (mol/s)': pytest.approx(1, rel=1e-4),
+                'Mass Flow (kg/s)': pytest.approx(1.8015e-2, rel=1e-4),
+                'T (K)': pytest.approx(286.34, rel=1e-4),
+                'P (Pa)': pytest.approx(1e5, rel=1e-4),
+                'Vapor Fraction': pytest.approx(0, abs=1e-4),
+                'Molar Enthalpy (J/mol) Vap': pytest.approx(2168.6, rel=1e-4),
+                'Molar Enthalpy (J/mol) Liq': pytest.approx(1000, rel=1e-4)}}
+
+        assert stable.to_dict() == expected
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -1128,11 +1206,6 @@ class TestIAPWS(object):
             )
             <= 1e-6
         )
-
-    @pytest.mark.ui
-    @pytest.mark.unit
-    def test_report(self, iapws):
-        iapws.fs.unit.report()
 
 
 # -----------------------------------------------------------------------------
@@ -1198,6 +1271,51 @@ class TestSaponification(object):
     @pytest.mark.unit
     def test_dof(self, sapon):
         assert degrees_of_freedom(sapon) == 0
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, sapon):
+        stable = sapon.fs.unit._get_stream_table_contents()
+
+        expected = {
+            'Units': {
+                'Volumetric Flowrate': getattr(pyunits.pint_registry, "m**3/second"),
+                'Molar Concentration H2O': getattr(pyunits.pint_registry, "mole/m**3"),
+                'Molar Concentration NaOH': getattr(pyunits.pint_registry, "mole/m**3"),
+                'Molar Concentration EthylAcetate': getattr(pyunits.pint_registry, "mole/m**3"),
+                'Molar Concentration SodiumAcetate': getattr(pyunits.pint_registry, "mole/m**3"),
+                'Molar Concentration Ethanol': getattr(pyunits.pint_registry, "mole/m**3"),
+                'Temperature': getattr(pyunits.pint_registry, "K"),
+                'Pressure': getattr(pyunits.pint_registry, "Pa")},
+            'inlet_1': {
+                'Volumetric Flowrate': pytest.approx(1e-3, rel=1e-4),
+                'Molar Concentration H2O': pytest.approx(55388, rel=1e-4),
+                'Molar Concentration NaOH': pytest.approx(100.00, rel=1e-4),
+                'Molar Concentration EthylAcetate': pytest.approx(100.00, rel=1e-4),
+                'Molar Concentration SodiumAcetate': pytest.approx(0, abs=1e-4),
+                'Molar Concentration Ethanol': pytest.approx(0, abs=1e-4),
+                'Temperature': pytest.approx(320, rel=1e-4),
+                'Pressure': pytest.approx(1.0132e+05, rel=1e-4)},
+            'inlet_2': {
+                'Volumetric Flowrate': pytest.approx(1e-3, rel=1e-4),
+                'Molar Concentration H2O': pytest.approx(55388, rel=1e-4),
+                'Molar Concentration NaOH': pytest.approx(100.00, rel=1e-4),
+                'Molar Concentration EthylAcetate': pytest.approx(100.00, rel=1e-4),
+                'Molar Concentration SodiumAcetate': pytest.approx(0, rel=1e-4),
+                'Molar Concentration Ethanol': pytest.approx(0, abs=1e-4),
+                'Temperature': pytest.approx(300, rel=1e-4),
+                'Pressure': pytest.approx(1.0132e+05, rel=1e-4)},
+            'Outlet': {
+                'Volumetric Flowrate': pytest.approx(1.00, rel=1e-4),
+                'Molar Concentration H2O': pytest.approx(100.00, rel=1e-4),
+                'Molar Concentration NaOH': pytest.approx(100.00, rel=1e-4),
+                'Molar Concentration EthylAcetate': pytest.approx(100.00, rel=1e-4),
+                'Molar Concentration SodiumAcetate': pytest.approx(100.00, rel=1e-4),
+                'Molar Concentration Ethanol': pytest.approx(100.00, rel=1e-4),
+                'Temperature': pytest.approx(298.15, rel=1e-4),
+                'Pressure': pytest.approx(1.0132e+05, rel=1e-4)}}
+
+        assert stable.to_dict() == expected
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -1288,11 +1406,6 @@ class TestSaponification(object):
             )
             <= 1e-3
         )
-
-    @pytest.mark.ui
-    @pytest.mark.unit
-    def test_report(self, sapon):
-        sapon.fs.unit.report()
 
 
 @pytest.mark.component

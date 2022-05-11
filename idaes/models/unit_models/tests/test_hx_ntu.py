@@ -169,6 +169,57 @@ class TestHXNTU(object):
     def test_dof(self, model):
         assert degrees_of_freedom(model) == 0
 
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, model):
+        perf_dict = model.fs.unit._get_performance_contents()
+
+        assert perf_dict is None
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, model):
+        stable = model.fs.unit._get_stream_table_contents()
+
+        expected = {
+            'Units': {
+                'Total Molar Flowrate': getattr(pyunits.pint_registry, "mole/second"),
+                'Total Mole Fraction H2O': getattr(pyunits.pint_registry, "dimensionless"),
+                'Total Mole Fraction MEA': getattr(pyunits.pint_registry, "dimensionless"),
+                'Total Mole Fraction CO2': getattr(pyunits.pint_registry, "dimensionless"),
+                'Temperature': getattr(pyunits.pint_registry, "kelvin"),
+                'Pressure': getattr(pyunits.pint_registry, "Pa")},
+            'Hot Inlet': {
+                'Total Molar Flowrate': pytest.approx(60.549, rel=1e-4),
+                'Total Mole Fraction H2O': pytest.approx(0.87470, rel=1e-4),
+                'Total Mole Fraction MEA': pytest.approx(0.10950, rel=1e-4),
+                'Total Mole Fraction CO2': pytest.approx(0.015800, rel=1e-4),
+                'Temperature': pytest.approx(392.23, rel=1e-4),
+                'Pressure': pytest.approx(2.0265e+05, rel=1e-4)},
+            'Hot Outlet': {
+                'Total Molar Flowrate': pytest.approx(1, rel=1e-4),
+                'Total Mole Fraction H2O': pytest.approx(1/3, rel=1e-4),
+                'Total Mole Fraction MEA': pytest.approx(1/3, rel=1e-4),
+                'Total Mole Fraction CO2': pytest.approx(1/3, rel=1e-4),
+                'Temperature': pytest.approx(298.15, rel=1e-4),
+                'Pressure': pytest.approx(101325, rel=1e-4)},
+            'Cold Inlet': {
+                'Total Molar Flowrate': pytest.approx(63.019, rel=1e-4),
+                'Total Mole Fraction H2O': pytest.approx(0.85090, rel=1e-4),
+                'Total Mole Fraction MEA': pytest.approx(0.10770, rel=1e-4),
+                'Total Mole Fraction CO2': pytest.approx(0.041400, rel=1e-4),
+                'Temperature': pytest.approx(326.36, rel=1e-4),
+                'Pressure': pytest.approx(2.0265e+05, rel=1e-4)},
+            'Cold Outlet': {
+                'Total Molar Flowrate': pytest.approx(1, rel=1e-4),
+                'Total Mole Fraction H2O': pytest.approx(1/3, rel=1e-4),
+                'Total Mole Fraction MEA': pytest.approx(1/3, rel=1e-4),
+                'Total Mole Fraction CO2': pytest.approx(1/3, rel=1e-4),
+                'Temperature': pytest.approx(298.15, rel=1e-4),
+                'Pressure': pytest.approx(101325, rel=1e-4)}}
+
+        assert stable.to_dict() == expected
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -314,36 +365,6 @@ class TestHXNTU(object):
             )
             <= 1e-6
         )
-
-    @pytest.mark.ui
-    @pytest.mark.unit
-    def test_get_performance_contents(self, model):
-        perf_dict = model.fs.unit._get_performance_contents()
-
-        assert perf_dict is None
-
-    @pytest.mark.ui
-    @pytest.mark.component
-    def test_report(self, model):
-        stream = StringIO()
-
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Stream Table
-                                Units       Hot Inlet  Hot Outlet  Cold Inlet  Cold Outlet
-    Total Molar Flowrate     mole / second     60.549      60.549      63.019      63.019 
-    Total Mole Fraction H2O  dimensionless    0.87470     0.87470     0.85090     0.85090 
-    Total Mole Fraction MEA  dimensionless    0.10950     0.10950     0.10770     0.10770 
-    Total Mole Fraction CO2  dimensionless   0.015800    0.015800    0.041400    0.041400 
-    Temperature                     kelvin     392.23      364.31      326.36      357.93 
-    Pressure                        pascal 2.0265e+05  2.0065e+05  2.0265e+05  2.0065e+05 
-====================================================================================
-
-"""
 
     @pytest.mark.component
     def test_initialization_error(self, model):

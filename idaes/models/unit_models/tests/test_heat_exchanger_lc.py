@@ -489,49 +489,6 @@ class TestHXLCGeneric(object):
                 "Delta T In": model.fs.unit.delta_temperature_in[0],
                 "Delta T Out": model.fs.unit.delta_temperature_out[0]}}
 
-    @pytest.mark.ui
-    @pytest.mark.component
-    def test_report(self, model):
-        stream = StringIO()
-
-        model.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key            : Value  : Units                           : Fixed : Bounds
-           HX Area : 1000.0 :                      meter ** 2 :  True : (0, None)
-    HX Coefficient : 100.00 : kilogram / kelvin / second ** 3 : False : (0, None)
-         Heat Duty : 0.0000 :                            watt : False : (None, None)
-
-    Expressions: 
-
-    Key             : Value  : Units
-    Delta T Driving : 10.050 : kelvin
-         Delta T In : 10.000 : kelvin
-        Delta T Out : 10.100 : kelvin
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                     Units         Hot Inlet  Hot Outlet  Cold Inlet  Cold Outlet
-    Molar Flow (mol/s)              mole / second     100.00      1.0000      100.00      1.0000 
-    Mass Flow (kg/s)            kilogram / second     1.8015    0.018015      1.8015    0.018015 
-    T (K)                                  kelvin     326.17      286.34      312.89      286.34 
-    P (Pa)                                 pascal 1.0132e+05  1.0000e+05  1.0132e+05  1.0000e+05 
-    Vapor Fraction                  dimensionless     0.0000      0.0000      0.0000      0.0000 
-    Molar Enthalpy (J/mol) Vap       joule / mole     42031.      2168.6      45975.      2168.6 
-    Molar Enthalpy (J/mol) Liq       joule / mole     4000.0      1000.0      3000.0      1000.0 
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
-
-
 class TestHXLCTransientSCO2(object):
     @pytest.fixture
     def model(self):

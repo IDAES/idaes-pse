@@ -281,40 +281,6 @@ class TestSaponification(object):
             "vars": {
                 "Area": sapon.fs.unit.area}}
 
-    @pytest.mark.ui
-    @pytest.mark.component
-    def test_report(self, sapon):
-        stream = StringIO()
-
-        sapon.fs.unit.report(ostream=stream)
-
-        output = """
-====================================================================================
-Unit : fs.unit                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key  : Value   : Units      : Fixed : Bounds
-    Area : 0.10000 : meter ** 2 :  True : (None, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                                             Units            Inlet     Outlet  
-    Volumetric Flowrate                meter ** 3 / second     1.0000     1.0000
-    Molar Concentration H2O              mole / meter ** 3     55388.     55388.
-    Molar Concentration NaOH             mole / meter ** 3     100.00     62.292
-    Molar Concentration EthylAcetate     mole / meter ** 3     100.00     62.292
-    Molar Concentration SodiumAcetate    mole / meter ** 3     0.0000     37.708
-    Molar Concentration Ethanol          mole / meter ** 3     0.0000     37.708
-    Temperature                                     kelvin     303.15     303.59
-    Pressure                                        pascal 1.0132e+05 1.0132e+05
-====================================================================================
-"""
-
-        assert output in stream.getvalue()
-
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
