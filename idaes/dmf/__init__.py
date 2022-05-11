@@ -24,8 +24,6 @@ from .dmfbase import DMF, DMFConfig           # noqa: F401
 from .dmfbase import create_configuration     # noqa: F401
 from .getver import get_version_info          # noqa: F401
 from .userapi import get_workspace            # noqa: F401
-from .userapi import find_property_packages   # noqa: F401
-from .userapi import index_property_packages  # noqa: F401
 from . import resource                        # noqa: F401
 # DMF version is the same as IDAES version
 from idaes import __version__                 # noqa

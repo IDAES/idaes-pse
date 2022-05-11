@@ -90,3 +90,24 @@ def test_deprecate_to_except():
             idaes.cfg.deprecation_to_exception = True
             idaes.reconfig()
             _log.warning("DEPRECATED: Hey! Don't use that.")
+
+@pytest.mark.unit
+def test_get_data_directory():
+    # this tests the function that give that data, binary and testing directories
+    # it doesn't actually change the idaes configuration.
+    if "IDAES_DATA" in os.environ:
+        odat = os.environ["IDAES_DATA"]
+    else:
+        odat = None
+    # Test set by env variable on a directory that should exist
+    os.environ["IDAES_DATA"] = idaes.config.data_directory
+    dd, bd, td = idaes.config.get_data_directory()
+    assert dd == idaes.config.data_directory
+    # Test set by env variable on a directory that should exist
+    os.environ["IDAES_DATA"] = "/this_directory_doesnt_exist/for_real/not_here"
+    dd, bd, td = idaes.config.get_data_directory()
+    assert dd is None
+    if odat is not None:
+        os.environ["IDAES_DATA"] = odat
+    else:
+        del(os.environ["IDAES_DATA"])
