@@ -656,6 +656,7 @@ H2 :  -2.0
 CH3OH :  1.0
 CO :  -1.0
 These coefficients should follow 1*CO + 2*H2 => 1*CH3OH
+
 Reaction conversion:  0.8500000099995839
 Reactor duty (MW):  -59.350063183071555
 Duty from Reaction (MW)): 28.21686516526679
@@ -678,68 +679,79 @@ operating cost ($/year) =  523119766.2459712
 sales ($/year) =  140530623320.3268
 raw materials cost ($/year) = 35229454878.16397
 revenue (1000$/year)=  104777764.36542404
+
+
 ====================================================================================
 Unit : fs.M101                                                             Time: 0.0
 ------------------------------------------------------------------------------------
     Stream Table
-                                H2_WGS      CO_WGS     Outlet  
-    Total Molar Flowrate          637.20      316.80     954.00
-    Total Mole Fraction CH4   1.0000e-06  1.0000e-06 1.0000e-06
-    Total Mole Fraction CO    1.0000e-06      1.0000    0.33208
-    Total Mole Fraction H2        1.0000  1.0000e-06    0.66792
-    Total Mole Fraction CH3OH 1.0000e-06  1.0000e-06 1.0000e-06
-    Molar Enthalpy               -142.40 -1.1068e+05    -36848.
-    Pressure                  3.0000e+06  3.0000e+06 3.0000e+06
+                                  Units        H2_WGS      CO_WGS     Outlet
+    Total Molar Flowrate       mole / second     637.20      316.80     954.00
+    Total Mole Fraction CH4    dimensionless 1.0000e-06  1.0000e-06 1.0000e-06
+    Total Mole Fraction CO     dimensionless 1.0000e-06      1.0000    0.33208
+    Total Mole Fraction H2     dimensionless     1.0000  1.0000e-06    0.66792
+    Total Mole Fraction CH3OH  dimensionless 1.0000e-06  1.0000e-06 1.0000e-06
+    Molar Enthalpy              joule / mole    -142.40 -1.1068e+05    -36848.
+    Pressure                          pascal 3.0000e+06  3.0000e+06 3.0000e+06
 ====================================================================================
+
 ====================================================================================
 Unit : fs.M102                                                             Time: 0.0
 ------------------------------------------------------------------------------------
     Stream Table
-                                 feed      recycle    Outlet  
-    Total Molar Flowrate          954.00     194.83     1148.8
-    Total Mole Fraction CH4   1.0000e-06 4.4069e-05 8.3041e-06
-    Total Mole Fraction CO       0.33208    0.25377    0.31880
-    Total Mole Fraction H2       0.66792    0.67379    0.66892
-    Total Mole Fraction CH3OH 1.0000e-06   0.072392   0.012278
-    Molar Enthalpy               -36848.    -39572.    -37310.
-    Pressure                  3.0000e+06 1.2103e+07 3.0000e+06
+                                  Units         feed      recycle    Outlet
+    Total Molar Flowrate       mole / second     954.00     194.83     1148.8
+    Total Mole Fraction CH4    dimensionless 1.0000e-06 4.4069e-05 8.3041e-06
+    Total Mole Fraction CO     dimensionless    0.33208    0.25377    0.31880
+    Total Mole Fraction H2     dimensionless    0.66792    0.67379    0.66892
+    Total Mole Fraction CH3OH  dimensionless 1.0000e-06   0.072392   0.012278
+    Molar Enthalpy              joule / mole    -36848.    -39572.    -37310.
+    Pressure                          pascal 3.0000e+06 1.2103e+07 3.0000e+06
 ====================================================================================
+
 ====================================================================================
 Unit : fs.F101                                                             Time: 0.0
 ------------------------------------------------------------------------------------
     Unit Performance
-    Variables: 
-    Key             : Value       : Fixed : Bounds
-          Heat Duty : -9.9723e+06 : False : (None, None)
-    Pressure Change :  1.0597e+07 : False : (None, None)
+
+    Variables:
+
+    Key             : Value       : Units  : Fixed : Bounds
+          Heat Duty : -9.9723e+06 :   watt : False : (None, None)
+    Pressure Change :  1.0597e+07 : pascal : False : (None, None)
+
 ------------------------------------------------------------------------------------
     Stream Table
                              Inlet    Vapor Outlet  Liquid Outlet
-    flow_mol                  526.22       216.48        309.74  
-    mole_frac_comp CH4    1.8129e-05   4.4069e-05    1.0000e-08  
-    mole_frac_comp CO        0.10440      0.25377    1.0000e-08  
-    mole_frac_comp H2        0.27719      0.67379    1.0000e-08  
-    mole_frac_comp CH3OH     0.61839     0.072392        1.0000  
-    enth_mol             -1.3724e+05      -39572.   -2.3770e+05  
-    pressure              1.5065e+06   1.2103e+07    1.2103e+07  
+    flow_mol                  526.22       216.48        309.74
+    mole_frac_comp CH4    1.8129e-05   4.4069e-05    1.0000e-08
+    mole_frac_comp CO        0.10440      0.25377    1.0000e-08
+    mole_frac_comp H2        0.27719      0.67379    1.0000e-08
+    mole_frac_comp CH3OH     0.61839     0.072392        1.0000
+    enth_mol             -1.3724e+05      -39572.   -2.3770e+05
+    pressure              1.5065e+06   1.2103e+07    1.2103e+07
 ====================================================================================
+
 ====================================================================================
 Unit : fs.S101                                                             Time: 0.0
 ------------------------------------------------------------------------------------
     Unit Performance
-    Variables: 
-    Key                           : Value   : Fixed : Bounds
-    Split Fraction [('recycle',)] : 0.90000 : False : (None, None)
+
+    Variables:
+
+    Key                           : Value   : Units         : Fixed : Bounds
+    Split Fraction [('recycle',)] : 0.90000 : dimensionless : False : (None, None)
+
 ------------------------------------------------------------------------------------
     Stream Table
-                                 Inlet  
-    Molar Enthalpy               -39572.
-    Pressure                  1.2103e+07
-    Total Molar Flowrate          216.48
-    Total Mole Fraction CH3OH   0.072392
-    Total Mole Fraction CH4   4.4069e-05
-    Total Mole Fraction CO       0.25377
-    Total Mole Fraction H2       0.67379
+                                  Units         Inlet
+    Total Molar Flowrate       mole / second     216.48
+    Total Mole Fraction CH4    dimensionless 4.4069e-05
+    Total Mole Fraction CO     dimensionless    0.25377
+    Total Mole Fraction H2     dimensionless    0.67379
+    Total Mole Fraction CH3OH  dimensionless   0.072392
+    Molar Enthalpy              joule / mole    -39572.
+    Pressure                          pascal 1.2103e+07
 ====================================================================================
 """
         output_string = output.replace(" ", "").replace("\n", "")
@@ -765,6 +777,7 @@ H2 :  0.0
 CH3OH :  0.0
 CO :  0.0
 These coefficients should follow 1*CO + 2*H2 => 1*CH3OH
+
 Reaction conversion:  0.75
 Reactor duty (MW):  0.0
 Duty from Reaction (MW)): 0.0009064
@@ -787,68 +800,79 @@ operating cost ($/year) =  0.0
 sales ($/year) =  5671299423.599999
 raw materials cost ($/year) = 35229454878.16397
 revenue (1000$/year)=  -29558277.23084167
+
+
 ====================================================================================
 Unit : fs.M101                                                             Time: 0.0
 ------------------------------------------------------------------------------------
     Stream Table
-                                H2_WGS      CO_WGS     Outlet  
-    Total Molar Flowrate          637.20      316.80     100.00
-    Total Mole Fraction CH4   1.0000e-06  1.0000e-06    0.25000
-    Total Mole Fraction CO    1.0000e-06      1.0000    0.25000
-    Total Mole Fraction H2        1.0000  1.0000e-06    0.25000
-    Total Mole Fraction CH3OH 1.0000e-06  1.0000e-06    0.25000
-    Molar Enthalpy               -142.40 -1.1068e+05     100.00
-    Pressure                  3.0000e+06  3.0000e+06 1.0000e+05
+                                  Units        H2_WGS      CO_WGS     Outlet
+    Total Molar Flowrate       mole / second     637.20      316.80     100.00
+    Total Mole Fraction CH4    dimensionless 1.0000e-06  1.0000e-06    0.25000
+    Total Mole Fraction CO     dimensionless 1.0000e-06      1.0000    0.25000
+    Total Mole Fraction H2     dimensionless     1.0000  1.0000e-06    0.25000
+    Total Mole Fraction CH3OH  dimensionless 1.0000e-06  1.0000e-06    0.25000
+    Molar Enthalpy              joule / mole    -142.40 -1.1068e+05     100.00
+    Pressure                          pascal 3.0000e+06  3.0000e+06 1.0000e+05
 ====================================================================================
+
 ====================================================================================
 Unit : fs.M102                                                             Time: 0.0
 ------------------------------------------------------------------------------------
     Stream Table
-                                 feed      recycle    Outlet  
-    Total Molar Flowrate          100.00     100.00     100.00
-    Total Mole Fraction CH4      0.25000    0.25000    0.25000
-    Total Mole Fraction CO       0.25000    0.25000    0.25000
-    Total Mole Fraction H2       0.25000    0.25000    0.25000
-    Total Mole Fraction CH3OH    0.25000    0.25000    0.25000
-    Molar Enthalpy                100.00     100.00     100.00
-    Pressure                  1.0000e+05 1.0000e+05 1.0000e+05
+                                  Units         feed      recycle    Outlet
+    Total Molar Flowrate       mole / second     100.00     100.00     100.00
+    Total Mole Fraction CH4    dimensionless    0.25000    0.25000    0.25000
+    Total Mole Fraction CO     dimensionless    0.25000    0.25000    0.25000
+    Total Mole Fraction H2     dimensionless    0.25000    0.25000    0.25000
+    Total Mole Fraction CH3OH  dimensionless    0.25000    0.25000    0.25000
+    Molar Enthalpy              joule / mole     100.00     100.00     100.00
+    Pressure                          pascal 1.0000e+05 1.0000e+05 1.0000e+05
 ====================================================================================
+
 ====================================================================================
 Unit : fs.F101                                                             Time: 0.0
 ------------------------------------------------------------------------------------
     Unit Performance
-    Variables: 
-    Key             : Value  : Fixed : Bounds
-          Heat Duty : 0.0000 : False : (None, None)
-    Pressure Change : 0.0000 :  True : (None, None)
+
+    Variables:
+
+    Key             : Value  : Units  : Fixed : Bounds
+          Heat Duty : 0.0000 :   watt : False : (None, None)
+    Pressure Change : 0.0000 : pascal :  True : (None, None)
+
 ------------------------------------------------------------------------------------
     Stream Table
                             Inlet    Vapor Outlet  Liquid Outlet
-    flow_mol                 100.00       50.000        50.000  
-    mole_frac_comp CH4      0.25000      0.25000    1.0000e-08  
-    mole_frac_comp CO       0.25000      0.25000    1.0000e-08  
-    mole_frac_comp H2       0.25000      0.25000    1.0000e-08  
-    mole_frac_comp CH3OH    0.25000      0.25000       0.25000  
-    enth_mol                 100.00      -97532.       -59600.  
-    pressure             1.0000e+05   1.0000e+05    1.0000e+05  
+    flow_mol                 100.00       50.000        50.000
+    mole_frac_comp CH4      0.25000      0.25000    1.0000e-08
+    mole_frac_comp CO       0.25000      0.25000    1.0000e-08
+    mole_frac_comp H2       0.25000      0.25000    1.0000e-08
+    mole_frac_comp CH3OH    0.25000      0.25000       0.25000
+    enth_mol                 100.00      -97532.       -59600.
+    pressure             1.0000e+05   1.0000e+05    1.0000e+05
 ====================================================================================
+
 ====================================================================================
 Unit : fs.S101                                                             Time: 0.0
 ------------------------------------------------------------------------------------
     Unit Performance
-    Variables: 
-    Key                           : Value   : Fixed : Bounds
-    Split Fraction [('recycle',)] : 0.50000 : False : (None, None)
+
+    Variables:
+
+    Key                           : Value   : Units         : Fixed : Bounds
+    Split Fraction [('recycle',)] : 0.50000 : dimensionless : False : (None, None)
+
 ------------------------------------------------------------------------------------
     Stream Table
-                                 Inlet  
-    Molar Enthalpy                100.00
-    Pressure                  1.0000e+05
-    Total Molar Flowrate          100.00
-    Total Mole Fraction CH3OH    0.25000
-    Total Mole Fraction CH4      0.25000
-    Total Mole Fraction CO       0.25000
-    Total Mole Fraction H2       0.25000
+                                  Units         Inlet
+    Total Molar Flowrate       mole / second     100.00
+    Total Mole Fraction CH4    dimensionless    0.25000
+    Total Mole Fraction CO     dimensionless    0.25000
+    Total Mole Fraction H2     dimensionless    0.25000
+    Total Mole Fraction CH3OH  dimensionless    0.25000
+    Molar Enthalpy              joule / mole     100.00
+    Pressure                          pascal 1.0000e+05
 ====================================================================================
 """
         output_string = output.replace(" ", "").replace("\n", "")
