@@ -95,7 +95,50 @@ class AbstractPriceForecaster(ABC):
         pass
 
 
-class PlaceHolderForecaster(AbstractPriceForecaster):
+class AbstractPrescientPriceForecaster(AbstractPriceForecaster):
+
+    """
+    Abstract class for price forecasters that will interface with Prescient.
+    """
+
+    @abstractmethod
+    def fetch_hourly_stats_from_prescient(self, prescient_hourly_stats):
+
+        """
+        This method fetches the hourly stats from Prescient to the price forecaster
+        once the hourly stats are published.
+
+        Arguments:
+            prescient_hourly_stats: Prescient HourlyStats object.
+
+        Returns:
+            None
+        """
+
+        pass
+
+    @abstractmethod
+    def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
+
+        """
+        This method fetches the day-ahead market to the price forecaster after the
+        UC is solved from Prescient through the coordinator.
+
+        Arguments:
+            ruc_date: the date of the day-ahead market we bid into.
+
+            ruc_hour: the hour the RUC is being solved in the day before.
+
+            day_ahead_result: a Prescient RucPlan object.
+
+        Returns:
+            None
+        """
+
+        pass
+
+
+class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
 
     """
     This a placeholder for a real price forecaster. This placeholder can takes
@@ -251,3 +294,37 @@ class PlaceHolderForecaster(AbstractPriceForecaster):
         forecasts_arr[forecasts_arr < 0] = 0
 
         return {i: list(forecasts_arr[i]) for i in range(n_samples)}
+
+    def fetch_hourly_stats_from_prescient(self, prescient_hourly_stats):
+
+        """
+        This method fetches the hourly stats from Prescient to the price forecaster
+        once the hourly stats are published.
+
+        Arguments:
+            prescient_hourly_stats: Prescient HourlyStats object.
+
+        Returns:
+            None
+        """
+
+        return
+
+    def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
+
+        """
+        This method fetches the day-ahead market to the price forecaster after the
+        UC is solved from Prescient through the coordinator.
+
+        Arguments:
+            ruc_date: the date of the day-ahead market we bid into.
+
+            ruc_hour: the hour the RUC is being solved in the day before.
+
+            day_ahead_result: a Prescient RucPlan object.
+
+        Returns:
+            None
+        """
+
+        return
