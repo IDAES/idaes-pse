@@ -11,7 +11,12 @@
 # license information.
 #################################################################################
 from abc import ABC, abstractmethod
+from numbers import Real
 import numpy as np
+
+
+class ForecastError(Exception):
+    """Error to indicate error with forecasters."""
 
 
 class AbstractPriceForecaster(ABC):
@@ -326,5 +331,334 @@ class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
         Returns:
             None
         """
+
+        return
+
+
+class Backcaster(AbstractPrescientPriceForecaster):
+
+    """
+    Generate price forecasts by directly using historical prices.
+    """
+
+    def __init__(
+        self, historical_da_prices, historical_rt_prices, max_historical_days=10
+    ):
+        """
+        Initialize the Backcaster.
+
+        Arguments:
+            historical_da_prices: dictionary of list for historical hourly day-ahead prices
+
+            historical_rt_prices: dictionary of list for historical hourly real-time prices
+
+            max_historical_days: maximum number of days of price data to store on the instance
+
+        Returns:
+            None
+        """
+
+        self.max_historical_days = max_historical_days
+        self.historical_da_prices = historical_da_prices
+        self.historical_rt_prices = historical_rt_prices
+        self._current_day_rt_prices = {bus: [] for bus in historical_da_prices}
+
+    def _validate_input_historical_price(self, historical_price):
+
+        """
+        Validate input historical prices.
+
+        Arguments:
+            historical_price: dictionary of list for historical hourly prices
+
+        Returns:
+            None
+        """
+
+        if not isinstance(historical_price, dict):
+            raise TypeError(
+                "Given historical price is not an dictionary object. Dictionaries with bus name (str) as keys are expected."
+            )
+
+        if len(historical_price) == 0:
+            raise ValueError(f"Given historical price is empty.")
+
+        for b, price_list in historical_price.items():
+            if not isinstance(price_list, list):
+                raise TypeError(
+                    f"Given historical price for bus {b} is not a list object. A list of historical prices is expected."
+                )
+
+            n_prices = len(price_list)
+
+            if n_prices < 24:
+                raise ValueError(
+                    f"At least a day of the historical prices (24 entries) is needed. For bus {b}, only {n_prices} are provided."
+                )
+
+            if n_prices % 24 != 0:
+                raise ValueError(
+                    f"The number of prices for each bus should be a multiple of 24. But for bus {b}, {n_prices} are provided."
+                )
+
+            while len(historical_price[b]) // 24 > self.max_historical_days:
+                raise Warning(
+                    f"The number of days of the provided historical prices for bus {b} is greater than the max value {self.max_historical_days}. Dropping the first day's data."
+                )
+                historical_price[b] = historical_price[b][24:]
+
+    @property
+    def max_historical_days(self):
+
+        """
+        Property getter for max_historical_days.
+
+        Returns:
+            int: max historical days
+        """
+
+        return self._max_historical_days
+
+    @max_historical_days.setter
+    def max_historical_days(self, value):
+
+        """
+        Property setter for max_historical_days (validate before setting).
+
+        Args:
+            value: intended value for max_historical_days
+
+        Returns:
+            None
+        """
+
+        if not isinstance(value, Real):
+            raise TypeError(
+                f"max_historical_days must be a number, but {type(value)} is provided."
+            )
+
+        value = int(value)
+
+        if value < 1:
+            raise ValueError(
+                f"max_historical_days must be >= 1, but {value} is provided."
+            )
+
+        self._max_historical_days = value
+
+    @property
+    def historical_da_prices(self):
+
+        """
+        Property getter for historical_da_prices.
+
+        Returns:
+            dict: saved historical day-ahead prices
+        """
+
+        return self._historical_da_prices
+
+    @historical_da_prices.setter
+    def historical_da_prices(self, value):
+
+        """
+        Property setter for historical_da_prices (validate before setting).
+
+        Args:
+            value: intended value for historical_da_prices
+
+        Returns:
+            None
+        """
+
+        self._validate_input_historical_price(value)
+        self._historical_da_prices = value
+
+    @property
+    def historical_rt_prices(self):
+
+        """
+        Property getter for historical_rt_prices.
+
+        Returns:
+            dict: saved historical real-time prices
+        """
+
+        return self._historical_rt_prices
+
+    @historical_rt_prices.setter
+    def historical_rt_prices(self, value):
+
+        """
+        Property setter for historical_rt_prices (validate before setting).
+
+        Args:
+            value: intended value for historical_rt_prices
+
+        Returns:
+            None
+        """
+
+        self._validate_input_historical_price(value)
+        self._historical_rt_prices = value
+
+    def forecast_day_ahead_and_real_time_prices(
+        self, date, hour, bus, horizon, n_samples
+    ):
+        """
+        Forecast both day-ahead and real-time market prices.
+
+        Arguments:
+            date: intended date of the forecasts
+
+            hour: intended hour of the forecasts
+
+            bus: intended bus of the forecasts
+
+            horizon: number of the time periods of the forecasts
+
+            n_samples: number of the samples
+
+        Returns:
+            dict: day-ahead price forecasts
+
+            dict: real-time price forecasts
+
+        """
+
+        rt_forecast = self.forecast_real_time_prices(
+            date, hour, bus, horizon, n_samples
+        )
+        da_forecast = self.forecast_day_ahead_prices(
+            date, hour, bus, horizon, n_samples
+        )
+
+        return da_forecast, rt_forecast
+
+    def forecast_real_time_prices(self, date, hour, bus, horizon, n_samples):
+
+        """
+        Forecast real-time market prices.
+
+        Arguments:
+            date: intended date of the forecasts
+
+            hour: intended hour of the forecasts
+
+            bus: intended bus of the forecasts
+
+            horizon: number of the time periods of the forecasts
+
+            n_samples: number of the samples
+
+        Returns:
+            dict: real-time price forecasts
+
+        """
+
+        if bus not in self.historical_rt_prices:
+            raise ForecastError(f"No {bus} real-time price available.")
+
+        historical_price_len = len(self.historical_rt_prices[bus])
+
+        forecast = {
+            i: [
+                self.historical_rt_prices[bus][t % historical_price_len]
+                for t in range(i * 24 + hour, i * 24 + hour + horizon)
+            ]
+            for i in range(n_samples)
+        }
+
+        return forecast
+
+    def forecast_day_ahead_prices(self, date, hour, bus, horizon, n_samples):
+
+        """
+        Forecast day-ahead market prices.
+
+        Arguments:
+            date: intended date of the forecasts
+
+            hour: intended hour of the forecasts
+
+            bus: intended bus of the forecasts
+
+            horizon: number of the time periods of the forecasts
+
+            n_samples: number of the samples
+
+        Returns:
+            dict: day-ahead price forecasts
+
+        """
+
+        if bus not in self.historical_da_prices:
+            raise ForecastError(f"No {bus} day-ahead price available.")
+
+        historical_price_len = len(self.historical_da_prices[bus])
+
+        forecast = {
+            i: [
+                self.historical_da_prices[bus][t % historical_price_len]
+                for t in range(i * 24, i * 24 + horizon)
+            ]
+            for i in range(n_samples)
+        }
+
+        return forecast
+
+    def fetch_hourly_stats_from_prescient(self, prescient_hourly_stats):
+
+        """
+        This method fetches the hourly real-time prices from Prescient and store
+        them on the price forecaster, once they are published. When the stored historical
+        data size has exceeded the specified upper bound, drop the oldest data.
+
+        Arguments:
+            prescient_hourly_stats: Prescient HourlyStats object.
+
+        Returns:
+            None
+        """
+
+        for b, price_list in self._current_day_rt_prices.items():
+            price_list.append(prescient_hourly_stats.observed_bus_LMPs[b])
+
+        # update the historical
+        for b in self._current_day_rt_prices:
+            if len(self._current_day_rt_prices[b]) >= 24:
+                self._historical_rt_prices[b] += self._current_day_rt_prices[b]
+                self._current_day_rt_prices[b] = []
+
+            while len(self._historical_rt_prices[b]) // 24 > self.max_historical_days:
+                self._historical_rt_prices[b] = self._historical_rt_prices[b][24:]
+
+        return
+
+    def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
+
+        """
+        This method fetches the hourly day-ahead prices from Prescient and store
+        them on the price forecaster, once they are published. When the stored historical
+        data size has exceeded the specified upper bound, drop the oldest data.
+
+        Arguments:
+            ruc_date: the date of the day-ahead market we bid into.
+
+            ruc_hour: the hour the RUC is being solved in the day before.
+
+            day_ahead_result: a Prescient RucPlan object.
+
+        Returns:
+            None
+        """
+
+        for b in self._historical_da_prices:
+            self._historical_da_prices[b] += [
+                result.ruc_market.day_ahead_prices.get((b, t)) for t in range(24)
+            ]
+
+            while len(self._historical_da_prices[b]) // 24 > self.max_historical_days:
+                self._historical_da_prices[b] = self._historical_da_prices[b][24:]
 
         return
