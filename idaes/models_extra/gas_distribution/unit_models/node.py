@@ -223,9 +223,7 @@ class PipelineNodeData(UnitModelBlockData):
                 b.mole_frac_comp_eq = self.get_mole_frac_comp_eq_con(
                     self.state, b.state
                 )
-                b.temperature_eq = self.get_temperature_eq_con(
-                    self.state, b.state
-                )
+                b.temperature_eq = self.get_temperature_eq_con(self.state, b.state)
 
         return block_rule
 
@@ -377,15 +375,11 @@ class PipelineNodeData(UnitModelBlockData):
         def enthalpy_mixing_rule(b, t):
             supplies = [self.supplies[i].state[t] for i in self.supply_set]
             inlets = [self.inlets[i].state[t] for i in self.inlet_set]
-            return (
-                sum(supply.get_enthalpy_flow_terms(p) for supply in supplies)
-                + sum(inlet.get_enthalpy_flow_terms(p) for inlet in inlets)
-                == self.state[t].get_enthalpy_flow_terms(p)
-            )
+            return sum(supply.get_enthalpy_flow_terms(p) for supply in supplies) + sum(
+                inlet.get_enthalpy_flow_terms(p) for inlet in inlets
+            ) == self.state[t].get_enthalpy_flow_terms(p)
 
-        self.enthalpy_mixing_eq = Constraint(
-            time, rule=enthalpy_mixing_rule
-        )
+        self.enthalpy_mixing_eq = Constraint(time, rule=enthalpy_mixing_rule)
 
     def add_pipeline_to_inlet(self, pipeline, idx=None):
         """

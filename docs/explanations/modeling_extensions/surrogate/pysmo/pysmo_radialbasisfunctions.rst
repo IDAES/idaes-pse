@@ -53,7 +53,7 @@ and then the function *training* is called on the initialized object:
 .. code:: python
 
    # Required imports
-   >>> from idaes.surrogate.pysmo import radial_basis_function
+   >>> from idaes.core.surrogate.pysmo import radial_basis_function
    >>> import pandas as pd
 
    # Load dataset from a csv file
@@ -109,15 +109,15 @@ Once an RBF model has been trained, predictions for values at previously unsampl
 
 Further details about *pysmo.radial_basis_function* module may be found by consulting the examples or reading the paper [...]
 
-.. module:: idaes.surrogate.pysmo.radial_basis_function
+.. module:: idaes.core.surrogate.pysmo.radial_basis_function
 
 Available Methods
 ------------------
 
-.. autoclass:: idaes.surrogate.pysmo.radial_basis_function.FeatureScaling
+.. autoclass:: idaes.core.surrogate.pysmo.radial_basis_function.FeatureScaling
     :members:
 
-.. autoclass:: idaes.surrogate.pysmo.radial_basis_function.RadialBasisFunctions
+.. autoclass:: idaes.core.surrogate.pysmo.radial_basis_function.RadialBasisFunctions
     :members: __init__, get_feature_vector, training, predict_output, r2_calculation, generate_expression
 
 References:

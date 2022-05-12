@@ -257,38 +257,47 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
         # integral term written de_i(t)/dt = e(t)
         if self.config.type in [ControllerType.PI, ControllerType.PID]:
             self.integral_of_error = pyo.Var(
-                time_set, initialize=0, doc="Integral term", units=pv_units * time_units
+                time_set,
+                initialize=0,
+                doc="Integral term calculated from de_i(t)/dt = e(t)",
+                units=pv_units * time_units
             )
             self.integral_of_error_dot = pyodae.DerivativeVar(
-                self.integral_of_error, wrt=time_set, initialize=0, units=pv_units
+                self.integral_of_error,
+                wrt=time_set,
+                initialize=0,
+                units=pv_units,
+                doc="de_i(t)/dt"
             )
 
-            @self.Constraint(time_set, doc="Error calculated by derivative of integral")
+            @self.Constraint(time_set, doc="de_i(t)/dt = e(t)")
             def error_from_integral_eqn(b, t):
-                if t == time_0:
-                    if self.config.calculate_initial_integral:
-                        if self.config.type == ControllerType.PI:
-                            return (
-                                self.integral_of_error[t]
-                                == (
-                                    b.manipulated_var[t]
-                                    - b.mv_ref[t]
-                                    - b.gain_p[t] * b.error[t]
-                                )
-                                / b.gain_i[t]
-                            )
-                        return (
-                            self.integral_of_error[t]
-                            == (
-                                b.manipulated_var[t]
-                                - b.mv_ref[t]
-                                - b.gain_p[t] * b.error[t]
-                                - b.gain_d[t] * b.derivative_of_error[t]
-                            )
-                            / b.gain_i[t]
-                        )
-                    return pyo.Constraint.Skip
                 return b.error[t] == b.integral_of_error_dot[t]
+
+            if self.config.calculate_initial_integral:
+                t0 = time_set.first()
+                @self.Constraint(doc="Calculate initial e_i based on output")
+                def initial_integral_error_eqn(b):
+                    if self.config.type == ControllerType.PI:
+                        return (
+                            self.integral_of_error[t0]
+                            == (
+                                b.manipulated_var[t0]
+                                - b.mv_ref[t0]
+                                - b.gain_p[t0] * b.error[t0]
+                            )
+                            / b.gain_i[t0]
+                        )
+                    return (
+                        self.integral_of_error[t0]
+                        == (
+                            b.manipulated_var[t0]
+                            - b.mv_ref[t0]
+                            - b.gain_p[t0] * b.error[t0]
+                            - b.gain_d[t0] * b.derivative_of_error[t0]
+                        )
+                        / b.gain_i[t0]
+                    )
 
         @self.Expression(time_set, doc="Unbounded output for manipulated variable")
         def mv_unbounded(b, t):
@@ -320,23 +329,24 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
 
         @self.Constraint(time_set, doc="Bounded output of manipulated variable")
         def mv_eqn(b, t):
-            if t == time_0:
-                return pyo.Constraint.Skip
-            else:
-                if self.config.mv_bound_type == ControllerMVBoundType.SMOOTH_BOUND:
-                    return b.manipulated_var[t] == smooth_bound(
-                        b.mv_unbounded[t], lb=b.mv_lb, ub=b.mv_ub, eps=b.smooth_eps
-                    )
-                elif self.config.mv_bound_type == ControllerMVBoundType.LOGISTIC:
-                    return (
-                        (b.manipulated_var[t] - b.mv_lb)
-                        * (
-                            1
-                            + pyo.exp(
-                                -b.logistic_bound_k
-                                / (b.mv_ub - b.mv_lb)
-                                * (b.mv_unbounded[t] - (b.mv_lb + b.mv_ub) / 2)
-                            )
+            if self.config.mv_bound_type == ControllerMVBoundType.SMOOTH_BOUND:
+                return b.manipulated_var[t] == smooth_bound(
+                    b.mv_unbounded[t], lb=b.mv_lb, ub=b.mv_ub, eps=b.smooth_eps
+                )
+            elif self.config.mv_bound_type == ControllerMVBoundType.LOGISTIC:
+                return (
+                    (b.manipulated_var[t] - b.mv_lb)
+                    * (
+                        1
+                        + pyo.exp(
+                            -b.logistic_bound_k
+                            / (b.mv_ub - b.mv_lb)
+                            * (b.mv_unbounded[t] - (b.mv_lb + b.mv_ub) / 2)
                         )
-                    ) == b.mv_ub - b.mv_lb
-                return b.manipulated_var[t] == b.mv_unbounded[t]
+                    )
+                ) == b.mv_ub - b.mv_lb
+            return b.manipulated_var[t] == b.mv_unbounded[t]
+
+        # deactivate the time 0 mv_eqn instead of skip, should be fine since
+        # first time step always exists.
+        self.mv_eqn[time_set.first()].deactivate()

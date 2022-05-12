@@ -10,49 +10,13 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
+"""
+Deprecation path for renamed module.
+"""
+from pyomo.common.deprecation import deprecation_warning
 
+deprecation_warning("The idaes.surrogate.metrics module has been "
+                    "moved to idaes.core.surrogate.metrics",
+                    version="2.0.0.alpha0")
 
-def compute_fit_metrics(surrogate, dataframe):
-    """
-    Compute the fit metrics for the surrogate against the
-    data in dataframe. The surrogate will be evaluated
-    for the input values in the dataframe, and the results
-    will be compared against the output values in the dataframe
-    to provide the metrics.
-
-    Args:
-       surrogate : surrogate object (derived from SurrogateBase)
-          This is the surrogate object we want to evaluate for the comparison
-       dataframe : pandas DataFrame
-          The dataframe that contains the inputs and outputs we want to use
-          in the evaluation.
-
-    Returns:
-        dict-of-dicts with outer keys representing output labels and inner keys
-        representing metrics for that output.
-    """
-    y = dataframe[surrogate.output_labels()]
-    f = surrogate.evaluate_surrogate(dataframe)
-    assert f.columns.to_list() == surrogate.output_labels()
-
-    y_mean = y.mean(axis=0)
-    SST = ((y-y_mean)**2).sum(axis=0)
-    SSE = ((y-f)**2).sum(axis=0)
-
-    R2 = 1-SSE/SST
-    MAE = (y-f).abs().mean(axis=0)
-    maxAE = (y-f).abs().max(axis=0)
-    MSE = ((y-f)**2).mean(axis=0)
-    RMSE = MSE**0.5
-
-    # Reorder indices to have output first
-    metrics = {}
-    for o in surrogate.output_labels():
-        metrics[o] = {"RMSE": RMSE[o],
-                      "MSE": MSE[o],
-                      "MAE": MAE[o],
-                      "maxAE": maxAE[o],
-                      "SSE": SSE[o],
-                      "R2": R2[o]}
-
-    return metrics
+from idaes.core.surrogate.metrics import *

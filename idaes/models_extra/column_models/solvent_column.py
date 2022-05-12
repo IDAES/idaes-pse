@@ -397,7 +397,7 @@ and used when constructing these
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             initialize=0.9,
-            units=pyunits.dimensionless,
+            units=(pyunits.m)**2 / (pyunits.m)**3,
             doc="Specific interfacial area",
         )
 
@@ -412,7 +412,11 @@ and used when constructing these
 
         # TODO : Consider making this a Var & Constraint
         def rule_holdup_vap(blk, t, x):
-            return blk.eps_ref - blk.holdup_liq[t, x]
+            if x == self.vapor_phase.length_domain.first():
+                return Expression.Skip
+            else:
+                zb = self.vapor_phase.length_domain.prev(x)
+                return blk.eps_ref - blk.holdup_liq[t, zb]
 
         self.holdup_vap = Expression(
             self.flowsheet().time,
@@ -428,9 +432,13 @@ and used when constructing these
             doc="Vapor phase cross-sectional area constraint",
         )
         def vapor_phase_area(blk, t, x):
-            return blk.vapor_phase.area[t, x] == (
-                blk.area_column * blk.holdup_vap[t, x]
-            )
+            if x == self.vapor_phase.length_domain.first():
+                return blk.vapor_phase.area[t, x] == (
+                    blk.eps_ref * blk.area_column)
+            else:
+                return blk.vapor_phase.area[t, x] == (
+                    blk.area_column * blk.holdup_vap[t, x]
+                )
 
         @self.Constraint(
             self.flowsheet().time,
@@ -438,9 +446,13 @@ and used when constructing these
             doc="Liquid phase cross-sectional area constraint",
         )
         def liquid_phase_area(blk, t, x):
-            return blk.liquid_phase.area[t, x] == (
-                blk.area_column * blk.holdup_liq[t, x]
-            )
+            if x == self.liquid_phase.length_domain.last():
+                return blk.liquid_phase.area[t, x] == (
+                    blk.eps_ref * blk.area_column)
+            else:
+                return blk.liquid_phase.area[t, x] == (
+                    blk.area_column * blk.holdup_liq[t, x]
+                )
 
         # =====================================================================
         # Add performance equations
@@ -468,7 +480,7 @@ and used when constructing these
             units=(
                 lunits("amount")
                 / lunits("pressure")
-                / lunits("length") ** 3
+                / lunits("length") ** 2
                 / lunits("time")
             ),
             doc="Vapor phase mass transfer coefficient",
@@ -586,7 +598,7 @@ and used when constructing these
                 return pyunits.convert(
                     blk.vapor_phase.heat[t, x],
                     to_units=lunits("power") / lunits("length"),
-                ) == -(
+                ) == (
                     blk.heat_transfer_coeff[t, x]
                     * (
                         blk.liquid_phase.properties[t, zb].temperature
