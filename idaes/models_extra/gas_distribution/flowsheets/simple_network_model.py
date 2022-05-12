@@ -235,7 +235,6 @@ def add_objective_to_model(
 
     cost_expr = m.supply_cost + m.boost_cost + m.demand_penalty
     if dynamic and add_terminal_penalty:
-        # TODO: Add terminal costs
         cost_expr += m.terminal_pressure_cost
         cost_expr += m.terminal_flow_mass_cost
     cost_expr *= 1e-6
