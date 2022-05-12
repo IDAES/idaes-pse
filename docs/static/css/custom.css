@@ -40,7 +40,6 @@ h2 {
 }
 
 /* Set table values to top align & add padding in index-table*/
-
 .index-table.docutils tbody td {
 	vertical-align: top;
     padding-top: 16px;
@@ -54,6 +53,26 @@ h2 {
     border-top: none;
 }
 
-.simulated-codeblock.code.literal {
+.simulated-codeblock.literal-block pre{
   background: #eeffcc;
+}
+
+/* Collapsible section, basically HTML's details & summary */
+.collapsible .header {
+    display: inline;
+    clear: both;
+}
+
+.collapsible .header p:before {
+    content: "▶";
+    padding-right: 5px;
+}
+
+.collapsible .header.open p:before {
+    content: "▼";
+    padding-right: 5px;
+}
+
+.collapsible {
+    margin: 1%;
 }

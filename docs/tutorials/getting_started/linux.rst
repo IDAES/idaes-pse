@@ -1,18 +1,39 @@
 Linux Installation Guide
 ========================
 
-Prerequisites
--------------
+Quickstart
+----------
+
+.. sidebar:: Learn more about the Installation
+
+   * `Install Prerequisites`_
+   * `Install IDAES-PSE`_
+   * `Install IDAES Extensions`_
+   * `Install IDAES Examples`_
+   * `Run IDAES Tests`_
+
+.. Import quick start guide, including OS specific lines & skipping non-OS lines & comments
+.. literalinclude:: install_templates/quickstart.md
+   :language: bash
+   :linenos:
+   :lines: 1-5,7,10-
+
+------------------------------------------------
+
+Installing IDAES
+----------------
+
+Install Prerequisites
+^^^^^^^^^^^^^^^^^^^^^
 
 **Install  Miniconda (optional)**
 
-1. Download: https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-2. Open a terminal window
-3. Run the script you downloaded in (1).
+1. Download `Anaconda <https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh>`_
+2. Open a terminal window & run the downloaded script.
 
 **Install Dependencies**
 
-1. The IPOPT solver depends on the GNU FORTRAN, GOMP, Blas, and Lapack libraries,
+1. The IPOPT solver depends on the GNU FORTRAN, GOMP, Blas, and Lapack libraries.
    If these libraries are not already installed on your Linux system, you or your
    system administrator can use the sample commands below to install them. If you
    have a Linux distribution that is not listed, IPOPT should still work, but
@@ -22,18 +43,61 @@ Prerequisites
    .. note:: Depending on your distribution, you may need to prepend ``sudo`` to
             these commands or switch to the "root" user.
 
-   Ubuntu 18.04 and 19.10 and distributions based on them::
+   .. container:: collapsible
 
-      sudo apt-get install libgfortran4 libgomp1 liblapack3 libblas3
+      .. container:: header
 
-   Ubuntu 20.04 and distributions based on it ::
+         Ubuntu 18.04 and 19.10 and distributions based on them
 
-      sudo apt-get install libgfortran5 libgomp1 liblapack3 libblas3
+      .. code-block:: console
 
-   Current RedHat based distributions, including CentOS::
+         sudo apt-get install libgfortran4 libgomp1 liblapack3 libblas3
 
-      yum install lapack blas libgfortran libgomp
+   .. container:: collapsible
+
+      .. container:: header
+
+         Ubuntu 20.04 and distributions based on it
+
+      .. code-block:: console
+
+         sudo apt-get install libgfortran5 libgomp1 liblapack3 libblas3
+
+   .. container:: collapsible
+
+      .. container:: header
+
+         Current RedHat based distributions, including CentOS
+
+      .. code-block:: console
+
+         yum install lapack blas libgfortran libgomp
+
+Install IDAES-PSE
+^^^^^^^^^^^^^^^^^^
+
+.. include:: install_templates/conda_idaes_pse.md
+
+.. container:: collapsible
+
+   .. container:: header
+
+      Installing other versions
+   
+   .. include:: install_templates/other_releases.md
+
+Install IDAES Extensions
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: install_templates/extensions.md
+
+Install IDAES Examples
+^^^^^^^^^^^^^^^^^^^^^^
 
 .. |os_specific_fpath| replace:: `~\/idaes/examples`
+.. include:: install_templates/examples.md
 
-.. include:: generic_install.md
+Run IDAES Tests
+^^^^^^^^^^^^^^^
+
+.. include:: install_templates/run_tests.md
