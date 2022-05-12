@@ -495,24 +495,6 @@ def test_get_stream_table_contents_CV0D_missing_default_port():
 
 
 @pytest.mark.unit
-def test_report_CV0D():
-    m = ConcreteModel()
-    m.fs = Flowsheet()
-    m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.u = Unit()
-    m.fs.u._setup_dynamics()
-
-    m.fs.u.control_volume = ControlVolume0DBlock(default={"property_package": m.fs.pp})
-
-    m.fs.u.control_volume.add_state_blocks(has_phase_equilibrium=False)
-
-    m.fs.u.add_inlet_port()
-    m.fs.u.add_outlet_port()
-
-    m.fs.u.report()
-
-
-@pytest.mark.unit
 def test_add_state_material_balances_invalid_state_1():
     m = ConcreteModel()
     m.fs = Flowsheet()
