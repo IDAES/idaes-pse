@@ -1317,7 +1317,7 @@ class TestIAPWS(object):
         )
 
         m.fs.unit.inlet.flow_mol[0].fix(100)
-        m.fs.unit.inlet.enth_mol[0].fix(4000)
+        m.fs.unit.inlet.enth_mol[0].fix(5000)
         m.fs.unit.inlet.pressure[0].fix(101325)
 
         m.fs.unit.split_fraction[0, "outlet_1", "H2O"].fix(0.4)
@@ -1391,11 +1391,11 @@ class TestIAPWS(object):
             'Inlet': {
                 'Molar Flow (mol/s)': 100,
                 'Mass Flow (kg/s)': 1.8015,
-                'T (K)': 326.17,
+                'T (K)': 339.43,
                 'P (Pa)': 101325,
                 'Vapor Fraction': 0,
-                'Molar Enthalpy (J/mol) Vap': 42030,
-                'Molar Enthalpy (J/mol) Liq': 4000},
+                'Molar Enthalpy (J/mol) Vap': 46684,
+                'Molar Enthalpy (J/mol) Liq': 5000},
             'outlet_1': {
                 'Molar Flow (mol/s)': 1,
                 'Mass Flow (kg/s)': 1.8015e-2,
@@ -1447,9 +1447,9 @@ class TestIAPWS(object):
         assert pytest.approx(50, abs=1e-3) == value(iapws.fs.unit.outlet_2.flow_mol[0])
         assert pytest.approx(10, abs=1e-3) == value(iapws.fs.unit.outlet_3.flow_mol[0])
 
-        assert pytest.approx(4000, abs=1e0) == value(iapws.fs.unit.outlet_1.enth_mol[0])
-        assert pytest.approx(4000, abs=1e0) == value(iapws.fs.unit.outlet_2.enth_mol[0])
-        assert pytest.approx(4000, abs=1e0) == value(iapws.fs.unit.outlet_3.enth_mol[0])
+        assert pytest.approx(5000, abs=1e0) == value(iapws.fs.unit.outlet_1.enth_mol[0])
+        assert pytest.approx(5000, abs=1e0) == value(iapws.fs.unit.outlet_2.enth_mol[0])
+        assert pytest.approx(5000, abs=1e0) == value(iapws.fs.unit.outlet_3.enth_mol[0])
 
         assert pytest.approx(101325, abs=1e2) == value(
             iapws.fs.unit.outlet_1.pressure[0]
