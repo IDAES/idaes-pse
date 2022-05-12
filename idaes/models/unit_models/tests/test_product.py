@@ -16,7 +16,7 @@ Authors: Andrew Lee
 """
 
 import pytest
-from io import StringIO
+import pandas
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, value, units as pyunits
 from pyomo.util.check_units import assert_units_consistent
@@ -128,7 +128,7 @@ class TestSaponification(object):
     def test_get_stream_table_contents(self, sapon):
         stable = sapon.fs.unit._get_stream_table_contents()
 
-        expected = {
+        expected = pandas.DataFrame.from_dict({
             'Units': {
                 'Volumetric Flowrate': getattr(pyunits.pint_registry, "m**3/second"),
                 'Molar Concentration H2O': getattr(pyunits.pint_registry, "mole/m**3"),
@@ -139,16 +139,17 @@ class TestSaponification(object):
                 'Temperature': getattr(pyunits.pint_registry, "K"),
                 'Pressure': getattr(pyunits.pint_registry, "Pa")},
             'Inlet': {
-                'Volumetric Flowrate': pytest.approx(1e-3, rel=1e-4),
-                'Molar Concentration H2O': pytest.approx(55388, rel=1e-4),
-                'Molar Concentration NaOH': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration EthylAcetate': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration SodiumAcetate': pytest.approx(0, abs=1e-4),
-                'Molar Concentration Ethanol': pytest.approx(0, abs=1e-4),
-                'Temperature': pytest.approx(303.15, rel=1e-4),
-                'Pressure': pytest.approx(1.0132e+05, rel=1e-4)}}
+                'Volumetric Flowrate': 1e-3,
+                'Molar Concentration H2O': 55388,
+                'Molar Concentration NaOH': 100.00,
+                'Molar Concentration EthylAcetate': 100.00,
+                'Molar Concentration SodiumAcetate': 0,
+                'Molar Concentration Ethanol': 0,
+                'Temperature': 303.15,
+                'Pressure': 1.0132e+05}})
 
-        assert stable.to_dict() == expected
+        pandas.testing.assert_frame_equal(
+            stable, expected, rtol=1e-4, atol=1e-4)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -217,7 +218,7 @@ class TestBTX(object):
     def test_get_stream_table_contents(self, btx):
         stable = btx.fs.unit._get_stream_table_contents()
 
-        expected = {
+        expected = pandas.DataFrame.from_dict({
             'Units': {
                 'flow_mol': getattr(pyunits.pint_registry, "mole/second"),
                 'mole_frac_comp benzene': getattr(pyunits.pint_registry, "dimensionless"),
@@ -225,13 +226,14 @@ class TestBTX(object):
                 'temperature': getattr(pyunits.pint_registry, "kelvin"),
                 'pressure': getattr(pyunits.pint_registry, "Pa")},
             'Inlet': {
-                'flow_mol': pytest.approx(5.0, rel=1e-4),
-                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
-                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
-                'temperature': pytest.approx(365, rel=1e-4),
-                'pressure': pytest.approx(101325.0, rel=1e-4)}}
+                'flow_mol': 5.0,
+                'mole_frac_comp benzene': 0.5,
+                'mole_frac_comp toluene': 0.5,
+                'temperature': 365,
+                'pressure': 101325.0}})
 
-        assert stable.to_dict() == expected
+        pandas.testing.assert_frame_equal(
+            stable, expected, rtol=1e-4, atol=1e-4)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -277,7 +279,7 @@ class TestIAPWS(object):
         m.fs.unit = Product(default={"property_package": m.fs.properties})
 
         m.fs.unit.flow_mol[0].fix(100)
-        m.fs.unit.enth_mol[0].fix(4000)
+        m.fs.unit.enth_mol[0].fix(5000)
         m.fs.unit.pressure[0].fix(101325)
 
         return m
@@ -318,7 +320,7 @@ class TestIAPWS(object):
     def test_get_stream_table_contents(self, iapws):
         stable = iapws.fs.unit._get_stream_table_contents()
 
-        expected = {
+        expected = pandas.DataFrame.from_dict({
             'Units': {
                 'Molar Flow (mol/s)': getattr(pyunits.pint_registry, "mole/second"),
                 'Mass Flow (kg/s)': getattr(pyunits.pint_registry, "kg/second"),
@@ -328,15 +330,16 @@ class TestIAPWS(object):
                 'Molar Enthalpy (J/mol) Vap': getattr(pyunits.pint_registry, "J/mole"),
                 'Molar Enthalpy (J/mol) Liq': getattr(pyunits.pint_registry, "J/mole")},
             'Inlet': {
-                'Molar Flow (mol/s)': pytest.approx(100, rel=1e-4),
-                'Mass Flow (kg/s)': pytest.approx(1.8015, rel=1e-4),
-                'T (K)': pytest.approx(326.17, rel=1e-4),
-                'P (Pa)': pytest.approx(101325, rel=1e-4),
-                'Vapor Fraction': pytest.approx(0, abs=1e-4),
-                'Molar Enthalpy (J/mol) Vap': pytest.approx(42031, rel=1e-4),
-                'Molar Enthalpy (J/mol) Liq': pytest.approx(4000, rel=1e-4)}}
+                'Molar Flow (mol/s)': 100,
+                'Mass Flow (kg/s)': 1.8015,
+                'T (K)': 339.43,
+                'P (Pa)': 101325,
+                'Vapor Fraction': 0,
+                'Molar Enthalpy (J/mol) Vap': 46685,
+                'Molar Enthalpy (J/mol) Liq': 5000}})
 
-        assert stable.to_dict() == expected
+        pandas.testing.assert_frame_equal(
+            stable, expected, rtol=1e-4, atol=1e-4)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

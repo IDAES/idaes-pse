@@ -1711,7 +1711,7 @@ objects linked the mixed state and all outlet states,
             stream_attributes = {}
             stream_attributes["Units"] = {}
 
-            for n in outlet_list + ["inlet"]:
+            for n in ["inlet"] + outlet_list:
                 port_obj = getattr(self, n)
 
                 stream_attributes[n] = {}
