@@ -72,7 +72,6 @@ class MEAColumnData(PackedColumnData):
         self.enhancement_factor = Var(self.flowsheet().time,
                                       self.liquid_phase.length_domain,
                                       units=pyunits.dimensionless,
-                                      bounds=(1,500),
                                       initialize=160,
                                       doc='Enhancement factor')
 
@@ -344,7 +343,7 @@ class MEAColumnData(PackedColumnData):
         
         self.conc_interface_MEA = Var(self.flowsheet().time,
                           self.liquid_phase.length_domain,
-                          bounds=(0,1),
+                          bounds=(0.5,1),
                           initialize=1,
                           units=pyunits.dimensionless,
                           doc='''Dimensionless concentration of MEA
@@ -352,7 +351,7 @@ class MEAColumnData(PackedColumnData):
                                       
         self.sqrt_conc_interface_MEA = Var(self.flowsheet().time,
                           self.liquid_phase.length_domain,
-                          bounds=(0,1),
+                          bounds=(0.5,1),
                           initialize=0.97,
                           units=pyunits.dimensionless,
                           doc='''Substitute for conc_interface_MEA''')

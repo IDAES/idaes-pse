@@ -15,6 +15,7 @@ Tests for MEA solvent column model
 Author: Anuja Deshpande, Andrew Lee
 """
 # Import Python libraries
+import copy
 import pytest
 
 # Import Pyomo libraries
@@ -54,8 +55,8 @@ class TestAbsorber:
         m.fs = FlowsheetBlock(default={"dynamic": False})
     
         # Set up molar flow bounds
-        vaporconfig_copy = vaporconfig.copy()
-        liquidconfig_copy = liquidconfig.copy()
+        vaporconfig_copy = copy.deepcopy(vaporconfig)
+        liquidconfig_copy = copy.deepcopy(liquidconfig)
         vaporconfig_copy["state_bounds"]["flow_mol"] = (0, 1, 1e6, pyunits.mol / pyunits.s)
         liquidconfig_copy["state_bounds"]["flow_mol"] = (0, 1, 1e6, pyunits.mol / pyunits.s)
     
