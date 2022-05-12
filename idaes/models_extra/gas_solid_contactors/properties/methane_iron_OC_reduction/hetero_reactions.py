@@ -460,6 +460,7 @@ class ReactionBlockData(ReactionBlockDataBase):
                 )
             else:
                 return Constraint.Skip
+            
 
         try:
             # Try to build constraint
