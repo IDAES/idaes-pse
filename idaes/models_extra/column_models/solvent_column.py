@@ -397,7 +397,7 @@ and used when constructing these
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             initialize=0.9,
-            units=pyunits.dimensionless,
+            units=(pyunits.m)**2 / (pyunits.m)**3,
             doc="Specific interfacial area",
         )
 
@@ -480,7 +480,7 @@ and used when constructing these
             units=(
                 lunits("amount")
                 / lunits("pressure")
-                / lunits("length") ** 3
+                / lunits("length") ** 2
                 / lunits("time")
             ),
             doc="Vapor phase mass transfer coefficient",

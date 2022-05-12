@@ -26,17 +26,16 @@ from pyomo.environ import (ConcreteModel,
 
 # Import IDAES Libraries
 from idaes.core import FlowsheetBlock
-from idaes.models_extra.column_models.solvent_column \
-    import PackedColumn
 from idaes.models_extra.column_models.MEAsolvent_column import MEAColumn
 from idaes.models.properties.modular_properties.base.generic_property import (
         GenericParameterBlock)
 from idaes.models_extra.column_models.properties.MEA_vapor \
-    import flue_gas as vaporconfig_absorber
+    import flue_gas as vaporconfig
 from idaes.models_extra.column_models.properties.MEA_solvent \
     import configuration as liquidconfig
 
 from idaes.core.util.model_statistics import degrees_of_freedom
+from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
 
@@ -55,21 +54,21 @@ class TestAbsorber:
         m.fs = FlowsheetBlock(default={"dynamic": False})
     
         # Set up molar flow bounds
-        vaporconfig_absorber["state_bounds"]["flow_mol"] = (0, 1, 1e6, pyunits.mol / pyunits.s)
-        liquidconfig["state_bounds"]["flow_mol"] = (0, 1, 1e6, pyunits.mol / pyunits.s)
+        vaporconfig_copy = vaporconfig.copy()
+        liquidconfig_copy = liquidconfig.copy()
+        vaporconfig_copy["state_bounds"]["flow_mol"] = (0, 1, 1e6, pyunits.mol / pyunits.s)
+        liquidconfig_copy["state_bounds"]["flow_mol"] = (0, 1, 1e6, pyunits.mol / pyunits.s)
     
         # Set up property package
-        m.fs.vapor_properties = GenericParameterBlock(default=vaporconfig_absorber)
-        m.fs.liquid_properties = GenericParameterBlock(default=liquidconfig)
+        m.fs.vapor_properties = GenericParameterBlock(default=vaporconfig_copy)
+        m.fs.liquid_properties = GenericParameterBlock(default=liquidconfig_copy)
     
         # Number of finite elements and finite element list in the spatial domain
         x_nfe = 40
-        x_nfe_list = [i / x_nfe for i in range(x_nfe + 1)]
     
         # Create an instance of the column in the flowsheet
         m.fs.unit = MEAColumn(default={
             "finite_elements": x_nfe,
-            "length_domain_set": x_nfe_list,
             "vapor_phase": {
                 "property_package": m.fs.vapor_properties},
             "liquid_phase":{
@@ -106,6 +105,10 @@ class TestAbsorber:
     @pytest.mark.unit
     def test_degrees_of_freedom(self, model):
         assert degrees_of_freedom(model) == 0
+        
+    @pytest.mark.component
+    def test_unit_consistency(self, model):
+        assert_units_consistent(model)
 
     @pytest.mark.component
     def test_initialize(self, model):
@@ -122,32 +125,32 @@ class TestAbsorber:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(19281.692077, rel=1e-5) == value(
+        assert pytest.approx(19281.692273, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.flow_mol[0])
-        assert pytest.approx(0.00135616, rel=1e-5) == value(
+        assert pytest.approx(0.00135604, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"])
-        assert pytest.approx(0.12657307, rel=1e-5) == value(
+        assert pytest.approx(0.1265732, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"])
-        assert pytest.approx(0.75185310, rel=1e-5) == value(
+        assert pytest.approx(0.75185309, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "N2"])
         assert pytest.approx(0.12021766, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "O2"])
         assert pytest.approx(100000.0, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.pressure[0])
-        assert pytest.approx(336.10675452, rel=1e-5) == value(
+        assert pytest.approx(336.10714, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.temperature[0])
 
-        assert pytest.approx(23718.307923, rel=1e-5) == value(
+        assert pytest.approx(23718.307726, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.flow_mol[0])
-        assert pytest.approx(0.05400263, rel=1e-5) == value(
+        assert pytest.approx(0.05400272, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "CO2"])
-        assert pytest.approx(0.83469195, rel=1e-5) == value(
+        assert pytest.approx(0.83469085, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "H2O"])
         assert pytest.approx(0.11130642, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "MEA"])
         assert pytest.approx(100000.0, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.pressure[0])
-        assert pytest.approx(315.34357491, rel=1e-5) == value(
+        assert pytest.approx(315.34352506, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.temperature[0])
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")

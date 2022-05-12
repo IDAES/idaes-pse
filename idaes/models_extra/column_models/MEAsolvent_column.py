@@ -205,14 +205,17 @@ class MEAColumnData(PackedColumnData):
                                           doc='Interfacial area parameter A')
     
         self.area_interfacial_parB = Var(initialize=0.12,
-                                          units=None,
+                                          units=pyunits.dimensionless,
                                           doc='Interfacial area parameter B')
         
         def rule_interfacial_area(blk, t, x):
             if x == self.vapor_phase.length_domain.first():
                 return Constraint.Skip
             else:            
-                return blk.area_interfacial[t, x] == blk.packing_specific_area * blk.area_interfacial_parA * \
+                return blk.area_interfacial[t, x] == blk.packing_specific_area *\
+                    blk.area_interfacial_parA * \
+                    ((pyunits.newton*(pyunits.m**(2/3))*\
+                    (pyunits.s**(4/3))/pyunits.kilogram)**blk.area_interfacial_parB)*\
                     ((blk.liquid_phase.properties[t, x].mw/\
                     blk.liquid_phase.properties[t, x].vol_mol_phase['Liq']/
                     blk.liquid_phase.properties[t, x].surf_tens_phase['Liq']) *
@@ -231,18 +234,21 @@ class MEAColumnData(PackedColumnData):
                             doc='Holdup parameter A')
 
         self.holdup_parB = Var(initialize=0.6471,
-                            units=None,
+                            units=pyunits.dimensionless,
                             doc='Holdup parameter B')
 
         def rule_holdup_liq(blk, t, x): 
             if x == self.liquid_phase.length_domain.last():
                 return Constraint.Skip
             else:
-                return blk.holdup_liq[t, x] == blk.holdup_parA * (blk.velocity_liq[t, x] *
+                return blk.holdup_liq[t, x] == blk.holdup_parA *\
+                    (((pyunits.pascal*(pyunits.s**(10/3)))/\
+                      (pyunits.kilogram*(pyunits.m**(2/3))))**blk.holdup_parB)*\
+                    (blk.velocity_liq[t, x] *
                     (blk.liquid_phase.properties[t, x].visc_d_phase['Liq'] /
                     (blk.liquid_phase.properties[t, x].mw/\
                       blk.liquid_phase.properties[t, x].vol_mol_phase['Liq'])) **
-                    (0.333))**blk.holdup_parB
+                    (1/3))**blk.holdup_parB
     
         self.holdup_liq_constraint = Constraint(self.flowsheet().time,
                                       self.liquid_phase.length_domain,
@@ -261,7 +267,10 @@ class MEAColumnData(PackedColumnData):
             if x == self.vapor_phase.length_domain.first():
                 return Constraint.Skip
             else:
-                return blk.mass_transfer_coeff_vap[t, x, j] == (1/(CONST.gas_constant * blk.vapor_phase.properties[t, x].temperature))*\
+                return blk.mass_transfer_coeff_vap[t, x, j] == \
+                    (1/(pyunits.convert(CONST.gas_constant, 
+                    pyunits.kilogram*pyunits.m**2/(pyunits.s**2*pyunits.mol*pyunits.K))*\
+                    blk.vapor_phase.properties[t, x].temperature))*\
                     (blk.Cv_ref / (blk.holdup_vap[t, x])**0.5)*\
                     ((blk.packing_specific_area / blk.hydraulic_diameter)**0.5)*\
                     ((blk.vapor_phase.properties[t, x].diffus_phase_comp['Vap',j])**(2/3))*\
@@ -337,7 +346,7 @@ class MEAColumnData(PackedColumnData):
                           self.liquid_phase.length_domain,
                           bounds=(0,1),
                           initialize=1,
-                          units=None,
+                          units=pyunits.dimensionless,
                           doc='''Dimensionless concentration of MEA
                                       at interface ''')
                                       
@@ -345,7 +354,7 @@ class MEAColumnData(PackedColumnData):
                           self.liquid_phase.length_domain,
                           bounds=(0,1),
                           initialize=0.97,
-                          units=None,
+                          units=pyunits.dimensionless,
                           doc='''Substitute for conc_interface_MEA''')
         
         def rule_rate_constant(blk, t, x):
@@ -359,7 +368,8 @@ class MEAColumnData(PackedColumnData):
                 # Reference: X.Luo et al., Chem. Eng. Sci. (2015)
                 
                 return (2.003e10*exp(-4742*pyunits.K/T)*C_MEA +
-                        4.147e6*exp(-3110*pyunits.K/T)*C_H2O)*1e-6
+                        4.147e6*exp(-3110*pyunits.K/T)*C_H2O)* 1e-6* \
+                       ((pyunits.m)**6/(pyunits.mol**2 * pyunits.s))
     
         self.rate_constant = Expression(self.flowsheet().time,
                               self.liquid_phase.length_domain,
@@ -483,7 +493,7 @@ class MEAColumnData(PackedColumnData):
             else:
                 return (blk.enhancement_factor[t, x]-1)*(1 - blk.conc_CO2_bulk[t, x]) == \
                     (blk.instant_E[t, x]-1)*(1-blk.sqrt_conc_interface_MEA[t, x]*blk.sqrt_conc_interface_MEA[t, x])
-    
+         
         @self.Objective()
         def enhancement_factor_obj(blk):
             time_set = self.flowsheet().time
@@ -495,6 +505,11 @@ class MEAColumnData(PackedColumnData):
                     blk.sqrt_conc_interface_MEA[t, x])
                 )**2 for t in time_set) for x in x_set if x != blk.liquid_phase.length_domain.last()
             )
+        self.enhancement_factor_obj.deactivate()
+        # Note: the objective function is only activated in the 
+        # initialization routine in an intermediate step, to improve
+        # model convergence. It is not included in the unit model.
+        
         
         # Heat transfer coefficients, Chilton Colburn  analogy
         # Vapor-liquid heat transfer coefficient [J/m2.s.K]
@@ -549,7 +564,7 @@ class MEAColumnData(PackedColumnData):
         self.flood_fraction = Var(self.flowsheet().time,
                                  self.vapor_phase.length_domain,
                                  initialize=0.7,
-                                 units=None,
+                                 units=pyunits.dimensionless,
                                  doc='''Dimensionless flooding fraction''')
     
         def rule_flood_fraction(blk, t, x):
@@ -1084,8 +1099,6 @@ class MEAColumnData(PackedColumnData):
                 c.deactivate()
             if c.local_name in flooding_constraint:
                 c.deactivate()
-                
-        blk.enhancement_factor_obj.deactivate()
 
         # Fix variables
         
