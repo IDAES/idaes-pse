@@ -16,6 +16,7 @@ Tests for 0D heat exchanger models.
 Author: John Eslick
 """
 import pytest
+import pandas
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -39,7 +40,7 @@ from idaes.core import (
 from idaes.models.unit_models.heat_exchanger import (
     delta_temperature_lmtd_callback,
     delta_temperature_lmtd2_callback,
-    delta_temperature_lmtd3_callback,
+    # delta_temperature_lmtd3_callback,
     delta_temperature_amtd_callback,
     delta_temperature_underwood_callback,
     HeatExchanger,
@@ -77,7 +78,7 @@ from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
 )
 from idaes.models.properties.modular_properties.phase_equil.forms import log_fugacity
 import idaes.models.properties.modular_properties.pure.RPP4 as RPP
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import ConfigurationError
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -572,6 +573,61 @@ class TestBTX_cocurrent(object):
     def test_dof(self, btx):
         assert degrees_of_freedom(btx) == 0
 
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, btx):
+        perf_dict = btx.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "HX Area": btx.fs.unit.area,
+                "Heat Duty": btx.fs.unit.heat_duty[0],
+                "HX Coefficient": btx.fs.unit.overall_heat_transfer_coefficient[0]},
+            "exprs": {
+                "Delta T Driving": btx.fs.unit.delta_temperature[0],
+                "Delta T In": btx.fs.unit.delta_temperature_in[0],
+                "Delta T Out": btx.fs.unit.delta_temperature_out[0]}}
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, btx):
+        stable = btx.fs.unit._get_stream_table_contents()
+
+        expected = pandas.DataFrame.from_dict({
+            'Units': {
+                'flow_mol': getattr(pyunits.pint_registry, "mole/second"),
+                'mole_frac_comp benzene': getattr(pyunits.pint_registry, "dimensionless"),
+                'mole_frac_comp toluene': getattr(pyunits.pint_registry, "dimensionless"),
+                'temperature': getattr(pyunits.pint_registry, "kelvin"),
+                'pressure': getattr(pyunits.pint_registry, "Pa")},
+            'Hot Inlet': {
+                'flow_mol': 5.0,
+                'mole_frac_comp benzene': 0.5,
+                'mole_frac_comp toluene': 0.5,
+                'temperature': 365,
+                'pressure': 101325.0},
+            'Hot Outlet': {
+                'flow_mol': 1.0,
+                'mole_frac_comp benzene': 0.5,
+                'mole_frac_comp toluene': 0.5,
+                'temperature': 298.15,
+                'pressure': 101325.0},
+            'Cold Inlet': {
+                'flow_mol': 1.0,
+                'mole_frac_comp benzene': 0.5,
+                'mole_frac_comp toluene': 0.5,
+                'temperature': 300,
+                'pressure': 101325.0},
+            'Cold Outlet': {
+                'flow_mol': 1.0,
+                'mole_frac_comp benzene': 0.5,
+                'mole_frac_comp toluene': 0.5,
+                'temperature': 298.15,
+                'pressure': 101325.0}})
+
+        pandas.testing.assert_frame_equal(
+            stable, expected, rtol=1e-4, atol=1e-4)
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -643,11 +699,6 @@ class TestBTX_cocurrent(object):
             )
         )
         assert abs(shell + tube) <= 1e-6
-
-    @pytest.mark.ui
-    @pytest.mark.unit
-    def test_report(self, btx):
-        btx.fs.unit.report()
 
 
 # -----------------------------------------------------------------------------
@@ -747,6 +798,61 @@ class TestBTX_cocurrent_alt_name(object):
     def test_dof(self, btx):
         assert degrees_of_freedom(btx) == 0
 
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, btx):
+        perf_dict = btx.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "HX Area": btx.fs.unit.area,
+                "Heat Duty": btx.fs.unit.heat_duty[0],
+                "HX Coefficient": btx.fs.unit.overall_heat_transfer_coefficient[0]},
+            "exprs": {
+                "Delta T Driving": btx.fs.unit.delta_temperature[0],
+                "Delta T In": btx.fs.unit.delta_temperature_in[0],
+                "Delta T Out": btx.fs.unit.delta_temperature_out[0]}}
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, btx):
+        stable = btx.fs.unit._get_stream_table_contents()
+
+        expected = pandas.DataFrame.from_dict({
+            'Units': {
+                'flow_mol': getattr(pyunits.pint_registry, "mole/second"),
+                'mole_frac_comp benzene': getattr(pyunits.pint_registry, "dimensionless"),
+                'mole_frac_comp toluene': getattr(pyunits.pint_registry, "dimensionless"),
+                'temperature': getattr(pyunits.pint_registry, "kelvin"),
+                'pressure': getattr(pyunits.pint_registry, "Pa")},
+            'Hot Inlet': {
+                'flow_mol': 5.0,
+                'mole_frac_comp benzene': 0.5,
+                'mole_frac_comp toluene': 0.5,
+                'temperature': 365,
+                'pressure': 101325.0},
+            'Hot Outlet': {
+                'flow_mol': 1.0,
+                'mole_frac_comp benzene': 0.5,
+                'mole_frac_comp toluene': 0.5,
+                'temperature': 298.15,
+                'pressure': 101325.0},
+            'Cold Inlet': {
+                'flow_mol': 1.0,
+                'mole_frac_comp benzene': 0.5,
+                'mole_frac_comp toluene': 0.5,
+                'temperature': 300,
+                'pressure': 101325.0},
+            'Cold Outlet': {
+                'flow_mol': 1.0,
+                'mole_frac_comp benzene': 0.5,
+                'mole_frac_comp toluene': 0.5,
+                'temperature': 298.15,
+                'pressure': 101325.0}})
+
+        pandas.testing.assert_frame_equal(
+            stable, expected, rtol=1e-4, atol=1e-4)
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -821,11 +927,6 @@ class TestBTX_cocurrent_alt_name(object):
         )
         assert abs(shell + tube) <= 1e-6
 
-    @pytest.mark.ui
-    @pytest.mark.unit
-    def test_report(self, btx):
-        btx.fs.unit.report()
-
 
 # -----------------------------------------------------------------------------
 @pytest.mark.iapws
@@ -847,11 +948,11 @@ class TestIAPWS_countercurrent(object):
         )
 
         m.fs.unit.inlet_1.flow_mol[0].fix(100)
-        m.fs.unit.inlet_1.enth_mol[0].fix(4000)
+        m.fs.unit.inlet_1.enth_mol[0].fix(6000)
         m.fs.unit.inlet_1.pressure[0].fix(101325)
 
         m.fs.unit.inlet_2.flow_mol[0].fix(100)
-        m.fs.unit.inlet_2.enth_mol[0].fix(3500)
+        m.fs.unit.inlet_2.enth_mol[0].fix(5000)
         m.fs.unit.inlet_2.pressure[0].fix(101325)
 
         m.fs.unit.area.fix(1000)
@@ -876,11 +977,11 @@ class TestIAPWS_countercurrent(object):
         )
 
         m.fs.unit.inlet_1.flow_mol[0].fix(100)
-        m.fs.unit.inlet_1.enth_mol[0].fix(4000)
+        m.fs.unit.inlet_1.enth_mol[0].fix(6000)
         m.fs.unit.inlet_1.pressure[0].fix(101325)
 
         m.fs.unit.inlet_2.flow_mol[0].fix(100)
-        m.fs.unit.inlet_2.enth_mol[0].fix(3500)
+        m.fs.unit.inlet_2.enth_mol[0].fix(5000)
         m.fs.unit.inlet_2.pressure[0].fix(101325)
 
         m.fs.unit.area.fix(1000)
@@ -946,17 +1047,82 @@ class TestIAPWS_countercurrent(object):
     @pytest.mark.unit
     def test_dof_alt_name1(self, iapws):
         iapws.fs.unit.shell_inlet.flow_mol[0].fix(100)
-        iapws.fs.unit.shell_inlet.enth_mol[0].fix(4000)
+        iapws.fs.unit.shell_inlet.enth_mol[0].fix(6000)
         iapws.fs.unit.shell_inlet.pressure[0].fix(101325)
 
         iapws.fs.unit.tube_inlet.flow_mol[0].fix(100)
-        iapws.fs.unit.tube_inlet.enth_mol[0].fix(3500)
+        iapws.fs.unit.tube_inlet.enth_mol[0].fix(5000)
         iapws.fs.unit.tube_inlet.pressure[0].fix(101325)
 
         iapws.fs.unit.area.fix(1000)
         iapws.fs.unit.overall_heat_transfer_coefficient.fix(100)
 
         assert degrees_of_freedom(iapws) == 0
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, iapws):
+        perf_dict = iapws.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "HX Area": iapws.fs.unit.area,
+                "Heat Duty": iapws.fs.unit.heat_duty[0],
+                "HX Coefficient": iapws.fs.unit.overall_heat_transfer_coefficient[0]},
+            "exprs": {
+                "Delta T Driving": iapws.fs.unit.delta_temperature[0],
+                "Delta T In": iapws.fs.unit.delta_temperature_in[0],
+                "Delta T Out": iapws.fs.unit.delta_temperature_out[0]}}
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, iapws):
+        stable = iapws.fs.unit._get_stream_table_contents()
+
+        expected = pandas.DataFrame.from_dict({
+            'Units': {
+                'Molar Flow (mol/s)': getattr(pyunits.pint_registry, "mole/second"),
+                'Mass Flow (kg/s)': getattr(pyunits.pint_registry, "kg/second"),
+                'T (K)': getattr(pyunits.pint_registry, "K"),
+                'P (Pa)': getattr(pyunits.pint_registry, "Pa"),
+                'Vapor Fraction': getattr(pyunits.pint_registry, "dimensionless"),
+                'Molar Enthalpy (J/mol) Vap': getattr(pyunits.pint_registry, "J/mole"),
+                'Molar Enthalpy (J/mol) Liq': getattr(pyunits.pint_registry, "J/mole")},
+            'Hot Inlet': {
+                'Molar Flow (mol/s)': 100,
+                'Mass Flow (kg/s)': 1.8015,
+                'T (K)': 352.67,
+                'P (Pa)': 101325,
+                'Vapor Fraction': 0,
+                'Molar Enthalpy (J/mol) Vap': 47398,
+                'Molar Enthalpy (J/mol) Liq': 6000},
+            'Hot Outlet': {
+                'Molar Flow (mol/s)': 1,
+                'Mass Flow (kg/s)': 1.8015e-2,
+                'T (K)': 286.34,
+                'P (Pa)': 1e5,
+                'Vapor Fraction': 0,
+                'Molar Enthalpy (J/mol) Vap': 2168.6,
+                'Molar Enthalpy (J/mol) Liq': 1000},
+            'Cold Inlet': {
+                'Molar Flow (mol/s)': 100,
+                'Mass Flow (kg/s)': 1.8015,
+                'T (K)': 339.43,
+                'P (Pa)': 101325,
+                'Vapor Fraction': 0,
+                'Molar Enthalpy (J/mol) Vap': 46685,
+                'Molar Enthalpy (J/mol) Liq': 5000},
+            'Cold Outlet': {
+                'Molar Flow (mol/s)': 1,
+                'Mass Flow (kg/s)': 1.8015e-2,
+                'T (K)': 286.34,
+                'P (Pa)': 1e5,
+                'Vapor Fraction': 0,
+                'Molar Enthalpy (J/mol) Vap': 2168.6,
+                'Molar Enthalpy (J/mol) Liq': 1000}})
+
+        pandas.testing.assert_frame_equal(
+            stable, expected, rtol=1e-4, atol=1e-4)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -995,8 +1161,8 @@ class TestIAPWS_countercurrent(object):
         assert pytest.approx(100, abs=1e-5) == value(iapws.fs.unit.outlet_1.flow_mol[0])
         assert pytest.approx(100, abs=1e-5) == value(iapws.fs.unit.outlet_2.flow_mol[0])
 
-        assert pytest.approx(3535, abs=1e0) == value(iapws.fs.unit.outlet_1.enth_mol[0])
-        assert pytest.approx(3964.5, abs=1e0) == value(
+        assert pytest.approx(5070.219, abs=1e0) == value(iapws.fs.unit.outlet_1.enth_mol[0])
+        assert pytest.approx(5929.781, abs=1e0) == value(
             iapws.fs.unit.outlet_2.enth_mol[0]
         )
 
@@ -1039,11 +1205,6 @@ class TestIAPWS_countercurrent(object):
             * (iapws.fs.unit.inlet_2.enth_mol[0] - iapws.fs.unit.outlet_2.enth_mol[0])
         )
         assert abs(shell_side + tube_side) <= 1e-6
-
-    @pytest.mark.ui
-    @pytest.mark.unit
-    def test_report(self, iapws):
-        iapws.fs.unit.report()
 
 
 # -----------------------------------------------------------------------------
@@ -1145,6 +1306,77 @@ class TestSaponification_crossflow(object):
     def test_dof(self, sapon):
         assert degrees_of_freedom(sapon) == 0
 
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, sapon):
+        perf_dict = sapon.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "HX Area": sapon.fs.unit.area,
+                "Heat Duty": sapon.fs.unit.heat_duty[0],
+                "HX Coefficient": sapon.fs.unit.overall_heat_transfer_coefficient[0],
+                "Crossflow Factor": sapon.fs.unit.crossflow_factor[0]},
+            "exprs": {
+                "Delta T Driving": sapon.fs.unit.delta_temperature[0],
+                "Delta T In": sapon.fs.unit.delta_temperature_in[0],
+                "Delta T Out": sapon.fs.unit.delta_temperature_out[0]}}
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, sapon):
+        stable = sapon.fs.unit._get_stream_table_contents()
+
+        expected = pandas.DataFrame.from_dict({
+            'Units': {
+                'Volumetric Flowrate': getattr(pyunits.pint_registry, "m**3/second"),
+                'Molar Concentration H2O': getattr(pyunits.pint_registry, "mole/m**3"),
+                'Molar Concentration NaOH': getattr(pyunits.pint_registry, "mole/m**3"),
+                'Molar Concentration EthylAcetate': getattr(pyunits.pint_registry, "mole/m**3"),
+                'Molar Concentration SodiumAcetate': getattr(pyunits.pint_registry, "mole/m**3"),
+                'Molar Concentration Ethanol': getattr(pyunits.pint_registry, "mole/m**3"),
+                'Temperature': getattr(pyunits.pint_registry, "K"),
+                'Pressure': getattr(pyunits.pint_registry, "Pa")},
+            'Hot Inlet': {
+                'Volumetric Flowrate': 1e-3,
+                'Molar Concentration H2O': 55388,
+                'Molar Concentration NaOH': 100.00,
+                'Molar Concentration EthylAcetate': 100.00,
+                'Molar Concentration SodiumAcetate': 0,
+                'Molar Concentration Ethanol': 0,
+                'Temperature': 320,
+                'Pressure': 1.0132e+05},
+            'Hot Outlet': {
+                'Volumetric Flowrate': 1.00,
+                'Molar Concentration H2O': 100.00,
+                'Molar Concentration NaOH': 100.00,
+                'Molar Concentration EthylAcetate': 100.00,
+                'Molar Concentration SodiumAcetate': 100.00,
+                'Molar Concentration Ethanol': 100.00,
+                'Temperature': 298.15,
+                'Pressure': 1.0132e+05},
+            'Cold Inlet': {
+                'Volumetric Flowrate': 1e-3,
+                'Molar Concentration H2O': 55388,
+                'Molar Concentration NaOH': 100.00,
+                'Molar Concentration EthylAcetate': 100.00,
+                'Molar Concentration SodiumAcetate': 0,
+                'Molar Concentration Ethanol': 0,
+                'Temperature': 300,
+                'Pressure': 1.0132e+05},
+            'Cold Outlet': {
+                'Volumetric Flowrate': 1.00,
+                'Molar Concentration H2O': 100.00,
+                'Molar Concentration NaOH': 100.00,
+                'Molar Concentration EthylAcetate': 100.00,
+                'Molar Concentration SodiumAcetate': 100.00,
+                'Molar Concentration Ethanol': 100.00,
+                'Temperature': 298.15,
+                'Pressure': 1.0132e+05}})
+
+        pandas.testing.assert_frame_equal(
+            stable, expected, rtol=1e-4, atol=1e-4)
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -1240,11 +1472,6 @@ class TestSaponification_crossflow(object):
             )
         )
         assert abs(shell_side + tube_side) <= 1e0
-
-    @pytest.mark.ui
-    @pytest.mark.unit
-    def test_report(self, sapon):
-        sapon.fs.unit.report()
 
 
 # -----------------------------------------------------------------------------
@@ -1461,6 +1688,61 @@ class TestBT_Generic_cocurrent(object):
     def test_dof(self, btx):
         assert degrees_of_freedom(btx) == 0
 
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, btx):
+        perf_dict = btx.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "HX Area": btx.fs.unit.area,
+                "Heat Duty": btx.fs.unit.heat_duty[0],
+                "HX Coefficient": btx.fs.unit.overall_heat_transfer_coefficient[0]},
+            "exprs": {
+                "Delta T Driving": btx.fs.unit.delta_temperature[0],
+                "Delta T In": btx.fs.unit.delta_temperature_in[0],
+                "Delta T Out": btx.fs.unit.delta_temperature_out[0]}}
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, btx):
+        stable = btx.fs.unit._get_stream_table_contents()
+
+        expected = pandas.DataFrame.from_dict({
+            'Units': {
+                'Total Molar Flowrate': getattr(pyunits.pint_registry, "mole/second"),
+                'Total Mole Fraction benzene': getattr(pyunits.pint_registry, "dimensionless"),
+                'Total Mole Fraction toluene': getattr(pyunits.pint_registry, "dimensionless"),
+                'Temperature': getattr(pyunits.pint_registry, "kelvin"),
+                'Pressure': getattr(pyunits.pint_registry, "Pa")},
+            'Hot Inlet': {
+                'Total Molar Flowrate': 5.0,
+                'Total Mole Fraction benzene': 0.5,
+                'Total Mole Fraction toluene': 0.5,
+                'Temperature': 365,
+                'Pressure': 101325.0},
+            'Hot Outlet': {
+                'Total Molar Flowrate': 100.0,
+                'Total Mole Fraction benzene': 0.5,
+                'Total Mole Fraction toluene': 0.5,
+                'Temperature': 300,
+                'Pressure': 1e5},
+            'Cold Inlet': {
+                'Total Molar Flowrate': 1.0,
+                'Total Mole Fraction benzene': 0.5,
+                'Total Mole Fraction toluene': 0.5,
+                'Temperature': 300,
+                'Pressure': 101325.0},
+            'Cold Outlet': {
+                'Total Molar Flowrate': 100.0,
+                'Total Mole Fraction benzene': 0.5,
+                'Total Mole Fraction toluene': 0.5,
+                'Temperature': 300,
+                'Pressure': 1e5}})
+
+        pandas.testing.assert_frame_equal(
+            stable, expected, rtol=1e-4, atol=1e-4)
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -1536,11 +1818,6 @@ class TestBT_Generic_cocurrent(object):
             to_units=pyunits.J / pyunits.s,
         )
         assert abs(shell + tube) <= 1e-6
-
-    @pytest.mark.ui
-    @pytest.mark.unit
-    def test_report(self, btx):
-        btx.fs.unit.report()
 
     @pytest.mark.component
     def test_initialization_error(self, btx):

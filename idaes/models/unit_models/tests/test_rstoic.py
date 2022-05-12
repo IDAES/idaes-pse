@@ -16,6 +16,7 @@ Tests for IDAES Stoichiometric reactor.
 Author: Chinedu Okoli, Andrew Lee
 """
 import pytest
+from io import StringIO
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, value, units, Var
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
@@ -253,8 +254,14 @@ class TestSaponification(object):
 
     @pytest.mark.ui
     @pytest.mark.unit
-    def test_report(self, sapon):
-        sapon.fs.unit.report()
+    def test_get_performance_contents(self, sapon):
+        perf_dict = sapon.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Reaction Extent [R1]": sapon.fs.unit.rate_reaction_extent[0, "R1"],
+                "Heat Duty": sapon.fs.unit.heat_duty[0],
+                "Pressure Change": sapon.fs.unit.deltaP[0]}}
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
