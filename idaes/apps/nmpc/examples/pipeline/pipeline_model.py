@@ -18,7 +18,7 @@ from idaes.models_extra.gas_distribution.properties.natural_gas import (
 from idaes.models_extra.gas_distribution.unit_models.pipeline import GasPipeline
 
 """
-Utilies for constructing and simulating a gas pipeline model
+Utilities for constructing and simulating a gas pipeline model
 """
 
 def get_simulation_inputs(

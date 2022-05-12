@@ -27,7 +27,7 @@ from idaes.apps.nmpc.dynamic_data import (
 )
 
 """
-Script for running "rolling-horizon" type simulatoin with pipeline model
+Script for running "rolling-horizon" type simulation with pipeline model
 """
 
 def run_simulation(
