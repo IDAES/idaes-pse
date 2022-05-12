@@ -17,6 +17,7 @@ Author: Andrew Lee
 """
 import pytest
 from io import StringIO
+import pandas
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -1377,8 +1378,8 @@ class TestIAPWS(object):
     @pytest.mark.unit
     def test_get_stream_table_contents(self, iapws):
         stable = iapws.fs.unit._get_stream_table_contents()
-
-        expected = {
+        
+        expected = pandas.DataFrame.from_dict({
             'Units': {
                 'Molar Flow (mol/s)': getattr(pyunits.pint_registry, "mole/second"),
                 'Mass Flow (kg/s)': getattr(pyunits.pint_registry, "kg/second"),
@@ -1418,9 +1419,10 @@ class TestIAPWS(object):
                 'P (Pa)': 1e5,
                 'Vapor Fraction': 0,
                 'Molar Enthalpy (J/mol) Vap': 2168.6,
-                'Molar Enthalpy (J/mol) Liq': 1000}}
+                'Molar Enthalpy (J/mol) Liq': 1000}})
 
-        assert stable.to_dict() == pytest.approx(expected, rel=1e-4, abs=1e-4)
+        pandas.testing.assert_frame_equal(
+            stable, expected, rtol=1e-4, atol=1e-4)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
