@@ -16,6 +16,7 @@ Tests for 0D lumped capacitance heat exchanger model
 Author: Rusty Gentile, John Eslick, Andrew Lee
 """
 import pytest
+from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -473,33 +474,20 @@ class TestHXLCGeneric(object):
         ):
             m.fs.unit.activate_dynamic_heat_eq()
 
+    @pytest.mark.ui
     @pytest.mark.unit
-    def test_build_valid_configs(self, static_flowsheet_model, dynamic_flowsheet_model):
-        def build_unit_model(m, dyn, dyn_hb):
-            return HeatExchangerLumpedCapacitance(
-                default={
-                    "shell": {"property_package": m.fs.properties},
-                    "tube": {"property_package": m.fs.properties},
-                    "dynamic": dyn,
-                    "dynamic_heat_balance": dyn_hb,
-                }
-            )
+    def test_get_performance_contents(self, model):
+        perf_dict = model.fs.unit._get_performance_contents()
 
-        # Static model
-        ms = static_flowsheet_model
-        ms.fs.unit = build_unit_model(ms, False, False)
-
-        # Dynamic model
-        md = dynamic_flowsheet_model
-        md.fs.u1 = build_unit_model(ms, False, False)
-        md.fs.u2 = build_unit_model(ms, True, False)
-        md.fs.u3 = build_unit_model(ms, False, True)
-        md.fs.u4 = build_unit_model(ms, True, True)
-        md.discretizer = TransformationFactory("dae.finite_difference")
-        md.discretizer.apply_to(md, nfe=10, wrt=md.fs.time, scheme="BACKWARD")
-
-        assert True
-
+        assert perf_dict == {
+            "vars": {
+                "HX Area": model.fs.unit.area,
+                "Heat Duty": model.fs.unit.heat_duty[0],
+                "HX Coefficient": model.fs.unit.overall_heat_transfer_coefficient[0]},
+            "exprs": {
+                "Delta T Driving": model.fs.unit.delta_temperature[0],
+                "Delta T In": model.fs.unit.delta_temperature_in[0],
+                "Delta T Out": model.fs.unit.delta_temperature_out[0]}}
 
 class TestHXLCTransientSCO2(object):
     @pytest.fixture

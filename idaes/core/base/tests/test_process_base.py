@@ -16,8 +16,11 @@ Tests for process_base.
 Author: Andrew Lee
 """
 import pytest
+from io import StringIO
+import types
+import pandas
 
-from pyomo.environ import Block, ConcreteModel
+from pyomo.environ import Block, ConcreteModel, Set, Var, Param, Expression, units
 
 from idaes.core.base.process_base import ProcessBaseBlock
 from idaes.core import FlowsheetBlockData, declare_process_block_class
@@ -74,8 +77,109 @@ def test_get_stream_table_contents():
 
 
 @pytest.mark.unit
-def test_report():
-    # Test that no exceptions occur
+def test_report_dof():
     m = ConcreteModel()
     m.b = ProcessBaseBlock()
-    m.b.report(dof=True)
+
+    stream = StringIO()
+
+    m.b.report(ostream=stream, dof=True)
+
+    expected = """
+====================================================================================
+Unit : b                                                                   Time: 0.0
+====================================================================================
+    Local Degrees of Freedom: 0
+    Total Variables: 0    Activated Constraints: 0    Activated Blocks: 1
+====================================================================================
+"""
+
+    assert stream.getvalue().strip() == expected.strip()
+
+
+@pytest.mark.unit
+def test_report_perf_dict():
+    m = ConcreteModel()
+    m.b = ProcessBaseBlock()
+
+    m.b.s = Set(initialize=[1, 2])
+
+    m.b.sv = Var(initialize=7, units=units.m)
+    m.b.iv = Var(m.b.s, initialize=42, units=units.s)
+
+    m.b.p = Param(initialize=4, units=units.mole)
+
+    m.b.e = Expression(rule=72)
+
+    def dummy_performance(self, time_point):
+        return {
+            "vars": {"Scalar Var": m.b.sv, "Indexed Var 1": m.b.iv[1]},
+            "params": {"Param": m.b.p},
+            "exprs": {"Expression": m.b.e},
+        }
+
+    m.b._get_performance_contents = types.MethodType(dummy_performance, m.b)
+
+    stream = StringIO()
+
+    m.b.report(ostream=stream)
+
+    expected = """
+====================================================================================
+Unit : b                                                                   Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key           : Value  : Units  : Fixed : Bounds
+    Indexed Var 1 : 42.000 : second : False : (None, None)
+       Scalar Var : 7.0000 :  meter : False : (None, None)
+
+    Expressions: 
+
+    Key        : Value  : Units
+    Expression : 72.000 : dimensionless
+
+    Parameters: 
+
+    Key   : Value : Units : Mutable
+    Param :     4 :  mole :    True
+
+====================================================================================
+"""
+
+    assert stream.getvalue().strip() == expected.strip()
+
+
+@pytest.mark.unit
+def test_report_stream_table():
+    m = ConcreteModel()
+    m.b = ProcessBaseBlock()
+
+    data = {"x1": [1, 2, 3, 4], "x2": [5, 6, 7, 8], "z1": [10, 20, 30, 40]}
+    df = pandas.DataFrame(data)
+
+    def dummy_stream_table(self, time_point):
+        return df
+
+    m.b._get_stream_table_contents = types.MethodType(dummy_stream_table, m.b)
+
+    stream = StringIO()
+
+    m.b.report(ostream=stream)
+
+    expected = """
+====================================================================================
+Unit : b                                                                   Time: 0.0
+------------------------------------------------------------------------------------
+    Stream Table
+       x1  x2  z1
+    0   1   5  10
+    1   2   6  20
+    2   3   7  30
+    3   4   8  40
+====================================================================================
+"""
+
+    assert stream.getvalue().strip() == expected.strip()
