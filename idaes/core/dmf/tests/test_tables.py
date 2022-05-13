@@ -11,14 +11,14 @@
 # license information.
 #################################################################################
 """
-Tests for idaes.dmf.tables
+Tests for idaes.core.dmf.tables
 """
 __author__ = "Dan Gunter"
 
 from pathlib import Path
 import pytest
-from idaes.dmf.tables import Table, DataFormatError
-from idaes.dmf import resource, DMF
+from idaes.core.dmf.tables import Table, DataFormatError
+from idaes.core.dmf import resource, DMF
 
 # DATA
 

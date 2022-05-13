@@ -33,5 +33,5 @@ from idaes import __version__                 # noqa
 h = logging.StreamHandler()
 h.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] '
                                  '%(name)s: %(message)s'))
-logging.getLogger('idaes.dmf').addHandler(h)
-logging.getLogger('idaes.dmf').propagate = False
+logging.getLogger('idaes.core.dmf').addHandler(h)
+logging.getLogger('idaes.core.dmf').propagate = False

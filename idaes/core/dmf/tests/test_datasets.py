@@ -11,14 +11,14 @@
 # license information.
 #################################################################################
 """
-Tests for idaes.dmf.datasets module
+Tests for idaes.core.dmf.datasets module
 """
 import copy
 import json
 from pathlib import Path
 import pytest
 import uuid
-from idaes.dmf import datasets
+from idaes.core.dmf import datasets
 
 
 # Constants
@@ -105,7 +105,7 @@ def dmf_workspace_path(tmp_path_factory):
 def pub_datasets(
     dmf_workspace_path, dmf_publication_dataset, dmf_publication_dataset_no_tables
 ):
-    from idaes.dmf import datasets
+    from idaes.core.dmf import datasets
 
     ds = datasets.PublicationDataset(dmf_workspace_path)
     ds.load(dmf_publication_dataset)
@@ -229,7 +229,7 @@ def test_retrieve(pub_datasets):
 
 @pytest.mark.unit
 def test_load_publication_missing_keys(dmf_workspace_path, tmp_path_factory):
-    from idaes.dmf import datasets
+    from idaes.core.dmf import datasets
     # Try to load bad config files
     for key in (
         datasets.PublicationDataset.NAME_KEY,
@@ -253,7 +253,7 @@ def test_load_publication_missing_keys(dmf_workspace_path, tmp_path_factory):
 
 @pytest.mark.unit
 def test_load_publication_isbn(dmf_workspace_path, tmp_path_factory):
-    from idaes.dmf import datasets
+    from idaes.core.dmf import datasets
     # Try to load config files with isbn
     p = tmp_path_factory.mktemp(f"ds_conf_has_isbn")
     # Copy config and delete required key

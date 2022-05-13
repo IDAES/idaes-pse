@@ -12,7 +12,7 @@
 #################################################################################
 """
 Test the 'relations' connecting Resource instances,
-which spans the modules idaes.dmf.{dmf, resource, resourcedb}
+which spans the modules idaes.core.dmf.{dmf, resource, resourcedb}
 """
 # stdlib
 import logging
@@ -24,8 +24,8 @@ from typing import Union
 import pytest
 
 # local
-from idaes.dmf import experiment, resource, DMF
-from idaes.dmf.resource import Predicates
+from idaes.core.dmf import experiment, resource, DMF
+from idaes.core.dmf.resource import Predicates
 
 
 # for testing
@@ -42,7 +42,7 @@ scratch_path: Union[Path, None] = None
 
 def setup_module(module):
     global scratch_dir, scratch_path
-    scratch_dir = TemporaryDirectory(prefix="idaes_dmf_")  # easier to remove later
+    scratch_dir = TemporaryDirectory(prefix="idaes.core.dmf_")  # easier to remove later
     scratch_path = Path(scratch_dir.name)
 
 

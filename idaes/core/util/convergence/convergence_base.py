@@ -76,7 +76,7 @@ from pyomo.common.log import LoggingIntercept
 
 # idaes
 import idaes.core.util.convergence.mpi_utils as mpiu
-from idaes.dmf import resource
+from idaes.core.dmf import resource
 import idaes.logger as idaeslog
 
 # Set up logger
