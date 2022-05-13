@@ -24,7 +24,7 @@ import re
 from typing import Dict
 
 # package
-from idaes.dmf.datasets import Publication, AvailableResult
+from idaes.core.dmf.datasets import Publication, AvailableResult
 
 __authors__ = ["Dan Gunter (LBNL)"]
 __author__ = __authors__[0]

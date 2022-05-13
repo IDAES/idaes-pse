@@ -114,7 +114,7 @@ class Workspace(object):
             ISO8601 format.
         htmldocs
             Full path to the location of the built (not source) Sphinx HTML
-            documentation for the `idaes_dmf` package. See
+            documentation for the `idaes.core.dmf` package. See
             DMF Help Configuration for more details.
 
     There are many different possible "styles" of formatting a list of values

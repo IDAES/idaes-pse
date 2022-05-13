@@ -17,8 +17,8 @@ Data Management Framework high-level functions.
 import logging
 import sys
 # package
-from idaes.dmf import DMF
-from idaes.dmf import errors
+from idaes.core.dmf import DMF
+from idaes.core.dmf import errors
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 

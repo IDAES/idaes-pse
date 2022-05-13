@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Tests for idaes.dmf.util module
+Tests for idaes.core.dmf.util module
 """
 import datetime
 import hashlib
@@ -27,7 +27,7 @@ import pytest
 
 #
 from pyomo.environ import value
-from idaes.dmf import util, resource
+from idaes.core.dmf import util, resource
 from .util import init_logging
 
 __author__ = "Dan Gunter"
@@ -40,7 +40,7 @@ scratch_path: Union[Path, None] = None
 
 def setup_module(module):
     global scratch_dir, scratch_path
-    scratch_dir = TemporaryDirectory(prefix="idaes_dmf_")  # easier to remove later
+    scratch_dir = TemporaryDirectory(prefix="idaes.core.dmf_")  # easier to remove later
     scratch_path = Path(scratch_dir.name)
 
 
@@ -65,13 +65,13 @@ def test_get_file():
 
 @pytest.mark.unit
 def test_import_module():
-    m = util.import_module("idaes.dmf.util")
+    m = util.import_module("idaes.core.dmf.util")
     assert m is not None
 
 
 @pytest.mark.unit
 def test_get_module_version():
-    m = util.import_module("idaes.dmf.util")
+    m = util.import_module("idaes.core.dmf.util")
     v1 = util.get_module_version(m)
     assert v1 is None
     m.__version__ = "foobar"
@@ -87,7 +87,7 @@ def test_get_module_version():
 
 @pytest.mark.unit
 def test_get_module_author():
-    m = util.import_module("idaes.dmf.util")
+    m = util.import_module("idaes.core.dmf.util")
     util.get_module_author(m)
 
 
@@ -110,13 +110,13 @@ def test_mkdir_p():
     tmp_dir = scratch_path / "mkdir_p"
     random_str = hashlib.sha1().hexdigest()
     # test absolute
-    path = str(tmp_dir / f"{random_str}/idaes/dmf/util/mkdir_p")
+    path = str(tmp_dir / f"{random_str}/idaes.core.dmf/util/mkdir_p")
     util.mkdir_p(path)
     assert os.path.exists(path)
     # test relative
     random_str = hashlib.sha1().hexdigest()
     os.chdir(str(tmp_dir))
-    path = f"{random_str}/idaes/dmf/util/mkdir_p"
+    path = f"{random_str}/idaes.core.dmf/util/mkdir_p"
     util.mkdir_p(path)
     assert os.path.exists(path)
 

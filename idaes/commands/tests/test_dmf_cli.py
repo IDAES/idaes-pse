@@ -27,10 +27,10 @@ from click.testing import CliRunner
 import pytest
 
 # package
-from idaes.dmf.cli import init, register, info, ls, related, rm, status
-from idaes.dmf.dmfbase import DMFConfig, DMF
-from idaes.dmf.workspace import Workspace
-from idaes.dmf import resource
+from idaes.core.dmf.cli import init, register, info, ls, related, rm, status
+from idaes.core.dmf.dmfbase import DMFConfig, DMF
+from idaes.core.dmf.workspace import Workspace
+from idaes.core.dmf import resource
 
 from . import create_module_scratch, rmtree_scratch
 

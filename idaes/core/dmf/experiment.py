@@ -18,8 +18,8 @@ set of 'resources'.
 from copy import deepcopy
 import logging
 # local
-from idaes.dmf import resource, errors
-from idaes.dmf.resource import Predicates, ResourceTypes
+from idaes.core.dmf import resource, errors
+from idaes.core.dmf.resource import Predicates, ResourceTypes
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
