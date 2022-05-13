@@ -630,11 +630,11 @@ class TestIronOC(object):
         assert pytest.approx(0.266906, abs=1e-5) == iron_oc.fs.unit.delta[0, 0].value
         assert pytest.approx(0.30425, abs=1e-5) == iron_oc.fs.unit.delta[0, 1].value
         assert (
-            pytest.approx(123088.236424, abs=1e-5)
+            pytest.approx(123088.236424, rel=1e-5)
             == iron_oc.fs.unit.gas_outlet.pressure[0].value
         )
         assert (
-            pytest.approx(62911.76357, abs=1e-5)
+            pytest.approx(62911.76357, rel=1e-5)
             == iron_oc.fs.unit.gas_inlet.pressure[0].value
             - iron_oc.fs.unit.gas_outlet.pressure[0].value
         )
@@ -925,11 +925,11 @@ class TestIronOC_EnergyBalanceType(object):
         for (t, x, j), v in BFB.Kgbulk_c.items():
             assert pytest.approx(3.014e-5, abs=1e-5) == iscale.get_scaling_factor(v)
         for (t, x), v in BFB._reform_var_1.items():
-            assert pytest.approx(65.00000, abs=1e-5) == iscale.get_scaling_factor(v)
+            assert pytest.approx(65.00000, rel=1e-5) == iscale.get_scaling_factor(v)
         for (t, x, j), v in BFB._reform_var_2.items():
-            assert pytest.approx(16927.95406, abs=1e-5) == iscale.get_scaling_factor(v)
+            assert pytest.approx(16927.95406, rel=1e-5) == iscale.get_scaling_factor(v)
         for (t, x), v in BFB._reform_var_3.items():
-            assert pytest.approx(2.83941, abs=1e-5) == iscale.get_scaling_factor(v)
+            assert pytest.approx(2.83941, rel=1e-5) == iscale.get_scaling_factor(v)
 
         for c in BFB.orifice_area.values():
             assert pytest.approx(
@@ -1061,19 +1061,19 @@ class TestIronOC_EnergyBalanceType(object):
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in BFB.particle_porosity_in.items():
             assert pytest.approx(
-                100.00000, abs=1e-5
+                100.00000, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in BFB.emulsion_gas_velocity_in.items():
             assert pytest.approx(
-                25.23722, abs=1e-5
+                25.23722, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for (t, j), c in BFB.bubble_mole_frac_in.items():
             assert pytest.approx(
-                10.00000, abs=1e-5
+                10.00000, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for (t, j), c in BFB.gas_emulsion_mole_frac_in.items():
             assert pytest.approx(
-                10.00000, abs=1e-5
+                10.00000, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in BFB.solid_emulsion_mass_flow_in.items():
             assert pytest.approx(
@@ -1097,7 +1097,7 @@ class TestIronOC_EnergyBalanceType(object):
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in BFB.solid_particle_porosity_out.items():
             assert pytest.approx(
-                100.00000, abs=1e-5
+                100.00000, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in BFB.gas_energy_balance_out.items():
             assert pytest.approx(
@@ -1165,11 +1165,11 @@ class TestIronOC_EnergyBalanceType(object):
         assert pytest.approx(0.52679, abs=1e-5) == iron_oc.fs.unit.delta[0, 0].value
         assert pytest.approx(0.30244, abs=1e-5) == iron_oc.fs.unit.delta[0, 1].value
         assert (
-            pytest.approx(122577.18737, abs=1e-5)
+            pytest.approx(122577.18737, rel=1e-4)
             == iron_oc.fs.unit.gas_outlet.pressure[0].value
         )
         assert (
-            pytest.approx(63422.81262, abs=1e-5)
+            pytest.approx(63422.81262, rel=1e-4)
             == iron_oc.fs.unit.gas_inlet.pressure[0].value
             - iron_oc.fs.unit.gas_outlet.pressure[0].value
         )
@@ -1407,11 +1407,11 @@ class TestIronOC_TransformationMethod(object):
         assert pytest.approx(0.266906, abs=1e-5) == iron_oc.fs.unit.delta[0, 0].value
         assert pytest.approx(0.31323, abs=1e-5) == iron_oc.fs.unit.delta[0, 1].value
         assert (
-            pytest.approx(126040.59980, abs=1e-5)
+            pytest.approx(126040.59980, rel=1e-4)
             == iron_oc.fs.unit.gas_outlet.pressure[0].value
         )
         assert (
-            pytest.approx(59959.40019, abs=1e-5)
+            pytest.approx(59959.40019, rel=1e-4)
             == iron_oc.fs.unit.gas_inlet.pressure[0].value
             - iron_oc.fs.unit.gas_outlet.pressure[0].value
         )

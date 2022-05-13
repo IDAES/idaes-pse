@@ -10,18 +10,6 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
-#
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
 """
 Tests to make sure the NGFC example builds and solves correctly.
 """
@@ -52,22 +40,18 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 from idaes.core.util import model_serializer as ms
-
-solver_available = pyo.SolverFactory("ipopt").available()
-solver = get_solver()
+import idaes
 
 
 @pytest.fixture(scope="module")
 def m():
     m = pyo.ConcreteModel(name="NGFC without carbon capture")
     m.fs = FlowsheetBlock(default={"dynamic": False})
-
     build_power_island(m)
     build_reformer(m)
     set_power_island_inputs(m)
     set_reformer_inputs(m)
     connect_reformer_to_power_island(m)
-
     return m
 
 
@@ -91,8 +75,14 @@ def test_build(m):
 @pytest.mark.integration
 def test_initialize(m):
     scale_flowsheet(m)
-    initialize_power_island(m)
-    initialize_reformer(m)
+
+    with idaes.temporary_config_ctx():
+        # these config changes affect get_solver() so they should apply to
+        # initialization even without setting the solvers to use global settings
+        idaes.cfg.ipopt.options.linear_solver = "ma57"
+        idaes.cfg.ipopt.options.OF_ma57_automatic_scaling = "yes"
+        initialize_power_island(m)
+        initialize_reformer(m)
 
     assert pyo.value(m.fs.reformer.lagrange_mult[(0, "H")]) == pytest.approx(
         83163, 1e-3
@@ -101,7 +91,6 @@ def test_initialize(m):
         63608, 1e-3
     )
     assert pyo.value(m.fs.anode.lagrange_mult[(0, "H")]) == pytest.approx(76820, 1e-3)
-
     assert pyo.value(m.fs.bypass_rejoin.outlet.temperature[0]) == pytest.approx(
         640.6, 1e-3
     )
