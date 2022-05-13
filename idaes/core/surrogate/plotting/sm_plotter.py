@@ -98,7 +98,8 @@ def _scatter2D(
                 plt.show()
             if filename is not None:
                 pdf.savefig(fig)
-    pdf.close()
+    if filename is not None:  # place outside loop to avoid closing/reopening
+        pdf.close()
 
 
 def surrogate_scatter3D(surrogate, dataframe, filename=None, show=True):
@@ -179,7 +180,8 @@ def _scatter3D(
                 plt.show()
             if filename is not None:
                 pdf.savefig(fig)
-    pdf.close()
+    if filename is not None:  # place outside loop to avoid closing/reopening
+        pdf.close()
 
 
 def surrogate_parity(surrogate, dataframe, filename=None, show=True):
@@ -240,7 +242,8 @@ def _parity(zdata, zfit, zlabels=None, show=True, filename=None):
             plt.show()
         if filename is not None:
             pdf.savefig(fig)
-    pdf.close()
+    if filename is not None:  # place outside loop to avoid closing/reopening
+        pdf.close()
 
 
 def surrogate_residual(
@@ -309,4 +312,5 @@ def _residual(xdata, residual, xlabels=None, elabels=None, show=True, filename=N
                 plt.show()
             if filename is not None:
                 pdf.savefig(fig)
-    pdf.close()
+    if filename is not None:  # place outside loop to avoid closing/reopening
+        pdf.close()
