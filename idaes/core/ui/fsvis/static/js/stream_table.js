@@ -1,28 +1,10 @@
 export class StreamTable {
     // Variable Types
-    UNFIXED = {
-        num: 1,
-        text: 'Unfixed'
-        // UNFIXED types don't have a visual representation in the Stream Table
-    };
-    FIXED = {
-        num: 2,
-        text: 'Fixed',
-        className: 'streamtable-vartype-fixed',
-        cellStyle: '<span class="streamtable-vartype-fixed" style="margin-top: 7%;" title="Fixed"></span>'
-    };
-    PARAMETER = {
-        num: 3,
-        text: 'Parameter',
-        className: 'streamtable-vartype-parameter',
-        cellStyle: '<span class="streamtable-vartype-parameter" style="margin-top: 7%;" title="Parameter"></span>'
-    };
-    EXPRESSION = {
-        num: 4,
-        text: 'Expression',
-        className: 'streamtable-vartype-expression',
-        cellStyle: '<span class="streamtable-vartype-expression" style="margin-top: 7%;" title="Expression"></span>'
-    };
+    UNFIXED = 'unfixed';
+    FIXED = 'fixed';
+    PARAMETER = 'parameter';
+    EXPRESSION = 'expression';
+
 
     constructor(app, model) {
         this._app = app;
@@ -69,24 +51,26 @@ export class StreamTable {
             const elem_dot = document.createElement('span');
             const elem_text = document.createElement('span');
             elem_text.className = 'streamtable-vartype-text';
+            const var_type_class = `streamtable-vartype-${var_type}`;
             switch (var_type) {
-                case this.UNFIXED.num:
-                    console.info(`Unfixed variables don't have a visual indicator`);
+                case this.UNFIXED:
+                    // This will execute once since this.existing_var_types is a set
+                    console.debug(`Unfixed variables don't have a visual indicator`);
                     break;
-                case this.FIXED.num:
-                    elem_dot.className = this.FIXED.className;
-                    elem_dot.title = this.FIXED.text;
-                    elem_text.innerHTML = this.FIXED.text;
+                case this.FIXED:
+                    elem_dot.className = var_type_class;
+                    elem_dot.title = var_type;
+                    elem_text.innerHTML = var_type;
                     break;
-                case this.PARAMETER.num:
-                    elem_dot.className = this.PARAMETER.className;
-                    elem_dot.title = this.PARAMETER.text;
-                    elem_text.innerHTML = this.PARAMETER.text;
+                case this.PARAMETER:
+                    elem_dot.className = var_type_class;
+                    elem_dot.title = var_type;
+                    elem_text.innerHTML = var_type;
                     break;
-                case this.EXPRESSION.num:
-                    elem_dot.className = this.EXPRESSION.className;
-                    elem_dot.title = this.EXPRESSION.text;
-                    elem_text.innerHTML = this.EXPRESSION.text;
+                case this.EXPRESSION:
+                    elem_dot.className = var_type_class;
+                    elem_dot.title = var_type;
+                    elem_text.innerHTML = var_type;
                     break;
                 default:
                     console.warn(`Couldn't identify Variable type: ${data[col_index]}`);
@@ -170,32 +154,26 @@ export class StreamTable {
                         row_object[variable_col] = row_object[variable_col] + '<span class="streamtable-units">&ndash;</span>';
                     }
                 }
-                else if (columns[col_index].includes("_vartype")) {
-                    const stream_col = columns[col_index].substring(0, columns[col_index].length - 8)
-                    let cell_style = "";
-                    switch (data[col_index]) {
-                        case this.UNFIXED.num:
-                            console.info(`Unfixed variables don't have a visual indicator`);
+                else if (columns[col_index] === "Variable") {
+                    row_object[columns[col_index]] = data[col_index];
+                }
+                else {
+                    var [value, type] = data[col_index];
+                    switch (type) {
+                        case this.FIXED:
+                            this.existing_var_types.add(this.FIXED);
                             break;
-                        case this.FIXED.num:
-                            cell_style = this.FIXED.cellStyle;
-                            this.existing_var_types.add(this.FIXED.num);
+                        case this.PARAMETER:
+                            this.existing_var_types.add(this.PARAMETER);
                             break;
-                        case this.PARAMETER.num:
-                            cell_style = this.PARAMETER.cellStyle;
-                            this.existing_var_types.add(this.PARAMETER.num);
-                            break;
-                        case this.EXPRESSION.num:
-                            cell_style = this.EXPRESSION.cellStyle;
-                            this.existing_var_types.add(this.EXPRESSION.num);
+                        case this.EXPRESSION:
+                            this.existing_var_types.add(this.EXPRESSION);
                             break;
                         default:
                             console.warn(`Couldn't identify Variable type: ${data[col_index]}`);
                     };
-                    row_object[stream_col] = cell_style + '<span class="streamtable-variable-value">' + data[col_index-1] + '</span>';
-                }
-                else {
-                    row_object[columns[col_index]] = data[col_index];
+                    let cell_style = `<span class="streamtable-vartype-${type}" style="margin-top: 7%;" title="${type}"></span>`;
+                    row_object[columns[col_index]] = cell_style + '<span class="streamtable-variable-value">' + value + '</span>';
                 }
             };
             row_data.push(row_object);

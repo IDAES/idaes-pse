@@ -185,8 +185,6 @@ class FlowsheetSerializer:
         self.orphaned_ports = {}
         self.labels = {}
         self._stream_table_df = None
-        self.add_variable_type = True #  e.g fixed, variable, Parameter, Expression
-        self.variable_type_suffix = '_vartype'
         self._ordered_stream_names = deque()
         self._out_json = {"model": {}, "routing_config" : {}}
         self._serialized_contents = defaultdict(dict)
@@ -228,8 +226,6 @@ class FlowsheetSerializer:
             self._known_endpoints.add(component.source.parent_block())
             self._known_endpoints.add(component.dest.parent_block())
             self._ordered_stream_names.append(component.getname())
-            if self.add_variable_type:
-                self._ordered_stream_names.append(component.getname() + self.variable_type_suffix)
 
     def _identify_unit_models(self) -> Dict:
         from idaes.core import UnitModelBlockData  # avoid circular import
@@ -469,13 +465,9 @@ class FlowsheetSerializer:
                     # Ordering the feeds vs products in the code to display
                     # the right column order in the stream table
                     if type_ == self.FEED:
-                        if self.add_variable_type:
-                            self._ordered_stream_names.appendleft(edge_name + self.variable_type_suffix)
                         self._ordered_stream_names.appendleft(edge_name)
                     else:
                         self._ordered_stream_names.append(edge_name)
-                        if self.add_variable_type:
-                            self._ordered_stream_names.append(edge_name + self.variable_type_suffix)
                 except Exception:
                     self._logger.warning(
                         f"Cannot extract state block from Port: "
@@ -503,16 +495,13 @@ class FlowsheetSerializer:
 
     def _construct_model_json(self):
         from idaes.core.util.tables import (
-            create_stream_table_dataframe
+            create_stream_table_ui
         )  # deferred to avoid circular import
 
         # Get the stream table and add it to the model json
         # Change the index of the pandas dataframe to not be the variables
         self._stream_table_df = (
-            create_stream_table_dataframe(
-                self.streams,
-                add_variable_type=self.add_variable_type
-                )
+            create_stream_table_ui(self.streams)
             # Change the index of the pandas dataframe to not be the variables
             .reset_index()
             .rename(columns={"index": "Variable"})
