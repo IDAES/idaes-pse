@@ -33,7 +33,7 @@ def rglob(path, glob):
 
 
 DEPENDENCIES_FOR_PRERELEASE_VERSION = [
-    "pyomo @ https://github.com/IDAES/pyomo/archive/6.4.1.rc2.idaes.2022.05.13.zip"
+    "pyomo @ https://github.com/IDAES/pyomo/archive/6.4.1.zip"
 ]
 
 # For included DMF data
