@@ -20,7 +20,7 @@ import os
 from pyomo.environ import *
 from idaes.core.util import to_json, from_json, StoreSpec
 from idaes.core.util.model_serializer import _only_fixed
-from idaes.util.system import mkdtemp
+from idaes.core.dmf.util import mkdtemp
 import shutil
 import pytest
 

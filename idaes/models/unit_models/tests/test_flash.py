@@ -15,7 +15,8 @@ Tests for Flash unit model.
 Author: Jaffer Ghouse
 """
 import pytest
-from pyomo.environ import check_optimal_termination, ConcreteModel, value, units, Var
+
+from pyomo.environ import check_optimal_termination, ConcreteModel, value, units, Var, units as pyunits
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import (
@@ -144,6 +145,49 @@ class TestBTXIdeal(object):
     def test_dof(self, btx):
         assert degrees_of_freedom(btx) == 0
 
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, btx):
+        perf_dict = btx.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Heat Duty": btx.fs.unit.heat_duty[0],
+                "Pressure Change": btx.fs.unit.deltaP[0]}}
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, btx):
+        stable = btx.fs.unit._get_stream_table_contents()
+
+        expected = {
+            'Units': {
+                'flow_mol': getattr(pyunits.pint_registry, "mole/s"),
+                'mole_frac_comp benzene': getattr(pyunits.pint_registry, "dimensionless"),
+                'mole_frac_comp toluene': getattr(pyunits.pint_registry, "dimensionless"),
+                'temperature': getattr(pyunits.pint_registry, "K"),
+                'pressure': getattr(pyunits.pint_registry, "Pa")},
+            'Inlet': {
+                'flow_mol': pytest.approx(1.00, rel=1e-4),
+                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
+                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
+                'temperature': pytest.approx(368, rel=1e-4),
+                'pressure': pytest.approx(101325, rel=1e-4)},
+            'Vapor Outlet': {
+                'flow_mol': pytest.approx(0.5, rel=1e-4),
+                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
+                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
+                'temperature': pytest.approx(298.15, rel=1e-4),
+                'pressure': pytest.approx(101325.0, rel=1e-4)},
+            'Liquid Outlet': {
+                'flow_mol': pytest.approx(0.5, rel=1e-4),
+                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
+                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
+                'temperature': pytest.approx(298.15, rel=1e-4),
+                'pressure': pytest.approx(101325.0, rel=1e-4)}}
+
+        assert stable.to_dict() == expected
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -205,11 +249,6 @@ class TestBTXIdeal(object):
             )
             <= 1e-6
         )
-
-    @pytest.mark.ui
-    @pytest.mark.unit
-    def test_report(self, btx):
-        btx.fs.unit.report()
 
 
 # -----------------------------------------------------------------------------
@@ -279,6 +318,57 @@ class TestIAPWS(object):
     @pytest.mark.unit
     def test_dof(self, iapws):
         assert degrees_of_freedom(iapws) == 0
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, iapws):
+        perf_dict = iapws.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Heat Duty": iapws.fs.unit.heat_duty[0],
+                "Pressure Change": iapws.fs.unit.deltaP[0]}}
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, iapws):
+        stable = iapws.fs.unit._get_stream_table_contents()
+
+        expected = {
+            'Units': {
+                'Molar Flow (mol/s)': getattr(pyunits.pint_registry, "mole/second"),
+                'Mass Flow (kg/s)': getattr(pyunits.pint_registry, "kg/second"),
+                'T (K)': getattr(pyunits.pint_registry, "K"),
+                'P (Pa)': getattr(pyunits.pint_registry, "Pa"),
+                'Vapor Fraction': getattr(pyunits.pint_registry, "dimensionless"),
+                'Molar Enthalpy (J/mol) Vap': getattr(pyunits.pint_registry, "J/mole"),
+                'Molar Enthalpy (J/mol) Liq': getattr(pyunits.pint_registry, "J/mole")},
+            'Inlet': {
+                'Molar Flow (mol/s)': pytest.approx(100, rel=1e-4),
+                'Mass Flow (kg/s)': pytest.approx(1.8015, rel=1e-4),
+                'T (K)': pytest.approx(373.13, rel=1e-4),
+                'P (Pa)': pytest.approx(101325, rel=1e-4),
+                'Vapor Fraction': pytest.approx(0.40467, abs=1e-4),
+                'Molar Enthalpy (J/mol) Vap': pytest.approx(48201, rel=1e-4),
+                'Molar Enthalpy (J/mol) Liq': pytest.approx(7549.7, rel=1e-4)},
+            'Vapor Outlet': {
+                'Molar Flow (mol/s)': pytest.approx(1, rel=1e-4),
+                'Mass Flow (kg/s)': pytest.approx(1.8015e-2, rel=1e-4),
+                'T (K)': pytest.approx(286.34, rel=1e-4),
+                'P (Pa)': pytest.approx(1e5, rel=1e-4),
+                'Vapor Fraction': pytest.approx(0, abs=1e-4),
+                'Molar Enthalpy (J/mol) Vap': pytest.approx(2168.6, rel=1e-4),
+                'Molar Enthalpy (J/mol) Liq': pytest.approx(1000, rel=1e-4)},
+            'Liquid Outlet': {
+                'Molar Flow (mol/s)': pytest.approx(1, rel=1e-4),
+                'Mass Flow (kg/s)': pytest.approx(1.8015e-2, rel=1e-4),
+                'T (K)': pytest.approx(286.34, rel=1e-4),
+                'P (Pa)': pytest.approx(1e5, rel=1e-4),
+                'Vapor Fraction': pytest.approx(0, abs=1e-4),
+                'Molar Enthalpy (J/mol) Vap': pytest.approx(2168.6, rel=1e-4),
+                'Molar Enthalpy (J/mol) Liq': pytest.approx(1000, rel=1e-4)}}
+
+        assert stable.to_dict() == expected
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -361,11 +451,6 @@ class TestIAPWS(object):
             )
             <= 1e-6
         )
-
-    @pytest.mark.ui
-    @pytest.mark.component
-    def test_report(self, iapws):
-        iapws.fs.unit.report()
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

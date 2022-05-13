@@ -16,6 +16,7 @@ Authors: Andrew Lee
 """
 
 import pytest
+from io import StringIO
 
 from pyomo.environ import ConcreteModel
 from pyomo.util.check_units import assert_units_consistent
@@ -139,5 +140,7 @@ class TestTranslate(object):
 
     @pytest.mark.ui
     @pytest.mark.unit
-    def test_report(self, trans):
-        trans.fs.unit.report()
+    def test_get_performance_contents(self, trans):
+        perf_dict = trans.fs.unit._get_performance_contents()
+
+        assert perf_dict is None

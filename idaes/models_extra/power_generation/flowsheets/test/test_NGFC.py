@@ -52,6 +52,7 @@ from idaes.core.util import scaling as iscale
 from idaes.core.util.scaling import (extreme_jacobian_columns,
                                      extreme_jacobian_rows)
 from idaes.core.util import model_serializer as ms
+
 from idaes.core.util.tables import create_stream_table_dataframe
 
 solver_available = pyo.SolverFactory("ipopt").available()
@@ -62,13 +63,11 @@ solver = get_solver()
 def m():
     m = pyo.ConcreteModel(name="NGFC without carbon capture")
     m.fs = FlowsheetBlock(default={"dynamic": False})
-
     build_power_island(m)
     build_reformer(m)
     scale_flowsheet(m)
     set_power_island_inputs(m)
     set_reformer_inputs(m)
-
     return m
 
 
@@ -205,30 +204,33 @@ def test_scaling(m):
 
 
 @pytest.mark.integration
-def test_initialize_power_island(m):
-    initialize_power_island(m)
+def test_initialize(m):
+    scale_flowsheet(m)
 
-    # a few checks to make sure this method worked as expected
-    assert pyo.value(m.fs.cathode.inlet.flow_mol[0]) == \
-        pytest.approx(34168, rel=1e-3)
-    assert pyo.value(m.fs.cathode.inlet.temperature[0]) == \
-        pytest.approx(892, rel=1e-3)
-    assert pyo.value(m.fs.cathode.inlet.pressure[0]) == \
-        pytest.approx(105490, rel=1e-3)
+    with idaes.temporary_config_ctx():
+        # these config changes affect get_solver() so they should apply to
+        # initialization even without setting the solvers to use global settings
+        idaes.cfg.ipopt.options.linear_solver = "ma57"
+        idaes.cfg.ipopt.options.OF_ma57_automatic_scaling = "yes"
+        initialize_power_island(m)
+        initialize_reformer(m)
 
-
-@pytest.mark.integration
-def test_initialize_reformer(m):
-    initialize_reformer(m)
-
-    # a few checks to make sure this method worked as expected
-    assert pyo.value(m.fs.reformer.inlet.flow_mol[0]) == \
-        pytest.approx(3879, rel=1e-3)  # mol/s
-    assert pyo.value(m.fs.reformer.inlet.temperature[0]) == \
-        pytest.approx(1251, rel=1e-3)  # K
-    assert pyo.value(m.fs.reformer.inlet.pressure[0]) == \
-        pytest.approx(5555795, rel=1e-3)  # Pa
-
+    assert pyo.value(m.fs.reformer.lagrange_mult[(0, "H")]) == pytest.approx(
+        83163, 1e-3
+    )
+    assert pyo.value(m.fs.prereformer.lagrange_mult[(0, "H")]) == pytest.approx(
+        63608, 1e-3
+    )
+    assert pyo.value(m.fs.anode.lagrange_mult[(0, "H")]) == pytest.approx(76820, 1e-3)
+    assert pyo.value(m.fs.bypass_rejoin.outlet.temperature[0]) == pytest.approx(
+        640.6, 1e-3
+    )
+    assert pyo.value(m.fs.anode_hx.shell_outlet.temperature[0]) == pytest.approx(
+        827.6, 1e-3
+    )
+    assert pyo.value(m.fs.cathode_hx.shell_outlet.temperature[0]) == pytest.approx(
+        475.8, 1e-3
+    )
 
 @pytest.mark.unit
 def test_connect_reformer_to_power_island(m):

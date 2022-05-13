@@ -15,6 +15,7 @@ Tests for valve model
 """
 import math
 import pytest
+
 from pyomo.environ import check_optimal_termination, ConcreteModel, units, value
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import Valve, ValveFunctionType
@@ -25,8 +26,6 @@ from idaes.core.util.model_statistics import (
     number_unused_variables,
 )
 from idaes.core.util.testing import (
-    PhysicalParameterTestBlock,
-    ReactionParameterTestBlock,
     initialization_tester,
 )
 from idaes.core.solvers import get_solver

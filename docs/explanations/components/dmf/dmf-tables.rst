@@ -3,12 +3,12 @@ DMF Tables
 
 Overview
 --------
-.. automodule:: idaes.dmf.tables
+.. automodule:: idaes.core.dmf.tables
     :noindex:
 
 Table class
 -----------
 
-.. autoclass:: idaes.dmf.tables.Table
+.. autoclass:: idaes.core.dmf.tables.Table
     :members:
     :noindex:
