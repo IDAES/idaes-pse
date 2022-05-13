@@ -26,7 +26,7 @@ from urllib.parse import urlparse
 from lxml import html
 
 # package
-from idaes.dmf.dmfbase import DMFConfig
+from idaes.core.dmf.dmfbase import DMFConfig
 
 __author__ = "Dan Gunter <dkgunter@lbl.gov>"
 

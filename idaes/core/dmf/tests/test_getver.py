@@ -11,12 +11,12 @@
 # license information.
 #################################################################################
 """
-Tests for idaes.dmf.getver module
+Tests for idaes.core.dmf.getver module
 """
 
 import idaes
-from idaes import dmf
-from idaes.dmf import getver
+from idaes.core import dmf
+from idaes.core.dmf import getver
 import uuid
 
 import pytest

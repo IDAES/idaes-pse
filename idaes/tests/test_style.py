@@ -26,7 +26,7 @@ _log = logging.getLogger(__name__)
 DIRS = [
     str(p)
     for p in (
-        Path("idaes/dmf"),
+        Path("idaes.core.dmf"),
         # Path("apps/ddm-learning/alamo_python/alamopy"),
         # Path("apps/ddm-learning/ripe_python/ripe"),
     )

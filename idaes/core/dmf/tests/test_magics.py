@@ -24,9 +24,9 @@ import webbrowser
 import pytest
 
 # local
-from idaes.dmf import magics, DMF
-from idaes.dmf.magics import DMFMagicError
-from idaes.dmf.resource import Resource
+from idaes.core.dmf import magics, DMF
+from idaes.core.dmf.magics import DMFMagicError
+from idaes.core.dmf.resource import Resource
 
 # monkey-patch webbrowser to do nothing
 webbrowser.open_new = lambda url: None
@@ -61,7 +61,7 @@ scratch_path: Union[Path, None] = None
 
 def setup_module(module):
     global scratch_dir, scratch_path
-    scratch_dir = TemporaryDirectory(prefix="idaes_dmf_")  # easier to remove later
+    scratch_dir = TemporaryDirectory(prefix="idaes.core.dmf_")  # easier to remove later
     scratch_path = Path(scratch_dir.name)
 
 
@@ -175,7 +175,7 @@ def test_dmf_status_extra_meta(magics_impl):
         f"""
 _id: this-is-a-temporary-config
 logging:
-    idaes.dmf.dmfbase:
+    idaes.core.dmf.dmfbase:
         level: debug
         output: _stderr_
     root:
@@ -185,7 +185,7 @@ logging:
     .dmf.experiment:
         output: _stdout_
     # equivalent to previous
-    idaes.dmf.experiment:
+    idaes.core.dmf.experiment:
         output: {tmp_dir / 'experiment.log'}
     # user
     crazy.little.logger:
@@ -210,7 +210,7 @@ def test_dmf_help(magics_impl):
     for name in "dmf", "help", "idaes":
         magics_impl.dmf_help(name)
     # b) object
-    magics_impl.dmf_help("idaes.dmf.dmfbase.DMF")
+    magics_impl.dmf_help("idaes.core.dmf.dmfbase.DMF")
     # c) failure (still returns None)
     assert magics_impl.dmf_help("FAIL") is None
 

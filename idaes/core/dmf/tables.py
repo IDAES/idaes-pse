@@ -17,11 +17,11 @@ The main class defined here is :class:`Table`. It provides constructor methods
 for reading from Excel and CSV files. There is a convention defined for
 indicating units in column headers so that this code can split the unit from
 the column name. Other methods are defined for adding and extracting tables
-from DMF :class:`idaes.dmf.resource.Resource` objects.
+from DMF :class:`idaes.core.dmf.resource.Resource` objects.
 
 In the simplest case, you would create a new DMF resource for a CSV table like this::
 
-    from idaes.dmf.resource import Resource
+    from idaes.core.dmf.resource import Resource
     resource = Resource()
     resource.add_table("my_file.csv")
     # you can now save this resource in the DMF
@@ -35,8 +35,8 @@ Then you could retrieve and use that table like this::
 
 See also, on the DMF Resource class:
 
-    * :meth:`idaes.dmf.resource.Resource.add_table`
-    * :attr:`idaes.dmf.resource.Resource.tables`
+    * :meth:`idaes.core.dmf.resource.Resource.add_table`
+    * :attr:`idaes.core.dmf.resource.Resource.tables`
 
 """
 # stdlib
@@ -47,7 +47,7 @@ import re
 import pandas as pd
 
 # Local
-from idaes.dmf.resource import Resource
+from idaes.core.dmf.resource import Resource
 
 __authors__ = ["Dan Gunter (LBNL)"]
 __author__ = __authors__[0]
