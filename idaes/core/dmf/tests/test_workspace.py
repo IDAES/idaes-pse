@@ -22,8 +22,8 @@ import sys
 import pytest
 
 # local
-from idaes.dmf import workspace, errors
-from idaes.dmf.util import TempDir
+from idaes.core.dmf import workspace, errors
+from idaes.core.dmf.util import TempDir
 
 # for testing
 from .util import init_logging

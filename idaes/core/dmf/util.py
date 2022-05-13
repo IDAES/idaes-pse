@@ -25,15 +25,13 @@ import os
 from pathlib import Path
 import re
 import shutil
+import tempfile
 import time
 from typing import Union
 import yaml
 
 # third-party
 import colorama
-
-# package
-from idaes.util.system import mkdtemp
 
 __author__ = "Dan Gunter"
 
@@ -561,3 +559,32 @@ def size_prefix(number, base2=False):
     else:
         num_str = f"{negative}{npow:.1f}{abbr}{extra}"
     return num_str
+
+# Edge-case temporary dir handling
+
+# Cache this, since the result of gettempdir() is also cached
+_is_curdir = None
+
+
+def fail_if_tempdir_is_curdir():
+    global _is_curdir
+    if _is_curdir is None:
+        td = tempfile.gettempdir()  # initializes it 1st time
+        try:
+            curdir = os.getcwd()
+        except (AttributeError, OSError):
+            curdir = os.curdir
+        _is_curdir = td == curdir
+    if _is_curdir:
+        raise RuntimeError("abort: temporary directory is going to be in "
+                           "the current directory. Please set one of the "
+                           "following environment variables to a suitable "
+                           "directory: TMPDIR, TEMP, or TMP")
+
+def mkdtemp(*args, **kwargs):
+    fail_if_tempdir_is_curdir()
+    return tempfile.mkdtemp(*args, **kwargs)
+
+def NamedTemporaryFile(*args, **kwargs):
+    fail_if_tempdir_is_curdir()
+    return tempfile.NamedTemporaryFile(*args, **kwargs)

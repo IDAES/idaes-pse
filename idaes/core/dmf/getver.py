@@ -58,7 +58,7 @@ class Versioned:
 
     Sample usage::
 
-        from idaes.dmf.getver import Versioned
+        from idaes.core.dmf.getver import Versioned
         import some_module
 
         vrs = Versioned(some_module)

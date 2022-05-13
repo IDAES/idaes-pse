@@ -21,7 +21,7 @@ import time
 
 # package
 import idaes
-from idaes.dmf.util import ColorTerm
+from idaes.core.dmf.util import ColorTerm
 import pytest
 
 good_modname = re.compile(r"[a-zA-Z][a-zA-Z0-9_]*")

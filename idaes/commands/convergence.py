@@ -24,8 +24,8 @@ from pyomo.common.dependencies import attempt_import
 from idaes.commands import cb
 
 cnv = attempt_import('idaes.core.util.convergence.convergence_base')[0]
-dmf = attempt_import('idaes.dmf')[0]
-dmf_error = attempt_import('idaes.dmf.errors')[0]
+dmf = attempt_import('idaes.core.dmf')[0]
+dmf_error = attempt_import('idaes.core.dmf.errors')[0]
 
 _log = logging.getLogger("idaes.commands.convergence")
 
