@@ -24,9 +24,9 @@ from pkg_resources import get_distribution
 from typing import Tuple, Dict, Union, List
 
 # package
-from idaes.dmf import DMF, resource
-from idaes.dmf.resource import Predicates
-from idaes.dmf.tables import Table
+from idaes.core.dmf import DMF, resource
+from idaes.core.dmf.resource import Predicates
+from idaes.core.dmf.tables import Table
 
 __authors__ = ["Dan Gunter (LBNL)"]
 __author__ = __authors__[0]

@@ -22,7 +22,7 @@ import pandas as pd
 
 from pyomo.common.fileutils import this_file_dir
 
-import idaes.dmf.model_data as da
+import idaes.core.dmf.model_data as da
 
 _data_dir = os.path.join(this_file_dir(), "data_files")
 

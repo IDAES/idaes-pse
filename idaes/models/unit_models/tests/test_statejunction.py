@@ -16,6 +16,7 @@ Authors: Andrew Lee
 """
 
 import pytest
+from io import StringIO
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from pyomo.util.check_units import assert_units_consistent
@@ -128,8 +129,10 @@ class TestSaponification(object):
 
     @pytest.mark.ui
     @pytest.mark.unit
-    def test_report(self, sapon):
-        sapon.fs.unit.report()
+    def test_get_performance_contents(self, sapon):
+        perf_dict = sapon.fs.unit._get_performance_contents()
+
+        assert perf_dict is None
 
 
 # -----------------------------------------------------------------------------
@@ -207,8 +210,10 @@ class TestBTX(object):
 
     @pytest.mark.ui
     @pytest.mark.unit
-    def test_report(self, btx):
-        btx.fs.unit.report()
+    def test_get_performance_contents(self, btx):
+        perf_dict = btx.fs.unit._get_performance_contents()
+
+        assert perf_dict is None
 
 
 # -----------------------------------------------------------------------------
@@ -268,5 +273,7 @@ class TestIAPWS(object):
 
     @pytest.mark.ui
     @pytest.mark.unit
-    def test_report(self, iapws):
-        iapws.fs.unit.report()
+    def test_get_performance_contents(self, iapws):
+        perf_dict = iapws.fs.unit._get_performance_contents()
+
+        assert perf_dict is None
