@@ -28,7 +28,7 @@ the Miniconda install section.
 +------------------+-----------------------------+
 | Windows          | :ref:`min_install_windows`  |
 +------------------+-----------------------------+
-| Mac OSX          | :ref:`min_install_osx`      |
+| macOS            | :ref:`min_install_macos`    |
 +------------------+-----------------------------+
 | Generic          | :ref:`min_install_generic`  |
 +------------------+-----------------------------+
@@ -92,10 +92,10 @@ Linux
 Follow the :ref:`min_install_generic` instructions.
 
 
-.. _min_install_osx:
+.. _min_install_macos:
 
-Mac/OSX
--------
+macOS
+-----
 
 **Install  Miniconda (optional)**
 
@@ -113,7 +113,7 @@ Follow the :ref:`min_install_generic` instructions.
 Generic Install
 ---------------
 
-The remaining steps performed in either the Linux or OSX Terminal or Powershell.
+The remaining steps performed in either the Linux or macOS Terminal or Powershell.
 If you installed Miniconda on Windows use the Anaconda Prompt or Anaconda
 Powershell Prompt.  Regardless of OS and shell, the following steps are the same.
 
@@ -169,7 +169,7 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
 ..
 
-   .. warning:: The IDAES binary extensions are not yet supported on Mac/OSX.
+   .. warning:: The IDAES binary extensions are not yet supported on macOS with Intel processors.
 
                 As a fallback (assuming you are using a conda env) you can install
                 the generic ipopt solver with the command ``conda install -c

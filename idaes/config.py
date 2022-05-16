@@ -19,7 +19,7 @@ import importlib
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
-default_binary_release = "2.6.0"
+default_binary_release = "2.6.3"
 # Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums
@@ -27,12 +27,16 @@ release_checksum_url = \
     "https://raw.githubusercontent.com/IDAES/idaes-ext/main/releases/sha256sum_{}.txt"
 # This is a list of platforms with builds
 base_platforms = (
+    "darwin-aarch64",
     "el7-x86_64",
     "el8-x86_64",
+    "el8-aarch64",
     "ubuntu1804-x86_64",
+    "ubuntu1804-aarch64",
     "ubuntu2004-x86_64",
     "ubuntu2004-aarch64",
     "ubuntu2204-x86_64",
+    "ubuntu2204-aarch64",
     "windows-x86_64",
 )
 # Map some platform names to others for get-extensions
@@ -554,6 +558,6 @@ def setup_environment(bin_directory, use_idaes_solvers):
     if os.name != 'nt':  # If not Windwos set lib search path, Windows uses PATH
         os.environ['LD_LIBRARY_PATH'] = os.pathsep.join(
             [oe.get('LD_LIBRARY_PATH', ''), bin_directory])
-        # This is for OSX, but won't hurt other UNIX
+        # This is for macOS, but won't hurt other UNIX
         os.environ['DYLD_LIBRARY_PATH'] = os.pathsep.join(
             [oe.get('DYLD_LIBRARY_PATH', ''), bin_directory])

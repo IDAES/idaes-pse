@@ -1,8 +1,8 @@
 Binary Packages
 ===============
 
-This section describes what is in the IDAES binary distribution, where it is
-installed, how to use it, and alternative installation methods.  The IDAES binary
+This section describes the IDAES binary distribution, where it is
+installed, how to use it, and alternative installation methods. The IDAES binary
 distribution contains mainly third-party solvers compiled for user convenience and
 function libraries used for some IDAES physical property packages.
 
@@ -48,63 +48,70 @@ Extras
 Supported Systems
 -----------------
 
-Currently builds are available for Windows and several Linux distributions.
-Although the binaries are complied on a small number of platforms, one of the
-available sets should work on most recent Linux distributions. The table below
-show distributions that should work automatically. If you have a distribution
+Currently builds are available for Windows, ARM64 based macOS, and several Linux
+distributions.  Although the binaries are complied on a smaller number of platforms,
+one of the available builds should work on most recent Linux distributions. The table
+below shows distributions that should work automatically. If you have a distribution
 not on the list, you can try to specify a similar distribution.
 
 +-----------------------------+---------------+--------------------+-------------------+
 | Distro/OS                   | ID            | Arch               | Build Distro/OS   |
 +=============================+===============+====================+===================+
-| AlmaLinux 8                 | almalinux7    | x86_64             | el8               |
+| AlmaLinux 8                 | almalinux7    | x86_64, aarch6     | el8               |
 +-----------------------------+---------------+--------------------+-------------------+
 | CentOS 7                    | centos7       | x86_64             | el7               |
 +-----------------------------+---------------+--------------------+-------------------+
-| CentOS 8                    | centos8       | x86_64             | el8               |
+| CentOS 8                    | centos8       | x86_64, aarch6     | el8               |
 +-----------------------------+---------------+--------------------+-------------------+
 | Debian 9                    | debian9       | x86_64             | el7               |
 +-----------------------------+---------------+--------------------+-------------------+
-| Debian 10                   | debian10      | x86_64             | el8               |
+| Debian 10                   | debian10      | x86_64, aarch6     | el8               |
 +-----------------------------+---------------+--------------------+-------------------+
 | Debian 11                   | debian11      | x86_64, aarch64    | ubuntu2004        |
 +-----------------------------+---------------+--------------------+-------------------+
-| Kubuntu 18.04               | kubuntu1804   | x86_64             | ubuntu1804        |
+| Kubuntu 18.04               | kubuntu1804   | x86_64, aarch6     | ubuntu1804        |
 +-----------------------------+---------------+--------------------+-------------------+
 | Kubuntu 20.04               | kubuntu2004   | x86_64, aarch64    | ubuntu2004        |
 +-----------------------------+---------------+--------------------+-------------------+
-| Kubuntu 22.04               | kubuntu2204   | x86_64             | ubuntu2204        |
+| Kubuntu 22.04               | kubuntu2204   | x86_64, aarch6     | ubuntu2204        |
 +-----------------------------+---------------+--------------------+-------------------+
 | Linux Mint 20               | ubuntu2004    | x86_64, aarch64    | ubuntu2004        |
 +-----------------------------+---------------+--------------------+-------------------+
+| macOS                       | darwin        | aarch64            | darwin            |
++-----------------------------+---------------+--------------------+-------------------+
 | Red Hat Enterprise Linux 7  | rhel7         | x86_64             | el7               |
 +-----------------------------+---------------+--------------------+-------------------+
-| Red Hat Enterprise Linux 8  | rhel8         | x86_64             | el8               |
+| Red Hat Enterprise Linux 8  | rhel8         | x86_64, aarch6     | el8               |
 +-----------------------------+---------------+--------------------+-------------------+
-| Rocky Linux 8               | rocky8        | x86_64             | el8               |
+| Rocky Linux 8               | rocky8        | x86_64, aarch6     | el8               |
 +-----------------------------+---------------+--------------------+-------------------+
 | Scientific Linux 7          | scientific7   | x86_64             | el7               |
 +-----------------------------+---------------+--------------------+-------------------+
-| Ubuntu 18.04                | ubuntu1804    | x86_64             | ubuntu1804        |
+| Ubuntu 18.04                | ubuntu1804    | x86_64, aarch6     | ubuntu1804        |
 +-----------------------------+---------------+--------------------+-------------------+
 | Ubuntu 20.04                | ubuntu2004    | x86_64, aarch64    | ubuntu2004        |
 +-----------------------------+---------------+--------------------+-------------------+
-| Ubuntu 22.04                | ubuntu2204    | x86_64             | ubuntu2204        |
+| Ubuntu 22.04                | ubuntu2204    | x86_64, aarch6     | ubuntu2204        |
 +-----------------------------+---------------+--------------------+-------------------+
 | Windows 10, 11              | windows       | x86_64             | windows           |
 +-----------------------------+---------------+--------------------+-------------------+
-| Xubuntu 18.04               | xubuntu1804   | x86_64             | ubuntu1804        |
+| Xubuntu 18.04               | xubuntu1804   | x86_64, aarch6     | ubuntu1804        |
 +-----------------------------+---------------+--------------------+-------------------+
 | Xubuntu 20.04               | xubuntu2004   | x86_64, aarch64    | ubuntu2004        |
 +-----------------------------+---------------+--------------------+-------------------+
-| Xubuntu 22.04               | xubuntu2204   | x86_64             | ubuntu2204        |
+| Xubuntu 22.04               | xubuntu2204   | x86_64, aarch6     | ubuntu2204        |
 +-----------------------------+---------------+--------------------+-------------------+
 
 Install Location
 ----------------
 
-The location of the binary file installation is not currently configurable and
-it can be found with the command line command ``idaes bin-directory``.
+The location of the binary file installation can be found with the command line
+command ``idaes bin-directory``.  On Windows, by default it is in
+``%LOCALAPPDATA%\idaes\bin``. On other operating systems it is in
+``$HOME/.idaes/bin`` by default.  The location of IDAES data files can be changed
+by setting the ``IDAES_DATA`` environment variable. The environment variable
+method of setting the data directory can accommodate nonstandard setups or
+multiple IDAES installations.
 
 Manual Installation
 -------------------
@@ -126,7 +133,7 @@ Using Solvers Without IDAES
 ---------------------------
 
 Generally, the environment variables are set up to use the IDAES solvers when any
-idaes module is imported in Python.  If you would like to use the solvers in
+IDAES module is imported in Python.  If you would like to use the solvers in
 Pyomo without importing IDAES, you will need to add the install location to your
 executable and dynamic library search path environment variables as appropriate
 for your operating system (e.g. add the install location to $PATH in Linux).

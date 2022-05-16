@@ -31,7 +31,6 @@ import pytest
 
 # package
 from idaes.commands import examples, extensions, convergence, config, env_info, base
-from idaes.util.system import TemporaryDirectory
 from . import create_module_scratch, rmtree_scratch
 import idaes
 
@@ -214,28 +213,27 @@ def test_examples_download_bad_version():
 
 
 @pytest.mark.integration()
-def test_examples_find_python_directories():
-    with TemporaryDirectory() as tmpd:
-        root = Path(tmpd)
-        # populate a/c/file.py, a/d/file.py, b/c/file.py, b/d/file.py
-        for i in ("a", "b"):
-            # create parent
-            os.mkdir(str(root / i))
-            for j in ("c", "d"):
-                pydir = root / i / j
-                # create child dir
-                os.mkdir(str(pydir))
-                # put python file in child
-                (pydir / "file.py").open("w")
-        # find
-        found_dirs = examples.find_python_directories(root)
-        # check
-        rel_found_dirs = [d.relative_to(root) for d in found_dirs]
-        for i in ("a", "b"):
-            path_i = Path(i)
-            assert path_i in rel_found_dirs
-            for j in ("c", "d"):
-                assert path_i / j in rel_found_dirs
+def test_examples_find_python_directories(tmp_path):
+    root = tmp_path
+    # populate a/c/file.py, a/d/file.py, b/c/file.py, b/d/file.py
+    for i in ("a", "b"):
+        # create parent
+        os.mkdir(str(root / i))
+        for j in ("c", "d"):
+            pydir = root / i / j
+            # create child dir
+            os.mkdir(str(pydir))
+            # put python file in child
+            (pydir / "file.py").open("w")
+    # find
+    found_dirs = examples.find_python_directories(root)
+    # check
+    rel_found_dirs = [d.relative_to(root) for d in found_dirs]
+    for i in ("a", "b"):
+        path_i = Path(i)
+        assert path_i in rel_found_dirs
+        for j in ("c", "d"):
+            assert path_i / j in rel_found_dirs
 
 
 @pytest.mark.integration()
@@ -403,17 +401,16 @@ def test_examples_local(tempdir):
 
 
 @pytest.mark.integration()
-def test_illegal_dirs():
-    with TemporaryDirectory() as tmpd:
-        root = Path(tmpd)
-        # git
-        (root / ".git").mkdir()
-        try:
-            examples.download(root, "1.2.3")
-        except examples.DownloadError as err:
-            assert "exists" in str(err)
-        finally:
-            (root / ".git").rmdir()
+def test_illegal_dirs(tmp_path):
+    root = tmp_path
+    # git
+    (root / ".git").mkdir()
+    try:
+        examples.download(root, "1.2.3")
+    except examples.DownloadError as err:
+        assert "exists" in str(err)
+    finally:
+        (root / ".git").rmdir()
 
 
 @pytest.mark.integration()

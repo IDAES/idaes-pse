@@ -16,6 +16,8 @@ Authors: Andrew Lee
 """
 
 import pytest
+from io import StringIO
+
 from pyomo.environ import check_optimal_termination, ConcreteModel, value, units
 from idaes.core import (
     FlowsheetBlock,
@@ -34,8 +36,6 @@ from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
     number_total_constraints,
-    fixed_variables_set,
-    activated_constraints_set,
     number_unused_variables,
 )
 from idaes.core.util.testing import (
@@ -243,8 +243,13 @@ class TestSaponification(object):
 
     @pytest.mark.ui
     @pytest.mark.unit
-    def test_report(self, sapon):
-        sapon.fs.unit.report()
+    def test_get_performance_contents(self, sapon):
+        perf_dict = sapon.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Heat Duty": sapon.fs.unit.heat_duty[0],
+                "Pressure Change": sapon.fs.unit.deltaP[0]}}
 
     @pytest.mark.component
     def test_initialization_error(self, sapon):
