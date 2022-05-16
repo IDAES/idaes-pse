@@ -57,7 +57,7 @@ from idaes.core.util.tables import create_stream_table_dataframe
 
 solver_available = pyo.SolverFactory("ipopt").available()
 solver = get_solver()
-
+import idaes  # import for initialization test
 
 @pytest.fixture(scope="module")
 def m():
