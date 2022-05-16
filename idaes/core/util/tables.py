@@ -275,7 +275,7 @@ def create_stream_table_dataframe(
 
 
 def create_stream_table_ui(
-    streams, true_state=False, time_point=0, orient="columns"
+    streams, true_state=False, time_point=0, orient="columns", precision=5
 ):
     """
     Method to create a stream table in the form of a pandas dataframe. Method
@@ -297,6 +297,8 @@ def create_stream_table_ui(
         orient : orientation of stream table. Accepted values are 'columns'
             (default) where streams are displayed as columns, or 'index' where
             stream are displayed as rows.
+        precision: rounding the floating numbers to the give precision. Default
+            is 5 digits after the floating point.
 
     Returns:
         A pandas DataFrame containing the stream table data.
@@ -337,7 +339,7 @@ def create_stream_table_ui(
                     var_type = VariableTypes.EXPRESSION
 
                 quant = report_quantity(disp_dict[k][i])
-                stream_attributes[key][stream_key] = (quant.m, var_type)
+                stream_attributes[key][stream_key] = (round(quant.m, precision), var_type)
                 # TODO: Only need to do this once, as otherwise we are just
                 # repeatedly overwriting this
                 stream_attributes["Units"][stream_key] = quant.u

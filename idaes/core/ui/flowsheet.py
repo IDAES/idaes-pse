@@ -325,6 +325,7 @@ class FlowsheetSerializer:
         """
         if "Units" in df.columns:
             df["Units"] = df["Units"].apply(
+                # Get different formats from the Units' pint object
                 lambda pint_unit: {
                     "raw": str(pint_unit),
                     "html": "{:~H}".format(pint_unit),
@@ -517,8 +518,7 @@ class FlowsheetSerializer:
             (pd.notnull(self._stream_table_df)), None
         )
 
-        # Get different formats from the Units' pint object
-        self._stream_table_df = self._clean_units(self._stream_table_df)
+        self._stream_table_df = self._make_valid_json(self._stream_table_df)
 
         # Order the stream table based on the right order:
         # feed streams -> middle streams -> product streams

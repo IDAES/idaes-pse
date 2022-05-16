@@ -32,6 +32,7 @@ from idaes.core import (
 from idaes.core.util.tables import (
     arcs_to_stream_dict,
     create_stream_table_dataframe,
+    create_stream_table_ui,
     stream_table_dataframe_to_string,
     generate_table,
     tag_state_quantities,
@@ -263,27 +264,17 @@ def test_create_stream_table_dataframe_from_Arc(m):
 
 
 @pytest.mark.unit
-def test_create_stream_table_dataframe_variable_types(m_with_variable_types):
+def test_create_stream_table_ui(m_with_variable_types):
     m = m_with_variable_types
 
     state_name = 'state'
-    suffix = '_suffix'
     state_dict = {
         state_name: m.fs.flash.inlet
     }
-    df = create_stream_table_dataframe(
-        state_dict,
-        add_variable_type=True,
-        variable_type_suffix=suffix
-        )
+    df = create_stream_table_ui(state_dict)
 
-    streams = df.columns[1:]
-    for i in range(0, len(streams), 2):
-        stream = streams[i]
-        assert streams[i+1] == stream + suffix
-
-    assert df.loc["pressure"][state_name + suffix] == 1
-    assert df.loc["temperature"][state_name + suffix] == 2
+    assert df.loc["pressure"][state_name] == (3.14, 'unfixed')
+    assert df.loc["temperature"][state_name] == (368, 'fixed')
 
 
 @pytest.mark.unit
