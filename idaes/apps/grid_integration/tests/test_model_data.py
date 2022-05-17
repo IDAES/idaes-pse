@@ -13,7 +13,10 @@
 
 import pytest
 from pyomo.common import unittest as pyo_unittest
-from idaes.apps.grid_integration.model_data import GeneratorModelData
+from idaes.apps.grid_integration.model_data import (
+    ThermalGeneratorModelData,
+    RenewableGeneratorModelData,
+)
 
 
 @pytest.fixture
@@ -21,7 +24,6 @@ def generator_params():
     return {
         "gen_name": "Testing_Generator",
         "bus": "bus5",
-        "generator_type": "thermal",
         "p_min": 30,
         "p_max": 76,
         "min_down_time": 2,
@@ -37,12 +39,29 @@ def generator_params():
 
 
 @pytest.fixture
+def renewable_generator_params():
+    return {
+        "gen_name": "Testing_Renewable_Generator",
+        "bus": "bus5",
+        "p_min": 0,
+        "p_max": 200,
+        "p_cost": 0,
+        "fixed_commitment": None,
+    }
+
+
+@pytest.fixture
 def generator_data_object(generator_params):
-    return GeneratorModelData(**generator_params)
+    return ThermalGeneratorModelData(**generator_params)
+
+
+@pytest.fixture
+def renewable_generator_data_object(renewable_generator_params):
+    return RenewableGeneratorModelData(**renewable_generator_params)
 
 
 @pytest.mark.unit
-def test_create_model_data_object(generator_params, generator_data_object):
+def test_create_thermal_model_data_object(generator_params, generator_data_object):
 
     # test scalar values
     for param_name in generator_params:
@@ -58,6 +77,18 @@ def test_create_model_data_object(generator_params, generator_data_object):
         bids = getattr(generator_data_object, a_name)
         expected_bid = [(key, val) for key, val in generator_params[p_name]]
         pyo_unittest.assertStructuredAlmostEqual(first=bids, second=expected_bid)
+
+
+@pytest.mark.unit
+def test_create_renewable_model_data_object(
+    renewable_generator_params, renewable_generator_data_object
+):
+
+    for name, value in renewable_generator_data_object:
+        if name == "generator_type":
+            assert value == "renewable"
+        else:
+            assert renewable_generator_params[name] == value
 
 
 @pytest.mark.unit
@@ -79,7 +110,7 @@ def test_create_model_data_with_non_real_numbers(param_name, value, generator_pa
     with pytest.raises(
         TypeError, match=f"Value for {param_name} shoulde be real numbers."
     ):
-        GeneratorModelData(**generator_params)
+        ThermalGeneratorModelData(**generator_params)
 
 
 @pytest.mark.unit
@@ -96,7 +127,7 @@ def test_create_model_data_with_non_real_numbers(param_name, value, generator_pa
 def test_create_model_data_with_negative_values(param_name, value, generator_params):
     generator_params[param_name] = value
     with pytest.raises(ValueError, match="Value should be greater than or equal to 0."):
-        GeneratorModelData(**generator_params)
+        ThermalGeneratorModelData(**generator_params)
 
 
 @pytest.mark.unit
@@ -111,7 +142,7 @@ def test_create_model_data_with_less_than_pmin_data(
     with pytest.raises(
         ValueError, match=f"Value for {param_name} shoulde be greater or equal to Pmin."
     ):
-        GeneratorModelData(**generator_params)
+        ThermalGeneratorModelData(**generator_params)
 
 
 @pytest.mark.unit
@@ -120,30 +151,21 @@ def test_invalid_fixed_commitment_value(generator_params):
     with pytest.raises(
         ValueError, match=r"^(Value for generator fixed commitment must be one of)"
     ):
-        GeneratorModelData(**generator_params)
+        ThermalGeneratorModelData(**generator_params)
 
 
 @pytest.mark.unit
 def test_invalid_generator_name(generator_params):
     generator_params["gen_name"] = 102_111
     with pytest.raises(TypeError, match=r".*gen_name must be str.*"):
-        GeneratorModelData(**generator_params)
+        ThermalGeneratorModelData(**generator_params)
 
 
 @pytest.mark.unit
 def test_invalid_bus_name(generator_params):
     generator_params["bus"] = 102
     with pytest.raises(TypeError, match=r".*bus must be str.*"):
-        GeneratorModelData(**generator_params)
-
-
-@pytest.mark.unit
-def test_invalid_generator_type(generator_params):
-    generator_params["generator_type"] = "nuclear"
-    with pytest.raises(
-        ValueError, match=r"^(Value for generator types must be one of)"
-    ):
-        GeneratorModelData(**generator_params)
+        ThermalGeneratorModelData(**generator_params)
 
 
 @pytest.mark.unit
@@ -155,7 +177,7 @@ def test_empty_bid_pairs(param_name, generator_params):
     with pytest.raises(
         ValueError, match=r"Empty production|startup cost pairs are provided."
     ):
-        GeneratorModelData(**generator_params)
+        ThermalGeneratorModelData(**generator_params)
 
 
 @pytest.mark.unit
@@ -166,7 +188,7 @@ def test_bid_missing_pmin(generator_params):
     with pytest.raises(
         ValueError, match=r"^(The first power output in the bid should be the Pmin)"
     ):
-        GeneratorModelData(**generator_params)
+        ThermalGeneratorModelData(**generator_params)
 
 
 @pytest.mark.unit
@@ -175,7 +197,7 @@ def test_bid_missing_pmax(generator_params):
     with pytest.raises(
         ValueError, match=r"^(The last power output in the bid should be the Pmax)"
     ):
-        GeneratorModelData(**generator_params)
+        ThermalGeneratorModelData(**generator_params)
 
 
 @pytest.mark.unit
@@ -185,4 +207,33 @@ def test_invalid_start_up_bid(generator_params):
         ValueError,
         match=r"^(The first startup lag should be the same as minimum down time)",
     ):
-        GeneratorModelData(**generator_params)
+        ThermalGeneratorModelData(**generator_params)
+
+
+@pytest.mark.unit
+def test_model_data_iterator(generator_data_object):
+
+    expected_param_names = [
+        "gen_name",
+        "bus",
+        "p_min",
+        "p_max",
+        "min_down_time",
+        "min_up_time",
+        "ramp_up_60min",
+        "ramp_down_60min",
+        "shutdown_capacity",
+        "startup_capacity",
+        "p_cost",
+        "startup_cost",
+        "fixed_commitment",
+        "generator_type",
+    ]
+    iter_result = [name for name, value in generator_data_object]
+
+    expected_param_names.sort()
+    iter_result.sort()
+
+    pyo_unittest.assertStructuredAlmostEqual(
+        first=expected_param_names, second=iter_result
+    )
