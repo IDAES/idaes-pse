@@ -375,7 +375,7 @@ input:checked + .slider:before {
 .streamtable-vartype-fixed {
   height: 7px;
   width:  7px;
-  margin-top: 9%;
+  margin-top: 0.5em;
   background-color: #7526f1;
   border-radius: 50%;
   float: left;
@@ -384,7 +384,7 @@ input:checked + .slider:before {
 .streamtable-vartype-parameter {
   height: 7px;
   width:  7px;
-  margin-top: 9%;
+  margin-top: 0.5em;
   background-color: #74AA50;
   border-radius: 50%;
   float: left;
@@ -393,7 +393,7 @@ input:checked + .slider:before {
 .streamtable-vartype-expression {
   height: 7px;
   width:  7px;
-  margin-top: 9%;
+  margin-top: 0.5em;
   background-color: #EAAA00;
   border-radius: 50%;
   float: left;

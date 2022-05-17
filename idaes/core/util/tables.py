@@ -234,8 +234,6 @@ def create_stream_table_dataframe(
         orient : orientation of stream table. Accepted values are 'columns'
             (default) where streams are displayed as columns, or 'index' where
             stream are displayed as rows.
-        add_variable_type : Add columns for each stream to specify the
-            corresponding variable type. (e.g fixed, unfixed, Parameter, Expression)
 
     Returns:
         A pandas DataFrame containing the stream table data.
@@ -254,13 +252,12 @@ def create_stream_table_dataframe(
         else:
             disp_dict = sb.define_display_vars()
         for k in disp_dict:
-            for i in disp_dict[k]:
+            for row, i in enumerate(disp_dict[k]):
                 stream_key = k if i is None else f"{k} {i}"
                 quant = report_quantity(disp_dict[k][i])
                 stream_attributes[key][stream_key] = quant.m
-                # TODO: Only need to do this once, as otherwise we are just
-                # repeatedly overwriting this
-                stream_attributes["Units"][stream_key] = quant.u
+                if row == 0 or stream_key not in stream_attributes["Units"]:
+                    stream_attributes["Units"][stream_key] = quant.u
                 if stream_key not in full_keys:
                     full_keys.append(stream_key)
 
@@ -304,7 +301,7 @@ def create_stream_table_ui(
         A pandas DataFrame containing the stream table data.
     """
     # Variable Types:
-    class VariableTypes():
+    class VariableTypes:
         UNFIXED = "unfixed"
         FIXED = "fixed"
         PARAMETER = "parameter"
@@ -323,7 +320,7 @@ def create_stream_table_ui(
         else:
             disp_dict = sb.define_display_vars()
         for k in disp_dict:
-            for i in disp_dict[k]:
+            for row, i in enumerate(disp_dict[k]):
                 stream_key = k if i is None else f"{k} {i}"
 
                 # Identifying value's variable type
@@ -340,9 +337,8 @@ def create_stream_table_ui(
 
                 quant = report_quantity(disp_dict[k][i])
                 stream_attributes[key][stream_key] = (round(quant.m, precision), var_type)
-                # TODO: Only need to do this once, as otherwise we are just
-                # repeatedly overwriting this
-                stream_attributes["Units"][stream_key] = quant.u
+                if row == 0 or stream_key not in stream_attributes["Units"]:
+                    stream_attributes["Units"][stream_key] = quant.u
 
                 if stream_key not in full_keys:
                     full_keys.append(stream_key)

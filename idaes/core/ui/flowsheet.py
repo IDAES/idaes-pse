@@ -24,6 +24,7 @@ from typing import Dict, List, Tuple
 # third-party
 import pandas as pd
 import numpy as np
+import pint
 from pyomo.environ import Block, value
 from pyomo.network import Arc
 from pyomo.network.port import Port
@@ -323,14 +324,24 @@ class FlowsheetSerializer:
         Return:
             The dataframe that now has valid JSON
         """
-        if "Units" in df.columns:
-            df["Units"] = df["Units"].apply(
-                # Get different formats from the Units' pint object
-                lambda pint_unit: {
+        def get_valid_unit_format(pint_unit):
+            """Get different formats from the Units' pint object"""
+            if isinstance(pint_unit, pint.Unit):
+                return {
                     "raw": str(pint_unit),
                     "html": "{:~H}".format(pint_unit),
                     "latex": "{:~L}".format(pint_unit),
                 }
+            else:
+                return {
+                    "raw": str(pint_unit),
+                    "html": "",
+                    "latex": "",
+                }
+
+        if "Units" in df.columns:
+            df["Units"] = df["Units"].apply(
+                lambda pint_unit: get_valid_unit_format(pint_unit)
             )
         return df
 

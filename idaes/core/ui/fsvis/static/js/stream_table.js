@@ -35,7 +35,9 @@ export class StreamTable {
         const stream_table_class = 'streamtable-vartype-element';
 
         // Adding header
-        if (this.existing_var_types.size > 0) {
+        if (this.existing_var_types.has(this.FIXED) ||
+            this.existing_var_types.has(this.PARAMETER) ||
+            this.existing_var_types.has(this.EXPRESSION)) {
             const header_vartype = document.createElement('p');
             header_vartype.innerHTML = 'Annotated Variable Types:';
             header_vartype.className = stream_table_class;
@@ -44,41 +46,31 @@ export class StreamTable {
 
         // Adding each type
         this.existing_var_types.forEach(var_type => {
-            const elem_vartype = document.createElement('span'); // Parent node
-            elem_vartype.className = stream_table_class;
-
-            // Create dot with the right color and the right variable type text
-            const elem_dot = document.createElement('span');
-            const elem_text = document.createElement('span');
-            elem_text.className = 'streamtable-vartype-text';
-            const var_type_class = `streamtable-vartype-${var_type}`;
             switch (var_type) {
                 case this.UNFIXED:
                     // This will execute once since this.existing_var_types is a set
                     console.debug(`Unfixed variables don't have a visual indicator`);
                     break;
                 case this.FIXED:
-                    elem_dot.className = var_type_class;
-                    elem_dot.title = var_type;
-                    elem_text.innerHTML = var_type;
-                    break;
                 case this.PARAMETER:
-                    elem_dot.className = var_type_class;
-                    elem_dot.title = var_type;
-                    elem_text.innerHTML = var_type;
-                    break;
                 case this.EXPRESSION:
-                    elem_dot.className = var_type_class;
+                    const elem_vartype = document.createElement('span'); // Parent node
+                    elem_vartype.className = stream_table_class;
+
+                    // Create dot with the right color and the right variable type text
+                    const elem_dot = document.createElement('span');
+                    const elem_text = document.createElement('span');
+                    elem_text.className = 'streamtable-vartype-text';
+                    elem_dot.className = `streamtable-vartype-${var_type}`;
                     elem_dot.title = var_type;
                     elem_text.innerHTML = var_type;
+                    elem_vartype.appendChild(elem_dot);
+                    elem_vartype.appendChild(elem_text);
+                    var_types_panel.appendChild(elem_vartype);
                     break;
                 default:
                     console.warn(`Couldn't identify Variable type: ${data[col_index]}`);
             };
-            elem_vartype.appendChild(elem_dot);
-            elem_vartype.appendChild(elem_text);
-
-            var_types_panel.appendChild(elem_vartype);
         });
     }
 
@@ -159,20 +151,20 @@ export class StreamTable {
                 }
                 else {
                     var [value, type] = data[col_index];
+                    let cell_style = "";
                     switch (type) {
+                        case this.UNFIXED:
+                            this.existing_var_types.add(type);
+                            break;
                         case this.FIXED:
-                            this.existing_var_types.add(this.FIXED);
-                            break;
                         case this.PARAMETER:
-                            this.existing_var_types.add(this.PARAMETER);
-                            break;
                         case this.EXPRESSION:
-                            this.existing_var_types.add(this.EXPRESSION);
+                            this.existing_var_types.add(type);
+                            cell_style = `<span class="streamtable-vartype-${type}" style="margin-top: 7%;" title="${type}"></span>`;
                             break;
                         default:
-                            console.warn(`Couldn't identify Variable type: ${data[col_index]}`);
+                            console.warn(`Couldn't identify Variable type: ${type}`);
                     };
-                    let cell_style = `<span class="streamtable-vartype-${type}" style="margin-top: 7%;" title="${type}"></span>`;
                     row_object[columns[col_index]] = cell_style + '<span class="streamtable-variable-value">' + value + '</span>';
                 }
             };
