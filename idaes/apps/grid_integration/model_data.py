@@ -159,21 +159,21 @@ class GeneratorModelData:
             )
         self.fixed_commitment = fixed_commitment
 
-        # initialization for iterator
-        # get the collection of the params
-        self._collection = [
-            name
-            for name in dir(self)
-            if not name.startswith("__")
-            and not name.startswith("_")
-            and not callable(getattr(self, name))
-        ]
-        self._index = -1
-
     def __iter__(self):
         """
         Make it iteratble.
         """
+
+        if not hasattr(self, "_collection"):
+            self._collection = [
+                name
+                for name in dir(self)
+                if not name.startswith("__")
+                and not name.startswith("_")
+                and not callable(getattr(self, name))
+            ]
+            self._index = -1
+
         return self
 
     def __next__(self):
@@ -217,6 +217,14 @@ class ThermalGeneratorModelData(GeneratorModelData):
         startup_cost_pairs=None,
     ):
 
+        super().__init__(
+            gen_name=gen_name,
+            bus=bus,
+            p_min=p_min,
+            p_max=p_max,
+            fixed_commitment=fixed_commitment,
+        )
+
         self.min_down_time = min_down_time
         self.min_up_time = min_up_time
         self.ramp_up_60min = ramp_up_60min
@@ -226,14 +234,6 @@ class ThermalGeneratorModelData(GeneratorModelData):
 
         self.p_cost = self._assemble_default_cost_bids(production_cost_bid_pairs)
         self.startup_cost = self._assemble_default_startup_cost_bids(startup_cost_pairs)
-
-        super().__init__(
-            gen_name=gen_name,
-            bus=bus,
-            p_min=p_min,
-            p_max=p_max,
-            fixed_commitment=fixed_commitment,
-        )
 
     def _check_empty_and_sort_cost_pairs(self, pair_description, pairs):
 
@@ -322,7 +322,6 @@ class RenewableGeneratorModelData(GeneratorModelData):
 
     def __init__(self, gen_name, bus, p_min, p_max, p_cost, fixed_commitment=None):
 
-        self.p_cost = p_cost
         super().__init__(
             gen_name=gen_name,
             bus=bus,
@@ -330,6 +329,7 @@ class RenewableGeneratorModelData(GeneratorModelData):
             p_max=p_max,
             fixed_commitment=fixed_commitment,
         )
+        self.p_cost = p_cost
 
     @property
     def generator_type(self):
