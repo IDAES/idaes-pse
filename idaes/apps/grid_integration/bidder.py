@@ -922,6 +922,7 @@ class SelfScheduler(StochasticProgramBidder):
         """
 
         bids = {}
+        is_thermal = self.bidding_model_object.model_data.generator_type == "thermal"
 
         power_output_var = getattr(model.fs[0], power_var_name)
         time_index = power_output_var.index_set()
@@ -939,29 +940,34 @@ class SelfScheduler(StochasticProgramBidder):
 
             if self.fixed_to_schedule:
                 bids[t][self.generator]["p_min"] = bids[t][self.generator]["p_max"]
-                bids[t][self.generator]["min_up_time"] = 0
-                bids[t][self.generator]["min_down_time"] = 0
                 bids[t][self.generator]["fixed_commitment"] = (
                     1 if bids[t][self.generator]["p_min"] > 0 else 0
                 )
-                bids[t][self.generator]["startup_fuel"] = [
-                    (bids[t][self.generator]["min_down_time"], 0)
-                ]
-                bids[t][self.generator]["startup_cost"] = [
-                    (bids[t][self.generator]["min_down_time"], 0)
+
+                if is_thermal:
+                    bids[t][self.generator]["min_up_time"] = 0
+                    bids[t][self.generator]["min_down_time"] = 0
+
+                    bids[t][self.generator]["startup_fuel"] = [
+                        (bids[t][self.generator]["min_down_time"], 0)
+                    ]
+                    bids[t][self.generator]["startup_cost"] = [
+                        (bids[t][self.generator]["min_down_time"], 0)
+                    ]
+
+            if is_thermal:
+
+                bids[t][self.generator]["p_cost"] = [
+                    (bids[t][self.generator]["p_min"], 0),
+                    (bids[t][self.generator]["p_max"], 0),
                 ]
 
-            bids[t][self.generator]["p_cost"] = [
-                (bids[t][self.generator]["p_min"], 0),
-                (bids[t][self.generator]["p_max"], 0),
-            ]
-
-            bids[t][self.generator]["startup_capacity"] = bids[t][self.generator][
-                "p_min"
-            ]
-            bids[t][self.generator]["shutdown_capacity"] = bids[t][self.generator][
-                "p_min"
-            ]
+                bids[t][self.generator]["startup_capacity"] = bids[t][self.generator][
+                    "p_min"
+                ]
+                bids[t][self.generator]["shutdown_capacity"] = bids[t][self.generator][
+                    "p_min"
+                ]
 
         return bids
 
