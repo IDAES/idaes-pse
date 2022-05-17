@@ -688,6 +688,8 @@ class AlamoTrainer(SurrogateTrainer):
         alamo_log = None
         alamo_object = None
 
+        self._verify_inputs()
+
         try:
             # Write .alm file
             self._write_alm_file()
@@ -707,7 +709,7 @@ class AlamoTrainer(SurrogateTrainer):
             self._remove_temp_files()
 
         success = False
-        if return_code == 0:
+        if return_code == 0 and alamo_object is not None:
             # Non-zero return code implies an error
             # specifics returned in the msg
             success = True
@@ -765,6 +767,23 @@ class AlamoTrainer(SurrogateTrainer):
         self._almfile = almfile
         self._trcfile = trcfile
         self._wrkdir = wrkdir
+
+    def _verify_inputs(self):
+        """
+        Check for issues in input arguments that will cause issues later.
+        """
+        # ALAMO does not support spaces in variable names
+        # TODO: Should this be a check for all IDAES surrogate models?
+        for i in self._input_labels:
+            if " " in i:
+                raise ValueError(
+                    f"ALAMO does not support the presence of spaces in variable names. "
+                    f"Found space in input names: {i}.")
+        for o in self._output_labels:
+            if " " in o:
+                raise ValueError(
+                    f"ALAMO does not support the presence of spaces in variable names. "
+                    f"Found space in output names: {o}.")
 
     def _write_alm_to_stream(
         self, stream, trace_fname=None, training_data=None, validation_data=None
@@ -1002,9 +1021,16 @@ class AlamoTrainer(SurrogateTrainer):
         Returns:
             trace_dict: contents of trace file as a dict
         """
-        with open(trcfile, "r") as f:
-            lines = f.readlines()
-        f.close()
+        try:
+            with open(trcfile, "r") as f:
+                lines = f.readlines()
+            f.close()
+        except OSError:
+            # Probably means trace file does not exist
+            raise RuntimeError(
+                "Error occured when trying to read the ALAMO trace file - this probably "
+                "indicates that a trace file was not created by the ALAMO executable. "
+                "Please check the ALAMO output logs.")
 
         output_labels = self.output_labels()
 

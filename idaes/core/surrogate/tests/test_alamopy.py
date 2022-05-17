@@ -106,6 +106,50 @@ class TestAlamoTrainer:
             alamo_trainer._get_files()
 
     @pytest.mark.unit
+    def test_spaces_in_input(self):
+        data = {"x 1": [1, 2, 3, 4], "x2": [5, 6, 7, 8], "z1": [10, 20, 30, 40]}
+        data = pd.DataFrame(data)
+
+        input_labels = ["x 1", "x2"]
+        output_labels = ["z1"]
+        bnds = {"x 1": (0, 5), "x2": (0, 10)}
+
+        alamo_trainer = AlamoTrainer(
+            input_labels=input_labels,
+            output_labels=output_labels,
+            input_bounds=bnds,
+            training_dataframe=data,
+        )
+
+        with pytest.raises(
+                ValueError,
+                match="ALAMO does not support the presence of spaces in variable names. "
+                "Found space in input names: x 1."):
+            alamo_trainer._verify_inputs()
+
+    @pytest.mark.unit
+    def test_spaces_in_output(self):
+        data = {"x1": [1, 2, 3, 4], "x2": [5, 6, 7, 8], "z 1": [10, 20, 30, 40]}
+        data = pd.DataFrame(data)
+
+        input_labels = ["x1", "x2"]
+        output_labels = ["z 1"]
+        bnds = {"x1": (0, 5), "x2": (0, 10)}
+
+        alamo_trainer = AlamoTrainer(
+            input_labels=input_labels,
+            output_labels=output_labels,
+            input_bounds=bnds,
+            training_dataframe=data,
+        )
+
+        with pytest.raises(
+                ValueError,
+                match="ALAMO does not support the presence of spaces in variable names. "
+                "Found space in output names: z 1."):
+            alamo_trainer._verify_inputs()
+
+    @pytest.mark.unit
     def test_writer_default(self, alamo_trainer):
         stream = io.StringIO()
         alamo_trainer._write_alm_to_stream(stream=stream)
@@ -858,6 +902,21 @@ class TestAlamoTrainer:
             "AlamoVersion": {"z1": "2021.12.28", "z2": "2021.12.28"},
             "Model": mdict,
         }
+
+    @pytest.mark.unit
+    def test_read_trace_invalid_file(self, alamo_trainer):
+        alamo_trainer._output_labels = ["z1", "z2"]
+
+        alamo_trainer._trcfile = os.path.join(dirpath, "foo.trc")
+        
+        with pytest.raises(
+                RuntimeError,
+                match="Error occured when trying to read the ALAMO trace file - "
+                "this probably indicates that a trace file was not created by "
+                "the ALAMO executable. Please check the ALAMO output logs."):
+            alamo_trainer._read_trace_file(
+                alamo_trainer._trcfile, has_validation_data=True
+            )
 
     @pytest.mark.unit
     def test_populate_results(self, alamo_trainer):
