@@ -398,23 +398,34 @@ class DoubleLoopCoordinator:
             None
         """
 
+        is_thermal = (
+            self.bidder.bidding_model_object.model_data.generator_type == "thermal"
+        )
+        is_renewable = (
+            self.bidder.bidding_model_object.model_data.generator_type == "renewable"
+        )
+
         for param, value in self.bidder.bidding_model_object.model_data:
             if param == "gen_name" or value is None:
                 continue
             elif param == "p_cost":
-                curve_value = convert_marginal_costs_to_actual_costs(value)
-                gen_dict[param] = {
-                    "data_type": "cost_curve",
-                    "cost_curve_type": "piecewise",
-                    "values": curve_value,
-                }
+                if is_thermal:
+                    curve_value = convert_marginal_costs_to_actual_costs(value)
+                    gen_dict[param] = {
+                        "data_type": "cost_curve",
+                        "cost_curve_type": "piecewise",
+                        "values": curve_value,
+                    }
+                elif is_renewable:
+                    gen_dict[param] = value
+
                 if "p_fuel" in gen_dict:
                     gen_dict.pop("p_fuel")
             else:
                 gen_dict[param] = value
 
-            if param == "startup_cost" and "startup_fuel" in gen_dict:
-                gen_dict.pop("startup_fuel")
+                if param == "startup_cost" and "startup_fuel" in gen_dict:
+                    gen_dict.pop("startup_fuel")
 
     def pass_static_params_to_DA(
         self, options, simulator, ruc_instance, ruc_date, ruc_hour
