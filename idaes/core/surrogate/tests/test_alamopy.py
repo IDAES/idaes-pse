@@ -910,7 +910,7 @@ class TestAlamoTrainer:
         alamo_trainer._trcfile = os.path.join(dirpath, "foo.trc")
         
         with pytest.raises(
-                RuntimeError,
+                FileNotFoundError,
                 match="Error occured when trying to read the ALAMO trace file - "
                 "this probably indicates that a trace file was not created by "
                 "the ALAMO executable. Please check the ALAMO output logs."):

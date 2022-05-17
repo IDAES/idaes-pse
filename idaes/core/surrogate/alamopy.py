@@ -688,6 +688,7 @@ class AlamoTrainer(SurrogateTrainer):
         alamo_log = None
         alamo_object = None
 
+        # Check for any issues in arguments that might cause problems
         self._verify_inputs()
 
         try:
@@ -1025,9 +1026,9 @@ class AlamoTrainer(SurrogateTrainer):
             with open(trcfile, "r") as f:
                 lines = f.readlines()
             f.close()
-        except OSError:
-            # Probably means trace file does not exist
-            raise RuntimeError(
+        except FileNotFoundError:
+            # Trace file does not exist
+            raise FileNotFoundError(
                 "Error occured when trying to read the ALAMO trace file - this probably "
                 "indicates that a trace file was not created by the ALAMO executable. "
                 "Please check the ALAMO output logs.")
@@ -1152,6 +1153,10 @@ class AlamoTrainer(SurrogateTrainer):
         Returns:
             None
         """
+        if self._temp_context is None:
+            # Assume we have already cleaned up
+            return
+
         remove = True
         if self.config.filename is not None:
             remove = False
