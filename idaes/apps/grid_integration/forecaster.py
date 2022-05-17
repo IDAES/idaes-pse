@@ -655,7 +655,7 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
         for b in self._historical_da_prices:
             self._historical_da_prices[b] += [
-                result.ruc_market.day_ahead_prices.get((b, t)) for t in range(24)
+                day_ahead_result.ruc_market.day_ahead_prices.get((b, t)) for t in range(24)
             ]
 
             while len(self._historical_da_prices[b]) // 24 > self.max_historical_days:
