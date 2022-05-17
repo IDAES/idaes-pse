@@ -16,7 +16,7 @@ import pandas as pd
 from idaes.apps.grid_integration import Tracker
 from idaes.apps.grid_integration import Bidder, SelfScheduler
 from idaes.apps.grid_integration import DoubleLoopCoordinator
-from idaes.apps.grid_integration.forecaster import AbstractPriceForecaster
+from idaes.apps.grid_integration.forecaster import AbstractPrescientPriceForecaster
 from idaes.apps.grid_integration.model_data import GeneratorModelData, ThermalGeneratorModelData
 
 
@@ -260,7 +260,7 @@ class TestingModel:
         return ("tot_cost", 1)
 
 
-class TestingForecaster(AbstractPriceForecaster):
+class TestingForecaster(AbstractPrescientPriceForecaster):
     """
     A fake forecaster class for testing.
     """
@@ -288,6 +288,12 @@ class TestingForecaster(AbstractPriceForecaster):
 
     def _forecast(self, horizon, n_samples, prediction):
         return {i: [prediction] * horizon for i in range(n_samples)}
+
+    def fetch_hourly_stats_from_prescient(self, prescient_hourly_stats):
+        return
+
+    def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
+        return
 
 
 testing_generator_params = {
