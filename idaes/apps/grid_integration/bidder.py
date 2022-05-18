@@ -1183,9 +1183,9 @@ class Bidder(StochasticProgramBidder):
         for t in time_index:
 
             # make sure the orignal points in the bids
-            for power, marginal_cost in self.bidding_model_object.model_data.p_cost:
-                if round(power, 2) not in bids[t][gen]:
-                    bids[t][gen][power] = marginal_cost
+            # for power, marginal_cost in self.bidding_model_object.model_data.p_cost:
+            #     if round(power, 2) not in bids[t][gen]:
+            #         bids[t][gen][power] = marginal_cost
 
             pmin = self.bidding_model_object.model_data.p_min
 
