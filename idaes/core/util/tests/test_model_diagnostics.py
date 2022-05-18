@@ -76,9 +76,9 @@ def test_dense_svd(dummy_problem, u_exp, s_exp, v_exp):
     m = dummy_problem
     dh = DegeneracyHunter(m)
     dh.svd_analysis(dense=True)
-    assert dh.s == pytest.approx(s_exp, 1e-6)
-    assert u_exp == pytest.approx(np.abs(dh.u), 1e-6)
-    assert v_exp == pytest.approx(np.abs(dh.v), 1e-6)
+    assert dh.s == pytest.approx(s_exp, 1e-6, abs=1e-10)
+    assert u_exp == pytest.approx(np.abs(dh.u), 1e-6, abs=1e-10)
+    assert v_exp == pytest.approx(np.abs(dh.v), 1e-6, abs=1e-10)
 
 
 @pytest.mark.unit
@@ -86,9 +86,9 @@ def test_sparse_svd(dummy_problem, u_exp, s_exp, v_exp):
     m = dummy_problem
     dh = DegeneracyHunter(m)
     dh.svd_analysis()
-    assert dh.s == pytest.approx(s_exp, 1e-6)
-    assert u_exp == pytest.approx(np.abs(dh.u), 1e-6)
-    assert v_exp == pytest.approx(np.abs(dh.v), 1e-6)
+    assert dh.s == pytest.approx(s_exp, 1e-6, abs=1e-10)
+    assert u_exp == pytest.approx(np.abs(dh.u), 1e-6, abs=1e-10)
+    assert v_exp == pytest.approx(np.abs(dh.v), 1e-6, abs=1e-10)
 
 
 @pytest.mark.unit
