@@ -1234,8 +1234,8 @@ class TestCommon(object):
 
 
 # -----------------------------------------------------------------------------
-# Test example from Austin Ladshaw via WAterTAP project
-# This example relevealed some issues with initialization of FpcTP states with
+# Test example from Austin Ladshaw via WaterTAP project
+# This example revealed some issues with initialization of FpcTP states with
 # phase equilibrium
 thermo_config_no_rxn = {
     "components": {
