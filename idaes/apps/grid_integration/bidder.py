@@ -351,6 +351,8 @@ class StochasticProgramBidder(AbstractBidder):
 
         model = self._set_up_bidding_problem(self.real_time_horizon)
         self._add_RT_bidding_constraints(model)
+        for i in model.SCENARIOS:
+            model.fs[i].day_ahead_power_ub.deactivate()
 
         return model
 
@@ -654,8 +656,10 @@ class StochasticProgramBidder(AbstractBidder):
                     dispatch = realized_day_ahead_dispatches[t + hour]
                 except IndexError as ex:
                     self.real_time_model.fs[s].day_ahead_power[t].unfix()
+                    self.real_time_model.fs[s].day_ahead_power_ub.activate()
                 else:
                     self.real_time_model.fs[s].day_ahead_power[t].fix(dispatch)
+                    self.real_time_model.fs[s].day_ahead_power_ub.deactivate()
 
     def update_day_ahead_model(self, **kwargs):
 
