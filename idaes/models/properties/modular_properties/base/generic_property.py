@@ -1505,7 +1505,6 @@ class _GenericStateBlock(StateBlock):
                         "total_flow_balance",
                         "component_flow_balances",
                         "sum_mole_frac",
-                        "equilibrium_constraint",
                         "phase_fraction_constraint",
                     ):
                         c.activate()
@@ -1516,20 +1515,12 @@ class _GenericStateBlock(StateBlock):
                                 blk[k].log_mole_frac_phase_comp[p, j],
                                 blk[k].log_mole_frac_phase_comp_eqn[p, j],
                             )
-                    elif c.local_name == "mole_frac_phase_comp_eq":
-                        c.activate()
-                        for p, j in blk[k].params._phase_component_set:
-                            calculate_variable_from_constraint(
-                                blk[k].mole_frac_phase_comp[p, j],
-                                blk[k].mole_frac_phase_comp_eq[p, j],
-                            )
-                    elif c.local_name == "mole_frac_comp_eq":
-                        c.activate()
-                        for j in blk[k].params.component_list:
-                            calculate_variable_from_constraint(
-                                blk[k].mole_frac_comp[j],
-                                blk[k].mole_frac_comp_eq[j],
-                            )
+                    elif c.local_name == "equilibrium_constraint":
+                        # For systems where the state variables fully define the
+                        # phase equilibrium, we cannot activate the equilibrium
+                        # constraint at this stage.
+                        if "flow_mol_phase_comp" not in blk[k].define_state_vars():
+                            c.activate()
 
                 for pp in blk[k].params._pe_pairs:
                     # Activate formulation specific constraints
