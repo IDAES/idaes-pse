@@ -421,6 +421,9 @@ class DoubleLoopCoordinator:
 
                 if "p_fuel" in gen_dict:
                     gen_dict.pop("p_fuel")
+            elif param == "initial_status" or param == "initial_p_output":
+                if param not in gen_dict:
+                    gen_dict[param] = value
             else:
                 gen_dict[param] = value
 

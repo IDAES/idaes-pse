@@ -32,6 +32,8 @@ def generator_params():
         "ramp_down_60min": 100,
         "shutdown_capacity": 30,
         "startup_capacity": 30,
+        "initial_status": 4,
+        "initial_p_output": 30,
         "production_cost_bid_pairs": [(30, 25), (45, 23), (60, 27), (76, 35)],
         "startup_cost_pairs": [(2, 1000), (6, 1500), (10, 2000)],
         "fixed_commitment": None,
@@ -228,6 +230,8 @@ def test_model_data_iterator(generator_data_object):
         "startup_cost",
         "fixed_commitment",
         "generator_type",
+        "initial_status",
+        "initial_p_output",
     ]
     iter_result = [name for name, value in generator_data_object]
 
@@ -237,3 +241,42 @@ def test_model_data_iterator(generator_data_object):
     pyo_unittest.assertStructuredAlmostEqual(
         first=expected_param_names, second=iter_result
     )
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "value, error, msg",
+    [
+        ("1", TypeError, "Value for initial_status shoulde be real numbers"),
+        (0, ValueError, "Value for initial_status cannot be zero"),
+    ],
+)
+def test_invalid_initial_status(value, error, msg, generator_params):
+
+    generator_params["initial_status"] = value
+    with pytest.raises(error, match=msg):
+        ThermalGeneratorModelData(**generator_params)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "initial_status, initial_p_output, error, msg",
+    [
+        (9, "1", TypeError, "Value for initial_p_output shoulde be real numbers"),
+        (
+            9,
+            29,
+            ValueError,
+            r".*so the initial power output should at least be p_min.*",
+        ),
+        (-9, 30, ValueError, r".*so the initial power output should at 0.*"),
+    ],
+)
+def test_invalid_initial_p_output(
+    initial_status, initial_p_output, error, msg, generator_params
+):
+
+    generator_params["initial_p_output"] = initial_p_output
+    generator_params["initial_status"] = initial_status
+    with pytest.raises(error, match=msg):
+        ThermalGeneratorModelData(**generator_params)

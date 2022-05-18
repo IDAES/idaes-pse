@@ -212,6 +212,8 @@ class ThermalGeneratorModelData(GeneratorModelData):
         ramp_down_60min,
         shutdown_capacity,
         startup_capacity,
+        initial_status,
+        initial_p_output,
         fixed_commitment=None,
         production_cost_bid_pairs=None,
         startup_cost_pairs=None,
@@ -231,6 +233,8 @@ class ThermalGeneratorModelData(GeneratorModelData):
         self.ramp_down_60min = ramp_down_60min
         self.shutdown_capacity = shutdown_capacity
         self.startup_capacity = startup_capacity
+        self.initial_status = initial_status
+        self.initial_p_output = initial_p_output
 
         self.p_cost = self._assemble_default_cost_bids(production_cost_bid_pairs)
         self.startup_cost = self._assemble_default_startup_cost_bids(startup_cost_pairs)
@@ -313,7 +317,62 @@ class ThermalGeneratorModelData(GeneratorModelData):
 
     @property
     def generator_type(self):
+        """
+        Generator type property: fixed to thermal.
+        """
         return "thermal"
+
+    @property
+    def initial_status(self):
+
+        """
+        Generator initial status proptery. If positive, the number of hours prior
+        to (and including) t=0 that the unit has been on. If negative, the number
+        of hours prior to (and including) t=0 that the unit has been off. The value
+        cannot be 0, by definition.
+        """
+
+        return self._initial_status
+
+    @initial_status.setter
+    def initial_status(self, value):
+
+        """
+        Generator initial status proptery setter. Validate the value before setting.
+        """
+
+        if not isinstance(value, Real):
+            raise TypeError("Value for initial_status shoulde be real numbers.")
+
+        if isclose(value, 0):
+            raise ValueError("Value for initial_status cannot be zero.")
+
+        self._initial_status = value
+
+    @property
+    def initial_p_output(self):
+        """
+        Generator initial power output proptery.
+        """
+        return self._initial_p_output
+
+    @initial_p_output.setter
+    def initial_p_output(self, value):
+
+        """
+        Generator initial power output proptery setter.
+        """
+
+        if not isinstance(value, Real):
+            raise TypeError("Value for initial_p_output shoulde be real numbers.")
+
+        if self.initial_status > 0 and value < self.p_min and not isclose(value, self.p_min):
+            raise ValueError(f"The initial status of the generator was on before T0, so the initial power output should at least be p_min {self.p_min}, but {value} is provided.")
+
+        if self.initial_status < 0 and (value > 0 and not isclose(value, 0)):
+            raise ValueError(f"The initial status of the generator was off before T0, so the initial power output should at 0, but {value} is provided.")
+
+        self._initial_p_output = value
 
 
 class RenewableGeneratorModelData(GeneratorModelData):
@@ -333,4 +392,7 @@ class RenewableGeneratorModelData(GeneratorModelData):
 
     @property
     def generator_type(self):
+        """
+        Generator type property: fixed to renewable.
+        """
         return "renewable"
