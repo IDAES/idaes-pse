@@ -556,20 +556,15 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
         """
 
-        if bus not in self.historical_rt_prices:
-            raise ForecastError(f"No {bus} real-time price available.")
-
-        historical_price_len = len(self.historical_rt_prices[bus])
-
-        forecast = {
-            i: [
-                self.historical_rt_prices[bus][t % historical_price_len]
-                for t in range(i * 24 + hour, i * 24 + hour + horizon)
-            ]
-            for i in range(n_samples)
-        }
-
-        return forecast
+        return self._forecast(
+            historical_price_dict=self.historical_rt_prices,
+            market="real-time",
+            date=date,
+            hour=hour,
+            bus=bus,
+            horizon=horizon,
+            n_samples=n_samples,
+        )
 
     def forecast_day_ahead_prices(self, date, hour, bus, horizon, n_samples):
 
@@ -592,18 +587,35 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
         """
 
-        if bus not in self.historical_da_prices:
-            raise ForecastError(f"No {bus} day-ahead price available.")
+        return self._forecast(
+            historical_price_dict=self.historical_da_prices,
+            market="day-ahead",
+            date=date,
+            hour=0,
+            bus=bus,
+            horizon=horizon,
+            n_samples=n_samples,
+        )
 
-        historical_price_len = len(self.historical_da_prices[bus])
+    def _forecast(
+        self, historical_price_dict, market, date, hour, bus, horizon, n_samples
+    ):
 
-        forecast = {
-            i: [
-                self.historical_da_prices[bus][t % historical_price_len]
-                for t in range(i * 24, i * 24 + horizon)
+        if bus not in historical_price_dict:
+            raise ForecastError(f"No {bus} {market} price available.")
+
+        historical_price_len = len(historical_price_dict[bus])
+        n_days = historical_price_len // 24
+
+        forecast = {}
+
+        for i in range(n_samples):
+            day_idx = n_days - (i % n_days) - 1
+
+            forecast[i] = [
+                historical_price_dict[bus][t % historical_price_len]
+                for t in range(day_idx * 24 + hour, day_idx * 24 + hour + horizon)
             ]
-            for i in range(n_samples)
-        }
 
         return forecast
 
@@ -655,7 +667,8 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
         for b in self._historical_da_prices:
             self._historical_da_prices[b] += [
-                day_ahead_result.ruc_market.day_ahead_prices.get((b, t)) for t in range(24)
+                day_ahead_result.ruc_market.day_ahead_prices.get((b, t))
+                for t in range(24)
             ]
 
             while len(self._historical_da_prices[b]) // 24 > self.max_historical_days:
