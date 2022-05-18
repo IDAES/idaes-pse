@@ -133,7 +133,7 @@ def test_forecast_real_time_prices(base_backcaster):
     result_forecasts = base_backcaster.forecast_real_time_prices(
         date="2022-05-11", hour=18, bus="test_bus", horizon=horizon, n_samples=n_samples
     )
-    expected_forecasts = {i: [(i + 1) * 10] * horizon for i in range(n_samples)}
+    expected_forecasts = {n_samples - i - 1: [(i + 1) * 10] * horizon for i in range(n_samples)}
 
     pyo_unittest.assertStructuredAlmostEqual(
         first=result_forecasts, second=expected_forecasts
@@ -141,7 +141,7 @@ def test_forecast_real_time_prices(base_backcaster):
 
 
 @pytest.mark.unit
-def test_forecast_real_time_prices(base_backcaster):
+def test_forecast_day_ahead_prices(base_backcaster):
 
     n_samples = 2
     horizon = 48
@@ -149,7 +149,7 @@ def test_forecast_real_time_prices(base_backcaster):
     result_forecasts = base_backcaster.forecast_day_ahead_prices(
         date="2022-05-11", hour=0, bus="test_bus", horizon=horizon, n_samples=n_samples
     )
-    expected_forecasts = {0: [1] * 24 + [2] * 24, 1: [2] * 24 + [3] * 24}
+    expected_forecasts = {0: [3] * 24 + [1] * 24, 1: [2] * 24 + [3] * 24}
 
     pyo_unittest.assertStructuredAlmostEqual(
         first=result_forecasts, second=expected_forecasts
