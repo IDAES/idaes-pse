@@ -228,6 +228,7 @@ Hv = -779.305
 Ul = Hl - 8.314 * 300 * (Zl - 1)
 Uv = Hv - 8.314 * 300 * (Zv - 1)
 
+
 @pytest.mark.unit
 def test_wrong_phase():
     m = ConcreteModel()

@@ -30,17 +30,30 @@ from idaes.models.properties.modular_properties.state_definitions.FpcTP import (
     define_default_scaling_factors,
 )
 from idaes.core import (
+    FlowsheetBlock,
     MaterialFlowBasis,
     MaterialBalanceType,
     EnergyBalanceType,
     declare_process_block_class,
+    Solvent,
+    Solute,
+    AqueousPhase,
+    VaporPhase,
 )
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterData,
+    GenericParameterBlock,
 )
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
+from idaes.models.properties.modular_properties.pure.Perrys import Perrys
+from idaes.models.properties.modular_properties.pure.NIST import NIST
+from idaes.generic_models.properties.core.phase_equil.forms import fugacity
+from idaes.generic_models.properties.core.eos.ideal import Ideal
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
+from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBubbleDew
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
+from idaes.core.util.model_statistics import degrees_of_freedom, large_residuals_set
 
 
 @declare_process_block_class("DummyParameterBlock")
@@ -1218,3 +1231,224 @@ class TestCommon(object):
             "Temperature": frame.props[1].temperature,
             "Pressure": frame.props[1].pressure,
         }
+
+
+# -----------------------------------------------------------------------------
+# Test example from Austin Ladshaw via WAterTAP project
+# This example relevealed some issues with initialization of FpcTP states with
+# phase equilibrium
+thermo_config_no_rxn = {
+    "components": {
+        "H2O": {
+            "type": Solvent,
+            # Define the methods used to calculate the following properties
+            "dens_mol_liq_comp": Perrys,
+            "enth_mol_liq_comp": Perrys,
+            "cp_mol_liq_comp": Perrys,
+            "entr_mol_liq_comp": Perrys,
+            "enth_mol_ig_comp": NIST,
+            "pressure_sat_comp": NIST,
+            "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
+            # Parameter data is always associated with the methods defined above
+            "parameter_data": {
+                "mw": (18.0153, pyunits.g / pyunits.mol),
+                "pressure_crit": (220.64e5, pyunits.Pa),
+                "temperature_crit": (647, pyunits.K),
+                # Comes from Perry's Handbook:  p. 2-98
+                "dens_mol_liq_comp_coeff": {
+                    "1": (5.459, pyunits.kmol * pyunits.m**-3),
+                    "2": (0.30542, pyunits.dimensionless),
+                    "3": (647.13, pyunits.K),
+                    "4": (0.081, pyunits.dimensionless),
+                },
+                "enth_mol_form_liq_comp_ref": (-285.830, pyunits.kJ / pyunits.mol),
+                "enth_mol_form_vap_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                # Comes from Perry's Handbook:  p. 2-174
+                "cp_mol_liq_comp_coeff": {
+                    "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
+                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K**5),
+                },
+                "cp_mol_ig_comp_coeff": {
+                    "A": (30.09200, pyunits.J / pyunits.mol / pyunits.K),
+                    "B": (
+                        6.832514,
+                        pyunits.J
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-1,
+                    ),
+                    "C": (
+                        6.793435,
+                        pyunits.J
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-2,
+                    ),
+                    "D": (
+                        -2.534480,
+                        pyunits.J
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-3,
+                    ),
+                    "E": (
+                        0.082139,
+                        pyunits.J
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**2,
+                    ),
+                    "F": (-250.8810, pyunits.kJ / pyunits.mol),
+                    "G": (223.3967, pyunits.J / pyunits.mol / pyunits.K),
+                    "H": (0, pyunits.kJ / pyunits.mol),
+                },
+                "entr_mol_form_liq_comp_ref": (
+                    69.95,
+                    pyunits.J / pyunits.K / pyunits.mol,
+                ),
+                "pressure_sat_comp_coeff": {
+                    "A": (4.6543, None),  # [1], temperature range 255.9 K - 373 K
+                    "B": (1435.264, pyunits.K),
+                    "C": (-64.848, pyunits.K),
+                },
+            },
+        },
+        "CO2": {
+            "type": Solute,
+            "dens_mol_liq_comp": Perrys,
+            "enth_mol_liq_comp": Perrys,
+            "cp_mol_liq_comp": Perrys,
+            "entr_mol_liq_comp": Perrys,
+            "enth_mol_ig_comp": NIST,
+            "pressure_sat_comp": NIST,
+            "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
+            "parameter_data": {
+                "mw": (44.0095, pyunits.g / pyunits.mol),
+                "pressure_crit": (73.825e5, pyunits.Pa),
+                "temperature_crit": (304.23, pyunits.K),
+                "dens_mol_liq_comp_coeff": {
+                    "1": (0.000789, pyunits.kmol * pyunits.m**-3),
+                    "2": (0.000956, pyunits.dimensionless),
+                    "3": (500.78, pyunits.K),
+                    "4": (0.94599, pyunits.dimensionless),
+                },
+                "cp_mol_ig_comp_coeff": {
+                    "A": (24.99735, pyunits.J / pyunits.mol / pyunits.K),
+                    "B": (
+                        55.18696,
+                        pyunits.J
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-1,
+                    ),
+                    "C": (
+                        -33.69137,
+                        pyunits.J
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-2,
+                    ),
+                    "D": (
+                        7.948387,
+                        pyunits.J
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-3,
+                    ),
+                    "E": (
+                        -0.136638,
+                        pyunits.J
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**2,
+                    ),
+                    "F": (-403.6075, pyunits.kJ / pyunits.mol),
+                    "G": (228.2431, pyunits.J / pyunits.mol / pyunits.K),
+                    "H": (0, pyunits.kJ / pyunits.mol),
+                },
+                "cp_mol_liq_comp_coeff": {
+                    "1": (-8.3043e6, pyunits.J / pyunits.kmol / pyunits.K),
+                    "2": (1.0437e5, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (4.333e2, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (6.0052e-1, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K**5),
+                },
+                "enth_mol_form_liq_comp_ref": (-285.83, pyunits.kJ / pyunits.mol),
+                "enth_mol_form_vap_comp_ref": (-393.52, pyunits.kJ / pyunits.mol),
+                "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
+                "entr_mol_form_vap_comp_ref": (213.6, pyunits.J / pyunits.mol),
+                "pressure_sat_comp_coeff": {
+                    "A": (6.81228, None),
+                    "B": (1301.679, pyunits.K),
+                    "C": (-3.494, pyunits.K),
+                },
+            },
+        },
+    },
+    "phases": {
+        "Liq": {"type": AqueousPhase, "equation_of_state": Ideal},
+        "Vap": {"type": VaporPhase, "equation_of_state": Ideal},
+    },
+    # Set base units of measurement
+    "base_units": {
+        "time": pyunits.s,
+        "length": pyunits.m,
+        "mass": pyunits.kg,
+        "amount": pyunits.mol,
+        "temperature": pyunits.K,
+    },
+    # Specifying state definition
+    "state_definition": FpcTP,
+    "state_bounds": {
+        "temperature": (273.15, 300, 500, pyunits.K),
+        "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
+    },
+    "pressure_ref": (101325, pyunits.Pa),
+    "temperature_ref": (300, pyunits.K),
+    # Defining phase equilibria
+    "phases_in_equilibrium": [("Vap", "Liq")],
+    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
+    "bubble_dew_method": IdealBubbleDew,
+}
+
+
+@pytest.mark.component
+def test_phase_equilibrium_initialization():
+    # Create a pyomo model object
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(default={"dynamic": False})
+
+    model.fs.thermo_params = GenericParameterBlock(default=thermo_config_no_rxn)
+
+    model.fs.state = model.fs.thermo_params.build_state_block(
+        model.fs.time, default={"defined_state": False}
+    )
+
+    model.fs.state[0].pressure.set_value(101325.0)
+    model.fs.state[0].temperature.set_value(298.0)
+
+    model.fs.state[0].flow_mol_phase_comp["Vap", "CO2"].set_value(0.0005 * 10)
+    model.fs.state[0].flow_mol_phase_comp["Liq", "CO2"].set_value(1e-8)
+    model.fs.state[0].flow_mol_phase_comp["Vap", "H2O"].set_value(1e-8)
+    model.fs.state[0].flow_mol_phase_comp["Liq", "H2O"].set_value((1 - 0.0005) * 10)
+
+    assert_units_consistent(model)
+    # We expect 6 state variables, but two additional constraints for phase equilibrium
+    assert degrees_of_freedom(model) == 6 - 2
+
+    model.fs.state.initialize()
+
+    # Check that degrees of freedom are still the same
+    assert degrees_of_freedom(model) == 6 - 2
+
+    # As the phase equilibrium constraints were not solved, we expect these to have a large residual
+    large_res = large_residuals_set(model.fs.state[0])
+    assert len(large_res) == 2
+    for i in large_res:
+        assert i.name in [
+            "fs.state[0.0].equilibrium_constraint[Vap,Liq,H2O]",
+            "fs.state[0.0].equilibrium_constraint[Vap,Liq,CO2]",
+        ]
