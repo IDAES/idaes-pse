@@ -1506,6 +1506,8 @@ class _GenericStateBlock(StateBlock):
                         "component_flow_balances",
                         "sum_mole_frac",
                         "phase_fraction_constraint",
+                        "mole_frac_phase_comp_eq",
+                        "mole_frac_comp_eq",
                     ):
                         c.activate()
                     if c.local_name == "log_mole_frac_phase_comp_eqn":
