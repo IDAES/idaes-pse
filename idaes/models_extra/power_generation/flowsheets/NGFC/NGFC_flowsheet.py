@@ -1010,10 +1010,12 @@ def initialize_power_island(m):
     solver = pyo.SolverFactory("ipopt")
     solver.options = {
         "max_iter": 500,
-        "tol": 1e-7,
-        "bound_push": 1e-12,
+        "tol": 1e-5,
+        "bound_push": 1e-8,
         "linear_solver": "ma57",
         "ma57_pivtol": 1e-3,
+        "OF_ma57_automatic_scaling": "yes",
+        "nlp_scaling_method": "user-scaling"
           }
     # cathode side
     m.fs.air_blower.initialize(outlvl=logging.INFO)
@@ -1212,10 +1214,12 @@ def initialize_reformer(m):
     solver = pyo.SolverFactory("ipopt")
     solver.options = {
         "max_iter": 500,
-        "tol": 1e-7,
-        "bound_push": 1e-12,
+        "tol": 1e-5,
+        "bound_push": 1e-8,
         "linear_solver": "ma57",
         "ma57_pivtol": 1e-3,
+        "OF_ma57_automatic_scaling": "yes",
+        "nlp_scaling_method": "user-scaling"
           }
     m.fs.reformer.inlet.flow_mol[0] = 2262  # mol/s
     m.fs.reformer.inlet.temperature[0] = 470  # K
@@ -1737,10 +1741,12 @@ def main(resultsdir="", jsontestdir=""):
             solver = pyo.SolverFactory("ipopt")
             solver.options = {
                 "max_iter": 100,
-                "tol": 1e-7,
-                "bound_push": 1e-12,
+                "tol": 1e-5,
+                "bound_push": 1e-8,
                 "linear_solver": "ma57",
                 "ma57_pivtol": 1e-3,
+                "OF_ma57_automatic_scaling": "yes",
+                "nlp_scaling_method": "user-scaling"
                   }
             solve_iteration = 0
             for i in range(1, 10):  # keep looping until condition is met
@@ -1767,10 +1773,12 @@ def main(resultsdir="", jsontestdir=""):
         solver = pyo.SolverFactory("ipopt")
         solver.options = {
             "max_iter": 100,
-            "tol": 1e-7,
-            "bound_push": 1e-12,
+            "tol": 1e-5,
+            "bound_push": 1e-8,
             "linear_solver": "ma57",
             "ma57_pivtol": 1e-3,
+            "OF_ma57_automatic_scaling": "yes",
+            "nlp_scaling_method": "user-scaling"
               }
         solve_iteration = 0
         for i in range(1, 10):  # keep looping until condition is met

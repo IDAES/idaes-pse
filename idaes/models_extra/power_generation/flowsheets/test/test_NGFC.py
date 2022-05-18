@@ -55,9 +55,6 @@ from idaes.core.util import model_serializer as ms
 
 from idaes.core.util.tables import create_stream_table_dataframe
 
-solver_available = pyo.SolverFactory("ipopt").available()
-solver = get_solver()
-import idaes  # import for initialization test
 
 @pytest.fixture(scope="module")
 def m():
@@ -204,33 +201,43 @@ def test_scaling(m):
 
 
 @pytest.mark.integration
-def test_initialize(m):
-    scale_flowsheet(m)
+def test_initialize_power_island(m):
+    initialize_power_island(m)
 
-    with idaes.temporary_config_ctx():
-        # these config changes affect get_solver() so they should apply to
-        # initialization even without setting the solvers to use global settings
-        idaes.cfg.ipopt.options.linear_solver = "ma57"
-        idaes.cfg.ipopt.options.OF_ma57_automatic_scaling = "yes"
-        initialize_power_island(m)
-        initialize_reformer(m)
+    # a few checks to make sure this method worked as expected
+    assert pyo.value(m.fs.cathode.inlet.flow_mol[0]) == \
+        pytest.approx(34168, rel=1e-3)
+    assert pyo.value(m.fs.cathode.inlet.temperature[0]) == \
+        pytest.approx(892, rel=1e-3)
+    assert pyo.value(m.fs.cathode.inlet.pressure[0]) == \
+        pytest.approx(105490, rel=1e-3)
 
-    assert pyo.value(m.fs.reformer.lagrange_mult[(0, "H")]) == pytest.approx(
-        83163, 1e-3
-    )
-    assert pyo.value(m.fs.prereformer.lagrange_mult[(0, "H")]) == pytest.approx(
-        63608, 1e-3
-    )
-    assert pyo.value(m.fs.anode.lagrange_mult[(0, "H")]) == pytest.approx(76820, 1e-3)
-    assert pyo.value(m.fs.bypass_rejoin.outlet.temperature[0]) == pytest.approx(
-        640.6, 1e-3
-    )
-    assert pyo.value(m.fs.anode_hx.shell_outlet.temperature[0]) == pytest.approx(
-        827.6, 1e-3
-    )
-    assert pyo.value(m.fs.cathode_hx.shell_outlet.temperature[0]) == pytest.approx(
-        475.8, 1e-3
-    )
+
+@pytest.mark.integration
+def test_initialize_reformer(m):
+    initialize_reformer(m)
+
+    # a few checks to make sure this method worked as expected
+    assert pyo.value(m.fs.reformer.inlet.flow_mol[0]) == \
+        pytest.approx(3880, rel=1e-3)  # mol/s
+    assert pyo.value(m.fs.reformer.inlet.temperature[0]) == \
+        pytest.approx(1387, rel=1e-3)  # K
+    assert pyo.value(m.fs.reformer.inlet.pressure[0]) == \
+        pytest.approx(50025000, rel=1e-3)  # Pa
+
+    assert pyo.value(m.fs.reformer.lagrange_mult[(0, "H")]) == \
+        pytest.approx(83053, rel=1e-3)
+    assert pyo.value(m.fs.prereformer.lagrange_mult[(0, "H")]) == \
+        pytest.approx(69351, rel=1e-3)
+    assert pyo.value(m.fs.anode.lagrange_mult[(0, "H")]) == \
+        pytest.approx(74261, rel=1e-3)
+    assert pyo.value(m.fs.bypass_rejoin.outlet.temperature[0]) == \
+        pytest.approx(1019, rel=1e-3)
+    assert pyo.value(m.fs.anode_hx.shell_outlet.temperature[0]) == \
+        pytest.approx(1361, rel=1e-3)
+    assert pyo.value(m.fs.cathode_hx.shell_outlet.temperature[0]) == \
+        pytest.approx(475.8, rel=1e-3)
+
 
 @pytest.mark.unit
 def test_connect_reformer_to_power_island(m):
@@ -279,34 +286,9 @@ def test_add_result_constraints(m):
     assert degrees_of_freedom(m) == 0
 
 
-@pytest.mark.integration
-def test_solve(m):
-    assert solver_available
-    solver.options = {
-        "max_iter": 100,
-        "tol": 1e-7,
-        "bound_push": 1e-12,
-        "linear_solver": "ma57",
-        "ma57_pivtol": 1e-3,
-          }
-    solve_iteration = 0
-    for i in range(1, 10):  # keep looping until condition is met
-        solve_iteration += 1
-        print('Solve # ', solve_iteration)
-        res = solver.solve(m, tee=True)
-        if 'Optimal Solution Found' in res.solver.message:
-            break
-
-    assert check_optimal_termination(res)
-    assert solve_iteration == 1  # this value may be updated as needed
-
-
 @pytest.mark.unit
 def test_json_load_init(m):
-    fname = os.path.join(
-        os.path.join(os.path.dirname(this_file_dir()), "NGFC"),
-        "NGFC_flowsheet_init.json.gz",
-    )
+    fname = os.path.join(this_file_dir(), "NGFC_flowsheet_init.json.gz")
 
     ms.from_json(m, fname=fname)
 
@@ -329,87 +311,47 @@ def test_json_load_init(m):
         pytest.approx(0.009880, rel=1e-3)
 
     assert pyo.value(m.fs.anode.inlet.flow_mol[0]) == \
-        pytest.approx(5898, rel=1e-3)
+        pytest.approx(7256, rel=1e-3)
     assert pyo.value(m.fs.anode.inlet.temperature[0]) == \
-        pytest.approx(1413, rel=1e-3)
+        pytest.approx(1387, rel=1e-3)
     assert pyo.value(m.fs.anode.inlet.pressure[0]) == \
-        pytest.approx(186611, rel=1e-3)
+        pytest.approx(50025000, rel=1e-3)
     assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "CH4"]) == \
-        pytest.approx(0.2382, rel=1e-3)
+        pytest.approx(0.5882, rel=1e-3)
     assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "CO"]) == \
-        pytest.approx(0.3772, rel=1e-3)
+        pytest.approx(0.5110, rel=1e-3)
     assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "CO2"]) == \
-        pytest.approx(0.2585, rel=1e-3)
+        pytest.approx(0.4126, rel=1e-3)
     assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "H2"]) == \
-        pytest.approx(0.3433, rel=1e-3)
+        pytest.approx(0.4899, rel=1e-3)
     assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "H2O"]) == \
-        pytest.approx(0.2422, rel=1e-3)
+        pytest.approx(0.3938, rel=1e-3)
     assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "N2"]) == \
-        pytest.approx(0.2880, rel=1e-3)
+        pytest.approx(0.4898, rel=1e-3)
     assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "O2"]) == \
-        pytest.approx(0.3086, rel=1e-3)
+        pytest.approx(0.3234, rel=1e-3)
     assert pyo.value(m.fs.anode.inlet.mole_frac_comp[0, "Ar"]) == \
-        pytest.approx(0.2871, rel=1e-3)
+        pytest.approx(0.4898, rel=1e-3)
 
     assert pyo.value(m.fs.anode.lagrange_mult[0, "C"]) == \
-        pytest.approx(26137, rel=1e-3)
+        pytest.approx(16759, rel=1e-3)
     assert pyo.value(m.fs.anode.lagrange_mult[0, "H"]) == \
-        pytest.approx(75542, rel=1e-3)
+        pytest.approx(74261, rel=1e-3)
     assert pyo.value(m.fs.anode.lagrange_mult[0, "O"]) == \
-        pytest.approx(304676, rel=1e-3)
+        pytest.approx(311619, rel=1e-3)
 
     assert pyo.value(m.fs.anode.outlet.mole_frac_comp[0, "O2"]) == \
-        pytest.approx(8.8565e-12, rel=1e-3)
+        pytest.approx(1.4486e-22, rel=1e-3)
 
     assert pyo.value(m.fs.prereformer.gibbs_scaling) == \
         pytest.approx(1e-4, rel=1e-3)
 
     assert pyo.value(m.fs.prereformer.lagrange_mult[0, "C"]) == \
-        pytest.approx(7764, rel=1e-3)
+        pytest.approx(5615, rel=1e-3)
     assert pyo.value(m.fs.prereformer.lagrange_mult[0, "H"]) == \
-        pytest.approx(66902, rel=1e-3)
+        pytest.approx(69351, rel=1e-3)
     assert pyo.value(m.fs.prereformer.lagrange_mult[0, "O"]) == \
-        pytest.approx(301919, rel=1e-3)
-
-    assert pyo.value(m.fs.prereformer.outlet.mole_frac_comp[0, "O2"]) == \
-        pytest.approx(0, rel=1e-3)
-    assert pyo.value(m.fs.prereformer.outlet.mole_frac_comp[0, "Ar"]) == \
-        pytest.approx(0.07344, rel=1e-3)
-    assert pyo.value(m.fs.prereformer.outlet.mole_frac_comp[0, "C2H6"]) == \
-        pytest.approx(7.0975e-7, rel=1e-3)
-    assert pyo.value(m.fs.prereformer.outlet.mole_frac_comp[0, "C3H8"]) == \
-        pytest.approx(0, rel=1e-3)
-    assert pyo.value(m.fs.prereformer.outlet.mole_frac_comp[0, "C4H10"]) == \
-        pytest.approx(0, rel=1e-3)
-
-    assert pyo.value(m.fs.reformer.inlet.flow_mol[0]) == \
-        pytest.approx(3879, rel=1e-3)  # mol/s
-    assert pyo.value(m.fs.reformer.inlet.temperature[0]) == \
-        pytest.approx(1251, rel=1e-3)  # K
-    assert pyo.value(m.fs.reformer.inlet.pressure[0]) == \
-        pytest.approx(5555795, rel=1e-3)  # Pa
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "CH4"]) == \
-        pytest.approx(0.47992, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "C2H6"]) == \
-        pytest.approx(0.46836, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "C3H8"]) == \
-        pytest.approx(0.45690, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "C4H10"]) == \
-        pytest.approx(0.44557, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "H2"]) == \
-        pytest.approx(0.49154, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "CO"]) == \
-        pytest.approx(0.47632, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "CO2"]) == \
-        pytest.approx(0.45510, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "H2O"]) == \
-        pytest.approx(0.47011, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "N2"]) == \
-        pytest.approx(0.52541, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "O2"]) == \
-        pytest.approx(0.45772, rel=1e-3)
-    assert pyo.value(m.fs.reformer.inlet.mole_frac_comp[0, "Ar"]) == \
-        pytest.approx(0.52542, rel=1e-3)
+        pytest.approx(308901, rel=1e-3)
 
     assert pyo.value(m.fs.reformer.lagrange_mult[0, "C"]) == \
         pytest.approx(-25493, rel=1e-3)
@@ -418,50 +360,21 @@ def test_json_load_init(m):
     assert pyo.value(m.fs.reformer.lagrange_mult[0, "O"]) == \
         pytest.approx(370367, rel=1e-3)
 
-    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "O2"]) == \
-        pytest.approx(0, rel=1e-3)
-    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "Ar"]) == \
-        pytest.approx(0.062046, rel=1e-3)
-    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "CH4"]) == \
-        pytest.approx(0.32244, rel=1e-3)
-    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "C2H6"]) == \
-        pytest.approx(0.000140979, rel=1e-3)
-    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "C3H8"]) == \
-        pytest.approx(2.2842e-7, rel=1e-3)
-    assert pyo.value(m.fs.reformer.outlet.mole_frac_comp[0, "C4H10"]) == \
-        pytest.approx(3.460668e-10, rel=1e-3)
-
-    assert pyo.value(m.fs.reformer.lagrange_mult[(0, "H")]) == \
-        pytest.approx(83053, rel=1e-3)
-    assert pyo.value(m.fs.prereformer.lagrange_mult[(0, "H")]) == \
-        pytest.approx(66902, rel=1e-3)
-    assert pyo.value(m.fs.anode.lagrange_mult[(0, "H")]) == \
-        pytest.approx(75542, rel=1e-3)
-    assert pyo.value(m.fs.bypass_rejoin.outlet.temperature[0]) == \
-        pytest.approx(1019, rel=1e-3)
-    assert pyo.value(m.fs.anode_hx.shell_outlet.temperature[0]) == \
-        pytest.approx(869, rel=1e-3)
-    assert pyo.value(m.fs.cathode_hx.shell_outlet.temperature[0]) == \
-        pytest.approx(475.8, rel=1e-3)
-
 
 @pytest.mark.unit
 def test_json_load_solution(m):
-    fname = os.path.join(
-        os.path.join(os.path.dirname(this_file_dir()), "NGFC"),
-        "NGFC_flowsheet_solution.json.gz",
-    )
+    fname = os.path.join(this_file_dir(), "NGFC_flowsheet_solution.json.gz")
 
     ms.from_json(m, fname=fname)
 
     assert pyo.value(m.fs.cathode.ion_outlet.flow_mol[0]) == \
         pytest.approx(1670, rel=1e-3)
     assert pyo.value(m.fs.reformer_recuperator.area) == \
-        pytest.approx(2328, rel=1e-3)
+        pytest.approx(4511, rel=1e-3)
     assert pyo.value(m.fs.anode.heat_duty[0]) == \
-        pytest.approx(-871373774, rel=1e-3)
+        pytest.approx(-672918765, rel=1e-3)
     assert pyo.value(m.fs.CO2_emissions) == \
-        pytest.approx(300, rel=1e-3)
+        pytest.approx(291, rel=1e-3)
     assert pyo.value(m.fs.net_power) == \
         pytest.approx(660, rel=1e-3)
 
@@ -521,8 +434,113 @@ def test_pfd_result(m):
     assert not os.path.isdir(dname)
 
 
+@pytest.mark.integration
+def test_main_init_and_solve(m):
+    # remove both json, have main() reinitialize and resolve/serialize
+
+    jsontestdir = this_file_dir()
+    assert os.path.exists(os.path.join(jsontestdir,
+                                       "NGFC_flowsheet_init.json.gz"))
+    assert os.path.exists(os.path.join(jsontestdir,
+                                       "NGFC_flowsheet_solution.json.gz"))
+
+    # remove both json so we can reinitialize/resolve and regenerate them
+    os.remove(os.path.join(jsontestdir, "NGFC_flowsheet_init.json.gz"))
+    os.remove(os.path.join(jsontestdir, "NGFC_flowsheet_solution.json.gz"))
+    assert not os.path.exists(os.path.join(jsontestdir,
+                                           "NGFC_flowsheet_init.json.gz"))
+    assert not os.path.exists(os.path.join(jsontestdir,
+                                           "NGFC_flowsheet_solution.json.gz"))
+
+    with TempfileManager.new_context() as tf:
+        dname = tf.mkdtemp()
+        assert os.path.isdir(dname)
+
+        stream = StringIO()
+        sys.stdout = stream
+        m = main(dname, jsontestdir)
+        sys.stdout = sys.__stdout__
+
+        output1 = """Scaling flowsheet variables
+overwriting mole_frac lower bound, set to 0 to remove warnings
+Scaling flowsheet constraints
+Calculating scaling factors
+"""
+
+        output2 = """Starting ROM initialization
+ROM initialization completed
+"""
+        output3 = """EXIT: Optimal Solution Found.
+PFD Results Created
+"""
+
+        assert isinstance(m, pyo.ConcreteModel)
+        assert output1 in stream.getvalue()  # check pre-init printed output
+        assert output2 in stream.getvalue()  # check the ROM solves after init
+        # split output1 and output2 because initialization prints statuses
+        assert output3 in stream.getvalue()  # check that final solve is
+        # optimal and results are exported post-solve
+        # checking together so internal statuses from init are not flagged
+
+        # check that a results file was created in the results directory
+        assert os.path.isfile(os.path.join(dname, "NGFC_results.svg"))
+    # check that the temporary directory and file are cleaned up
+    assert not os.path.isdir(dname)
+
+
+@pytest.mark.integration
+def test_main_load_and_solve(m):
+    # remove solution json, have main() load init json and resolve/serialize
+
+    jsontestdir = this_file_dir()
+    assert os.path.exists(os.path.join(jsontestdir,
+                                       "NGFC_flowsheet_init.json.gz"))
+    assert os.path.exists(os.path.join(jsontestdir,
+                                       "NGFC_flowsheet_solution.json.gz"))
+
+    # remove solution json so we can resolve and regenerate it
+    os.remove(os.path.join(jsontestdir, "NGFC_flowsheet_solution.json.gz"))
+    assert not os.path.exists(os.path.join(jsontestdir,
+                                           "NGFC_flowsheet_solution.json.gz"))
+
+    with TempfileManager.new_context() as tf:
+        dname = tf.mkdtemp()
+        assert os.path.isdir(dname)
+
+        stream = StringIO()
+        sys.stdout = stream
+        m = main(dname, jsontestdir)
+        sys.stdout = sys.__stdout__
+
+        output1 = """Scaling flowsheet variables
+overwriting mole_frac lower bound, set to 0 to remove warnings
+Scaling flowsheet constraints
+Calculating scaling factors
+
+Starting ROM initialization
+ROM initialization completed
+Loading initialized model
+"""
+        output2 = """EXIT: Optimal Solution Found.
+PFD Results Created
+"""
+
+        assert isinstance(m, pyo.ConcreteModel)
+        assert output1 in stream.getvalue()  # check pre-solve printed output
+        # check entire string because initialization is skipped here
+        assert output2 in stream.getvalue()  # check that final solve is
+        # optimal and results are exported post-solve
+        # checking together so internal statuses from init are not flagged
+
+        # check that a results file was created in the results directory
+        assert os.path.isfile(os.path.join(dname, "NGFC_results.svg"))
+    # check that the temporary directory and file are cleaned up
+    assert not os.path.isdir(dname)
+
+
 @pytest.mark.unit
-def test_main():
+def test_main_load_json():
+    # load solution json, do not call solver
 
     jsontestdir = this_file_dir()
     assert os.path.exists(os.path.join(jsontestdir,
@@ -551,7 +569,8 @@ PFD Results Created
 """
 
         assert isinstance(m, pyo.ConcreteModel)
-        assert output in stream.getvalue()
+        assert output in stream.getvalue()  # check printed output
+        # a single string because no solver steps are called
 
         # check that a results file was created in the results directory
         assert os.path.isfile(os.path.join(dname, "NGFC_results.svg"))
