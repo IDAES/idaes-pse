@@ -629,6 +629,16 @@ class SolidOxideCellData(UnitModelBlockData):
                 for iz in b.electrolyte.iznodes
             )
 
+        @self.Expression(tset)
+        def average_current_density(b, t):
+            # z is dimensionless and goes from 0 to 1 so sum(dz) = 1 and the
+            # cell is a rectangle hence I don't need to worry about width or
+            # length or dividing by the sum of dz and the units are right.
+            return sum(
+                b.current_density[t, iz] * b.electrolyte.dz[iz]
+                for iz in b.electrolyte.iznodes
+            )
+
     def initialize_build(
         self,
         outlvl=idaeslog.NOTSET,
