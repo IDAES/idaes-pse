@@ -46,6 +46,7 @@ def build_tester(cell, nt, nz):
                 "voltage_drop_contact": nz * nt,
                 "voltage_drop_ohmic": nz * nt,
                 "electrical_work": 1,
+                "average_current_density": 1,
             },
         },
     )

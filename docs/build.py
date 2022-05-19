@@ -71,7 +71,7 @@ def run_apidoc(clean=True, dry_run=False, **kwargs):
 def postprocess_apidoc(root):
     """Perform postprocessing on generated apidoc files"""
     # Remove :noindex: from all entries in given modules
-    remove_noindex = ["idaes.dmf"]
+    remove_noindex = ["idaes.core.dmf"]
     for module in remove_noindex:
         module_path = root / (module + ".rst")
         _log.debug(f"Looking for :noindex: in {module_path}")
