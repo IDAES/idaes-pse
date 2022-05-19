@@ -637,7 +637,6 @@ class CPUData(UnitModelBlockData):
         init_log.info("Initialization Complete.")
 
     def calculate_scaling_factors(self):
-        print("yo")
         super().calculate_scaling_factors()
 
         for c in self.component_data_objects(Constraint):
