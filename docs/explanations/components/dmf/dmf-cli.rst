@@ -642,7 +642,7 @@ Default is to copy the file under the workspace directory.
 
 Explicitly specify the type of resource. If this is not given, then
 try to infer the resource type from the file. The default will be 'data'.
-The full list of resource types is in :py:data:`idaes.dmf.resource.RESOURCE_TYPES`
+The full list of resource types is in :py:data:`idaes.core.dmf.resource.RESOURCE_TYPES`
 
 
 .. option:: --strict
@@ -688,7 +688,7 @@ From 1 to 4 part semantic versions are allowed, e.g.
 * `1.0.1`
 * `1.0.1-alpha`
 
-See http://semver.org and the function :func:`idaes.dmf.resource.version_list` for more details.
+See http://semver.org and the function :func:`idaes.core.dmf.resource.version_list` for more details.
 
 dmf register usage
 ^^^^^^^^^^^^^^^^^^
@@ -749,7 +749,7 @@ given (with this option, failure to parse will be an error):
 
     $ echo "totally bogus" > notreally.json
     $ dmf reg notreally.json
-    2019-04-12 06:06:47,003 [WARNING] idaes.dmf.resource: File ending in '.json' is not valid JSON: treating as generic file
+    2019-04-12 06:06:47,003 [WARNING] idaes.core.dmf.resource: File ending in '.json' is not valid JSON: treating as generic file
     d22727c678a1499ab2c5224e2d83d9df
     $ dmf reg --strict notreally.json
     Failed to infer resource: File ending in '.json' is not valid JSON
@@ -952,7 +952,7 @@ command-line, but the following Python code does the job:
 
 .. code-block:: python
 
-    from idaes.dmf import DMF, resource
+    from idaes.core.dmf import DMF, resource
     dmf = DMF()
     rlist = [resource.Resource(value={"desc": ltr, "aliases": [ltr],
                                "tags": ["graph"]})

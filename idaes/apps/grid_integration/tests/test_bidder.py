@@ -13,8 +13,11 @@
 import pytest
 import pyomo.environ as pyo
 from idaes.apps.grid_integration.bidder import Bidder
-from idaes.apps.grid_integration.tests.util import TestingModel
-from idaes.apps.grid_integration.tests.util import TestingForecaster
+from idaes.apps.grid_integration.tests.util import (
+    TestingModel,
+    TestingForecaster,
+    testing_model_data,
+)
 from pyomo.common import unittest as pyo_unittest
 
 from idaes.apps.grid_integration.coordinator import prescient_avail
@@ -83,7 +86,7 @@ def test_model_object_missing_attr():
     forecaster = TestingForecaster(horizon=horizon, n_sample=n_scenario)
 
     # By definition, the model object should contain these attributes
-    attr_list = ["power_output", "total_cost", "generator", "pmin", "default_bids"]
+    attr_list = ["power_output", "total_cost", "model_data"]
 
     # test if the correct error message is raised if a model misses necessary attributes
     for attr in attr_list:
@@ -102,7 +105,7 @@ def test_n_scenario_checker():
 
     solver = pyo.SolverFactory("cbc")
     forecaster = TestingForecaster(horizon=horizon, n_sample=n_scenario)
-    bidding_model_object = TestingModel(horizon=horizon)
+    bidding_model_object = TestingModel(model_data=testing_model_data, horizon=horizon)
 
     # test if bidder raise error when negative number of scenario is given
     with pytest.raises(ValueError, match=r".*greater than zero.*"):
@@ -127,7 +130,7 @@ def test_n_scenario_checker():
 def test_solver_checker():
 
     forecaster = TestingForecaster(horizon=horizon, n_sample=n_scenario)
-    bidding_model_object = TestingModel(horizon=horizon)
+    bidding_model_object = TestingModel(model_data=testing_model_data, horizon=horizon)
 
     # test if bidder raise error when invalid solver is provided
     invalid_solvers = [5, "cbc", "ipopt"]
@@ -148,7 +151,7 @@ def bidder_object():
     forecaster = TestingForecaster(horizon=horizon, n_sample=n_scenario)
 
     # create a bidder model
-    bidding_model_object = TestingModel(horizon=horizon)
+    bidding_model_object = TestingModel(model_data=testing_model_data, horizon=horizon)
     bidder_object = Bidder(
         bidding_model_object=bidding_model_object,
         n_scenario=n_scenario,
@@ -159,13 +162,14 @@ def bidder_object():
 
 
 @pytest.mark.component
-@pytest.mark.skipif(not prescient_avail,
-                    reason="Prescient (optional dependency) not available")
+@pytest.mark.skipif(
+    not prescient_avail, reason="Prescient (optional dependency) not available"
+)
 def test_compute_bids(bidder_object):
 
     marginal_cost = bidder_object.bidding_model_object.marginal_cost
     gen = bidder_object.generator
-    default_bids = bidder_object.bidding_model_object.default_bids
+    default_bids = bidder_object.bidding_model_object.model_data.p_cost
     pmin = bidder_object.bidding_model_object.pmin
     pmax = bidder_object.bidding_model_object.pmax
     date = "2021-08-20"
@@ -183,7 +187,9 @@ def test_compute_bids(bidder_object):
                 "p_max": pmax,
                 "startup_capacity": pmin,
                 "shutdown_capacity": pmin,
-                "p_cost": [(p, p * marginal_cost - shift * pmin) for p in default_bids],
+                "p_cost": [
+                    (p, p * marginal_cost - shift * pmin) for p, _ in default_bids
+                ],
             }
         }
         for t in range(horizon)
@@ -211,7 +217,7 @@ def test_compute_bids(bidder_object):
         pre_p = 0
         pre_cost = 0
 
-        for p in default_bids:
+        for p, _ in default_bids:
             # because the price forecast is higher than the marginal costs
             # to have highest profit, power output will be pmax
             # and the bidding costs will be computed with the price forecasts

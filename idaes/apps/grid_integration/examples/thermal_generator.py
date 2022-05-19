@@ -16,16 +16,17 @@ import pandas as pd
 from idaes.apps.grid_integration import Tracker
 from idaes.apps.grid_integration import Bidder
 from idaes.apps.grid_integration import PlaceHolderForecaster
+from idaes.apps.grid_integration.model_data import GeneratorModelData
 
 from pyomo.common.dependencies import attempt_import
 
-Prescient, prescient_avail = attempt_import("prescient.simulator.Prescient")
+prescient_simulator, prescient_avail = attempt_import("prescient.simulator")
 
 
 class ThermalGenerator:
 
     """
-    Simple thermal generator model (MIP). Equations models are from Gao, Knueven, 
+    Simple thermal generator model (MIP). Equations models are from Gao, Knueven,
     Siirola, Miller, Dowling (2022). Multiscale Simulation of Integrated Energy
     System and Electricity Market Interactions. Applied Energy.
     """
@@ -49,13 +50,12 @@ class ThermalGenerator:
 
         self.generator = generator
         self.horizon = horizon
-        self.model_data = self.assemble_model_data(
+        self._model_data_dict = self.assemble_model_data(
             generator_name=generator, gen_params=rts_gmlc_dataframe
         )
         self.result_list = []
 
-    @staticmethod
-    def assemble_model_data(generator_name, gen_params):
+    def assemble_model_data(self, generator_name, gen_params):
 
         """
         This function assembles the parameter data to build the thermal generator
@@ -127,7 +127,38 @@ class ThermalGenerator:
                 model_data["Power Segments"][l]
             ] = model_data["Marginal Costs"][l]
 
+        self._model_data = GeneratorModelData(
+            gen_name=generator_name,
+            generator_type="thermal",
+            p_min=model_data["PMin MW"],
+            p_max=model_data["PMax MW"],
+            min_down_time=model_data["Min Down Time Hr"],
+            min_up_time=model_data["Min Up Time Hr"],
+            ramp_up_60min=model_data["RU"],
+            ramp_down_60min=model_data["RD"],
+            shutdown_capacity=model_data["SD"],
+            startup_capacity=model_data["SU"],
+            production_cost_bid_pairs=[
+                (
+                    model_data["PMin MW"],
+                    model_data["Min Load Cost"] / model_data["PMin MW"],
+                )
+            ]
+            + [
+                (model_data["Power Segments"][l], model_data["Marginal Costs"][l])
+                for l in range(1, ThermalGenerator.segment_number)
+            ],
+            startup_cost_pairs=[
+                (model_data["Min Down Time Hr"], model_data["SU Cost"])
+            ],
+            fixed_commitment=None,
+        )
+
         return model_data
+
+    @property
+    def model_data(self):
+        return self._model_data
 
     @staticmethod
     def _add_UT_DT_constraints(b):
@@ -222,11 +253,11 @@ class ThermalGenerator:
             b: the constructed block.
         """
 
-        model_data = self.model_data
+        model_data = self._model_data_dict
 
         ## define the sets
         b.HOUR = pyo.Set(initialize=list(range(self.horizon)))
-        b.SEGMENTS = pyo.Set(initialize=list(range(1, self.segment_number)))
+        b.SEGMENTS = pyo.Set(initialize=list(range(1, ThermalGenerator.segment_number)))
 
         ## define the parameters
 
@@ -660,14 +691,6 @@ class ThermalGenerator:
     def total_cost(self):
         return ("tot_cost", 1)
 
-    @property
-    def default_bids(self):
-        return self.model_data["Original Marginal Cost Curve"]
-
-    @property
-    def pmin(self):
-        return self.model_data["PMin MW"]
-
 
 if __name__ == "__main__":
 
@@ -752,4 +775,4 @@ if __name__ == "__main__":
             },
         }
 
-        Prescient().simulate(**options)
+        prescient_simulator.Prescient().simulate(**options)

@@ -16,6 +16,7 @@ Tests for ControlVolumeBlockData.
 Author: Andrew Lee
 """
 import pytest
+from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -439,5 +440,10 @@ class TestMethane(object):
 
     @pytest.mark.ui
     @pytest.mark.unit
-    def test_report(self, methane):
-        methane.fs.unit.report()
+    def test_get_performance_contents(self, methane):
+        perf_dict = methane.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Heat Duty": methane.fs.unit.heat_duty[0],
+                "Pressure Change": methane.fs.unit.deltaP[0]}}

@@ -26,6 +26,8 @@ from pyomo.environ import ConcreteModel, SolverFactory, value
 
 # Import IDAES core modules
 from idaes.core import FlowsheetBlock
+from idaes.core.util import scaling as iscale
+from idaes.core.solvers import get_solver
 
 # Import IDAES logger
 import idaes.logger as idaeslog
@@ -95,7 +97,7 @@ def main():
     # Fix inlet port variables for gas and solid
     m.fs.BFB.gas_inlet.flow_mol[0].fix(1567.79)  # mol/s
     m.fs.BFB.gas_inlet.temperature[0].fix(373)  # K
-    m.fs.BFB.gas_inlet.pressure[0].fix(1.86)  # bar
+    m.fs.BFB.gas_inlet.pressure[0].fix(1.86e5)  # Pa = 1E5 bar
     m.fs.BFB.gas_inlet.mole_frac_comp[0, "O2"].fix(0.2095)
     m.fs.BFB.gas_inlet.mole_frac_comp[0, "N2"].fix(0.7808)
     m.fs.BFB.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.0004)
@@ -144,6 +146,14 @@ def main():
         },
     }
 
+    print()
+    print("Apply scaling transformation")
+    # Scale the model by applying scaling transformation
+    # This reduces ill conditioning of the model
+    iscale.calculate_scaling_factors(m)
+
+    print()
+    print("Initialize the model")
     m.fs.BFB.initialize(
         outlvl=idaeslog.INFO,
         gas_phase_state_args=gas_phase_state_args,
@@ -156,7 +166,8 @@ def main():
     # Final solve
 
     # Create a solver
-    solver = SolverFactory("ipopt")
+    solver = get_solver()
+
     solver.solve(m.fs.BFB, tee=True)
 
     t_simulation = time.time()  # Simulation time

@@ -1483,9 +1483,9 @@ argument).""",
                     mass transfer should be included in enthalpy balance. This
                     should generally be the same as the has_mass_transfer
                     argument in the material balance methods
-            custom_term - a Pyomo Expression representing custom terms to
-                    be included in enthalpy balances.
-                    Expression must be indexed by time, length and phase list
+            custom_term - a Python method which returns Pyomo expressions representing
+                    custom terms to be included in enthalpy balances.
+                    Method should accept time, length and phase list as arguments.
 
         Returns:
             Constraint object representing enthalpy balances
@@ -1746,6 +1746,9 @@ argument).""",
             custom_term - a Pyomo Expression representing custom terms to
                     be included in pressure balances.
                     Expression must be indexed by time and length domain
+            custom_term - a Python method which returns Pyomo expressions representing
+                    custom terms to be included in enthalpy balances.
+                    Method should accept time and length as arguments.
 
         Returns:
             Constraint object representing pressure balances
