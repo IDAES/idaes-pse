@@ -74,7 +74,13 @@ New cost accounts include:
     between 90% and 97.7% capture rate. It is only valid for a flue gas CO2
     concentration of 4%. The additional cost component of the CO2 system is
     in account 5.1.b and remains unchanged.
- """
+
+    - 6.1 can be used to cost the MEA solvent-based carbon capture system, 
+    using the reference: Kangkang Li, Ashleigh Cousins, Hai You, Paul Feron,
+    Weilang Luo, Jian Chen (2016). Systematic study of aqueous monoethanolamine
+    (MEA)-based CO2 capture process: Techno-economic assessment of the MEA
+    process and its improvements. Applied Energy, 165, 648-659.
+"""
 
 custom_costing_exponents = {
     "6": {
@@ -82,6 +88,46 @@ custom_costing_exponents = {
             "Account Name": "Cansolv CO2 Removal System",
             "Exponent": 2.788,
             "Process Parameter": "CO2 Flowrate",
+        },
+        "6.1.ccs": {
+            "Account Name": "MEA solvent capture system absorber",
+            "Exponent": 0.6,
+            "Process Parameter": "Absorber volume",
+        },
+        "6.2.ccs": {
+            "Account Name": "MEA solvent capture system absorber packing",
+            "Exponent": 0.6,
+            "Process Parameter": "Absorber packing volume",
+        },
+        "6.3.ccs": {
+            "Account Name": "MEA solvent capture system stripper",
+            "Exponent": 0.6,
+            "Process Parameter": "Stripper volume",
+        },
+        "6.4.ccs": {
+            "Account Name": "MEA solvent capture system stripper packing",
+            "Exponent": 0.6,
+            "Process Parameter": "Stripper packing volume",
+        },
+        "6.5.ccs": {
+            "Account Name": "MEA solvent capture system stripper condenser",
+            "Exponent": 0.6,
+            "Process Parameter": "Stripper condenser area",
+        },
+        "6.6.ccs": {
+            "Account Name": "MEA solvent capture system stripper reboiler",
+            "Exponent": 0.6,
+            "Process Parameter": "Stripper reboiler area",
+        },
+        "6.7.ccs": {
+            "Account Name": "MEA solvent capture system lean rich heat exchanger",
+            "Exponent": 0.6,
+            "Process Parameter": "Lean rich heat exchanger area"
+        },
+        "6.8.ccs": {
+            "Account Name": "MEA solvent capture system lean solvent cooler",
+            "Exponent": 0.6,
+            "Process Parameter": "Lean solvent cooler area"
         }
     }
 }
@@ -96,13 +142,77 @@ custom_costing_params = {
                 "Project Contingency": 0.2,
                 "RP Value": 493587.88,
                 "Units": "lb/hr",
+            },
+            "6.1.ccs":{
+                    "BEC": 6128000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 1074.424688,
+                    "Units": "m**3"
+            },
+            "6.2.ccs":{
+                    "BEC": 6040000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 791.6813487,
+                    "Units": "m**3"
+            },
+            "6.3.ccs":{
+                    "BEC": 1986000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 419.6971436,
+                    "Units": "m**3"
+            },
+            "6.4.ccs":{
+                    "BEC": 1438000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 309.2505268,
+                    "Units": "m**3"
+            },
+            "6.5.ccs":{
+                    "BEC": 260000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 800,
+                    "Units": "m**2"
+            },
+            "6.6.ccs":{
+                    "BEC": 3095000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 4250,
+                    "Units": "m**2"
+            },
+            "6.7.ccs":{
+                    "BEC": 1151000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 9100,
+                    "Units": "m**2"
+            },
+            "6.8.ccs":{
+                    "BEC": 465000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 1200,
+                    "Units": "m**2"
             }
         }
     }
 }
 
 
-def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B"):
+def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B", CE_index_base=None):
     """
     Power Plant Costing Method
     This method relies on the capital cost scaling methodologies developed
@@ -181,6 +291,11 @@ def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B"):
 
     CE_index = fs.costing.CE_index
 
+    if CE_index_base is None:
+        CE_index_base = 671.1
+    else:
+        pass
+
     # define preloaded accounts
     PC_preloaded_accounts = {
         "Coal Handling": ["1.1", "1.2", "1.3", "1.4", "1.9a"],
@@ -249,6 +364,7 @@ def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B"):
     account_names = {}
     exponents = {}
     reference_costs = {}
+    reference_costs_init = {}
     reference_params = {}
     engineering_fees = {}
     process_contingencies = {}
@@ -269,6 +385,8 @@ def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B"):
                 BB_costing_exponents[str(tech)][account]["Exponent"]
             )
             reference_costs[account] = BB_costing_params[str(tech)][ccs][account]["BEC"]
+            reference_costs_init[account] = BB_costing_params[str(
+                tech)][ccs][account]['BEC'] * 1e-3
             reference_params[account] = BB_costing_params[str(tech)][ccs][account][
                 "RP Value"
             ]
@@ -298,6 +416,8 @@ def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B"):
                 reference_costs[account] = custom_costing_params[str(tech)][ccs][
                     account
                 ]["BEC"]
+                reference_costs_init[account] = custom_costing_params[str(
+                    tech)][ccs][account]['BEC'] * 1e-3
                 reference_params[account] = custom_costing_params[str(tech)][ccs][
                     account
                 ]["RP Value"]
@@ -388,14 +508,14 @@ def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B"):
     # define variables
     self.costing.bare_erected_cost = Var(
         cost_accounts,
-        initialize=reference_costs,
+        initialize=reference_costs_init,
         bounds=(0, 1e4),
         doc="scaled bare erected cost in $MM",
     )
 
     self.costing.total_plant_cost = Var(
         cost_accounts,
-        initialize=reference_costs,
+        initialize=reference_costs_init,
         bounds=(0, 1e4),
         doc="total plant cost in $MM",
     )
@@ -405,7 +525,7 @@ def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B"):
     def bare_erected_cost_rule(costing, i):
         return (
             costing.bare_erected_cost[i] * 1e3
-            == (CE_index / 671.1)
+            == (CE_index / CE_index_base)
             * costing.ref_cost[i]
             * (scaled_param / costing.ref_param[i]) ** costing.exp[i]
         )
