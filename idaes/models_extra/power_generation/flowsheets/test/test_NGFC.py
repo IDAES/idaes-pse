@@ -200,7 +200,7 @@ def test_scaling(m):
         pytest.approx(1e5, rel=1e-5)
 
 
-@pytest.mark.integration
+@pytest.mark.component
 def test_initialize_power_island(m):
     initialize_power_island(m)
 
@@ -213,7 +213,7 @@ def test_initialize_power_island(m):
         pytest.approx(105490, rel=1e-3)
 
 
-@pytest.mark.integration
+@pytest.mark.component
 def test_initialize_reformer(m):
     initialize_reformer(m)
 
