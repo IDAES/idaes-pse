@@ -110,7 +110,7 @@ def minlp():
     return m, 1, 1
 
 
-def dae():
+def dae(nfe=1):
     """This provides a DAE model for solver testing.
 
     The problem and expected result are from the problem given here:
@@ -198,7 +198,7 @@ def dae():
         model.y[0, i].fix(y0[i])
 
     discretizer = pyo.TransformationFactory("dae.finite_difference")
-    discretizer.apply_to(model, nfe=1, scheme="BACKWARD")
+    discretizer.apply_to(model, nfe=nfe, scheme="BACKWARD")
 
     return (
         model,

@@ -17,10 +17,10 @@ Relevant tutorials can be found in ``tutorials/advanced/data_recon_and_parameter
 Data Management
 ---------------
 
-.. currentmodule:: idaes.dmf.model_data
+.. currentmodule:: idaes.core.dmf.model_data
 
 IDAES has functions to read and mange process data process data. Data management
-functions are contained in the ``idaes.dmf.model_data`` module.
+functions are contained in the ``idaes.core.dmf.model_data`` module.
 
 
 Reading Data
@@ -64,7 +64,7 @@ the reference string for a heater block outlet temperature could be
 ``m.flowsheet.heater.control_volume.properties_out[:].temperature``. This
 reference will be indexed by time.
 
-Reading data can be done with the ``idaes.dmf.model_data.read_data()`` function.
+Reading data can be done with the ``idaes.core.dmf.model_data.read_data()`` function.
 
 .. autofunction:: read_data
   :noindex:
@@ -84,25 +84,25 @@ change over time and be useful for things like fault detection and equipment
 degradation.
 
 Adding bin information to a data frame is done with the
-``idaes.dmf.model_data.bin_data()`` function.
+``idaes.core.dmf.model_data.bin_data()`` function.
 
 .. autofunction:: bin_data
   :noindex:
 
-The ``idaes.dmf.model_data.bin_stdev()`` function can be used to calculate the
+The ``idaes.core.dmf.model_data.bin_stdev()`` function can be used to calculate the
 standard deviation for each measurement in each bin.
 
 .. autofunction:: bin_stdev
   :noindex:
 
-The function ``idaes.dmf.model_data.data_plot_book()`` creates a multipage PDF
+The function ``idaes.core.dmf.model_data.data_plot_book()`` creates a multipage PDF
 containing box plots for all the measurements based on the bins.
 
 .. autofunction:: data_plot_book
   :noindex:
 
 To compare reconciled data to original measurements the
-``idaes.dmf.data_rec_plot_book()`` is used.  For each bin there are two box
+``idaes.core.dmf.data_rec_plot_book()`` is used.  For each bin there are two box
 plots one for the original data and one for reconciled data.
 
 .. autofunction:: data_rec_plot_book
@@ -118,13 +118,13 @@ variable, expression, or parameter. The tags may be process measurement tags, or
 other convenient string. IDAES has some utilities to help facilitate tagging of models.
 
 If model reference strings where provided in the tag metadata file, the tag metadata
-from the ``idaes.dmf.model_data.read_data()`` will contain model references. These
+from the ``idaes.core.dmf.model_data.read_data()`` will contain model references. These
 references can be accessed in the metadata dictionary as ``metadata[tag]["reference"]``.
 
 The reference strings are optional in the tag metadata file and can be added after reading
 the data. To add a reference string to the metadata, you can update the metadata dictionary
 like ``metadata[tag]["reference_string"] = reference_string``. If you update the reference
-string, the idaes.dmf.model_data.upadate_metadata_model_references()`` function can be used
+string, the idaes.core.dmf.model_data.upadate_metadata_model_references()`` function can be used
 to update the references in the tag metadata.
 
 .. autofunction:: upadate_metadata_model_references

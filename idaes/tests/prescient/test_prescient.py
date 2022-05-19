@@ -25,9 +25,6 @@ import pytest
 import pandas as pd
 
 
-prescient_simulator = pytest.importorskip("prescient.simulator", reason="prescient (optional dependency) not available")
-
-
 # define custom type for type hinting
 PrescientOptions = Dict[str, Union[str, bool, Number, dict]]
 
@@ -82,7 +79,9 @@ class Test5Bus:
 
     @pytest.fixture
     def run_simulator(self, prescient_options: PrescientOptions) -> None:
-        from prescient.simulator import Prescient
+        Prescient = pytest.importorskip(
+            "prescient.simulator.Prescient", 
+            reason="Prescient (optional dependency) not available")
 
         sim = Prescient()
         sim.simulate(**prescient_options)

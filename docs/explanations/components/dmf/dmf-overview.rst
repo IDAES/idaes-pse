@@ -44,7 +44,7 @@ keyword. For example::
   workspace: ~/data/workspaces/workspace1
 
 The per-workspace configuration has more options. See the documentation
-in the :class:`Workspace <idaes.dmf.workspace.Workspace>` class for details.
+in the :class:`Workspace <idaes.core.dmf.workspace.Workspace>` class for details.
 The configuration file is in YAML (or JSON) format. Here is an example file, with some
 description in comments:
 
@@ -64,20 +64,20 @@ description in comments:
       html_documentation_paths:             # List of paths for HTML documentation
         -: /home/myuser/idaes/docs/build
       logging:                              # Logging configuration
-        idaes.dmf:                          # Name of the logger
+        idaes.core.dmf:                          # Name of the logger
             level: DEBUG                    # Log level (Python logging constant)
             output: /tmp/debug.log          # File path or "_stdout_" or "_stderr_"
 
 This configuration file is used whether you use the DMF from the command-line,
 Jupyter notebook, or in a Python program. For details see the
-:mod:`DMF package <idaes.dmf>` documentation.
+:mod:`DMF package <idaes.core.dmf>` documentation.
 
 Jupyter notebook usage
 ----------------------
 In the Jupyter Notebook, there are some "magics" defined that make
 initializing the DMF pretty easy. For example::
 
-    from idaes.dmf import magics
+    from idaes.core.dmf import magics
     %dmf init path/to/workspace
 
 The code above loads the "%dmf" *line magic* in the first line, then uses it
@@ -106,7 +106,7 @@ pull up this documentation for an IDAES module, class, or
 object. Below are a couple of examples::
 
     # Initialize the DMF first
-    from idaes.dmf import magics
+    from idaes.core.dmf import magics
     %dmf init path/to/workspace create
 
     # Get help on a module (imported)
@@ -168,5 +168,5 @@ So, some ways to share (with one or many people) include:
 
 Reference
 ---------
-See the :mod:`idaes.dmf` package documentation that is generated
+See the :mod:`idaes.core.dmf` package documentation that is generated
 automatically from the source code.

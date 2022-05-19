@@ -109,6 +109,10 @@ in inspecting a models scaling. Additionally ``constraint_autoscale_large_jac()`
 described above can provide Jacobian information at the current variable values.
 
 
+.. autofunction:: extreme_jacobian_columns
+
+.. autofunction:: extreme_jacobian_rows
+
 .. autofunction:: badly_scaled_var_generator
 
 .. autofunction:: unscaled_variables_generator

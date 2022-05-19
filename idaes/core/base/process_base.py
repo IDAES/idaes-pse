@@ -22,7 +22,7 @@ from pandas import DataFrame
 
 from pyomo.core.base.block import _BlockData
 from pyomo.common.formatting import tabular_writer
-from pyomo.environ import Block, value
+from pyomo.environ import Block
 from pyomo.gdp import Disjunct
 from pyomo.common.config import ConfigBlock
 from enum import Enum
@@ -40,6 +40,7 @@ from idaes.core.util.model_statistics import (
     number_activated_constraints,
     number_activated_blocks,
 )
+from idaes.core.util.units_of_measurement import report_quantity
 
 
 # Some more inforation about this module
@@ -285,8 +286,13 @@ class ProcessBlockData(_BlockData):
                     ostream,
                     prefix + tab,
                     ((k, v) for k, v in performance["vars"].items()),
-                    ("Value", "Fixed", "Bounds"),
-                    lambda k, v: ["{:#.5g}".format(value(v)), v.fixed, v.bounds],
+                    ("Value", "Units", "Fixed", "Bounds"),
+                    lambda k, v: [
+                        "{:#.5g}".format(report_quantity(v).m),
+                        report_quantity(v).u,
+                        v.fixed,
+                        v.bounds,
+                    ],
                 )
 
             if "exprs" in performance.keys() and len(performance["exprs"]) > 0:
@@ -297,8 +303,14 @@ class ProcessBlockData(_BlockData):
                     ostream,
                     prefix + tab,
                     ((k, v) for k, v in performance["exprs"].items()),
-                    ("Value",),
-                    lambda k, v: ["{:#.5g}".format(value(v))],
+                    (
+                        "Value",
+                        "Units",
+                    ),
+                    lambda k, v: [
+                        "{:#.5g}".format(report_quantity(v).m),
+                        report_quantity(v).u,
+                    ],
                 )
 
             if "params" in performance.keys() and len(performance["params"]) > 0:
@@ -309,8 +321,12 @@ class ProcessBlockData(_BlockData):
                     ostream,
                     prefix + tab,
                     ((k, v) for k, v in performance["params"].items()),
-                    ("Value", "Mutable"),
-                    lambda k, v: [value(v), not v.is_constant()],
+                    ("Value", "Units", "Mutable"),
+                    lambda k, v: [
+                        report_quantity(v).m,
+                        report_quantity(v).u,
+                        not v.is_constant(),
+                    ],
                 )
 
         if stream_table is not None:
@@ -324,10 +340,10 @@ class ProcessBlockData(_BlockData):
             )
         ostream.write("\n" + "=" * max_str_length + "\n")
 
-    def _get_performance_contents(self, time_point):
+    def _get_performance_contents(self, time_point=0):
         return None
 
-    def _get_stream_table_contents(self, time_point):
+    def _get_stream_table_contents(self, time_point=0):
         return None
 
     def serialize_contents(self, time_point=0):

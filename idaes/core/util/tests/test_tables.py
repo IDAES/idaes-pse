@@ -256,9 +256,10 @@ def test_create_stream_table_dataframe_ordering(m):
     df = create_stream_table_dataframe(state_dict)
 
     columns = list(df)
-    assert columns[0] == "state1"
-    assert columns[1] == "state3"
-    assert columns[2] == "state2"
+    assert columns[0] == "Units"
+    assert columns[1] == "state1"
+    assert columns[2] == "state3"
+    assert columns[3] == "state2"
 
 
 @pytest.mark.unit

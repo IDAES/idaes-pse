@@ -25,6 +25,17 @@ on:
       # synchronize occurs whenever commits are pushed to the PR branch
       - synchronize
 
+concurrency:
+  # NOTE: the value of `group` should be chosen carefully,
+  # otherwise we might end up over- or under-canceling workflow runs
+  # e.g. if we want to have Codecov results for each commit on `main`,
+  # we should use something `github.sha` instead of `github.ref_name`
+  # to avoid over-canceling runs from `main`
+  # in which case we'd need to access the PR number from somewhere else rather than `github.ref_name`
+  # to avoid under-canceling runs from PRs
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
 env:
   # default Python version to use for checks that do not require multiple versions
   DEFAULT_PYTHON_VERSION: '3.8'
