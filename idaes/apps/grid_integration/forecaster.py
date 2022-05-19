@@ -600,6 +600,29 @@ class Backcaster(AbstractPrescientPriceForecaster):
     def _forecast(
         self, historical_price_dict, market, date, hour, bus, horizon, n_samples
     ):
+        """
+        Forecast energy market prices using historical prices.
+
+        Arguments:
+
+            historical_price_dict: the dictionary that holds the intended historical prices
+
+            market: the market that the price forecast is for, e.g., day-ahead
+
+            date: intended date of the forecasts
+
+            hour: intended hour of the forecasts
+
+            bus: intended bus of the forecasts
+
+            horizon: number of the time periods of the forecasts
+
+            n_samples: number of the samples
+
+        Returns:
+            dict: price forecasts
+
+        """
 
         if bus not in historical_price_dict:
             raise ForecastError(f"No {bus} {market} price available.")
@@ -633,15 +656,19 @@ class Backcaster(AbstractPrescientPriceForecaster):
             None
         """
 
+        # save the newest rt prices
         for b, price_list in self._current_day_rt_prices.items():
             price_list.append(prescient_hourly_stats.observed_bus_LMPs[b])
 
         # update the historical
         for b in self._current_day_rt_prices:
+
+            # if a full day's data is ready, get them ready for future forecasts
             if len(self._current_day_rt_prices[b]) >= 24:
                 self._historical_rt_prices[b] += self._current_day_rt_prices[b]
                 self._current_day_rt_prices[b] = []
 
+            # drop oldes historical prices if total stored data exceeded the upper bound
             while len(self._historical_rt_prices[b]) // 24 > self.max_historical_days:
                 self._historical_rt_prices[b] = self._historical_rt_prices[b][24:]
 
@@ -666,11 +693,14 @@ class Backcaster(AbstractPrescientPriceForecaster):
         """
 
         for b in self._historical_da_prices:
+
+            # save the newest da prices
             self._historical_da_prices[b] += [
                 day_ahead_result.ruc_market.day_ahead_prices.get((b, t))
                 for t in range(24)
             ]
 
+            # drop oldes historical prices if total stored data exceeded the upper bound
             while len(self._historical_da_prices[b]) // 24 > self.max_historical_days:
                 self._historical_da_prices[b] = self._historical_da_prices[b][24:]
 
