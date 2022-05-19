@@ -201,7 +201,7 @@ def create_model(
 def test_petsc_with_pid_model():
     m = create_model(
         time_set=[0, 24],
-        nfe=1,
+        nfe=5,
         calc_integ=True,
     )
     # time_var will be an explicit time variable we can use in constraints.
@@ -209,8 +209,7 @@ def test_petsc_with_pid_model():
 
     # We'll add a constraint to calculate the inlet pressure based on time,
     # so we need to unfix pressure.
-    m.fs.valve_1.control_volume.properties_in[0].pressure.unfix()
-    m.fs.valve_1.control_volume.properties_in[24].pressure.unfix()
+    m.fs.valve_1.control_volume.properties_in[:].pressure.unfix()
 
     # The solver will directly set the time variable for the DAE solve, but
     # solving the initial conditions is just a system of nonlinear equations,
@@ -229,41 +228,41 @@ def test_petsc_with_pid_model():
     res = petsc.petsc_dae_by_time_element(
         m,
         time=m.fs.time,
+        between=[m.fs.time.first(), m.fs.time.at(3), m.fs.time.last()],
         timevar=m.fs.time_var,
         ts_options={
             "--ts_type": "beuler",
             "--ts_dt": 0.1,
             "--ts_monitor": "",  # set initial step to 0.1
             "--ts_save_trajectory": 1,
-            "--ts_trajectory_type": "visualization",
         },
-        vars_stub="tj_vars",
     )
+    assert isinstance(res.results, list)
 
     # read the trajectory data, and make it easy by interpolating a time point
     # every second
-    tj = petsc.PetscTrajectory(stub="tj_vars", delete_on_read=True)
-    vecs = tj.interpolate_vecs(np.linspace(0, 24, 25))
+    tj = res.trajectory
+    tj2 = tj.interpolate(np.linspace(0, 24, 25))
 
     # For more details about the problem behavior see the PETSc examples in the
     # examples repo.
 
     # make sure the inlet pressure is initially 5e5 Pa
     assert pyo.value(
-        vecs[str(m.fs.valve_1.control_volume.properties_in[24].pressure)][5]
+        tj2.get_vec(m.fs.valve_1.control_volume.properties_in[24].pressure)[5]
     ) == pytest.approx(5e5)
     # make sure the inlet pressure ramped up to 6e5 Pa
     assert pyo.value(
-        vecs[str(m.fs.valve_1.control_volume.properties_in[24].pressure)][20]
+        tj2.get_vec(m.fs.valve_1.control_volume.properties_in[24].pressure)[20]
     ) == pytest.approx(6e5)
     # make sure after the controller comes on the presure goes to the set point
     assert pyo.value(
-        vecs[str(m.fs.tank.control_volume.properties_out[24].pressure)][9]
+        tj2.get_vec(m.fs.tank.control_volume.properties_out[24].pressure)[9]
     ) == pytest.approx(3e5)
     # make sure after ramping inlet pressure the tank pressure gets back to the
     # setpoint
     assert pyo.value(
-        vecs[str(m.fs.tank.control_volume.properties_out[24].pressure)][22]
+        tj2.get_vec(m.fs.tank.control_volume.properties_out[24].pressure)[22]
     ) == pytest.approx(3e5)
 
     # Test derivatives.  There is no discretization equation at t=0 and
@@ -273,22 +272,22 @@ def test_petsc_with_pid_model():
 
     der = (
         m.fs.tank.control_volume.material_holdup[m.fs.time.last(), "Vap", "H2O"]
-        - m.fs.tank.control_volume.material_holdup[m.fs.time.first(), "Vap", "H2O"]
-    ) / 24.0
+        - m.fs.tank.control_volume.material_holdup[m.fs.time.at(5), "Vap", "H2O"]
+    ) / (m.fs.time.last() - m.fs.time.at(5))
     assert pyo.value(
         m.fs.tank.control_volume.material_accumulation[m.fs.time.last(), "Vap", "H2O"]
     ) == pytest.approx(pyo.value(der))
     der = (
         m.fs.tank.control_volume.energy_holdup[m.fs.time.last(), "Vap"]
-        - m.fs.tank.control_volume.energy_holdup[m.fs.time.first(), "Vap"]
-    ) / 24.0
+        - m.fs.tank.control_volume.energy_holdup[m.fs.time.at(5), "Vap"]
+    ) / (m.fs.time.last() - m.fs.time.at(5))
     assert pyo.value(
         m.fs.tank.control_volume.energy_accumulation[m.fs.time.last(), "Vap"]
     ) == pytest.approx(pyo.value(der))
     der = (
         m.fs.ctrl.integral_of_error[m.fs.time.last()]
-        - m.fs.ctrl.integral_of_error[m.fs.time.first()]
-    ) / 24.0
+        - m.fs.ctrl.integral_of_error[m.fs.time.at(5)]
+    ) / (m.fs.time.last() - m.fs.time.at(5))
     assert pyo.value(
         m.fs.ctrl.integral_of_error_dot[m.fs.time.last()]
     ) == pytest.approx(pyo.value(der))

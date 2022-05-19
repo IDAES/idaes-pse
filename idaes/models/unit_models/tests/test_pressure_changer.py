@@ -16,6 +16,7 @@ Tests for Pressure Changer unit model.
 Author: Andrew Lee, Emmanuel Ogbe
 """
 import pytest
+from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -26,7 +27,6 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core import (
     FlowsheetBlock,
@@ -347,8 +347,14 @@ class TestBTX_isothermal(object):
 
     @pytest.mark.ui
     @pytest.mark.unit
-    def test_report(self, btx):
-        btx.fs.unit.report()
+    def test_get_performance_contents(self, btx):
+        perf_dict = btx.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Mechanical Work": btx.fs.unit.work_mechanical[0],
+                "Pressure Ratio": btx.fs.unit.ratioP[0],
+                "Pressure Change": btx.fs.unit.deltaP[0]}}
 
 
 # -----------------------------------------------------------------------------
@@ -576,8 +582,15 @@ class TestIAPWS(object):
 
     @pytest.mark.ui
     @pytest.mark.unit
-    def test_report(self, iapws):
-        iapws.fs.unit.report()
+    def test_get_performance_contents(self, iapws):
+        perf_dict = iapws.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Mechanical Work": iapws.fs.unit.work_mechanical[0],
+                "Pressure Ratio": iapws.fs.unit.ratioP[0],
+                "Pressure Change": iapws.fs.unit.deltaP[0],
+                "Isentropic Efficiency": iapws.fs.unit.efficiency_isentropic[0]}}
 
     @pytest.mark.component
     def test_initialization_error(self, iapws):
@@ -726,9 +739,15 @@ class TestSaponification(object):
 
     @pytest.mark.ui
     @pytest.mark.unit
-    def test_report(self, sapon):
-        sapon.fs.unit.report()
+    def test_get_performance_contents(self, sapon):
+        perf_dict = sapon.fs.unit._get_performance_contents()
 
+        assert perf_dict == {
+            "vars": {
+                "Mechanical Work": sapon.fs.unit.work_mechanical[0],
+                "Pressure Ratio": sapon.fs.unit.ratioP[0],
+                "Pressure Change": sapon.fs.unit.deltaP[0],
+                "Efficiency": sapon.fs.unit.efficiency_pump[0]}}
 
 class TestTurbine(object):
     @pytest.mark.unit

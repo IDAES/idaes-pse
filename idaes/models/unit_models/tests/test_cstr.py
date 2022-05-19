@@ -14,6 +14,7 @@
 Tests for CSTR unit model.
 Authors: Andrew Lee, Vibhav Dabadghao
 """
+from io import StringIO
 
 import pytest
 from pyomo.environ import check_optimal_termination, ConcreteModel, units, value, Var
@@ -251,8 +252,14 @@ class TestSaponification(object):
 
     @pytest.mark.ui
     @pytest.mark.unit
-    def test_report(self, sapon):
-        sapon.fs.unit.report()
+    def test_get_performance_contents(self, sapon):
+        perf_dict = sapon.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Volume": sapon.fs.unit.volume[0],
+                "Heat Duty": sapon.fs.unit.heat_duty[0],
+                "Pressure Change": sapon.fs.unit.deltaP[0]}}
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
