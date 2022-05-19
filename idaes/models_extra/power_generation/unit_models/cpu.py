@@ -587,7 +587,8 @@ class CPUData(UnitModelBlockData):
     def initialize(blk,
                    outlvl=idaeslog.NOTSET,
                    solver='ipopt',
-                   optarg={'tol': 1e-6}):
+                   optarg={'tol': 1e-6},
+                   release_state=True):
         '''
         CO2 pure pyomo block initialization routine
 
@@ -624,33 +625,21 @@ class CPUData(UnitModelBlockData):
             )
         init_log.info_high("Initialization Step 1 Complete.")
 
-        # check component material balances
-        # deactivate component balance equation for inlet
-        # fix all inlet flows
-        # blk.inlet.mole_frac_comp[0, 'O2'].fix(0)
-        # blk.mole_frac_comp_inlet_eqn.deactivate()
-        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        #     res = opt.solve(blk, tee=slc.tee)
-        # init_log.info_high(
-        #         "Initialization Step 2 {}.".format(idaeslog.condition(res))
-        #     )
-
         # release all states and activate constraint
-        blk.inlet.flow_mol[0].unfix()
-        blk.inlet.mole_frac_comp[0, 'Ar'].unfix()
-        blk.inlet.mole_frac_comp[0, 'CO2'].unfix()
-        blk.inlet.mole_frac_comp[0, 'O2'].unfix()
-        blk.inlet.mole_frac_comp[0, 'H2O'].unfix()
-        blk.inlet.mole_frac_comp[0, 'N2'].unfix()
-        # blk.mole_frac_comp_inlet_eqn.activate()
+        if release_state:
+            blk.inlet.flow_mol[0].unfix()
+            blk.inlet.mole_frac_comp[0, 'Ar'].unfix()
+            blk.inlet.mole_frac_comp[0, 'CO2'].unfix()
+            blk.inlet.mole_frac_comp[0, 'O2'].unfix()
+            blk.inlet.mole_frac_comp[0, 'H2O'].unfix()
+            blk.inlet.mole_frac_comp[0, 'N2'].unfix()
 
         init_log.info("Initialization Complete.")
 
     def calculate_scaling_factors(self):
+        print("yo")
         super().calculate_scaling_factors()
 
-        # for v in self.component_data_objects(Var):
-        #     iscale.set_scaling_factor(v, 1)
         for c in self.component_data_objects(Constraint):
             iscale.set_scaling_factor(c, 1)
 
