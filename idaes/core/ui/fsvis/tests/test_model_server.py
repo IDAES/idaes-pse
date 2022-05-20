@@ -27,6 +27,12 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 from idaes.models.unit_models import Flash
 
 
+@pytest.fixture(scope="module", params=[True])
+def flowsheet_server(request):
+    srv = model_server.FlowsheetServer(is_local=request.param)
+    return srv
+
+
 @pytest.mark.unit
 def test_flowsheet_server_class():
     srv = model_server.FlowsheetServer()
@@ -89,42 +95,40 @@ def flash_model():
 
 
 @pytest.mark.component
-def test_flowsheet_server_run(flash_model):
+def test_flowsheet_server_run(flowsheet_server, flash_model):
     import requests
 
-    srv = model_server.FlowsheetServer()
+    srv = flowsheet_server
     srv.start()
     srv.path = "/app"
-    resp = requests.get(f"http://localhost:{srv.port}/app")
+    resp = requests.get(f"http://{srv.ip}:{srv.port}/app")
     assert not resp.ok
     # ok to get /app with bogus id (id is just added to response page)
-    resp = requests.get(f"http://localhost:{srv.port}/app?id=1234")
+    resp = requests.get(f"http://{srv.ip}:{srv.port}/app?id=1234")
     assert resp.ok
     # not ok to get /fs with bogus id
-    resp = requests.get(f"http://localhost:{srv.port}/fs?id=1234")
+    resp = requests.get(f"http://{srv.ip}:{srv.port}/fs?id=1234")
     assert not resp.ok
     # add the flowsheet
     fs = flash_model.fs
     srv.add_flowsheet("oscar", fs, persist.MemoryDataStore())
     # now /fs should work
-    resp = requests.get(f"http://localhost:{srv.port}/fs?id=oscar")
+    resp = requests.get(f"http://{srv.ip}:{srv.port}/fs?id=oscar")
     assert resp.ok
     print("Bogus PUT")
-    resp = requests.put(f"http://localhost:{srv.port}/fs")
+    resp = requests.put(f"http://{srv.ip}:{srv.port}/fs")
     assert not resp.ok
     # test getting setting values
-    resp = requests.get(f"http://localhost:{srv.port}/setting")
+    resp = requests.get(f"http://{srv.ip}:{srv.port}/setting")
     assert not resp.ok
-    resp = requests.get(f"http://localhost:{srv.port}/setting?bogus_key=1234")
+    resp = requests.get(f"http://{srv.ip}:{srv.port}/setting?bogus_key=1234")
     assert not resp.ok
     resp = requests.get(
-        f"http://localhost:{srv.port}/setting?setting_key=save_time_interval"
+        f"http://{srv.ip}:{srv.port}/setting?setting_key=save_time_interval"
     )
     assert resp.ok
     assert resp.json()["setting_value"] == None
     srv.add_setting("dummy_setting", 5000)
-    resp = requests.get(
-        f"http://localhost:{srv.port}/setting?setting_key=dummy_setting"
-    )
+    resp = requests.get(f"http://{srv.ip}:{srv.port}/setting?setting_key=dummy_setting")
     assert resp.ok
     assert resp.json()["setting_value"] == 5000

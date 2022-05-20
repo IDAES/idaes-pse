@@ -49,11 +49,12 @@ class FlowsheetServer(http.server.HTTPServer):
      start running the server, and `add_flowsheet()`, to a add a new flowsheet.
     """
 
-    def __init__(self, port=None):
+    def __init__(self, port=None, is_local=True):
         """Create HTTP server"""
         self._port = port or find_free_port()
-        _log.info(f"Starting HTTP server on localhost, port {self._port}")
-        super().__init__(("127.0.0.1", self._port), FlowsheetServerHandler)
+        self._ip = "127.0.0.1" if is_local else "0.0.0.0"
+        _log.info(f"Starting HTTP server on {self._ip}, port {self._port}")
+        super().__init__((self._ip, self._port), FlowsheetServerHandler)
         self._dsm = persist.DataStoreManager()
         self._flowsheets = {}
         self._thr = None
@@ -62,6 +63,10 @@ class FlowsheetServer(http.server.HTTPServer):
     @property
     def port(self):
         return self._port
+
+    @property
+    def ip(self):
+        return self._ip
 
     def start(self):
         """Start the server, which will spawn a thread."""
@@ -226,7 +231,7 @@ class FlowsheetServer(http.server.HTTPServer):
 
     def _run(self):
         """Run in a separate thread."""
-        _log.debug(f"Serve forever on localhost:{self._port}")
+        _log.debug(f"Serve forever on {self._ip}:{self._port}")
         try:
             self.serve_forever()
         except Exception as err:

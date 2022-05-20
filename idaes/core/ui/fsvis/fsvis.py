@@ -53,9 +53,10 @@ def visualize(
     save: Optional[Union[Path, str, bool]] = None,
     load_from_saved: bool = True,
     save_dir: Optional[Path] = None,
-    save_time_interval=5000,  # 5 seconds
+    save_time_interval: int = 5000,  # 5 seconds
     overwrite: bool = False,
     browser: bool = True,
+    localhost: bool = True,
     port: Optional[int] = None,
     log_level: int = logger.WARNING,
     quiet: bool = False,
@@ -84,6 +85,8 @@ def visualize(
         overwrite: If True, and the file given by ``save`` exists, overwrite instead of creating a new
           numbered file.
         browser: If true, open a browser
+        localhost: If True, the flowsheet server will have `127.0.0.1` as an IP address. Otherwise,
+            `0.0.0.0` is chosen. Default is True.
         port: Start listening on this port. If not given, find an open port.
         log_level: An IDAES logging level, which is a superset of the built-in :mod:`logging` module levels.
           See the :mod:`idaes.logger` module for details
@@ -106,13 +109,13 @@ def visualize(
 
     # Start the web server
     if web_server is None:
-        web_server = FlowsheetServer(port=port)
+        web_server = FlowsheetServer(port=port, is_local=localhost)
         web_server.add_setting("save_time_interval", save_time_interval)
         web_server.start()
         if not quiet:
             print("Started visualization server")
     else:
-        _log.info(f"Using HTTP server on localhost, port {web_server.port}")
+        _log.info(f"Using HTTP server on {web_server.ip}, port {web_server.port}")
 
     # Set up save location
     use_default = False
@@ -176,7 +179,7 @@ def visualize(
         name = new_name
 
     # Open a browser window for the UI
-    url = f"http://localhost:{web_server.port}/app?id={name}"
+    url = f"http://{web_server.ip}:{web_server.port}/app?id={name}"
     if browser:
         success = webbrowser.open(url)
         if success:
