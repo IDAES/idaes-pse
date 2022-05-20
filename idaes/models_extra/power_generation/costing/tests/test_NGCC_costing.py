@@ -41,13 +41,6 @@ def build_costing():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.get_costing(year="2018")
 
-    return m
-
-
-@pytest.mark.unit
-def test_get_costing(build_costing):
-    m = build_costing
-    assert hasattr(m.fs.costing, "CE_index")
     # Accounts with Feedwater Flow to HP section of HRSG, as the
     # reference/scaling parameter - Exhibit 5-15
     FW_accounts = ["3.1", "3.3", "8.4"]
@@ -56,6 +49,15 @@ def test_get_costing(build_costing):
     m.fs.b1.feedwater_flowrate = pyo.Var(initialize=1085751)  # lb/hr
     m.fs.b1.feedwater_flowrate.fix()
     get_PP_costing(m.fs.b1, FW_accounts, m.fs.b1.feedwater_flowrate, "lb/hr", 6)
+
+    return m
+
+
+@pytest.mark.unit
+def test_get_costing(build_costing):
+    m = build_costing
+    assert hasattr(m.fs.costing, "CE_index")
+
     assert isinstance(m.fs.b1.costing.total_plant_cost, pyo.Var)
     assert hasattr(m.fs.b1.costing, "bare_erected_cost")
     assert isinstance(m.fs.b1.costing.total_plant_cost_eq, pyo.Constraint)
