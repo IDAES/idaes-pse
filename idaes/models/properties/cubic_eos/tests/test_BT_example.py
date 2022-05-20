@@ -42,7 +42,6 @@ solver = get_solver()
 
 # -----------------------------------------------------------------------------
 # Run test harness
-@pytest.mark.unit
 class TestBasicLV(PropertyTestHarness):
     def configure(self):
         self.prop_pack = BT_PR.BTParameterBlock
@@ -51,7 +50,6 @@ class TestBasicLV(PropertyTestHarness):
         self.has_density_terms = True
 
 
-@pytest.mark.unit
 class TestBasicL(PropertyTestHarness):
     def configure(self):
         self.prop_pack = BT_PR.BTParameterBlock
@@ -60,7 +58,6 @@ class TestBasicL(PropertyTestHarness):
         self.has_density_terms = True
 
 
-@pytest.mark.unit
 class TestBasicV(PropertyTestHarness):
     def configure(self):
         self.prop_pack = BT_PR.BTParameterBlock

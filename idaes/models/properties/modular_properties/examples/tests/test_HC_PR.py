@@ -258,7 +258,7 @@ class TestStateBlock(object):
 
         return model
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     def test_build(self, model):
         # Check state variable values and bounds
         assert isinstance(model.props[1].flow_mol, Var)
@@ -287,7 +287,7 @@ class TestStateBlock(object):
     def test_unit_consistency(self, model):
         assert_units_consistent(model)
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     def test_define_state_vars(self, model):
         sv = model.props[1].define_state_vars()
 
@@ -295,7 +295,7 @@ class TestStateBlock(object):
         for i in sv:
             assert i in ["flow_mol", "mole_frac_comp", "temperature", "pressure"]
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     def test_define_port_members(self, model):
         sv = model.props[1].define_state_vars()
 
@@ -303,7 +303,7 @@ class TestStateBlock(object):
         for i in sv:
             assert i in ["flow_mol", "mole_frac_comp", "temperature", "pressure"]
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     def test_define_display_vars(self, model):
         sv = model.props[1].define_display_vars()
 
@@ -379,6 +379,6 @@ class TestStateBlock(object):
             0.77026, abs=1e-4
         )
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     def test_report(self, model):
         model.props[1].report()

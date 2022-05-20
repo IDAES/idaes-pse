@@ -24,6 +24,7 @@ from typing import Dict, List, Tuple
 # third-party
 import pandas as pd
 import numpy as np
+import pint
 from pyomo.environ import Block, value
 from pyomo.network import Arc
 from pyomo.network.port import Port
@@ -323,13 +324,24 @@ class FlowsheetSerializer:
         Return:
             The dataframe that now has valid JSON
         """
-        if "Units" in df.columns:
-            df["Units"] = df["Units"].apply(
-                lambda pint_unit: {
+        def get_valid_unit_format(pint_unit):
+            """Get different formats from the Units' pint object"""
+            if isinstance(pint_unit, pint.Unit):
+                return {
                     "raw": str(pint_unit),
                     "html": "{:~H}".format(pint_unit),
                     "latex": "{:~L}".format(pint_unit),
                 }
+            else:
+                return {
+                    "raw": str(pint_unit),
+                    "html": "",
+                    "latex": "",
+                }
+
+        if "Units" in df.columns:
+            df["Units"] = df["Units"].apply(
+                lambda pint_unit: get_valid_unit_format(pint_unit)
             )
         return df
 
@@ -495,13 +507,13 @@ class FlowsheetSerializer:
 
     def _construct_model_json(self):
         from idaes.core.util.tables import (
-            create_stream_table_dataframe
+            create_stream_table_ui
         )  # deferred to avoid circular import
 
         # Get the stream table and add it to the model json
         # Change the index of the pandas dataframe to not be the variables
         self._stream_table_df = (
-            create_stream_table_dataframe(self.streams)
+            create_stream_table_ui(self.streams)
             # Change the index of the pandas dataframe to not be the variables
             .reset_index()
             .rename(columns={"index": "Variable"})
@@ -517,8 +529,7 @@ class FlowsheetSerializer:
             (pd.notnull(self._stream_table_df)), None
         )
 
-        # Get different formats from the Units' pint object
-        self._stream_table_df = self._clean_units(self._stream_table_df)
+        self._stream_table_df = self._make_valid_json(self._stream_table_df)
 
         # Order the stream table based on the right order:
         # feed streams -> middle streams -> product streams

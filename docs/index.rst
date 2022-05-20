@@ -47,6 +47,7 @@ Contents
          * :doc:`Configuring IDAES <reference_guides/configuration>`
          * :doc:`Logging Processing & Outputs <reference_guides/logging>`
          * :doc:`Developing for IDAES <reference_guides/developer/index>`
+         * :doc:`IDAES grid integration application <reference_guides/apps/grid_integration/index>`
 
 .. toctree::
     :hidden:

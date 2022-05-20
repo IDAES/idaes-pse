@@ -280,7 +280,7 @@ class Tracker:
 
         Arguments:
             market_dispatch: a dictionary that contains the market dispatch
-            signals that we want to track. {generator name: [float]}
+            signals that we want to track.
 
             date: current simulation date
 

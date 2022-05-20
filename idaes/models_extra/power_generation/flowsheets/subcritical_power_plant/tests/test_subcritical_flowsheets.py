@@ -156,7 +156,7 @@ def test_dynamic_steam_cycle():
     assert degrees_of_freedom(m) == 7
 
 
-@pytest.mark.unit
-def test_subcritical_recyrculation_system():
+@pytest.mark.component
+def test_subcritical_recirculation_system():
     m = recyrc.main()
     assert degrees_of_freedom(m) == 0
