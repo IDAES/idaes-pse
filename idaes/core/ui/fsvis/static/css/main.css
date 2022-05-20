@@ -340,7 +340,7 @@ input:checked + .slider:before {
 }
 
 /* Styling the Variables column in the Stream Table */
-.streamtable-variable {
+.streamtable-cell {
   display: block;
 }
 
@@ -348,6 +348,55 @@ input:checked + .slider:before {
 .streamtable-units {
   opacity: 0.6;
   float: right;
+}
+
+.streamtable-variable-value {
+  float: right;
+}
+
+/* Styling visual indicators to identify different Variable types in the Stream Table */
+.streamtable-vartype-panel {
+  height: 1.7em;
+  display: flex;
+  gap: 1em;
+  justify-content: center;
+}
+
+.streamtable-vartype-element {
+  display: inline-flex;
+  gap: 0.3em;
+  place-content: center;
+}
+
+.streamtable-vartype-text {
+  float: right;
+}
+
+.streamtable-vartype-fixed {
+  height: 7px;
+  width:  7px;
+  margin-top: 0.5em;
+  background-color: #7526f1;
+  border-radius: 50%;
+  float: left;
+}
+
+.streamtable-vartype-parameter {
+  height: 7px;
+  width:  7px;
+  margin-top: 0.5em;
+  background-color: #74AA50;
+  border-radius: 50%;
+  float: left;
+}
+
+.streamtable-vartype-expression {
+  height: 7px;
+  width:  7px;
+  margin-top: 0.5em;
+  background-color: #EAAA00;
+  border-radius: 50%;
+  float: left;
 }
 
 /* Styling the stream table column header that corresponds to the link mouseover event */

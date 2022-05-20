@@ -32,6 +32,7 @@ from idaes.core import (
 from idaes.core.util.tables import (
     arcs_to_stream_dict,
     create_stream_table_dataframe,
+    create_stream_table_ui,
     stream_table_dataframe_to_string,
     generate_table,
     tag_state_quantities,
@@ -89,6 +90,28 @@ def m():
 
     return m
 
+
+@pytest.fixture()
+def m_with_variable_types():
+    """Flash unit model. Use '.fs' attribute to get the flowsheet."""
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    # Flash properties
+    m.fs.properties = BTXParameterBlock(
+        default={
+            "valid_phase": ("Liq", "Vap"),
+            "activity_coeff_model": "Ideal",
+            "state_vars": "FTPz",
+        }
+    )
+    # Flash unit
+    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    # Adding fixed and unfixed variables
+    m.fs.flash.inlet.pressure.fix(3.14)
+    m.fs.flash.inlet.pressure.unfix()
+    m.fs.flash.inlet.temperature.fix(368)
+
+    return m
 
 @pytest.mark.unit
 def test_create_stream_table_dataframe_from_StateBlock(m):
@@ -238,6 +261,20 @@ def test_create_stream_table_dataframe_from_Arc(m):
     assert df.loc["Molar Concentration EthylAcetate"]["state"] == 100.0
     assert df.loc["Molar Concentration SodiumAcetate"]["state"] == 100.0
     assert df.loc["Molar Concentration Ethanol"]["state"] == 100.0
+
+
+@pytest.mark.unit
+def test_create_stream_table_ui(m_with_variable_types):
+    m = m_with_variable_types
+
+    state_name = 'state'
+    state_dict = {
+        state_name: m.fs.flash.inlet
+    }
+    df = create_stream_table_ui(state_dict)
+
+    assert df.loc["pressure"][state_name] == (3.14, 'unfixed')
+    assert df.loc["temperature"][state_name] == (368, 'fixed')
 
 
 @pytest.mark.unit
