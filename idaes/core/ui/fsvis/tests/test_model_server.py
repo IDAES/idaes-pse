@@ -113,3 +113,15 @@ def test_flowsheet_server_run(flash_model):
     print("Bogus PUT")
     resp = requests.put(f"http://localhost:{srv.port}/fs")
     assert not resp.ok
+    # test getting setting values
+    resp = requests.get(f"http://localhost:{srv.port}/setting")
+    assert not resp.ok
+    resp = requests.get(f"http://localhost:{srv.port}/setting?bogus_key=1234")
+    assert not resp.ok
+    resp = requests.get(f"http://localhost:{srv.port}/setting?setting_key=save_time_interval")
+    assert resp.ok
+    assert resp.json()["setting_value"] == None
+    srv.add_setting('dummy_setting', 5000)
+    resp = requests.get(f"http://localhost:{srv.port}/setting?setting_key=dummy_setting")
+    assert resp.ok
+    assert resp.json()["setting_value"] == 5000
