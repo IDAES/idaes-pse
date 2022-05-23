@@ -18,8 +18,9 @@ Author: Andrew Lee
 import pytest
 import types
 
-from pyomo.environ import ConcreteModel, Constraint, Set, Var, units as pyunits
+from pyomo.environ import Block, ConcreteModel, Constraint, Set, Var, units as pyunits
 from pyomo.common.config import ConfigBlock
+from pyomo.network import Port
 
 from idaes.core import (
     declare_process_block_class,
@@ -28,6 +29,7 @@ from idaes.core import (
     StateBlockData,
     Phase,
     Component,
+    FlowsheetBlock,
 )
 from idaes.core.util.exceptions import PropertyPackageError, PropertyNotSupportedError
 from idaes.core.base.property_meta import PropertyClassMetadata
@@ -416,6 +418,157 @@ def test_StateBlock_NotImplementedErrors():
         m.p.calculate_bubble_point_pressure()
     with pytest.raises(NotImplementedError):
         m.p.calculate_dew_point_pressure()
+
+
+@pytest.mark.unit
+def test_StateBlock_build_port_1index():
+    m = ConcreteModel()
+
+    m.state_block = TestStateBlock([1, 2, 3])
+
+    # Need to add define_port_memebers method to all state blocks
+    def define_port_members(blk):
+        return {
+            "ScalarVar": blk.scalar_var,
+            "IndexedVar": blk.indexed_var,
+        }
+
+    for sbd in m.state_block.values():
+        # add a scalar var to all state blocks
+        sbd.scalar_var = Var(initialize=1)
+
+        # Add a nindexed block to all state blocks
+        sbd.indexed_var = Var([5, 6], initialize=42)
+
+        # Set define_port_members method
+        sbd.define_port_members = types.MethodType(define_port_members, sbd)
+
+    # Create a Block to build a Port on
+    m.test_block = Block()
+
+    # Build the Port
+    m.state_block.build_port(m.test_block, "test_port", "test_doc")
+
+    # Check References were constructed on test block
+    assert isinstance(m.test_block._ScalarVar_test_port_ref, Var)
+    for i, v in m.test_block._ScalarVar_test_port_ref.items():
+        assert i in [1, 2, 3]
+        assert v is m.state_block[i].scalar_var
+    assert isinstance(m.test_block._IndexedVar_test_port_ref, Var)
+    for i, v in m.test_block._IndexedVar_test_port_ref.items():
+        assert i[0] in [1, 2, 3]
+        assert i[1] in [5, 6]
+        assert v is m.state_block[i[0]].indexed_var[i[1]]
+
+    # Check Port and members
+    assert isinstance(m.test_block.test_port, Port)
+    assert len(m.test_block.test_port) == 1
+    assert m.test_block.test_port.doc == "test_doc"
+
+    assert m.test_block.test_port.ScalarVar is m.test_block._ScalarVar_test_port_ref
+    assert m.test_block.test_port.IndexedVar is m.test_block._IndexedVar_test_port_ref
+
+
+@pytest.mark.unit
+def test_StateBlock_build_port_2index():
+    m = ConcreteModel()
+
+    m.state_block = TestStateBlock([1, 2, 3], [10, 20])
+
+    # Need to add define_port_memebers method to all state blocks
+    def define_port_members(blk):
+        return {
+            "ScalarVar": blk.scalar_var,
+            "IndexedVar": blk.indexed_var,
+        }
+
+    for sbd in m.state_block.values():
+        # add a scalar var to all state blocks
+        sbd.scalar_var = Var(initialize=1)
+
+        # Add a nindexed block to all state blocks
+        sbd.indexed_var = Var([5, 6], initialize=42)
+
+        # Set define_port_members method
+        sbd.define_port_members = types.MethodType(define_port_members, sbd)
+
+    # Create a Block to build a Port on
+    m.test_block = Block()
+
+    # Build the Port
+    m.state_block.build_port(m.test_block, "test_port", "test_doc")
+
+    # Check References were constructed on test block
+    assert isinstance(m.test_block._ScalarVar_test_port_ref, Var)
+    for i, v in m.test_block._ScalarVar_test_port_ref.items():
+        assert i[0] in [1, 2, 3]
+        assert i[1] in [10, 20]
+        assert v is m.state_block[i].scalar_var
+    assert isinstance(m.test_block._IndexedVar_test_port_ref, Var)
+    for i, v in m.test_block._IndexedVar_test_port_ref.items():
+        assert i[0] in [1, 2, 3]
+        assert i[1] in [10, 20]
+        assert i[2] in [5, 6]
+        assert v is m.state_block[i[0], i[1]].indexed_var[i[2]]
+
+    # Check Port and members
+    assert isinstance(m.test_block.test_port, Port)
+    assert len(m.test_block.test_port) == 1
+    assert m.test_block.test_port.doc == "test_doc"
+
+    assert m.test_block.test_port.ScalarVar is m.test_block._ScalarVar_test_port_ref
+    assert m.test_block.test_port.IndexedVar is m.test_block._IndexedVar_test_port_ref
+
+
+@pytest.mark.unit
+def test_StateBlock_build_port_2index_subset():
+    m = ConcreteModel()
+
+    m.state_block = TestStateBlock([1, 2, 3], [10, 20])
+
+    # Need to add define_port_memebers method to all state blocks
+    def define_port_members(blk):
+        return {
+            "ScalarVar": blk.scalar_var,
+            "IndexedVar": blk.indexed_var,
+        }
+
+    for sbd in m.state_block.values():
+        # add a scalar var to all state blocks
+        sbd.scalar_var = Var(initialize=1)
+
+        # Add a nindexed block to all state blocks
+        sbd.indexed_var = Var([5, 6], initialize=42)
+
+        # Set define_port_members method
+        sbd.define_port_members = types.MethodType(define_port_members, sbd)
+
+    # Create a Block to build a Port on
+    m.test_block = Block()
+
+    # Build the Port
+    m.state_block.build_port(
+        m.test_block, "test_port", "test_doc", subset=m.state_block[:, 10]
+    )
+
+    # Check References were constructed on test block
+    assert isinstance(m.test_block._ScalarVar_test_port_ref, Var)
+    for i, v in m.test_block._ScalarVar_test_port_ref.items():
+        assert i in [1, 2, 3]
+        assert v is m.state_block[i, 10].scalar_var
+    assert isinstance(m.test_block._IndexedVar_test_port_ref, Var)
+    for i, v in m.test_block._IndexedVar_test_port_ref.items():
+        assert i[0] in [1, 2, 3]
+        assert i[1] in [5, 6]
+        assert v is m.state_block[i[0], 10].indexed_var[i[1]]
+
+    # Check Port and members
+    assert isinstance(m.test_block.test_port, Port)
+    assert len(m.test_block.test_port) == 1
+    assert m.test_block.test_port.doc == "test_doc"
+
+    assert m.test_block.test_port.ScalarVar is m.test_block._ScalarVar_test_port_ref
+    assert m.test_block.test_port.IndexedVar is m.test_block._IndexedVar_test_port_ref
 
 
 # -----------------------------------------------------------------------------

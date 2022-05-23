@@ -17,11 +17,12 @@ This module contains classes for property blocks and property parameter blocks.
 import sys
 
 # Import Pyomo libraries
-from pyomo.environ import Set, value, Var, Expression, Constraint
+from pyomo.environ import Set, value, Var, Expression, Constraint, Reference
 from pyomo.core.base.var import _VarData
 from pyomo.core.base.expression import _ExpressionData
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 from pyomo.common.formatting import tabular_writer
+from pyomo.network import Port
 
 # Import IDAES cores
 from idaes.core.base.process_block import ProcessBlock
@@ -503,6 +504,47 @@ class StateBlock(ProcessBlock):
             )
 
         ostream.write("\n" + "=" * max_str_length + "\n")
+
+    def build_port(self, target_block, port_name, doc=None, subset=None):
+        """
+        Constructs a Port based on this StateBlock attached to the target block.
+
+        Args:
+            target_block - blokc ot which Port should be attached
+            port_name - name to use for Port
+            doc - doc string or Prot object
+            subset - slicer representing a subset of indices of StateBlock which
+                should be included in Port
+
+        Returns:
+            Port object
+        """
+        if subset is None:
+            subset = self[...]
+
+        # Create empty Port
+        p = Port(doc=doc)
+        setattr(target_block, port_name, p)
+
+        # Get dict of Port members and names
+        # Need to get a representative member of StateBlockDatas
+        i0 = self.index_set().first()
+        member_list = self[i0].define_port_members()
+
+        # Create References for port members
+        for s in member_list:
+            if not member_list[s].is_indexed():
+                slicer = subset.component(member_list[s].local_name)
+            else:
+                slicer = subset.component(member_list[s].local_name)[...]
+
+            r = Reference(slicer)
+            setattr(target_block, "_" + s + "_" + port_name + "_ref", r)
+
+            # Add Reference to Port
+            p.add(r, s)
+
+        return p
 
 
 class StateBlockData(ProcessBlockData):
