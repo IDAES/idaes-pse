@@ -426,7 +426,7 @@ def test_StateBlock_build_port_1index():
 
     m.state_block = TestStateBlock([1, 2, 3])
 
-    # Need to add define_port_memebers method to all state blocks
+    # Need to add define_port_members method to all state blocks
     def define_port_members(blk):
         return {
             "ScalarVar": blk.scalar_var,
@@ -434,10 +434,10 @@ def test_StateBlock_build_port_1index():
         }
 
     for sbd in m.state_block.values():
-        # add a scalar var to all state blocks
+        # Add a scalar var to all state blocks
         sbd.scalar_var = Var(initialize=1)
 
-        # Add a nindexed block to all state blocks
+        # Add an indexed block to all state blocks
         sbd.indexed_var = Var([5, 6], initialize=42)
 
         # Set define_port_members method
@@ -475,7 +475,7 @@ def test_StateBlock_build_port_2index():
 
     m.state_block = TestStateBlock([1, 2, 3], [10, 20])
 
-    # Need to add define_port_memebers method to all state blocks
+    # Need to add define_port_members method to all state blocks
     def define_port_members(blk):
         return {
             "ScalarVar": blk.scalar_var,
@@ -483,10 +483,10 @@ def test_StateBlock_build_port_2index():
         }
 
     for sbd in m.state_block.values():
-        # add a scalar var to all state blocks
+        # Add a scalar var to all state blocks
         sbd.scalar_var = Var(initialize=1)
 
-        # Add a nindexed block to all state blocks
+        # Add an indexed block to all state blocks
         sbd.indexed_var = Var([5, 6], initialize=42)
 
         # Set define_port_members method

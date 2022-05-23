@@ -195,7 +195,7 @@ def test_add_port_invalid_block():
     with pytest.raises(
         ConfigurationError,
         match="fs.u block object provided to add_port method is not an "
-        "instance of a StateBlock object \(does not have a buld_port method\).",
+        "instance of a StateBlock object \(does not have a build_port method\).",
     ):
         m.fs.u.add_port(name="test_port", block=m.fs.u)
 

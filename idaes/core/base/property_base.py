@@ -510,7 +510,7 @@ class StateBlock(ProcessBlock):
         Constructs a Port based on this StateBlock attached to the target block.
 
         Args:
-            target_block - blokc ot which Port should be attached
+            target_block - block to which Port should be attached
             port_name - name to use for Port
             doc - doc string or Prot object
             subset - slicer representing a subset of indices of StateBlock which

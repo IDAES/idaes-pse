@@ -170,7 +170,7 @@ Must be True if dynamic = True,
         except AttributeError:
             raise ConfigurationError(
                 f"{self.name} block object provided to add_port method is not an "
-                f"instance of a StateBlock object (does not have a buld_port method)."
+                f"instance of a StateBlock object (does not have a build_port method)."
             )
 
         return p
