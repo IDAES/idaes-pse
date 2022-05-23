@@ -190,6 +190,278 @@ def test_ccs_units_costing():
         6,
         CE_index_base=567.3
     )
+    
+    # Flue gas blower
+    flue_gas_blower_accounts = ["6.9.ccs"]
+    m.fs.b25 = pyo.Block()
+    # Obtain the amount of CO2 captured in lb/hr
+    amt_co2_capture = 246552  # lb/hr
+
+    m.fs.b25.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b25.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b25,
+        flue_gas_blower_accounts,
+        m.fs.b25.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Flue gas direct contact cooler
+    flue_gas_dcc_accounts = ["6.10.ccs"]
+    m.fs.b26 = pyo.Block()
+
+    m.fs.b26.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b26.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b26,
+        flue_gas_dcc_accounts,
+        m.fs.b26.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Flue gas direct contact cooler packing
+    flue_gas_dcc_packing_accounts = ["6.11.ccs"]
+    m.fs.b27 = pyo.Block()
+
+    m.fs.b27.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b27.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b27,
+        flue_gas_dcc_packing_accounts,
+        m.fs.b27.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Pretreatment pump
+    pretreatment_pump_accounts = ["6.12.ccs"]
+    m.fs.b28 = pyo.Block()
+
+    m.fs.b28.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b28.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b28,
+        pretreatment_pump_accounts,
+        m.fs.b28.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Pretreatment cooler
+    pretreatment_cooler_accounts = ["6.13.ccs"]
+    m.fs.b29 = pyo.Block()
+
+    m.fs.b29.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b29.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b29,
+        pretreatment_cooler_accounts,
+        m.fs.b29.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Pretreatment tank
+    pretreatment_tank_accounts = ["6.14.ccs"]
+    m.fs.b30 = pyo.Block()
+
+    m.fs.b30.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b30.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b30,
+        pretreatment_tank_accounts,
+        m.fs.b30.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Washing column
+    washing_column_accounts = ["6.15.ccs"]
+    m.fs.b31 = pyo.Block()
+
+    m.fs.b31.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b31.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b31,
+        washing_column_accounts,
+        m.fs.b31.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Washing column packing
+    washing_column_packing_accounts = ["6.16.ccs"]
+    m.fs.b32 = pyo.Block()
+
+    m.fs.b32.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b32.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b32,
+        washing_column_packing_accounts,
+        m.fs.b32.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Washing solvent cooler
+    washing_solvent_cooler_accounts = ["6.17.ccs"]
+    m.fs.b33 = pyo.Block()
+
+    m.fs.b33.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b33.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b33,
+        washing_solvent_cooler_accounts,
+        m.fs.b33.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Washing solvent pump
+    washing_solvent_pump_accounts = ["6.18.ccs"]
+    m.fs.b34 = pyo.Block()
+
+    m.fs.b34.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b34.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b34,
+        washing_solvent_pump_accounts,
+        m.fs.b34.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Condenser pump
+    condenser_pump_accounts = ["6.19.ccs"]
+    m.fs.b35 = pyo.Block()
+
+    m.fs.b35.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b35.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b35,
+        condenser_pump_accounts,
+        m.fs.b35.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Stripper reflux drum
+    stripper_reflux_drum_accounts = ["6.20.ccs"]
+    m.fs.b36 = pyo.Block()
+
+    m.fs.b36.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b36.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b36,
+        stripper_reflux_drum_accounts,
+        m.fs.b36.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Lean solvent pump
+    lean_solvent_pump_accounts = ["6.21.ccs"]
+    m.fs.b37 = pyo.Block()
+
+    m.fs.b37.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b37.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b37,
+        lean_solvent_pump_accounts,
+        m.fs.b37.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Solvent storage tank
+    solvent_storage_tank_accounts = ["6.22.ccs"]
+    m.fs.b38 = pyo.Block()
+
+    m.fs.b38.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b38.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b38,
+        solvent_storage_tank_accounts,
+        m.fs.b38.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Washing solvent tank
+    washing_solvent_tank_accounts = ["6.23.ccs"]
+    m.fs.b39 = pyo.Block()
+
+    m.fs.b39.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b39.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b39,
+        washing_solvent_tank_accounts,
+        m.fs.b39.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Solvent stripper reclaimer
+    solvent_stripper_reclaimer_accounts = ["6.24.ccs"]
+    m.fs.b40 = pyo.Block()
+
+    m.fs.b40.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b40.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b40,
+        solvent_stripper_reclaimer_accounts,
+        m.fs.b40.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Solvent reclaimer cooler
+    solvent_reclaimer_cooler_accounts = ["6.25.ccs"]
+    m.fs.b41 = pyo.Block()
+
+    m.fs.b41.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b41.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b41,
+        solvent_reclaimer_cooler_accounts,
+        m.fs.b41.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    # Solvent filtration
+    solvent_filtration_accounts = ["6.26.ccs"]
+    m.fs.b42 = pyo.Block()
+
+    m.fs.b42.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
+    m.fs.b42.amt_co2_capture.fix()
+    get_PP_costing(
+        m.fs.b42,
+        solvent_filtration_accounts,
+        m.fs.b42.amt_co2_capture,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
 
     # Initialize costing
     costing_initialization(m.fs)
