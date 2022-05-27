@@ -76,3 +76,12 @@ h2 {
 .collapsible {
     margin: 1%;
 }
+
+/* Sidebar for quickstar guides*/
+.quickstart-toc.sidebar{
+    width: 25%;
+}
+
+.quickstart-toc.sidebar .sidebar-title{
+    text-align: center;
+}

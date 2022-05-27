@@ -5,6 +5,7 @@ Quickstart
 ----------
 
 .. sidebar:: Learn more about the Installation
+   :class: quickstart-toc
 
    * `Install Prerequisites`_
    * `Install IDAES-PSE`_
