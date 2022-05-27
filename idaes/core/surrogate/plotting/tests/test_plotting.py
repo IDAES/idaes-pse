@@ -16,7 +16,6 @@ Tests for Surrogate Plotting Methods
 
 import pytest
 import os
-import numpy as np
 import pandas as pd
 
 from pyomo.common.fileutils import this_file_dir
@@ -46,8 +45,6 @@ def data_validation():
     # import validation data and create dataframe here as well
     # random data subset will change every time, but should be fine
 
-    np.set_printoptions(precision=6, suppress=True)
-
     csv_data = pd.read_csv(os.path.join(this_file_dir(), 'reformer-data.csv'))
     data = csv_data.sample(n=100)  # randomly sample points for validation
 
@@ -63,8 +60,6 @@ def data_validation():
 
 @pytest.mark.unit
 def test_scatter2D(surrogate, data_validation):
-    # in new directory, run method with no filename, PDFs should not be created
-    curdir = this_file_dir()
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -79,13 +74,9 @@ def test_scatter2D(surrogate, data_validation):
 
         assert os.path.exists(filename)  # PDF results file
 
-    assert os.getcwd() == curdir  # directory should revert to test folder
-
 
 @pytest.mark.unit
 def test_scatter3D(surrogate, data_validation):
-    # in new directory, run method with no filename, PDFs should not be created
-    curdir = this_file_dir()
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -100,13 +91,9 @@ def test_scatter3D(surrogate, data_validation):
 
         assert os.path.exists(filename)  # PDF results file
 
-    assert os.getcwd() == curdir  # directory should revert to test folder
-
 
 @pytest.mark.unit
 def test_parity(surrogate, data_validation):
-    # in new directory, run method with no filename, PDFs should not be created
-    curdir = this_file_dir()
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -121,13 +108,9 @@ def test_parity(surrogate, data_validation):
 
         assert os.path.exists(filename)  # PDF results file
 
-    assert os.getcwd() == curdir  # directory should revert to test folder
-
 
 @pytest.mark.unit
 def test_residual(surrogate, data_validation):
-    # in new directory, run method with no filename, PDFs should not be created
-    curdir = this_file_dir()
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -142,13 +125,9 @@ def test_residual(surrogate, data_validation):
 
         assert os.path.exists(filename)  # PDF results file
 
-    assert os.getcwd() == curdir  # directory should revert to test folder
-
 
 @pytest.mark.unit
 def test_scatter2D_noPDF(surrogate, data_validation):
-    # in new directory, run method with no filename, PDFs should not be created
-    curdir = this_file_dir()
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -162,13 +141,9 @@ def test_scatter2D_noPDF(surrogate, data_validation):
         for file in list(os.walk(dname)):  # check entire temp directory
             assert file[-4:] != '.pdf'  # no PDF files should be created
 
-    assert os.getcwd() == curdir  # directory should revert to test folder
-
 
 @pytest.mark.unit
 def test_scatter3D_noPDF(surrogate, data_validation):
-    # in new directory, run method with no filename, PDFs should not be created
-    curdir = this_file_dir()
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -182,13 +157,9 @@ def test_scatter3D_noPDF(surrogate, data_validation):
         for file in list(os.walk(dname)):  # check entire temp directory
             assert file[-4:] != '.pdf'  # no PDF files should be created
 
-    assert os.getcwd() == curdir  # directory should revert to test folder
-
 
 @pytest.mark.unit
 def test_parity_noPDF(surrogate, data_validation):
-    # in new directory, run method with no filename, PDFs should not be created
-    curdir = this_file_dir()
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -202,13 +173,9 @@ def test_parity_noPDF(surrogate, data_validation):
         for file in list(os.walk(dname)):  # check entire temp directory
             assert file[-4:] != '.pdf'  # no PDF files should be created
 
-    assert os.getcwd() == curdir  # directory should revert to test folder
-
 
 @pytest.mark.unit
 def test_residual_noPDF(surrogate, data_validation):
-    # in new directory, run method with no filename, PDFs should not be created
-    curdir = this_file_dir()
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -221,5 +188,3 @@ def test_residual_noPDF(surrogate, data_validation):
 
         for file in list(os.walk(dname)):  # check entire temp directory
             assert file[-4:] != '.pdf'  # no PDF files should be created
-
-    assert os.getcwd() == curdir  # directory should revert to test folder
