@@ -10,6 +10,7 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
+from time import sleep
 import idaes
 import logging
 import bisect
@@ -257,7 +258,7 @@ def add_valid_log_tag(tag):
     idaes.cfg.valid_logger_tags.add(tag)
 
 
-class IOToLogTread(threading.Thread):
+class IOToLogThread(threading.Thread):
     """This is a Thread class that can log solver messages and show them as
     they are produced, while the main thread is waiting on the solver to finish
     """
@@ -307,16 +308,20 @@ def solver_log(logger, level=logging.ERROR):
     # thread is daemonic, so it will shut down with the main process even if it
     # stays around for some mysterious reason while the model is running.
     join_timeout = 3
+    sleep_period = 1
     tee = logger.isEnabledFor(level)
     if not solver_capture():
         yield SolverLogInfo(tee=tee)
     else:
         with capture_output() as s:
-            lt = IOToLogTread(s, logger=logger, level=level)
+            lt = IOToLogThread(s, logger=logger, level=level)
             lt.start()
             try:
                 yield SolverLogInfo(tee=tee, thread=lt)
             except:
+                # Need to wait a brief period to make sure solver output is captured on the logging thread
+                # before the exception is raised.
+                sleep(sleep_period)
                 lt.stop.set()
                 lt.join(timeout=join_timeout)
                 raise
