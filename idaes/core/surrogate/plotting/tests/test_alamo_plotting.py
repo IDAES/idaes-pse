@@ -30,14 +30,13 @@ from idaes.core.surrogate.plotting.sm_plotter import (surrogate_scatter2D,
 
 
 @pytest.fixture
-def surrogate():
-    # import surrogates from external JSON files (ALAMO selected for test)
-    # so the JSON file is loaded once for the entire module
+def alamo_surrogate():
+    # import surrogates from external JSON
 
-    surrogate = AlamoSurrogate.load_from_file(
-        os.path.join(this_file_dir(), 'alamo_surrogate.json'))
+    alamo_surrogate = AlamoSurrogate.load_from_file(
+            os.path.join(this_file_dir(), 'alamo_surrogate.json'))
 
-    return surrogate
+    return alamo_surrogate
 
 
 @pytest.fixture
@@ -57,9 +56,11 @@ def data_validation():
 
     return data_validation
 
+# --------------------------------------------------------------------------
+
 
 @pytest.mark.unit
-def test_scatter2D(surrogate, data_validation):
+def test_scatter2D_alamo(alamo_surrogate, data_validation):
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -69,14 +70,14 @@ def test_scatter2D(surrogate, data_validation):
         # create and step into new temporary directory
         dname = tf.mkdtemp()
         filename = os.path.join(dname, 'results.pdf')
-        surrogate_scatter2D(surrogate, data_validation,
+        surrogate_scatter2D(alamo_surrogate, data_validation,
                             filename=filename, show=False)
 
         assert os.path.exists(filename)  # PDF results file
 
 
 @pytest.mark.unit
-def test_scatter3D(surrogate, data_validation):
+def test_scatter3D_alamo(alamo_surrogate, data_validation):
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -86,14 +87,14 @@ def test_scatter3D(surrogate, data_validation):
         # create and step into new temporary directory
         dname = tf.mkdtemp()
         filename = os.path.join(dname, 'results.pdf')
-        surrogate_scatter3D(surrogate, data_validation,
+        surrogate_scatter3D(alamo_surrogate, data_validation,
                             filename=filename, show=False)
 
         assert os.path.exists(filename)  # PDF results file
 
 
 @pytest.mark.unit
-def test_parity(surrogate, data_validation):
+def test_parity_alamo(alamo_surrogate, data_validation):
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -103,14 +104,14 @@ def test_parity(surrogate, data_validation):
         # create and step into new temporary directory
         dname = tf.mkdtemp()
         filename = os.path.join(dname, 'results.pdf')
-        surrogate_parity(surrogate, data_validation,
+        surrogate_parity(alamo_surrogate, data_validation,
                          filename=filename, show=False)
 
         assert os.path.exists(filename)  # PDF results file
 
 
 @pytest.mark.unit
-def test_residual(surrogate, data_validation):
+def test_residual_alamo(alamo_surrogate, data_validation):
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -120,14 +121,14 @@ def test_residual(surrogate, data_validation):
         # create and step into new temporary directory
         dname = tf.mkdtemp()
         filename = os.path.join(dname, 'results.pdf')
-        surrogate_residual(surrogate, data_validation,
+        surrogate_residual(alamo_surrogate, data_validation,
                            filename=filename, show=False)
 
         assert os.path.exists(filename)  # PDF results file
 
 
 @pytest.mark.unit
-def test_scatter2D_noPDF(surrogate, data_validation):
+def test_scatter2D_noPDF_alamo(alamo_surrogate, data_validation):
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -136,14 +137,14 @@ def test_scatter2D_noPDF(surrogate, data_validation):
 
         # create and step into new temporary directory
         dname = tf.mkdtemp()
-        surrogate_scatter2D(surrogate, data_validation, show=False)
+        surrogate_scatter2D(alamo_surrogate, data_validation, show=False)
 
         for file in list(os.walk(dname)):  # check entire temp directory
             assert file[-4:] != '.pdf'  # no PDF files should be created
 
 
 @pytest.mark.unit
-def test_scatter3D_noPDF(surrogate, data_validation):
+def test_scatter3D_noPDF_alamo(alamo_surrogate, data_validation):
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -152,14 +153,14 @@ def test_scatter3D_noPDF(surrogate, data_validation):
 
         # create and step into new temporary directory
         dname = tf.mkdtemp()
-        surrogate_scatter3D(surrogate, data_validation, show=False)
+        surrogate_scatter3D(alamo_surrogate, data_validation, show=False)
 
         for file in list(os.walk(dname)):  # check entire temp directory
             assert file[-4:] != '.pdf'  # no PDF files should be created
 
 
 @pytest.mark.unit
-def test_parity_noPDF(surrogate, data_validation):
+def test_parity_noPDF_alamo(alamo_surrogate, data_validation):
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -168,14 +169,14 @@ def test_parity_noPDF(surrogate, data_validation):
 
         # create and step into new temporary directory
         dname = tf.mkdtemp()
-        surrogate_parity(surrogate, data_validation, show=False)
+        surrogate_parity(alamo_surrogate, data_validation, show=False)
 
         for file in list(os.walk(dname)):  # check entire temp directory
             assert file[-4:] != '.pdf'  # no PDF files should be created
 
 
 @pytest.mark.unit
-def test_residual_noPDF(surrogate, data_validation):
+def test_residual_noPDF_alamo(alamo_surrogate, data_validation):
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -184,7 +185,7 @@ def test_residual_noPDF(surrogate, data_validation):
 
         # create and step into new temporary directory
         dname = tf.mkdtemp()
-        surrogate_residual(surrogate, data_validation, show=False)
+        surrogate_residual(alamo_surrogate, data_validation, show=False)
 
         for file in list(os.walk(dname)):  # check entire temp directory
             assert file[-4:] != '.pdf'  # no PDF files should be created
