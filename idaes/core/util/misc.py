@@ -251,3 +251,19 @@ class StrEnum(str, Enum):
 
     def __str__(self):
         return str(self.value)
+
+
+# Author: Douglas Allan
+def set_and_get_attr(obj, name, val):
+    """
+    Helper function to create an attribute on object and return a pointer to that attribute
+    Args:
+        obj (Object): Object upon which to create attribute
+        name (string): Name of attribute to create
+        val: Value to assign to new attribute (typically an Object)
+
+    Returns:
+        Attribute created on Object obj
+    """
+    setattr(obj, name, val)
+    return getattr(obj, name)

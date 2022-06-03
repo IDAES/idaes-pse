@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-This module contains miscalaneous utility functions for use in IDAES models.
+This module contains miscellaneous utility functions for use in IDAES models.
 """
 
 import pytest
@@ -26,6 +26,7 @@ from idaes.core.util.misc import (
     copy_port_values,
     TagReference,
     set_param_from_config,
+    set_and_get_attr
 )
 import idaes.logger as idaeslog
 
@@ -474,3 +475,9 @@ class TestSetParamFromConfig:
             "b no units provided for parameter test_param - assuming "
             "default units" in caplog.text
         )
+
+@pytest.mark.unit
+def test_set_and_get_attr():
+    m = ConcreteModel()
+    x = set_and_get_attr(m, "x", Var(initialize=0))
+    assert m.x is x

@@ -25,6 +25,7 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.model_statistics as mstat
 from idaes.core.util.constants import Constants
+from idaes.core.util.misc import set_and_get_attr
 import idaes.logger as idaeslog
 
 _safe_log_eps = 1e-9
@@ -34,12 +35,6 @@ _safe_sqrt_eps = 1e-9
 class CV_Bound(enum.Enum):
     EXTRAPOLATE = 1
     NODE_VALUE = 2
-
-
-def _set_and_get_attr(obj, name, val):
-    setattr(obj, name, val)
-    return getattr(obj, name)
-
 
 def _set_default_factor(c, s):
     """Iterate over an indexed component, and set individual scaling factors
@@ -587,7 +582,7 @@ def _pure_component_visc(temperature, comp):
             1e-7
             * 16.64
             * bin_diff_M[comp] ** 0.5
-            * temperature
+            * temperature # FIXME this shouldn't depend linearly on temperature
             / (bin_diff_epsok[comp] ** 0.5 * bin_diff_sigma[comp] ** 2)
         )
         * pyo.units.Pa
@@ -931,7 +926,7 @@ def _face_initializer(blk, faces, direction):
                 "is not strictly increasing."
             )
 
-    face_set = _set_and_get_attr(
+    face_set = set_and_get_attr(
         blk,
         dfaces,
         pyo.Set(
@@ -940,7 +935,7 @@ def _face_initializer(blk, faces, direction):
             doc=f"{direction} coordinates for control volume faces",
         ),
     )
-    node_set = _set_and_get_attr(
+    node_set = set_and_get_attr(
         blk,
         dnodes,
         pyo.Set(
@@ -953,7 +948,7 @@ def _face_initializer(blk, faces, direction):
         ),
     )
     # This sets provide an integer index for nodes and faces
-    iface_set = _set_and_get_attr(
+    iface_set = set_and_get_attr(
         blk,
         "i" + dfaces,
         pyo.Set(
@@ -962,7 +957,7 @@ def _face_initializer(blk, faces, direction):
             doc=f"Integer index set for {dfaces}",
         ),
     )
-    inode_set = _set_and_get_attr(
+    inode_set = set_and_get_attr(
         blk,
         "i" + dnodes,
         pyo.Set(

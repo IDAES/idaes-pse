@@ -54,6 +54,7 @@ from idaes.models_extra.power_generation.unit_models.soc_submodels.common import
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.misc import set_and_get_attr
 from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
@@ -190,7 +191,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
             side_comps = getattr(self.solid_oxide_cell, f"{side}_component_list")
             # Support absent components in property package to support legacy property packages that do not
             # permit users to exclude components.
-            absent_comp_list = common._set_and_get_attr(
+            absent_comp_list = set_and_get_attr(
                 self,
                 f"absent_{side}_component_list",
                 pyo.Set(
