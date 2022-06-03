@@ -10,7 +10,7 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from time import sleep
+import time
 import idaes
 import logging
 import bisect
@@ -321,7 +321,7 @@ def solver_log(logger, level=logging.ERROR):
             except:
                 # Need to wait a brief period to make sure solver output is captured on the logging thread
                 # before the exception is raised.
-                sleep(sleep_period)
+                time.sleep(sleep_period)
                 lt.stop.set()
                 lt.join(timeout=join_timeout)
                 raise
