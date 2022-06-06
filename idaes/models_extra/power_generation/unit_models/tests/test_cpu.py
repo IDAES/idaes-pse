@@ -25,7 +25,8 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import unit model
-from idaes.models_extra.power_generation.unit_models.cpu import CPU
+from idaes.models_extra.power_generation.unit_models.cpu import \
+    CarbonProcessingUnit
 
 from idaes.core.solvers import get_solver
 
@@ -40,7 +41,7 @@ solver = get_solver()
 def model():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.cpu = CPU()
+    m.fs.cpu = CarbonProcessingUnit()
 
     return m
 
