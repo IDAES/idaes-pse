@@ -106,7 +106,6 @@ kwargs = dict(
     },
     # Only installed if [<key>] is added to package name
     extras_require={
-        "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
         "optional": [
             "tensorflow",  # idaes.core.surrogate.keras_surrogate
             "gridx-prescient>=2.1",  # idaes.tests.prescient
