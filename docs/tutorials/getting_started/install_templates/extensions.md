@@ -1,4 +1,4 @@
-Run the :doc:`idaes get-extensions command<../../../reference_guides/commands/get_extensions>` to install the compiled binaries. These binaries include solvers and function libraries. See :ref:`Binary Packages <tutorials/getting_started/binaries:Binary Packages>` for more details:: 
+Run the :doc:`idaes get-extensions command<../../../reference_guides/commands/get_extensions>` to install the compiled binaries. These binaries include solvers and function libraries. See :ref:`Binary Packages <tutorials/getting_started/binaries:Binary Packages>` for more details :: 
 
    idaes get-extensions
 

@@ -3,6 +3,7 @@ Windows Installation Guide
 
 Quickstart
 ----------
+The following commands should be sufficient to get you started with installing and using IDAES. For more information on these steps, see below.
 
 .. sidebar:: Learn more about the Installation
    :class: quickstart-toc
@@ -36,14 +37,6 @@ Install IDAES-PSE
 ^^^^^^^^^^^^^^^^^^
 
 .. include:: install_templates/conda_idaes_pse.md
-
-.. container:: collapsible
-
-   .. container:: header
-
-      Installing other versions
-
-   .. include:: install_templates/other_releases.md
 
 Install IDAES Extensions
 ^^^^^^^^^^^^^^^^^^^^^^^^

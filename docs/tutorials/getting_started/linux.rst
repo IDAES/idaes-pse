@@ -3,6 +3,7 @@ Linux Installation Guide
 
 Quickstart
 ----------
+The following commands should be sufficient to get you started with installing and using IDAES. For more information on these steps, see below.
 
 .. sidebar:: Learn more about the Installation
    :class: quickstart-toc
@@ -23,11 +24,12 @@ Quickstart
 
 Installing IDAES
 ----------------
+To get IDAES fully set up on your machine, we'll go through the steps to get idaes-pse package installed as well as setting up the IDAES extensions, which includes some extra solvers and function libraries, the IDAES example files, and the IDAES tests.
 
 Install Prerequisites
 ^^^^^^^^^^^^^^^^^^^^^
 
-**Install  Miniconda (optional)**
+**Install  Miniconda**
 
 1. Download `Anaconda <https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh>`_
 2. Open a terminal window & run the downloaded script.
@@ -78,14 +80,6 @@ Install IDAES-PSE
 ^^^^^^^^^^^^^^^^^^
 
 .. include:: install_templates/conda_idaes_pse.md
-
-.. container:: collapsible
-
-   .. container:: header
-
-      Installing other versions
-   
-   .. include:: install_templates/other_releases.md
 
 Install IDAES Extensions
 ^^^^^^^^^^^^^^^^^^^^^^^^
