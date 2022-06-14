@@ -446,7 +446,7 @@ custom_costing_params = {
 }
 
 
-def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B", CE_index_base=None):
+def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B", CE_index_base=671.1):
     """
     Power Plant Costing Method
     This method relies on the capital cost scaling methodologies developed
@@ -524,11 +524,6 @@ def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B", CE_i
         fs.get_costing(year="2018")
 
     CE_index = fs.costing.CE_index
-
-    if CE_index_base is None:
-        CE_index_base = 671.1
-    else:
-        pass
 
     # define preloaded accounts
     PC_preloaded_accounts = {
