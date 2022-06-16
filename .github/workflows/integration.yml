@@ -120,7 +120,7 @@ jobs:
 
   pytest:
     name: pytest (py${{ matrix.python-version }}/${{ matrix.os }}/integration)
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os-version }}
     needs: [precheck]
     if: >-
       (
@@ -137,8 +137,16 @@ jobs:
           - '3.9'
           - '3.10'
         os:
-          - ubuntu-18.04
-          - windows-latest
+          - linux
+          - win64
+          - macos
+        include:
+          - os: linux
+            os-version: ubuntu-18.04
+          - os: win64
+            os-version: windows-2019
+          - os: macos
+            os-version: macos-11
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/display-debug-info
@@ -156,7 +164,7 @@ jobs:
 
   examples:
     name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os-version }}
     needs: [precheck]
     if: >-
       (
@@ -173,8 +181,16 @@ jobs:
           - '3.9'
           - '3.10'
         os:
-          - ubuntu-18.04
-          - windows-latest
+          - linux
+          - win64
+          - macos
+        include:
+          - os: linux
+            os-version: ubuntu-18.04
+          - os: win64
+            os-version: windows-2019
+          - os: macos
+            os-version: macos-11
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/display-debug-info
