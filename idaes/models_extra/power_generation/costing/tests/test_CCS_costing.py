@@ -194,16 +194,20 @@ def test_ccs_units_costing():
     # Flue gas blower
     flue_gas_blower_accounts = ["6.9.ccs"]
     m.fs.b25 = pyo.Block()
-    # Obtain the amount of CO2 captured in lb/hr
-    amt_co2_capture = 246552  # lb/hr
+    # Obtain the CO2 product flow in lb/hr
+    co2_product_flow = 245000  # lb/hr
+    # Obtain the flue gas inlet flow to the absorber in m3/hr
+    fg_flow = 2e6 # m3/hr
 
-    m.fs.b25.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b25.amt_co2_capture.fix()
+    m.fs.b25.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b25.co2_product_flow.fix()
+    m.fs.b25.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b25.fg_flow.fix()
     get_PP_costing(
         m.fs.b25,
         flue_gas_blower_accounts,
-        m.fs.b25.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b25.co2_product_flow,m.fs.b25.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -212,13 +216,15 @@ def test_ccs_units_costing():
     flue_gas_dcc_accounts = ["6.10.ccs"]
     m.fs.b26 = pyo.Block()
 
-    m.fs.b26.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b26.amt_co2_capture.fix()
+    m.fs.b26.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b26.co2_product_flow.fix()
+    m.fs.b26.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b26.fg_flow.fix()
     get_PP_costing(
         m.fs.b26,
         flue_gas_dcc_accounts,
-        m.fs.b26.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b26.co2_product_flow,m.fs.b26.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -227,13 +233,15 @@ def test_ccs_units_costing():
     flue_gas_dcc_packing_accounts = ["6.11.ccs"]
     m.fs.b27 = pyo.Block()
 
-    m.fs.b27.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b27.amt_co2_capture.fix()
+    m.fs.b27.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b27.co2_product_flow.fix()
+    m.fs.b27.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b27.fg_flow.fix()
     get_PP_costing(
         m.fs.b27,
         flue_gas_dcc_packing_accounts,
-        m.fs.b27.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b27.co2_product_flow,m.fs.b27.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -242,13 +250,15 @@ def test_ccs_units_costing():
     pretreatment_pump_accounts = ["6.12.ccs"]
     m.fs.b28 = pyo.Block()
 
-    m.fs.b28.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b28.amt_co2_capture.fix()
+    m.fs.b28.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b28.co2_product_flow.fix()
+    m.fs.b28.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b28.fg_flow.fix()
     get_PP_costing(
         m.fs.b28,
         pretreatment_pump_accounts,
-        m.fs.b28.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b28.co2_product_flow,m.fs.b28.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -257,13 +267,15 @@ def test_ccs_units_costing():
     pretreatment_cooler_accounts = ["6.13.ccs"]
     m.fs.b29 = pyo.Block()
 
-    m.fs.b29.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b29.amt_co2_capture.fix()
+    m.fs.b29.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b29.co2_product_flow.fix()
+    m.fs.b29.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b29.fg_flow.fix()
     get_PP_costing(
         m.fs.b29,
         pretreatment_cooler_accounts,
-        m.fs.b29.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b29.co2_product_flow,m.fs.b29.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -272,13 +284,15 @@ def test_ccs_units_costing():
     pretreatment_tank_accounts = ["6.14.ccs"]
     m.fs.b30 = pyo.Block()
 
-    m.fs.b30.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b30.amt_co2_capture.fix()
+    m.fs.b30.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b30.co2_product_flow.fix()
+    m.fs.b30.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b30.fg_flow.fix()
     get_PP_costing(
         m.fs.b30,
         pretreatment_tank_accounts,
-        m.fs.b30.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b30.co2_product_flow,m.fs.b30.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -287,13 +301,15 @@ def test_ccs_units_costing():
     washing_column_accounts = ["6.15.ccs"]
     m.fs.b31 = pyo.Block()
 
-    m.fs.b31.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b31.amt_co2_capture.fix()
+    m.fs.b31.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b31.co2_product_flow.fix()
+    m.fs.b31.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b31.fg_flow.fix()
     get_PP_costing(
         m.fs.b31,
         washing_column_accounts,
-        m.fs.b31.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b31.co2_product_flow,m.fs.b31.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -302,13 +318,15 @@ def test_ccs_units_costing():
     washing_column_packing_accounts = ["6.16.ccs"]
     m.fs.b32 = pyo.Block()
 
-    m.fs.b32.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b32.amt_co2_capture.fix()
+    m.fs.b32.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b32.co2_product_flow.fix()
+    m.fs.b32.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b32.fg_flow.fix()
     get_PP_costing(
         m.fs.b32,
         washing_column_packing_accounts,
-        m.fs.b32.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b32.co2_product_flow,m.fs.b32.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -317,13 +335,15 @@ def test_ccs_units_costing():
     washing_solvent_cooler_accounts = ["6.17.ccs"]
     m.fs.b33 = pyo.Block()
 
-    m.fs.b33.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b33.amt_co2_capture.fix()
+    m.fs.b33.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b33.co2_product_flow.fix()
+    m.fs.b33.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b33.fg_flow.fix()
     get_PP_costing(
         m.fs.b33,
         washing_solvent_cooler_accounts,
-        m.fs.b33.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b33.co2_product_flow,m.fs.b33.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -332,13 +352,15 @@ def test_ccs_units_costing():
     washing_solvent_pump_accounts = ["6.18.ccs"]
     m.fs.b34 = pyo.Block()
 
-    m.fs.b34.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b34.amt_co2_capture.fix()
+    m.fs.b34.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b34.co2_product_flow.fix()
+    m.fs.b34.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b34.fg_flow.fix()
     get_PP_costing(
         m.fs.b34,
         washing_solvent_pump_accounts,
-        m.fs.b34.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b34.co2_product_flow,m.fs.b34.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -347,13 +369,15 @@ def test_ccs_units_costing():
     condenser_pump_accounts = ["6.19.ccs"]
     m.fs.b35 = pyo.Block()
 
-    m.fs.b35.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b35.amt_co2_capture.fix()
+    m.fs.b35.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b35.co2_product_flow.fix()
+    m.fs.b35.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b35.fg_flow.fix()
     get_PP_costing(
         m.fs.b35,
         condenser_pump_accounts,
-        m.fs.b35.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b35.co2_product_flow,m.fs.b35.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -362,13 +386,15 @@ def test_ccs_units_costing():
     stripper_reflux_drum_accounts = ["6.20.ccs"]
     m.fs.b36 = pyo.Block()
 
-    m.fs.b36.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b36.amt_co2_capture.fix()
+    m.fs.b36.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b36.co2_product_flow.fix()
+    m.fs.b36.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b36.fg_flow.fix()
     get_PP_costing(
         m.fs.b36,
         stripper_reflux_drum_accounts,
-        m.fs.b36.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b36.co2_product_flow,m.fs.b36.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -377,13 +403,15 @@ def test_ccs_units_costing():
     lean_solvent_pump_accounts = ["6.21.ccs"]
     m.fs.b37 = pyo.Block()
 
-    m.fs.b37.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b37.amt_co2_capture.fix()
+    m.fs.b37.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b37.co2_product_flow.fix()
+    m.fs.b37.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b37.fg_flow.fix()
     get_PP_costing(
         m.fs.b37,
         lean_solvent_pump_accounts,
-        m.fs.b37.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b37.co2_product_flow,m.fs.b37.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -392,13 +420,15 @@ def test_ccs_units_costing():
     solvent_storage_tank_accounts = ["6.22.ccs"]
     m.fs.b38 = pyo.Block()
 
-    m.fs.b38.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b38.amt_co2_capture.fix()
+    m.fs.b38.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b38.co2_product_flow.fix()
+    m.fs.b38.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b38.fg_flow.fix()
     get_PP_costing(
         m.fs.b38,
         solvent_storage_tank_accounts,
-        m.fs.b38.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b38.co2_product_flow,m.fs.b38.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -407,13 +437,15 @@ def test_ccs_units_costing():
     washing_solvent_tank_accounts = ["6.23.ccs"]
     m.fs.b39 = pyo.Block()
 
-    m.fs.b39.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b39.amt_co2_capture.fix()
+    m.fs.b39.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b39.co2_product_flow.fix()
+    m.fs.b39.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b39.fg_flow.fix()
     get_PP_costing(
         m.fs.b39,
         washing_solvent_tank_accounts,
-        m.fs.b39.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b39.co2_product_flow,m.fs.b39.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -422,13 +454,15 @@ def test_ccs_units_costing():
     solvent_stripper_reclaimer_accounts = ["6.24.ccs"]
     m.fs.b40 = pyo.Block()
 
-    m.fs.b40.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b40.amt_co2_capture.fix()
+    m.fs.b40.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b40.co2_product_flow.fix()
+    m.fs.b40.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b40.fg_flow.fix()
     get_PP_costing(
         m.fs.b40,
         solvent_stripper_reclaimer_accounts,
-        m.fs.b40.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b40.co2_product_flow,m.fs.b40.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -437,13 +471,15 @@ def test_ccs_units_costing():
     solvent_reclaimer_cooler_accounts = ["6.25.ccs"]
     m.fs.b41 = pyo.Block()
 
-    m.fs.b41.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b41.amt_co2_capture.fix()
+    m.fs.b41.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b41.co2_product_flow.fix()
+    m.fs.b41.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b41.fg_flow.fix()
     get_PP_costing(
         m.fs.b41,
         solvent_reclaimer_cooler_accounts,
-        m.fs.b41.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b41.co2_product_flow,m.fs.b41.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
@@ -452,16 +488,20 @@ def test_ccs_units_costing():
     solvent_filtration_accounts = ["6.26.ccs"]
     m.fs.b42 = pyo.Block()
 
-    m.fs.b42.amt_co2_capture = pyo.Var(initialize=amt_co2_capture)
-    m.fs.b42.amt_co2_capture.fix()
+    m.fs.b42.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b42.co2_product_flow.fix()
+    m.fs.b42.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b42.fg_flow.fix()
     get_PP_costing(
         m.fs.b42,
         solvent_filtration_accounts,
-        m.fs.b42.amt_co2_capture,
-        "lb/hr",
+        [m.fs.b42.co2_product_flow,m.fs.b42.fg_flow],
+        ["lb/hr", "m3/hr"],
         6,
         CE_index_base=567.3
     )
+    
+    get_total_TPC(m.fs)
 
     # Initialize costing
     costing_initialization(m.fs)
@@ -517,4 +557,118 @@ def test_ccs_units_costing():
         pyo.value(m.fs.b24.costing.total_plant_cost[ac])
         for ac in lean_solvent_cooler_accounts
     )
+    
+    # Flue gas blower TPC
+    assert pytest.approx(1.8425, abs=0.5) == sum(
+        pyo.value(m.fs.b25.costing.total_plant_cost[ac])
+        for ac in flue_gas_blower_accounts
+    )
+    
+    # Flue gas direct contact cooler TPC
+    assert pytest.approx(5.2476, abs=0.5) == sum(
+        pyo.value(m.fs.b26.costing.total_plant_cost[ac])
+        for ac in flue_gas_dcc_accounts
+    )
+    
+    # Flue gas direct contact cooler packing TPC
+    assert pytest.approx(4.6755, abs=0.5) == sum(
+        pyo.value(m.fs.b27.costing.total_plant_cost[ac])
+        for ac in flue_gas_dcc_packing_accounts
+    )
+    
+    # Pretreatment pump TPC
+    assert pytest.approx(0.2243, abs=0.5) == sum(
+        pyo.value(m.fs.b28.costing.total_plant_cost[ac])
+        for ac in pretreatment_pump_accounts
+    )
+    
+    # Pretreatment cooler TPC
+    assert pytest.approx(0.4159, abs=0.5) == sum(
+        pyo.value(m.fs.b29.costing.total_plant_cost[ac])
+        for ac in pretreatment_cooler_accounts
+    )
+    
+    # Pretreatment tank TPC
+    assert pytest.approx(0.1865, abs=0.5) == sum(
+        pyo.value(m.fs.b30.costing.total_plant_cost[ac])
+        for ac in pretreatment_tank_accounts
+    )
+    
+    # Washing column TPC
+    assert pytest.approx(5.0208, abs=0.5) == sum(
+        pyo.value(m.fs.b31.costing.total_plant_cost[ac])
+        for ac in washing_column_accounts
+    )
+    
+    # Washing column packing TPC
+    assert pytest.approx(5.1317, abs=0.5) == sum(
+        pyo.value(m.fs.b32.costing.total_plant_cost[ac])
+        for ac in washing_column_packing_accounts
+    )
+    
+    # Washing solvent cooler TPC
+    assert pytest.approx(0.1159, abs=0.5) == sum(
+        pyo.value(m.fs.b33.costing.total_plant_cost[ac])
+        for ac in washing_solvent_cooler_accounts
+    )
+    
+    # Washing solvent pump TPC
+    assert pytest.approx(0.0227, abs=0.5) == sum(
+        pyo.value(m.fs.b34.costing.total_plant_cost[ac])
+        for ac in washing_solvent_pump_accounts
+    )
+    
+    # Condenser pump TPC
+    assert pytest.approx(0.063, abs=0.5) == sum(
+        pyo.value(m.fs.b35.costing.total_plant_cost[ac])
+        for ac in condenser_pump_accounts
+    )
+    
+    # Stripper reflux drum TPC
+    assert pytest.approx(0.0857, abs=0.5) == sum(
+        pyo.value(m.fs.b36.costing.total_plant_cost[ac])
+        for ac in stripper_reflux_drum_accounts
+    )
+    
+    # Lean solvent pump TPC
+    assert pytest.approx(0.6553, abs=0.5) == sum(
+        pyo.value(m.fs.b37.costing.total_plant_cost[ac])
+        for ac in lean_solvent_pump_accounts
+    )
+    
+    # Solvent storage tank TPC
+    assert pytest.approx(0.7461, abs=0.5) == sum(
+        pyo.value(m.fs.b38.costing.total_plant_cost[ac])
+        for ac in solvent_storage_tank_accounts
+    )
+    
+    # Washing solvent tank TPC
+    assert pytest.approx(0.0857, abs=0.5) == sum(
+        pyo.value(m.fs.b39.costing.total_plant_cost[ac])
+        for ac in washing_solvent_tank_accounts
+    )
+    
+    # Solvent stripper reclaimer TPC
+    assert pytest.approx(0.3629, abs=0.5) == sum(
+        pyo.value(m.fs.b40.costing.total_plant_cost[ac])
+        for ac in solvent_stripper_reclaimer_accounts
+    )
+    
+    # Solvent reclaimer cooler TPC
+    assert pytest.approx(0.3402, abs=0.5) == sum(
+        pyo.value(m.fs.b41.costing.total_plant_cost[ac])
+        for ac in solvent_reclaimer_cooler_accounts
+    )
+    
+    # Solvent filtration TPC
+    assert pytest.approx(1.9937, abs=0.5) == sum(
+        pyo.value(m.fs.b42.costing.total_plant_cost[ac])
+        for ac in solvent_filtration_accounts
+    )
+    
+    # Total TPC
+    assert pytest.approx(100.81, abs=0.5) == sum(
+        pyo.value(m.fs.costing.total_TPC)
+    )
+
     return m
