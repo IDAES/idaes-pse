@@ -667,8 +667,6 @@ def test_ccs_units_costing():
     )
     
     # Total TPC
-    assert pytest.approx(100.81, abs=0.5) == sum(
-        pyo.value(m.fs.costing.total_TPC)
-    )
+    assert pytest.approx(100.81, abs=0.5) == pyo.value(m.fs.costing.total_TPC)
 
     return m
