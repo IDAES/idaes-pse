@@ -17,26 +17,28 @@ from idaes.core.ui.icons import UnitModelIcon
 
 @pytest.mark.parametrize(
     "test_input,expected",
-    [("default", "default.svg"),
-    ("cstr", "reactor_c.svg"),
-    ("equilibrium_reactor", "reactor_e.svg"),
-    ("gibbs_reactor", "reactor_g.svg"),
-    ("plug_flow_reactor", "reactor_pfr.svg"),
-    ("stoichiometric_reactor", "reactor_s.svg"),
-    ("flash", "flash.svg"),
-    ("mixer", "mixer.svg"),
-    ("feed", "feed.svg"),
-    ("feed_flash", "feed.svg"),
-    ("product", "product.svg"),
-    ("separator", "splitter.svg"),
-    ("heater", "heater_2.svg"),
-    ("pressure_changer", "compressor.svg"),
-    ("heat_exchanger", "heat_exchanger_1.svg"),
-    ("heat_exchanger_1D", "heat_exchanger_1.svg"),
-    ("statejunction", "default.svg"),
-    ("translator", "default.svg"),
-    ("packed_column", "packed_column_1.svg"),
-    ("tray_column", "tray_column_1.svg")]
+    [
+        ("default", "default.svg"),
+        ("cstr", "reactor_c.svg"),
+        ("equilibrium_reactor", "reactor_e.svg"),
+        ("gibbs_reactor", "reactor_g.svg"),
+        ("plug_flow_reactor", "reactor_pfr.svg"),
+        ("stoichiometric_reactor", "reactor_s.svg"),
+        ("flash", "flash.svg"),
+        ("mixer", "mixer.svg"),
+        ("feed", "feed.svg"),
+        ("feed_flash", "feed.svg"),
+        ("product", "product.svg"),
+        ("separator", "splitter.svg"),
+        ("heater", "heater_2.svg"),
+        ("pressure_changer", "compressor.svg"),
+        ("heat_exchanger", "heat_exchanger_1.svg"),
+        ("heat_exchanger_1D", "heat_exchanger_1.svg"),
+        ("statejunction", "default.svg"),
+        ("translator", "default.svg"),
+        ("packed_column", "packed_column_1.svg"),
+        ("tray_column", "tray_column_1.svg"),
+    ],
 )
 @pytest.mark.unit
 def test_icon_mapping(test_input, expected):
@@ -44,23 +46,26 @@ def test_icon_mapping(test_input, expected):
     with pytest.raises(ValueError):
         UnitModelIcon("unregistered_model", "not_default")
 
+
 @pytest.mark.parametrize(
     "model_name,expected",
-    [(
-        "default",
-        "{'groups': {'in': {'position': {'name': 'left', 'args': {'x': 10, 'y': 35}}, "
-        "'attrs': {'rect': {'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': "
-        "'<g><rect/></g>'}, 'out': {'position': {'name': 'left', 'args': {'x': 41, 'y': 35}}, "
-        "'attrs': {'rect': {'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': "
-        "'<g><rect/></g>'}}, 'items':[]}"
-    ),
-    (
-        "cstr",
-        "{'groups': {'in': {'position': {'name': 'left', 'args': {'x': 15, 'y': 0, 'dx': 1, 'dy': 1}}, 'attrs': "
-        "{'rect': {'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': '<g><rect/></g>'}, "
-        "'out': {'position': {'name': 'left', 'args': {'x': 48, 'y': 45, 'dx': 1, 'dy': 1}}, 'attrs': {'rect': "
-        "{'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': '<g><rect/></g>'}}, 'items': []}"
-    )]
+    [
+        (
+            "default",
+            "{'groups': {'in': {'position': {'name': 'left', 'args': {'x': 10, 'y': 35}}, "
+            "'attrs': {'rect': {'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': "
+            "'<g><rect/></g>'}, 'out': {'position': {'name': 'left', 'args': {'x': 41, 'y': 35}}, "
+            "'attrs': {'rect': {'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': "
+            "'<g><rect/></g>'}}, 'items':[]}",
+        ),
+        (
+            "cstr",
+            "{'groups': {'in': {'position': {'name': 'left', 'args': {'x': 15, 'y': 0, 'dx': 1, 'dy': 1}}, 'attrs': "
+            "{'rect': {'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': '<g><rect/></g>'}, "
+            "'out': {'position': {'name': 'left', 'args': {'x': 48, 'y': 45, 'dx': 1, 'dy': 1}}, 'attrs': {'rect': "
+            "{'stroke': '#000000', 'stroke-width': 0, 'width': 0, 'height': 0}}, 'markup': '<g><rect/></g>'}}, 'items': []}",
+        ),
+    ],
 )
 @pytest.mark.unit
 def test_link_position_mapping(model_name, expected):

@@ -17,7 +17,12 @@ Authors: Andrew Lee
 
 import pytest
 
-from pyomo.environ import check_optimal_termination, ConcreteModel, value, units as pyunits
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    value,
+    units as pyunits,
+)
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.models.unit_models.feed_flash import FeedFlash, FlashType
 from idaes.models.properties import iapws95
@@ -123,18 +128,25 @@ class TestBTXIdeal(object):
         stable = btx.fs.unit._get_stream_table_contents()
 
         expected = {
-            'Units': {
-                'flow_mol': getattr(pyunits.pint_registry, "mole/second"),
-                'mole_frac_comp benzene': getattr(pyunits.pint_registry, "dimensionless"),
-                'mole_frac_comp toluene': getattr(pyunits.pint_registry, "dimensionless"),
-                'temperature': getattr(pyunits.pint_registry, "kelvin"),
-                'pressure': getattr(pyunits.pint_registry, "Pa")},
-            'Outlet': {
-                'flow_mol': pytest.approx(1.0, rel=1e-4),
-                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
-                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
-                'temperature': pytest.approx(298.15, rel=1e-4),
-                'pressure': pytest.approx(101325.0, rel=1e-4)}}
+            "Units": {
+                "flow_mol": getattr(pyunits.pint_registry, "mole/second"),
+                "mole_frac_comp benzene": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "mole_frac_comp toluene": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "temperature": getattr(pyunits.pint_registry, "kelvin"),
+                "pressure": getattr(pyunits.pint_registry, "Pa"),
+            },
+            "Outlet": {
+                "flow_mol": pytest.approx(1.0, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(298.15, rel=1e-4),
+                "pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+        }
 
         assert stable.to_dict() == expected
 
@@ -232,22 +244,25 @@ class TestIAPWS(object):
         stable = iapws.fs.unit._get_stream_table_contents()
 
         expected = {
-            'Units': {
-                'Molar Flow (mol/s)': getattr(pyunits.pint_registry, "mole/second"),
-                'Mass Flow (kg/s)': getattr(pyunits.pint_registry, "kg/second"),
-                'T (K)': getattr(pyunits.pint_registry, "K"),
-                'P (Pa)': getattr(pyunits.pint_registry, "Pa"),
-                'Vapor Fraction': getattr(pyunits.pint_registry, "dimensionless"),
-                'Molar Enthalpy (J/mol) Vap': getattr(pyunits.pint_registry, "J/mole"),
-                'Molar Enthalpy (J/mol) Liq': getattr(pyunits.pint_registry, "J/mole")},
-            'Outlet': {
-                'Molar Flow (mol/s)': pytest.approx(1, rel=1e-4),
-                'Mass Flow (kg/s)': pytest.approx(1.8015e-2, rel=1e-4),
-                'T (K)': pytest.approx(286.34, rel=1e-4),
-                'P (Pa)': pytest.approx(1e5, rel=1e-4),
-                'Vapor Fraction': pytest.approx(0, abs=1e-4),
-                'Molar Enthalpy (J/mol) Vap': pytest.approx(2168.6, rel=1e-4),
-                'Molar Enthalpy (J/mol) Liq': pytest.approx(1000, rel=1e-4)}}
+            "Units": {
+                "Molar Flow (mol/s)": getattr(pyunits.pint_registry, "mole/second"),
+                "Mass Flow (kg/s)": getattr(pyunits.pint_registry, "kg/second"),
+                "T (K)": getattr(pyunits.pint_registry, "K"),
+                "P (Pa)": getattr(pyunits.pint_registry, "Pa"),
+                "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
+                "Molar Enthalpy (J/mol) Vap": getattr(pyunits.pint_registry, "J/mole"),
+                "Molar Enthalpy (J/mol) Liq": getattr(pyunits.pint_registry, "J/mole"),
+            },
+            "Outlet": {
+                "Molar Flow (mol/s)": pytest.approx(1, rel=1e-4),
+                "Mass Flow (kg/s)": pytest.approx(1.8015e-2, rel=1e-4),
+                "T (K)": pytest.approx(286.34, rel=1e-4),
+                "P (Pa)": pytest.approx(1e5, rel=1e-4),
+                "Vapor Fraction": pytest.approx(0, abs=1e-4),
+                "Molar Enthalpy (J/mol) Vap": pytest.approx(2168.6, rel=1e-4),
+                "Molar Enthalpy (J/mol) Liq": pytest.approx(1000, rel=1e-4),
+            },
+        }
 
         assert stable.to_dict() == expected
 

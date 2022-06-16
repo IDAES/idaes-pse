@@ -483,11 +483,15 @@ class TestHXLCGeneric(object):
             "vars": {
                 "HX Area": model.fs.unit.area,
                 "Heat Duty": model.fs.unit.heat_duty[0],
-                "HX Coefficient": model.fs.unit.overall_heat_transfer_coefficient[0]},
+                "HX Coefficient": model.fs.unit.overall_heat_transfer_coefficient[0],
+            },
             "exprs": {
                 "Delta T Driving": model.fs.unit.delta_temperature[0],
                 "Delta T In": model.fs.unit.delta_temperature_in[0],
-                "Delta T Out": model.fs.unit.delta_temperature_out[0]}}
+                "Delta T Out": model.fs.unit.delta_temperature_out[0],
+            },
+        }
+
 
 class TestHXLCTransientSCO2(object):
     @pytest.fixture
