@@ -36,9 +36,19 @@ runs:
         pip show pyomo idaes-pse
         echo '::endgroup::'
         # idaes --version
-    - name: Install extensions
+    - name: Install extensions and/or binaries
       shell: bash -l {0}
       run: |
-        echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --extra petsc --verbose
-        echo '::endgroup::'
+        function install_without_extensions {
+            conda install --quiet --yes -c conda-forge ipopt cmake
+            # some failures are expected, but this should succeed as long as pynumero is built correctly
+            pyomo build-extensions || python -c "from pyomo.contrib.pynumero.asl import AmplInterface; exit(0 if AmplInterface.available() else 1)"
+        }
+
+        if [ "$RUNNER_OS" == "macOS" ]; then
+            install_without_extensions
+        else
+            echo '::group::Output of "idaes get-extensions" command'
+            idaes get-extensions --extra petsc --verbose
+            echo '::endgroup::'
+        fi
