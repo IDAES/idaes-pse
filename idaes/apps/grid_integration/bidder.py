@@ -14,8 +14,8 @@ import pandas as pd
 import pyomo.environ as pyo
 from pyomo.opt.base.solvers import OptSolver
 import os
-from itertools import combinations
 from abc import ABC, abstractmethod
+from idaes.apps.grid_integration.utils import convert_marginal_costs_to_actual_costs
 
 from pyomo.common.dependencies import attempt_import
 
@@ -138,8 +138,8 @@ class AbstractBidder(ABC):
         """
 
         method_list = ["populate_model", "update_model"]
-        attr_list = ["power_output", "total_cost", "generator", "pmin", "default_bids"]
-        msg = "Tracking model object does not have a "
+        attr_list = ["power_output", "total_cost", "model_data"]
+        msg = "Bidding model object does not have a "
 
         for m in method_list:
             obtained_m = getattr(self.bidding_model_object, m, None)
@@ -206,7 +206,7 @@ class SelfScheduler(AbstractBidder):
         self.horizon = horizon
         self.solver = solver
         self.forecaster = forecaster
-        self.generator = self.bidding_model_object.generator
+        self.generator = self.bidding_model_object.model_data.gen_name
         self.fixed_to_schedule = fixed_to_schedule
 
         self._check_inputs()
@@ -353,7 +353,7 @@ class SelfScheduler(AbstractBidder):
 
             bids[t][self.generator] = {
                 "p_max": round(pyo.value(self.model.fs[0].power_output_ref[t]), 4),
-                "p_min": self.bidding_model_object.pmin,
+                "p_min": self.bidding_model_object.model_data.p_min,
             }
 
             if self.fixed_to_schedule:
@@ -552,7 +552,7 @@ class Bidder(AbstractBidder):
         self._check_inputs()
 
         # get the generator name
-        self.generator = self.bidding_model_object.generator
+        self.generator = self.bidding_model_object.model_data.gen_name
 
         # add flowsheets to model
         self.model = pyo.ConcreteModel()
@@ -792,7 +792,7 @@ class Bidder(AbstractBidder):
                 # if power lower than pmin, e.g., power = 0, we need to skip this
                 # solution, because Prescient is not expecting any power output lower
                 # than pmin in the bids
-                if power < self.bidding_model_object.pmin:
+                if power < self.bidding_model_object.model_data.p_min:
                     continue
                 elif power in bids[t][gen]:
                     bids[t][gen][power] = min(bids[t][gen][power], marginal_cost)
@@ -802,11 +802,11 @@ class Bidder(AbstractBidder):
         for t in time_index:
 
             # make sure the orignal points in the bids
-            for power, marginal_cost in self.bidding_model_object.default_bids.items():
+            for power, marginal_cost in self.bidding_model_object.model_data.p_cost:
                 if power not in bids[t][gen]:
                     bids[t][gen][power] = marginal_cost
 
-            pmin = self.bidding_model_object.pmin
+            pmin = self.bidding_model_object.model_data.p_min
 
             # sort the curves by power
             bids[t][gen] = dict(sorted(bids[t][gen].items()))
@@ -823,14 +823,9 @@ class Bidder(AbstractBidder):
                 pre_power = power
 
             # calculate the actual cost
-            pre_power = 0
-            pre_cost = 0
-            for power, marginal_cost in bids[t][gen].items():
-
-                delta_p = power - pre_power
-                bids[t][gen][power] = pre_cost + marginal_cost * delta_p
-                pre_power = power
-                pre_cost += marginal_cost * delta_p
+            bids[t][gen] = convert_marginal_costs_to_actual_costs(
+                list(bids[t][gen].items())
+            )
 
         # check if bids are convex
         for t in bids:
@@ -838,13 +833,13 @@ class Bidder(AbstractBidder):
                 temp_curve = {
                     "data_type": "cost_curve",
                     "cost_curve_type": "piecewise",
-                    "values": list(bids[t][gen].items()),
+                    "values": bids[t][gen],
                 }
                 tx_utils.validate_and_clean_cost_curve(
                     curve=temp_curve,
                     curve_type="cost_curve",
-                    p_min=min(bids[t][gen].keys()),
-                    p_max=max(bids[t][gen].keys()),
+                    p_min=min([p[0] for p in bids[t][gen]]),
+                    p_max=max([p[0] for p in bids[t][gen]]),
                     gen_name=gen,
                     t=t,
                 )
@@ -856,14 +851,14 @@ class Bidder(AbstractBidder):
             full_bids[t] = {}
             for gen in bids[t]:
                 full_bids[t][gen] = {}
-                full_bids[t][gen]["p_cost"] = list(bids[t][gen].items())
-                full_bids[t][gen]["p_min"] = min(bids[t][gen].keys())
-                full_bids[t][gen]["p_max"] = max(bids[t][gen].keys())
+                full_bids[t][gen]["p_cost"] = bids[t][gen]
+                full_bids[t][gen]["p_min"] = min([p[0] for p in bids[t][gen]])
+                full_bids[t][gen]["p_max"] = max([p[0] for p in bids[t][gen]])
                 full_bids[t][gen]["startup_capacity"] = full_bids[t][gen]["p_min"]
                 full_bids[t][gen]["shutdown_capacity"] = full_bids[t][gen]["p_min"]
 
                 fixed_commitment = getattr(
-                    self.bidding_model_object, "fixed_commitment", None
+                    self.bidding_model_object.model_data, "fixed_commitment", None
                 )
                 if fixed_commitment is not None:
                     full_bids[t][gen]["fixed_commitment"] = fixed_commitment

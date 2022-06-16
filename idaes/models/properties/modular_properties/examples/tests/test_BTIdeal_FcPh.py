@@ -175,7 +175,6 @@ config_dict = {
 }
 
 
-@pytest.mark.unit
 class TestBTIdeal_FcPh(PropertyTestHarness):
     def configure(self):
         self.prop_pack = GenericParameterBlock

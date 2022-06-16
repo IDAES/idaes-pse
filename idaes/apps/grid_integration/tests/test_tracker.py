@@ -13,7 +13,7 @@
 import pytest
 import pyomo.environ as pyo
 from idaes.apps.grid_integration.tracker import Tracker
-from idaes.apps.grid_integration.tests.util import TestingModel
+from idaes.apps.grid_integration.tests.util import TestingModel, testing_model_data
 
 
 class TestMissingModel:
@@ -106,7 +106,7 @@ horizon = 4
 def test_n_tracking_hour_checker():
 
     solver = pyo.SolverFactory("cbc")
-    tracking_model_object = TestingModel(horizon=horizon)
+    tracking_model_object = TestingModel(model_data=testing_model_data, horizon=horizon)
 
     # test if tracker raise error when negative number of hours is given
     n_tracking_hour = -1
@@ -131,7 +131,7 @@ def test_n_tracking_hour_checker():
 def test_solver_checker():
 
     n_tracking_hour = 1
-    tracking_model_object = TestingModel(horizon=horizon)
+    tracking_model_object = TestingModel(model_data=testing_model_data, horizon=horizon)
 
     # test if bidder raise error when invalid solver is provided
     invalid_solvers = [5, "cbc", "ipopt"]
@@ -151,7 +151,7 @@ def tracker_object():
     solver = pyo.SolverFactory("cbc")
 
     # create a tracker model
-    tracking_model_object = TestingModel(horizon=horizon)
+    tracking_model_object = TestingModel(model_data=testing_model_data, horizon=horizon)
     tracker_object = Tracker(
         tracking_model_object=tracking_model_object,
         n_tracking_hour=n_tracking_hour,

@@ -68,12 +68,13 @@ export class Toolbar {
 
         // Save event listener
         document.querySelector("#save-btn").addEventListener("click", () => {
-            this._app.saveModel(url, this._paper.graph)
+            this._app.saveModel(url, this._paper.graph);
         });
 
         // Refresh event listener
         document.querySelector("#refresh-btn").addEventListener("click", () => {
             this._app.refreshModel(url, this._paper)
+            this._app.saveModel(url, this._paper.graph)
         });
 
         // Flowsheet to SVG export event listener

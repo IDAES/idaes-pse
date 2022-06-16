@@ -18,6 +18,7 @@ from idaes.apps.grid_integration import Tracker
 from idaes.apps.grid_integration import Bidder, SelfScheduler
 from idaes.apps.grid_integration import PlaceHolderForecaster
 from idaes.apps.grid_integration import DoubleLoopCoordinator
+from idaes.apps.grid_integration.model_data import GeneratorModelData
 
 
 class TestingModel:
@@ -26,10 +27,7 @@ class TestingModel:
     Simple model object for testing.
     """
 
-    # marginal cost [$/MW]
-    marginal_cost = 30.00
-
-    def __init__(self, horizon=48, name="test", pmin=20.00, pmax=100.00):
+    def __init__(self, model_data, horizon=48):
 
         """
         Initializes the class object by building the thermal generator model.
@@ -45,12 +43,20 @@ class TestingModel:
             None
         """
 
-        self.generator = name
+        if not isinstance(model_data, GeneratorModelData):
+            raise TypeError(f"model_data must be an instance of GeneratorModelData.")
+        self._model_data = model_data
+
+        self.generator = self.model_data.gen_name
         self.horizon = horizon
         self.result_list = []
-        self._bids = None
-        self.pmin = pmin
-        self.pmax = pmax
+        self.pmin = self.model_data.p_min
+        self.pmax = self.model_data.p_max
+        self.marginal_cost = self.model_data.p_cost[0][1]
+
+    @property
+    def model_data(self):
+        return self._model_data
 
     def populate_model(self, b):
 
@@ -255,24 +261,6 @@ class TestingModel:
     def total_cost(self):
         return ("tot_cost", 1)
 
-    @property
-    def default_bids(self):
-
-        if self._bids is None:
-            bids = {}
-            n_bids = 5
-            step_len = (self.pmax - self.pmin) // n_bids
-
-            for idx in range(n_bids):
-                bids[self.pmin + idx * step_len] = self.marginal_cost
-
-            if self.pmax not in bids:
-                bids[self.pmax] = self.marginal_cost
-
-            self._bids = bids
-
-        return self._bids
-
 
 class TestingForecaster:
     """
@@ -289,9 +277,28 @@ class TestingForecaster:
 
 this_module_dir = os.path.dirname(__file__)
 
-generator = "10_STEAM"
-pmin = 30
-pmax = 76
+testing_generator_params = {
+    "gen_name": "10_STEAM",
+    "generator_type": "thermal",
+    "p_min": 30,
+    "p_max": 76,
+    "min_down_time": 4,
+    "min_up_time": 8,
+    "ramp_up_60min": 120,
+    "ramp_down_60min": 120,
+    "shutdown_capacity": 30,
+    "startup_capacity": 30,
+    "production_cost_bid_pairs": [
+        (30, 30),
+        (45.3, 30),
+        (60.7, 30),
+        (76, 30),
+    ],
+    "startup_cost_pairs": [(4, 7355.42), (10, 10488.35), (12, 11383.41)],
+    "fixed_commitment": None,
+}
+
+testing_model_data = GeneratorModelData(**testing_generator_params)
 tracking_horizon = 4
 bidding_horizon = 48
 n_scenario = 10
@@ -332,7 +339,7 @@ def make_testing_tracker():
     """
 
     tracking_model_object = TestingModel(
-        horizon=tracking_horizon, name=generator, pmin=pmin, pmax=pmax
+        model_data=testing_model_data, horizon=tracking_horizon
     )
     thermal_tracker = Tracker(
         tracking_model_object=tracking_model_object,
@@ -358,7 +365,7 @@ def make_testing_bidder():
     forecaster = make_testing_forecaster()
 
     bidding_model_object = TestingModel(
-        horizon=bidding_horizon, name=generator, pmin=pmin, pmax=pmax
+        model_data=testing_model_data, horizon=bidding_horizon
     )
     thermal_bidder = Bidder(
         bidding_model_object=bidding_model_object,
@@ -385,7 +392,7 @@ def make_testing_selfscheduler():
     forecaster = make_testing_forecaster()
 
     bidding_model_object = TestingModel(
-        horizon=bidding_horizon, name=generator, pmin=pmin, pmax=pmax
+        model_data=testing_model_data, horizon=bidding_horizon
     )
     self_scheduler = SelfScheduler(
         bidding_model_object=bidding_model_object,
