@@ -23,8 +23,9 @@ from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from idaes.models_extra.power_generation.costing.power_plant_capcost import \
-    QGESSCostingData
+from idaes.models_extra.power_generation.costing.power_plant_capcost import (
+    QGESSCostingData,
+)
 
 
 @pytest.mark.component
@@ -50,7 +51,9 @@ def test_PP_costing():
     m.fs.boiler = pyo.Block()
     m.fs.boiler.coal_mass_flow = pyo.Var(initialize=7238.95)  # tpd
     m.fs.boiler.coal_mass_flow.fix()
-    QGESSCostingData.get_PP_costing(m.fs.boiler, coal_accounts, m.fs.boiler.coal_mass_flow, "tpd", 2)
+    QGESSCostingData.get_PP_costing(
+        m.fs.boiler, coal_accounts, m.fs.boiler.coal_mass_flow, "tpd", 2
+    )
 
     # total fuel feed
     # accounts 3.x are for start up systems and miscellaneous plant equipment
@@ -71,7 +74,9 @@ def test_PP_costing():
     m.fs.bfp = pyo.Block()
     m.fs.bfp.BFW_mass_flow = pyo.Var(initialize=5316158)  # lb/hr
     m.fs.bfp.BFW_mass_flow.fix()
-    QGESSCostingData.get_PP_costing(m.fs.bfp, BFW_accounts, m.fs.bfp.BFW_mass_flow, "lb/hr", 2)
+    QGESSCostingData.get_PP_costing(
+        m.fs.bfp, BFW_accounts, m.fs.bfp.BFW_mass_flow, "lb/hr", 2
+    )
 
     # Steam turbine power
     # accounts 8.x are for the steam turbine and its foundations
@@ -163,27 +168,19 @@ def test_PP_costing():
     )
 
     assert (
-        pytest.approx(
-            pyo.value(m.fs.fuel_feed.total_plant_cost["3.6"]), abs=1e-1
-        )
+        pytest.approx(pyo.value(m.fs.fuel_feed.total_plant_cost["3.6"]), abs=1e-1)
         == 4864 / 1e3
     )
     assert (
-        pytest.approx(
-            pyo.value(m.fs.fuel_feed.total_plant_cost["3.9"]), abs=1e-1
-        )
+        pytest.approx(pyo.value(m.fs.fuel_feed.total_plant_cost["3.9"]), abs=1e-1)
         == 522 / 1e3
     )
     assert (
-        pytest.approx(
-            pyo.value(m.fs.fuel_feed.total_plant_cost["7.3"]), abs=1e-1
-        )
+        pytest.approx(pyo.value(m.fs.fuel_feed.total_plant_cost["7.3"]), abs=1e-1)
         == 1710 / 1e3
     )
     assert (
-        pytest.approx(
-            pyo.value(m.fs.fuel_feed.total_plant_cost["7.5"]), abs=1e-1
-        )
+        pytest.approx(pyo.value(m.fs.fuel_feed.total_plant_cost["7.5"]), abs=1e-1)
         == 647 / 1e3
     )
 
@@ -214,9 +211,7 @@ def test_PP_costing():
     )
 
     assert (
-        pytest.approx(
-            pyo.value(m.fs.condenser.total_plant_cost["8.3"]), abs=1e-1
-        )
+        pytest.approx(pyo.value(m.fs.condenser.total_plant_cost["8.3"]), abs=1e-1)
         == 20447 / 1e3
     )
 
@@ -258,25 +253,19 @@ def test_PP_costing():
     )
 
     assert (
-        pytest.approx(
-            pyo.value(m.fs.ash_handling.total_plant_cost["10.6"]), abs=1e-1
-        )
+        pytest.approx(pyo.value(m.fs.ash_handling.total_plant_cost["10.6"]), abs=1e-1)
         == 6429 / 1e3
     )
     assert (
-        pytest.approx(
-            pyo.value(m.fs.ash_handling.total_plant_cost["10.7"]), abs=1e-1
-        )
+        pytest.approx(pyo.value(m.fs.ash_handling.total_plant_cost["10.7"]), abs=1e-1)
         == 10725 / 1e3
     )
     assert (
-        pytest.approx(
-            pyo.value(m.fs.ash_handling.total_plant_cost["10.9"]), abs=1e-1
-        )
+        pytest.approx(pyo.value(m.fs.ash_handling.total_plant_cost["10.9"]), abs=1e-1)
         == 2564 / 1e3
     )
 
-    #m.fs.display()
+    # m.fs.display()
     assert pytest.approx(pyo.value(m.fs.total_TPC), abs=1e-1) == 0  # 993753 / 1e3
 
     return m
@@ -327,28 +316,36 @@ def test_power_plant_costing():
     m.fs.IGCC_3 = pyo.Block()
     m.fs.IGCC_3.HRSG_duty = pyo.Var(initialize=1777.86)  # MMBtu/hr
     m.fs.IGCC_3.HRSG_duty.fix()
-    QGESSCostingData.get_PP_costing(m.fs.IGCC_3, HRSG_accounts, m.fs.IGCC_3.HRSG_duty, "MMBtu/hr", 5)
+    QGESSCostingData.get_PP_costing(
+        m.fs.IGCC_3, HRSG_accounts, m.fs.IGCC_3.HRSG_duty, "MMBtu/hr", 5
+    )
 
     # NGCC
     steam_turbine_accounts = ["8.1", "8.2", "8.5"]
     m.fs.NGCC = pyo.Block()
     m.fs.NGCC.turbine_power = pyo.Var(initialize=212500)  # kW
     m.fs.NGCC.turbine_power.fix()
-    QGESSCostingData.get_PP_costing(m.fs.NGCC, steam_turbine_accounts, m.fs.NGCC.turbine_power, "kW", 6)
+    QGESSCostingData.get_PP_costing(
+        m.fs.NGCC, steam_turbine_accounts, m.fs.NGCC.turbine_power, "kW", 6
+    )
 
     # AUSC PC
     AUSC_accounts = ["4.9", "8.4"]
     m.fs.AUSC = pyo.Block()
     m.fs.AUSC.feedwater_flow = pyo.Var(initialize=3298815.58)  # lb/hr
     m.fs.AUSC.feedwater_flow.fix()
-    QGESSCostingData.get_PP_costing(m.fs.AUSC, AUSC_accounts, m.fs.AUSC.feedwater_flow, "lb/hr", 7)
+    QGESSCostingData.get_PP_costing(
+        m.fs.AUSC, AUSC_accounts, m.fs.AUSC.feedwater_flow, "lb/hr", 7
+    )
 
     # custom carbon capture
     CCS_accounts = ["5.1.a.epri"]
     m.fs.CCS = pyo.Block()
     m.fs.CCS.CO2_flow = pyo.Var(initialize=493587.88)  # lb/hr
     m.fs.CCS.CO2_flow.fix()
-    QGESSCostingData.get_PP_costing(m.fs.CCS, CCS_accounts, m.fs.CCS.CO2_flow, "lb/hr", 6)
+    QGESSCostingData.get_PP_costing(
+        m.fs.CCS, CCS_accounts, m.fs.CCS.CO2_flow, "lb/hr", 6
+    )
 
     # add total cost
     QGESSCostingData.get_total_TPC(m.fs)
@@ -364,21 +361,15 @@ def test_power_plant_costing():
     #  all numbers come from the NETL excel file
     # "201.001.001_BBR4 COE Spreadsheet_Rev0U_20190919_njk.xlsm"
     assert (
-        pytest.approx(
-            pyo.value(m.fs.subcritical_PC.total_plant_cost["1.1"]), abs=1e-1
-        )
+        pytest.approx(pyo.value(m.fs.subcritical_PC.total_plant_cost["1.1"]), abs=1e-1)
         == 2379 / 1e3
     )
     assert (
-        pytest.approx(
-            pyo.value(m.fs.subcritical_PC.total_plant_cost["1.2"]), abs=1e-1
-        )
+        pytest.approx(pyo.value(m.fs.subcritical_PC.total_plant_cost["1.2"]), abs=1e-1)
         == 6588 / 1e3
     )
     assert (
-        pytest.approx(
-            pyo.value(m.fs.subcritical_PC.total_plant_cost["1.3"]), abs=1e-1
-        )
+        pytest.approx(pyo.value(m.fs.subcritical_PC.total_plant_cost["1.3"]), abs=1e-1)
         == 61409 / 1e3
     )
 
@@ -505,7 +496,9 @@ def test_sCO2_costing():
     def HTR_UA_rule(b):
         return b.HTR.UA * b.HTR.LMTD == b.HTR.heat_duty
 
-    QGESSCostingData.get_sCO2_unit_cost(m.fs.HTR, "Recuperator", m.fs.HTR.UA, temp_C=m.fs.HTR.temp)
+    QGESSCostingData.get_sCO2_unit_cost(
+        m.fs.HTR, "Recuperator", m.fs.HTR.UA, temp_C=m.fs.HTR.temp
+    )
 
     # ######################################################
     # Low Temperature Recuperator
@@ -522,7 +515,9 @@ def test_sCO2_costing():
     def LTR_UA_rule(b):
         return b.LTR.UA * b.LTR.LMTD == b.LTR.heat_duty
 
-    QGESSCostingData.get_sCO2_unit_cost(m.fs.LTR, "Recuperator", m.fs.LTR.UA, temp_C=m.fs.LTR.temp)
+    QGESSCostingData.get_sCO2_unit_cost(
+        m.fs.LTR, "Recuperator", m.fs.LTR.UA, temp_C=m.fs.LTR.temp
+    )
 
     # ######################################################
     # CO2 Cooler, costed using the recouperator not dry cooler
@@ -761,9 +756,7 @@ def test_OM_costing():
 
     assert degrees_of_freedom(m) == 0
 
-    assert pytest.approx(28.094, abs=0.1) == (
-        pyo.value(m.fs.total_fixed_OM_cost)
-    )
+    assert pytest.approx(28.094, abs=0.1) == (pyo.value(m.fs.total_fixed_OM_cost))
 
     assert pytest.approx(3.587, abs=0.1) == (
         pyo.value(m.fs.costing.total_variable_OM_cost[0])
