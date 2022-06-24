@@ -15,16 +15,18 @@
 Custom dictionaries have been added as a way to add new scaling equations
 that are not based on the Bituminous Baseline report.
 New cost accounts include:
-    - 5.1.a.epri can be used to cost the Cansolv carbon capture system
-    between 90% and 97.7% capture rate. It is only valid for a flue gas CO2
-    concentration of 4%. The additional cost component of the CO2 system is
-    in account 5.1.b and remains unchanged.
 
-    - 6.1 can be used to cost the MEA solvent-based carbon capture system, 
-    using the reference: Kangkang Li, Ashleigh Cousins, Hai You, Paul Feron,
-    Weilang Luo, Jian Chen (2016). Systematic study of aqueous monoethanolamine
-    (MEA)-based CO2 capture process: Techno-economic assessment of the MEA
-    process and its improvements. Applied Energy, 165, 648-659.
+    - 5.1.a.epri can be used to cost the Cansolv carbon capture system
+      between 90% and 97.7% capture rate. It is only valid for a flue gas CO2
+      concentration of 4%. The additional cost component of the CO2 system is
+      in account 5.1.b and remains unchanged.
+
+    - 6.1 can be used to cost the MEA solvent-based carbon capture system,
+      using the reference: Kangkang Li, Ashleigh Cousins, Hai You, Paul Feron,
+      Weilang Luo, Jian Chen (2016). Systematic study of aqueous
+      monoethanolamine (MEA)-based CO2 capture process: Techno-economic
+      assessment of the MEA process and its improvements. Applied Energy, 165,
+      648-659.
  """
 
 custom_costing_exponents = {

@@ -20,16 +20,17 @@ developed to calculate the capital cost of power generation plants:
 2. Supercritical CO2 power cycles (direct and indirect) (get_sCO2_unit_cost)
 
 Other methods:
-* get_fixed_OM_costs() to cost fixed O&M costs
-* get_variable_OM_costs to cost variable O&M costs
-* get_ASU_cost() to cost air separation units
-* costing_initialization() to initialize costing blocks
-* display_total_plant_costs() to display total plant cost (TPC)
-* display_bare_erected_costs() to display BEC costs
-* get_total_TPC() to display the total TPC of the entire flowsheet
-* display_flowsheet_cost() to display flowsheet cost
-* check_sCO2_costing_bounds() to display a warnning if costing model have been
-used outside the range that where designed for
+
+    - get_fixed_OM_costs() to cost fixed O&M costs
+    - get_variable_OM_costs() to cost variable O&M costs
+    - get_ASU_cost() to cost air separation units
+    - costing_initialization() to initialize costing blocks
+    - display_total_plant_costs() to display total plant cost (TPC)
+    - display_bare_erected_costs() to display BEC costs
+    - get_total_TPC() to display the total TPC of the entire flowsheet
+    - display_flowsheet_cost() to display flowsheet cost
+    - check_sCO2_costing_bounds() to display a warnning if costing model have
+      been used outside the range that where designed for
 """
 __author__ = "Costing Team (A. Noring and M. Zamarripa)"
 __version__ = "1.0.0"
@@ -281,6 +282,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         When two operational/design parameters are used to scale the cost,
         the following equation is implemented:
+
             SC = RC*w1*(SP1/RP1)^Exp + RC*w2*(SP2/RP2)^Exp
 
         where:
@@ -296,20 +298,20 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             operational/design parameter 2
             Exp is the scaling exponent
 
-        The scaled cost is computed using ref values for different technoligies.
+        The scaled cost is computed using ref values for different technologies.
         Categories:
-        1 - Supercritical PC, air-fired, with and without CO2 capture,
+        1. Supercritical PC, air-fired, with and without CO2 capture,
         Illinois No. 6 coal
-        2 - Subcritical PC, air-fired, with and without CO2 capture,
+        2. Subcritical PC, air-fired, with and without CO2 capture,
         Illinois No. 6 coal
-        3 - Two-stage, slurry-feed, oxygen-blown gasifier with and without
+        3. Two-stage, slurry-feed, oxygen-blown gasifier with and without
         CO2 capture, Illinois No. 6 coal
-        4 - Single-stage, slurry-feed, oxygen-blown gasifier with and without
+        4. Single-stage, slurry-feed, oxygen-blown gasifier with and without
         CO2 capture, Illinois No. 6 coal
-        5 - Single-stage, dry-feed, oxygen-blown, up-flow gasifier with
+        5. Single-stage, dry-feed, oxygen-blown, up-flow gasifier with
         and without CO2 capture, Illinois No. 6 coal
-        6 - Natural gas, air-fired, with and without CO2 capture
-        7 - Advanced Ultrasupercritical PC
+        6. Natural gas, air-fired, with and without CO2 capture
+        7. Advanced Ultrasupercritical PC
 
         This method computes the capital cost of units and main components of the
         power plant, and requires a few arguments to build a constraint as part of
