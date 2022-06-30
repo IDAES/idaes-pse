@@ -32,7 +32,7 @@ from .util import init_logging
 
 __author__ = "Dan Gunter"
 
-#if sys.platform.startswith("win"):
+# if sys.platform.startswith("win"):
 #    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
 
 init_logging()
@@ -98,8 +98,7 @@ walker_args_noexclude.update(
 
 @pytest.fixture
 def package_walker():
-    """This walker is also a test. But useful as a base for other things.
-    """
+    """This walker is also a test. But useful as a base for other things."""
     walker = codesearch.ModuleClassWalker(from_pkg=idaes, **walker_args)
     yield walker
 

@@ -17,11 +17,12 @@ set of 'resources'.
 # stdlib
 from copy import deepcopy
 import logging
+
 # local
 from idaes.core.dmf import resource, errors
 from idaes.core.dmf.resource import Predicates, ResourceTypes
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+__author__ = "Dan Gunter <dkgunter@lbl.gov>"
 
 _log = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ class Experiment(resource.Resource):
     It is also a useful unit for passing as an argument to functions,
     since it has a standard 'slot' for the DMF instance that created it.
     """
+
     def __init__(self, dmf, **kwargs):
         """Constructor. Adds the new experiment to the DMF.
 
@@ -89,19 +91,17 @@ class Experiment(resource.Resource):
         return new_exp
 
     def update(self):
-        """Update experiment to current values.
-        """
+        """Update experiment to current values."""
         self._dmf.update(self, sync_relations=True)
 
     def remove(self):
-        """Remove this experiment from the associated DMF instance.
-        """
+        """Remove this experiment from the associated DMF instance."""
         # remove from the DMF
         self._dmf.remove(self.id)
         # cut the connection to the DMF instance
         self._dmf = None
         # disable known methods (via monkeypatching!)
-        for m in 'add', 'update', 'remove', 'link', 'copy':
+        for m in "add", "update", "remove", "link", "copy":
             self.__dict__[m] = self._removed
 
     def link(self, subj, predicate=Predicates.contains, obj=None):
@@ -122,4 +122,4 @@ class Experiment(resource.Resource):
         self._dmf.update(obj)
 
     def _removed(self, *args, **kwargs):
-        raise errors.BadResourceError('This experiment has been removed')
+        raise errors.BadResourceError("This experiment has been removed")
