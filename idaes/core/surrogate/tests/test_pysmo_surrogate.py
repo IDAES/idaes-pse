@@ -1684,6 +1684,7 @@ class TestPysmoSurrogate:
             )
         )
 
+    @pytest.mark.nolinux  # FIXME: see IDAES/idaes-pse#897
     @pytest.mark.unit
     def test_evaluate_multisurrogate_rbf(self, pysmo_surr2_rbf):
         # Test ``evaluate_surrogate`` for RBF with two inputs/outputs
@@ -1874,6 +1875,7 @@ class TestPysmoSurrogate:
                 )
             )
 
+    @pytest.mark.nolinux  # FIXME: see IDAES/idaes-pse#897
     @pytest.mark.unit
     def test_populate_block_multisurrogate_rbf(self, pysmo_surr2_rbf):
         # Test ``populate_block`` for RBF with one input/output
@@ -1908,6 +1910,7 @@ class TestPysmoSurrogate:
             )
         )
 
+    @pytest.mark.nolinux  # FIXME: see IDAES/idaes-pse#897
     @pytest.mark.unit
     def test_evaluate_multisurrogate_kriging(self, pysmo_surr2_krg):
         # Test ``evaluate_surrogate`` for kriging with two inputs/outputs
