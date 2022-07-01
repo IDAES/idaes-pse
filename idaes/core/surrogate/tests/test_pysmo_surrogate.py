@@ -1717,7 +1717,7 @@ class TestPysmoSurrogate:
         sol, rbf_trained = pysmo_surr2_rbf
         out = rbf_trained.evaluate_surrogate(inputs)
         for i in range(inputs.shape[0]):
-            assert pytest.approx(out["z1"][i], rel=1e-6, abs=1e-6) == (
+            assert pytest.approx(out["z1"][i], rel=1e-6, abs=1e-8) == (
                 (
                     10
                     + 40
@@ -1795,7 +1795,7 @@ class TestPysmoSurrogate:
                     )
                 )
             )
-            assert pytest.approx(out["z2"][i], rel=1e-6, abs=1e-6) == (
+            assert pytest.approx(out["z2"][i], rel=1e-6, abs=1e-8) == (
                 (
                     6
                     + 8
