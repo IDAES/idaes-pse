@@ -1889,15 +1889,15 @@ class TestPysmoSurrogate:
         assert blk.outputs["z1"].bounds == (None, None)
         assert isinstance(blk.pysmo_constraint, Constraint)
         assert len(blk.pysmo_constraint) == 2
-#         assert str(blk.pysmo_constraint["z1"].body) == (
-#             "outputs[z1] - (10 + 40*(-{}*exp(- (0.05*(((inputs[x1] - 1)/4)**2 + ((inputs[x2] - 5)/4)**2)**0.5)**2) - {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.25)**2 + ((inputs[x2] - 5)/4 - 0.25)**2)**0.5)**2) + {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.5)**2 + ((inputs[x2] - 5)/4 - 0.5)**2)**0.5)**2) - {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.75)**2 + ((inputs[x2] - 5)/4 - 0.75)**2)**0.5)**2) + {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 1.0)**2 + ((inputs[x2] - 5)/4 - 1.0)**2)**0.5)**2)))".format(
-#                 abs(sol._data["z1"]._model.weights[0, 0]),
-#                 abs(sol._data["z1"]._model.weights[1, 0]),
-#                 abs(sol._data["z1"]._model.weights[2, 0]),
-#                 abs(sol._data["z1"]._model.weights[3, 0]),
-#                 abs(sol._data["z1"]._model.weights[4, 0]),
-#             )
-#         )
+        #         assert str(blk.pysmo_constraint["z1"].body) == (
+        #             "outputs[z1] - (10 + 40*(-{}*exp(- (0.05*(((inputs[x1] - 1)/4)**2 + ((inputs[x2] - 5)/4)**2)**0.5)**2) - {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.25)**2 + ((inputs[x2] - 5)/4 - 0.25)**2)**0.5)**2) + {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.5)**2 + ((inputs[x2] - 5)/4 - 0.5)**2)**0.5)**2) - {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.75)**2 + ((inputs[x2] - 5)/4 - 0.75)**2)**0.5)**2) + {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 1.0)**2 + ((inputs[x2] - 5)/4 - 1.0)**2)**0.5)**2)))".format(
+        #                 abs(sol._data["z1"]._model.weights[0, 0]),
+        #                 abs(sol._data["z1"]._model.weights[1, 0]),
+        #                 abs(sol._data["z1"]._model.weights[2, 0]),
+        #                 abs(sol._data["z1"]._model.weights[3, 0]),
+        #                 abs(sol._data["z1"]._model.weights[4, 0]),
+        #             )
+        #         )
         assert str(blk.pysmo_constraint["z2"].body) == (
             "outputs[z2] - (6 + 8*(-{}*exp(- (0.05*(((inputs[x1] - 1)/4)**2 + ((inputs[x2] - 5)/4)**2)**0.5)**2) - {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.25)**2 + ((inputs[x2] - 5)/4 - 0.25)**2)**0.5)**2) + {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.5)**2 + ((inputs[x2] - 5)/4 - 0.5)**2)**0.5)**2) - {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.75)**2 + ((inputs[x2] - 5)/4 - 0.75)**2)**0.5)**2) + {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 1.0)**2 + ((inputs[x2] - 5)/4 - 1.0)**2)**0.5)**2)))".format(
                 abs(sol._data["z2"]._model.weights[0, 0]),
