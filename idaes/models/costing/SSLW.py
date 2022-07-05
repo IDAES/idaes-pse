@@ -1023,13 +1023,13 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                 "pressure changers with the compressor argument "
                 "equal to True."
             )
-        # compressor = True, and using isothermal assumption
+        # compressor = True, and using non-isentropic assumption
         # (costing not needed)
         elif hasattr(blk.unit_model.config, "thermodynamic_assumption"):
-            if (blk.unit_model.config.thermodynamic_assumption.name) == "isothermal":
+            if (blk.unit_model.config.thermodynamic_assumption.name) != "isentropic":
                 # PYLINT-TODO-FIX fix exception message with correct number of arguments
                 raise ValueError(
-                    "{} - pressure changers with isothermal "  # pylint: disable=E1305
+                    "{} - pressure changers without isentrpoic "  # pylint: disable=E1305
                     "assumption are too simple to be costed. ".format(
                         blk.unit_model.name
                     )

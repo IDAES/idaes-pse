@@ -855,7 +855,7 @@ class TestMapping:
         model.fs.unit = PressureChanger(
             default={
                 "property_package": model.fs.pparams,
-                "thermodynamic_assumption": ThermodynamicAssumption.adiabatic,
+                "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
             }
         )
         model.fs.unit.costing = UnitModelCostingBlock(
@@ -863,6 +863,34 @@ class TestMapping:
         )
         assert model.fs.unit.costing.drive_factor.value == 1
         assert model.fs.unit.costing.material_factor.value == 2.5
+
+    def test_isothermal_compressor(self, model):
+        # Test exception for non-supported compressor flags
+        model.fs.unit = PressureChanger(
+            default={
+                "property_package": model.fs.pparams,
+                "compressor": True,
+                "thermodynamic_assumption": ThermodynamicAssumption.isothermal,
+            }
+        )
+        with pytest.raises(ValueError):
+            model.fs.unit.costing = UnitModelCostingBlock(
+                default={"flowsheet_costing_block": model.fs.costing}
+            )
+
+    def test_adiabatic_compressor(self, model):
+        # Test exception for non-supported compressor flags
+        model.fs.unit = PressureChanger(
+            default={
+                "property_package": model.fs.pparams,
+                "compressor": True,
+                "thermodynamic_assumption": ThermodynamicAssumption.adiabatic,
+            }
+        )
+        with pytest.raises(ValueError):
+            model.fs.unit.costing = UnitModelCostingBlock(
+                default={"flowsheet_costing_block": model.fs.costing}
+            )
 
     def test_pump(self):
         # Need a different property package here
