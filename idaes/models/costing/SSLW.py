@@ -1016,13 +1016,24 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             integer: whether the number of units should be constrained to be
                 an integer or not (default = True).
         """
-        # Confirm that unit is a turbine
+        # Confirm that unit is a compressor
         if not blk.unit_model.config.compressor:
             raise TypeError(
                 "cost_compressor method is only appropriate for "
                 "pressure changers with the compressor argument "
                 "equal to True."
             )
+        # compressor = True, and using isothermal assumption
+        # (costing not needed)
+        elif hasattr(blk.unit_model.config, "thermodynamic_assumption"):
+            if (blk.unit_model.config.thermodynamic_assumption.name) == "isothermal":
+                # PYLINT-TODO-FIX fix exception message with correct number of arguments
+                raise ValueError(
+                    "{} - pressure changers with isothermal "  # pylint: disable=E1305
+                    "assumption are too simple to be costed. ".format(
+                        blk.unit_model.name
+                    )
+                )
 
         # Build generic costing variables
         _make_common_vars(blk, integer)

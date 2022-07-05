@@ -50,6 +50,7 @@ from idaes.models.unit_models import (
     StoichiometricReactor,
     Turbine,
 )
+from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
 from idaes.core.util.testing import (
     PhysicalParameterTestBlock,
     ReactionParameterTestBlock,
@@ -851,7 +852,12 @@ class TestMapping:
 
     def test_pressure_changer(self, model):
         # Add examples of supported unit models and add costing
-        model.fs.unit = PressureChanger(default={"property_package": model.fs.pparams})
+        model.fs.unit = PressureChanger(
+            default={
+                "property_package": model.fs.pparams,
+                "thermodynamic_assumption": ThermodynamicAssumption.adiabatic,
+            }
+        )
         model.fs.unit.costing = UnitModelCostingBlock(
             default={"flowsheet_costing_block": model.fs.costing}
         )
