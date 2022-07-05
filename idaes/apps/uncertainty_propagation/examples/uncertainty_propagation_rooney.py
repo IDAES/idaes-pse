@@ -12,24 +12,30 @@
 #################################################################################
 import sys
 import os
-sys.path.append(os.path.abspath('..')) # current folder is ~/examples
-from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_uncertainty
+
+sys.path.append(os.path.abspath(".."))  # current folder is ~/examples
+from idaes.apps.uncertainty_propagation.uncertainties import (
+    quantify_propagate_uncertainty,
+)
 import pandas as pd
-from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model,rooney_biegler_model_opt
+from idaes.apps.uncertainty_propagation.examples.rooney_biegler import (
+    rooney_biegler_model,
+    rooney_biegler_model_opt,
+)
 
 if __name__ == "__main__":
-    variable_name = ['asymptote', 'rate_constant']
-    data = pd.DataFrame(data=[[1,8.3],
-                              [2,10.3],
-                              [3,19.0],
-                              [4,16.0],
-                              [5,15.6],
-                              [7,19.8]],
-                        columns=['hour', 'y'])
+    variable_name = ["asymptote", "rate_constant"]
+    data = pd.DataFrame(
+        data=[[1, 8.3], [2, 10.3], [3, 19.0], [4, 16.0], [5, 15.6], [7, 19.8]],
+        columns=["hour", "y"],
+    )
 
     def SSE(model, data):
-        expr = sum((data.y[i] - model.response_function[data.hour[i]])**2 for i in data.index)
+        expr = sum(
+            (data.y[i] - model.response_function[data.hour[i]]) ** 2 for i in data.index
+        )
         return expr
 
-
-    results =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE)
+    results = quantify_propagate_uncertainty(
+        rooney_biegler_model, rooney_biegler_model_opt, data, variable_name, SSE
+    )

@@ -45,15 +45,17 @@ def level_from_verbosity(vb):
 
 
 def how_to_report_an_error(embed=False):
-    msg = ["You can report this error by visiting the Github",
-           "software page at:",
-           "    https://github.com/idaes/idaes-pse/issues",
-           "and clicking on 'New issue', or by sending email",
-           "to 'idaes-support@idaes.org'. Please include the",
-           "command or actions you took, and the resulting",
-           "message, in the report."]
+    msg = [
+        "You can report this error by visiting the Github",
+        "software page at:",
+        "    https://github.com/idaes/idaes-pse/issues",
+        "and clicking on 'New issue', or by sending email",
+        "to 'idaes-support@idaes.org'. Please include the",
+        "command or actions you took, and the resulting",
+        "message, in the report.",
+    ]
     if not embed:
-        bar = '-' * 50
+        bar = "-" * 50
         msg.insert(0, bar)
         msg.append(bar)
     return "\n".join(msg)
@@ -88,7 +90,7 @@ def command_base(verbose, quiet):
 @command_base.command(help="Show IDAES copyright information")
 def copyright():
     click.echo(
-            """
+        """
 ================================================================================
  Institute for the Design of Advanced Energy Systems Process Systems
  Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
@@ -103,10 +105,13 @@ def copyright():
 """
     )
 
+
 @command_base.command(help="Show how long it takes to import command modules")
 def import_time(name="import-time"):
     from idaes.commands import _command_import_total_time
+
     click.echo(f"Time: {_command_import_total_time}")
+
 
 if __name__ == "__main__":
     # PYLINT-TODO-FIX fix error bypassed by directive

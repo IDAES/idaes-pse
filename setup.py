@@ -8,6 +8,7 @@ import sys
 from setuptools import setup, find_namespace_packages
 from typing import List, Tuple
 
+
 def warn(s):
     sys.stderr.write("*** WARNING *** {}\n".format(s))
 
@@ -42,7 +43,7 @@ DMF_DATA_ROOT = "data"
 
 def dmf_data_files(root: str = DMF_DATA_ROOT) -> List[Tuple[str, List[str]]]:
     """Generate a list of pairs (directory, [files..]), covering all the DMF data
-       files, for the `data_files` option to :func:`setup()`.
+    files, for the `data_files` option to :func:`setup()`.
     """
     file_list = [
         (
@@ -57,6 +58,7 @@ def dmf_data_files(root: str = DMF_DATA_ROOT) -> List[Tuple[str, List[str]]]:
             file_list.append((files_subdir.as_posix(), file_names))
     return file_list
 
+
 kwargs = dict(
     zip_safe=False,
     name=NAME,
@@ -70,7 +72,7 @@ kwargs = dict(
         "bunch",
         "click>=8",
         "colorama",
-        "distro", # help identify linux distros for binary downloads
+        "distro",  # help identify linux distros for binary downloads
         "flask",  # for ui/fsvis
         "flask-cors",
         "jupyter",
@@ -80,7 +82,7 @@ kwargs = dict(
         "nbformat",
         "numpy",
         "networkx",
-        "omlt==0.3.1", # fix the version for now as package evolves
+        "omlt==0.3.1",  # fix the version for now as package evolves
         "pandas",
         "pint",
         "psutil",

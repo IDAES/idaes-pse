@@ -182,41 +182,53 @@ class TestHXNTU(object):
         stable = model.fs.unit._get_stream_table_contents()
 
         expected = {
-            'Units': {
-                'Total Molar Flowrate': getattr(pyunits.pint_registry, "mole/second"),
-                'Total Mole Fraction H2O': getattr(pyunits.pint_registry, "dimensionless"),
-                'Total Mole Fraction MEA': getattr(pyunits.pint_registry, "dimensionless"),
-                'Total Mole Fraction CO2': getattr(pyunits.pint_registry, "dimensionless"),
-                'Temperature': getattr(pyunits.pint_registry, "kelvin"),
-                'Pressure': getattr(pyunits.pint_registry, "Pa")},
-            'Hot Inlet': {
-                'Total Molar Flowrate': pytest.approx(60.549, rel=1e-4),
-                'Total Mole Fraction H2O': pytest.approx(0.87470, rel=1e-4),
-                'Total Mole Fraction MEA': pytest.approx(0.10950, rel=1e-4),
-                'Total Mole Fraction CO2': pytest.approx(0.015800, rel=1e-4),
-                'Temperature': pytest.approx(392.23, rel=1e-4),
-                'Pressure': pytest.approx(2.0265e+05, rel=1e-4)},
-            'Hot Outlet': {
-                'Total Molar Flowrate': pytest.approx(1, rel=1e-4),
-                'Total Mole Fraction H2O': pytest.approx(1/3, rel=1e-4),
-                'Total Mole Fraction MEA': pytest.approx(1/3, rel=1e-4),
-                'Total Mole Fraction CO2': pytest.approx(1/3, rel=1e-4),
-                'Temperature': pytest.approx(298.15, rel=1e-4),
-                'Pressure': pytest.approx(101325, rel=1e-4)},
-            'Cold Inlet': {
-                'Total Molar Flowrate': pytest.approx(63.019, rel=1e-4),
-                'Total Mole Fraction H2O': pytest.approx(0.85090, rel=1e-4),
-                'Total Mole Fraction MEA': pytest.approx(0.10770, rel=1e-4),
-                'Total Mole Fraction CO2': pytest.approx(0.041400, rel=1e-4),
-                'Temperature': pytest.approx(326.36, rel=1e-4),
-                'Pressure': pytest.approx(2.0265e+05, rel=1e-4)},
-            'Cold Outlet': {
-                'Total Molar Flowrate': pytest.approx(1, rel=1e-4),
-                'Total Mole Fraction H2O': pytest.approx(1/3, rel=1e-4),
-                'Total Mole Fraction MEA': pytest.approx(1/3, rel=1e-4),
-                'Total Mole Fraction CO2': pytest.approx(1/3, rel=1e-4),
-                'Temperature': pytest.approx(298.15, rel=1e-4),
-                'Pressure': pytest.approx(101325, rel=1e-4)}}
+            "Units": {
+                "Total Molar Flowrate": getattr(pyunits.pint_registry, "mole/second"),
+                "Total Mole Fraction H2O": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "Total Mole Fraction MEA": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "Total Mole Fraction CO2": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "Temperature": getattr(pyunits.pint_registry, "kelvin"),
+                "Pressure": getattr(pyunits.pint_registry, "Pa"),
+            },
+            "Hot Inlet": {
+                "Total Molar Flowrate": pytest.approx(60.549, rel=1e-4),
+                "Total Mole Fraction H2O": pytest.approx(0.87470, rel=1e-4),
+                "Total Mole Fraction MEA": pytest.approx(0.10950, rel=1e-4),
+                "Total Mole Fraction CO2": pytest.approx(0.015800, rel=1e-4),
+                "Temperature": pytest.approx(392.23, rel=1e-4),
+                "Pressure": pytest.approx(2.0265e05, rel=1e-4),
+            },
+            "Hot Outlet": {
+                "Total Molar Flowrate": pytest.approx(1, rel=1e-4),
+                "Total Mole Fraction H2O": pytest.approx(1 / 3, rel=1e-4),
+                "Total Mole Fraction MEA": pytest.approx(1 / 3, rel=1e-4),
+                "Total Mole Fraction CO2": pytest.approx(1 / 3, rel=1e-4),
+                "Temperature": pytest.approx(298.15, rel=1e-4),
+                "Pressure": pytest.approx(101325, rel=1e-4),
+            },
+            "Cold Inlet": {
+                "Total Molar Flowrate": pytest.approx(63.019, rel=1e-4),
+                "Total Mole Fraction H2O": pytest.approx(0.85090, rel=1e-4),
+                "Total Mole Fraction MEA": pytest.approx(0.10770, rel=1e-4),
+                "Total Mole Fraction CO2": pytest.approx(0.041400, rel=1e-4),
+                "Temperature": pytest.approx(326.36, rel=1e-4),
+                "Pressure": pytest.approx(2.0265e05, rel=1e-4),
+            },
+            "Cold Outlet": {
+                "Total Molar Flowrate": pytest.approx(1, rel=1e-4),
+                "Total Mole Fraction H2O": pytest.approx(1 / 3, rel=1e-4),
+                "Total Mole Fraction MEA": pytest.approx(1 / 3, rel=1e-4),
+                "Total Mole Fraction CO2": pytest.approx(1 / 3, rel=1e-4),
+                "Temperature": pytest.approx(298.15, rel=1e-4),
+                "Pressure": pytest.approx(101325, rel=1e-4),
+            },
+        }
 
         assert stable.to_dict() == expected
 
