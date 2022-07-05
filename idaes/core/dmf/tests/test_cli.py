@@ -29,7 +29,6 @@ from idaes.core.dmf import cli
 __author__ = "Dan Gunter"
 
 
-
 @pytest.fixture
 def runner():
     # trivial, but allows later flexibility

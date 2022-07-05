@@ -15,8 +15,10 @@ Deprecation path for renamed CO2 compressor model.
 """
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The CO2 Compression module has been moved to "
-                    "idaes.models_extra.carbon_capture.co2_compressor.py",
-                    version="2.0.0.alpha0")
+deprecation_warning(
+    "The CO2 Compression module has been moved to "
+    "idaes.models_extra.carbon_capture.co2_compressor.py",
+    version="2.0.0.alpha0",
+)
 
 from idaes.models_extra.carbon_capture.co2_compressor import *

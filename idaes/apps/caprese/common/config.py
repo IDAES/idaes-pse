@@ -92,23 +92,23 @@ class PlantHorizonType(enum.Enum):
 # list of inputs at time.first().
 def validate_list_of_vardata(varlist):
     if not isinstance(varlist, list):
-        raise TypeError('Not a list of VarData')
+        raise TypeError("Not a list of VarData")
     for var in varlist:
         if not isinstance(var, _GeneralVarData):
-            raise TypeError('Not a list of VarData')
+            raise TypeError("Not a list of VarData")
     return varlist
 
 
 def validate_list_of_vardata_value_tuples(varvaluelist):
     if not isinstance(varvaluelist, list):
-        raise TypeError('Not a list')
+        raise TypeError("Not a list")
     for item in varvaluelist:
         if not isinstance(item, tuple):
-            raise TypeError('Item in list is not a tuple')
+            raise TypeError("Item in list is not a tuple")
         if not len(item) == 2:
-            raise ValueError('Tuple in list does not have correct length')
+            raise ValueError("Tuple in list does not have correct length")
         if not isinstance(item[0], _GeneralVarData):
-            raise TypeError('First entry is not a VarData')
+            raise TypeError("First entry is not a VarData")
         item = (item[0], float(item[1]))
     return varvaluelist
 
@@ -116,19 +116,16 @@ def validate_list_of_vardata_value_tuples(varvaluelist):
 def validate_solver(solver):
     if type(solver) is str:
         solver = SolverFactory(solver)
-    if not hasattr(solver, 'solve'):
-        raise TypeError(
-            'Solver does not implement solve method')
+    if not hasattr(solver, "solve"):
+        raise TypeError("Solver does not implement solve method")
     return solver
 
 
 def get_ncp(continuous_set):
-    scheme = continuous_set.get_discretization_info()['scheme']
-    if scheme == 'LAGRANGE-RADAU':
-        return continuous_set.get_discretization_info()['ncp']
-    elif scheme == 'BACKWARD Difference':
+    scheme = continuous_set.get_discretization_info()["scheme"]
+    if scheme == "LAGRANGE-RADAU":
+        return continuous_set.get_discretization_info()["ncp"]
+    elif scheme == "BACKWARD Difference":
         return 1
     else:
-        raise NotImplementedError(
-            '%s discretization scheme is not supported' % scheme)
-
+        raise NotImplementedError("%s discretization scheme is not supported" % scheme)

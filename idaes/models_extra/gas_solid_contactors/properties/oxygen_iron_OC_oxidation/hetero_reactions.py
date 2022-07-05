@@ -201,7 +201,7 @@ class ReactionParameterData(ReactionParameterBlock):
             domain=Reals,
             initialize=1.0,
             doc="Reaction order in gas species [-]",
-            units=pyunits.dimensionless
+            units=pyunits.dimensionless,
         )
         self.rxn_order.fix()
 
@@ -211,7 +211,7 @@ class ReactionParameterData(ReactionParameterBlock):
             domain=Reals,
             initialize=3.1e-4,
             doc="Pre-exponential factor" "[mol^(1-N_reaction)m^(3*N_reaction -2)/s]",
-            units=pyunits.m / pyunits.s
+            units=pyunits.m / pyunits.s,
         )
         self.k0_rxn.fix()
 
@@ -514,7 +514,7 @@ class ReactionBlockData(ReactionBlockDataBase):
             domain=Reals,
             initialize=1.0,
             doc="Reformulation term for" "X to help eqn scaling",
-            units=pyunits.dimensionless
+            units=pyunits.dimensionless,
         )
 
         def OC_conv_temp_eqn(b):
@@ -539,7 +539,7 @@ class ReactionBlockData(ReactionBlockDataBase):
         )
 
         def rate_rule(b, r):
-            return b.reaction_rate[r]== b._params._scale_factor_rxn * (
+            return b.reaction_rate[r] == b._params._scale_factor_rxn * (
                 b.solid_state_ref.mass_frac_comp["Fe3O4"]
                 * (1 - b.solid_state_ref.particle_porosity)
                 * b.solid_state_ref.dens_mass_skeletal

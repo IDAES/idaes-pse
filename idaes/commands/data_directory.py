@@ -19,6 +19,7 @@ import idaes
 import click
 from idaes.commands import cb
 
+
 @cb.command(name="data-directory", help="Show IDAES data directory")
 @click.option("--exists", is_flag=True, help="Show if the directory exists")
 @click.option("--create", is_flag=True, help="Create the directory")
@@ -30,6 +31,7 @@ def data_directory(exists, create):
         click.echo(os.path.exists(idaes.data_directory))
     else:
         click.echo(idaes.data_directory)
+
 
 @cb.command(name="bin-directory", help="Show IDAES executable file directory")
 @click.option("--exists", is_flag=True, help="Show if the directory exists")
