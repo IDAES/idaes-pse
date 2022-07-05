@@ -35,10 +35,10 @@ class DoubleLoopCoordinator:
         Arguments:
             bidder: an initialized bidder object
 
-            tracker: an initialized bidder object
+            tracker: an initialized tracker object
 
-            projection_tracker: an initialized bidder object, this object is
-                                mimicking the behaviro of the projection SCED in
+            projection_tracker: an initialized tracker object, this object is
+                                mimicking the behaviror of the projection SCED in
                                 Prescient and to projecting the system states
                                 and updating bidder model.
 
@@ -285,7 +285,7 @@ class DoubleLoopCoordinator:
 
         """
         This function assembles the signals for the tracking model to estimate the
-        state of the bidding model at the begining of next RUC.
+        state of the bidding model at the beginning of next RUC.
 
         Arguments:
             options: Prescient options from prescient.simulator.config.
