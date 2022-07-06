@@ -15,9 +15,11 @@ Deprecation path for renamed model.
 """
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The phase_separator module has been moved to "
-                    "idaes.models_extra.power_generation.unit_models."
-                    "helm.phase_separator",
-                    version="2.0.0.alpha0")
+deprecation_warning(
+    "The phase_separator module has been moved to "
+    "idaes.models_extra.power_generation.unit_models."
+    "helm.phase_separator",
+    version="2.0.0.alpha0",
+)
 
 from idaes.models_extra.power_generation.unit_models.helm.phase_separator import *

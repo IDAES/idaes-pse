@@ -9,11 +9,13 @@ class MultiReporter(BaseReporter):
     Combines multiple reporters so that the pylint message stream can be displayed in real time
     and simultaneously saved in a machine-readable format for further "offline" processing.
     """
-    name = 'multi'
+
+    name = "multi"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.console = text.ColorizedTextReporter()
-        self.json = JSONReporter(output=open('pylint.json', 'w'))
+        self.json = JSONReporter(output=open("pylint.json", "w"))
         self._start = None
 
     def __iter__(self):
@@ -32,11 +34,11 @@ class MultiReporter(BaseReporter):
         f = time.perf_counter
         if self._start is None:
             self._start = f()
-            return 0.
+            return 0.0
         return f() - self._start
 
     def on_set_current_module(self, module, filepath):
-        self.writeln(string=f'{self.elapsed:07.3f} {filepath}')
+        self.writeln(string=f"{self.elapsed:07.3f} {filepath}")
         self.console._template = self.console.line_format
 
     def display_messages(self, layout):

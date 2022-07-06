@@ -33,8 +33,7 @@ webbrowser.open_new = lambda url: None
 
 
 class MockShell(object):
-    """Mock object for IPython 'shell'.
-    """
+    """Mock object for IPython 'shell'."""
 
     def ev(self, name):
         """Mock evaluation.
@@ -213,4 +212,3 @@ def test_dmf_help(magics_impl):
     magics_impl.dmf_help("idaes.core.dmf.dmfbase.DMF")
     # c) failure (still returns None)
     assert magics_impl.dmf_help("FAIL") is None
-

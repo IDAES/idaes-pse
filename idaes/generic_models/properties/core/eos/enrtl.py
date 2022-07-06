@@ -15,8 +15,10 @@ Deprecation path for renamed module.
 """
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The generic_models.properties.core.eos.enrtl has been "
-                    "moved to idaes.models.properties.modular_properties.eos.enrtl",
-                    version="2.0.0.alpha0")
+deprecation_warning(
+    "The generic_models.properties.core.eos.enrtl has been "
+    "moved to idaes.models.properties.modular_properties.eos.enrtl",
+    version="2.0.0.alpha0",
+)
 
 from idaes.models.properties.modular_properties.eos.enrtl import *

@@ -101,8 +101,7 @@ class Version(object):
         self.releaselevel, self.serial, self.label = releaselevel, serial, label
 
     def __iter__(self):
-        """Return version information as a sequence.
-        """
+        """Return version information as a sequence."""
         items = [self.major, self.minor, self.micro]
         if self.releaselevel != "final":
             items.append(self.releaselevel)
@@ -117,8 +116,7 @@ class Version(object):
             yield it
 
     def __str__(self):
-        """Return version information as a string.
-        """
+        """Return version information as a string."""
         return "{}.{}.{}{}".format(
             self.major,
             self.minor,
@@ -135,8 +133,7 @@ class Version(object):
 
 
 class HasVersion(object):
-    """Interface for a versioned class.
-    """
+    """Interface for a versioned class."""
 
     def __init__(self, *args):
         """Constructor creates a `version` attribute that is
@@ -149,8 +146,7 @@ class HasVersion(object):
 
 
 def git_hash():
-    """Get current git hash, with no dependencies on external packages.
-    """
+    """Get current git hash, with no dependencies on external packages."""
     # find git root (in grandparent dir to this file, if anywhere)
     git_root = os.path.realpath(os.path.join(__file__, "..", "..", ".git"))
     if not os.path.exists(git_root) or not os.path.isdir(git_root):
@@ -196,4 +192,3 @@ package_version = Version(2, 0, 0, "development", 3, gh)
 
 #: Package's version as a simple string
 __version__ = str(package_version)
-

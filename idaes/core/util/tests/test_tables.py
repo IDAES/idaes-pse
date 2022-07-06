@@ -113,6 +113,7 @@ def m_with_variable_types():
 
     return m
 
+
 @pytest.mark.unit
 def test_create_stream_table_dataframe_from_StateBlock(m):
     d = arcs_to_stream_dict(m, descend_into=True, prepend="model")
@@ -267,14 +268,12 @@ def test_create_stream_table_dataframe_from_Arc(m):
 def test_create_stream_table_ui(m_with_variable_types):
     m = m_with_variable_types
 
-    state_name = 'state'
-    state_dict = {
-        state_name: m.fs.flash.inlet
-    }
+    state_name = "state"
+    state_dict = {state_name: m.fs.flash.inlet}
     df = create_stream_table_ui(state_dict)
 
-    assert df.loc["pressure"][state_name] == (3.14, 'unfixed')
-    assert df.loc["temperature"][state_name] == (368, 'fixed')
+    assert df.loc["pressure"][state_name] == (3.14, "unfixed")
+    assert df.loc["temperature"][state_name] == (368, "fixed")
 
 
 @pytest.mark.unit
