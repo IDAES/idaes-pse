@@ -1026,7 +1026,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         # compressor = True, and using non-isentropic assumption
         # (costing not needed)
         elif hasattr(blk.unit_model.config, "thermodynamic_assumption"):
-            if (blk.unit_model.config.thermodynamic_assumption.name) != "isentropic":
+            if blk.unit_model.config.thermodynamic_assumption.name != "isentropic":
                 raise ValueError(
                     f"{blk.unit_model.name} - pressure changers without isentropic "
                     "assumption are too simple to be costed."
