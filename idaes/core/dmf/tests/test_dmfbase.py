@@ -139,7 +139,9 @@ def test_find_propertydata():
     pj = prop_json[0]
     n, resource_ids = 10, []
     for i in range(n):
-        pd = resource.Resource(value={"data": pj}, type_=resource.ResourceTypes.property)
+        pd = resource.Resource(
+            value={"data": pj}, type_=resource.ResourceTypes.property
+        )
         resource_ids.append(scratch_dmf.add(pd))
     # get them back again
     filter_ = {"type": resource.ResourceTypes.property}
@@ -230,9 +232,7 @@ logging:
 def test_dmf_init_workspace_name():
     tmp_dir = Path(scratch_dir) / "dmf_init_workspace_name"
     tmp_dir.mkdir()
-    (tmp_dir / DMF.WORKSPACE_CONFIG).open("w").write(
-        "_id: this-is-a-temporary-config"
-    )
+    (tmp_dir / DMF.WORKSPACE_CONFIG).open("w").write("_id: this-is-a-temporary-config")
     d = DMF(path=tmp_dir, name="my workspace", desc="It is a space to work")
 
 
@@ -291,7 +291,7 @@ def test_dmf_add_duplicate():
     pytest.raises(errors.DuplicateResourceError, dmf.add, r)
 
 
-#@pytest.mark.linux
+# @pytest.mark.linux
 @pytest.mark.unit
 def test_dmf_add_filesystem_err():
     tmp_dir = Path(scratch_dir) / "dmf_add_filesystem_err"
@@ -454,6 +454,7 @@ def test_dmf_str():
     s = str(dmf)
     assert len(s) > 0
 
+
 #########################
 # DMFConfig             #
 #########################
@@ -462,9 +463,9 @@ def test_dmf_str():
 @pytest.fixture
 def dmfconfig_tmp():
     """Default file is in user's home directory.
-       We don't want to actually modify this with a test.
-       So switch it out and switch it back when the fixture
-       is done.
+    We don't want to actually modify this with a test.
+    So switch it out and switch it back when the fixture
+    is done.
     """
     default_filename = DMFConfig._filename
     path = Path(scratch_dir) / "config.yaml"
@@ -532,4 +533,3 @@ def test_dmfconfig_save_nofile(dmfconfig_none):
 def test_dmfconfig_attrs(dmfconfig_tmp):
     config = DMFConfig()
     assert config.workspace is not None
-

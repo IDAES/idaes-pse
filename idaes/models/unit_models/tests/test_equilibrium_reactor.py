@@ -249,7 +249,9 @@ class TestSaponification(object):
         assert perf_dict == {
             "vars": {
                 "Heat Duty": sapon.fs.unit.heat_duty[0],
-                "Pressure Change": sapon.fs.unit.deltaP[0]}}
+                "Pressure Change": sapon.fs.unit.deltaP[0],
+            }
+        }
 
     @pytest.mark.component
     def test_initialization_error(self, sapon):

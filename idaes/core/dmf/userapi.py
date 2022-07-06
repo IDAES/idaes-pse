@@ -16,17 +16,17 @@ Data Management Framework high-level functions.
 # stdlib
 import logging
 import sys
+
 # package
 from idaes.core.dmf import DMF
 from idaes.core.dmf import errors
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+__author__ = "Dan Gunter <dkgunter@lbl.gov>"
 
 _log = logging.getLogger(__name__)
 
 
-def get_workspace(path='', name=None, desc=None, create=False, errs=None,
-                  **kwargs):
+def get_workspace(path="", name=None, desc=None, create=False, errs=None, **kwargs):
     """Create or load a DMF workspace.
 
     If the :class:`DMF` constructor, throws an exception, this catches
@@ -51,13 +51,14 @@ def get_workspace(path='', name=None, desc=None, create=False, errs=None,
     except errors.DMFError as err:
         if errs is None:
             errs = sys.stdout
-        msg = 'Error creating DMF workspace\n'
+        msg = "Error creating DMF workspace\n"
         if isinstance(err, errors.DMFError) and not create:
             msg += 'Directory not found, and "create" flag is False\n'
-            msg += 'If you want to create the workspace, try again with ' \
-                   'create=True\n'
+            msg += (
+                "If you want to create the workspace, try again with " "create=True\n"
+            )
         else:
-            msg += '{}\n'.format(err)
-        msg += '\npath: {}\nname: {}\ndesc: {}\n'.format(path, name, desc)
+            msg += "{}\n".format(err)
+        msg += "\npath: {}\nname: {}\ndesc: {}\n".format(path, name, desc)
         errs.write(msg)
     return dmf
