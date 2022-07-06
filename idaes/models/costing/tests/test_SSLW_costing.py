@@ -873,7 +873,11 @@ class TestMapping:
                 "thermodynamic_assumption": ThermodynamicAssumption.isothermal,
             }
         )
-        with pytest.raises(ValueError):
+
+        expected_string = "fs.unit - pressure changers without isentropic "
+        "assumption are too simple to be costed."
+
+        with pytest.raises(ValueError, match=expected_string):
             model.fs.unit.costing = UnitModelCostingBlock(
                 default={"flowsheet_costing_block": model.fs.costing}
             )
@@ -887,7 +891,11 @@ class TestMapping:
                 "thermodynamic_assumption": ThermodynamicAssumption.adiabatic,
             }
         )
-        with pytest.raises(ValueError):
+
+        expected_string = "fs.unit - pressure changers without isentropic "
+        "assumption are too simple to be costed."
+
+        with pytest.raises(ValueError, match=expected_string):
             model.fs.unit.costing = UnitModelCostingBlock(
                 default={"flowsheet_costing_block": model.fs.costing}
             )
