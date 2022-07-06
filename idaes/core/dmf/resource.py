@@ -688,7 +688,7 @@ class Resource:
             data = self.v.get(self.DATA_FIELD)
             if self.TABLE_INFO_FIELD not in data:
                 data[self.TABLE_INFO_FIELD] = {}
-            #key = str(path)
+            # key = str(path)
             key = Path(path).name
             if path in data[self.TABLE_INFO_FIELD]:
                 if data[self.TABLE_INFO_FIELD][key] == table_meta:
@@ -734,14 +734,18 @@ class Resource:
                         else:  # maybe we just wanted a relative path
                             full_path = datafiles_path / path
                         if not full_path.exists():
-                            msg = f"Path '{full_path}' to file '{path}' does not exist. " \
-                                  f"DMF path={self._dmf_datafiles_path}, resource path={datafiles_path}"
+                            msg = (
+                                f"Path '{full_path}' to file '{path}' does not exist. "
+                                f"DMF path={self._dmf_datafiles_path}, resource path={datafiles_path}"
+                            )
                             raise ValueError(msg)
                     else:
                         # This is a problem!
                         deets = ", ".join(["{k}={v}" for k, v in datafile.items()])
-                        msg = f"Cannot resolve relative path for datafile: No " \
-                              f"'datafiles_dir' in resource. {deets}"
+                        msg = (
+                            f"Cannot resolve relative path for datafile: No "
+                            f"'datafiles_dir' in resource. {deets}"
+                        )
                         raise ValueError(msg)
             if mode is None:
                 yield full_path
@@ -750,7 +754,9 @@ class Resource:
                     fp = full_path.open(mode=mode)
                 except FileNotFoundError:
                     if ignore_errors:
-                        _log.warning(f"Failed to open path '{full_path}' in mode '{mode}'")
+                        _log.warning(
+                            f"Failed to open path '{full_path}' in mode '{mode}'"
+                        )
                     else:
                         raise
                 yield fp

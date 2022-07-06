@@ -100,7 +100,6 @@ _propm = {
 }
 
 
-
 @pytest.mark.unit
 def test_validate_default(default_resource):
     default_resource.validate()
@@ -316,4 +315,3 @@ def test_triple_from_resource_relations():
     assert t.subject == i
     assert t.predicate == "likes"
     assert t.object == j
-

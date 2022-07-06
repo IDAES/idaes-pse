@@ -17,7 +17,11 @@ from pathlib import Path
 
 import pytest
 
-from idaes.core.ui.flowsheet import FlowsheetSerializer, FlowsheetDiff, validate_flowsheet
+from idaes.core.ui.flowsheet import (
+    FlowsheetSerializer,
+    FlowsheetDiff,
+    validate_flowsheet,
+)
 from idaes.models.properties.swco2 import SWCO2ParameterBlock
 from idaes.models.unit_models import Heater, PressureChanger, HeatExchanger
 from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
@@ -35,14 +39,11 @@ from .shared import dict_diff
 test_dir = Path(__file__).parent
 
 base_model = {
-    "model": {
-        "id": "Model1",
-        "unit_models": {},
-        "arcs": {}
-    },
+    "model": {"id": "Model1", "unit_models": {}, "arcs": {}},
     "cells": {},
-    "routing_config": {}
+    "routing_config": {},
 }
+
 
 @pytest.fixture
 def models():
@@ -363,10 +364,12 @@ def report_failure(test_dict, stored_dict):
     diff = dict_diff(test_dict, stored_dict)
     print("Diff between generated dict and expected dict:")
     print(diff)
-   # print("---")
-   # print(f"Generated data (JSON):\n{test_json}")
-   # print("---")
-    # print(f"Expected data (JSON):\n{stored_json}")
+
+
+# print("---")
+# print(f"Generated data (JSON):\n{test_json}")
+# print("---")
+# print(f"Expected data (JSON):\n{stored_json}")
 
 
 def _show_json(test=None, stored=None):
@@ -433,7 +436,7 @@ def test_flowsheet_serializer_get_unit_model_type():
                 "material_balance_type": MaterialBalanceType.componentTotal,
                 "has_pressure_change": True,
             },
-        }
+        },
     )
     unit_type = FlowsheetSerializer.get_unit_model_type(m.fs.fwh)
     assert unit_type == "heat_exchanger"

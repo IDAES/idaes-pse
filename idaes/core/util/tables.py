@@ -336,7 +336,10 @@ def create_stream_table_ui(
                     var_type = VariableTypes.EXPRESSION
 
                 quant = report_quantity(disp_dict[k][i])
-                stream_attributes[key][stream_key] = (round(quant.m, precision), var_type)
+                stream_attributes[key][stream_key] = (
+                    round(quant.m, precision),
+                    var_type,
+                )
                 if row == 0 or stream_key not in stream_attributes["Units"]:
                     stream_attributes["Units"][stream_key] = quant.u
 

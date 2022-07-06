@@ -245,14 +245,16 @@ class TestIronOC(object):
         optarg = {"tol": 1e-6}
         solver = get_solver("ipopt", optarg)  # create solver
 
-        initialize_by_time_element(iron_oc_unscaled.fs,
-                                   iron_oc_unscaled.fs.time,
-                                   solver=solver)
+        initialize_by_time_element(
+            iron_oc_unscaled.fs, iron_oc_unscaled.fs.time, solver=solver
+        )
 
         assert degrees_of_freedom(iron_oc_unscaled) == 0
 
         # Assert that model is still fixed and deactivated as expected
-        assert iron_oc_unscaled.fs.unit.solids[iron_oc_unscaled.fs.time.first()].particle_porosity.fixed
+        assert iron_oc_unscaled.fs.unit.solids[
+            iron_oc_unscaled.fs.time.first()
+        ].particle_porosity.fixed
 
         for t in iron_oc_unscaled.fs.time:
             if t != iron_oc_unscaled.fs.time.first():
@@ -282,9 +284,7 @@ class TestIronOC(object):
         iron_oc.fs.gas_props.set_default_scaling("pressure", 1e-5)
         iron_oc.fs.gas_props.set_default_scaling("temperature", 1e-2)
         for comp in iron_oc.fs.gas_props.component_list:
-            iron_oc.fs.gas_props.set_default_scaling(
-                "mole_frac_comp", 1e1, index=comp
-            )
+            iron_oc.fs.gas_props.set_default_scaling("mole_frac_comp", 1e1, index=comp)
         # Set scaling for gas phase thermophysical and transport properties
         iron_oc.fs.gas_props.set_default_scaling("enth_mol", 1e-6)
         iron_oc.fs.gas_props.set_default_scaling("enth_mol_comp", 1e-6)
@@ -361,11 +361,11 @@ class TestIronOC(object):
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in FB0D.solids_energy_holdup_constraints.items():
             assert pytest.approx(
-                1.27324E-7, rel=1e-5
+                1.27324e-7, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for t, c in FB0D.solids_energy_accumulation_constraints.items():
             assert pytest.approx(
-                1.27324E-7, rel=1e-5
+                1.27324e-7, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
 
     @pytest.mark.solver
@@ -384,9 +384,7 @@ class TestIronOC(object):
         optarg = {"tol": 1e-6}
         solver = get_solver("ipopt", optarg)  # create solver
 
-        initialize_by_time_element(iron_oc.fs,
-                                   iron_oc.fs.time,
-                                   solver=solver)
+        initialize_by_time_element(iron_oc.fs, iron_oc.fs.time, solver=solver)
 
         assert degrees_of_freedom(iron_oc) == 0
 
@@ -729,14 +727,16 @@ class TestIronOC_EnergyBalanceType(object):
         optarg = {"tol": 1e-6}
         solver = get_solver("ipopt", optarg)  # create solver
 
-        initialize_by_time_element(iron_oc_unscaled.fs,
-                                   iron_oc_unscaled.fs.time,
-                                   solver=solver)
+        initialize_by_time_element(
+            iron_oc_unscaled.fs, iron_oc_unscaled.fs.time, solver=solver
+        )
 
         assert degrees_of_freedom(iron_oc_unscaled) == 0
 
         # Assert that model is still fixed and deactivated as expected
-        assert iron_oc_unscaled.fs.unit.solids[iron_oc_unscaled.fs.time.first()].particle_porosity.fixed
+        assert iron_oc_unscaled.fs.unit.solids[
+            iron_oc_unscaled.fs.time.first()
+        ].particle_porosity.fixed
 
         for t in iron_oc_unscaled.fs.time:
             if t != iron_oc_unscaled.fs.time.first():
@@ -766,9 +766,7 @@ class TestIronOC_EnergyBalanceType(object):
         iron_oc.fs.gas_props.set_default_scaling("pressure", 1e-5)
         iron_oc.fs.gas_props.set_default_scaling("temperature", 1e-2)
         for comp in iron_oc.fs.gas_props.component_list:
-            iron_oc.fs.gas_props.set_default_scaling(
-                "mole_frac_comp", 1e1, index=comp
-            )
+            iron_oc.fs.gas_props.set_default_scaling("mole_frac_comp", 1e1, index=comp)
         # Set scaling for gas phase thermophysical and transport properties
         iron_oc.fs.gas_props.set_default_scaling("enth_mol", 1e-6)
         iron_oc.fs.gas_props.set_default_scaling("enth_mol_comp", 1e-6)
@@ -864,9 +862,7 @@ class TestIronOC_EnergyBalanceType(object):
         optarg = {"tol": 1e-6}
         solver = get_solver("ipopt", optarg)  # create solver
 
-        initialize_by_time_element(iron_oc.fs,
-                                   iron_oc.fs.time,
-                                   solver=solver)
+        initialize_by_time_element(iron_oc.fs, iron_oc.fs.time, solver=solver)
 
         assert degrees_of_freedom(iron_oc) == 0
 

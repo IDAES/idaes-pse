@@ -53,7 +53,7 @@ CONFIG_SCHEMA = {
                 "type": "string",
                 "description": "directory containing Sphinx HTML docs",
             },
-            "default": "https://idaes-pse.readthedocs.io/en/stable,{dmf_root}/docs/build/html"
+            "default": "https://idaes-pse.readthedocs.io/en/stable,{dmf_root}/docs/build/html",
         },
         "description": {
             "description": "A human-readable description of the workspace",
@@ -65,8 +65,7 @@ CONFIG_SCHEMA = {
 
 
 class Fields(object):
-    """Workspace configuration fields.
-    """
+    """Workspace configuration fields."""
 
     DOC_HTML_PATH = "htmldocs"  # path to documentation html dir
     LOG_CONF = "logging"  # logging config
@@ -227,7 +226,7 @@ class Workspace(object):
 
     def _create_new_config(self, add_defaults):
         _log.info(f"Create new configuration at '{self._conf}'")
-        conf = open(self._conf, 'w')  # create the file
+        conf = open(self._conf, "w")  # create the file
         new_id = uuid.uuid4().hex  # create new unique ID
         conf.write("{}: {}\n".format(self.ID_FIELD, new_id))  # write ID
         conf.close()  # flush and close
@@ -268,7 +267,7 @@ class Workspace(object):
     def set_meta(self, values, remove=None):
         # type: (dict, list) -> None
         """Update metadata with new values.
-        
+
         Args:
             values (dict): Values to add or change
             remove (list): Keys of values to remove.
@@ -402,8 +401,7 @@ class Workspace(object):
 
     @property
     def configuration_file(self):
-        """Configuration file path.
-        """
+        """Configuration file path."""
         return self._conf
 
     @property
@@ -417,8 +415,9 @@ class Workspace(object):
 
 class WorkspaceConfiguration(object):
     """Interface to the :data:`CONFIG_SCHEMA` JSON Schema that specifies the fields in the
-       workspace configuration.
+    workspace configuration.
     """
+
     DEFAULTS = {"string": "", "number": 0, "boolean": False, "array": []}
 
     def __init__(self):
@@ -456,7 +455,10 @@ class WorkspaceConfiguration(object):
             default_value = None
             if type_ == "array":
                 # Arrays need special processing
-                item_type, item_desc = item["items"]["type"], item["items"]["description"]
+                item_type, item_desc = (
+                    item["items"]["type"],
+                    item["items"]["description"],
+                )
                 desc = "{}. Each item is a {}".format(desc, item_desc)
                 type_ = item_type
                 # Use default either (1) inside the list of items, or (2) outside for the whole property
@@ -471,11 +473,15 @@ class WorkspaceConfiguration(object):
             # Set result, except if we are in 'only_defaults' mode and there is no default value
             if only_defaults:
                 if default_value is None:
-                    _log.debug(f"(only_defaults mode) NOT setting default value for {key}: no value provided")
+                    _log.debug(
+                        f"(only_defaults mode) NOT setting default value for {key}: no value provided"
+                    )
                 else:
                     # Set the value
                     result[key] = (desc, default_value)
-                    _log.debug(f"(only_defaults mode) setting default value for {key} to: {default_value}")
+                    _log.debug(
+                        f"(only_defaults mode) setting default value for {key} to: {default_value}"
+                    )
             else:
                 # If not in only_defaults mode, use an internal default value based on the type when there
                 # is no default value in the schema.

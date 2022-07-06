@@ -15,8 +15,10 @@ Deprecation path for renamed module.
 """
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The generic_models.unit_models.equilibrium_reactor module has been "
-                    "moved to idaes.models.unit_models.equilibrium_reactor",
-                    version="2.0.0.alpha0")
+deprecation_warning(
+    "The generic_models.unit_models.equilibrium_reactor module has been "
+    "moved to idaes.models.unit_models.equilibrium_reactor",
+    version="2.0.0.alpha0",
+)
 
 from idaes.models.unit_models.equilibrium_reactor import *
