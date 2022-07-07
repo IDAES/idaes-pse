@@ -656,6 +656,37 @@ def test_cost_compressor(model, compressor_type, drive_type, material_type):
 
 
 @pytest.mark.component
+@pytest.mark.parametrize("compressor_type", CompressorType)
+@pytest.mark.parametrize("drive_type", CompressorDriveType)
+@pytest.mark.parametrize("material_type", CompressorMaterial)
+def test_not_compressor(model, compressor_type, drive_type, material_type):
+    # Test exception for non-supported compressor flags
+    model.fs.unit.config.declare("compressor", ConfigValue(default=False))
+    model.fs.unit.work_mechanical = Param(
+        [0], initialize=101410.4, units=pyunits.J / pyunits.s
+    )
+
+    expected_string = (
+        "cost_compressor method is only appropriate for "
+        "pressure changers with the compressor argument "
+        "equal to True."
+    )
+
+    with pytest.raises(TypeError, match=expected_string):
+        model.fs.unit.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": model.fs.costing,
+                "costing_method": SSLWCostingData.cost_compressor,
+                "costing_method_arguments": {
+                    "compressor_type": compressor_type,
+                    "drive_type": drive_type,
+                    "material_type": material_type,
+                },
+            }
+        )
+
+
+@pytest.mark.component
 @pytest.mark.parametrize("fan_type", FanType)
 @pytest.mark.parametrize("material_type", FanMaterial)
 def test_cost_fan(model, fan_type, material_type):
@@ -866,10 +897,9 @@ class TestMapping:
 
     def test_isothermal_compressor(self, model):
         # Test exception for non-supported compressor flags
-        model.fs.unit = PressureChanger(
+        model.fs.unit = Compressor(
             default={
                 "property_package": model.fs.pparams,
-                "compressor": True,
                 "thermodynamic_assumption": ThermodynamicAssumption.isothermal,
             }
         )
@@ -886,10 +916,9 @@ class TestMapping:
 
     def test_adiabatic_compressor(self, model):
         # Test exception for non-supported compressor flags
-        model.fs.unit = PressureChanger(
+        model.fs.unit = Compressor(
             default={
                 "property_package": model.fs.pparams,
-                "compressor": True,
                 "thermodynamic_assumption": ThermodynamicAssumption.adiabatic,
             }
         )
