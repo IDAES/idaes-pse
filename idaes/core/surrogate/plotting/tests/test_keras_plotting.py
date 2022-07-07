@@ -32,6 +32,7 @@ from idaes.core.surrogate.plotting.sm_plotter import (
 
 _ = pytest.importorskip("tensorflow", reason="tensorflow not installed")
 
+
 @pytest.fixture
 def keras_surrogate():
     # import surrogates from external folder
