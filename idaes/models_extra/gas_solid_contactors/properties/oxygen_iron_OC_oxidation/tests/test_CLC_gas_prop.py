@@ -343,6 +343,7 @@ def test_units_consistent(gas_prop):
 
     assert_units_consistent(gas_prop)
 
+
 # -----------------------------------------------------------------------------
 
 

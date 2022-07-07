@@ -50,8 +50,7 @@ class TestFcTP_LV_inlet:
             }
         )
         m.fs.state_block_ideal_vl = m.fs.properties_ideal_vl.build_state_block(
-            [0],
-            default={"defined_state": True}
+            [0], default={"defined_state": True}
         )
 
         m.fs.state_block_ideal_vl[0].flow_mol_comp["benzene"].fix(0.5)
@@ -137,8 +136,7 @@ class TestFcTP_L_inlet:
             }
         )
         m.fs.state_block_ideal_l = m.fs.properties_ideal_l.build_state_block(
-            [0],
-            default={"has_phase_equilibrium": False, "defined_state": True}
+            [0], default={"has_phase_equilibrium": False, "defined_state": True}
         )
 
         m.fs.state_block_ideal_l[0].flow_mol_comp["benzene"].fix(0.5)
@@ -224,8 +222,7 @@ class TestFcTP_V_inlet:
             }
         )
         m.fs.state_block_ideal_v = m.fs.properties_ideal_v.build_state_block(
-            [0],
-            default={"has_phase_equilibrium": False, "defined_state": True}
+            [0], default={"has_phase_equilibrium": False, "defined_state": True}
         )
 
         m.fs.state_block_ideal_v[0].flow_mol_comp["benzene"].fix(0.5)
@@ -311,8 +308,7 @@ class TestFcTP_LV_outlet:
             }
         )
         m.fs.state_block_ideal_vl = m.fs.properties_ideal_vl.build_state_block(
-            [0],
-            default={"defined_state": False}
+            [0], default={"defined_state": False}
         )
 
         m.fs.state_block_ideal_vl[0].flow_mol_comp["benzene"].fix(0.5)
@@ -398,8 +394,7 @@ class TestFcTP_L_outlet:
             }
         )
         m.fs.state_block_ideal_l = m.fs.properties_ideal_l.build_state_block(
-            [0],
-            default={"has_phase_equilibrium": False, "defined_state": False}
+            [0], default={"has_phase_equilibrium": False, "defined_state": False}
         )
 
         m.fs.state_block_ideal_l[0].flow_mol_comp["benzene"].fix(0.5)
@@ -485,8 +480,7 @@ class TestFcTP_V_outlet:
             }
         )
         m.fs.state_block_ideal_v = m.fs.properties_ideal_v.build_state_block(
-            [0],
-            default={"has_phase_equilibrium": False, "defined_state": False}
+            [0], default={"has_phase_equilibrium": False, "defined_state": False}
         )
 
         m.fs.state_block_ideal_v[0].flow_mol_comp["benzene"].fix(0.5)

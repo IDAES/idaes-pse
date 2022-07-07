@@ -16,8 +16,7 @@ from typing import Dict
 
 
 class UnitModelIcon:
-    """Represents icon display information for a given unit model.
-    """
+    """Represents icon display information for a given unit model."""
 
     #: Name of default unit_model to use
     DEFAULT = "default"
@@ -39,28 +38,28 @@ class UnitModelIcon:
         # Loading the Unit Models mappings
         dir_path = os.path.dirname(os.path.realpath(__file__))
         mappings_file = os.path.join(dir_path, "mappings", "mappings.json")
-        with open(mappings_file, 'r') as mappings_f:
+        with open(mappings_file, "r") as mappings_f:
             self._mapping = json.load(mappings_f)
         self._model_details = self._get_mapping(unit_model, default)
         self._pos = self._build_link_positions()
 
     def _get_mapping(self, unit_model, default):
-        """Find the correct mapping for the given unit_model name.
-        """
+        """Find the correct mapping for the given unit_model name."""
         if unit_model in self._mapping:
             return self._mapping[unit_model]
 
         # Couldn't find unit model and using default model instead
         if not default or default not in self._mapping:
-            raise ValueError("Specified unit model doesn't exist, and the default model is not set.")
+            raise ValueError(
+                "Specified unit model doesn't exist, and the default model is not set."
+            )
         return self._mapping[default]
 
     @property
     def icon(self) -> str:
-        """Get the name of the icon.
-        """
+        """Get the name of the icon."""
         # return self._info[0]
-        return self._model_details['image']
+        return self._model_details["image"]
 
     @property
     def link_positions(self) -> Dict:
@@ -108,7 +107,7 @@ class UnitModelIcon:
             The link position (see example result)
         """
         return self._pos
-    
+
     @property
     def routing_config(self) -> Dict:
         """Get the Unit model routing config to be used to add jointjs vertices
@@ -131,23 +130,24 @@ class UnitModelIcon:
         return self._model_details["routing_config"]
 
     def _build_link_positions(self) -> Dict:
-        """Fill in boilerplate based on raw info and place built value in class cache.
-        """
+        """Fill in boilerplate based on raw info and place built value in class cache."""
         # build link positions from info
         groups, items = {}, []
         for group_name, group_config in self._model_details["port_groups"].items():
             groups[group_name] = group_config
-            groups[group_name].update({
-                "attrs": {
-                    "rect": {
-                        "stroke": "#000000",
-                        "stroke-width": 0,
-                        "width": 0,
-                        "height": 0,
-                    }
-                },
-                "markup": "<g><rect/></g>",
-            })
+            groups[group_name].update(
+                {
+                    "attrs": {
+                        "rect": {
+                            "stroke": "#000000",
+                            "stroke-width": 0,
+                            "width": 0,
+                            "height": 0,
+                        }
+                    },
+                    "markup": "<g><rect/></g>",
+                }
+            )
 
         # set new link positions attr and place in cache
         positions = {"groups": groups, "items": []}

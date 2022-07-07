@@ -46,6 +46,7 @@ def print_extensions_version(library_only=False):
     click.echo("===================================================")
     return 0
 
+
 def print_license():
     click.echo("---------------------------------------------------")
     click.echo("IDAES Extensions License Information")
@@ -61,51 +62,39 @@ def print_license():
     click.echo("===================================================")
     return 0
 
+
 @cb.command(name="get-extensions", help="Get solvers and libraries")
 @click.option(
     "--release",
     help="Optional, specify an official binary release to download",
-    default=None)
+    default=None,
+)
 @click.option(
-    "--url",
-    help="Optional, URL to download solvers/libraries from",
-    default=None)
+    "--url", help="Optional, URL to download solvers/libraries from", default=None
+)
 @click.option(
-    "--distro",
-    help="OS or Linux distribution (default=auto)",
-    default="auto")
-@click.option(
-    "--insecure",
-    is_flag=True,
-    help="Don't verify download location")
+    "--distro", help="OS or Linux distribution (default=auto)", default="auto"
+)
+@click.option("--insecure", is_flag=True, help="Don't verify download location")
 @click.option(
     "--cacert",
     help="Specify certificate file to verify download location",
-    default=None)
-@click.option(
-    "--nochecksum",
-    is_flag=True,
-    help="Don't verify the file checksum")
+    default=None,
+)
+@click.option("--nochecksum", is_flag=True, help="Don't verify the file checksum")
 @click.option(
     "--library-only",
     is_flag=True,
-    help="Only install shared physical property function libraries, not solvers")
+    help="Only install shared physical property function libraries, not solvers",
+)
 @click.option(
     "--no-download",
     is_flag=True,
-    help="Don't download anything, but report what would be done")
-@click.option(
-    "--extra",
-    multiple=True,
-    help="Install extras")
-@click.option(
-    "--extras-only",
-    is_flag=True,
-    help="Only install extras")
-@click.option(
-    "--to",
-    default=None,
-    help="Put extensions in a alternate location")
+    help="Don't download anything, but report what would be done",
+)
+@click.option("--extra", multiple=True, help="Install extras")
+@click.option("--extras-only", is_flag=True, help="Only install extras")
+@click.option("--to", default=None, help="Put extensions in a alternate location")
 @click.option("--verbose", help="Show details", is_flag=True)
 def get_extensions(
     release,
@@ -120,7 +109,7 @@ def get_extensions(
     extras_only,
     extra,
     to,
-    ):
+):
     if url is None and release is None:
         # the default release is only used if neither a release or url is given
         release = idaes.config.default_binary_release
@@ -141,7 +130,8 @@ def get_extensions(
                 no_download,
                 extras_only,
                 extra,
-                alt_path=to)
+                alt_path=to,
+            )
             click.echo("Done")
         except idaes.commands.util.download_bin.UnsupportedPlatformError as e:
             click.echo("")
@@ -163,11 +153,9 @@ def get_extensions(
     "--release",
     help="Optional, specify an official binary release to download",
     default=None,
-    required=True)
-@click.option(
-    "--path",
-    help="Directory of release files",
-    default="./")
+    required=True,
+)
+@click.option("--path", help="Directory of release files", default="./")
 def hash_extensions(release, path):
     hfile = f"sha256sum_{release}.txt"
     if path is not None:
@@ -194,6 +182,7 @@ def hash_extensions(release, path):
                     continue
                 _write_hash(f, pack, plat)
 
+
 @cb.command(name="bin-platform", help="Show the compatible binary build.")
 @click.option("--distro", default="auto")
 def bin_platform(distro):
@@ -204,9 +193,11 @@ def bin_platform(distro):
     except idaes.commands.util.download_bin.UnsupportedPlatformError:
         click.echo("No supported binaries found.")
 
+
 @cb.command(name="extensions-license", help="show license info for binary extensions")
 def extensions_license():
     print_license()
+
 
 @cb.command(name="extensions-version", help="show license info for binary extensions")
 def extensions_version():

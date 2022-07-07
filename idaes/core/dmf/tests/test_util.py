@@ -47,6 +47,7 @@ def setup_module(module):
 def teardown_module(module):
     pass
 
+
 @pytest.mark.unit
 def test_strlist():
     input = [1, 2, 3]

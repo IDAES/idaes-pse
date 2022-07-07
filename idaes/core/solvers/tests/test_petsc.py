@@ -164,9 +164,9 @@ def rp_example4():
 
     return m
 
+
 def rp_example5():
-    """This example is used to test ramping only in a subset of time.
-    """
+    """This example is used to test ramping only in a subset of time."""
     m = pyo.ConcreteModel()
 
     m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
@@ -561,6 +561,7 @@ def test_petsc_read_trajectory():
     tj2 = petsc.PetscTrajectory(vecs=vecs)
     assert tj2.vecs[str(m.y[180, 1])][-1] == pytest.approx(y1, rel=1e-3)
     assert tj2.vecs["_time"][-1] == pytest.approx(180)
+
 
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")

@@ -16,15 +16,16 @@ import pytest
 import idaes
 import logging
 
-class TestIdaesConfigure(object):
 
+class TestIdaesConfigure(object):
     @pytest.mark.unit
     def test_write_config(self):
         idaes.write_config(
-            os.path.join(idaes.testing_directory, "config_testing_orig.json"))
+            os.path.join(idaes.testing_directory, "config_testing_orig.json")
+        )
         idaes.write_config(
-            os.path.join(idaes.testing_directory, "config_testing_default.json"))
-
+            os.path.join(idaes.testing_directory, "config_testing_default.json")
+        )
 
     @pytest.mark.unit
     def test_tmp_config_ctx(self):
@@ -34,7 +35,6 @@ class TestIdaesConfigure(object):
             assert idaes.cfg["logging"]["disable_existing_loggers"] == True
         assert idaes.cfg["logging"]["disable_existing_loggers"] == False
 
-
     @pytest.mark.unit
     def test_read_default_config(self):
         # set some stuff to not the default
@@ -42,13 +42,13 @@ class TestIdaesConfigure(object):
         idaes.cfg.use_idaes_solvers = False
         assert idaes.cfg.logging.disable_existing_loggers == True
         assert idaes.cfg.use_idaes_solvers == False
-        #read the default
+        # read the default
         idaes.read_config(
-            os.path.join(idaes.testing_directory, "config_testing_default.json"))
+            os.path.join(idaes.testing_directory, "config_testing_default.json")
+        )
         assert idaes.cfg.ipopt.options.nlp_scaling_method == "gradient-based"
         assert idaes.cfg.use_idaes_solvers == True
         assert idaes.cfg.logging.disable_existing_loggers == False
-
 
     @pytest.mark.unit
     def test_change_env(self):
@@ -60,18 +60,21 @@ class TestIdaesConfigure(object):
         pt = os.environ["PATH"]
         assert pf != pt
 
+
 @pytest.mark.unit
 def test_canonical_arch():
-    assert idaes.config.canonical_arch("Intel64")  == "x86_64"
-    assert idaes.config.canonical_arch("AMD64")  == "x86_64"
-    assert idaes.config.canonical_arch("ARM64")  == "aarch64"
+    assert idaes.config.canonical_arch("Intel64") == "x86_64"
+    assert idaes.config.canonical_arch("AMD64") == "x86_64"
+    assert idaes.config.canonical_arch("ARM64") == "aarch64"
+
 
 @pytest.mark.unit
 def test_canonical_distro():
-    assert idaes.config.canonical_distro("kubUntu1804")  == "ubuntu1804"
-    assert idaes.config.canonical_distro("Ubuntu1804")  == "ubuntu1804"
-    assert idaes.config.canonical_distro("Windows")  == "windows"
-    assert idaes.config.canonical_distro("daRwin")  == "darwin"
+    assert idaes.config.canonical_distro("kubUntu1804") == "ubuntu1804"
+    assert idaes.config.canonical_distro("Ubuntu1804") == "ubuntu1804"
+    assert idaes.config.canonical_distro("Windows") == "windows"
+    assert idaes.config.canonical_distro("daRwin") == "darwin"
+
 
 @pytest.mark.unit
 def test_warning_to_except():
@@ -82,6 +85,7 @@ def test_warning_to_except():
             idaes.reconfig()
             _log.warning("Hey! Don't do that.")
 
+
 @pytest.mark.unit
 def test_deprecate_to_except():
     with idaes.temporary_config_ctx():
@@ -90,6 +94,7 @@ def test_deprecate_to_except():
             idaes.cfg.deprecation_to_exception = True
             idaes.reconfig()
             _log.warning("DEPRECATED: Hey! Don't use that.")
+
 
 @pytest.mark.unit
 def test_get_data_directory():
@@ -110,4 +115,4 @@ def test_get_data_directory():
     if odat is not None:
         os.environ["IDAES_DATA"] = odat
     else:
-        del(os.environ["IDAES_DATA"])
+        del os.environ["IDAES_DATA"]

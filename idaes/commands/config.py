@@ -22,13 +22,14 @@ import pyomo.common.config
 from idaes.commands import cb
 import idaes.config as cfg
 
+
 @cb.command(name="config-write", help="Write the IDAES config")
 @click.option("--file", default="idaes_config.json", help="File name to write.")
-@click.option(
-    "--default", is_flag=True, help="Write the default config")
+@click.option("--default", is_flag=True, help="Write the default config")
 def config_write(file, default):
     idaes.write_config(file, default)
     click.echo(f"Wrote config to {file}")
+
 
 @cb.command(name="config-file", help="Show the config file paths")
 @click.option("--global", "gbl", is_flag=True, help="Global config path")
@@ -42,6 +43,7 @@ def config_file(gbl, local):
         click.echo(f"global: {idaes._global_config_file}")
         click.echo(f"local: {idaes._local_config_file}")
 
+
 @cb.command(name="config-set", help="Set a set a configuration option")
 @click.argument("key")
 @click.argument("value")
@@ -54,13 +56,16 @@ def config_file(gbl, local):
 @click.option(
     "--file_as_global",
     is_flag=True,
-    help="Testing option, alternate global config location")
+    help="Testing option, alternate global config location",
+)
 @click.option(
     "--file_as_local",
     is_flag=True,
-    help="Testing option, alternate local config file location")
+    help="Testing option, alternate local config file location",
+)
 def config_set(
-    glb, local, key, value, file, file_as_local, file_as_global, display, add, dlt):
+    glb, local, key, value, file, file_as_local, file_as_global, display, add, dlt
+):
     # get locations for the local and global config files
     global_config_file = idaes._global_config_file
     local_config_file = idaes._local_config_file
@@ -87,8 +92,8 @@ def config_set(
         idaes.read_config(local_config_file)
     idaes.cfg.display()
     # get the config block entry
-    key = key.split(":") # use : instead of . due to logger names
-    value = value.replace("'", '"') # " expected by json but gets eaten by shell
+    key = key.split(":")  # use : instead of . due to logger names
+    value = value.replace("'", '"')  # " expected by json but gets eaten by shell
     value = json.loads(value)
     c = idaes.cfg
     for k in key[:-1]:
@@ -120,6 +125,7 @@ def config_set(
         idaes.write_config(file)
     if display:
         idaes.cfg.display()
+
 
 @cb.command(name="config-display", help="Show IDAES config")
 def config_display():
