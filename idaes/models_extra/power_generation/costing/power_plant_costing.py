@@ -129,95 +129,185 @@ custom_costing_exponents = {
             "Exponent": 0.6,
             "Process Parameter": "Lean solvent cooler area"
         },
-        "6.9.ccs": {
-            "Account Name": "MEA solvent capture system flue gas blower",
+        "6.9.1.ccs": {
+            "Account Name": "MEA solvent capture system flue gas blower cost component 1",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "CO2 product flow rate"
         },
-        "6.10.ccs": {
-            "Account Name": "MEA solvent capture system flue gas direct contact cooler",
+        "6.9.2.ccs": {
+            "Account Name": "MEA solvent capture system flue gas blower cost component 2",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "Flue gas inlet to absorber"
         },
-        "6.11.ccs": {
-            "Account Name": "MEA solvent capture system flue gas direct contact cooler packing",
+        "6.10.1.ccs": {
+            "Account Name": "MEA solvent capture system flue gas direct contact cooler cost component 1",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "CO2 product flow rate"
         },
-        "6.12.ccs": {
-            "Account Name": "MEA solvent capture system pretreatment pump",
+        "6.10.2.ccs": {
+            "Account Name": "MEA solvent capture system flue gas direct contact cooler cost component 2",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "Flue gas inlet to absorber"
         },
-        "6.13.ccs": {
-            "Account Name": "MEA solvent capture system pretreatment cooler",
+        "6.11.1.ccs": {
+            "Account Name": "MEA solvent capture system flue gas direct contact cooler packing cost component 1",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "CO2 product flow rate"
         },
-        "6.14.ccs": {
-            "Account Name": "MEA solvent capture system pretreatment tank",
+        "6.11.2.ccs": {
+            "Account Name": "MEA solvent capture system flue gas direct contact cooler packing cost component 2",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "Flue gas inlet to absorber"
         },
-        "6.15.ccs": {
-            "Account Name": "MEA solvent capture system washing column",
+        "6.12.1.ccs": {
+            "Account Name": "MEA solvent capture system pretreatment pump cost component 1",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "CO2 product flow rate"
         },
-        "6.16.ccs": {
-            "Account Name": "MEA solvent capture system washing column packing",
+        "6.12.2.ccs": {
+            "Account Name": "MEA solvent capture system pretreatment pump cost component 2",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "Flue gas inlet to absorber"
         },
-        "6.17.ccs": {
-            "Account Name": "MEA solvent capture system washing solvent cooler",
+        "6.13.1.ccs": {
+            "Account Name": "MEA solvent capture system pretreatment cooler cost component 1",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "CO2 product flow rate"
         },
-        "6.18.ccs": {
-            "Account Name": "MEA solvent capture system washing solvent pump",
+        "6.13.2.ccs": {
+            "Account Name": "MEA solvent capture system pretreatment cooler cost component 2",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "Flue gas inlet to absorber"
         },
-        "6.19.ccs": {
-            "Account Name": "MEA solvent capture system condenser pump",
+        "6.14.1.ccs": {
+            "Account Name": "MEA solvent capture system pretreatment tank cost component 1",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "CO2 product flow rate"
         },
-        "6.20.ccs": {
-            "Account Name": "MEA solvent capture system stripper reflux drum",
+        "6.14.2.ccs": {
+            "Account Name": "MEA solvent capture system pretreatment tank cost component 2",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "Flue gas inlet to absorber"
         },
-        "6.21.ccs": {
-            "Account Name": "MEA solvent capture system lean solvent pump",
+        "6.15.1.ccs": {
+            "Account Name": "MEA solvent capture system washing column cost component 1",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "CO2 product flow rate"
         },
-        "6.22.ccs": {
-            "Account Name": "MEA solvent capture system solvent storage tank",
+        "6.15.2.ccs": {
+            "Account Name": "MEA solvent capture system washing column cost component 2",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "Flue gas inlet to absorber"
         },
-        "6.23.ccs": {
-            "Account Name": "MEA solvent capture system washing solvent tank",
+        "6.16.1.ccs": {
+            "Account Name": "MEA solvent capture system washing column packing cost component 1",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "CO2 product flow rate"
         },
-        "6.24.ccs": {
-            "Account Name": "MEA solvent capture system solvent stripper reclaimer",
+        "6.16.2.ccs": {
+            "Account Name": "MEA solvent capture system washing column packing cost component 2",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "Flue gas inlet to absorber"
         },
-        "6.25.ccs": {
-            "Account Name": "MEA solvent capture system solvent reclaimer cooler",
+        "6.17.1.ccs": {
+            "Account Name": "MEA solvent capture system washing solvent cooler cost component 1",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "CO2 product flow rate"
         },
-        "6.26.ccs": {
-            "Account Name": "MEA solvent capture system solvent filtration",
+        "6.17.2.ccs": {
+            "Account Name": "MEA solvent capture system washing solvent cooler cost component 2",
             "Exponent": 0.6,
-            "Process Parameter": ["CO2 product flow rate", "Flue gas inlet to absorber"]
+            "Process Parameter": "Flue gas inlet to absorber"
+        },
+        "6.18.1.ccs": {
+            "Account Name": "MEA solvent capture system washing solvent pump cost component 1",
+            "Exponent": 0.6,
+            "Process Parameter": "CO2 product flow rate"
+        },
+        "6.18.2.ccs": {
+            "Account Name": "MEA solvent capture system washing solvent pump cost component 2",
+            "Exponent": 0.6,
+            "Process Parameter": "Flue gas inlet to absorber"
+        },
+        "6.19.1.ccs": {
+            "Account Name": "MEA solvent capture system condenser pump cost component 1",
+            "Exponent": 0.6,
+            "Process Parameter": "CO2 product flow rate"
+        },
+        "6.19.2.ccs": {
+            "Account Name": "MEA solvent capture system condenser pump cost component 2",
+            "Exponent": 0.6,
+            "Process Parameter": "Flue gas inlet to absorber"
+        },
+        "6.20.1.ccs": {
+            "Account Name": "MEA solvent capture system stripper reflux drum cost component 1",
+            "Exponent": 0.6,
+            "Process Parameter": "CO2 product flow rate"
+        },
+        "6.20.2.ccs": {
+            "Account Name": "MEA solvent capture system stripper reflux drum cost component 2",
+            "Exponent": 0.6,
+            "Process Parameter": "Flue gas inlet to absorber"
+        },
+        "6.21.1.ccs": {
+            "Account Name": "MEA solvent capture system lean solvent pump cost component 1",
+            "Exponent": 0.6,
+            "Process Parameter": "CO2 product flow rate"
+        },
+        "6.21.2.ccs": {
+            "Account Name": "MEA solvent capture system lean solvent pump cost component 2",
+            "Exponent": 0.6,
+            "Process Parameter": "Flue gas inlet to absorber"
+        },
+        "6.22.1.ccs": {
+            "Account Name": "MEA solvent capture system solvent storage tank cost component 1",
+            "Exponent": 0.6,
+            "Process Parameter": "CO2 product flow rate"
+        },
+        "6.22.2.ccs": {
+            "Account Name": "MEA solvent capture system solvent storage tank cost component 2",
+            "Exponent": 0.6,
+            "Process Parameter": "Flue gas inlet to absorber"
+        },
+        "6.23.1.ccs": {
+            "Account Name": "MEA solvent capture system washing solvent tank cost component 1",
+            "Exponent": 0.6,
+            "Process Parameter": "CO2 product flow rate"
+        },
+        "6.23.2.ccs": {
+            "Account Name": "MEA solvent capture system washing solvent tank cost component 2",
+            "Exponent": 0.6,
+            "Process Parameter": "Flue gas inlet to absorber"
+        },
+        "6.24.1.ccs": {
+            "Account Name": "MEA solvent capture system solvent stripper reclaimer cost component 1",
+            "Exponent": 0.6,
+            "Process Parameter": "CO2 product flow rate"
+        },
+        "6.24.2.ccs": {
+            "Account Name": "MEA solvent capture system solvent stripper reclaimer cost component 2",
+            "Exponent": 0.6,
+            "Process Parameter": "Flue gas inlet to absorber"
+        },
+        "6.25.1.ccs": {
+            "Account Name": "MEA solvent capture system solvent reclaimer cooler cost component 1",
+            "Exponent": 0.6,
+            "Process Parameter": "CO2 product flow rate"
+        },
+        "6.25.2.ccs": {
+            "Account Name": "MEA solvent capture system solvent reclaimer cooler cost component 2",
+            "Exponent": 0.6,
+            "Process Parameter": "Flue gas inlet to absorber"
+        },
+        "6.26.1.ccs": {
+            "Account Name": "MEA solvent capture system solvent filtration cost component 1",
+            "Exponent": 0.6,
+            "Process Parameter": "CO2 product flow rate"
+        },
+        "6.26.2.ccs": {
+            "Account Name": "MEA solvent capture system solvent filtration cost component 2",
+            "Exponent": 0.6,
+            "Process Parameter": "Flue gas inlet to absorber"
         }
     }
 }
@@ -297,167 +387,293 @@ custom_costing_params = {
                     "RP Value": 1200,
                     "Units": "m**2"
             },
-            "6.9.ccs":{
-                    "BEC": 731000/1e3,
+            "6.9.1.ccs":{
+                    "BEC": 0.6*731000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
             },
-            "6.10.ccs":{
-                    "BEC": 2082000/1e3,
+            "6.9.2.ccs":{
+                    "BEC": 0.4*731000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
             },
-            "6.11.ccs":{
-                    "BEC": 1855000/1e3,
+            "6.10.1.ccs":{
+                    "BEC": 0.6*2082000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
             },
-            "6.12.ccs":{
-                    "BEC": 89000/1e3,
+            "6.10.2.ccs":{
+                    "BEC": 0.4*2082000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
             },
-            "6.13.ccs":{
-                    "BEC": 165000/1e3,
+            "6.11.1.ccs":{
+                    "BEC": 0.6*1855000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
             },
-            "6.14.ccs":{
-                    "BEC": 74000/1e3,
+            "6.11.2.ccs":{
+                    "BEC": 0.4*1855000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
             },
-            "6.15.ccs":{
-                    "BEC": 1992000/1e3,
+            "6.12.1.ccs":{
+                    "BEC": 0.6*89000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
             },
-            "6.16.ccs":{
-                    "BEC": 2036000/1e3,
+            "6.12.2.ccs":{
+                    "BEC": 0.4*89000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
             },
-            "6.17.ccs":{
-                    "BEC": 46000/1e3,
+            "6.13.1.ccs":{
+                    "BEC": 0.6*165000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
             },
-            "6.18.ccs":{
-                    "BEC": 9000/1e3,
+            "6.13.2.ccs":{
+                    "BEC": 0.4*165000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
             },
-            "6.19.ccs":{
-                    "BEC": 25000/1e3,
+            "6.14.1.ccs":{
+                    "BEC": 0.6*74000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
             },
-            "6.20.ccs":{
-                    "BEC": 34000/1e3,
+            "6.14.2.ccs":{
+                    "BEC": 0.4*74000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
             },
-            "6.21.ccs":{
-                    "BEC": 260000/1e3,
+            "6.15.1.ccs":{
+                    "BEC": 0.6*1992000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
             },
-            "6.22.ccs":{
-                    "BEC": 296000/1e3,
+            "6.15.2.ccs":{
+                    "BEC": 0.4*1992000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
             },
-            "6.23.ccs":{
-                    "BEC": 34000/1e3,
+            "6.16.1.ccs":{
+                    "BEC": 0.6*2036000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
             },
-            "6.24.ccs":{
-                    "BEC": 144000/1e3,
+            "6.16.2.ccs":{
+                    "BEC": 0.4*2036000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
             },
-            "6.25.ccs":{
-                    "BEC": 135000/1e3,
+            "6.17.1.ccs":{
+                    "BEC": 0.6*46000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
             },
-            "6.26.ccs":{
-                    "BEC": 791000/1e3,
+            "6.17.2.ccs":{
+                    "BEC": 0.4*46000/1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
-                    "RP Value": [262349.78, 672504.35],
-                    "Cost scaling fraction": [0.6, 0.4],
-                    "Units": ["lb/hr", "m3/hr"]
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
+            },
+            "6.18.1.ccs":{
+                    "BEC": 0.6*9000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
+            },
+            "6.18.2.ccs":{
+                    "BEC": 0.4*9000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
+            },
+            "6.19.1.ccs":{
+                    "BEC": 0.6*25000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
+            },
+            "6.19.2.ccs":{
+                    "BEC": 0.4*25000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
+            },
+            "6.20.1.ccs":{
+                    "BEC": 0.6*34000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
+            },
+            "6.20.2.ccs":{
+                    "BEC": 0.4*34000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
+            },
+            "6.21.1.ccs":{
+                    "BEC": 0.6*260000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
+            },
+            "6.21.2.ccs":{
+                    "BEC": 0.4*260000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
+            },
+            "6.22.1.ccs":{
+                    "BEC": 0.6*296000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
+            },
+            "6.22.2.ccs":{
+                    "BEC": 0.4*296000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
+            },
+            "6.23.1.ccs":{
+                    "BEC": 0.6*34000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
+            },
+            "6.23.2.ccs":{
+                    "BEC": 0.4*34000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
+            },
+            "6.24.1.ccs":{
+                    "BEC": 0.6*144000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
+            },
+            "6.24.2.ccs":{
+                    "BEC": 0.4*144000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
+            },
+            "6.25.1.ccs":{
+                    "BEC": 0.6*135000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
+            },
+            "6.25.2.ccs":{
+                    "BEC": 0.4*135000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
+            },
+            "6.26.1.ccs":{
+                    "BEC": 0.6*791000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 262349.78,
+                    "Units": "lb/hr"
+            },
+            "6.26.2.ccs":{
+                    "BEC": 0.4*791000/1e3,
+                    "Eng Fee": 0.2,
+                    "Process Contingency": 0.12,
+                    "Project Contingency": 0.2,
+                    "RP Value": 672504.35,
+                    "Units": "m3/hr"
             }
         }
     }
@@ -633,7 +849,6 @@ def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B", CE_i
     reference_costs = {}
     reference_costs_init = {}
     reference_params = {}
-    cost_scaling_fractions = {}
     engineering_fees = {}
     process_contingencies = {}
     project_contingencies = {}
@@ -655,20 +870,10 @@ def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B", CE_i
             reference_costs[account] = BB_costing_params[str(tech)][ccs][account]["BEC"]
             reference_costs_init[account] = BB_costing_params[str(
                 tech)][ccs][account]['BEC'] * 1e-3
-            
-            if type(process_params[account]) == list:
-                for i,processparam in enumerate(process_params[account]):
-                    reference_params[account, processparam] = BB_costing_params[str(tech)][ccs][account][
-                        "RP Value"
-                    ][i]
-                    cost_scaling_fractions[account, processparam] = BB_costing_params[str(tech)][ccs][account][
-                        "Cost scaling fraction"
-                    ][i]
-                    
-            elif type(process_params[account]) == str:
-                    reference_params[account] = BB_costing_params[str(tech)][ccs][account][
-                        "RP Value"
-                    ]
+
+            reference_params[account] = BB_costing_params[str(tech)][ccs][account][
+                "RP Value"
+            ]
                     
             engineering_fees[account] = BB_costing_params[str(tech)][ccs][account][
                 "Eng Fee"
@@ -698,20 +903,9 @@ def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B", CE_i
                 ]["BEC"]
                 reference_costs_init[account] = custom_costing_params[str(
                     tech)][ccs][account]['BEC'] * 1e-3
-                
-                if type(process_params[account]) == list:
-                    for i,processparam in enumerate(process_params[account]):
-                        reference_params[account, processparam] = custom_costing_params[str(tech)][ccs][
-                            account
-                        ]["RP Value"][i]
-
-                        cost_scaling_fractions[account, processparam] = \
-                            custom_costing_params[str(tech)][ccs][account]["Cost scaling fraction"][i]
-                        
-                elif type(process_params[account]) == str:
-                    reference_params[account] = custom_costing_params[str(tech)][ccs][
-                        account
-                    ]["RP Value"]
+                reference_params[account] = custom_costing_params[str(tech)][ccs][
+                account
+                ]["RP Value"]
                         
                 engineering_fees[account] = custom_costing_params[str(tech)][ccs][
                     account
@@ -768,29 +962,13 @@ def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B", CE_i
         initialize=reference_costs,
         doc="reference cost for account",
     )
-    
-    if type(process_params[cost_accounts[0]]) == list:
-        if len(process_params[cost_accounts[0]]) > 1:
-            self.costing.ref_param = Param(
-                cost_accounts,process_params[cost_accounts[0]],
-                mutable=True,
-                initialize=reference_params,
-                doc="reference parameter for account",
-                )
             
-            self.costing.cost_scaling_fracs = Param(
-                cost_accounts,process_params[cost_accounts[0]],
-                mutable=True,
-                initialize=cost_scaling_fractions,
-                doc="reference parameter for account",
-                )
-    elif type(process_params[cost_accounts[0]]) == str:            
-        self.costing.ref_param = Param(
-            cost_accounts,
-            mutable=True,
-            initialize=reference_params,
-            doc="reference parameter for account",
-            )
+    self.costing.ref_param = Param(
+        cost_accounts,
+        mutable=True,
+        initialize=reference_params,
+        doc="reference parameter for account",
+    )
 
     self.costing.eng_fee = Param(
         cost_accounts,
@@ -831,23 +1009,12 @@ def get_PP_costing(self, cost_accounts, scaled_param, units, tech, ccs="B", CE_i
     # rule for scaling BEC
     # reference cost is in 2018 dollars, 671.1 is CE index for 2018
     def bare_erected_cost_rule(costing, i):
-        if type(process_params[i]) == list:
-            if len(process_params[i]) > 1:
-                return (
-                    costing.bare_erected_cost[i] * 1e3
-                    == (CE_index / CE_index_base)
-                    * costing.ref_cost[i]
-                    * sum(costing.cost_scaling_fracs[i,p]*
-                         (scaled_param[j] / costing.ref_param[i,p]) ** costing.exp[i]
-                          for j,p in enumerate(process_params[i]))
-                )
-        elif type(process_params[i]) == str:
-            return (
-                    costing.bare_erected_cost[i] * 1e3
-                    == (CE_index / CE_index_base)
-                    * costing.ref_cost[i]
-                    * (scaled_param / costing.ref_param[i]) ** costing.exp[i]
-                )
+        return (
+                costing.bare_erected_cost[i] * 1e3
+                == (CE_index / CE_index_base)
+                * costing.ref_cost[i]
+                * (scaled_param / costing.ref_param[i]) ** costing.exp[i]
+            )
 
     self.costing.bare_erected_cost_eq = Constraint(
         cost_accounts, rule=bare_erected_cost_rule

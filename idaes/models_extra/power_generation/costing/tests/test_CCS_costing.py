@@ -192,311 +192,552 @@ def test_ccs_units_costing():
     )
     
     # Flue gas blower
-    flue_gas_blower_accounts = ["6.9.ccs"]
+    flue_gas_blower_account_1 = ["6.9.1.ccs"]
+    flue_gas_blower_account_2 = ["6.9.2.ccs"]
+    
     m.fs.b25 = pyo.Block()
     # Obtain the CO2 product flow in lb/hr
     co2_product_flow = 245000  # lb/hr
-    # Obtain the flue gas inlet flow to the absorber in m3/hr
-    fg_flow = 2e6 # m3/hr
 
     m.fs.b25.co2_product_flow = pyo.Var(initialize=co2_product_flow)
     m.fs.b25.co2_product_flow.fix()
-    m.fs.b25.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b25.fg_flow.fix()
+
     get_PP_costing(
         m.fs.b25,
-        flue_gas_blower_accounts,
-        [m.fs.b25.co2_product_flow,m.fs.b25.fg_flow],
-        ["lb/hr", "m3/hr"],
+        flue_gas_blower_account_1,
+        m.fs.b25.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+
+    m.fs.b26 = pyo.Block()
+
+    # Obtain the flue gas inlet flow to the absorber in m3/hr
+    fg_flow = 2e6 # m3/hr
+
+    m.fs.b26.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b26.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b26,
+        flue_gas_blower_account_2,
+        m.fs.b26.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Flue gas direct contact cooler
-    flue_gas_dcc_accounts = ["6.10.ccs"]
-    m.fs.b26 = pyo.Block()
+    flue_gas_dcc_account_1 = ["6.10.1.ccs"]
+    flue_gas_dcc_account_2 = ["6.10.2.ccs"]
+    
+    m.fs.b27 = pyo.Block()
 
-    m.fs.b26.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b26.co2_product_flow.fix()
-    m.fs.b26.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b26.fg_flow.fix()
+    m.fs.b27.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b27.co2_product_flow.fix()
+
     get_PP_costing(
-        m.fs.b26,
-        flue_gas_dcc_accounts,
-        [m.fs.b26.co2_product_flow,m.fs.b26.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b27,
+        flue_gas_dcc_account_1,
+        m.fs.b27.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    m.fs.b28 = pyo.Block()
+
+    m.fs.b28.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b28.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b28,
+        flue_gas_dcc_account_2,
+        m.fs.b28.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Flue gas direct contact cooler packing
-    flue_gas_dcc_packing_accounts = ["6.11.ccs"]
-    m.fs.b27 = pyo.Block()
+    flue_gas_dcc_packing_account_1 = ["6.11.1.ccs"]
+    flue_gas_dcc_packing_account_2 = ["6.11.2.ccs"]
+    
+    m.fs.b29 = pyo.Block()
 
-    m.fs.b27.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b27.co2_product_flow.fix()
-    m.fs.b27.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b27.fg_flow.fix()
+    m.fs.b29.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b29.co2_product_flow.fix()
     get_PP_costing(
-        m.fs.b27,
-        flue_gas_dcc_packing_accounts,
-        [m.fs.b27.co2_product_flow,m.fs.b27.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b29,
+        flue_gas_dcc_packing_account_1,
+        m.fs.b29.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+
+    m.fs.b30 = pyo.Block()
+
+    m.fs.b30.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b30.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b30,
+        flue_gas_dcc_packing_account_2,
+        m.fs.b30.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Pretreatment pump
-    pretreatment_pump_accounts = ["6.12.ccs"]
-    m.fs.b28 = pyo.Block()
+    pretreatment_pump_account_1 = ["6.12.1.ccs"]
+    pretreatment_pump_account_2 = ["6.12.2.ccs"]
+    
+    m.fs.b31 = pyo.Block()
 
-    m.fs.b28.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b28.co2_product_flow.fix()
-    m.fs.b28.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b28.fg_flow.fix()
+    m.fs.b31.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b31.co2_product_flow.fix()
+
     get_PP_costing(
-        m.fs.b28,
-        pretreatment_pump_accounts,
-        [m.fs.b28.co2_product_flow,m.fs.b28.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b31,
+        pretreatment_pump_account_1,
+        m.fs.b31.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    m.fs.b32 = pyo.Block()
+
+    m.fs.b32.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b32.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b32,
+        pretreatment_pump_account_2,
+        m.fs.b32.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Pretreatment cooler
-    pretreatment_cooler_accounts = ["6.13.ccs"]
-    m.fs.b29 = pyo.Block()
+    pretreatment_cooler_account_1 = ["6.13.1.ccs"]
+    pretreatment_cooler_account_2 = ["6.13.2.ccs"]
+    
+    m.fs.b33 = pyo.Block()
 
-    m.fs.b29.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b29.co2_product_flow.fix()
-    m.fs.b29.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b29.fg_flow.fix()
+    m.fs.b33.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b33.co2_product_flow.fix()
+
     get_PP_costing(
-        m.fs.b29,
-        pretreatment_cooler_accounts,
-        [m.fs.b29.co2_product_flow,m.fs.b29.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b33,
+        pretreatment_cooler_account_1,
+        m.fs.b33.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    m.fs.b34 = pyo.Block()
+
+    m.fs.b34.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b34.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b34,
+        pretreatment_cooler_account_2,
+        m.fs.b34.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Pretreatment tank
-    pretreatment_tank_accounts = ["6.14.ccs"]
-    m.fs.b30 = pyo.Block()
+    pretreatment_tank_account_1 = ["6.14.1.ccs"]
+    pretreatment_tank_account_2 = ["6.14.2.ccs"]
+    m.fs.b35 = pyo.Block()
 
-    m.fs.b30.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b30.co2_product_flow.fix()
-    m.fs.b30.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b30.fg_flow.fix()
+    m.fs.b35.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b35.co2_product_flow.fix()
+
     get_PP_costing(
-        m.fs.b30,
-        pretreatment_tank_accounts,
-        [m.fs.b30.co2_product_flow,m.fs.b30.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b35,
+        pretreatment_tank_account_1,
+        m.fs.b35.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    m.fs.b36 = pyo.Block()
+
+    m.fs.b36.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b36.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b36,
+        pretreatment_tank_account_2,
+        m.fs.b36.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Washing column
-    washing_column_accounts = ["6.15.ccs"]
-    m.fs.b31 = pyo.Block()
+    washing_column_account_1 = ["6.15.1.ccs"]
+    washing_column_account_2 = ["6.15.2.ccs"]
+    m.fs.b37 = pyo.Block()
 
-    m.fs.b31.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b31.co2_product_flow.fix()
-    m.fs.b31.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b31.fg_flow.fix()
+    m.fs.b37.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b37.co2_product_flow.fix()
+
     get_PP_costing(
-        m.fs.b31,
-        washing_column_accounts,
-        [m.fs.b31.co2_product_flow,m.fs.b31.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b37,
+        washing_column_account_1,
+        m.fs.b37.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    m.fs.b38 = pyo.Block()
+
+    m.fs.b38.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b38.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b38,
+        washing_column_account_2,
+        m.fs.b38.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Washing column packing
-    washing_column_packing_accounts = ["6.16.ccs"]
-    m.fs.b32 = pyo.Block()
+    washing_column_packing_account_1 = ["6.16.1.ccs"]
+    washing_column_packing_account_2 = ["6.16.2.ccs"]
+    m.fs.b39 = pyo.Block()
 
-    m.fs.b32.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b32.co2_product_flow.fix()
-    m.fs.b32.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b32.fg_flow.fix()
+    m.fs.b39.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b39.co2_product_flow.fix()
+
     get_PP_costing(
-        m.fs.b32,
-        washing_column_packing_accounts,
-        [m.fs.b32.co2_product_flow,m.fs.b32.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b39,
+        washing_column_packing_account_1,
+        m.fs.b39.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    m.fs.b40 = pyo.Block()
+
+    m.fs.b40.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b40.fg_flow.fix()
+
+    get_PP_costing(
+        m.fs.b40,
+        washing_column_packing_account_2,
+        m.fs.b40.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Washing solvent cooler
-    washing_solvent_cooler_accounts = ["6.17.ccs"]
-    m.fs.b33 = pyo.Block()
+    washing_solvent_cooler_account_1 = ["6.17.1.ccs"]
+    washing_solvent_cooler_account_2 = ["6.17.2.ccs"]
+    m.fs.b41 = pyo.Block()
 
-    m.fs.b33.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b33.co2_product_flow.fix()
-    m.fs.b33.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b33.fg_flow.fix()
+    m.fs.b41.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b41.co2_product_flow.fix()
+
     get_PP_costing(
-        m.fs.b33,
-        washing_solvent_cooler_accounts,
-        [m.fs.b33.co2_product_flow,m.fs.b33.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b41,
+        washing_solvent_cooler_account_1,
+        m.fs.b41.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    m.fs.b42 = pyo.Block()
+
+    m.fs.b42.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b42.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b42,
+        washing_solvent_cooler_account_2,
+        m.fs.b42.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Washing solvent pump
-    washing_solvent_pump_accounts = ["6.18.ccs"]
-    m.fs.b34 = pyo.Block()
+    washing_solvent_pump_account_1 = ["6.18.1.ccs"]
+    washing_solvent_pump_account_2 = ["6.18.2.ccs"]
+    m.fs.b43 = pyo.Block()
 
-    m.fs.b34.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b34.co2_product_flow.fix()
-    m.fs.b34.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b34.fg_flow.fix()
+    m.fs.b43.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b43.co2_product_flow.fix()
+
     get_PP_costing(
-        m.fs.b34,
-        washing_solvent_pump_accounts,
-        [m.fs.b34.co2_product_flow,m.fs.b34.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b43,
+        washing_solvent_pump_account_1,
+        m.fs.b43.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    m.fs.b44 = pyo.Block()
+
+    m.fs.b44.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b44.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b44,
+        washing_solvent_pump_account_2,
+        m.fs.b44.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Condenser pump
-    condenser_pump_accounts = ["6.19.ccs"]
-    m.fs.b35 = pyo.Block()
+    condenser_pump_account_1 = ["6.19.1.ccs"]
+    condenser_pump_account_2 = ["6.19.2.ccs"]
+    
+    m.fs.b45 = pyo.Block()
 
-    m.fs.b35.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b35.co2_product_flow.fix()
-    m.fs.b35.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b35.fg_flow.fix()
+    m.fs.b45.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b45.co2_product_flow.fix()
+
     get_PP_costing(
-        m.fs.b35,
-        condenser_pump_accounts,
-        [m.fs.b35.co2_product_flow,m.fs.b35.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b45,
+        condenser_pump_account_1,
+        m.fs.b45.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    m.fs.b46 = pyo.Block()
+
+    m.fs.b46.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b46.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b46,
+        condenser_pump_account_2,
+        m.fs.b46.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Stripper reflux drum
-    stripper_reflux_drum_accounts = ["6.20.ccs"]
-    m.fs.b36 = pyo.Block()
+    stripper_reflux_drum_account_1 = ["6.20.1.ccs"]
+    stripper_reflux_drum_account_2 = ["6.20.2.ccs"]
+    m.fs.b47 = pyo.Block()
 
-    m.fs.b36.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b36.co2_product_flow.fix()
-    m.fs.b36.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b36.fg_flow.fix()
+    m.fs.b47.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b47.co2_product_flow.fix()
+
     get_PP_costing(
-        m.fs.b36,
-        stripper_reflux_drum_accounts,
-        [m.fs.b36.co2_product_flow,m.fs.b36.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b47,
+        stripper_reflux_drum_account_1,
+        m.fs.b47.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    m.fs.b48 = pyo.Block()
+
+    m.fs.b48.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b48.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b48,
+        stripper_reflux_drum_account_2,
+        m.fs.b48.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Lean solvent pump
-    lean_solvent_pump_accounts = ["6.21.ccs"]
-    m.fs.b37 = pyo.Block()
+    lean_solvent_pump_account_1 = ["6.21.1.ccs"]
+    lean_solvent_pump_account_2 = ["6.21.2.ccs"]
+    m.fs.b49 = pyo.Block()
 
-    m.fs.b37.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b37.co2_product_flow.fix()
-    m.fs.b37.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b37.fg_flow.fix()
+    m.fs.b49.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b49.co2_product_flow.fix()
+
     get_PP_costing(
-        m.fs.b37,
-        lean_solvent_pump_accounts,
-        [m.fs.b37.co2_product_flow,m.fs.b37.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b49,
+        lean_solvent_pump_account_1,
+        m.fs.b49.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    m.fs.b50 = pyo.Block()
+
+    m.fs.b50.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b50.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b50,
+        lean_solvent_pump_account_2,
+        m.fs.b50.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Solvent storage tank
-    solvent_storage_tank_accounts = ["6.22.ccs"]
-    m.fs.b38 = pyo.Block()
+    solvent_storage_tank_account_1 = ["6.22.1.ccs"]
+    solvent_storage_tank_account_2 = ["6.22.2.ccs"]
+    m.fs.b51 = pyo.Block()
 
-    m.fs.b38.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b38.co2_product_flow.fix()
-    m.fs.b38.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b38.fg_flow.fix()
+    m.fs.b51.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b51.co2_product_flow.fix()
+
     get_PP_costing(
-        m.fs.b38,
-        solvent_storage_tank_accounts,
-        [m.fs.b38.co2_product_flow,m.fs.b38.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b51,
+        solvent_storage_tank_account_1,
+        m.fs.b51.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    m.fs.b52 = pyo.Block()
+
+    m.fs.b52.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b52.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b52,
+        solvent_storage_tank_account_2,
+        m.fs.b52.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Washing solvent tank
-    washing_solvent_tank_accounts = ["6.23.ccs"]
-    m.fs.b39 = pyo.Block()
+    washing_solvent_tank_account_1 = ["6.23.1.ccs"]
+    washing_solvent_tank_account_2 = ["6.23.2.ccs"]
+    m.fs.b53 = pyo.Block()
 
-    m.fs.b39.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b39.co2_product_flow.fix()
-    m.fs.b39.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b39.fg_flow.fix()
+    m.fs.b53.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b53.co2_product_flow.fix()
+
     get_PP_costing(
-        m.fs.b39,
-        washing_solvent_tank_accounts,
-        [m.fs.b39.co2_product_flow,m.fs.b39.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b53,
+        washing_solvent_tank_account_1,
+        m.fs.b53.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    m.fs.b54 = pyo.Block()
+
+    m.fs.b54.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b54.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b54,
+        washing_solvent_tank_account_2,
+        m.fs.b54.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Solvent stripper reclaimer
-    solvent_stripper_reclaimer_accounts = ["6.24.ccs"]
-    m.fs.b40 = pyo.Block()
+    solvent_stripper_reclaimer_account_1 = ["6.24.1.ccs"]
+    solvent_stripper_reclaimer_account_2 = ["6.24.2.ccs"]
+    m.fs.b55 = pyo.Block()
 
-    m.fs.b40.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b40.co2_product_flow.fix()
-    m.fs.b40.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b40.fg_flow.fix()
+    m.fs.b55.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b55.co2_product_flow.fix()
+
     get_PP_costing(
-        m.fs.b40,
-        solvent_stripper_reclaimer_accounts,
-        [m.fs.b40.co2_product_flow,m.fs.b40.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b55,
+        solvent_stripper_reclaimer_account_1,
+        m.fs.b55.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    m.fs.b56 = pyo.Block()
+
+    m.fs.b56.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b56.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b56,
+        solvent_stripper_reclaimer_account_2,
+        m.fs.b56.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Solvent reclaimer cooler
-    solvent_reclaimer_cooler_accounts = ["6.25.ccs"]
-    m.fs.b41 = pyo.Block()
+    solvent_reclaimer_cooler_account_1 = ["6.25.1.ccs"]
+    solvent_reclaimer_cooler_account_2 = ["6.25.2.ccs"]
+    m.fs.b57 = pyo.Block()
 
-    m.fs.b41.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b41.co2_product_flow.fix()
-    m.fs.b41.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b41.fg_flow.fix()
+    m.fs.b57.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b57.co2_product_flow.fix()
+
     get_PP_costing(
-        m.fs.b41,
-        solvent_reclaimer_cooler_accounts,
-        [m.fs.b41.co2_product_flow,m.fs.b41.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b57,
+        solvent_reclaimer_cooler_account_1,
+        m.fs.b57.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    m.fs.b58 = pyo.Block()
+
+    m.fs.b58.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b58.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b58,
+        solvent_reclaimer_cooler_account_2,
+        m.fs.b58.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
     
     # Solvent filtration
-    solvent_filtration_accounts = ["6.26.ccs"]
-    m.fs.b42 = pyo.Block()
+    solvent_filtration_account_1 = ["6.26.1.ccs"]
+    solvent_filtration_account_2 = ["6.26.2.ccs"]
+    m.fs.b59 = pyo.Block()
 
-    m.fs.b42.co2_product_flow = pyo.Var(initialize=co2_product_flow)
-    m.fs.b42.co2_product_flow.fix()
-    m.fs.b42.fg_flow = pyo.Var(initialize=fg_flow)
-    m.fs.b42.fg_flow.fix()
+    m.fs.b59.co2_product_flow = pyo.Var(initialize=co2_product_flow)
+    m.fs.b59.co2_product_flow.fix()
+
     get_PP_costing(
-        m.fs.b42,
-        solvent_filtration_accounts,
-        [m.fs.b42.co2_product_flow,m.fs.b42.fg_flow],
-        ["lb/hr", "m3/hr"],
+        m.fs.b59,
+        solvent_filtration_account_1,
+        m.fs.b59.co2_product_flow,
+        "lb/hr",
+        6,
+        CE_index_base=567.3
+    )
+    
+    m.fs.b60 = pyo.Block()
+
+    m.fs.b60.fg_flow = pyo.Var(initialize=fg_flow)
+    m.fs.b60.fg_flow.fix()
+    get_PP_costing(
+        m.fs.b60,
+        solvent_filtration_account_2,
+        m.fs.b60.fg_flow,
+        "m3/hr",
         6,
         CE_index_base=567.3
     )
@@ -561,109 +802,163 @@ def test_ccs_units_costing():
     # Flue gas blower TPC
     assert pytest.approx(1.8425, abs=0.5) == sum(
         pyo.value(m.fs.b25.costing.total_plant_cost[ac])
-        for ac in flue_gas_blower_accounts
+        for ac in flue_gas_blower_account_1
+    ) + sum(
+        pyo.value(m.fs.b26.costing.total_plant_cost[ac])
+        for ac in flue_gas_blower_account_2
     )
     
     # Flue gas direct contact cooler TPC
     assert pytest.approx(5.2476, abs=0.5) == sum(
-        pyo.value(m.fs.b26.costing.total_plant_cost[ac])
-        for ac in flue_gas_dcc_accounts
+        pyo.value(m.fs.b27.costing.total_plant_cost[ac])
+        for ac in flue_gas_dcc_account_1
+    ) + sum(
+        pyo.value(m.fs.b28.costing.total_plant_cost[ac])
+        for ac in flue_gas_dcc_account_2
     )
     
     # Flue gas direct contact cooler packing TPC
     assert pytest.approx(4.6755, abs=0.5) == sum(
-        pyo.value(m.fs.b27.costing.total_plant_cost[ac])
-        for ac in flue_gas_dcc_packing_accounts
+        pyo.value(m.fs.b29.costing.total_plant_cost[ac])
+        for ac in flue_gas_dcc_packing_account_1
+    ) + sum(
+        pyo.value(m.fs.b30.costing.total_plant_cost[ac])
+        for ac in flue_gas_dcc_packing_account_2
     )
     
     # Pretreatment pump TPC
     assert pytest.approx(0.2243, abs=0.5) == sum(
-        pyo.value(m.fs.b28.costing.total_plant_cost[ac])
-        for ac in pretreatment_pump_accounts
+        pyo.value(m.fs.b31.costing.total_plant_cost[ac])
+        for ac in pretreatment_pump_account_1
+    ) + sum(
+        pyo.value(m.fs.b32.costing.total_plant_cost[ac])
+        for ac in pretreatment_pump_account_2
     )
     
     # Pretreatment cooler TPC
     assert pytest.approx(0.4159, abs=0.5) == sum(
-        pyo.value(m.fs.b29.costing.total_plant_cost[ac])
-        for ac in pretreatment_cooler_accounts
+        pyo.value(m.fs.b33.costing.total_plant_cost[ac])
+        for ac in pretreatment_cooler_account_1
+    ) + sum(
+        pyo.value(m.fs.b34.costing.total_plant_cost[ac])
+        for ac in pretreatment_cooler_account_2
     )
     
     # Pretreatment tank TPC
     assert pytest.approx(0.1865, abs=0.5) == sum(
-        pyo.value(m.fs.b30.costing.total_plant_cost[ac])
-        for ac in pretreatment_tank_accounts
+        pyo.value(m.fs.b35.costing.total_plant_cost[ac])
+        for ac in pretreatment_tank_account_1
+    ) + sum(
+        pyo.value(m.fs.b36.costing.total_plant_cost[ac])
+        for ac in pretreatment_tank_account_2
     )
     
     # Washing column TPC
     assert pytest.approx(5.0208, abs=0.5) == sum(
-        pyo.value(m.fs.b31.costing.total_plant_cost[ac])
-        for ac in washing_column_accounts
+        pyo.value(m.fs.b37.costing.total_plant_cost[ac])
+        for ac in washing_column_account_1
+    ) + sum(
+        pyo.value(m.fs.b38.costing.total_plant_cost[ac])
+        for ac in washing_column_account_2
     )
     
     # Washing column packing TPC
     assert pytest.approx(5.1317, abs=0.5) == sum(
-        pyo.value(m.fs.b32.costing.total_plant_cost[ac])
-        for ac in washing_column_packing_accounts
+        pyo.value(m.fs.b39.costing.total_plant_cost[ac])
+        for ac in washing_column_packing_account_1
+    ) + sum(
+        pyo.value(m.fs.b40.costing.total_plant_cost[ac])
+        for ac in washing_column_packing_account_2
     )
     
     # Washing solvent cooler TPC
     assert pytest.approx(0.1159, abs=0.5) == sum(
-        pyo.value(m.fs.b33.costing.total_plant_cost[ac])
-        for ac in washing_solvent_cooler_accounts
+        pyo.value(m.fs.b41.costing.total_plant_cost[ac])
+        for ac in washing_solvent_cooler_account_1
+    ) + sum(
+        pyo.value(m.fs.b42.costing.total_plant_cost[ac])
+        for ac in washing_solvent_cooler_account_2
     )
     
     # Washing solvent pump TPC
     assert pytest.approx(0.0227, abs=0.5) == sum(
-        pyo.value(m.fs.b34.costing.total_plant_cost[ac])
-        for ac in washing_solvent_pump_accounts
+        pyo.value(m.fs.b43.costing.total_plant_cost[ac])
+        for ac in washing_solvent_pump_account_1
+    ) + sum(
+        pyo.value(m.fs.b44.costing.total_plant_cost[ac])
+        for ac in washing_solvent_pump_account_2
     )
     
     # Condenser pump TPC
     assert pytest.approx(0.063, abs=0.5) == sum(
-        pyo.value(m.fs.b35.costing.total_plant_cost[ac])
-        for ac in condenser_pump_accounts
+        pyo.value(m.fs.b45.costing.total_plant_cost[ac])
+        for ac in condenser_pump_account_1
+    ) + sum(
+        pyo.value(m.fs.b46.costing.total_plant_cost[ac])
+        for ac in condenser_pump_account_2
     )
     
     # Stripper reflux drum TPC
     assert pytest.approx(0.0857, abs=0.5) == sum(
-        pyo.value(m.fs.b36.costing.total_plant_cost[ac])
-        for ac in stripper_reflux_drum_accounts
+        pyo.value(m.fs.b47.costing.total_plant_cost[ac])
+        for ac in stripper_reflux_drum_account_1
+    ) + sum(
+        pyo.value(m.fs.b48.costing.total_plant_cost[ac])
+        for ac in stripper_reflux_drum_account_2
     )
     
     # Lean solvent pump TPC
     assert pytest.approx(0.6553, abs=0.5) == sum(
-        pyo.value(m.fs.b37.costing.total_plant_cost[ac])
-        for ac in lean_solvent_pump_accounts
+        pyo.value(m.fs.b49.costing.total_plant_cost[ac])
+        for ac in lean_solvent_pump_account_1
+    ) + sum(
+        pyo.value(m.fs.b50.costing.total_plant_cost[ac])
+        for ac in lean_solvent_pump_account_2
     )
     
     # Solvent storage tank TPC
     assert pytest.approx(0.7461, abs=0.5) == sum(
-        pyo.value(m.fs.b38.costing.total_plant_cost[ac])
-        for ac in solvent_storage_tank_accounts
+        pyo.value(m.fs.b51.costing.total_plant_cost[ac])
+        for ac in solvent_storage_tank_account_1
+    ) + sum(
+        pyo.value(m.fs.b52.costing.total_plant_cost[ac])
+        for ac in solvent_storage_tank_account_2
     )
     
     # Washing solvent tank TPC
     assert pytest.approx(0.0857, abs=0.5) == sum(
-        pyo.value(m.fs.b39.costing.total_plant_cost[ac])
-        for ac in washing_solvent_tank_accounts
+        pyo.value(m.fs.b53.costing.total_plant_cost[ac])
+        for ac in washing_solvent_tank_account_1
+    ) + sum(
+        pyo.value(m.fs.b54.costing.total_plant_cost[ac])
+        for ac in washing_solvent_tank_account_2
     )
     
     # Solvent stripper reclaimer TPC
     assert pytest.approx(0.3629, abs=0.5) == sum(
-        pyo.value(m.fs.b40.costing.total_plant_cost[ac])
-        for ac in solvent_stripper_reclaimer_accounts
+        pyo.value(m.fs.b55.costing.total_plant_cost[ac])
+        for ac in solvent_stripper_reclaimer_account_1
+    ) + sum(
+        pyo.value(m.fs.b56.costing.total_plant_cost[ac])
+        for ac in solvent_stripper_reclaimer_account_2
     )
     
     # Solvent reclaimer cooler TPC
     assert pytest.approx(0.3402, abs=0.5) == sum(
-        pyo.value(m.fs.b41.costing.total_plant_cost[ac])
-        for ac in solvent_reclaimer_cooler_accounts
+        pyo.value(m.fs.b57.costing.total_plant_cost[ac])
+        for ac in solvent_reclaimer_cooler_account_1
+    ) + sum(
+        pyo.value(m.fs.b58.costing.total_plant_cost[ac])
+        for ac in solvent_reclaimer_cooler_account_2
     )
     
     # Solvent filtration TPC
     assert pytest.approx(1.9937, abs=0.5) == sum(
-        pyo.value(m.fs.b42.costing.total_plant_cost[ac])
-        for ac in solvent_filtration_accounts
+        pyo.value(m.fs.b59.costing.total_plant_cost[ac])
+        for ac in solvent_filtration_account_1
+    ) + sum(
+        pyo.value(m.fs.b60.costing.total_plant_cost[ac])
+        for ac in solvent_filtration_account_2
     )
     
     # Total TPC
