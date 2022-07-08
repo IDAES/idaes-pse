@@ -354,7 +354,9 @@ class TestBTX_isothermal(object):
             "vars": {
                 "Mechanical Work": btx.fs.unit.work_mechanical[0],
                 "Pressure Ratio": btx.fs.unit.ratioP[0],
-                "Pressure Change": btx.fs.unit.deltaP[0]}}
+                "Pressure Change": btx.fs.unit.deltaP[0],
+            }
+        }
 
 
 # -----------------------------------------------------------------------------
@@ -590,7 +592,9 @@ class TestIAPWS(object):
                 "Mechanical Work": iapws.fs.unit.work_mechanical[0],
                 "Pressure Ratio": iapws.fs.unit.ratioP[0],
                 "Pressure Change": iapws.fs.unit.deltaP[0],
-                "Isentropic Efficiency": iapws.fs.unit.efficiency_isentropic[0]}}
+                "Isentropic Efficiency": iapws.fs.unit.efficiency_isentropic[0],
+            }
+        }
 
     @pytest.mark.component
     def test_initialization_error(self, iapws):
@@ -747,7 +751,10 @@ class TestSaponification(object):
                 "Mechanical Work": sapon.fs.unit.work_mechanical[0],
                 "Pressure Ratio": sapon.fs.unit.ratioP[0],
                 "Pressure Change": sapon.fs.unit.deltaP[0],
-                "Efficiency": sapon.fs.unit.efficiency_pump[0]}}
+                "Efficiency": sapon.fs.unit.efficiency_pump[0],
+            }
+        }
+
 
 class TestTurbine(object):
     @pytest.mark.unit

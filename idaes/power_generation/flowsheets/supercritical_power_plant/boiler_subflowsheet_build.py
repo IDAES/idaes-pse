@@ -15,9 +15,11 @@ Deprecation path for renamed model.
 """
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The boiler_subflowsheet_build module has been moved to "
-                    "idaes.models_extra.power_generation.flowsheets."
-                    "supercritical_power_plant.boiler_subflowsheet_build",
-                    version="2.0.0.alpha0")
+deprecation_warning(
+    "The boiler_subflowsheet_build module has been moved to "
+    "idaes.models_extra.power_generation.flowsheets."
+    "supercritical_power_plant.boiler_subflowsheet_build",
+    version="2.0.0.alpha0",
+)
 
 from idaes.models_extra.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build import *

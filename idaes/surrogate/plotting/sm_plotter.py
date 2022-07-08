@@ -15,8 +15,10 @@ Deprecation path for renamed module.
 """
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The idaes.surrogate.plotting.sm_plotter module has been "
-                    "moved to idaes.core.surrogate.plotting.sm_plotter",
-                    version="2.0.0.alpha0")
+deprecation_warning(
+    "The idaes.surrogate.plotting.sm_plotter module has been "
+    "moved to idaes.core.surrogate.plotting.sm_plotter",
+    version="2.0.0.alpha0",
+)
 
 from idaes.core.surrogate.plotting.sm_plotter import *

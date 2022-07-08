@@ -187,25 +187,29 @@ class N2OAnalogy:
     @staticmethod
     def build_parameters(cobj, phase, h_type):
         cobj.lwm_coeff_1 = Var(
-                doc="N2O Analogy Henry's constant coefficient 1",
-                units=pyunits.dimensionless)
+            doc="N2O Analogy Henry's constant coefficient 1",
+            units=pyunits.dimensionless,
+        )
         set_param_from_config(cobj, param="lwm_coeff", index="1")
-        
+
         cobj.lwm_coeff_2 = Var(
-                doc="N2O Analogy Henry's constant coefficient 2",
-                units=pyunits.dimensionless)
+            doc="N2O Analogy Henry's constant coefficient 2",
+            units=pyunits.dimensionless,
+        )
         set_param_from_config(cobj, param="lwm_coeff", index="2")
-        
+
         cobj.lwm_coeff_3 = Var(
-                doc="N2O Analogy Henry's constant coefficient 3",
-                units=pyunits.dimensionless)
+            doc="N2O Analogy Henry's constant coefficient 3",
+            units=pyunits.dimensionless,
+        )
         set_param_from_config(cobj, param="lwm_coeff", index="3")
-        
+
         cobj.lwm_coeff_4 = Var(
-                doc="N2O Analogy Henry's constant coefficient 4",
-                units=pyunits.dimensionless)
+            doc="N2O Analogy Henry's constant coefficient 4",
+            units=pyunits.dimensionless,
+        )
         set_param_from_config(cobj, param="lwm_coeff", index="4")
-        
+
     @staticmethod
     def return_expression(b, p, j, T):
         cobj = b.params.get_component(j)
@@ -938,10 +942,10 @@ configuration = {
                 "mw": (0.04401, pyunits.kg / pyunits.mol),
                 "dh_abs_co2": -84000,
                 "lwm_coeff": {
-                    '1': 1.70981,
-                    '2': 0.03972,
-                    '3': -4.3e-4,
-                    '4': -2.20377,
+                    "1": 1.70981,
+                    "2": 0.03972,
+                    "3": -4.3e-4,
+                    "4": -2.20377,
                 },
                 "diffus_phase_comp_coeff": {
                     "1": 2.35e-6,
