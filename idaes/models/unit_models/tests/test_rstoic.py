@@ -261,7 +261,9 @@ class TestSaponification(object):
             "vars": {
                 "Reaction Extent [R1]": sapon.fs.unit.rate_reaction_extent[0, "R1"],
                 "Heat Duty": sapon.fs.unit.heat_duty[0],
-                "Pressure Change": sapon.fs.unit.deltaP[0]}}
+                "Pressure Change": sapon.fs.unit.deltaP[0],
+            }
+        }
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

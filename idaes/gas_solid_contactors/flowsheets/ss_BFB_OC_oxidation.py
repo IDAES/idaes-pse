@@ -15,9 +15,11 @@ Deprecation path for renamed model.
 """
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The gas_solid_contactors.flowsheets.ss_BFB_OC_oxidation module "
-                    "has been moved to "
-                    "idaes.models_extra.gas_solid_contactors.flowsheets.ss_BFB_OC_oxidation",
-                    version="2.0.0.alpha0")
+deprecation_warning(
+    "The gas_solid_contactors.flowsheets.ss_BFB_OC_oxidation module "
+    "has been moved to "
+    "idaes.models_extra.gas_solid_contactors.flowsheets.ss_BFB_OC_oxidation",
+    version="2.0.0.alpha0",
+)
 
 from idaes.models_extra.gas_solid_contactors.flowsheets.ss_BFB_OC_oxidation import *

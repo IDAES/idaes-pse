@@ -16,22 +16,24 @@ IDAES Data Management Framework (DMF)
 The DMF lets you save, search, and retrieve provenance related
 to your models.
 """
-__author__ = 'Dan Gunter'
+__author__ = "Dan Gunter"
 
 import logging
 
-from .dmfbase import DMF, DMFConfig           # noqa: F401
-from .dmfbase import create_configuration     # noqa: F401
-from .getver import get_version_info          # noqa: F401
-from .userapi import get_workspace            # noqa: F401
-from . import resource                        # noqa: F401
+from .dmfbase import DMF, DMFConfig  # noqa: F401
+from .dmfbase import create_configuration  # noqa: F401
+from .getver import get_version_info  # noqa: F401
+from .userapi import get_workspace  # noqa: F401
+from . import resource  # noqa: F401
+
 # DMF version is the same as IDAES version
-from idaes import __version__                 # noqa
+from idaes import __version__  # noqa
 
 
 # default log format
 h = logging.StreamHandler()
-h.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] '
-                                 '%(name)s: %(message)s'))
-logging.getLogger('idaes.core.dmf').addHandler(h)
-logging.getLogger('idaes.core.dmf').propagate = False
+h.setFormatter(
+    logging.Formatter("%(asctime)s [%(levelname)s] " "%(name)s: %(message)s")
+)
+logging.getLogger("idaes.core.dmf").addHandler(h)
+logging.getLogger("idaes.core.dmf").propagate = False

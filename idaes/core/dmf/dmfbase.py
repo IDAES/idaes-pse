@@ -1005,12 +1005,14 @@ class DMF(workspace.Workspace, HasTraits):
                         pathlib.Path(self.datafiles_path) / datafiles_dir / filename
                     )
             else:
-                filename_is_absolute = filename and (pathlib.Path(filename).is_absolute())
+                filename_is_absolute = filename and (
+                    pathlib.Path(filename).is_absolute()
+                )
                 if filename_is_absolute:
                     full_path = pathlib.Path(filename)
                 else:
                     full_path = pathlib.Path(datafiles_dir) / filename
-            assert full_path is not None   # we should have assigned this above
+            assert full_path is not None  # we should have assigned this above
             _log.debug(f"post-process resource ({r.id}: set full_path={full_path}")
             df_item["full_path"] = str(full_path)  # make sure it's JSON serializable
 
@@ -1021,4 +1023,3 @@ class DMF(workspace.Workspace, HasTraits):
     def resource_count(self) -> int:
         """How many resources have been added to this instance of the DMF."""
         return len(self._resources)
-
