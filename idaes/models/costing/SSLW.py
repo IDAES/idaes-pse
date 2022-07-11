@@ -1034,10 +1034,10 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                 "assumption should use the cost_pump method."
             )
         # isothermal or adiabatic compressors are too simple to cost
-        elif (
-            blk.unit_model.config.thermodynamic_assumption
-            != ThermodynamicAssumption.isentropic
-        ):
+        elif blk.unit_model.config.thermodynamic_assumption in [
+            ThermodynamicAssumption.isothermal,
+            ThermodynamicAssumption.adiabatic,
+        ]:
             raise ValueError(
                 f"{blk.unit_model.name} - pressure changers without isentropic "
                 "assumption are too simple to be costed."
