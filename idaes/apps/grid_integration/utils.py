@@ -11,6 +11,7 @@
 # license information.
 #################################################################################
 
+
 def convert_marginal_costs_to_actual_costs(power_marginal_cost_pairs):
 
     """

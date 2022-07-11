@@ -87,13 +87,17 @@ class Versioned:
                 try:
                     mod = importlib.import_module(module)
                 except ModuleNotFoundError as err:
-                    raise ModuleImportError(f"Could not import module '{module}': {err}")
+                    raise ModuleImportError(
+                        f"Could not import module '{module}': {err}"
+                    )
             self._mod = mod
             self._name = mod.__package__
         try:
             self._version = self._get_version()
         except PipError:
-            raise GetVersionError(f"Could not get version for '{self._name}' from pip command '{self.PIP}'")
+            raise GetVersionError(
+                f"Could not get version for '{self._name}' from pip command '{self.PIP}'"
+            )
         if self._version is None:
             raise GetVersionError(f"Could not get version for '{self._name}'")
         self._hash = None
@@ -152,8 +156,10 @@ class Versioned:
         try:
             version = pkg_resources.get_distribution(self._name).version
         except Exception as err:
-            _log.warning(f"Could not get version from pkg_resources.get_distribution; trying pip ({self.PIP}). "
-                         f"Error message was: {err}")
+            _log.warning(
+                f"Could not get version from pkg_resources.get_distribution; trying pip ({self.PIP}). "
+                f"Error message was: {err}"
+            )
             status, output = subprocess.getstatusoutput(f"{self.PIP} list")
             if status != 0:
                 raise PipError(f"Shell command '{self.PIP} list' failed")
@@ -210,7 +216,9 @@ class Versioned:
         raise ModuleImportError(f"Cannot get path for module: {self._mod}")
 
 
-def get_version_info(module: Union[ModuleType, str] = None, package: str = None) -> VersionInfo:
+def get_version_info(
+    module: Union[ModuleType, str] = None, package: str = None
+) -> VersionInfo:
     """Get version info for a module.
 
     This is simply syntactic sugar around the `Versioned` object.
@@ -223,7 +231,9 @@ def get_version_info(module: Union[ModuleType, str] = None, package: str = None)
         The same as :meth:`Versioned.get_info()` for the given module.
     """
     if package and module:
-        _log.warning("Since 'package' argument is given to get_version_info(), 'module' argument will be ignored")
+        _log.warning(
+            "Since 'package' argument is given to get_version_info(), 'module' argument will be ignored"
+        )
     vv = Versioned(module, package=package)
     return vv.get_info()
 
@@ -231,6 +241,7 @@ def get_version_info(module: Union[ModuleType, str] = None, package: str = None)
 # If run from command-line, provide hash of a module
 if __name__ == "__main__":
     import argparse
+
     logging.basicConfig()
     prs = argparse.ArgumentParser()
     prs.add_argument("module")
@@ -239,5 +250,5 @@ if __name__ == "__main__":
     try:
         info = get_version_info(args.module)
     except ModuleImportError:
-        info = get_version_info(package = args.module)
+        info = get_version_info(package=args.module)
     print(f"{args.module}: version={info.version} hash={info.git_hash}")

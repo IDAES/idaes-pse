@@ -44,8 +44,9 @@ import json
 
 # third-party
 import click
+
 # third-party slow
-nb_exporters= attempt_import("nbconvert.exporters")[0]
+nb_exporters = attempt_import("nbconvert.exporters")[0]
 nb_writers = attempt_import("nbconvert.writers")[0]
 traitlets_config = attempt_import("traitlets.config")[0]
 nbformat = attempt_import("nbformat")[0]
@@ -86,21 +87,19 @@ g_tempdir, g_egg = None, None
 
 
 class DownloadError(Exception):
-    """Used for errors downloading the release files.
-    """
+    """Used for errors downloading the release files."""
 
     pass
 
 
 class CopyError(Exception):
-    """Used for errors copying files.
-    """
+    """Used for errors copying files."""
+
     pass
 
 
 class InstallError(Exception):
-    """Used for errors installing the source as a Python package.
-    """
+    """Used for errors installing the source as a Python package."""
 
     pass
 
@@ -112,21 +111,27 @@ class GithubError(Exception):
 Release = namedtuple("Release", ["date", "tag", "info"])
 
 
-@cb.command(
-    name="get-examples", help="Fetch example scripts and Jupyter Notebooks."
-)
+@cb.command(name="get-examples", help="Fetch example scripts and Jupyter Notebooks.")
 @click.option(
-    "--dir", "-d", "directory", help="installation target directory", default="examples",
+    "--dir",
+    "-d",
+    "directory",
+    help="installation target directory",
+    default="examples",
     type=str,
 )
 @click.option(
-    "--local", "local_dir",
+    "--local",
+    "local_dir",
     help="For developers: instead of downloading, copy from an "
-         "idaes-examples repository on local disk"
+    "idaes-examples repository on local disk",
 )
 @click.option(
-    "--no-install", "-I", "no_install", help="Do *not* install examples into 'idaes_examples' package",
-    is_flag=True
+    "--no-install",
+    "-I",
+    "no_install",
+    help="Do *not* install examples into 'idaes_examples' package",
+    is_flag=True,
 )
 @click.option(
     "--list",
@@ -136,17 +141,13 @@ Release = namedtuple("Release", ["date", "tag", "info"])
     is_flag=True,
 )
 @click.option(
-    "--no-download",
-    "-N",
-    "no_download",
-    help="Do not download anything",
-    is_flag=True
+    "--no-download", "-N", "no_download", help="Do not download anything", is_flag=True
 )
 @click.option(
     "--unstable",
     "-U",
     help="Allow and list unstable/pre-release versions",
-    is_flag=True
+    is_flag=True,
 )
 @click.option(
     "--version",
@@ -155,10 +156,10 @@ Release = namedtuple("Release", ["date", "tag", "info"])
     default=None,
     show_default=False,
 )
-def get_examples(directory, no_install, list_releases, no_download, version,
-                 unstable, local_dir):
-    """Get the examples from Github and put them in a local directory.
-    """
+def get_examples(
+    directory, no_install, list_releases, no_download, version, unstable, local_dir
+):
+    """Get the examples from Github and put them in a local directory."""
     # list-releases mode
     if list_releases:
         try:
@@ -180,21 +181,26 @@ def get_examples(directory, no_install, list_releases, no_download, version,
         click.echo("Skip download")
     else:  # download
         if target_dir.exists():
-            click.echo(f"Target directory '{target_dir}' already exists. Please "
-                       f"remove it, or choose a different directory.")
+            click.echo(
+                f"Target directory '{target_dir}' already exists. Please "
+                f"remove it, or choose a different directory."
+            )
             sys.exit(-1)
         if local_dir is not None:
             click.echo(f"Copying from local directory: {local_dir}")
             local_path = Path(local_dir)
             if not local_path.exists() or not local_path.is_dir():
-                click.echo(f"Cannot copy from local directory '{local_dir}': "
-                           f"directory does not exist, or not a directory")
+                click.echo(
+                    f"Cannot copy from local directory '{local_dir}': "
+                    f"directory does not exist, or not a directory"
+                )
                 sys.exit(-1)
             try:
                 copy_contents(target_dir, local_path)
             except CopyError as err:
-                click.echo(f"Failed to copy from '{local_dir}' to '{target_dir}': "
-                           f"{err}")
+                click.echo(
+                    f"Failed to copy from '{local_dir}' to '{target_dir}': " f"{err}"
+                )
                 sys.exit(-1)
             ex_version = version if version else PKG_VERSION
         else:
@@ -207,8 +213,10 @@ def get_examples(directory, no_install, list_releases, no_download, version,
             if version is not None:
                 stable_ver = re.match(r".*-\w+$", version) is None
                 if not stable_ver and not unstable:
-                    click.echo(f"Cannot download unstable version {version} unless you add "
-                               f"the -U/--unstable flag")
+                    click.echo(
+                        f"Cannot download unstable version {version} unless you add "
+                        f"the -U/--unstable flag"
+                    )
                     sys.exit(-1)
             # set version
             if version is None:
@@ -218,16 +226,20 @@ def get_examples(directory, no_install, list_releases, no_download, version,
             # give an error if selected version does not exist
             if ex_version not in [r.tag for r in releases]:
                 if version is None:
-                    click.echo(f"Internal Error: Could not find an examples release\n"
-                               f"matching IDAES version {PKG_VERSION}\n"
-                               f"You can manually pick  version with '-V/--version'\n"
-                               f"or install from a local directory with '--local'.\n"
-                               f"Use '-l/--list-releases' to see all versions.\n"
-                               f"{how_to_report_an_error()}\n")
+                    click.echo(
+                        f"Internal Error: Could not find an examples release\n"
+                        f"matching IDAES version {PKG_VERSION}\n"
+                        f"You can manually pick  version with '-V/--version'\n"
+                        f"or install from a local directory with '--local'.\n"
+                        f"Use '-l/--list-releases' to see all versions.\n"
+                        f"{how_to_report_an_error()}\n"
+                    )
                 else:
-                    click.echo(f"Could not find an examples release matching IDAES version "
-                               f"{version}.\n Use -l/--list-releases to see all "
-                               f"available versions.")
+                    click.echo(
+                        f"Could not find an examples release matching IDAES version "
+                        f"{version}.\n Use -l/--list-releases to see all "
+                        f"available versions."
+                    )
                 sys.exit(-1)
             click.echo("Downloading...")
             try:
@@ -248,9 +260,11 @@ def get_examples(directory, no_install, list_releases, no_download, version,
                 click.echo(f"Target directory '{target_dir}' does not exist")
                 sys.exit(-1)
             else:
-                click.echo(f"Internal error: After download, directory '{target_dir}'\n"
-                           f"does not exist.\n"
-                           f"{how_to_report_an_error()}")
+                click.echo(
+                    f"Internal error: After download, directory '{target_dir}'\n"
+                    f"does not exist.\n"
+                    f"{how_to_report_an_error()}"
+                )
                 sys.exit(-1)
         click.echo("Installing...")
         try:
@@ -270,7 +284,7 @@ def get_examples(directory, no_install, list_releases, no_download, version,
     clean_up_temporary_files()
 
     # Done
-    print_summary( ex_version, target_dir, not no_install)
+    print_summary(ex_version, target_dir, not no_install)
 
 
 def print_summary(version, dirname, installed):
@@ -295,41 +309,45 @@ def get_examples_version(idaes_version: str):
         Examples version, or if there is no match, return None.
     """
     # Fetch the idaes:examples version mapping from Github
-    compat_file = 'idaes-compatibility.json'
+    compat_file = "idaes-compatibility.json"
     url = f"{GITHUB_API}/repos/{REPO_ORG}/{REPO_NAME}/contents/{compat_file}"
-    headers = {'Accept': 'application/vnd.github.v3.raw'}
-    _log.debug(f'About to call requests.get({url}, {headers})')
+    headers = {"Accept": "application/vnd.github.v3.raw"}
+    _log.debug(f"About to call requests.get({url}, {headers})")
     res = requests.get(url, headers=headers)
     if not res.ok:
-        _log.debug(f'Problem getting mapping file: {res.json()}')
+        _log.debug(f"Problem getting mapping file: {res.json()}")
         raise DownloadError(res.json())
 
     try:
-        compat_mapping = json.loads(res.text)['mapping']
+        compat_mapping = json.loads(res.text)["mapping"]
     except KeyError:
         # return the latest version instead
-        _log.warning('Ill-formed compatibility mapping file for examples repository:')
-        _log.debug(f'compat_mapping: {res.text}')
-        _log.info('Defaulting to latest released version of examples.')
+        _log.warning("Ill-formed compatibility mapping file for examples repository:")
+        _log.debug(f"compat_mapping: {res.text}")
+        _log.info("Defaulting to latest released version of examples.")
         return None
 
     idaes_version_num = idaes_version
-    version_numbers = idaes_version.split('.')
+    version_numbers = idaes_version.split(".")
     if len(version_numbers) > 3:
-        idaes_version_num = '.'.join(version_numbers[:3])
-        click.echo(f"Warning: non-release version of IDAES detected. "
-                   f"Using IDAES {idaes_version_num} as reference; "
-                   f"examples version compatibility is not guaranteed.")
+        idaes_version_num = ".".join(version_numbers[:3])
+        click.echo(
+            f"Warning: non-release version of IDAES detected. "
+            f"Using IDAES {idaes_version_num} as reference; "
+            f"examples version compatibility is not guaranteed."
+        )
 
     try:
         examples_version = compat_mapping[idaes_version_num]
     except KeyError:
         # return the latest version instead, as above
-        _log.warning('IDAES version not found in compatibility mapping file. \
-                Defaulting to latest released version of examples.')
+        _log.warning(
+            "IDAES version not found in compatibility mapping file. \
+                Defaulting to latest released version of examples."
+        )
         return None
 
-    _log.debug(f'get_examples_version({idaes_version}: {examples_version}')
+    _log.debug(f"get_examples_version({idaes_version}: {examples_version}")
 
     return examples_version
 
@@ -341,8 +359,10 @@ def download(target_dir: Path, version: str):
     """
     # check target directory
     if target_dir.exists():
-        click.echo(f"Directory '{target_dir}' exists. Please move or delete and "
-                   f"try this command again")
+        click.echo(
+            f"Directory '{target_dir}' exists. Please move or delete and "
+            f"try this command again"
+        )
         raise DownloadError("directory exists")
     # download
     try:
@@ -353,8 +373,7 @@ def download(target_dir: Path, version: str):
 
 
 def is_illegal_dir(d: Path):
-    """Refuse to remove directories for some situations, for safety.
-    """
+    """Refuse to remove directories for some situations, for safety."""
     if (d / ".git").exists():
         return ".git file found"
     if d.absolute() == Path.home().absolute():
@@ -460,8 +479,7 @@ def clean_up_temporary_files():
 
 
 def archive_file_url(version, org=REPO_ORG, repo=REPO_NAME):
-    """Build & return URL for a given release version.
-    """
+    """Build & return URL for a given release version."""
     return f"{GITHUB}/{org}/{repo}/archive/{version}.zip"
 
 
@@ -497,10 +515,12 @@ def check_github_response(data, headers):
             wait_min = int((reset_ts - now_ts) // 60) + 1
             reset_dt = datetime.fromtimestamp(reset_ts)
             datestr = reset_dt.astimezone(tzinfo).isoformat()
-            raise GithubError(f"API rate limit exceeded.\n"
-                              f"You will need to wait {wait_min} minutes,"
-                              f" until {datestr}, to try again from "
-                              f"this computer.")
+            raise GithubError(
+                f"API rate limit exceeded.\n"
+                f"You will need to wait {wait_min} minutes,"
+                f" until {datestr}, to try again from "
+                f"this computer."
+            )
         else:
             raise GithubError(f"Error connecting to Github: {data['message']}")
     else:
@@ -515,8 +535,10 @@ def print_releases(releases: List[Release], unstable):
         if unstable:
             print("No releases found")
         else:
-            print("No stable releases found. Add -U/--unstable to also look "
-                  "for pre-releases.")
+            print(
+                "No stable releases found. Add -U/--unstable to also look "
+                "for pre-releases."
+            )
         return
     # determine column widths
     widths = [4, 7, 7]  # widths of column titles: date,version,details
@@ -546,7 +568,8 @@ def install_src(version, target_dir):
     When done, name the directory back to 'src', and remove '__init__.py' files.
     Then clean up whatever cruft is left behind..
     """
-    from setuptools import setup, find_packages # import here due to slowness
+    from setuptools import setup, find_packages  # import here due to slowness
+
     global g_egg
     orig_dir = Path(os.curdir).absolute()
     target_dir = Path(target_dir.absolute())
@@ -572,9 +595,10 @@ def install_src(version, target_dir):
     _log.info(f"rename {target_dir} -> {examples_dir}")
     shutil.move(target_dir, examples_dir)
     # if there is a 'build' directory, move it aside
-    build_dir = root_dir / 'build'
+    build_dir = root_dir / "build"
     if build_dir.exists():
         from uuid import uuid1
+
         random_letters = str(uuid1())
         moved_build_dir = f"{build_dir}.{random_letters}"
         _log.debug(f"move existing build dir to {moved_build_dir}")
@@ -597,7 +621,7 @@ def install_src(version, target_dir):
         # description='IDAES examples',
         packages=packages,
         python_requires=">=3.5,  <4",
-        zip_safe=False
+        zip_safe=False,
     )
     # restore stdout
     sys.stdout = orig_stdout
@@ -652,8 +676,7 @@ def find_python_directories(target_dir: Path) -> List[Path]:
 
 
 def find_notebook_files(target_dir: Path) -> List[Path]:
-    """Find all files ending in ".ipynb", at or below target_dir.
-    """
+    """Find all files ending in ".ipynb", at or below target_dir."""
     return list(target_dir.rglob("*.ipynb"))
 
 
@@ -698,7 +721,10 @@ def strip_tags(nb: Path) -> bool:
     if nb_name.lower().endswith("_solution_testing"):
         pre = nb_name[:-17]
         names = [f"{pre}_solution.ipynb", f"{pre}_exercise.ipynb"]
-        tags_to_strip = [(REMOVE_CELL_TAG, EXERCISE_CELL_TAG), (REMOVE_CELL_TAG, SOLUTION_CELL_TAG)]
+        tags_to_strip = [
+            (REMOVE_CELL_TAG, EXERCISE_CELL_TAG),
+            (REMOVE_CELL_TAG, SOLUTION_CELL_TAG),
+        ]
     # - check for case (2), _testing.ipynb
     elif nb_name.lower().endswith("_testing"):
         pre = nb_name[:-8]
@@ -725,8 +751,9 @@ def strip_tags(nb: Path) -> bool:
             "nbconvert.preprocessors.TagRemovePreprocessor"
         ]
         # Convert from Notebook format to Notebook format, stripping tags
-        (body, resources) = nb_exporters.NotebookExporter(
-            config=conf).from_filename(str(nb))
+        (body, resources) = nb_exporters.NotebookExporter(config=conf).from_filename(
+            str(nb)
+        )
         # Set up output destination
         wrt = nb_writers.FilesWriter()
         wrt.build_directory = str(target_nb.parent)
@@ -734,6 +761,7 @@ def strip_tags(nb: Path) -> bool:
         wrt.write(body, resources, notebook_name=target_nb.stem)
 
     return True
+
 
 def has_tagged_cells(nb: Path):
     """Quickly check whether this notebook has any cells with the "special" tag.
