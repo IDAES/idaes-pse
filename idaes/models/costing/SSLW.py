@@ -1024,13 +1024,24 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                 "equal to True."
             )
         # compressor = True, and using non-isentropic assumption
-        # (costing not needed)
-        elif hasattr(blk.unit_model.config, "thermodynamic_assumption"):
-            if blk.unit_model.config.thermodynamic_assumption.name != "isentropic":
-                raise ValueError(
-                    f"{blk.unit_model.name} - pressure changers without isentropic "
-                    "assumption are too simple to be costed."
-                )
+        # pumps should use the cost_pump method
+        if (
+            blk.unit_model.config.thermodynamic_assumption
+            == ThermodynamicAssumption.pump
+        ):
+            raise ValueError(
+                f"{blk.unit_model.name} - pressure changers with the pump "
+                "assumption should use the cost_pump method."
+            )
+        # isothermal or adiabatic compressors are too simple to cost
+        elif (
+            blk.unit_model.config.thermodynamic_assumption
+            != ThermodynamicAssumption.isentropic
+        ):
+            raise ValueError(
+                f"{blk.unit_model.name} - pressure changers without isentropic "
+                "assumption are too simple to be costed."
+            )
 
         # Build generic costing variables
         _make_common_vars(blk, integer)

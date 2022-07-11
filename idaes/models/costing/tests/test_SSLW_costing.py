@@ -616,6 +616,11 @@ def test_cost_pump_reciprocating(model, material_type, motor_type):
 @pytest.mark.parametrize("material_type", CompressorMaterial)
 def test_cost_compressor(model, compressor_type, drive_type, material_type):
     model.fs.unit.config.declare("compressor", ConfigValue(default=True))
+    model.fs.unit.config.declare(
+        "thermodynamic_assumption",
+        ConfigValue(default=ThermodynamicAssumption.isothermal),
+    )
+    model.fs.unit.config.thermodynamic_assumption = ThermodynamicAssumption.isentropic
     model.fs.unit.work_mechanical = Param(
         [0], initialize=101410.4, units=pyunits.J / pyunits.s
     )
@@ -894,6 +899,25 @@ class TestMapping:
         )
         assert model.fs.unit.costing.drive_factor.value == 1
         assert model.fs.unit.costing.material_factor.value == 2.5
+
+    def test_pump_compressor(self, model):
+        # Test exception for non-supported compressor flags
+        model.fs.unit = Compressor(
+            default={
+                "property_package": model.fs.pparams,
+                "thermodynamic_assumption": ThermodynamicAssumption.pump,
+            }
+        )
+
+        expected_string = (
+            "fs.unit - pressure changers with the pump "
+            "assumption should use the cost_pump method."
+        )
+
+        with pytest.raises(ValueError, match=expected_string):
+            model.fs.unit.costing = UnitModelCostingBlock(
+                default={"flowsheet_costing_block": model.fs.costing}
+            )
 
     def test_isothermal_compressor(self, model):
         # Test exception for non-supported compressor flags
