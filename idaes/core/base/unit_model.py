@@ -244,7 +244,9 @@ Must be True if dynamic = True,
                     elif block._flow_direction == FlowDirection.backward:
                         _idx = block.length_domain.last()
 
-                    p = sblock.build_port(self, name, doc, subset=sblock[:, _idx])
+                    p = sblock.build_port(
+                        self, name, doc, slice_index=(slice(None), _idx)
+                    )
 
                 except AttributeError:
                     raise ConfigurationError(
@@ -329,7 +331,9 @@ Must be True if dynamic = True,
                     elif block._flow_direction == FlowDirection.forward:
                         _idx = block.length_domain.last()
 
-                    p = sblock.build_port(self, name, doc, subset=sblock[:, _idx])
+                    p = sblock.build_port(
+                        self, name, doc, slice_index=(slice(None), _idx)
+                    )
 
                 except AttributeError:
                     raise ConfigurationError(

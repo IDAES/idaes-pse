@@ -505,7 +505,22 @@ class StateBlock(ProcessBlock):
 
         ostream.write("\n" + "=" * max_str_length + "\n")
 
-    def build_port(self, target_block, port_name, doc=None, subset=None):
+    def get_port_reference_name(self, component_name, port_name):
+        """
+        Get the standard name of a "port reference", the component
+        accessed on the port by "port_name.component_name".
+
+        """
+        return "_%s_%s_ref" % (component_name, port_name)
+
+    def build_port(
+        self,
+        target_block,
+        port_name,
+        doc=None,
+        slice_index=None,
+        index=None,
+    ):
         """
         Constructs a Port based on this StateBlock attached to the target block.
 
@@ -513,36 +528,40 @@ class StateBlock(ProcessBlock):
             target_block - block to which Port should be attached
             port_name - name to use for Port
             doc - doc string or Prot object
-            subset - slicer representing a subset of indices of StateBlock which
-                should be included in Port
+            slice_index - Slice index (e.g. (slice(None), 0.0) that will be
+                used to index self when constructing port references.
 
         Returns:
             Port object
         """
-        if subset is None:
-            subset = self[...]
+        if slice_index is None:
+            slice_index = Ellipsis
+        if index is None:
+            index = self.index_set().first()
 
         # Create empty Port
         p = Port(doc=doc)
+        # Add port to the target block
         setattr(target_block, port_name, p)
 
         # Get dict of Port members and names
         # Need to get a representative member of StateBlockDatas
-        i0 = self.index_set().first()
-        member_list = self[i0].define_port_members()
+        port_member_dict = self[index].define_port_members()
 
         # Create References for port members
-        for s in member_list:
-            if not member_list[s].is_indexed():
-                slicer = subset.component(member_list[s].local_name)
+        for name, component in port_member_dict.items():
+            if not component.is_indexed():
+                slicer = self[slice_index].component(component.local_name)
             else:
-                slicer = subset.component(member_list[s].local_name)[...]
+                slicer = self[slice_index].component(component.local_name)[...]
 
-            r = Reference(slicer)
-            setattr(target_block, "_" + s + "_" + port_name + "_ref", r)
+            ref = Reference(slicer)
+            ref_name = self.get_port_reference_name(name, port_name)
+            # Add reference to the target block as well
+            setattr(target_block, ref_name, ref)
 
             # Add Reference to Port
-            p.add(r, s)
+            p.add(ref, name)
 
         return p
 
