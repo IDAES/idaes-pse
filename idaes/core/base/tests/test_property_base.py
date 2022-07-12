@@ -537,7 +537,7 @@ def test_StateBlock_build_port_2index_subset():
         # add a scalar var to all state blocks
         sbd.scalar_var = Var(initialize=1)
 
-        # Add a nindexed block to all state blocks
+        # Add an indexed block to all state blocks
         sbd.indexed_var = Var([5, 6], initialize=42)
 
         # Set define_port_members method

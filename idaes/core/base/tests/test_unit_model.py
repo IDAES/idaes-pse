@@ -598,7 +598,7 @@ def test_add_outlet_port_CV0D_part_args():
     with pytest.raises(
         ConfigurationError,
         match="fs.u add_outlet_port was called without a block "
-        "argument  but a name argument was provided. Either "
+        "argument but a name argument was provided. Either "
         "both a name and a block must be provided or neither.",
     ):
         m.fs.u.add_outlet_port(name="foo")

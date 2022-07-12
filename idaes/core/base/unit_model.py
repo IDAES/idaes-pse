@@ -285,7 +285,7 @@ Must be True if dynamic = True,
             if name is not None:
                 raise ConfigurationError(
                     "{} add_outlet_port was called without a block "
-                    "argument  but a name argument was provided. Either "
+                    "argument but a name argument was provided. Either "
                     "both a name and a block must be provided or neither.".format(
                         self.name
                     )
