@@ -15,6 +15,9 @@ from pyomo.common.timing import TicTocTimer
 from idaes.core.solvers import get_solver
 from idaes.core.util import from_json, to_json
 import matplotlib.pyplot as plt
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class MultiPeriodModel(pyo.ConcreteModel):
@@ -47,7 +50,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
         initialization_options={},
         unfix_dof_options={},
         solver=None,
-        verbose=False
+        outlvl=logging.WARNING
     ):  # , state_variable_func=None):
 
         super().__init__()
@@ -92,13 +95,16 @@ class MultiPeriodModel(pyo.ConcreteModel):
             if solver is None:
                 solver = get_solver()
 
+            logging.basicConfig(level=outlvl)
+            _logger = logging.getLogger(__name__)
+
             # Build the stochastic multiperiod optimization model
             self.build_stochastic_multiperiod(initialization_func,
                                               unfix_dof_func,
                                               flowsheet_options,
                                               initialization_options,
                                               unfix_dof_options,
-                                              solver, verbose)
+                                              solver)
 
         # optional initialzation features
         # self.initialization_points = None   #library of possible initial points
@@ -245,26 +251,10 @@ class MultiPeriodModel(pyo.ConcreteModel):
                                      flowsheet_options,
                                      initialization_options,
                                      unfix_dof_options,
-                                     solver, verbose):
+                                     solver):
         """
         This function constructs the stochastic multiperiod optimization problem
         """
-
-        def _build_scenario_model(m):
-            # Get reference to the object containing the set definitions
-            set_defs = m.parent_block()
-            if set_defs is None:
-                set_defs = m
-
-            m.period = pyo.Block(set_defs.set_period)
-
-            for i in m.period:
-                if verbose:
-                    print(f"...Constructing the flowsheet model for {m.period[i].name}")
-
-                set_defs.create_process_model(m.period[i], **flowsheet_options)
-                        
-
         # Create set of periods:
         multiple_days = self._multiple_days
         multiyear = self._multiyear
@@ -287,6 +277,68 @@ class MultiPeriodModel(pyo.ConcreteModel):
 
         self.set_period = pyo.Set(initialize=set_period)
 
+        # Define a function to create a multiperiod model for one scenario
+        def _build_scenario_model(m):
+            m.period = pyo.Block(self.set_period)
+
+            for i in m.period:
+                _logger.info(f"...Constructing the flowsheet model for {m.period[i].name}")
+                self.create_process_model(m.period[i], **flowsheet_options)
+
+            # link blocks together. loop over every time index except the last one
+            if self.get_linking_variable_pairs is None:
+                _logger.warning(f"linking_variable_func is not provided, so variables across"
+                                f" time periods are not linked.")
+                return
+
+            # TODO: Instead of accessing the constraints as 
+            # m.link_constraints[t, d, y].link_constraints[1], add a Reference for easy access.
+            if multiyear and multiple_days:
+                m.link_constraints = pyo.Block(self.set_time.data()[:-1], 
+                                               self.set_days, 
+                                               self.set_years)
+
+                for y in self.set_years:
+                    for d in self.set_days:
+                        for t in self.set_time.data()[:-1]:
+                            link_variable_pairs = self.get_linking_variable_pairs(
+                                m.period[t, d, y], m.period[t + 1, d, y])
+                            self._create_linking_constraints(m.link_constraints[t, d, y], link_variable_pairs)
+
+            elif multiyear and not multiple_days:
+                m.link_constraints = pyo.Block(self.set_time.data()[:-1],
+                                               self.set_years)
+
+                for y in self.set_years:
+                    for t in self.set_time.data()[:-1]:
+                        link_variable_pairs = self.get_linking_variable_pairs(
+                            m.period[t, y], m.period[t + 1, y])
+                        self._create_linking_constraints(m.link_constraints[t, y], link_variable_pairs)
+
+            elif not multiyear and multiple_days:
+                m.link_constraints = pyo.Block(self.set_time.data()[:-1],
+                                               self.set_days)
+
+                for d in self.set_days:
+                    for t in self.set_time.data()[:-1]:
+                        link_variable_pairs = self.get_linking_variable_pairs(
+                            m.period[t, d], m.period[t + 1, d])
+                        self._create_linking_constraints(m.link_constraints[t, d], link_variable_pairs)
+
+            else:
+                m.link_constraints = pyo.Block(self.set_time.data()[:-1])
+
+                for t in self.set_time.data()[:-1]:
+                    link_variable_pairs = self.get_linking_variable_pairs(
+                        m.period[t], m.period[t + 1])
+                    self._create_linking_constraints(m.link_constraints[t], link_variable_pairs)
+
+            # Check if a method for periodic constraints is given
+            if self.get_periodic_variable_pairs is not None:
+                _logger.warning(f"A method is provided for get_periodic_variable_pairs. " 
+                                f"build_stochastic_multiperiod method does not support periodic "
+                                f"constraints, so the user needs to add them manually.")
+
         # Begin the formulation of the multiperiod optimization problem 
         timer = TicTocTimer()  # Create timer object
         timer.toc("Beginning the formulation of the multiperiod optimization problem.")
@@ -295,8 +347,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
             self.scenario = pyo.Block(self.set_scenarios)
 
             for i in self.scenario:
-                if verbose:
-                    print(f"Constructing the model for scenario {i}")
+                _logger.info(f"Constructing the model for scenario {i}")
                 _build_scenario_model(self.scenario[i])
 
         else:
@@ -308,8 +359,8 @@ class MultiPeriodModel(pyo.ConcreteModel):
         Initialization routine
         """
         if initialization_func is None:
-            print("*** WARNING *** Initialization function is not provided. "
-                  "Returning the multiperiod model without initialization.")
+            _logger.warning(f"Initialization function is not provided. "
+                            f"Returning the multiperiod model without initialization.")
             return
 
         blk = pyo.ConcreteModel()
@@ -321,8 +372,8 @@ class MultiPeriodModel(pyo.ConcreteModel):
             assert pyo.check_optimal_termination(result)
 
         except AssertionError:
-            print(f"Flowsheet did not converge to optimality "
-                  f"after fixing the degrees of freedom.")
+            _logger.error(f"Flowsheet did not converge to optimality "
+                          f"after fixing the degrees of freedom.")
             raise
 
         # Store the initialized model in `init_model` object
@@ -345,8 +396,8 @@ class MultiPeriodModel(pyo.ConcreteModel):
         Unfix the degrees of freedom in each period model for optimization model
         """
         if unfix_dof_func is None:
-            print("*** WARNING *** unfix_dof function is not provided. "
-                  "Returning the model without unfixing degrees of freedom")
+            _logger.warning(f"unfix_dof function is not provided. "
+                            f"Returning the model without unfixing degrees of freedom")
             return
 
         if self._stochastic_model:
