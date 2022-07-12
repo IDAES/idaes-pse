@@ -505,7 +505,14 @@ class StateBlock(ProcessBlock):
 
         ostream.write("\n" + "=" * max_str_length + "\n")
 
-    def build_port(self, target_block, port_name, doc=None, subset=None):
+    def build_port(
+        self,
+        target_block,
+        port_name,
+        doc=None,
+        subset=None,
+        index=None,
+    ):
         """
         Constructs a Port based on this StateBlock attached to the target block.
 
@@ -521,6 +528,8 @@ class StateBlock(ProcessBlock):
         """
         if subset is None:
             subset = self[...]
+        if index is None:
+            index = self.index_set().first()
 
         # Create empty Port
         p = Port(doc=doc)
@@ -528,8 +537,7 @@ class StateBlock(ProcessBlock):
 
         # Get dict of Port members and names
         # Need to get a representative member of StateBlockDatas
-        i0 = self.index_set().first()
-        member_list = self[i0].define_port_members()
+        member_list = self[index].define_port_members()
 
         # Create References for port members
         for s in member_list:
