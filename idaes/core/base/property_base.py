@@ -537,14 +537,14 @@ class StateBlock(ProcessBlock):
 
         # Get dict of Port members and names
         # Need to get a representative member of StateBlockDatas
-        member_list = self[index].define_port_members()
+        port_member_dict = self[index].define_port_members()
 
         # Create References for port members
-        for s in member_list:
-            if not member_list[s].is_indexed():
-                slicer = subset.component(member_list[s].local_name)
+        for s in port_member_dict:
+            if not port_member_dict[s].is_indexed():
+                slicer = subset.component(port_member_dict[s].local_name)
             else:
-                slicer = subset.component(member_list[s].local_name)[...]
+                slicer = subset.component(port_member_dict[s].local_name)[...]
 
             r = Reference(slicer)
             setattr(target_block, "_" + s + "_" + port_name + "_ref", r)
