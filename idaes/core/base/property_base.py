@@ -510,7 +510,7 @@ class StateBlock(ProcessBlock):
         target_block,
         port_name,
         doc=None,
-        subset=None,
+        slice_index=None,
         index=None,
     ):
         """
@@ -520,14 +520,14 @@ class StateBlock(ProcessBlock):
             target_block - block to which Port should be attached
             port_name - name to use for Port
             doc - doc string or Prot object
-            subset - slicer representing a subset of indices of StateBlock which
-                should be included in Port
+            slice_index - Slice index (e.g. (slice(None), 0.0) that will be
+                used to index self when constructing port references.
 
         Returns:
             Port object
         """
-        if subset is None:
-            subset = self[...]
+        if slice_index is None:
+            slice_index = Ellipsis
         if index is None:
             index = self.index_set().first()
 
@@ -542,9 +542,13 @@ class StateBlock(ProcessBlock):
         # Create References for port members
         for s in port_member_dict:
             if not port_member_dict[s].is_indexed():
-                slicer = subset.component(port_member_dict[s].local_name)
+                slicer = self[slice_index].component(
+                    port_member_dict[s].local_name
+                )
             else:
-                slicer = subset.component(port_member_dict[s].local_name)[...]
+                slicer = self[slice_index].component(
+                    port_member_dict[s].local_name
+                )[...]
 
             r = Reference(slicer)
             setattr(target_block, "_" + s + "_" + port_name + "_ref", r)

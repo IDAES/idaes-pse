@@ -548,7 +548,7 @@ def test_StateBlock_build_port_2index_subset():
 
     # Build the Port
     m.state_block.build_port(
-        m.test_block, "test_port", "test_doc", subset=m.state_block[:, 10]
+        m.test_block, "test_port", "test_doc", slice_index=(slice(None), 10)
     )
 
     # Check References were constructed on test block
