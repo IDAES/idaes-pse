@@ -505,6 +505,14 @@ class StateBlock(ProcessBlock):
 
         ostream.write("\n" + "=" * max_str_length + "\n")
 
+    def get_port_reference_name(self, component_name, port_name):
+        """
+        Get the standard name of a "port reference", the component
+        accessed on the port by "port_name.component_name".
+
+        """
+        return "_%s_%s_ref" % (component_name, port_name)
+
     def build_port(
         self,
         target_block,
@@ -533,6 +541,7 @@ class StateBlock(ProcessBlock):
 
         # Create empty Port
         p = Port(doc=doc)
+        # Add port to the target block
         setattr(target_block, port_name, p)
 
         # Get dict of Port members and names
@@ -540,21 +549,19 @@ class StateBlock(ProcessBlock):
         port_member_dict = self[index].define_port_members()
 
         # Create References for port members
-        for s in port_member_dict:
-            if not port_member_dict[s].is_indexed():
-                slicer = self[slice_index].component(
-                    port_member_dict[s].local_name
-                )
+        for name, component in port_member_dict.items():
+            if not component.is_indexed():
+                slicer = self[slice_index].component(component.local_name)
             else:
-                slicer = self[slice_index].component(
-                    port_member_dict[s].local_name
-                )[...]
+                slicer = self[slice_index].component(component.local_name)[...]
 
-            r = Reference(slicer)
-            setattr(target_block, "_" + s + "_" + port_name + "_ref", r)
+            ref = Reference(slicer)
+            ref_name = self.get_port_reference_name(name, port_name)
+            # Add reference to the target block as well
+            setattr(target_block, ref_name, ref)
 
             # Add Reference to Port
-            p.add(r, s)
+            p.add(ref, name)
 
         return p
 
