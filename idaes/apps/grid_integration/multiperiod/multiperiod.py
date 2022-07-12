@@ -50,7 +50,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
         initialization_options={},
         unfix_dof_options={},
         solver=None,
-        outlvl=logging.WARNING
+        outlvl=logging.WARNING,
     ):  # , state_variable_func=None):
 
         super().__init__()
@@ -67,7 +67,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
         self._pyomo_model = None
         self._first_active_time = None
 
-        # Create sets 
+        # Create sets
         if use_stochastic_build:
             self.set_time = pyo.RangeSet(n_time_points)
 
@@ -99,12 +99,14 @@ class MultiPeriodModel(pyo.ConcreteModel):
             _logger = logging.getLogger(__name__)
 
             # Build the stochastic multiperiod optimization model
-            self.build_stochastic_multiperiod(initialization_func,
-                                              unfix_dof_func,
-                                              flowsheet_options,
-                                              initialization_options,
-                                              unfix_dof_options,
-                                              solver)
+            self.build_stochastic_multiperiod(
+                initialization_func,
+                unfix_dof_func,
+                flowsheet_options,
+                initialization_options,
+                unfix_dof_options,
+                solver,
+            )
 
         # optional initialzation features
         # self.initialization_points = None   #library of possible initial points
@@ -245,13 +247,15 @@ class MultiPeriodModel(pyo.ConcreteModel):
         for (i, pair) in enumerate(variable_pairs):
             b1.periodic_constraints[i] = pair[0] == pair[1]
 
-    def build_stochastic_multiperiod(self, 
-                                     initialization_func,
-                                     unfix_dof_func,
-                                     flowsheet_options,
-                                     initialization_options,
-                                     unfix_dof_options,
-                                     solver):
+    def build_stochastic_multiperiod(
+        self,
+        initialization_func,
+        unfix_dof_func,
+        flowsheet_options,
+        initialization_options,
+        unfix_dof_options,
+        solver,
+    ):
         """
         This function constructs the stochastic multiperiod optimization problem
         """
@@ -261,13 +265,15 @@ class MultiPeriodModel(pyo.ConcreteModel):
 
         # Construct the set of time periods
         if multiyear and multiple_days:
-            set_period = [(t, d, y) for y in self.set_years 
-                                    for d in self.set_days 
-                                    for t in self.set_time]
+            set_period = [
+                (t, d, y)
+                for y in self.set_years
+                for d in self.set_days
+                for t in self.set_time
+            ]
 
         elif multiyear and not multiple_days:
-            set_period = [(t, y) for y in self.set_years
-                                 for t in self.set_time]
+            set_period = [(t, y) for y in self.set_years for t in self.set_time]
 
         elif not multiyear and multiple_days:
             set_period = [(t, d) for d in self.set_days for t in self.set_time]
@@ -282,64 +288,82 @@ class MultiPeriodModel(pyo.ConcreteModel):
             m.period = pyo.Block(self.set_period)
 
             for i in m.period:
-                _logger.info(f"...Constructing the flowsheet model for {m.period[i].name}")
+                _logger.info(
+                    f"...Constructing the flowsheet model for {m.period[i].name}"
+                )
                 self.create_process_model(m.period[i], **flowsheet_options)
 
             # link blocks together. loop over every time index except the last one
             if self.get_linking_variable_pairs is None:
-                _logger.warning(f"linking_variable_func is not provided, so variables across"
-                                f" time periods are not linked.")
+                _logger.warning(
+                    f"linking_variable_func is not provided, so variables across"
+                    f" time periods are not linked."
+                )
                 return
 
-            # TODO: Instead of accessing the constraints as 
+            # TODO: Instead of accessing the constraints as
             # m.link_constraints[t, d, y].link_constraints[1], add a Reference for easy access.
             if multiyear and multiple_days:
-                m.link_constraints = pyo.Block(self.set_time.data()[:-1], 
-                                               self.set_days, 
-                                               self.set_years)
+                m.link_constraints = pyo.Block(
+                    self.set_time.data()[:-1], self.set_days, self.set_years
+                )
 
                 for y in self.set_years:
                     for d in self.set_days:
                         for t in self.set_time.data()[:-1]:
                             link_variable_pairs = self.get_linking_variable_pairs(
-                                m.period[t, d, y], m.period[t + 1, d, y])
-                            self._create_linking_constraints(m.link_constraints[t, d, y], link_variable_pairs)
+                                m.period[t, d, y], m.period[t + 1, d, y]
+                            )
+                            self._create_linking_constraints(
+                                m.link_constraints[t, d, y], link_variable_pairs
+                            )
 
             elif multiyear and not multiple_days:
-                m.link_constraints = pyo.Block(self.set_time.data()[:-1],
-                                               self.set_years)
+                m.link_constraints = pyo.Block(
+                    self.set_time.data()[:-1], self.set_years
+                )
 
                 for y in self.set_years:
                     for t in self.set_time.data()[:-1]:
                         link_variable_pairs = self.get_linking_variable_pairs(
-                            m.period[t, y], m.period[t + 1, y])
-                        self._create_linking_constraints(m.link_constraints[t, y], link_variable_pairs)
+                            m.period[t, y], m.period[t + 1, y]
+                        )
+                        self._create_linking_constraints(
+                            m.link_constraints[t, y], link_variable_pairs
+                        )
 
             elif not multiyear and multiple_days:
-                m.link_constraints = pyo.Block(self.set_time.data()[:-1],
-                                               self.set_days)
+                m.link_constraints = pyo.Block(self.set_time.data()[:-1], self.set_days)
 
                 for d in self.set_days:
                     for t in self.set_time.data()[:-1]:
                         link_variable_pairs = self.get_linking_variable_pairs(
-                            m.period[t, d], m.period[t + 1, d])
-                        self._create_linking_constraints(m.link_constraints[t, d], link_variable_pairs)
+                            m.period[t, d], m.period[t + 1, d]
+                        )
+                        self._create_linking_constraints(
+                            m.link_constraints[t, d], link_variable_pairs
+                        )
 
             else:
                 m.link_constraints = pyo.Block(self.set_time.data()[:-1])
 
                 for t in self.set_time.data()[:-1]:
                     link_variable_pairs = self.get_linking_variable_pairs(
-                        m.period[t], m.period[t + 1])
-                    self._create_linking_constraints(m.link_constraints[t], link_variable_pairs)
+                        m.period[t], m.period[t + 1]
+                    )
+                    self._create_linking_constraints(
+                        m.link_constraints[t], link_variable_pairs
+                    )
 
             # Check if a method for periodic constraints is given
             if self.get_periodic_variable_pairs is not None:
-                _logger.warning(f"A method is provided for get_periodic_variable_pairs. " 
-                                f"build_stochastic_multiperiod method does not support periodic "
-                                f"constraints, so the user needs to add them manually.")
+                _logger.warning(
+                    f"A method is provided for get_periodic_variable_pairs. "
+                    f"build_stochastic_multiperiod method does not support periodic "
+                    f"constraints, so the user needs to add them manually."
+                )
 
-        # Begin the formulation of the multiperiod optimization problem 
+        # Begin the formulation of the multiperiod optimization problem
         timer = TicTocTimer()  # Create timer object
         timer.toc("Beginning the formulation of the multiperiod optimization problem.")
 
@@ -359,8 +383,10 @@ class MultiPeriodModel(pyo.ConcreteModel):
         Initialization routine
         """
         if initialization_func is None:
-            _logger.warning(f"Initialization function is not provided. "
-                            f"Returning the multiperiod model without initialization.")
+            _logger.warning(
+                f"Initialization function is not provided. "
+                f"Returning the multiperiod model without initialization."
+            )
             return
 
         blk = pyo.ConcreteModel()
@@ -372,8 +398,10 @@ class MultiPeriodModel(pyo.ConcreteModel):
             assert pyo.check_optimal_termination(result)
 
         except AssertionError:
-            _logger.error(f"Flowsheet did not converge to optimality "
-                          f"after fixing the degrees of freedom.")
+            _logger.error(
+                f"Flowsheet did not converge to optimality "
+                f"after fixing the degrees of freedom."
+            )
             raise
 
         # Store the initialized model in `init_model` object
@@ -396,8 +424,10 @@ class MultiPeriodModel(pyo.ConcreteModel):
         Unfix the degrees of freedom in each period model for optimization model
         """
         if unfix_dof_func is None:
-            _logger.warning(f"unfix_dof function is not provided. "
-                            f"Returning the model without unfixing degrees of freedom")
+            _logger.warning(
+                f"unfix_dof function is not provided. "
+                f"Returning the model without unfixing degrees of freedom"
+            )
             return
 
         if self._stochastic_model:
@@ -412,12 +442,9 @@ class MultiPeriodModel(pyo.ConcreteModel):
         timer.toc("Unfixed the degrees of freedom from each period model.")
 
     @staticmethod
-    def plot_lmp_signal(lmp,
-                        time=None,
-                        draw_style="steps",
-                        x_range=None,
-                        y_range=None,
-                        grid=None):
+    def plot_lmp_signal(
+        lmp, time=None, draw_style="steps", x_range=None, y_range=None, grid=None
+    ):
         """
         This function plots LMP signals as a function of time.
 
@@ -444,21 +471,36 @@ class MultiPeriodModel(pyo.ConcreteModel):
 
             plt_lmp = {1: lmp}
             plt_title = {1: ""}
-            color = {1: 'tab:red'}
+            color = {1: "tab:red"}
             plt_x_range = {1: x_range}
             plt_y_range = {1: y_range}
 
         elif type(lmp) is dict:
             if len(lmp) > 6:
-                raise Exception("Number of LMP signals provided exceeds six: the maximum "
-                                "number of subplots the function can handle.")
+                raise Exception(
+                    "Number of LMP signals provided exceeds six: the maximum "
+                    "number of subplots the function can handle."
+                )
 
-            grid_shape = {1: (1, 1), 2: (1, 2), 3: (2, 2), 4: (2, 2), 5: (2, 3), 6: (2, 3)}
+            grid_shape = {
+                1: (1, 1),
+                2: (1, 2),
+                3: (2, 2),
+                4: (2, 2),
+                5: (2, 3),
+                6: (2, 3),
+            }
             if grid is None:
                 grid = grid_shape[len(lmp)]
 
-            color = {1: 'tab:red', 2: 'tab:red', 3: 'tab:red',
-                     4: 'tab:red', 5: 'tab:red', 6: 'tab:red'}
+            color = {
+                1: "tab:red",
+                2: "tab:red",
+                3: "tab:red",
+                4: "tab:red",
+                5: "tab:red",
+                6: "tab:red",
+            }
 
             plt_time = {}
             plt_lmp = {}
@@ -475,17 +517,17 @@ class MultiPeriodModel(pyo.ConcreteModel):
                     plt_time[counter] = time[i]
 
                 plt_title[counter] = str(i)
-                plt_x_range[counter] = (None if i not in x_range else x_range[i])
-                plt_y_range[counter] = (None if i not in y_range else y_range[i])
+                plt_x_range[counter] = None if i not in x_range else x_range[i]
+                plt_y_range[counter] = None if i not in y_range else y_range[i]
                 counter = counter + 1
-         
+
         fig = plt.figure()
 
         for i in range(1, len(plt_lmp) + 1):
             ax = fig.add_subplot(grid[0], grid[1], i)
             ax.plot(plt_time[i], plt_lmp[i], color=color[i], drawstyle=draw_style)
-            ax.set_xlabel('time (hr)')
-            ax.set_ylabel('LMP ($/MWh)')
+            ax.set_xlabel("time (hr)")
+            ax.set_ylabel("LMP ($/MWh)")
             ax.set_title(plt_title[i])
 
             if plt_x_range is not None:
@@ -498,18 +540,20 @@ class MultiPeriodModel(pyo.ConcreteModel):
         plt.show()
 
     @staticmethod
-    def plot_lmp_and_schedule(lmp=None,
-                              schedule=None,
-                              time=None,
-                              y_label=None,
-                              x_range=None,
-                              lmp_range=None,
-                              y_range=None,
-                              x_label="time (hr)",
-                              lmp_label="LMP ($/MWh)",
-                              color=None,
-                              draw_style="steps",
-                              grid=None):
+    def plot_lmp_and_schedule(
+        lmp=None,
+        schedule=None,
+        time=None,
+        y_label=None,
+        x_range=None,
+        lmp_range=None,
+        y_range=None,
+        x_label="time (hr)",
+        lmp_label="LMP ($/MWh)",
+        color=None,
+        draw_style="steps",
+        grid=None,
+    ):
 
         """
         The function plots optimal operation schedule as a function of time.
@@ -539,8 +583,10 @@ class MultiPeriodModel(pyo.ConcreteModel):
             raise Exception("Optimal schedule data is not provided!")
 
         if len(schedule) > 4:
-            raise Exception("len(schedule) exceeds four: the maximum "
-                            "number of subplots the function supports.")
+            raise Exception(
+                "len(schedule) exceeds four: the maximum "
+                "number of subplots the function supports."
+            )
 
         key_list = {index + 1: value for index, value in enumerate(schedule)}
 
@@ -551,9 +597,9 @@ class MultiPeriodModel(pyo.ConcreteModel):
             grid_shape = {1: (1, 1), 2: (1, 2), 3: (2, 2), 4: (2, 2)}
             grid = grid_shape[len(schedule)]
 
-        lmp_color = 'tab:red'
+        lmp_color = "tab:red"
         if color is None:
-            plt_color = {1: 'tab:blue', 2: 'magenta', 3: 'tab:green', 4: 'tab:cyan'}
+            plt_color = {1: "tab:blue", 2: "magenta", 3: "tab:green", 4: "tab:cyan"}
         else:
             plt_color = {index + 1: color[value] for index, value in enumerate(color)}
 
@@ -564,7 +610,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
             ax.set_xlabel(x_label)
             ax.set_ylabel(lmp_label, color=lmp_color)
             ax.plot(time, lmp, color=lmp_color, drawstyle="steps")
-            ax.tick_params(axis='y', labelcolor=lmp_color)
+            ax.tick_params(axis="y", labelcolor=lmp_color)
 
             if x_range is not None:
                 ax.set_xlim(x_range[0], x_range[1])
@@ -573,8 +619,10 @@ class MultiPeriodModel(pyo.ConcreteModel):
                 ax.set_ylim(lmp_range[0], lmp_range[1])
 
             ax1 = ax.twinx()
-            ax1.plot(time, schedule[key_list[i]], color=plt_color[i], drawstyle=draw_style)
-            ax1.tick_params(axis='y', labelcolor=plt_color[i])
+            ax1.plot(
+                time, schedule[key_list[i]], color=plt_color[i], drawstyle=draw_style
+            )
+            ax1.tick_params(axis="y", labelcolor=plt_color[i])
 
             if y_label is not None and key_list[i] in y_label:
                 ax1.set_ylabel(y_label[key_list[i]], color=plt_color[i])
