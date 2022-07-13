@@ -510,8 +510,14 @@ class StateBlock(ProcessBlock):
         Get the standard name of a "port reference", the component
         accessed on the port by "port_name.component_name".
 
+        Args:
+            component_name - name of port member of interest (str)
+            port_name - name of Port object (str)
+
+        Returns:
+            str with name for Reference used for Port member
         """
-        return "_%s_%s_ref" % (component_name, port_name)
+        return f"_{component_name}_{port_name}_ref"
 
     def build_port(
         self,
