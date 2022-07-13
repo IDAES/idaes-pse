@@ -164,14 +164,20 @@ Must be True if dynamic = True,
         """
         # Create Port
         try:
-            p = block.build_port(self, name, doc)
+            port, ref_name_list = block.build_port(name, doc)
         except AttributeError:
             raise ConfigurationError(
                 f"{self.name} block object provided to add_port method is not an "
                 f"instance of a StateBlock object (does not have a build_port method)."
             )
 
-        return p
+        # Add Port and References to unit moodel
+        self.add_component(name, port)
+        for ref, cname in ref_name_list:
+            ref_name = block.get_port_reference_name(cname, name)
+            self.add_component(ref_name, ref)
+
+        return port
 
     def add_inlet_port(self, name=None, block=None, doc=None):
         """
@@ -230,7 +236,8 @@ Must be True if dynamic = True,
             # Work out if this is a 0D or 1D block
             try:
                 # Try 0D first
-                p = block.properties_in.build_port(self, name, doc)
+                sblock = block.properties_in
+                port, ref_name_list = sblock.build_port(name, doc)
             except AttributeError:
                 # Otherwise a 1D control volume
                 try:
@@ -242,8 +249,8 @@ Must be True if dynamic = True,
                     elif block._flow_direction == FlowDirection.backward:
                         _idx = block.length_domain.last()
 
-                    p = sblock.build_port(
-                        self, name, doc, slice_index=(slice(None), _idx)
+                    port, ref_name_list = sblock.build_port(
+                        name, doc, slice_index=(slice(None), _idx)
                     )
 
                 except AttributeError:
@@ -254,9 +261,16 @@ Must be True if dynamic = True,
                     )
         else:
             # Assume a StateBlock indexed only by time
-            p = block.build_port(self, name, doc)
+            sblock = block
+            port, ref_name_list = sblock.build_port(name, doc)
 
-        return p
+        # Add Port and References to unit moodel
+        self.add_component(name, port)
+        for ref, cname in ref_name_list:
+            ref_name = sblock.get_port_reference_name(cname, name)
+            self.add_component(ref_name, ref)
+
+        return port
 
     def add_outlet_port(self, name=None, block=None, doc=None):
         """
@@ -317,7 +331,8 @@ Must be True if dynamic = True,
             # Work out if this is a 0D or 1D block
             try:
                 # Try 0D first
-                p = block.properties_out.build_port(self, name, doc)
+                sblock = block.properties_out
+                port, ref_name_list = sblock.build_port(name, doc)
             except AttributeError:
                 # Otherwise a 1D control volume
                 try:
@@ -329,8 +344,8 @@ Must be True if dynamic = True,
                     elif block._flow_direction == FlowDirection.forward:
                         _idx = block.length_domain.last()
 
-                    p = sblock.build_port(
-                        self, name, doc, slice_index=(slice(None), _idx)
+                    port, ref_name_list = sblock.build_port(
+                        name, doc, slice_index=(slice(None), _idx)
                     )
 
                 except AttributeError:
@@ -341,9 +356,16 @@ Must be True if dynamic = True,
                     )
         else:
             # Assume a StateBlock indexed only by time
-            p = block.build_port(self, name, doc)
+            sblock = block
+            port, ref_name_list = sblock.build_port(name, doc)
 
-        return p
+        # Add Port and References to unit moodel
+        self.add_component(name, port)
+        for ref, cname in ref_name_list:
+            ref_name = sblock.get_port_reference_name(cname, name)
+            self.add_component(ref_name, ref)
+
+        return port
 
     def add_state_material_balances(self, balance_type, state_1, state_2):
         """

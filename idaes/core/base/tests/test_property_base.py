@@ -29,7 +29,6 @@ from idaes.core import (
     StateBlockData,
     Phase,
     Component,
-    FlowsheetBlock,
 )
 from idaes.core.util.exceptions import PropertyPackageError, PropertyNotSupportedError
 from idaes.core.base.property_meta import PropertyClassMetadata
@@ -443,30 +442,38 @@ def test_StateBlock_build_port_1index():
         # Set define_port_members method
         sbd.define_port_members = types.MethodType(define_port_members, sbd)
 
-    # Create a Block to build a Port on
-    m.test_block = Block()
-
-    # Build the Port
-    m.state_block.build_port(m.test_block, "test_port", "test_doc")
-
-    # Check References were constructed on test block
-    assert isinstance(m.test_block._ScalarVar_test_port_ref, Var)
-    for i, v in m.test_block._ScalarVar_test_port_ref.items():
-        assert i in [1, 2, 3]
-        assert v is m.state_block[i].scalar_var
-    assert isinstance(m.test_block._IndexedVar_test_port_ref, Var)
-    for i, v in m.test_block._IndexedVar_test_port_ref.items():
-        assert i[0] in [1, 2, 3]
-        assert i[1] in [5, 6]
-        assert v is m.state_block[i[0]].indexed_var[i[1]]
+    # Call build_port
+    port, ref_name_list = m.state_block.build_port("test_port", "test_doc")
 
     # Check Port and members
-    assert isinstance(m.test_block.test_port, Port)
-    assert len(m.test_block.test_port) == 1
-    assert m.test_block.test_port.doc == "test_doc"
+    assert isinstance(port, Port)
+    assert port.doc == "test_doc"
 
-    assert m.test_block.test_port.ScalarVar is m.test_block._ScalarVar_test_port_ref
-    assert m.test_block.test_port.IndexedVar is m.test_block._IndexedVar_test_port_ref
+    for i in m.state_block:
+        assert port.ScalarVar[i] is m.state_block[i].scalar_var
+        for j in m.state_block[i].indexed_var:
+            assert port.IndexedVar[i, j] is m.state_block[i].indexed_var[j]
+
+    # Check References
+    assert len(ref_name_list) == 2
+    for ref, cname in ref_name_list:
+        assert cname in ["ScalarVar", "IndexedVar"]
+        if cname == "ScalarVar":
+            assert isinstance(ref, Var)
+            assert ref is port.ScalarVar
+            for i, v in ref.items():
+                assert i in [1, 2, 3]
+                assert v is m.state_block[i].scalar_var
+        elif cname == "IndexedVar":
+            assert isinstance(ref, Var)
+            assert ref is port.IndexedVar
+            for i, v in ref.items():
+                assert i[0] in [1, 2, 3]
+                assert i[1] in [5, 6]
+                assert v is m.state_block[i[0]].indexed_var[i[1]]
+        else:
+            # Catch for unexpected name
+            raise ValueError
 
 
 @pytest.mark.unit
@@ -492,32 +499,40 @@ def test_StateBlock_build_port_2index():
         # Set define_port_members method
         sbd.define_port_members = types.MethodType(define_port_members, sbd)
 
-    # Create a Block to build a Port on
-    m.test_block = Block()
-
-    # Build the Port
-    m.state_block.build_port(m.test_block, "test_port", "test_doc")
-
-    # Check References were constructed on test block
-    assert isinstance(m.test_block._ScalarVar_test_port_ref, Var)
-    for i, v in m.test_block._ScalarVar_test_port_ref.items():
-        assert i[0] in [1, 2, 3]
-        assert i[1] in [10, 20]
-        assert v is m.state_block[i].scalar_var
-    assert isinstance(m.test_block._IndexedVar_test_port_ref, Var)
-    for i, v in m.test_block._IndexedVar_test_port_ref.items():
-        assert i[0] in [1, 2, 3]
-        assert i[1] in [10, 20]
-        assert i[2] in [5, 6]
-        assert v is m.state_block[i[0], i[1]].indexed_var[i[2]]
+    # Call build_port
+    port, ref_name_list = m.state_block.build_port("test_port", "test_doc")
 
     # Check Port and members
-    assert isinstance(m.test_block.test_port, Port)
-    assert len(m.test_block.test_port) == 1
-    assert m.test_block.test_port.doc == "test_doc"
+    assert isinstance(port, Port)
+    assert port.doc == "test_doc"
 
-    assert m.test_block.test_port.ScalarVar is m.test_block._ScalarVar_test_port_ref
-    assert m.test_block.test_port.IndexedVar is m.test_block._IndexedVar_test_port_ref
+    for i in m.state_block:
+        assert port.ScalarVar[i] is m.state_block[i].scalar_var
+        for j in m.state_block[i].indexed_var:
+            assert port.IndexedVar[i, j] is m.state_block[i].indexed_var[j]
+
+    # Check References
+    assert len(ref_name_list) == 2
+    for ref, cname in ref_name_list:
+        assert cname in ["ScalarVar", "IndexedVar"]
+        if cname == "ScalarVar":
+            assert isinstance(ref, Var)
+            assert ref is port.ScalarVar
+            for i, v in ref.items():
+                assert i[0] in [1, 2, 3]
+                assert i[1] in [10, 20]
+                assert v is m.state_block[i].scalar_var
+        elif cname == "IndexedVar":
+            assert isinstance(ref, Var)
+            assert ref is port.IndexedVar
+            for i, v in ref.items():
+                assert i[0] in [1, 2, 3]
+                assert i[1] in [10, 20]
+                assert i[2] in [5, 6]
+                assert v is m.state_block[i[0], i[1]].indexed_var[i[2]]
+        else:
+            # Catch for unexpected name
+            raise ValueError
 
 
 @pytest.mark.unit
@@ -543,32 +558,40 @@ def test_StateBlock_build_port_2index_subset():
         # Set define_port_members method
         sbd.define_port_members = types.MethodType(define_port_members, sbd)
 
-    # Create a Block to build a Port on
-    m.test_block = Block()
-
-    # Build the Port
-    m.state_block.build_port(
-        m.test_block, "test_port", "test_doc", slice_index=(slice(None), 10)
-    )
-
-    # Check References were constructed on test block
-    assert isinstance(m.test_block._ScalarVar_test_port_ref, Var)
-    for i, v in m.test_block._ScalarVar_test_port_ref.items():
-        assert i in [1, 2, 3]
-        assert v is m.state_block[i, 10].scalar_var
-    assert isinstance(m.test_block._IndexedVar_test_port_ref, Var)
-    for i, v in m.test_block._IndexedVar_test_port_ref.items():
-        assert i[0] in [1, 2, 3]
-        assert i[1] in [5, 6]
-        assert v is m.state_block[i[0], 10].indexed_var[i[1]]
+    # Call build_port
+    port, ref_name_list = m.state_block.build_port("test_port", "test_doc")
 
     # Check Port and members
-    assert isinstance(m.test_block.test_port, Port)
-    assert len(m.test_block.test_port) == 1
-    assert m.test_block.test_port.doc == "test_doc"
+    assert isinstance(port, Port)
+    assert port.doc == "test_doc"
 
-    assert m.test_block.test_port.ScalarVar is m.test_block._ScalarVar_test_port_ref
-    assert m.test_block.test_port.IndexedVar is m.test_block._IndexedVar_test_port_ref
+    for i in m.state_block:
+        assert port.ScalarVar[i] is m.state_block[i].scalar_var
+        for j in m.state_block[i].indexed_var:
+            assert port.IndexedVar[i, j] is m.state_block[i].indexed_var[j]
+
+    # Check References
+    assert len(ref_name_list) == 2
+    for ref, cname in ref_name_list:
+        assert cname in ["ScalarVar", "IndexedVar"]
+        if cname == "ScalarVar":
+            assert isinstance(ref, Var)
+            assert ref is port.ScalarVar
+            for i, v in ref.items():
+                assert i[0] in [1, 2, 3]
+                assert i[1] in [10, 20]
+                assert v is m.state_block[i].scalar_var
+        elif cname == "IndexedVar":
+            assert isinstance(ref, Var)
+            assert ref is port.IndexedVar
+            for i, v in ref.items():
+                assert i[0] in [1, 2, 3]
+                assert i[1] in [10, 20]
+                assert i[2] in [5, 6]
+                assert v is m.state_block[i[0], i[1]].indexed_var[i[2]]
+        else:
+            # Catch for unexpected name
+            raise ValueError
 
 
 # -----------------------------------------------------------------------------

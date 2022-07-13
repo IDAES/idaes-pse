@@ -521,7 +521,6 @@ class StateBlock(ProcessBlock):
 
     def build_port(
         self,
-        target_block,
         port_name,
         doc=None,
         slice_index=None,
@@ -531,14 +530,14 @@ class StateBlock(ProcessBlock):
         Constructs a Port based on this StateBlock attached to the target block.
 
         Args:
-            target_block - block to which Port should be attached
             port_name - name to use for Port
             doc - doc string or Prot object
             slice_index - Slice index (e.g. (slice(None), 0.0) that will be
-                used to index self when constructing port references.
+                used to index self when constructing port references. DEfault = None.
+            index - time index to use when calling define_port_memebers. Default = None.
 
         Returns:
-            Port object
+            Port object and list of tuples with form (Reference, member name)
         """
         if slice_index is None:
             slice_index = Ellipsis
@@ -547,14 +546,13 @@ class StateBlock(ProcessBlock):
 
         # Create empty Port
         p = Port(doc=doc)
-        # Add port to the target block
-        setattr(target_block, port_name, p)
 
         # Get dict of Port members and names
         # Need to get a representative member of StateBlockDatas
         port_member_dict = self[index].define_port_members()
 
         # Create References for port members
+        ref_name_list = []
         for name, component in port_member_dict.items():
             if not component.is_indexed():
                 slicer = self[slice_index].component(component.local_name)
@@ -562,14 +560,12 @@ class StateBlock(ProcessBlock):
                 slicer = self[slice_index].component(component.local_name)[...]
 
             ref = Reference(slicer)
-            ref_name = self.get_port_reference_name(name, port_name)
-            # Add reference to the target block as well
-            setattr(target_block, ref_name, ref)
+            ref_name_list.append((ref, name))
 
             # Add Reference to Port
             p.add(ref, name)
 
-        return p
+        return p, ref_name_list
 
 
 class StateBlockData(ProcessBlockData):
