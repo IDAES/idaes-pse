@@ -521,7 +521,6 @@ class StateBlock(ProcessBlock):
 
     def build_port(
         self,
-        port_name,
         doc=None,
         slice_index=None,
         index=None,
@@ -530,10 +529,9 @@ class StateBlock(ProcessBlock):
         Constructs a Port based on this StateBlock attached to the target block.
 
         Args:
-            port_name - name to use for Port
             doc - doc string or Prot object
             slice_index - Slice index (e.g. (slice(None), 0.0) that will be
-                used to index self when constructing port references. DEfault = None.
+                used to index self when constructing port references. Default = None.
             index - time index to use when calling define_port_memebers. Default = None.
 
         Returns:

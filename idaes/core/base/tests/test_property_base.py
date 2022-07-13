@@ -443,7 +443,7 @@ def test_StateBlock_build_port_1index():
         sbd.define_port_members = types.MethodType(define_port_members, sbd)
 
     # Call build_port
-    port, ref_name_list = m.state_block.build_port("test_port", "test_doc")
+    port, ref_name_list = m.state_block.build_port("test_doc")
 
     # Check Port and members
     assert isinstance(port, Port)
@@ -500,7 +500,7 @@ def test_StateBlock_build_port_2index():
         sbd.define_port_members = types.MethodType(define_port_members, sbd)
 
     # Call build_port
-    port, ref_name_list = m.state_block.build_port("test_port", "test_doc")
+    port, ref_name_list = m.state_block.build_port("test_doc")
 
     # Check Port and members
     assert isinstance(port, Port)
@@ -559,7 +559,7 @@ def test_StateBlock_build_port_2index_subset():
         sbd.define_port_members = types.MethodType(define_port_members, sbd)
 
     # Call build_port
-    port, ref_name_list = m.state_block.build_port("test_port", "test_doc")
+    port, ref_name_list = m.state_block.build_port("test_doc")
 
     # Check Port and members
     assert isinstance(port, Port)
