@@ -881,12 +881,15 @@ class FlowsheetDiff:
             Merged dict with structure as described in :func:`validate_flowsheet()`.
         """
         if bool(self):
+            model = self._new["model"]
+            routing_config = self._new["routing_config"]
+            if do_copy:
+                model = copy.deepcopy(self._new["model"])
+                routing_config = copy.deepcopy(self._new["routing_config"])
             result = {
-                "model": copy.deepcopy(self._new["model"])
-                if do_copy
-                else self._new["model"],
+                "model": model,
                 "cells": self._layout,
-                "routing_config": self._new["routing_config"],
+                "routing_config": routing_config,
             }
         else:
             # diff is empty, return 'old' object
@@ -918,6 +921,12 @@ class FlowsheetDiff:
                     diff["add"][cls][key] = copy.deepcopy(new_data[key])
                     n += 1
                 elif old_data[key] != new_data[key]:
+                    if cls == "arcs":
+                        # Update source and destination unit models as well
+                        src_unit_model = old_data[key]['source']
+                        dest_unit_model = old_data[key]['dest']
+                        diff["change"]["unit_models"][src_unit_model] = copy.deepcopy(new_model["unit_models"][src_unit_model])
+                        diff["change"]["unit_models"][dest_unit_model] = copy.deepcopy(new_model["unit_models"][dest_unit_model])
                     diff["change"][cls][key] = copy.deepcopy(new_data[key])
                     n += 1
             # Remove
@@ -940,13 +949,19 @@ class FlowsheetDiff:
         for cls in self._diff["add"]:
             for id_ in self._diff["add"][cls]:
                 values = self._diff["add"][cls][id_]
-                if cls == "arcs":
-                    new_item = self._new_arc(id_, values)
-                else:
-                    new_item = self._new_unit_model(id_, values, x, y)
-                    x, y = x + 100, y + 100
+                new_item = None
+                for cell in self._new["cells"]:
+                    if cell["id"] == id_:
+                        print("deep copying cell with id:", id_)
+                        new_item = copy.deepcopy(cell)
+                if not new_item:
+                    if cls == "arcs":
+                        new_item = self._new_arc(id_, values)
+                    else:
+                        new_item = self._new_unit_model(id_, values, x, y)
+                        x, y = x + 100, y + 100
                 layout.append(new_item)
-        # Change, remove, and simply copy
+        # Change, remove, and simply copy cells
         for item in self._old["cells"]:
             id_ = item["id"]
             cls = "arcs" if "source" in item else "unit_models"
@@ -954,10 +969,19 @@ class FlowsheetDiff:
                 continue
             elif id_ in self._diff["change"][cls]:
                 values = self._diff["change"][cls][id_]
-                if cls == "arcs":
-                    new_item = self._update_arc(item, values)
-                else:
-                    new_item = self._update_unit_model(item, values)
+                new_item = None
+                for cell in self._new["cells"]:
+                    if cell["id"] == id_:
+                        print("deep copying cell with id:", id_)
+                        new_item = copy.deepcopy(cell)
+                        if cls == "unit_models":
+                            # Make sure we copy the old position for the graph to be consistent position wise
+                            new_item["position"] = item["position"]
+                if not new_item:
+                    if cls == "arcs":
+                        new_item = self._update_arc(item, values)
+                    else:
+                        new_item = self._update_unit_model(item, values)
                 layout.append(new_item)
             else:
                 layout.append(copy.deepcopy(item))
