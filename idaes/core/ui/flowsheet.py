@@ -952,7 +952,6 @@ class FlowsheetDiff:
                 new_item = None
                 for cell in self._new["cells"]:
                     if cell["id"] == id_:
-                        print("deep copying cell with id:", id_)
                         new_item = copy.deepcopy(cell)
                 if not new_item:
                     if cls == "arcs":
@@ -972,16 +971,14 @@ class FlowsheetDiff:
                 new_item = None
                 for cell in self._new["cells"]:
                     if cell["id"] == id_:
-                        print("deep copying cell with id:", id_)
                         new_item = copy.deepcopy(cell)
-                        if cls == "unit_models":
+                        if cls == "unit_models" and "position" in item:
                             # Make sure we copy the old position for the graph to be consistent position wise
                             new_item["position"] = item["position"]
-                if not new_item:
-                    if cls == "arcs":
-                        new_item = self._update_arc(item, values)
-                    else:
-                        new_item = self._update_unit_model(item, values)
+                if cls == "arcs":
+                    self._update_arc(new_item, values)
+                else:
+                    self._update_unit_model(new_item, values)
                 layout.append(new_item)
             else:
                 layout.append(copy.deepcopy(item))
@@ -1018,11 +1015,7 @@ class FlowsheetDiff:
 
     @staticmethod
     def _update_arc(item, values):
-        new_item = copy.deepcopy(item)
-        new_item["source"]["id"] = values["source"]
-        new_item["target"]["id"] = values["dest"]
-        new_item["labels"][0]["attrs"]["text"]["text"] = values["label"]
-        return new_item
+        item["labels"][0]["attrs"]["text"]["text"] = values["label"]
 
     @staticmethod
     def _new_unit_model(name, values, x, y):
@@ -1042,7 +1035,5 @@ class FlowsheetDiff:
 
     @staticmethod
     def _update_unit_model(item, values):
-        new_item = copy.deepcopy(item)
-        new_item["attrs"]["image"]["xlinkHref"] = values["image"]
-        new_item["attrs"]["root"]["title"] = values["type"]
-        return new_item
+        item["attrs"]["image"]["xlinkHref"] = values["image"]
+        item["attrs"]["root"]["title"] = values["type"]
