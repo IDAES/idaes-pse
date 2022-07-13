@@ -14,8 +14,7 @@
 Base class for unit models
 """
 
-from pyomo.environ import check_optimal_termination, Reference
-from pyomo.network import Port
+from pyomo.environ import check_optimal_termination
 from pyomo.common.config import ConfigValue
 
 from idaes.core.base.process_base import (
@@ -32,7 +31,6 @@ from idaes.core.base.control_volume_base import (
 from idaes.core.util.exceptions import (
     BurntToast,
     ConfigurationError,
-    PropertyPackageError,
     BalanceTypeNotSupportedError,
     InitializationError,
 )
