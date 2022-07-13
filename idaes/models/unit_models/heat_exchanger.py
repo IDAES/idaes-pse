@@ -25,18 +25,15 @@ from pyomo.environ import (
     Reference,
     PositiveReals,
     ExternalFunction,
-    Block,
     units as pyunits,
     check_optimal_termination,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
     declare_process_block_class,
     UnitModelBlockData,
-    UnitModelCostingBlock,  # TODO: Clean up in IDAES 2.0
 )
 
 import idaes.logger as idaeslog
@@ -52,8 +49,6 @@ from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 
-# TODO: Clean up in IDAES 2.0
-import idaes.core.util.unit_costing as costing
 
 _log = idaeslog.getLogger(__name__)
 
@@ -71,7 +66,7 @@ def _make_heat_exchanger_config(config):
     config.declare(
         "hot_side_name",
         ConfigValue(
-            default="shell",
+            default=None,
             domain=str,
             doc="Hot side name, sets control volume and inlet and outlet names",
         ),
@@ -79,7 +74,7 @@ def _make_heat_exchanger_config(config):
     config.declare(
         "cold_side_name",
         ConfigValue(
-            default="tube",
+            default=None,
             domain=str,
             doc="Cold side name, sets control volume and inlet and outlet names",
         ),
@@ -87,7 +82,6 @@ def _make_heat_exchanger_config(config):
     config.declare(
         "hot_side_config",
         ConfigBlock(
-            implicit=True,
             description="Config block for hot side",
             doc="""A config block used to construct the hot side control volume.
 This config can be given by the hot side name instead of hot_side_config.""",
@@ -96,7 +90,6 @@ This config can be given by the hot side name instead of hot_side_config.""",
     config.declare(
         "cold_side_config",
         ConfigBlock(
-            implicit=True,
             description="Config block for cold side",
             doc="""A config block used to construct the cold side control volume.
 This config can be given by the cold side name instead of cold_side_config.""",
@@ -124,15 +117,6 @@ This config can be given by the cold side name instead of cold_side_config.""",
 **HeatExchangerFlowPattern.cocurrent** - cocurrent flow,
 **HeatExchangerFlowPattern.crossflow** - cross flow, factor times
 countercurrent temperature difference.}""",
-        ),
-    )
-    config.declare(
-        "side_1_is_hot",
-        ConfigValue(
-            default=True,
-            domain=bool,
-            doc="""If True, side_1 is an alias for hot_side. Otherwise, side_1
-is an alias for cold_side""",
         ),
     )
 
@@ -275,9 +259,20 @@ class HeatExchangerData(UnitModelBlockData):
         """Check for configuration errors and alternate config option names."""
         config = self.config
 
-        if config.hot_side_name == config.cold_side_name:
+        if config.cold_side_name in ["hot_side", "cold_side"]:
+            raise ConfigurationError(
+                f"cold_side_name cannot be '{config.cold_side_name}'."
+            )
+        if config.hot_side_name in ["hot_side", "cold_side"]:
+            raise ConfigurationError(
+                f"hot_side_name cannot be '{config.hot_side_name}'."
+            )
+
+        if (config.hot_side_name is not None and
+                config.cold_side_name is not None and
+                config.hot_side_name == config.cold_side_name):
             raise NameError(
-                "Heatexchanger hot and cold side cannot have the same name '{}'."
+                "HeatExchanger hot and cold side cannot have the same name '{}'."
                 " Be sure to set both the hot_side_name and cold_side_name.".format(
                     config.hot_side_name
                 )
@@ -287,37 +282,18 @@ class HeatExchangerData(UnitModelBlockData):
             if not (
                 o in self.CONFIG or o in [config.hot_side_name, config.cold_side_name]
             ):
-                raise KeyError("Heatexchanger config option {} not defined".format(o))
+                raise KeyError("HeatExchanger config option {} not defined".format(o))
 
-        if config.hot_side_name in config:
+        if config.hot_side_name is not None and config.hot_side_name in config:
             config.hot_side_config.set_value(config[config.hot_side_name])
             # Allow access to hot_side_config under the hot_side_name, backward
             # compatible with the tube and shell notation
             setattr(config, config.hot_side_name, config.hot_side_config)
-        if config.cold_side_name in config:
+        if config.cold_side_name is not None and config.cold_side_name in config:
             config.cold_side_config.set_value(config[config.cold_side_name])
             # Allow access to hot_side_config under the cold_side_name, backward
             # compatible with the tube and shell notation
             setattr(config, config.cold_side_name, config.cold_side_config)
-
-        if config.side_1_is_hot:
-            if config.cold_side_name in ["hot_side", "side_1"]:
-                raise ConfigurationError(
-                    "Cold side name cannot be in ['hot_side', 'side_1']."
-                )
-            if config.hot_side_name in ["cold_side", "side_2"]:
-                raise ConfigurationError(
-                    "Hot side name cannot be in ['cold_side', 'side_2']."
-                )
-        else:
-            if config.cold_side_name in ["hot_side", "side_2"]:
-                raise ConfigurationError(
-                    "Cold side name cannot be in ['hot_side', 'side_2']."
-                )
-            if config.hot_side_name in ["cold_side", "side_1"]:
-                raise ConfigurationError(
-                    "Hot side name cannot be in ['cold_side', 'side_1']."
-                )
 
     def build(self):
         """
@@ -340,37 +316,36 @@ class HeatExchangerData(UnitModelBlockData):
         ########################################################################
         hot_side = _make_heater_control_volume(
             self,
-            config.hot_side_name,
+            "hot_side",
             config.hot_side_config,
             dynamic=config.dynamic,
             has_holdup=config.has_holdup,
         )
         cold_side = _make_heater_control_volume(
             self,
-            config.cold_side_name,
+            "cold_side",
             config.cold_side_config,
             dynamic=config.dynamic,
             has_holdup=config.has_holdup,
         )
-        # Add references to the hot side and cold side, so that we have solid
-        # names to refer to internally.  side_1 and side_2 also maintain
-        # compatability with older models.  Using add_object_reference keeps
-        # these from showing up when you iterate through pyomo compoents in a
-        # model, so only the user specified control volume names are "seen"
-        if config.side_1_is_hot:
-            if not hasattr(self, "side_1"):
-                add_object_reference(self, "side_1", hot_side)
-            if not hasattr(self, "side_2"):
-                add_object_reference(self, "side_2", cold_side)
-        else:
-            if not hasattr(self, "side_1"):
-                add_object_reference(self, "side_1", cold_side)
-            if not hasattr(self, "side_2"):
-                add_object_reference(self, "side_2", hot_side)
-        if not hasattr(self, "hot_side"):
-            add_object_reference(self, "hot_side", hot_side)
-        if not hasattr(self, "cold_side"):
-            add_object_reference(self, "cold_side", cold_side)
+        # Add references to the user provided aliases (if applicable).
+        # Using add_object_reference keeps these from showing up when you
+        # iterate through pyomo compoents in a model, so only the user specified
+        # control volume names are "seen"
+        if config.hot_side_name is not None:
+            if not hasattr(self, config.hot_side_name):
+                add_object_reference(self, config.hot_side_name, hot_side)
+            else:
+                raise ValueError(
+                    f"{self.name} could not assign hot side alias {config.hot_side_name} "
+                    f"as an attribute of that name already exists.")
+        if config.cold_side_name is not None:
+            if not hasattr(self, config.cold_side_name):
+                add_object_reference(self, config.cold_side_name, cold_side)
+            else:
+                raise ValueError(
+                    f"{self.name} could not assign cold side alias {config.cold_side_name} "
+                    f"as an attribute of that name already exists.")
 
         ########################################################################
         # Add variables                                                        #
@@ -422,54 +397,49 @@ class HeatExchangerData(UnitModelBlockData):
         # Add ports                                                            #
         ########################################################################
         i1 = self.add_inlet_port(
-            name=f"{config.hot_side_name}_inlet", block=hot_side, doc="Hot side inlet"
+            name="hot_side_inlet", block=hot_side, doc="Hot side inlet"
         )
         i2 = self.add_inlet_port(
-            name=f"{config.cold_side_name}_inlet",
-            block=cold_side,
-            doc="Cold side inlet",
+            name="cold_side_inlet", block=cold_side, doc="Cold side inlet",
         )
         o1 = self.add_outlet_port(
-            name=f"{config.hot_side_name}_outlet", block=hot_side, doc="Hot side outlet"
+            name="hot_side_outlet", block=hot_side, doc="Hot side outlet"
         )
         o2 = self.add_outlet_port(
-            name=f"{config.cold_side_name}_outlet",
-            block=cold_side,
-            doc="Cold side outlet",
+            name="cold_side_outlet", block=cold_side, doc="Cold side outlet",
         )
-
-        if not config.side_1_is_hot:
-            i1, i2 = i2, i1
-            o1, o2 = o2, o1
 
         # Using Andrew's function for now.  I want these port names for backward
         # compatablity, but I don't want them to appear if you iterate throught
         # components and add_object_reference hides them from Pyomo.
-        if not hasattr(self, "inlet_1"):
-            add_object_reference(self, "inlet_1", i1)
-        if not hasattr(self, "side_1_inlet"):
-            add_object_reference(self, "side_1_inlet", i1)
-        if not hasattr(self, "inlet_2"):
-            add_object_reference(self, "inlet_2", i2)
-        if not hasattr(self, "side_2_inlet"):
-            add_object_reference(self, "side_2_inlet", i2)
-        if not hasattr(self, "outlet_1"):
-            add_object_reference(self, "outlet_1", o1)
-        if not hasattr(self, "side_1_outlet"):
-            add_object_reference(self, "side_1_outlet", o1)
-        if not hasattr(self, "outlet_2"):
-            add_object_reference(self, "outlet_2", o2)
-        if not hasattr(self, "side_2_outlet"):
-            add_object_reference(self, "side_2_outlet", o2)
+        if config.hot_side_name is not None:
+            if not hasattr(self, config.hot_side_name+"_inlet"):
+                add_object_reference(self, config.hot_side_name+"_inlet", i1)
+            else:
+                raise ValueError(
+                    f"{self.name} could not assign hot side inlet alias {config.hot_side_name}_inlet "
+                    f"as an attribute of that name already exists.")
+            if not hasattr(self, config.hot_side_name+"_outlet"):
+                add_object_reference(self, config.hot_side_name+"_outlet", o1)
+            else:
+                raise ValueError(
+                    f"{self.name} could not assign hot side outlet alias {config.hot_side_name}_outlet "
+                    f"as an attribute of that name already exists.")
 
-        if not hasattr(self, "hot_inlet"):
-            add_object_reference(self, "hot_inlet", i1)
-        if not hasattr(self, "cold_inlet"):
-            add_object_reference(self, "cold_inlet", i2)
-        if not hasattr(self, "hot_outlet"):
-            add_object_reference(self, "hot_outlet", o1)
-        if not hasattr(self, "cold_outlet"):
-            add_object_reference(self, "cold_outlet", o2)
+        if config.cold_side_name is not None:
+            if not hasattr(self, config.cold_side_name+"_inlet"):
+                add_object_reference(self, config.cold_side_name+"_inlet", i2)
+            else:
+                raise ValueError(
+                    f"{self.name} could not assign cold side inlet alias {config.cold_side_name}_inlet "
+                    f"as an attribute of that name already exists.")
+            if not hasattr(self, config.cold_side_name+"_outlet"):
+                add_object_reference(self, config.cold_side_name+"_outlet", o2)
+            else:
+                raise ValueError(
+                    f"{self.name} could not assign cold side outlet alias {config.cold_side_name}_outlet "
+                    f"as an attribute of that name already exists.")
+
         ########################################################################
         # Add end temperature difference constraints                           #
         ########################################################################
@@ -579,19 +549,16 @@ class HeatExchangerData(UnitModelBlockData):
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        hot_side = getattr(self, self.config.hot_side_name)
-        cold_side = getattr(self, self.config.cold_side_name)
-
         # Create solver
         opt = get_solver(solver, optarg)
 
-        flags1 = hot_side.initialize(
+        flags1 = self.hot_side.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_1
         )
 
         init_log.info_high("Initialization Step 1a (hot side) Complete.")
 
-        flags2 = cold_side.initialize(
+        flags2 = self.cold_side.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_2
         )
 
@@ -601,8 +568,8 @@ class HeatExchangerData(UnitModelBlockData):
         self.heat_transfer_equation.deactivate()
 
         # Get side 1 and side 2 heat units, and convert duty as needed
-        s1_units = hot_side.heat.get_units()
-        s2_units = cold_side.heat.get_units()
+        s1_units = self.hot_side.heat.get_units()
+        s2_units = self.cold_side.heat.get_units()
 
         if duty is None:
             # Assume 1000 J/s and check for unitless properties
@@ -626,14 +593,14 @@ class HeatExchangerData(UnitModelBlockData):
                 duty[0], from_units=duty[1], to_units=s2_units
             )
 
-        cold_side.heat.fix(s2_duty)
-        for i in hot_side.heat:
-            hot_side.heat[i].value = s1_duty
+        self.cold_side.heat.fix(s2_duty)
+        for i in self.hot_side.heat:
+            self.hot_side.heat[i].value = s1_duty
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
-        cold_side.heat.unfix()
+        self.cold_side.heat.unfix()
         self.heat_transfer_equation.activate()
         # ---------------------------------------------------------------------
         # Solve unit
@@ -642,8 +609,8 @@ class HeatExchangerData(UnitModelBlockData):
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
-        hot_side.release_state(flags1, outlvl=outlvl)
-        cold_side.release_state(flags2, outlvl=outlvl)
+        self.hot_side.release_state(flags1, outlvl=outlvl)
+        self.cold_side.release_state(flags2, outlvl=outlvl)
 
         init_log.info("Initialization Completed, {}".format(idaeslog.condition(res)))
 
@@ -672,25 +639,13 @@ class HeatExchangerData(UnitModelBlockData):
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
             {
-                "Hot Inlet": self.inlet_1,
-                "Hot Outlet": self.outlet_1,
-                "Cold Inlet": self.inlet_2,
-                "Cold Outlet": self.outlet_2,
+                "Hot Inlet": self.hot_side_inlet,
+                "Hot Outlet": self.hot_side_outlet,
+                "Cold Inlet": self.cold_side_inlet,
+                "Cold Outlet": self.cold_side_outlet,
             },
             time_point=time_point,
         )
-
-    @deprecated(
-        "The get_costing method is being deprecated in favor of the new "
-        "FlowsheetCostingBlock tools.",
-        version="TBD",
-    )
-    def get_costing(self, module=costing, year=None, **kwargs):
-        if not hasattr(self.flowsheet(), "costing"):
-            self.flowsheet().get_costing(year=year)
-
-        self.costing = Block()
-        module.hx_costing(self.costing, **kwargs)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -749,10 +704,3 @@ class HeatExchangerData(UnitModelBlockData):
 
         for t, c in self.delta_temperature_out_equation.items():
             iscale.constraint_scaling_transform(c, sf_dT2[t], overwrite=False)
-
-        # TODO: Deprecate as part of IDAES 2.0
-        # Check for old-style costing block, and scale if required
-        if hasattr(self, "costing") and not isinstance(
-            self.costing, UnitModelCostingBlock
-        ):
-            costing.calculate_scaling_factors(self.costing)
