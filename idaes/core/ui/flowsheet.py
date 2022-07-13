@@ -923,10 +923,14 @@ class FlowsheetDiff:
                 elif old_data[key] != new_data[key]:
                     if cls == "arcs":
                         # Update source and destination unit models as well
-                        src_unit_model = old_data[key]['source']
-                        dest_unit_model = old_data[key]['dest']
-                        diff["change"]["unit_models"][src_unit_model] = copy.deepcopy(new_model["unit_models"][src_unit_model])
-                        diff["change"]["unit_models"][dest_unit_model] = copy.deepcopy(new_model["unit_models"][dest_unit_model])
+                        src_unit_model = old_data[key]["source"]
+                        dest_unit_model = old_data[key]["dest"]
+                        diff["change"]["unit_models"][src_unit_model] = copy.deepcopy(
+                            new_model["unit_models"][src_unit_model]
+                        )
+                        diff["change"]["unit_models"][dest_unit_model] = copy.deepcopy(
+                            new_model["unit_models"][dest_unit_model]
+                        )
                     diff["change"][cls][key] = copy.deepcopy(new_data[key])
                     n += 1
             # Remove
