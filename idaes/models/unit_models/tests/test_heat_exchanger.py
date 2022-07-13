@@ -98,8 +98,9 @@ def test_bad_option():
 def test_bad_option2():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    with pytest.raises(ConfigurationError,
-                       match="cold_side_name cannot be 'hot_side'."):
+    with pytest.raises(
+        ConfigurationError, match="cold_side_name cannot be 'hot_side'."
+    ):
         m.fs.unit = HeatExchanger(default={"cold_side_name": "hot_side"})
 
 
@@ -107,8 +108,9 @@ def test_bad_option2():
 def test_bad_option3():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    with pytest.raises(ConfigurationError,
-                       match="hot_side_name cannot be 'cold_side'."):
+    with pytest.raises(
+        ConfigurationError, match="hot_side_name cannot be 'cold_side'."
+    ):
         m.fs.unit = HeatExchanger(default={"hot_side_name": "cold_side"})
 
 
@@ -116,8 +118,9 @@ def test_bad_option3():
 def test_bad_option4():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    with pytest.raises(ConfigurationError,
-                       match="cold_side_name cannot be 'cold_side'."):
+    with pytest.raises(
+        ConfigurationError, match="cold_side_name cannot be 'cold_side'."
+    ):
         m.fs.unit = HeatExchanger(default={"cold_side_name": "cold_side"})
 
 
@@ -125,8 +128,7 @@ def test_bad_option4():
 def test_bad_option5():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    with pytest.raises(ConfigurationError,
-                       match="hot_side_name cannot be 'hot_side'."):
+    with pytest.raises(ConfigurationError, match="hot_side_name cannot be 'hot_side'."):
         m.fs.unit = HeatExchanger(default={"hot_side_name": "hot_side"})
 
 
@@ -136,10 +138,12 @@ def test_hot_side_name_clash():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = PhysicalParameterTestBlock()
 
-    with pytest.raises(ValueError,
-                       match="fs.unit could not assign hot side alias "
-                       "build as an attribute of that name already "
-                       "exists."):
+    with pytest.raises(
+        ValueError,
+        match="fs.unit could not assign hot side alias "
+        "build as an attribute of that name already "
+        "exists.",
+    ):
         m.fs.unit = HeatExchanger(
             default={
                 "hot_side_config": {"property_package": m.fs.properties},
@@ -155,10 +159,12 @@ def test_cold_side_name_clash():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = PhysicalParameterTestBlock()
 
-    with pytest.raises(ValueError,
-                       match="fs.unit could not assign cold side alias "
-                       "build as an attribute of that name already "
-                       "exists."):
+    with pytest.raises(
+        ValueError,
+        match="fs.unit could not assign cold side alias "
+        "build as an attribute of that name already "
+        "exists.",
+    ):
         m.fs.unit = HeatExchanger(
             default={
                 "hot_side_config": {"property_package": m.fs.properties},
@@ -199,9 +205,13 @@ def test_config():
     # Check hot_side config
     assert len(m.fs.unit.config.hot_side_config) == 7
     assert (
-        m.fs.unit.config.hot_side_config.material_balance_type == MaterialBalanceType.useDefault
+        m.fs.unit.config.hot_side_config.material_balance_type
+        == MaterialBalanceType.useDefault
     )
-    assert m.fs.unit.config.hot_side_config.energy_balance_type == EnergyBalanceType.useDefault
+    assert (
+        m.fs.unit.config.hot_side_config.energy_balance_type
+        == EnergyBalanceType.useDefault
+    )
     assert (
         m.fs.unit.config.hot_side_config.momentum_balance_type
         == MomentumBalanceType.pressureTotal
@@ -212,10 +222,17 @@ def test_config():
 
     # Check cold_side config
     assert len(m.fs.unit.config.cold_side_config) == 7
-    assert m.fs.unit.config.cold_side_config.material_balance_type == MaterialBalanceType.useDefault
-    assert m.fs.unit.config.cold_side_config.energy_balance_type == EnergyBalanceType.useDefault
     assert (
-        m.fs.unit.config.cold_side_config.momentum_balance_type == MomentumBalanceType.pressureTotal
+        m.fs.unit.config.cold_side_config.material_balance_type
+        == MaterialBalanceType.useDefault
+    )
+    assert (
+        m.fs.unit.config.cold_side_config.energy_balance_type
+        == EnergyBalanceType.useDefault
+    )
+    assert (
+        m.fs.unit.config.cold_side_config.momentum_balance_type
+        == MomentumBalanceType.pressureTotal
     )
     assert not m.fs.unit.config.cold_side_config.has_phase_equilibrium
     assert not m.fs.unit.config.cold_side_config.has_pressure_change
@@ -593,7 +610,9 @@ class TestBTX_cocurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx):
-        assert pytest.approx(5, abs=1e-3) == value(btx.fs.unit.hot_side_outlet.flow_mol[0])
+        assert pytest.approx(5, abs=1e-3) == value(
+            btx.fs.unit.hot_side_outlet.flow_mol[0]
+        )
         assert pytest.approx(359.5, abs=1e-1) == value(
             btx.fs.unit.hot_side_outlet.temperature[0]
         )
@@ -601,7 +620,9 @@ class TestBTX_cocurrent(object):
             btx.fs.unit.hot_side_outlet.pressure[0]
         )
 
-        assert pytest.approx(1, abs=1e-3) == value(btx.fs.unit.cold_side_outlet.flow_mol[0])
+        assert pytest.approx(1, abs=1e-3) == value(
+            btx.fs.unit.cold_side_outlet.flow_mol[0]
+        )
         assert pytest.approx(329.9, abs=1e-1) == value(
             btx.fs.unit.cold_side_outlet.temperature[0]
         )
@@ -616,7 +637,8 @@ class TestBTX_cocurrent(object):
         assert (
             abs(
                 value(
-                    btx.fs.unit.hot_side_inlet.flow_mol[0] - btx.fs.unit.hot_side_outlet.flow_mol[0]
+                    btx.fs.unit.hot_side_inlet.flow_mol[0]
+                    - btx.fs.unit.hot_side_outlet.flow_mol[0]
                 )
             )
             <= 1e-6
@@ -624,7 +646,8 @@ class TestBTX_cocurrent(object):
         assert (
             abs(
                 value(
-                    btx.fs.unit.cold_side_inlet.flow_mol[0] - btx.fs.unit.cold_side_outlet.flow_mol[0]
+                    btx.fs.unit.cold_side_inlet.flow_mol[0]
+                    - btx.fs.unit.cold_side_outlet.flow_mol[0]
                 )
             )
             <= 1e-6
@@ -1132,8 +1155,12 @@ class TestIAPWS_countercurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, iapws):
-        assert pytest.approx(100, abs=1e-5) == value(iapws.fs.unit.hot_side_outlet.flow_mol[0])
-        assert pytest.approx(100, abs=1e-5) == value(iapws.fs.unit.cold_side_outlet.flow_mol[0])
+        assert pytest.approx(100, abs=1e-5) == value(
+            iapws.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(100, abs=1e-5) == value(
+            iapws.fs.unit.cold_side_outlet.flow_mol[0]
+        )
 
         assert pytest.approx(5070.219, abs=1e0) == value(
             iapws.fs.unit.hot_side_outlet.enth_mol[0]
@@ -1174,11 +1201,17 @@ class TestIAPWS_countercurrent(object):
 
         hot_side = value(
             iapws.fs.unit.hot_side_outlet.flow_mol[0]
-            * (iapws.fs.unit.hot_side_inlet.enth_mol[0] - iapws.fs.unit.hot_side_outlet.enth_mol[0])
+            * (
+                iapws.fs.unit.hot_side_inlet.enth_mol[0]
+                - iapws.fs.unit.hot_side_outlet.enth_mol[0]
+            )
         )
         cold_side = value(
             iapws.fs.unit.cold_side_outlet.flow_mol[0]
-            * (iapws.fs.unit.cold_side_inlet.enth_mol[0] - iapws.fs.unit.cold_side_outlet.enth_mol[0])
+            * (
+                iapws.fs.unit.cold_side_inlet.enth_mol[0]
+                - iapws.fs.unit.cold_side_outlet.enth_mol[0]
+            )
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
@@ -1776,7 +1809,9 @@ class TestBT_Generic_cocurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx):
-        assert pytest.approx(5, abs=1e-3) == value(btx.fs.unit.hot_side_outlet.flow_mol[0])
+        assert pytest.approx(5, abs=1e-3) == value(
+            btx.fs.unit.hot_side_outlet.flow_mol[0]
+        )
         assert pytest.approx(359.4, abs=1e-1) == value(
             btx.fs.unit.hot_side_outlet.temperature[0]
         )
@@ -1784,7 +1819,9 @@ class TestBT_Generic_cocurrent(object):
             btx.fs.unit.hot_side_outlet.pressure[0]
         )
 
-        assert pytest.approx(1, abs=1e-3) == value(btx.fs.unit.cold_side_outlet.flow_mol[0])
+        assert pytest.approx(1, abs=1e-3) == value(
+            btx.fs.unit.cold_side_outlet.flow_mol[0]
+        )
         assert pytest.approx(596.9, abs=1e-1) == value(
             btx.fs.unit.cold_side_outlet.temperature[0]
         )
@@ -1799,7 +1836,8 @@ class TestBT_Generic_cocurrent(object):
         assert (
             abs(
                 value(
-                    btx.fs.unit.hot_side_inlet.flow_mol[0] - btx.fs.unit.hot_side_outlet.flow_mol[0]
+                    btx.fs.unit.hot_side_inlet.flow_mol[0]
+                    - btx.fs.unit.hot_side_outlet.flow_mol[0]
                 )
             )
             <= 1e-6
@@ -1807,7 +1845,8 @@ class TestBT_Generic_cocurrent(object):
         assert (
             abs(
                 value(
-                    btx.fs.unit.cold_side_inlet.flow_mol[0] - btx.fs.unit.cold_side_outlet.flow_mol[0]
+                    btx.fs.unit.cold_side_inlet.flow_mol[0]
+                    - btx.fs.unit.cold_side_outlet.flow_mol[0]
                 )
             )
             <= 1e-6

@@ -268,9 +268,11 @@ class HeatExchangerData(UnitModelBlockData):
                 f"hot_side_name cannot be '{config.hot_side_name}'."
             )
 
-        if (config.hot_side_name is not None and
-                config.cold_side_name is not None and
-                config.hot_side_name == config.cold_side_name):
+        if (
+            config.hot_side_name is not None
+            and config.cold_side_name is not None
+            and config.hot_side_name == config.cold_side_name
+        ):
             raise NameError(
                 "HeatExchanger hot and cold side cannot have the same name '{}'."
                 " Be sure to set both the hot_side_name and cold_side_name.".format(
@@ -338,14 +340,16 @@ class HeatExchangerData(UnitModelBlockData):
             else:
                 raise ValueError(
                     f"{self.name} could not assign hot side alias {config.hot_side_name} "
-                    f"as an attribute of that name already exists.")
+                    f"as an attribute of that name already exists."
+                )
         if config.cold_side_name is not None:
             if not hasattr(self, config.cold_side_name):
                 add_object_reference(self, config.cold_side_name, cold_side)
             else:
                 raise ValueError(
                     f"{self.name} could not assign cold side alias {config.cold_side_name} "
-                    f"as an attribute of that name already exists.")
+                    f"as an attribute of that name already exists."
+                )
 
         ########################################################################
         # Add variables                                                        #
@@ -400,45 +404,53 @@ class HeatExchangerData(UnitModelBlockData):
             name="hot_side_inlet", block=hot_side, doc="Hot side inlet"
         )
         i2 = self.add_inlet_port(
-            name="cold_side_inlet", block=cold_side, doc="Cold side inlet",
+            name="cold_side_inlet",
+            block=cold_side,
+            doc="Cold side inlet",
         )
         o1 = self.add_outlet_port(
             name="hot_side_outlet", block=hot_side, doc="Hot side outlet"
         )
         o2 = self.add_outlet_port(
-            name="cold_side_outlet", block=cold_side, doc="Cold side outlet",
+            name="cold_side_outlet",
+            block=cold_side,
+            doc="Cold side outlet",
         )
 
         # Using Andrew's function for now.  I want these port names for backward
         # compatablity, but I don't want them to appear if you iterate throught
         # components and add_object_reference hides them from Pyomo.
         if config.hot_side_name is not None:
-            if not hasattr(self, config.hot_side_name+"_inlet"):
-                add_object_reference(self, config.hot_side_name+"_inlet", i1)
+            if not hasattr(self, config.hot_side_name + "_inlet"):
+                add_object_reference(self, config.hot_side_name + "_inlet", i1)
             else:
                 raise ValueError(
                     f"{self.name} could not assign hot side inlet alias {config.hot_side_name}_inlet "
-                    f"as an attribute of that name already exists.")
-            if not hasattr(self, config.hot_side_name+"_outlet"):
-                add_object_reference(self, config.hot_side_name+"_outlet", o1)
+                    f"as an attribute of that name already exists."
+                )
+            if not hasattr(self, config.hot_side_name + "_outlet"):
+                add_object_reference(self, config.hot_side_name + "_outlet", o1)
             else:
                 raise ValueError(
                     f"{self.name} could not assign hot side outlet alias {config.hot_side_name}_outlet "
-                    f"as an attribute of that name already exists.")
+                    f"as an attribute of that name already exists."
+                )
 
         if config.cold_side_name is not None:
-            if not hasattr(self, config.cold_side_name+"_inlet"):
-                add_object_reference(self, config.cold_side_name+"_inlet", i2)
+            if not hasattr(self, config.cold_side_name + "_inlet"):
+                add_object_reference(self, config.cold_side_name + "_inlet", i2)
             else:
                 raise ValueError(
                     f"{self.name} could not assign cold side inlet alias {config.cold_side_name}_inlet "
-                    f"as an attribute of that name already exists.")
-            if not hasattr(self, config.cold_side_name+"_outlet"):
-                add_object_reference(self, config.cold_side_name+"_outlet", o2)
+                    f"as an attribute of that name already exists."
+                )
+            if not hasattr(self, config.cold_side_name + "_outlet"):
+                add_object_reference(self, config.cold_side_name + "_outlet", o2)
             else:
                 raise ValueError(
                     f"{self.name} could not assign cold side outlet alias {config.cold_side_name}_outlet "
-                    f"as an attribute of that name already exists.")
+                    f"as an attribute of that name already exists."
+                )
 
         ########################################################################
         # Add end temperature difference constraints                           #
