@@ -394,15 +394,12 @@ class MultiPeriodModel(pyo.ConcreteModel):
         initialization_func(blk, **initialization_options)
         result = solver.solve(blk)
 
-        try:
-            assert pyo.check_optimal_termination(result)
-
-        except AssertionError:
-            _logger.error(
-                f"Flowsheet did not converge to optimality "
-                f"after fixing the degrees of freedom."
+        if not pyo.check_optimal_termination(result):
+            raise Exception(
+                f"Flowsheet did not converge to optimality after fixing the degrees of freedom. "
+                f"To create the multi-period model without initialization, do not provide "
+                f"initialization_func argument."
             )
-            raise
 
         # Store the initialized model in `init_model` object
         init_model = to_json(blk, return_dict=True)
@@ -479,7 +476,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
             if len(lmp) > 6:
                 raise Exception(
                     "Number of LMP signals provided exceeds six: the maximum "
-                    "number of subplots the function can handle."
+                    "number of subplots the function supports."
                 )
 
             grid_shape = {
@@ -505,6 +502,8 @@ class MultiPeriodModel(pyo.ConcreteModel):
             plt_time = {}
             plt_lmp = {}
             plt_title = {}
+            plt_x_range = {}
+            plt_y_range = {}
 
             counter = 1
             for i in lmp:
@@ -517,8 +516,8 @@ class MultiPeriodModel(pyo.ConcreteModel):
                     plt_time[counter] = time[i]
 
                 plt_title[counter] = str(i)
-                plt_x_range[counter] = None if i not in x_range else x_range[i]
-                plt_y_range[counter] = None if i not in y_range else y_range[i]
+                plt_x_range[counter] = None if x_range is None or i not in x_range else x_range[i]
+                plt_y_range[counter] = None if y_range is None or i not in y_range else y_range[i]
                 counter = counter + 1
 
         fig = plt.figure()
@@ -530,10 +529,10 @@ class MultiPeriodModel(pyo.ConcreteModel):
             ax.set_ylabel("LMP ($/MWh)")
             ax.set_title(plt_title[i])
 
-            if plt_x_range is not None:
+            if plt_x_range[i] is not None:
                 ax.set_xlim(plt_x_range[i][0], plt_x_range[i][1])
 
-            if y_range is not None and i in y_range:
+            if plt_y_range[i] is not None:
                 ax.set_ylim(plt_y_range[i][0], plt_y_range[i][1])
 
         fig.tight_layout()
@@ -541,8 +540,8 @@ class MultiPeriodModel(pyo.ConcreteModel):
 
     @staticmethod
     def plot_lmp_and_schedule(
-        lmp=None,
-        schedule=None,
+        lmp,
+        schedule,
         time=None,
         y_label=None,
         x_range=None,
@@ -575,17 +574,10 @@ class MultiPeriodModel(pyo.ConcreteModel):
         Returns:
             None
         """
-
-        if lmp is None:
-            raise Exception("LMP data is not provided!")
-
-        if schedule is None:
-            raise Exception("Optimal schedule data is not provided!")
-
         if len(schedule) > 4:
             raise Exception(
-                "len(schedule) exceeds four: the maximum "
-                "number of subplots the function supports."
+                f"Number of elements in schedule exceeds four: "
+                f"the maximum number of subplots the function supports."
             )
 
         key_list = {index + 1: value for index, value in enumerate(schedule)}
