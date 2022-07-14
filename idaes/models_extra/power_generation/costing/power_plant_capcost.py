@@ -261,19 +261,22 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             var_dict["Total Annualized Capital Cost [$MM/year]"] = TAC
 
         if hasattr(blk, "total_fixed_OM_cost"):
-            var_dict["Total fixed O&M cost [$MM/year]"] = value(
-                blk.total_fixed_OM_cost)
+            var_dict["Total fixed O&M cost [$MM/year]"] = value(blk.total_fixed_OM_cost)
         if hasattr(blk, "total_variable_OM_cost"):
             var_dict["Total variable O&M cost [$MM/year]"] = value(
-                blk.total_variable_OM_cost[0])
+                blk.total_variable_OM_cost[0]
+            )
 
-        if hasattr(blk, "total_TPC") and \
-            hasattr(blk, "total_fixed_OM_cost") and \
-                hasattr(blk, "total_variable_OM_cost"):
+        if (
+            hasattr(blk, "total_TPC")
+            and hasattr(blk, "total_fixed_OM_cost")
+            and hasattr(blk, "total_variable_OM_cost")
+        ):
             var_dict["Total Annualized Cost [$MM/year]"] = (
-                TAC +
-                value(blk.total_fixed_OM_cost) +
-                value(blk.total_variable_OM_cost[0]))
+                TAC
+                + value(blk.total_fixed_OM_cost)
+                + value(blk.total_variable_OM_cost[0])
+            )
 
         report_dir = {}
         report_dir["Value"] = {}
@@ -286,17 +289,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             count += 1
 
         df = DataFrame.from_dict(report_dir, orient="columns")
-        del df['pos']
+        del df["pos"]
         if export:
             df.to_csv(f"{blk.local_name}_report.csv")
 
         print("\n" + "=" * 84)
         print(f"{blk.local_name}")
         print("-" * 84)
-        stdout.write(
-            textwrap.indent(
-                stream_table_dataframe_to_string(df),
-                " " * 4))
+        stdout.write(textwrap.indent(stream_table_dataframe_to_string(df), " " * 4))
         print("\n" + "=" * 84 + "\n")
 
     def get_PP_costing(
@@ -384,8 +384,11 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         spreadsheet.
 
         """
-        from idaes.models_extra.power_generation.costing.power_plant_capcost_custom_dict import \
-            (custom_costing_exponents, custom_costing_params)
+        from idaes.models_extra.power_generation.costing.power_plant_capcost_custom_dict import (
+            custom_costing_exponents,
+            custom_costing_params,
+        )
+
         # ------------------------ Power Plant Cost ------------------------
 
         # check to see if a costing block already exists

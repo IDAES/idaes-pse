@@ -751,10 +751,12 @@ def test_ccs_units_costing():
 
     # Flue gas direct contact cooler packing TPC
     assert pytest.approx(1.6921, rel=1e-3) == sum(
-        pyo.value(m.fs.b29.total_plant_cost[ac]) for ac in flue_gas_dcc_packing_account_1
+        pyo.value(m.fs.b29.total_plant_cost[ac])
+        for ac in flue_gas_dcc_packing_account_1
     )
     assert pytest.approx(2.2603, rel=1e-3) == sum(
-        pyo.value(m.fs.b30.total_plant_cost[ac]) for ac in flue_gas_dcc_packing_account_2
+        pyo.value(m.fs.b30.total_plant_cost[ac])
+        for ac in flue_gas_dcc_packing_account_2
     )
 
     # Pretreatment pump TPC
@@ -811,10 +813,12 @@ def test_ccs_units_costing():
 
     # Washing solvent pump TPC
     assert pytest.approx(0.008210, rel=1e-3) == sum(
-        pyo.value(m.fs.b43.total_plant_cost[ac]) for ac in washing_solvent_pump_account_1
+        pyo.value(m.fs.b43.total_plant_cost[ac])
+        for ac in washing_solvent_pump_account_1
     )
     assert pytest.approx(0.01097, rel=1e-3) == sum(
-        pyo.value(m.fs.b44.total_plant_cost[ac]) for ac in washing_solvent_pump_account_2
+        pyo.value(m.fs.b44.total_plant_cost[ac])
+        for ac in washing_solvent_pump_account_2
     )
 
     # Condenser pump TPC
@@ -827,10 +831,12 @@ def test_ccs_units_costing():
 
     # Stripper reflux drum TPC
     assert pytest.approx(0.0310, rel=1e-3) == sum(
-        pyo.value(m.fs.b47.total_plant_cost[ac]) for ac in stripper_reflux_drum_account_1
+        pyo.value(m.fs.b47.total_plant_cost[ac])
+        for ac in stripper_reflux_drum_account_1
     )
     assert pytest.approx(0.0414, rel=1e-3) == sum(
-        pyo.value(m.fs.b48.total_plant_cost[ac]) for ac in stripper_reflux_drum_account_2
+        pyo.value(m.fs.b48.total_plant_cost[ac])
+        for ac in stripper_reflux_drum_account_2
     )
 
     # Lean solvent pump TPC
@@ -843,18 +849,22 @@ def test_ccs_units_costing():
 
     # Solvent storage tank TPC
     assert pytest.approx(0.2700, rel=1e-3) == sum(
-        pyo.value(m.fs.b51.total_plant_cost[ac]) for ac in solvent_storage_tank_account_1
+        pyo.value(m.fs.b51.total_plant_cost[ac])
+        for ac in solvent_storage_tank_account_1
     )
     assert pytest.approx(0.3607, rel=1e-3) == sum(
-        pyo.value(m.fs.b52.total_plant_cost[ac]) for ac in solvent_storage_tank_account_2
+        pyo.value(m.fs.b52.total_plant_cost[ac])
+        for ac in solvent_storage_tank_account_2
     )
 
     # Washing solvent tank TPC
     assert pytest.approx(0.03101, rel=1e-3) == sum(
-        pyo.value(m.fs.b53.total_plant_cost[ac]) for ac in washing_solvent_tank_account_1
+        pyo.value(m.fs.b53.total_plant_cost[ac])
+        for ac in washing_solvent_tank_account_1
     )
     assert pytest.approx(0.04143, rel=1e-3) == sum(
-        pyo.value(m.fs.b54.total_plant_cost[ac]) for ac in washing_solvent_tank_account_2
+        pyo.value(m.fs.b54.total_plant_cost[ac])
+        for ac in washing_solvent_tank_account_2
     )
 
     # Solvent stripper reclaimer TPC
@@ -888,10 +898,9 @@ def test_ccs_units_costing():
     # Total TPC
     TPC = 0
     for idx in range(17, 61):
-        block = getattr(m.fs, 'b'+str(idx))
+        block = getattr(m.fs, "b" + str(idx))
         for ac in block.total_plant_cost.keys():
             TPC += pyo.value(block.total_plant_cost[ac])
-
 
     assert pytest.approx(85.218, rel=1e-3) == TPC
 
