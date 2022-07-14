@@ -74,14 +74,20 @@ class PropertyTestHarness(object):
 
         m.fs.params = self.prop_pack(default=self.param_args)
 
+        m.fs.props = m.fs.params.build_state_block(
+            [1], default={"defined_state": True, **m.prop_args}
+        )
+
         return m
 
+    @pytest.mark.unit
     def test_param_block(self, frame):
         if not isinstance(frame.fs.params, PhysicalParameterBlock):
             raise TypeError(
                 "Parameter Block does not inherit from PhysicalParameterBlock"
             )
 
+    @pytest.mark.unit
     def test_component_list(self, frame):
         if not isinstance(frame.fs.params.component_list, Set):
             raise TypeError(
@@ -89,6 +95,7 @@ class PropertyTestHarness(object):
                 "component_list is not a Pyomo Set."
             )
 
+    @pytest.mark.unit
     def test_phase_list(self, frame):
         if not isinstance(frame.fs.params.phase_list, Set):
             raise TypeError(
@@ -96,30 +103,31 @@ class PropertyTestHarness(object):
                 "phase_list is not a Pyomo Set."
             )
 
+    @pytest.mark.unit
     def test_state_block_class(self, frame):
         if not hasattr(frame.fs.params, "state_block_class"):
             raise AttributeError("Parameter block does not specify state_block_class.")
 
+    @pytest.mark.unit
     def test_properties_meta_data(self, frame):
         if frame.fs.params.get_metadata().properties is None:
             raise AttributeError(
                 "Parameter block has not specified properties metadata."
             )
 
+    @pytest.mark.unit
     def test_default_units_meta_data(self, frame):
         if frame.fs.params.get_metadata().default_units is None:
             raise AttributeError(
                 "Parameter block has not specified default_units metadata."
             )
 
+    @pytest.mark.unit
     def test_state_block_construction(self, frame):
-        frame.fs.props = frame.fs.params.build_state_block(
-            [1], default={"defined_state": True, **frame.prop_args}
-        )
-
         if not isinstance(frame.fs.props[1], StateBlockData):
             raise TypeError("State Block does not inherit from StateBlockData.")
 
+    @pytest.mark.unit
     def test_state_block_temperature(self, frame):
         if not isinstance(frame.fs.props[1].temperature, (Var, Expression)):
             raise AttributeError(
@@ -127,6 +135,7 @@ class PropertyTestHarness(object):
                 "not a Pyomo Var or Expression."
             )
 
+    @pytest.mark.unit
     def test_state_block_pressure(self, frame):
         if not isinstance(frame.fs.props[1].pressure, (Var, Expression)):
             raise AttributeError(
@@ -134,6 +143,7 @@ class PropertyTestHarness(object):
                 "not a Pyomo Var or Expression."
             )
 
+    @pytest.mark.unit
     def test_state_block_mole_frac_phase_comp(self, frame):
         if not isinstance(frame.fs.props[1].mole_frac_phase_comp, (Var, Expression)):
             raise AttributeError(
@@ -158,6 +168,7 @@ class PropertyTestHarness(object):
                 "mole_frac_phase_comp is not indexed by phase and component."
             )
 
+    @pytest.mark.unit
     def test_get_material_flow_terms(self, frame):
         try:
             for p, j in frame.fs.params._phase_component_set:
@@ -174,6 +185,7 @@ class PropertyTestHarness(object):
                 "State block has not implemented get_material_flow_terms " "method."
             )
 
+    @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, frame):
         try:
             for p in frame.fs.params.phase_list:
@@ -187,6 +199,7 @@ class PropertyTestHarness(object):
                 "State block has not implemented get_enthalpy_flow_terms " "method."
             )
 
+    @pytest.mark.unit
     def test_get_material_density_terms(self, frame):
         if frame.has_density_terms:
             try:
@@ -206,6 +219,7 @@ class PropertyTestHarness(object):
                     "get_material_density_terms method."
                 )
 
+    @pytest.mark.unit
     def test_get_energy_density_terms(self, frame):
         if frame.has_density_terms:
             try:
@@ -222,18 +236,22 @@ class PropertyTestHarness(object):
                     "get_enthalpy_density_terms method."
                 )
 
+    @pytest.mark.unit
     def test_default_material_balance_type(self, frame):
         if frame.fs.props[1].default_material_balance_type() not in MaterialBalanceType:
             raise ValueError("Invalid value for default_material_balance_type.")
 
+    @pytest.mark.unit
     def test_default_energy_balance_type(self, frame):
         if frame.fs.props[1].default_energy_balance_type() not in EnergyBalanceType:
             raise ValueError("Invalid value for default_energy_balance_type.")
 
+    @pytest.mark.unit
     def test_get_material_flow_basis(self, frame):
         if frame.fs.props[1].get_material_flow_basis() not in MaterialFlowBasis:
             raise ValueError("Invalid value for get_material_flow_basis.")
 
+    @pytest.mark.unit
     def test_define_state_vars(self, frame):
         try:
             sv = frame.fs.props[1].define_state_vars()
@@ -252,9 +270,11 @@ class PropertyTestHarness(object):
                     "be Pyomo Vars.".format(v)
                 )
 
+    @pytest.mark.component
     def test_unit_consistency(self, frame):
         assert_units_consistent(frame)
 
+    @pytest.mark.component
     def test_initialize(self, frame):
         frame._init_dof = degrees_of_freedom(frame.fs.props[1])
 
@@ -273,6 +293,7 @@ class PropertyTestHarness(object):
                 "degrees of freedom."
             )
 
+    @pytest.mark.component
     def test_release_state(self, frame):
         if not hasattr(frame.fs.props, "release_state") or not callable(
             frame.fs.props.release_state
@@ -289,6 +310,7 @@ class PropertyTestHarness(object):
                 "degrees of freedom."
             )
 
+    @pytest.mark.component
     def test_initialize_failure(self, frame):
         if not frame.skip_initialization_raises_exception_test:
             for n, v in frame.fs.props[1].define_state_vars().items():
@@ -308,6 +330,7 @@ class PropertyTestHarness(object):
                 for i in v:
                     frame.fs.props[1].del_component("_init_test_" + str(v) + str(i))
 
+    @pytest.mark.component
     def test_CV_integration(self, frame):
         frame.fs.cv = ControlVolume0DBlock(
             default={"property_package": frame.fs.params}
@@ -323,6 +346,7 @@ class PropertyTestHarness(object):
 
         frame.fs.cv.add_momentum_balances()
 
+    @pytest.mark.component
     def test_default_scaling_factors(self, frame):
         # check that the calculate_scaling_factors method successfully copies
         # the default scaling factors to the scaling suffixes.  If there are

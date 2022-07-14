@@ -15,6 +15,7 @@ Tests for versioning
 """
 # third-party
 import pytest
+
 # pkg
 import idaes
 from idaes import ver
@@ -28,20 +29,20 @@ def test_idaes_version():
 @pytest.mark.unit
 def test_ver_class():
     v = ver.Version(1, 2, 3)
-    assert str(v) == '1.2.3'
+    assert str(v) == "1.2.3"
     seq = [1, 2, 3]
     for i, n in enumerate(v):
-        print("i:", i, 'n:', n)
+        print("i:", i, "n:", n)
         assert n == seq[i]
-    v = ver.Version(1, 2, 3, 'beta', 1)
-    assert str(v) == '1.2.3.b1'
-    v = ver.Version(1, 2, 3, 'beta', 2, 'test')
-    assert str(v) == '1.2.3.b2+test'
-    v = ver.Version(1, 2, 3, 'beta', label='test')
-    assert str(v) == '1.2.3.b+test'
-    v = ver.Version(1, 2, 3, 'development')
-    assert str(v) == '1.2.3.dev'
-    pytest.raises(ValueError, ver.Version, 1, 2, 3, 'howdy')
+    v = ver.Version(1, 2, 3, "beta", 1)
+    assert str(v) == "1.2.3.b1"
+    v = ver.Version(1, 2, 3, "beta", 2, "test")
+    assert str(v) == "1.2.3.b2+test"
+    v = ver.Version(1, 2, 3, "beta", label="test")
+    assert str(v) == "1.2.3.b+test"
+    v = ver.Version(1, 2, 3, "development")
+    assert str(v) == "1.2.3.dev"
+    pytest.raises(ValueError, ver.Version, 1, 2, 3, "howdy")
 
 
 class MyVersionedClass(ver.HasVersion):
@@ -52,7 +53,7 @@ class MyVersionedClass(ver.HasVersion):
 @pytest.mark.unit
 def test_has_version():
     x = MyVersionedClass()
-    assert str(x.version) == '1.2.3'
+    assert str(x.version) == "1.2.3"
 
 
 @pytest.mark.unit

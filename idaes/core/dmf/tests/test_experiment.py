@@ -90,4 +90,3 @@ def test_remove_workflow():
     # check that the link is gone, i.e. there are no
     # relations in e2 any more
     assert len(e2.v["relations"]) == 0
-

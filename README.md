@@ -6,8 +6,8 @@ scale-up, operation and troubleshooting of innovative, advanced energy systems.
 
 <!-- BEGIN Status badges -->
 ## Project Build and Download Statuses
-![Tests](https://github.com/IDAES/idaes-pse/workflows/Tests/badge.svg?branch=main)
-![Integration](https://github.com/IDAES/idaes-pse/workflows/Integration/badge.svg?branch=main)
+[![Tests](https://github.com/IDAES/idaes-pse/actions/workflows/core.yml/badge.svg)](https://github.com/IDAES/idaes-pse/actions/workflows/core.yml)
+[![Integration](https://github.com/IDAES/idaes-pse/actions/workflows/integration.yml/badge.svg)](https://github.com/IDAES/idaes-pse/actions/workflows/integration.yml)
 [![codecov](https://codecov.io/gh/IDAES/idaes-pse/branch/main/graph/badge.svg?token=1lNQNbSB29)](https://codecov.io/gh/IDAES/idaes-pse)
 [![Documentation Status](https://readthedocs.org/projects/idaes-pse/badge/?version=latest)](https://idaes-pse.readthedocs.io/en/latest/?badge=latest)
 [![GitHub contributors](https://img.shields.io/github/contributors/IDAES/idaes-pse.svg)](https://github.com/IDAES/idaes-pse/graphs/contributors)

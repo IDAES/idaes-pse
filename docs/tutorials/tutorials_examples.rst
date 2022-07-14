@@ -1,6 +1,6 @@
 ﻿Tutorials and Examples
 ======================
-In addition to the short examples in the :doc:`How-to <howto/index>` section,
+In addition to the short examples in the :doc:`How-to <../reference_guides/developer/howto/>` section,
 longer examples and tutorials are available on a separate set of pages
 at |examples-site|.
 If you are new to IDAES, it is strongly recommended to start with the tutorials.

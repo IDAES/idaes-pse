@@ -294,8 +294,7 @@ class TestIronOC(object):
                 "temperature": 1173.9,
                 "pressure": 1.86e5,
             },
-            solid_phase_state_args={"flow_mass": 1230.865,
-                                    "temperature": 1173.9},
+            solid_phase_state_args={"flow_mass": 1230.865, "temperature": 1173.9},
         )
 
     @pytest.mark.solver
@@ -599,8 +598,7 @@ class TestIronOC(object):
                 "temperature": 1173.9,
                 "pressure": 1.86e5,
             },
-            solid_phase_state_args={"flow_mass": 1230.865,
-                                    "temperature": 1173.9},
+            solid_phase_state_args={"flow_mass": 1230.865, "temperature": 1173.9},
         )
 
     @pytest.mark.solver
@@ -917,17 +915,22 @@ class TestIronOC_EnergyBalanceType(object):
                 "flow_mol": 1567.79,
                 "temperature": 1173.9,
                 "pressure": 1.86e5,
-                "mole_frac_comp": {"O2": 0.2095,
-                                   "N2": 0.7808,
-                                   "CO2": 0.0004,
-                                   "H2O": 0.0093}
+                "mole_frac_comp": {
+                    "O2": 0.2095,
+                    "N2": 0.7808,
+                    "CO2": 0.0004,
+                    "H2O": 0.0093,
+                },
             },
-            solid_phase_state_args={"flow_mass": 1230.865,
-                                    "temperature": 1173.9,
-                                    "mole_frac_comp": {"Fe2O3": 0.244162011502,
-                                                       "Fe3O4": 0.201998299487,
-                                                       "Al2O3": 0.553839689011},
-                                    },
+            solid_phase_state_args={
+                "flow_mass": 1230.865,
+                "temperature": 1173.9,
+                "mole_frac_comp": {
+                    "Fe2O3": 0.244162011502,
+                    "Fe3O4": 0.201998299487,
+                    "Al2O3": 0.553839689011,
+                },
+            },
         )
 
     @pytest.mark.solver
@@ -1155,8 +1158,7 @@ class TestIronOC_EnergyBalanceType(object):
                 "temperature": 1173.9,
                 "pressure": 1.86e5,
             },
-            solid_phase_state_args={"flow_mass": 1230.865,
-                                    "temperature": 1173.9},
+            solid_phase_state_args={"flow_mass": 1230.865, "temperature": 1173.9},
         )
 
     @pytest.mark.solver
@@ -1399,8 +1401,7 @@ class TestIronOC_TransformationMethod(object):
                 "temperature": 1173.9,
                 "pressure": 1.86e5,
             },
-            solid_phase_state_args={"flow_mass": 1230.865,
-                                    "temperature": 1173.9},
+            solid_phase_state_args={"flow_mass": 1230.865, "temperature": 1173.9},
         )
 
     @pytest.mark.solver

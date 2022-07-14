@@ -74,8 +74,11 @@ export class Paper {
      * Register Events before the graph model is loaded
      */
     preSetupRegisterEvents() {
-        let model_id = $("#idaes-fs-name").data("flowsheetId");
-        let url = "/fs?id=".concat(model_id);
+
+        // Save model every time the graph changes
+        this._graph.on('change:position change:angle change:vertices', () => {
+            this._app.graphChanged();
+        });
 
         // Getting the main elements for the idaes canvas and the stream table
         // to be able to dispatch highlighting events to the streams existing
@@ -181,12 +184,6 @@ export class Paper {
             streamTable.dispatchEvent(removeHighlightStreamEvent);
             idaesCanvas.dispatchEvent(removeHighlightStreamEvent);
         });
-
-        // Send a post request to the server with the new this._graph 
-        // This is essentially the saving mechanism (for a server instance) for 
-        // right now
-        // See the comments above the save button for more saving TODOs
-        self._paper.on('paper:mouseleave', () => {this._app.saveModel(url, self._graph)});
 
         // Link labels will appear and disappear on right click. Replaces browser context menu
         self._paper.on("link:contextmenu", function(linkView, evt) {
