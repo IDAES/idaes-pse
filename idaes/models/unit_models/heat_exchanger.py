@@ -80,23 +80,23 @@ def _make_heat_exchanger_config(config):
         ),
     )
     config.declare(
-        "hot_side_config",
+        "hot_side",
         ConfigBlock(
             description="Config block for hot side",
             doc="""A config block used to construct the hot side control volume.
-This config can be given by the hot side name instead of hot_side_config.""",
+This config can be given by the hot side name instead of hot_side.""",
         ),
     )
     config.declare(
-        "cold_side_config",
+        "cold_side",
         ConfigBlock(
             description="Config block for cold side",
             doc="""A config block used to construct the cold side control volume.
-This config can be given by the cold side name instead of cold_side_config.""",
+This config can be given by the cold side name instead of cold_side.""",
         ),
     )
-    _make_heater_config_block(config.hot_side_config)
-    _make_heater_config_block(config.cold_side_config)
+    _make_heater_config_block(config.hot_side)
+    _make_heater_config_block(config.cold_side)
     config.declare(
         "delta_temperature_callback",
         ConfigValue(
@@ -274,10 +274,8 @@ class HeatExchangerData(UnitModelBlockData):
             and config.hot_side_name == config.cold_side_name
         ):
             raise NameError(
-                "HeatExchanger hot and cold side cannot have the same name '{}'."
-                " Be sure to set both the hot_side_name and cold_side_name.".format(
-                    config.hot_side_name
-                )
+                f"HeatExchanger hot and cold side cannot have the same name "
+                f"'{config.hot_side_name}'."
             )
 
         for o in config:
@@ -287,15 +285,15 @@ class HeatExchangerData(UnitModelBlockData):
                 raise KeyError("HeatExchanger config option {} not defined".format(o))
 
         if config.hot_side_name is not None and config.hot_side_name in config:
-            config.hot_side_config.set_value(config[config.hot_side_name])
-            # Allow access to hot_side_config under the hot_side_name, backward
+            config.hot_side.set_value(config[config.hot_side_name])
+            # Allow access to hot_side under the hot_side_name, backward
             # compatible with the tube and shell notation
-            setattr(config, config.hot_side_name, config.hot_side_config)
+            setattr(config, config.hot_side_name, config.hot_side)
         if config.cold_side_name is not None and config.cold_side_name in config:
-            config.cold_side_config.set_value(config[config.cold_side_name])
-            # Allow access to hot_side_config under the cold_side_name, backward
+            config.cold_side.set_value(config[config.cold_side_name])
+            # Allow access to hot_side under the cold_side_name, backward
             # compatible with the tube and shell notation
-            setattr(config, config.cold_side_name, config.cold_side_config)
+            setattr(config, config.cold_side_name, config.cold_side)
 
     def build(self):
         """
@@ -319,21 +317,20 @@ class HeatExchangerData(UnitModelBlockData):
         hot_side = _make_heater_control_volume(
             self,
             "hot_side",
-            config.hot_side_config,
+            config.hot_side,
             dynamic=config.dynamic,
             has_holdup=config.has_holdup,
         )
         cold_side = _make_heater_control_volume(
             self,
             "cold_side",
-            config.cold_side_config,
+            config.cold_side,
             dynamic=config.dynamic,
             has_holdup=config.has_holdup,
         )
         # Add references to the user provided aliases (if applicable).
         # Using add_object_reference keeps these from showing up when you
-        # iterate through pyomo compoents in a model, so only the user specified
-        # control volume names are "seen"
+        # iterate through pyomo componets in a model
         if config.hot_side_name is not None:
             if not hasattr(self, config.hot_side_name):
                 add_object_reference(self, config.hot_side_name, hot_side)
@@ -355,7 +352,7 @@ class HeatExchangerData(UnitModelBlockData):
         # Add variables                                                        #
         ########################################################################
         # Use hot side units as basis
-        s1_metadata = config.hot_side_config.property_package.get_metadata()
+        s1_metadata = config.hot_side.property_package.get_metadata()
 
         q_units = s1_metadata.get_derived_units("power")
         u_units = s1_metadata.get_derived_units("heat_transfer_coefficient")
@@ -417,9 +414,7 @@ class HeatExchangerData(UnitModelBlockData):
             doc="Cold side outlet",
         )
 
-        # Using Andrew's function for now.  I want these port names for backward
-        # compatablity, but I don't want them to appear if you iterate throught
-        # components and add_object_reference hides them from Pyomo.
+        # Add aliases for ports if user provided names for each side
         if config.hot_side_name is not None:
             if not hasattr(self, config.hot_side_name + "_inlet"):
                 add_object_reference(self, config.hot_side_name + "_inlet", i1)

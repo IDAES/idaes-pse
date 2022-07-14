@@ -146,8 +146,8 @@ class TestHXRegression(object):
 
         m.fs.unit = HeatExchangerLumpedCapacitance(
             default={
-                "hot_side_config": {"property_package": m.fs.properties},
-                "cold_side_config": {"property_package": m.fs.properties},
+                "hot_side": {"property_package": m.fs.properties},
+                "cold_side": {"property_package": m.fs.properties},
                 "flow_pattern": HeatExchangerFlowPattern.crossflow,
                 "dynamic_heat_balance": False,
             }
@@ -273,8 +273,8 @@ class TestHXLCGeneric(object):
             default={
                 "hot_side_name": "shell",
                 "cold_side_name": "tube",
-                "hot_side_config": {"property_package": m.fs.properties},
-                "cold_side_config": {"property_package": m.fs.properties},
+                "hot_side": {"property_package": m.fs.properties},
+                "cold_side": {"property_package": m.fs.properties},
                 "dynamic": False,
             }
         )

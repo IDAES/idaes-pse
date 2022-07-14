@@ -40,7 +40,6 @@ from idaes.core import (
 from idaes.models.unit_models.heat_exchanger import (
     delta_temperature_lmtd_callback,
     delta_temperature_lmtd2_callback,
-    # delta_temperature_lmtd3_callback,
     delta_temperature_amtd_callback,
     delta_temperature_underwood_callback,
     HeatExchanger,
@@ -133,6 +132,19 @@ def test_bad_option5():
 
 
 @pytest.mark.unit
+def test_hot_and_cold_names_same():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    with pytest.raises(
+        NameError,
+        match="HeatExchanger hot and cold side cannot have the same name 'shell'.",
+    ):
+        m.fs.unit = HeatExchanger(
+            default={"hot_side_name": "shell", "cold_side_name": "shell"}
+        )
+
+
+@pytest.mark.unit
 def test_hot_side_name_clash():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -146,8 +158,8 @@ def test_hot_side_name_clash():
     ):
         m.fs.unit = HeatExchanger(
             default={
-                "hot_side_config": {"property_package": m.fs.properties},
-                "cold_side_config": {"property_package": m.fs.properties},
+                "hot_side": {"property_package": m.fs.properties},
+                "cold_side": {"property_package": m.fs.properties},
                 "hot_side_name": "build",
             }
         )
@@ -167,11 +179,38 @@ def test_cold_side_name_clash():
     ):
         m.fs.unit = HeatExchanger(
             default={
-                "hot_side_config": {"property_package": m.fs.properties},
-                "cold_side_config": {"property_package": m.fs.properties},
+                "hot_side": {"property_package": m.fs.properties},
+                "cold_side": {"property_package": m.fs.properties},
                 "cold_side_name": "build",
             }
         )
+
+
+@pytest.mark.unit
+def test_user_names():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = PhysicalParameterTestBlock()
+
+    m.fs.unit = HeatExchanger(
+        default={
+            "hot_side_name": "shell",
+            "cold_side_name": "tube",
+            "shell": {"property_package": m.fs.properties},
+            "tube": {"property_package": m.fs.properties},
+        }
+    )
+
+    assert m.fs.unit.config.hot_side.property_package is m.fs.properties
+    assert m.fs.unit.config.cold_side.property_package is m.fs.properties
+
+    assert m.fs.unit.shell is m.fs.unit.hot_side
+    assert m.fs.unit.tube is m.fs.unit.cold_side
+
+    assert m.fs.unit.shell_inlet is m.fs.unit.hot_side_inlet
+    assert m.fs.unit.tube_inlet is m.fs.unit.cold_side_inlet
+    assert m.fs.unit.shell_outlet is m.fs.unit.hot_side_outlet
+    assert m.fs.unit.tube_outlet is m.fs.unit.cold_side_outlet
 
 
 @pytest.mark.unit
@@ -183,8 +222,8 @@ def test_config():
 
     m.fs.unit = HeatExchanger(
         default={
-            "hot_side_config": {"property_package": m.fs.properties},
-            "cold_side_config": {"property_package": m.fs.properties},
+            "hot_side": {"property_package": m.fs.properties},
+            "cold_side": {"property_package": m.fs.properties},
         }
     )
 
@@ -195,48 +234,44 @@ def test_config():
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
-    assert isinstance(m.fs.unit.config.hot_side_config, ConfigBlock)
-    assert isinstance(m.fs.unit.config.cold_side_config, ConfigBlock)
+    assert isinstance(m.fs.unit.config.hot_side, ConfigBlock)
+    assert isinstance(m.fs.unit.config.cold_side, ConfigBlock)
     assert (
         m.fs.unit.config.delta_temperature_callback is delta_temperature_lmtd_callback
     )
     assert m.fs.unit.config.flow_pattern == HeatExchangerFlowPattern.countercurrent
 
     # Check hot_side config
-    assert len(m.fs.unit.config.hot_side_config) == 7
+    assert len(m.fs.unit.config.hot_side) == 7
     assert (
-        m.fs.unit.config.hot_side_config.material_balance_type
+        m.fs.unit.config.hot_side.material_balance_type
         == MaterialBalanceType.useDefault
     )
+    assert m.fs.unit.config.hot_side.energy_balance_type == EnergyBalanceType.useDefault
     assert (
-        m.fs.unit.config.hot_side_config.energy_balance_type
-        == EnergyBalanceType.useDefault
-    )
-    assert (
-        m.fs.unit.config.hot_side_config.momentum_balance_type
+        m.fs.unit.config.hot_side.momentum_balance_type
         == MomentumBalanceType.pressureTotal
     )
-    assert not m.fs.unit.config.hot_side_config.has_phase_equilibrium
-    assert not m.fs.unit.config.hot_side_config.has_pressure_change
-    assert m.fs.unit.config.hot_side_config.property_package is m.fs.properties
+    assert not m.fs.unit.config.hot_side.has_phase_equilibrium
+    assert not m.fs.unit.config.hot_side.has_pressure_change
+    assert m.fs.unit.config.hot_side.property_package is m.fs.properties
 
     # Check cold_side config
-    assert len(m.fs.unit.config.cold_side_config) == 7
+    assert len(m.fs.unit.config.cold_side) == 7
     assert (
-        m.fs.unit.config.cold_side_config.material_balance_type
+        m.fs.unit.config.cold_side.material_balance_type
         == MaterialBalanceType.useDefault
     )
     assert (
-        m.fs.unit.config.cold_side_config.energy_balance_type
-        == EnergyBalanceType.useDefault
+        m.fs.unit.config.cold_side.energy_balance_type == EnergyBalanceType.useDefault
     )
     assert (
-        m.fs.unit.config.cold_side_config.momentum_balance_type
+        m.fs.unit.config.cold_side.momentum_balance_type
         == MomentumBalanceType.pressureTotal
     )
-    assert not m.fs.unit.config.cold_side_config.has_phase_equilibrium
-    assert not m.fs.unit.config.cold_side_config.has_pressure_change
-    assert m.fs.unit.config.cold_side_config.property_package is m.fs.properties
+    assert not m.fs.unit.config.cold_side.has_phase_equilibrium
+    assert not m.fs.unit.config.cold_side.has_pressure_change
+    assert m.fs.unit.config.cold_side.property_package is m.fs.properties
 
 
 def basic_model(cb=delta_temperature_lmtd_callback):
@@ -247,8 +282,8 @@ def basic_model(cb=delta_temperature_lmtd_callback):
 
     m.fs.unit = HeatExchanger(
         default={
-            "hot_side_config": {"property_package": m.fs.properties},
-            "cold_side_config": {"property_package": m.fs.properties},
+            "hot_side": {"property_package": m.fs.properties},
+            "cold_side": {"property_package": m.fs.properties},
             "delta_temperature_callback": cb,
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
         }
@@ -278,8 +313,8 @@ def basic_model2(cb=delta_temperature_lmtd_callback):
 
     m.fs.unit = HeatExchanger(
         default={
-            "hot_side_config": {"property_package": m.fs.properties},
-            "cold_side_config": {"property_package": m.fs.properties},
+            "hot_side": {"property_package": m.fs.properties},
+            "cold_side": {"property_package": m.fs.properties},
             "delta_temperature_callback": cb,
             "flow_pattern": HeatExchangerFlowPattern.cocurrent,
         }
@@ -309,8 +344,8 @@ def basic_model3(cb=delta_temperature_lmtd_callback):
 
     m.fs.unit = HeatExchanger(
         default={
-            "hot_side_config": {"property_package": m.fs.properties},
-            "cold_side_config": {"property_package": m.fs.properties},
+            "hot_side": {"property_package": m.fs.properties},
+            "cold_side": {"property_package": m.fs.properties},
             "delta_temperature_callback": cb,
             "flow_pattern": HeatExchangerFlowPattern.crossflow,
         }
@@ -438,8 +473,8 @@ class TestBTX_cocurrent(object):
 
         m.fs.unit = HeatExchanger(
             default={
-                "hot_side_config": {"property_package": m.fs.properties},
-                "cold_side_config": {"property_package": m.fs.properties},
+                "hot_side": {"property_package": m.fs.properties},
+                "cold_side": {"property_package": m.fs.properties},
                 "flow_pattern": HeatExchangerFlowPattern.cocurrent,
             }
         )
@@ -924,8 +959,8 @@ class TestIAPWS_countercurrent(object):
 
         m.fs.unit = HeatExchanger(
             default={
-                "hot_side_config": {"property_package": m.fs.properties},
-                "cold_side_config": {"property_package": m.fs.properties},
+                "hot_side": {"property_package": m.fs.properties},
+                "cold_side": {"property_package": m.fs.properties},
                 "flow_pattern": HeatExchangerFlowPattern.countercurrent,
             }
         )
@@ -952,8 +987,8 @@ class TestIAPWS_countercurrent(object):
 
         m.fs.unit = HeatExchanger(
             default={
-                "hot_side_config": {"property_package": m.fs.properties},
-                "cold_side_config": {"property_package": m.fs.properties},
+                "hot_side": {"property_package": m.fs.properties},
+                "cold_side": {"property_package": m.fs.properties},
                 "delta_temperature_callback": delta_temperature_underwood_callback,
                 "flow_pattern": HeatExchangerFlowPattern.countercurrent,
             }
@@ -1228,8 +1263,8 @@ class TestSaponification_crossflow(object):
 
         m.fs.unit = HeatExchanger(
             default={
-                "hot_side_config": {"property_package": m.fs.properties},
-                "cold_side_config": {"property_package": m.fs.properties},
+                "hot_side": {"property_package": m.fs.properties},
+                "cold_side": {"property_package": m.fs.properties},
                 "flow_pattern": HeatExchangerFlowPattern.crossflow,
             }
         )
@@ -1633,8 +1668,8 @@ class TestBT_Generic_cocurrent(object):
 
         m.fs.unit = HeatExchanger(
             default={
-                "hot_side_config": {"property_package": m.fs.properties},
-                "cold_side_config": {"property_package": m.fs.properties2},
+                "hot_side": {"property_package": m.fs.properties},
+                "cold_side": {"property_package": m.fs.properties2},
                 "flow_pattern": HeatExchangerFlowPattern.cocurrent,
             }
         )

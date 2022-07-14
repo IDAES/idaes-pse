@@ -240,6 +240,10 @@ class StateTestBlockData(StateBlockData):
         super(StateTestBlockData, self).build()
 
         self.flow_vol = Var(initialize=20, units=units.m**3 / units.s)
+        self.flow_mol = Var(
+            initialize=14,
+            units=units.mol / units.s,
+        )
         self.flow_mol_phase_comp = Var(
             self.params.phase_list,
             self.params.component_list,
@@ -256,6 +260,7 @@ class StateTestBlockData(StateBlockData):
         self.pressure = Var(initialize=1e5, units=units.Pa)
         self.temperature = Var(initialize=300, units=units.K)
 
+        self.cp_mol = Var(initialize=100, units=units.J / units.mol / units.K)
         self.enth_mol = Var(initialize=10000, units=units.J / units.mol)
 
         self.gibbs_mol_phase_comp = Var(
