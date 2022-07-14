@@ -35,6 +35,10 @@ Other methods:
 __author__ = "Costing Team (A. Noring and M. Zamarripa)"
 __version__ = "1.0.0"
 
+from pandas import DataFrame
+from sys import stdout
+import textwrap
+
 from pyomo.environ import (
     Param,
     Var,
@@ -60,6 +64,8 @@ from idaes.core import (
     FlowsheetCostingBlockData,
     register_idaes_currency_units,
 )
+
+from idaes.core.util.tables import stream_table_dataframe_to_string
 
 import idaes.logger as idaeslog
 
@@ -234,19 +240,64 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # TODO: For now,  no additional process level costs to initialize
         pass
 
-    def report():
-        # to do (Daison)
-        # Display:
-        # Total Plant Cost
-        # Total fixed OM
-        # Total Variable OM
-        # total_overnight_capital
-        # total_as_spent_cost
-        # annualized_cost
-        # cost_of_electricity
-        # cost_of_capture
+    def report(blk, export=False):
+        # NOTE: missing vars cost_of_electricity and cost_of_capture
 
-        pass
+        var_dict = {}
+
+        if hasattr(blk, "total_TPC"):
+            var_dict["Total TPC [$MM]"] = value(blk.total_TPC)
+
+            # Total overnigth cost (TPC + Owner's cost)
+            TOC = value(blk.total_TPC) * 1.22
+            var_dict["Total Overnigth Cost [$MM]"] = TOC
+
+            # Total as spent cost
+            TASC = TOC * 1.093
+            var_dict["Total As Spent Cost [$MM]"] = TASC
+
+            # Total annualized capital cost
+            TAC = TASC * 0.0707
+            var_dict["Total Annualized Capital Cost [$MM/year]"] = TAC
+
+        if hasattr(blk, "total_fixed_OM_cost"):
+            var_dict["Total fixed O&M cost [$MM/year]"] = value(
+                blk.total_fixed_OM_cost)
+        if hasattr(blk, "total_variable_OM_cost"):
+            var_dict["Total variable O&M cost [$MM/year]"] = value(
+                blk.total_variable_OM_cost[0])
+
+        if hasattr(blk, "total_TPC") and \
+            hasattr(blk, "total_fixed_OM_cost") and \
+                hasattr(blk, "total_variable_OM_cost"):
+            var_dict["Total Annualized Cost [$MM/year]"] = (
+                TAC +
+                value(blk.total_fixed_OM_cost) +
+                value(blk.total_variable_OM_cost[0]))
+
+        report_dir = {}
+        report_dir["Value"] = {}
+        report_dir["pos"] = {}
+
+        count = 1
+        for k, v in var_dict.items():
+            report_dir["Value"][k] = value(v)
+            report_dir["pos"][k] = count
+            count += 1
+
+        df = DataFrame.from_dict(report_dir, orient="columns")
+        del df['pos']
+        if export:
+            df.to_csv(f"{blk.local_name}_report.csv")
+
+        print("\n" + "=" * 84)
+        print(f"{blk.local_name}")
+        print("-" * 84)
+        stdout.write(
+            textwrap.indent(
+                stream_table_dataframe_to_string(df),
+                " " * 4))
+        print("\n" + "=" * 84 + "\n")
 
     def get_PP_costing(
         blk,
