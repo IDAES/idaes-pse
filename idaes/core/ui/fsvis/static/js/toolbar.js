@@ -74,7 +74,6 @@ export class Toolbar {
         // Refresh event listener
         document.querySelector("#refresh-btn").addEventListener("click", () => {
             this._app.refreshModel(url, this._paper)
-            this._app.saveModel(url, this._paper.graph)
         });
 
         // Flowsheet to SVG export event listener
