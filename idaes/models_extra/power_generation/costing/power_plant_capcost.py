@@ -332,6 +332,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         used to scale the cost
 
         When two operational/design parameters are used to scale the cost,
+
         the following equation is implemented:
 
             SC = RC*w1*(SP1/RP1)^Exp + RC*w2*(SP2/RP2)^Exp
