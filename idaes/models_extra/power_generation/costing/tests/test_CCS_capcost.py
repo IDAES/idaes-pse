@@ -886,7 +886,13 @@ def test_ccs_units_costing():
     )
 
     # Total TPC
-    m.fs.display()
-    assert pytest.approx(24.417, rel=1e-3) == pyo.value(m.fs.total_plant_cost)
+    TPC = 0
+    for idx in range(17, 61):
+        block = getattr(m.fs, 'b'+str(idx))
+        for ac in block.total_plant_cost.keys():
+            TPC += pyo.value(block.total_plant_cost[ac])
+
+
+    assert pytest.approx(85.218, rel=1e-3) == TPC
 
     return m
