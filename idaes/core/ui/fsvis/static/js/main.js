@@ -132,7 +132,7 @@ export class App {
 
                         // Refresh
                         this.renderModel(data);
-                        this.stream_table.initTable(data)
+                        this.stream_table.initTable(data);
                     })
                     // Otherwise fail
                     .fail((jqXHR, textStatus, errorThrown) => {
