@@ -1609,7 +1609,7 @@ class PolynomialRegression:
         vl = vl.reshape(1, len(variable_list)) if vl.ndim > 2 else vl
 
         terms = PolynomialRegression.polygeneration(
-            self.final_polynomial_order, self.multinomials, vl 
+            self.final_polynomial_order, self.multinomials, vl
         ).transpose()
         n = len(terms)
 

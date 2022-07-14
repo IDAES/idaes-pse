@@ -18,11 +18,13 @@ from pyomo.core.base.component import ComponentUID
 from collections import OrderedDict
 import bisect
 
+
 class TimeList(list):
     """
     Maintains a list of time points in sorted order, ensures time points
     are unique, and implements a binary search method.
     """
+
     # TODO: This class could inherit from ContinuousSet.
     # That would be convenient for a lot of reasons, one of which is that
     # I could use the find_nearest_index method
@@ -52,10 +54,11 @@ class TimeList(list):
             return time
         t0 = time[0]
         for t1 in time[1:]:
-            if t1 - t0 <= 2*self.tolerance:
+            if t1 - t0 <= 2 * self.tolerance:
                 raise ValueError(
-                    'Time points must be increasing and separated by more '
-                    'than twice the tolerance.')
+                    "Time points must be increasing and separated by more "
+                    "than twice the tolerance."
+                )
         return time
 
     def is_within_bounds(self, t):
@@ -64,7 +67,7 @@ class TimeList(list):
         last time points.
         """
         if not self:
-            raise ValueError('List is empty. No bounds exist.')
+            raise ValueError("List is empty. No bounds exist.")
         lower = self[0]
         upper = self[-1]
         tol = self.tolerance
@@ -79,7 +82,7 @@ class TimeList(list):
             return True
         t_last = self[-1]
         tol = self.tolerance
-        return (t - t_last > 2*tol)
+        return t - t_last > 2 * tol
 
     def append(self, t):
         """
@@ -87,8 +90,9 @@ class TimeList(list):
         """
         if not self.is_valid_append(t):
             raise ValueError(
-                'Appended time values must be more than 2*tolerance later '
-                'than current values.')
+                "Appended time values must be more than 2*tolerance later "
+                "than current values."
+            )
         super().append(t)
 
     def validate_extend(self, tpoints):
@@ -106,15 +110,17 @@ class TimeList(list):
         t_new = tpoints[0]
         if t_new < t_last - tolerance:
             raise ValueError(
-                'First new point must not be earlier than last existing point.')
+                "First new point must not be earlier than last existing point."
+            )
         elif t_new <= t_last + tolerance:
             # Do not want to have duplicates in time list, but want to allow
             # extending with an interval where the boundaries overlap.
             return tpoints[1:]
-        elif t_new <= t_last + 2*tolerance:
+        elif t_new <= t_last + 2 * tolerance:
             raise ValueError(
-                'Distinct time points must be separated by more than twice the '
-                'tolerance.')
+                "Distinct time points must be separated by more than twice the "
+                "tolerance."
+            )
         else:
             # t_new > t_last + 2*tolerance
             return tpoints
@@ -133,7 +139,7 @@ class TimeList(list):
         Returns the index of the nearest point in self.
         """
         # This is a copy of the same method of ContinuousSet.
-        # 
+        #
         tol = self.tolerance
         lo = 0
         hi = len(self)
@@ -146,20 +152,17 @@ class TimeList(list):
             nearest_index = i
             delta = self[nearest_index] - target
         elif i == hi:
-            nearest_index = i-1
+            nearest_index = i - 1
             delta = target - self[nearest_index]
         else:
-            delta, nearest_index = min((abs(target - self[_]), _) 
-                    for _ in [i-1, i])
+            delta, nearest_index = min((abs(target - self[_]), _) for _ in [i - 1, i])
 
         if delta > tol:
             return None
         return nearest_index
 
-
     def binary_search(self, t):
-        """
-        """
+        """ """
         # TODO: clean up this implementation
         tolerance = self.tolerance
 
@@ -171,9 +174,9 @@ class TimeList(list):
         if i == 0:
             return False, i
 
-        t_l = self[i-1]
+        t_l = self[i - 1]
         if t - t_l < tolerance:
-            return True, i-1
+            return True, i - 1
 
         return False, i
 
@@ -182,6 +185,7 @@ class VectorSeries(OrderedDict):
     """
     A time-indexed vector.
     """
+
     # This class's purpose is suspiciously similar to that of IndexedComponent.
     # Could have an OrderedDict of time-indexed variables/Parameters that I
     # continually update along with the underlying time set.
@@ -200,8 +204,7 @@ class VectorSeries(OrderedDict):
         len_time = len(time)
         for val_list in data.values():
             if len(val_list) != len_time:
-                raise ValueError(
-                    'data lists and time list must have same length')
+                raise ValueError("data lists and time list must have same length")
 
         self.name = name
         self.time = TimeList(time, tolerance=tolerance)
@@ -209,12 +212,11 @@ class VectorSeries(OrderedDict):
         super().__init__(data)
 
     def dim(self):
-        """ This is the dimension of the vector that is indexed by time.
-        """
+        """This is the dimension of the vector that is indexed by time."""
         return len(self.keys())
 
     def __len__(self):
-        """ This is the length of the time series, each element of which
+        """This is the length of the time series, each element of which
         is a vector.
         """
         return len(self.time)
@@ -236,8 +238,9 @@ class VectorSeries(OrderedDict):
     def validate_dimension(self, target):
         if not self.consistent_dimension(target):
             raise ValueError(
-                'Tried to validate a vector with inconsistent dimension. '
-                'Expected %s, got %s.' % (self.dim(), len(target)))
+                "Tried to validate a vector with inconsistent dimension. "
+                "Expected %s, got %s." % (self.dim(), len(target))
+            )
         return target
 
     def append(self, t, data):
@@ -255,14 +258,14 @@ class VectorSeries(OrderedDict):
         """
         #       How should I infer whether to check for consistency?
         #       Just compare last existing and first new time values
-        # TODO: Should I have an option that allows the user to violate 
+        # TODO: Should I have an option that allows the user to violate
         #       consistency?
         try:
             # This allows data to be an OrderedDict
             # or another VectorSeries.
             data = list(data.values())
         except AttributeError as ae:
-            if 'values' not in str(ae):
+            if "values" not in str(ae):
                 # If this attribute error is caught, data should
                 # behave like a list of lists.
                 raise ae
@@ -271,14 +274,14 @@ class VectorSeries(OrderedDict):
         if len(self) != 0:
             tlast = self.time[-1]
             t0 = tpoints[0]
-            if tlast-tolerance <= t0 and t0 <= tlast+tolerance:
+            if tlast - tolerance <= t0 and t0 <= tlast + tolerance:
                 data0 = [series[0] for series in data]
                 if not self.consistent(data0):
                     raise ValueError(
-                        'Tried to extend with series that overlapped at time '
-                        'point %s, but the series data was not consistent '
-                        'with pre-existing data.' 
-                        % t0)
+                        "Tried to extend with series that overlapped at time "
+                        "point %s, but the series data was not consistent "
+                        "with pre-existing data." % t0
+                    )
                 tpoints = tpoints[1:]
                 data = [series[1:] for series in data]
         self.time.extend(tpoints)

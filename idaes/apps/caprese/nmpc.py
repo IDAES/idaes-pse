@@ -17,17 +17,17 @@ Class for performing NMPC simulations of IDAES flowsheets
 
 import random
 from pyomo.environ import (
-        ComponentUID,
-        )
+    ComponentUID,
+)
 from pyomo.util.slices import slice_component_along_sets
 from pyomo.common.config import ConfigDict, ConfigValue
 
 from idaes.apps.caprese.dynamic_block import (
-        DynamicBlock,
-        )
+    DynamicBlock,
+)
 from idaes.apps.caprese.controller import (
-        ControllerBlock,
-        )
+    ControllerBlock,
+)
 
 __author__ = "Robert Parker and David Thierry"
 
@@ -42,11 +42,20 @@ class NMPCSim(object):
     (as defined by the names relative to the corresponding provided models)
     exist on both models.
     """
+
     # TODO: pyomo.common.config.add_docstring_list
 
-    def __init__(self, plant_model=None, plant_time_set=None, 
-        controller_model=None, controller_time_set=None, inputs_at_t0=None,
-        measurements=None, sample_time=None, **kwargs):
+    def __init__(
+        self,
+        plant_model=None,
+        plant_time_set=None,
+        controller_model=None,
+        controller_time_set=None,
+        inputs_at_t0=None,
+        measurements=None,
+        sample_time=None,
+        **kwargs
+    ):
         """
         Measurements must be defined in the controller model.
         Inputs must be defined in the plant model.
@@ -58,43 +67,39 @@ class NMPCSim(object):
         # iii. get a reference to the slice from the cuid on the new model
         # iv.  access the reference at the index you want (optional)
         self.measurement_cuids = [
-                ComponentUID(
-                slice_component_along_sets(comp, (controller_time_set,)))
-                for comp in measurements
-                ]
+            ComponentUID(slice_component_along_sets(comp, (controller_time_set,)))
+            for comp in measurements
+        ]
         self.input_cuids = [
-                ComponentUID(
-                slice_component_along_sets(comp, (plant_time_set,)))
-                for comp in inputs_at_t0
-                ]
+            ComponentUID(slice_component_along_sets(comp, (plant_time_set,)))
+            for comp in inputs_at_t0
+        ]
 
         p_t0 = plant_time_set.first()
         init_plant_measurements = [
-                cuid.find_component_on(plant_model)[p_t0]
-                for cuid in self.measurement_cuids
-                ]
+            cuid.find_component_on(plant_model)[p_t0] for cuid in self.measurement_cuids
+        ]
 
         self.plant = DynamicBlock(
-                model=plant_model,
-                time=plant_time_set,
-                inputs=inputs_at_t0,
-                measurements=init_plant_measurements,
-                )
+            model=plant_model,
+            time=plant_time_set,
+            inputs=inputs_at_t0,
+            measurements=init_plant_measurements,
+        )
         self.plant.construct()
 
         # Here we repeat essentially the same "find component"
         # procedure as above.
         c_t0 = controller_time_set.first()
         init_controller_inputs = [
-                cuid.find_component_on(controller_model)[c_t0]
-                for cuid in self.input_cuids
-                ]
+            cuid.find_component_on(controller_model)[c_t0] for cuid in self.input_cuids
+        ]
         self.controller = ControllerBlock(
-                model=controller_model,
-                time=controller_time_set,
-                inputs=init_controller_inputs,
-                measurements=measurements,
-                )
+            model=controller_model,
+            time=controller_time_set,
+            inputs=init_controller_inputs,
+            measurements=measurements,
+        )
         self.controller.construct()
 
         if sample_time is not None:

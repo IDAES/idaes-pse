@@ -21,42 +21,41 @@ from pyomo.common.collections import ComponentSet
 from pyomo.dae.flatten import flatten_dae_components
 
 from idaes.apps.caprese.categorize import (
-        categorize_dae_variables_and_constraints,
-        )
+    categorize_dae_variables_and_constraints,
+)
 from idaes.apps.caprese.common.config import VariableCategory as VC
 from idaes.apps.caprese.common.config import ConstraintCategory as CC
 from idaes.apps.caprese.tests.test_simple_model import make_model
 
 __author__ = "Robert Parker"
 
+
 @pytest.mark.unit
 def test_categorize_deriv():
-    """ The simplest test. Identify a differential and a derivative var.
-    """
+    """The simplest test. Identify a differential and a derivative var."""
     m = pyo.ConcreteModel()
     m.time = dae.ContinuousSet(initialize=[0, 1])
     m.v = pyo.Var(m.time, initialize=0)
     m.dv = dae.DerivativeVar(m.v, wrt=m.time)
     m.diff_eqn = pyo.Constraint(
-            m.time,
-            rule={t: m.dv[t] == -m.v[t]**2 for t in m.time}
-            )
+        m.time, rule={t: m.dv[t] == -m.v[t] ** 2 for t in m.time}
+    )
     with pytest.raises(TypeError):
         # If we find a derivative var, we will try to access the disc eq.
         var_partition, con_partition = categorize_dae_variables_and_constraints(
-                m,
-                [m.v, m.dv],
-                [m.diff_eqn],
-                m.time,
-                )
-    disc = pyo.TransformationFactory('dae.finite_difference')
-    disc.apply_to(m, wrt=m.time, nfe=1, scheme='BACKWARD')
-    var_partition, con_partition = categorize_dae_variables_and_constraints(
             m,
             [m.v, m.dv],
-            [m.diff_eqn, m.dv_disc_eq],
+            [m.diff_eqn],
             m.time,
-            )
+        )
+    disc = pyo.TransformationFactory("dae.finite_difference")
+    disc.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+    var_partition, con_partition = categorize_dae_variables_and_constraints(
+        m,
+        [m.v, m.dv],
+        [m.diff_eqn, m.dv_disc_eq],
+        m.time,
+    )
     assert len(var_partition[VC.DIFFERENTIAL]) == 1
     assert var_partition[VC.DIFFERENTIAL][0] is m.v
     assert len(var_partition[VC.DERIVATIVE]) == 1
@@ -67,18 +66,24 @@ def test_categorize_deriv():
     assert con_partition[CC.DISCRETIZATION][0] is m.dv_disc_eq
 
     for categ in VC:
-        if (categ is not VC.DIFFERENTIAL and categ is not VC.DERIVATIVE
-                and categ in var_partition):
+        if (
+            categ is not VC.DIFFERENTIAL
+            and categ is not VC.DERIVATIVE
+            and categ in var_partition
+        ):
             assert len(var_partition[categ]) == 0
     for categ in CC:
-        if (categ is not CC.DIFFERENTIAL and categ is not CC.DISCRETIZATION
-                and categ in con_partition):
+        if (
+            categ is not CC.DIFFERENTIAL
+            and categ is not CC.DISCRETIZATION
+            and categ in con_partition
+        ):
             assert len(con_partition[categ]) == 0
 
 
 @pytest.mark.unit
 def test_categorize_deriv_fixed():
-    """ If one of the derivative or diff var are fixed, the other
+    """If one of the derivative or diff var are fixed, the other
     should be categorized as algebraic.
     """
     m = pyo.ConcreteModel()
@@ -86,12 +91,11 @@ def test_categorize_deriv_fixed():
     m.v = pyo.Var(m.time, initialize=0)
     m.dv = dae.DerivativeVar(m.v, wrt=m.time)
     m.diff_eqn = pyo.Constraint(
-            m.time,
-            rule={t: m.dv[t] == -m.v[t]**2 for t in m.time}
-            )
-    disc = pyo.TransformationFactory('dae.finite_difference')
-    disc.apply_to(m, wrt=m.time, nfe=1, scheme='BACKWARD')
-    
+        m.time, rule={t: m.dv[t] == -m.v[t] ** 2 for t in m.time}
+    )
+    disc = pyo.TransformationFactory("dae.finite_difference")
+    disc.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+
     #
     # Fix differential variable, e.g. it is an input
     #
@@ -99,11 +103,11 @@ def test_categorize_deriv_fixed():
     m.diff_eqn.deactivate()
 
     var_partition, con_partition = categorize_dae_variables_and_constraints(
-            m,
-            [m.v, m.dv],
-            [m.diff_eqn, m.dv_disc_eq],
-            m.time,
-            )
+        m,
+        [m.v, m.dv],
+        [m.diff_eqn, m.dv_disc_eq],
+        m.time,
+    )
     # Expected categories have expected variables
     assert len(var_partition[VC.ALGEBRAIC]) == 1
     assert var_partition[VC.ALGEBRAIC][0] is m.dv
@@ -112,12 +116,18 @@ def test_categorize_deriv_fixed():
 
     # Unexpected categories are empty
     for categ in VC:
-        if (categ is not VC.ALGEBRAIC and categ is not VC.UNUSED
-                and categ in var_partition):
+        if (
+            categ is not VC.ALGEBRAIC
+            and categ is not VC.UNUSED
+            and categ in var_partition
+        ):
             assert len(var_partition[categ]) == 0
     for categ in CC:
-        if (categ is not CC.ALGEBRAIC and categ is not CC.UNUSED
-                and categ in con_partition):
+        if (
+            categ is not CC.ALGEBRAIC
+            and categ is not CC.UNUSED
+            and categ in con_partition
+        ):
             assert len(con_partition[categ]) == 0
 
     #
@@ -125,12 +135,12 @@ def test_categorize_deriv_fixed():
     #
     m.v.unfix()
     var_partition, con_partition = categorize_dae_variables_and_constraints(
-            m,
-            [m.v, m.dv],
-            [m.diff_eqn, m.dv_disc_eq],
-            m.time,
-            input_vars=[m.v],
-            )
+        m,
+        [m.v, m.dv],
+        [m.diff_eqn, m.dv_disc_eq],
+        m.time,
+        input_vars=[m.v],
+    )
     # Expected categories have expected variables
     assert len(var_partition[VC.ALGEBRAIC]) == 1
     assert var_partition[VC.ALGEBRAIC][0] is m.dv
@@ -147,11 +157,11 @@ def test_categorize_deriv_fixed():
     m.diff_eqn.activate()
     m.dv_disc_eq.deactivate()
     var_partition, con_partition = categorize_dae_variables_and_constraints(
-            m,
-            [m.v, m.dv],
-            [m.diff_eqn, m.dv_disc_eq],
-            m.time,
-            )
+        m,
+        [m.v, m.dv],
+        [m.diff_eqn, m.dv_disc_eq],
+        m.time,
+    )
     # Expected categories have expected variables
     assert len(var_partition[VC.ALGEBRAIC]) == 1
     assert var_partition[VC.ALGEBRAIC][0] is m.v
@@ -161,7 +171,7 @@ def test_categorize_deriv_fixed():
 
 @pytest.mark.unit
 def test_categorize_simple_model():
-    """ Categorize variables and equations in the "simple model" used
+    """Categorize variables and equations in the "simple model" used
     for the base class unit tests.
     """
     m = make_model()
@@ -170,49 +180,59 @@ def test_categorize_simple_model():
     scalar_vars, dae_vars = flatten_dae_components(m, m.time, pyo.Var)
     scalar_cons, dae_cons = flatten_dae_components(m, m.time, pyo.Constraint)
     var_partition, con_partition = categorize_dae_variables_and_constraints(
-            m,
-            dae_vars,
-            dae_cons,
-            m.time,
-            input_vars=[m.flow_in],
-            disturbance_vars=[
-                pyo.Reference(m.conc_in[:, 'A']),
-                pyo.Reference(m.conc_in[:, 'B']),
-                ],
-            )
+        m,
+        dae_vars,
+        dae_cons,
+        m.time,
+        input_vars=[m.flow_in],
+        disturbance_vars=[
+            pyo.Reference(m.conc_in[:, "A"]),
+            pyo.Reference(m.conc_in[:, "B"]),
+        ],
+    )
     t1 = m.time[2]
     # Expected variables:
     expected_vars = {
-            VC.DIFFERENTIAL: ComponentSet([m.conc[t1, 'A'], m.conc[t1, 'B']]),
-            VC.DERIVATIVE: ComponentSet([m.dcdt[t1, 'A'], m.dcdt[t1, 'B']]),
-            VC.ALGEBRAIC: ComponentSet([
-                    m.rate[t1, 'A'],
-                    m.rate[t1, 'B'],
-                    m.flow_out[t1],
-                    ]),
-            VC.INPUT: ComponentSet([m.flow_in[t1]]),
-            VC.DISTURBANCE: ComponentSet([
-                    m.conc_in[t1, 'A'],
-                    m.conc_in[t1, 'B'],
-                    ]),
-            }
+        VC.DIFFERENTIAL: ComponentSet([m.conc[t1, "A"], m.conc[t1, "B"]]),
+        VC.DERIVATIVE: ComponentSet([m.dcdt[t1, "A"], m.dcdt[t1, "B"]]),
+        VC.ALGEBRAIC: ComponentSet(
+            [
+                m.rate[t1, "A"],
+                m.rate[t1, "B"],
+                m.flow_out[t1],
+            ]
+        ),
+        VC.INPUT: ComponentSet([m.flow_in[t1]]),
+        VC.DISTURBANCE: ComponentSet(
+            [
+                m.conc_in[t1, "A"],
+                m.conc_in[t1, "B"],
+            ]
+        ),
+    }
 
     # Expected constraints:
     expected_cons = {
-            CC.DIFFERENTIAL: ComponentSet([
-                    m.material_balance[t1, 'A'],
-                    m.material_balance[t1, 'B'],
-                    ]),
-            CC.DISCRETIZATION: ComponentSet([
-                    m.dcdt_disc_eq[t1, 'A'],
-                    m.dcdt_disc_eq[t1, 'B'],
-                    ]),
-            CC.ALGEBRAIC: ComponentSet([
-                    m.rate_eqn[t1, 'A'],
-                    m.rate_eqn[t1, 'B'],
-                    m.flow_eqn[t1],
-                    ]),
-            }
+        CC.DIFFERENTIAL: ComponentSet(
+            [
+                m.material_balance[t1, "A"],
+                m.material_balance[t1, "B"],
+            ]
+        ),
+        CC.DISCRETIZATION: ComponentSet(
+            [
+                m.dcdt_disc_eq[t1, "A"],
+                m.dcdt_disc_eq[t1, "B"],
+            ]
+        ),
+        CC.ALGEBRAIC: ComponentSet(
+            [
+                m.rate_eqn[t1, "A"],
+                m.rate_eqn[t1, "B"],
+                m.flow_eqn[t1],
+            ]
+        ),
+    }
 
     # Expected categories have expected variables and constraints
     for categ in expected_vars:
@@ -234,7 +254,7 @@ def test_categorize_simple_model():
 
 @pytest.mark.unit
 def test_categorize_simple_model_with_constraints():
-    """ Categorize variables and equations in the "simple model" used
+    """Categorize variables and equations in the "simple model" used
     for the base class unit tests, now with an "input constraint"
     and an active inequality.
 
@@ -245,63 +265,73 @@ def test_categorize_simple_model_with_constraints():
     m = make_model()
     m.conc_in.unfix()
     m.flow_in.unfix()
-    m.performance = pyo.Constraint(m.time, rule={
-        t: m.conc[t, 'A'] >= 0.5 for t in m.time
-        })
-    m.pwc_input = pyo.Constraint(m.time, rule={
-        t: m.flow_in[t] == 1.0 for t in m.time
-        })
+    m.performance = pyo.Constraint(
+        m.time, rule={t: m.conc[t, "A"] >= 0.5 for t in m.time}
+    )
+    m.pwc_input = pyo.Constraint(m.time, rule={t: m.flow_in[t] == 1.0 for t in m.time})
     scalar_vars, dae_vars = flatten_dae_components(m, m.time, pyo.Var)
     scalar_cons, dae_cons = flatten_dae_components(m, m.time, pyo.Constraint)
     var_partition, con_partition = categorize_dae_variables_and_constraints(
-            m,
-            dae_vars,
-            dae_cons,
-            m.time,
-            input_vars=[m.flow_in],
-            disturbance_vars=[pyo.Reference(m.conc_in[:, 'B'])],
-            input_cons=[m.pwc_input],
-            active_inequalities=[m.performance],
-            )
+        m,
+        dae_vars,
+        dae_cons,
+        m.time,
+        input_vars=[m.flow_in],
+        disturbance_vars=[pyo.Reference(m.conc_in[:, "B"])],
+        input_cons=[m.pwc_input],
+        active_inequalities=[m.performance],
+    )
     t1 = m.time[2]
     # Expected variables:
     expected_vars = {
-            VC.DIFFERENTIAL: ComponentSet([m.conc[t1, 'B']]),
-            VC.DERIVATIVE: ComponentSet([m.dcdt[t1, 'B']]),
-            VC.ALGEBRAIC: ComponentSet([
-                    m.rate[t1, 'A'],
-                    m.rate[t1, 'B'],
-                    m.flow_out[t1],
-                    m.conc[t1, 'A'],
-                    m.dcdt[t1, 'A'],
-                    m.conc_in[t1, 'A'],
-                    ]),
-            VC.INPUT: ComponentSet([m.flow_in[t1]]),
-            VC.DISTURBANCE: ComponentSet([
-                    m.conc_in[t1, 'B'],
-                    ]),
-            }
+        VC.DIFFERENTIAL: ComponentSet([m.conc[t1, "B"]]),
+        VC.DERIVATIVE: ComponentSet([m.dcdt[t1, "B"]]),
+        VC.ALGEBRAIC: ComponentSet(
+            [
+                m.rate[t1, "A"],
+                m.rate[t1, "B"],
+                m.flow_out[t1],
+                m.conc[t1, "A"],
+                m.dcdt[t1, "A"],
+                m.conc_in[t1, "A"],
+            ]
+        ),
+        VC.INPUT: ComponentSet([m.flow_in[t1]]),
+        VC.DISTURBANCE: ComponentSet(
+            [
+                m.conc_in[t1, "B"],
+            ]
+        ),
+    }
 
     # Expected constraints:
     expected_cons = {
-            CC.DIFFERENTIAL: ComponentSet([
-                    m.material_balance[t1, 'B'],
-                    ]),
-            CC.DISCRETIZATION: ComponentSet([
-                    m.dcdt_disc_eq[t1, 'B'],
-                    ]),
-            CC.ALGEBRAIC: ComponentSet([
-                    m.rate_eqn[t1, 'A'],
-                    m.rate_eqn[t1, 'B'],
-                    m.flow_eqn[t1],
-                    m.material_balance[t1, 'A'],
-                    m.dcdt_disc_eq[t1, 'A'],
-                    m.performance[t1],
-                    ]),
-            CC.INPUT: ComponentSet([
-                    m.pwc_input[t1],
-                    ]),
-            }
+        CC.DIFFERENTIAL: ComponentSet(
+            [
+                m.material_balance[t1, "B"],
+            ]
+        ),
+        CC.DISCRETIZATION: ComponentSet(
+            [
+                m.dcdt_disc_eq[t1, "B"],
+            ]
+        ),
+        CC.ALGEBRAIC: ComponentSet(
+            [
+                m.rate_eqn[t1, "A"],
+                m.rate_eqn[t1, "B"],
+                m.flow_eqn[t1],
+                m.material_balance[t1, "A"],
+                m.dcdt_disc_eq[t1, "A"],
+                m.performance[t1],
+            ]
+        ),
+        CC.INPUT: ComponentSet(
+            [
+                m.pwc_input[t1],
+            ]
+        ),
+    }
 
     # Expected categories have expected variables and constraints
     for categ in expected_vars:
@@ -323,7 +353,7 @@ def test_categorize_simple_model_with_constraints():
 
 @pytest.mark.unit
 def test_space_indexed_model():
-    """ The case where a differential variable is "specifed"
+    """The case where a differential variable is "specifed"
     by an input (boundary condition). This is the case that
     motivated the development of this categorization method.
     """
@@ -337,60 +367,61 @@ def test_space_indexed_model():
 
     def _balance_rule(m, t, x):
         return m.dvdt[t, x] + m.dvdx[t, x] == 0
+
     m.balance = pyo.Constraint(m.time, m.space, rule=_balance_rule)
 
     m.u = pyo.Var(m.time, m.space, initialize=0)
+
     def _u_eqn_rule(m, t, x):
         return m.v[t, x] == m.u[t, x]
+
     m.u_eqn = pyo.Constraint(m.time, m.space, rule=_u_eqn_rule)
 
-    disc = pyo.TransformationFactory('dae.finite_difference')
-    disc.apply_to(m, wrt=m.time, nfe=2, scheme='BACKWARD')
-    disc.apply_to(m, wrt=m.space, nfe=2, scheme='BACKWARD')
+    disc = pyo.TransformationFactory("dae.finite_difference")
+    disc.apply_to(m, wrt=m.time, nfe=2, scheme="BACKWARD")
+    disc.apply_to(m, wrt=m.space, nfe=2, scheme="BACKWARD")
 
     scalar_vars, dae_vars = flatten_dae_components(m, m.time, pyo.Var)
     scalar_cons, dae_cons = flatten_dae_components(m, m.time, pyo.Constraint)
     var_partition, con_partition = categorize_dae_variables_and_constraints(
-            m,
-            dae_vars,
-            dae_cons,
-            m.time,
-            input_vars=[pyo.Reference(m.u[:, 0])],
-            )
+        m,
+        dae_vars,
+        dae_cons,
+        m.time,
+        input_vars=[pyo.Reference(m.u[:, 0])],
+    )
 
     t1 = m.time[2]
     # Expected variables:
     expected_vars = {
-            VC.DIFFERENTIAL: ComponentSet([
-                m.v[t1, x] for x in m.space if x != 0
-                ]),
-            VC.DERIVATIVE: ComponentSet([
-                m.dvdt[t1, x] for x in m.space if x != 0
-                ]),
-            VC.ALGEBRAIC: ComponentSet([
+        VC.DIFFERENTIAL: ComponentSet([m.v[t1, x] for x in m.space if x != 0]),
+        VC.DERIVATIVE: ComponentSet([m.dvdt[t1, x] for x in m.space if x != 0]),
+        VC.ALGEBRAIC: ComponentSet(
+            [
                 m.dvdt[t1, 0],
                 m.v[t1, 0],
                 *[m.dvdx[t1, x] for x in m.space],
                 *[m.u[t1, x] for x in m.space if x != 0],
-                ]),
-            VC.INPUT: ComponentSet([m.u[t1, 0]]),
-            }
+            ]
+        ),
+        VC.INPUT: ComponentSet([m.u[t1, 0]]),
+    }
 
     # Expected constraints:
     expected_cons = {
-            CC.DIFFERENTIAL: ComponentSet([
-                m.balance[t1, x] for x in m.space if x != 0
-                ]),
-            CC.DISCRETIZATION: ComponentSet([
-                m.dvdt_disc_eq[t1, x] for x in m.space if x != 0
-                ]),
-            CC.ALGEBRAIC: ComponentSet([
+        CC.DIFFERENTIAL: ComponentSet([m.balance[t1, x] for x in m.space if x != 0]),
+        CC.DISCRETIZATION: ComponentSet(
+            [m.dvdt_disc_eq[t1, x] for x in m.space if x != 0]
+        ),
+        CC.ALGEBRAIC: ComponentSet(
+            [
                 m.balance[t1, 0],
                 m.dvdt_disc_eq[t1, 0],
                 *[m.dvdx_disc_eq[t1, x] for x in m.space if x != 0],
                 *[m.u_eqn[t1, x] for x in m.space],
-                ]),
-            }
+            ]
+        ),
+    }
 
     # Expected categories have expected variables and constraints
     for categ in expected_vars:

@@ -514,9 +514,7 @@ class SolidPhaseStateBlockData(StateBlockData):
         if self.config.defined_state is False:
 
             def sum_component_eqn(b):
-                return 1 == sum(
-                    b.mass_frac_comp[j] for j in b._params.component_list
-                )
+                return 1 == sum(b.mass_frac_comp[j] for j in b._params.component_list)
 
             self.sum_component_eqn = Constraint(rule=sum_component_eqn)
 

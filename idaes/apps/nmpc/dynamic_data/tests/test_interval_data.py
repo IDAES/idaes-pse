@@ -21,9 +21,9 @@ from idaes.apps.nmpc.dynamic_data import (
     interval_data_from_time_series,
 )
 
+
 @pytest.mark.unit
 class TestAssertDisjoint(unittest.TestCase):
-
     def test_disjoint(self):
         intervals = [(0, 1), (1, 2)]
         assert_disjoint_intervals(intervals)
@@ -49,7 +49,6 @@ class TestAssertDisjoint(unittest.TestCase):
 
 @pytest.mark.unit
 class TestLoadInputs(unittest.TestCase):
-
     def make_model(self):
         m = pyo.ConcreteModel()
         m.time = dae.ContinuousSet(initialize=[0, 1, 2, 3, 4, 5, 6])
@@ -58,9 +57,7 @@ class TestLoadInputs(unittest.TestCase):
 
     def test_load_inputs_some_time(self):
         m = self.make_model()
-        inputs = {
-            "v": {(2, 4): 1.0}
-        }
+        inputs = {"v": {(2, 4): 1.0}}
         load_inputs_into_model(m, m.time, inputs)
 
         for t in m.time:
@@ -108,7 +105,6 @@ class TestLoadInputs(unittest.TestCase):
 
 @pytest.mark.unit
 class TestIntervalFromTimeSeries(unittest.TestCase):
-
     def test_singleton(self):
         name = "name"
         series = (
