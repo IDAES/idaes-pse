@@ -64,7 +64,7 @@ def build_multi_period_model():
         linking_variable_func=get_linking_variable_pairs,
         use_stochastic_build=True,
         initialization_func=fix_dof_and_initialize,
-        unfix_dof_func=unfix_dof
+        unfix_dof_func=unfix_dof,
     )
 
     return m
@@ -79,7 +79,7 @@ def build_multi_period_stochastic_model():
         use_stochastic_build=True,
         set_scenarios=[1, 2, 3],
         initialization_func=fix_dof_and_initialize,
-        unfix_dof_func=unfix_dof
+        unfix_dof_func=unfix_dof,
     )
 
     return m
@@ -94,7 +94,7 @@ def build_multi_day_model():
         use_stochastic_build=True,
         set_days=["d1", "d2", "d3", "d4"],
         initialization_func=fix_dof_and_initialize,
-        unfix_dof_func=unfix_dof
+        unfix_dof_func=unfix_dof,
     )
 
     return m
@@ -110,7 +110,7 @@ def build_multi_day_stochastic_model():
         set_days=["d1", "d2", "d3", "d4"],
         set_scenarios=[1, 2, 3],
         initialization_func=fix_dof_and_initialize,
-        unfix_dof_func=unfix_dof
+        unfix_dof_func=unfix_dof,
     )
 
     return m
@@ -125,7 +125,7 @@ def build_multi_year_model():
         use_stochastic_build=True,
         set_years=["y1", "y2", "y3"],
         initialization_func=fix_dof_and_initialize,
-        unfix_dof_func=unfix_dof
+        unfix_dof_func=unfix_dof,
     )
 
     return m
@@ -141,7 +141,7 @@ def build_multi_year_stochastic_model():
         set_years=["y1", "y2", "y3"],
         set_scenarios=[1, 2, 3],
         initialization_func=fix_dof_and_initialize,
-        unfix_dof_func=unfix_dof
+        unfix_dof_func=unfix_dof,
     )
 
     return m
@@ -157,7 +157,7 @@ def build_multi_day_year_model():
         set_days=["d1", "d2", "d3", "d4"],
         set_years=["y1", "y2", "y3"],
         initialization_func=fix_dof_and_initialize,
-        unfix_dof_func=unfix_dof
+        unfix_dof_func=unfix_dof,
     )
 
     return m
@@ -174,7 +174,7 @@ def build_multi_day_year_stochastic_model():
         set_years=["y1", "y2", "y3"],
         set_scenarios=[1, 2, 3],
         initialization_func=fix_dof_and_initialize,
-        unfix_dof_func=unfix_dof
+        unfix_dof_func=unfix_dof,
     )
 
     return m
@@ -184,11 +184,19 @@ def build_multi_day_year_stochastic_model():
 def test_lmp_plot(monkeypatch):
     lmp = [2, 3, 5, 6, 8, 6, 0, 4]
     lmp2 = {"Day1": lmp, "Day2": lmp}
-    lmp3 = {"Day1": lmp, "Day2": lmp, "Day3": lmp, "Day4": lmp, "Day5": lmp, "Day6": lmp, "Day7": lmp}
+    lmp3 = {
+        "Day1": lmp,
+        "Day2": lmp,
+        "Day3": lmp,
+        "Day4": lmp,
+        "Day5": lmp,
+        "Day6": lmp,
+        "Day7": lmp,
+    }
     time_vec = [i for i in range(len(lmp))]
     time_vec2 = {"Day1": time_vec, "Day2": time_vec}
 
-    monkeypatch.setattr(plt, 'show', lambda: None)
+    monkeypatch.setattr(plt, "show", lambda: None)
 
     MultiPeriodModel.plot_lmp_signal(lmp)
     MultiPeriodModel.plot_lmp_signal(lmp, time_vec, x_range=(0, 8), y_range=(0, 10))
@@ -197,8 +205,10 @@ def test_lmp_plot(monkeypatch):
 
     with pytest.raises(
         Exception,
-        match=(f"Number of LMP signals provided exceeds six: the maximum "
-               f"number of subplots the function supports.")
+        match=(
+            f"Number of LMP signals provided exceeds six: the maximum "
+            f"number of subplots the function supports."
+        ),
     ):
         MultiPeriodModel.plot_lmp_signal(lmp3)
 
@@ -221,16 +231,20 @@ def test_lmp_and_schedule_plot(monkeypatch):
         "var5": [2, 3, 4, 6, 5, 8, 2, 7],
     }
 
-    monkeypatch.setattr(plt, 'show', lambda: None)
+    monkeypatch.setattr(plt, "show", lambda: None)
 
     with pytest.raises(
         Exception,
-        match=(f"Number of elements in schedule exceeds four: "
-               f"the maximum number of subplots the function supports.")
+        match=(
+            f"Number of elements in schedule exceeds four: "
+            f"the maximum number of subplots the function supports."
+        ),
     ):
         MultiPeriodModel.plot_lmp_and_schedule(lmp, schedule2)
 
-    MultiPeriodModel.plot_lmp_and_schedule(lmp, schedule1, color={1: "tab:blue", 2: "magenta"})
+    MultiPeriodModel.plot_lmp_and_schedule(
+        lmp, schedule1, color={1: "tab:blue", 2: "magenta"}
+    )
     MultiPeriodModel.plot_lmp_and_schedule(
         lmp,
         schedule1,
@@ -238,7 +252,7 @@ def test_lmp_and_schedule_plot(monkeypatch):
         x_range=(0, 8),
         lmp_range=(0, 9),
         y_label={"var1": "Power [MW]"},
-        y_range={"var2": (0, 9)}
+        y_range={"var2": (0, 9)},
     )
 
 
@@ -307,7 +321,9 @@ def test_multi_day_stochastic_model(build_multi_day_stochastic_model):
 
                 if t != 5:
                     assert (t, d) in m.scenario[s].link_constraints
-                    assert hasattr(m.scenario[s].link_constraints[t, d], "link_constraints")
+                    assert hasattr(
+                        m.scenario[s].link_constraints[t, d], "link_constraints"
+                    )
 
     assert degrees_of_freedom(m) == 12  # num_days * num_scenarios
 
@@ -344,7 +360,9 @@ def test_multi_year_stochastic_model(build_multi_year_stochastic_model):
 
                 if t != 5:
                     assert (t, y) in m.scenario[s].link_constraints
-                    assert hasattr(m.scenario[s].link_constraints[t, y], "link_constraints")
+                    assert hasattr(
+                        m.scenario[s].link_constraints[t, y], "link_constraints"
+                    )
 
     assert degrees_of_freedom(m) == 9  # num_years * num_scenarios
 
@@ -383,7 +401,9 @@ def test_multi_day_year_stochastic_model(build_multi_day_year_stochastic_model):
 
                     if t != 5:
                         assert (t, d, y) in m.scenario[s].link_constraints
-                        assert hasattr(m.scenario[s].link_constraints[t, d, y], "link_constraints")
+                        assert hasattr(
+                            m.scenario[s].link_constraints[t, d, y], "link_constraints"
+                        )
 
     assert degrees_of_freedom(m) == 36  # num_days * num_years * num_scenarios
 
@@ -396,7 +416,7 @@ def test_no_initialization():
         process_model_func=build_flowsheet,
         linking_variable_func=get_linking_variable_pairs,
         use_stochastic_build=True,
-        initialization_func=fix_dof_and_initialize
+        initialization_func=fix_dof_and_initialize,
     )
 
     # Cover warning associated with initialization_func not provided
@@ -404,7 +424,7 @@ def test_no_initialization():
         n_time_points=2,
         process_model_func=build_flowsheet,
         linking_variable_func=get_linking_variable_pairs,
-        use_stochastic_build=True
+        use_stochastic_build=True,
     )
 
     # Cover warning associated with linking_variable_func not provided
@@ -412,7 +432,7 @@ def test_no_initialization():
         n_time_points=2,
         process_model_func=build_flowsheet,
         linking_variable_func=None,
-        use_stochastic_build=True
+        use_stochastic_build=True,
     )
 
     # Cover warning associated with periodic_variable_func provided
@@ -423,17 +443,19 @@ def test_no_initialization():
         periodic_variable_func=get_linking_variable_pairs,
         use_stochastic_build=True,
         initialization_func=fix_dof_and_initialize,
-        unfix_dof_func=unfix_dof
+        unfix_dof_func=unfix_dof,
     )
 
 
 @pytest.mark.unit
 def test_initialization_fail():
     with pytest.raises(
-            Exception,
-            match=(f"Flowsheet did not converge to optimality after fixing the degrees of freedom. "
-                   f"To create the multi-period model without initialization, do not provide "
-                   f"initialization_func argument.")
+        Exception,
+        match=(
+            f"Flowsheet did not converge to optimality after fixing the degrees of freedom. "
+            f"To create the multi-period model without initialization, do not provide "
+            f"initialization_func argument."
+        ),
     ):
         m = MultiPeriodModel(
             n_time_points=5,
@@ -441,5 +463,5 @@ def test_initialization_fail():
             linking_variable_func=get_linking_variable_pairs,
             use_stochastic_build=True,
             initialization_func=fix_dof_and_initialize_2,
-            unfix_dof_func=unfix_dof
+            unfix_dof_func=unfix_dof,
         )

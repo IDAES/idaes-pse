@@ -516,8 +516,12 @@ class MultiPeriodModel(pyo.ConcreteModel):
                     plt_time[counter] = time[i]
 
                 plt_title[counter] = str(i)
-                plt_x_range[counter] = None if x_range is None or i not in x_range else x_range[i]
-                plt_y_range[counter] = None if y_range is None or i not in y_range else y_range[i]
+                plt_x_range[counter] = (
+                    None if x_range is None or i not in x_range else x_range[i]
+                )
+                plt_y_range[counter] = (
+                    None if y_range is None or i not in y_range else y_range[i]
+                )
                 counter = counter + 1
 
         fig = plt.figure()
