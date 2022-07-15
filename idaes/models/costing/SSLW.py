@@ -52,6 +52,10 @@ from idaes.core import (
     register_idaes_currency_units,
 )
 
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
+
 # Some more information about this module
 __author__ = "Miguel Zamarripa, Andrew Lee"
 
@@ -1018,7 +1022,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         """
         # Confirm that unit is a compressor
         if not blk.unit_model.config.compressor:
-            raise TypeError(
+            _log.warning(
                 "cost_compressor method is only appropriate for "
                 "pressure changers with the compressor argument "
                 "equal to True."
@@ -1029,7 +1033,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             blk.unit_model.config.thermodynamic_assumption
             == ThermodynamicAssumption.pump
         ):
-            raise ValueError(
+            _log.warning(
                 f"{blk.unit_model.name} - pressure changers with the pump "
                 "assumption should use the cost_pump method."
             )
@@ -1038,7 +1042,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             ThermodynamicAssumption.isothermal,
             ThermodynamicAssumption.adiabatic,
         ]:
-            raise ValueError(
+            _log.warning(
                 f"{blk.unit_model.name} - pressure changers without isentropic "
                 "assumption are too simple to be costed."
             )

@@ -80,6 +80,9 @@ from idaes.models.costing.SSLW import (
     BlowerMaterial,
 )
 
+import logging
+from io import StringIO
+from pyomo.common.log import LoggingIntercept
 
 # Some more information about this module
 __author__ = "Andrew Lee"
@@ -667,6 +670,10 @@ def test_cost_compressor(model, compressor_type, drive_type, material_type):
 def test_not_compressor(model, compressor_type, drive_type, material_type):
     # Test exception for non-supported compressor flags
     model.fs.unit.config.declare("compressor", ConfigValue(default=False))
+    model.fs.unit.config.declare(
+        "thermodynamic_assumption",
+        ConfigValue(default=ThermodynamicAssumption.isentropic),
+    )
     model.fs.unit.work_mechanical = Param(
         [0], initialize=101410.4, units=pyunits.J / pyunits.s
     )
@@ -677,7 +684,8 @@ def test_not_compressor(model, compressor_type, drive_type, material_type):
         "equal to True."
     )
 
-    with pytest.raises(TypeError, match=expected_string):
+    stream = StringIO()
+    with LoggingIntercept(stream, "idaes", logging.WARNING):
         model.fs.unit.costing = UnitModelCostingBlock(
             default={
                 "flowsheet_costing_block": model.fs.costing,
@@ -689,6 +697,8 @@ def test_not_compressor(model, compressor_type, drive_type, material_type):
                 },
             }
         )
+
+    assert expected_string in str(stream.getvalue())
 
 
 @pytest.mark.component
@@ -914,10 +924,13 @@ class TestMapping:
             "assumption should use the cost_pump method."
         )
 
-        with pytest.raises(ValueError, match=expected_string):
+        stream = StringIO()
+        with LoggingIntercept(stream, "idaes", logging.WARNING):
             model.fs.unit.costing = UnitModelCostingBlock(
                 default={"flowsheet_costing_block": model.fs.costing}
             )
+
+        assert expected_string in str(stream.getvalue())
 
     def test_isothermal_compressor(self, model):
         # Test exception for non-supported compressor flags
@@ -933,10 +946,13 @@ class TestMapping:
             "assumption are too simple to be costed."
         )
 
-        with pytest.raises(ValueError, match=expected_string):
+        stream = StringIO()
+        with LoggingIntercept(stream, "idaes", logging.WARNING):
             model.fs.unit.costing = UnitModelCostingBlock(
                 default={"flowsheet_costing_block": model.fs.costing}
             )
+
+        assert expected_string in str(stream.getvalue())
 
     def test_adiabatic_compressor(self, model):
         # Test exception for non-supported compressor flags
@@ -952,10 +968,13 @@ class TestMapping:
             "assumption are too simple to be costed."
         )
 
-        with pytest.raises(ValueError, match=expected_string):
+        stream = StringIO()
+        with LoggingIntercept(stream, "idaes", logging.WARNING):
             model.fs.unit.costing = UnitModelCostingBlock(
                 default={"flowsheet_costing_block": model.fs.costing}
             )
+
+        assert expected_string in str(stream.getvalue())
 
     def test_pump(self):
         # Need a different property package here
