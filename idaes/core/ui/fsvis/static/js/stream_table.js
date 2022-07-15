@@ -17,6 +17,7 @@ export class StreamTable {
     initTable(model) {
         // Clear the table first in case this is a call on refresh then call all of the methods to fill the table and setup the events
         this.clearTable();
+        this.emptyVarTypesPanel();
         this.fillTable(model);
         this.setupEvents();
     }
@@ -25,8 +26,13 @@ export class StreamTable {
         // Clear the table
         $("#hide-fields-list").empty();
         $("#stream-table-data").empty();
+    }
+
+    emptyVarTypesPanel () {
         // Clear list of existing variable types
         this.existing_var_types = new Set();
+        const var_types_panel = document.querySelector('#existing-variable-types');
+        var_types_panel.innerHTML = "";
     }
 
     fillVarTypesPanel() {
@@ -43,7 +49,6 @@ export class StreamTable {
             header_vartype.className = stream_table_class;
             var_types_panel.appendChild(header_vartype);
         }
-
         // Adding each type
         this.existing_var_types.forEach(var_type => {
             switch (var_type) {
