@@ -240,43 +240,48 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # TODO: For now,  no additional process level costs to initialize
         pass
 
-    def report(blk, export=False):
-        # NOTE: missing vars cost_of_electricity and cost_of_capture
+    def report(self, export=False):
 
         var_dict = {}
 
-        if hasattr(blk, "total_TPC"):
-            var_dict["Total TPC [$MM]"] = value(blk.total_TPC)
+        if hasattr(self, "total_TPC"):
+            var_dict["Total TPC [$MM]"] = value(self.total_TPC)
 
-            # Total overnigth cost (TPC + Owner's cost)
-            TOC = value(blk.total_TPC) * 1.22
-            var_dict["Total Overnigth Cost [$MM]"] = TOC
+        if hasattr(self, "total_overnight_capital"):
+            var_dict["Total Overnigth Cost [$MM]"] = value(
+                self.total_overnight_capital)
 
-            # Total as spent cost
-            TASC = TOC * 1.093
-            var_dict["Total As Spent Cost [$MM]"] = TASC
+        if hasattr(self, "total_as_spent_cost"):
+            var_dict["Total As Spent Cost [$MM]"] = value(
+                self.total_as_spent_cost)
 
-            # Total annualized capital cost
-            TAC = TASC * 0.0707
-            var_dict["Total Annualized Capital Cost [$MM/year]"] = TAC
+        if hasattr(self, "annualized_cost"):
+            var_dict["Total Annualized Capital Cost [$MM/year]"] = value(
+                self.annualized_cost)
 
-        if hasattr(blk, "total_fixed_OM_cost"):
-            var_dict["Total fixed O&M cost [$MM/year]"] = value(blk.total_fixed_OM_cost)
-        if hasattr(blk, "total_variable_OM_cost"):
+        if hasattr(self, "total_fixed_OM_cost"):
+            var_dict["Total fixed O&M cost [$MM/year]"] = value(
+                self.total_fixed_OM_cost)
+
+        if hasattr(self, "total_variable_OM_cost"):
             var_dict["Total variable O&M cost [$MM/year]"] = value(
-                blk.total_variable_OM_cost[0]
-            )
+                self.total_variable_OM_cost[0])
 
-        if (
-            hasattr(blk, "total_TPC")
-            and hasattr(blk, "total_fixed_OM_cost")
-            and hasattr(blk, "total_variable_OM_cost")
-        ):
+        if hasattr(self, "annualized_cost") and \
+            hasattr(self, "total_fixed_OM_cost") and \
+                hasattr(self, "total_variable_OM_cost"):
             var_dict["Total Annualized Cost [$MM/year]"] = (
-                TAC
-                + value(blk.total_fixed_OM_cost)
-                + value(blk.total_variable_OM_cost[0])
-            )
+                value(self.annualized_cost) +
+                value(self.total_fixed_OM_cost) +
+                value(self.total_variable_OM_cost[0]))
+
+        if hasattr(self, "cost_of_electricity"):
+            var_dict["Cost of Electricity [$MM/year]"] = value(
+                self.cost_of_electricity)
+
+        if hasattr(self, "cost_of_capture"):
+            var_dict["Cost of Capture [$/tonne]"] = value(
+                self.cost_of_capture)
 
         report_dir = {}
         report_dir["Value"] = {}
@@ -289,15 +294,18 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             count += 1
 
         df = DataFrame.from_dict(report_dir, orient="columns")
-        del df["pos"]
+        del df['pos']
         if export:
-            df.to_csv(f"{blk.local_name}_report.csv")
+            df.to_csv(f"{self.local_name}_report.csv")
 
-        print("\n" + "=" * 84)
-        print(f"{blk.local_name}")
-        print("-" * 84)
-        stdout.write(textwrap.indent(stream_table_dataframe_to_string(df), " " * 4))
-        print("\n" + "=" * 84 + "\n")
+        print("\n" + "="*84)
+        print(f"{self.local_name}")
+        print("-"*84)
+        stdout.write(
+            textwrap.indent(
+                stream_table_dataframe_to_string(df),
+                " "*4))
+        print("\n" + "="*84 + "\n")
 
     def get_PP_costing(
         blk,
