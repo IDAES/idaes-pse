@@ -53,6 +53,7 @@ def visualize(
     save: Optional[Union[Path, str, bool]] = None,
     load_from_saved: bool = True,
     save_dir: Optional[Path] = None,
+    save_time_interval=5000,  # 5 seconds
     overwrite: bool = False,
     browser: bool = True,
     port: Optional[int] = None,
@@ -78,6 +79,8 @@ def visualize(
         save_dir: If this argument is given, and ``save`` is not given or a relative path, then it will
            be used as the directory to save the default or given file. The current working directory is
            the default. If ``save`` is given and an absolute path, this argument is ignored.
+        save_time_interval: The time interval that the UI application checks if any changes has occurred
+            in the graph for it to save the model. Default is 5 seconds
         overwrite: If True, and the file given by ``save`` exists, overwrite instead of creating a new
           numbered file.
         browser: If true, open a browser
@@ -104,6 +107,7 @@ def visualize(
     # Start the web server
     if web_server is None:
         web_server = FlowsheetServer(port=port)
+        web_server.add_setting("save_time_interval", save_time_interval)
         web_server.start()
         if not quiet:
             print("Started visualization server")
@@ -140,7 +144,10 @@ def visualize(
             # deal with duplicate names
             try:
                 save_path = _handle_existing_save_path(
-                    name, save_path, max_versions=MAX_SAVED_VERSIONS, overwrite=overwrite
+                    name,
+                    save_path,
+                    max_versions=MAX_SAVED_VERSIONS,
+                    overwrite=overwrite,
                 )
             except errors.TooManySavedVersions as err:
                 raise RuntimeError(f"In visualize(): {err}")

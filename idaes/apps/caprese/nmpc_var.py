@@ -34,19 +34,20 @@ class NmpcVar(IndexedVar):
     >>>     var[:].set_value(var[0])
 
     """
+
     def __init__(self, *args, **kwargs):
         if not args:
             raise NotImplementedError(
-                '%s component must be indexed by at least one set.'
-                % self.__class__
-                )
-        self.setpoint = kwargs.pop('setpoint', None)
-        self.weight = kwargs.pop('weight', None)
-        self.variance = kwargs.pop('variance', None)
-        self.nominal = kwargs.pop('nominal', None)
-        self.noise_bounds = kwargs.pop('noise_bounds', None)
-        kwargs.setdefault('ctype', type(self))
+                "%s component must be indexed by at least one set." % self.__class__
+            )
+        self.setpoint = kwargs.pop("setpoint", None)
+        self.weight = kwargs.pop("weight", None)
+        self.variance = kwargs.pop("variance", None)
+        self.nominal = kwargs.pop("nominal", None)
+        self.noise_bounds = kwargs.pop("noise_bounds", None)
+        kwargs.setdefault("ctype", type(self))
         super(NmpcVar, self).__init__(*args, **kwargs)
+
 
 """
 The following classes serve as custom ctypes for references
@@ -55,23 +56,29 @@ the user or developer wants to specify a particular subset
 of the "NMPC variables."
 """
 
+
 class DiffVar(NmpcVar):
-    _attr = 'differential'
+    _attr = "differential"
+
 
 class DerivVar(NmpcVar):
-    _attr = 'derivative'
+    _attr = "derivative"
+
 
 class AlgVar(NmpcVar):
-    _attr = 'algebraic'
+    _attr = "algebraic"
+
 
 class InputVar(NmpcVar):
-    _attr = 'input'
+    _attr = "input"
+
 
 class FixedVar(NmpcVar):
-    _attr = 'fixed'
+    _attr = "fixed"
+
 
 class MeasuredVar(NmpcVar):
-    _attr = 'measurement'
+    _attr = "measurement"
 
 
 class _NmpcVector(IndexedVar):

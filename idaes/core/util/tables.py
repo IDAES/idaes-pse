@@ -15,6 +15,9 @@ from pandas import DataFrame
 from collections import OrderedDict
 from pyomo.environ import value
 from pyomo.network import Arc, Port
+from pyomo.core.base.var import _GeneralVarData, Var
+from pyomo.core.base.param import Param
+from pyomo.core.base.expression import Expression
 
 import idaes.logger as idaeslog
 from idaes.core.util.units_of_measurement import report_quantity
@@ -235,6 +238,7 @@ def create_stream_table_dataframe(
     Returns:
         A pandas DataFrame containing the stream table data.
     """
+
     stream_attributes = OrderedDict()
     stream_states = stream_states_dict(streams=streams, time_point=time_point)
     full_keys = []  # List of all rows in dataframe to fill in missing data
@@ -248,15 +252,96 @@ def create_stream_table_dataframe(
         else:
             disp_dict = sb.define_display_vars()
         for k in disp_dict:
-            for i in disp_dict[k]:
+            for row, i in enumerate(disp_dict[k]):
+                stream_key = k if i is None else f"{k} {i}"
+                quant = report_quantity(disp_dict[k][i])
+                stream_attributes[key][stream_key] = quant.m
+                if row == 0 or stream_key not in stream_attributes["Units"]:
+                    stream_attributes["Units"][stream_key] = quant.u
+                if stream_key not in full_keys:
+                    full_keys.append(stream_key)
+
+    # Check for missing rows in any stream, and fill with "-" if needed
+    for k, v in stream_attributes.items():
+        for r in full_keys:
+            if r not in v.keys():
+                # Missing row, fill with placeholder
+                v[r] = "-"
+
+    return DataFrame.from_dict(stream_attributes, orient=orient)
+
+
+def create_stream_table_ui(
+    streams, true_state=False, time_point=0, orient="columns", precision=5
+):
+    """
+    Method to create a stream table in the form of a pandas dataframe. Method
+    takes a dict with name keys and stream values. Use an OrderedDict to list
+    the streams in a specific order, otherwise the dataframe can be sorted
+    later. Note: This function process each stream the same way
+    `create_stream_table_dataframe` does.
+
+
+    Args:
+        streams : dict with name keys and stream values. Names will be used as
+            display names for stream table, and streams may be Arcs, Ports or
+            StateBlocks.
+        true_state : indicated whether the stream table should contain the
+            display variables define in the StateBlock (False, default) or the
+            state variables (True).
+        time_point : point in the time domain at which to generate stream table
+            (default = 0)
+        orient : orientation of stream table. Accepted values are 'columns'
+            (default) where streams are displayed as columns, or 'index' where
+            stream are displayed as rows.
+        precision: rounding the floating numbers to the give precision. Default
+            is 5 digits after the floating point.
+
+    Returns:
+        A pandas DataFrame containing the stream table data.
+    """
+    # Variable Types:
+    class VariableTypes:
+        UNFIXED = "unfixed"
+        FIXED = "fixed"
+        PARAMETER = "parameter"
+        EXPRESSION = "expression"
+
+    stream_attributes = OrderedDict()
+    stream_states = stream_states_dict(streams=streams, time_point=time_point)
+    full_keys = []  # List of all rows in dataframe to fill in missing data
+
+    stream_attributes["Units"] = {}
+
+    for key, sb in stream_states.items():
+        stream_attributes[key] = {}
+        if true_state:
+            disp_dict = sb.define_state_vars()
+        else:
+            disp_dict = sb.define_display_vars()
+        for k in disp_dict:
+            for row, i in enumerate(disp_dict[k]):
                 stream_key = k if i is None else f"{k} {i}"
 
-                quant = report_quantity(disp_dict[k][i])
+                # Identifying value's variable type
+                var_type = None
+                if isinstance(disp_dict[k][i], (_GeneralVarData, Var)):
+                    if disp_dict[k][i].fixed:
+                        var_type = VariableTypes.FIXED
+                    else:
+                        var_type = VariableTypes.UNFIXED
+                elif isinstance(disp_dict[k][i], Param):
+                    var_type = VariableTypes.PARAMETER
+                elif isinstance(disp_dict[k][i], Expression):
+                    var_type = VariableTypes.EXPRESSION
 
-                stream_attributes[key][stream_key] = quant.m
-                # TODO: Only need to do this once, as otherwise we are just
-                # repeatedly overwriting this
-                stream_attributes["Units"][stream_key] = quant.u
+                quant = report_quantity(disp_dict[k][i])
+                stream_attributes[key][stream_key] = (
+                    round(quant.m, precision),
+                    var_type,
+                )
+                if row == 0 or stream_key not in stream_attributes["Units"]:
+                    stream_attributes["Units"][stream_key] = quant.u
 
                 if stream_key not in full_keys:
                     full_keys.append(stream_key)

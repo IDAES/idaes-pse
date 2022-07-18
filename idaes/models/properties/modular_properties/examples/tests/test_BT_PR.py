@@ -47,7 +47,6 @@ solver = get_solver()
 solver.options["max_iter"] = 50
 
 
-@pytest.mark.unit
 class TestBTPR(PropertyTestHarness):
     def configure(self):
         self.prop_pack = GenericParameterBlock

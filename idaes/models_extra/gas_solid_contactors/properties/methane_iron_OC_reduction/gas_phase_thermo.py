@@ -1069,8 +1069,11 @@ class GasPhaseStateBlockData(StateBlockData):
 
     def _entr_mol(self):
         units_meta = self._params.get_metadata().derived_units
-        units_entr_mol = (units_meta["energy"] * units_meta["amount"] ** -1
-                          * units_meta["temperature"] ** -1)
+        units_entr_mol = (
+            units_meta["energy"]
+            * units_meta["amount"] ** -1
+            * units_meta["temperature"] ** -1
+        )
         self.entr_mol = Var(
             doc="Specific Entropy",
             initialize=1.0,

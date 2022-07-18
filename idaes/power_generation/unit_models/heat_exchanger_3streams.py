@@ -15,9 +15,11 @@ Deprecation path for renamed model.
 """
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The heat_exchanger_3streams module has been moved to "
-                    "idaes.models_extra.power_generation.unit_models."
-                    "heat_exchanger_3streams",
-                    version="2.0.0.alpha0")
+deprecation_warning(
+    "The heat_exchanger_3streams module has been moved to "
+    "idaes.models_extra.power_generation.unit_models."
+    "heat_exchanger_3streams",
+    version="2.0.0.alpha0",
+)
 
 from idaes.models_extra.power_generation.unit_models.heat_exchanger_3streams import *

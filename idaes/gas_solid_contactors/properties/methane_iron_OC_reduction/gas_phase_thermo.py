@@ -15,9 +15,11 @@ Deprecation path for renamed model.
 """
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The gas_solid_contactors.properties.methane_iron_OC_reduction.gas_phase_thermo "
-                    "module has been moved to "
-                    "idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_phase_thermo",
-                    version="2.0.0.alpha0")
+deprecation_warning(
+    "The gas_solid_contactors.properties.methane_iron_OC_reduction.gas_phase_thermo "
+    "module has been moved to "
+    "idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_phase_thermo",
+    version="2.0.0.alpha0",
+)
 
 from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_phase_thermo import *
