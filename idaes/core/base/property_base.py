@@ -17,11 +17,12 @@ This module contains classes for property blocks and property parameter blocks.
 import sys
 
 # Import Pyomo libraries
-from pyomo.environ import Set, value, Var, Expression, Constraint
+from pyomo.environ import Set, value, Var, Expression, Constraint, Reference
 from pyomo.core.base.var import _VarData
 from pyomo.core.base.expression import _ExpressionData
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 from pyomo.common.formatting import tabular_writer
+from pyomo.network import Port
 
 # Import IDAES cores
 from idaes.core.base.process_block import ProcessBlock
@@ -503,6 +504,66 @@ class StateBlock(ProcessBlock):
             )
 
         ostream.write("\n" + "=" * max_str_length + "\n")
+
+    def get_port_reference_name(self, component_name, port_name):
+        """
+        Get the standard name of a "port reference", the component
+        accessed on the port by "port_name.component_name".
+
+        Args:
+            component_name - name of port member of interest (str)
+            port_name - name of Port object (str)
+
+        Returns:
+            str with name for Reference used for Port member
+        """
+        return f"_{component_name}_{port_name}_ref"
+
+    def build_port(
+        self,
+        doc=None,
+        slice_index=None,
+        index=None,
+    ):
+        """
+        Constructs a Port based on this StateBlock attached to the target block.
+
+        Args:
+            doc - doc string or Prot object
+            slice_index - Slice index (e.g. (slice(None), 0.0) that will be
+                used to index self when constructing port references. Default = None.
+            index - time index to use when calling define_port_memebers. Default = None.
+
+        Returns:
+            Port object and list of tuples with form (Reference, member name)
+        """
+        if slice_index is None:
+            slice_index = Ellipsis
+        if index is None:
+            index = self.index_set().first()
+
+        # Create empty Port
+        p = Port(doc=doc)
+
+        # Get dict of Port members and names
+        # Need to get a representative member of StateBlockDatas
+        port_member_dict = self[index].define_port_members()
+
+        # Create References for port members
+        ref_name_list = []
+        for name, component in port_member_dict.items():
+            if not component.is_indexed():
+                slicer = self[slice_index].component(component.local_name)
+            else:
+                slicer = self[slice_index].component(component.local_name)[...]
+
+            ref = Reference(slicer)
+            ref_name_list.append((ref, name))
+
+            # Add Reference to Port
+            p.add(ref, name)
+
+        return p, ref_name_list
 
 
 class StateBlockData(ProcessBlockData):

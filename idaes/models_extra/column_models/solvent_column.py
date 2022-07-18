@@ -397,7 +397,7 @@ and used when constructing these
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             initialize=0.9,
-            units=(pyunits.m)**2 / (pyunits.m)**3,
+            units=(pyunits.m) ** 2 / (pyunits.m) ** 3,
             doc="Specific interfacial area",
         )
 
@@ -433,8 +433,7 @@ and used when constructing these
         )
         def vapor_phase_area(blk, t, x):
             if x == self.vapor_phase.length_domain.first():
-                return blk.vapor_phase.area[t, x] == (
-                    blk.eps_ref * blk.area_column)
+                return blk.vapor_phase.area[t, x] == (blk.eps_ref * blk.area_column)
             else:
                 return blk.vapor_phase.area[t, x] == (
                     blk.area_column * blk.holdup_vap[t, x]
@@ -447,8 +446,7 @@ and used when constructing these
         )
         def liquid_phase_area(blk, t, x):
             if x == self.liquid_phase.length_domain.last():
-                return blk.liquid_phase.area[t, x] == (
-                    blk.eps_ref * blk.area_column)
+                return blk.liquid_phase.area[t, x] == (blk.eps_ref * blk.area_column)
             else:
                 return blk.liquid_phase.area[t, x] == (
                     blk.area_column * blk.holdup_liq[t, x]

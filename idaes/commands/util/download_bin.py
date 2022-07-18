@@ -38,7 +38,7 @@ def hash_file_sha256(fname):
     Returns:
         hash as a string
     """
-    with open(fname, 'rb') as f:
+    with open(fname, "rb") as f:
         fh = hashlib.sha256()
         while True:
             fb = f.read(10000)
@@ -47,12 +47,15 @@ def hash_file_sha256(fname):
             fh.update(fb)
     return str(fh.hexdigest())
 
+
 _hash = hash_file_sha256
+
 
 def _get_file_downloader(insecure, cacert):
     fd = FileDownloader(insecure=insecure, cacert=cacert)
     arch = fd.get_sysinfo()
     return fd, arch
+
 
 def _get_platform(fd, platform, arch):
     if platform == "auto":
@@ -74,14 +77,14 @@ def _get_platform(fd, platform, arch):
 
 
 def _get_checksums(fd, to_path, release):
-    checksum = {} # storage for hashes if install from release
+    checksum = {}  # storage for hashes if install from release
     check_to = os.path.join(to_path, f"sha256sum_{release}.txt")
     check_from = idaes.config.release_checksum_url.format(release)
     _log.debug(f"Getting checksum file {check_from}")
     fd.set_destination_filename(check_to)
     fd.get_binary_file(check_from)
     # read the hashes file and store then in checksum dict
-    with open(check_to, 'r') as f:
+    with open(check_to, "r") as f:
         for i in range(1000):
             line = f.readline(1000)
             if line == "":
@@ -92,7 +95,7 @@ def _get_checksums(fd, to_path, release):
 
 
 def _get_release_url_and_checksum(fd, to_path, release, url, nochecksum):
-    checksum = False # default if not checking checksums
+    checksum = False  # default if not checking checksums
     if release is not None:
         url = "/".join([_release_base_url, release])
         if not nochecksum:
@@ -105,7 +108,7 @@ def _get_release_url_and_checksum(fd, to_path, release, url, nochecksum):
         _log.debug("No release or URL was provided.")
         raise Exception("Must provide a location to download binaries")
     if url.endswith("/"):
-        url = url[0:-1] # if url ends with "/" remove it for proper join later
+        url = url[0:-1]  # if url ends with "/" remove it for proper join later
     _log.debug(f"Downloading binaries from {url}")
     return url, checksum
 
@@ -134,7 +137,7 @@ def download_binaries(
     extra=(),
     to_path=None,
     alt_path=None,
-    ):
+):
     """
     Download IDAES solvers and libraries and put them in the right location. Need
     to supply either local or url argument.
@@ -164,13 +167,13 @@ def download_binaries(
     idaes._create_bin_dir(to_path)
     fd, arch = _get_file_downloader(insecure, cacert)
     platform = _get_platform(fd, platform, arch)
-    url, checksum = _get_release_url_and_checksum(
-        fd, to_path, release, url, nochecksum)
+    url, checksum = _get_release_url_and_checksum(fd, to_path, release, url, nochecksum)
     # Set the binary file destinations
     pname = []
     ptar = []
     ftar = []
     furl = []
+
     def _add_pack(name):
         f = f"idaes-{name}-{platform}.tar.gz"
         ftar.append(f)
@@ -187,7 +190,7 @@ def download_binaries(
                 f"Extra package {e} not available for {platform}, not installed."
             )
             continue
-        _add_pack(e) # you have to explicitly ask for extras so assume you want
+        _add_pack(e)  # you have to explicitly ask for extras so assume you want
     if not extras_only:
         _add_pack("lib")
     if not library_only and not extras_only:
@@ -217,5 +220,5 @@ def download_binaries(
     # Extract solvers
     for n, p in zip(pname, ptar):
         _log.debug(f"Extracting files in {p} to {to_path}")
-        with tarfile.open(p, 'r') as f:
+        with tarfile.open(p, "r") as f:
             f.extractall(to_path)

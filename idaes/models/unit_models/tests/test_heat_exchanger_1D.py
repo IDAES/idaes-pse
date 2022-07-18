@@ -314,7 +314,9 @@ class TestBTX_cocurrent(object):
                 "Tube Area": btx.fs.unit.tube.area,
                 "Tube Inner Diameter": btx.fs.unit.d_tube_inner,
                 "Tube Length": btx.fs.unit.tube.length,
-                "Tube Outer Diameter": btx.fs.unit.d_tube_outer}}
+                "Tube Outer Diameter": btx.fs.unit.d_tube_outer,
+            }
+        }
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -322,36 +324,46 @@ class TestBTX_cocurrent(object):
         stable = btx.fs.unit._get_stream_table_contents()
 
         expected = {
-            'Units': {
-                'flow_mol': getattr(pyunits.pint_registry, "mole/second"),
-                'mole_frac_comp benzene': getattr(pyunits.pint_registry, "dimensionless"),
-                'mole_frac_comp toluene': getattr(pyunits.pint_registry, "dimensionless"),
-                'temperature': getattr(pyunits.pint_registry, "kelvin"),
-                'pressure': getattr(pyunits.pint_registry, "Pa")},
-            'Shell Inlet': {
-                'flow_mol': pytest.approx(5.0, rel=1e-4),
-                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
-                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
-                'temperature': pytest.approx(365, rel=1e-4),
-                'pressure': pytest.approx(101325.0, rel=1e-4)},
-            'Shell Outlet': {
-                'flow_mol': pytest.approx(1, rel=1e-4),
-                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
-                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
-                'temperature': pytest.approx(298.15, rel=1e-4),
-                'pressure': pytest.approx(101325.0, rel=1e-4)},
-            'Tube Inlet': {
-                'flow_mol': pytest.approx(1.0, rel=1e-4),
-                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
-                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
-                'temperature': pytest.approx(300, rel=1e-4),
-                'pressure': pytest.approx(101325.0, rel=1e-4)},
-            'Tube Outlet': {
-                'flow_mol': pytest.approx(1, rel=1e-4),
-                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
-                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
-                'temperature': pytest.approx(298.15, rel=1e-4),
-                'pressure': pytest.approx(101325.0, rel=1e-4)}}
+            "Units": {
+                "flow_mol": getattr(pyunits.pint_registry, "mole/second"),
+                "mole_frac_comp benzene": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "mole_frac_comp toluene": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "temperature": getattr(pyunits.pint_registry, "kelvin"),
+                "pressure": getattr(pyunits.pint_registry, "Pa"),
+            },
+            "Shell Inlet": {
+                "flow_mol": pytest.approx(5.0, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(365, rel=1e-4),
+                "pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+            "Shell Outlet": {
+                "flow_mol": pytest.approx(1, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(298.15, rel=1e-4),
+                "pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+            "Tube Inlet": {
+                "flow_mol": pytest.approx(1.0, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(300, rel=1e-4),
+                "pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+            "Tube Outlet": {
+                "flow_mol": pytest.approx(1, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(298.15, rel=1e-4),
+                "pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+        }
 
         assert stable.to_dict() == expected
 
@@ -560,7 +572,9 @@ class TestBTX_countercurrent(object):
                 "Tube Area": btx.fs.unit.tube.area,
                 "Tube Inner Diameter": btx.fs.unit.d_tube_inner,
                 "Tube Length": btx.fs.unit.tube.length,
-                "Tube Outer Diameter": btx.fs.unit.d_tube_outer}}
+                "Tube Outer Diameter": btx.fs.unit.d_tube_outer,
+            }
+        }
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -568,36 +582,46 @@ class TestBTX_countercurrent(object):
         stable = btx.fs.unit._get_stream_table_contents()
 
         expected = {
-            'Units': {
-                'flow_mol': getattr(pyunits.pint_registry, "mole/second"),
-                'mole_frac_comp benzene': getattr(pyunits.pint_registry, "dimensionless"),
-                'mole_frac_comp toluene': getattr(pyunits.pint_registry, "dimensionless"),
-                'temperature': getattr(pyunits.pint_registry, "kelvin"),
-                'pressure': getattr(pyunits.pint_registry, "Pa")},
-            'Shell Inlet': {
-                'flow_mol': pytest.approx(5.0, rel=1e-4),
-                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
-                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
-                'temperature': pytest.approx(365, rel=1e-4),
-                'pressure': pytest.approx(101325.0, rel=1e-4)},
-            'Shell Outlet': {
-                'flow_mol': pytest.approx(1, rel=1e-4),
-                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
-                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
-                'temperature': pytest.approx(298.15, rel=1e-4),
-                'pressure': pytest.approx(101325.0, rel=1e-4)},
-            'Tube Inlet': {
-                'flow_mol': pytest.approx(1.0, rel=1e-4),
-                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
-                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
-                'temperature': pytest.approx(300, rel=1e-4),
-                'pressure': pytest.approx(101325.0, rel=1e-4)},
-            'Tube Outlet': {
-                'flow_mol': pytest.approx(1, rel=1e-4),
-                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
-                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
-                'temperature': pytest.approx(298.15, rel=1e-4),
-                'pressure': pytest.approx(101325.0, rel=1e-4)}}
+            "Units": {
+                "flow_mol": getattr(pyunits.pint_registry, "mole/second"),
+                "mole_frac_comp benzene": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "mole_frac_comp toluene": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "temperature": getattr(pyunits.pint_registry, "kelvin"),
+                "pressure": getattr(pyunits.pint_registry, "Pa"),
+            },
+            "Shell Inlet": {
+                "flow_mol": pytest.approx(5.0, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(365, rel=1e-4),
+                "pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+            "Shell Outlet": {
+                "flow_mol": pytest.approx(1, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(298.15, rel=1e-4),
+                "pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+            "Tube Inlet": {
+                "flow_mol": pytest.approx(1.0, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(300, rel=1e-4),
+                "pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+            "Tube Outlet": {
+                "flow_mol": pytest.approx(1, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(298.15, rel=1e-4),
+                "pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+        }
 
         assert stable.to_dict() == expected
 
@@ -803,7 +827,9 @@ class TestIAPWS_cocurrent(object):
                 "Tube Area": iapws.fs.unit.tube.area,
                 "Tube Inner Diameter": iapws.fs.unit.d_tube_inner,
                 "Tube Length": iapws.fs.unit.tube.length,
-                "Tube Outer Diameter": iapws.fs.unit.d_tube_outer}}
+                "Tube Outer Diameter": iapws.fs.unit.d_tube_outer,
+            }
+        }
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -811,46 +837,52 @@ class TestIAPWS_cocurrent(object):
         stable = iapws.fs.unit._get_stream_table_contents()
 
         expected = {
-            'Units': {
-                'Molar Flow (mol/s)': getattr(pyunits.pint_registry, "mole/second"),
-                'Mass Flow (kg/s)': getattr(pyunits.pint_registry, "kg/second"),
-                'T (K)': getattr(pyunits.pint_registry, "K"),
-                'P (Pa)': getattr(pyunits.pint_registry, "Pa"),
-                'Vapor Fraction': getattr(pyunits.pint_registry, "dimensionless"),
-                'Molar Enthalpy (J/mol) Vap': getattr(pyunits.pint_registry, "J/mole"),
-                'Molar Enthalpy (J/mol) Liq': getattr(pyunits.pint_registry, "J/mole")},
-            'Shell Inlet': {
-                'Molar Flow (mol/s)': pytest.approx(5, rel=1e-4),
-                'Mass Flow (kg/s)': pytest.approx(0.090076, rel=1e-4),
-                'T (K)': pytest.approx(422.6, rel=1e-4),
-                'P (Pa)': pytest.approx(101325, rel=1e-4),
-                'Vapor Fraction': pytest.approx(1, abs=1e-4),
-                'Molar Enthalpy (J/mol) Vap': pytest.approx(50000, rel=1e-4),
-                'Molar Enthalpy (J/mol) Liq': pytest.approx(11342, rel=1e-4)},
-            'Shell Outlet': {
-                'Molar Flow (mol/s)': pytest.approx(1, rel=1e-4),
-                'Mass Flow (kg/s)': pytest.approx(1.8015e-2, rel=1e-4),
-                'T (K)': pytest.approx(286.34, rel=1e-4),
-                'P (Pa)': pytest.approx(1e5, rel=1e-4),
-                'Vapor Fraction': pytest.approx(0, abs=1e-4),
-                'Molar Enthalpy (J/mol) Vap': pytest.approx(2168.6, rel=1e-4),
-                'Molar Enthalpy (J/mol) Liq': pytest.approx(1000, rel=1e-4)},
-            'Tube Inlet': {
-                'Molar Flow (mol/s)': pytest.approx(5, rel=1e-4),
-                'Mass Flow (kg/s)': pytest.approx(0.090076, rel=1e-4),
-                'T (K)': pytest.approx(365.88, rel=1e-4),
-                'P (Pa)': pytest.approx(101325, rel=1e-4),
-                'Vapor Fraction': pytest.approx(0, abs=1e-4),
-                'Molar Enthalpy (J/mol) Vap': pytest.approx(47926, rel=1e-4),
-                'Molar Enthalpy (J/mol) Liq': pytest.approx(7000, rel=1e-4)},
-            'Tube Outlet': {
-                'Molar Flow (mol/s)': pytest.approx(1, rel=1e-4),
-                'Mass Flow (kg/s)': pytest.approx(1.8015e-2, rel=1e-4),
-                'T (K)': pytest.approx(286.34, rel=1e-4),
-                'P (Pa)': pytest.approx(1e5, rel=1e-4),
-                'Vapor Fraction': pytest.approx(0, abs=1e-4),
-                'Molar Enthalpy (J/mol) Vap': pytest.approx(2168.6, rel=1e-4),
-                'Molar Enthalpy (J/mol) Liq': pytest.approx(1000, rel=1e-4)}}
+            "Units": {
+                "Molar Flow (mol/s)": getattr(pyunits.pint_registry, "mole/second"),
+                "Mass Flow (kg/s)": getattr(pyunits.pint_registry, "kg/second"),
+                "T (K)": getattr(pyunits.pint_registry, "K"),
+                "P (Pa)": getattr(pyunits.pint_registry, "Pa"),
+                "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
+                "Molar Enthalpy (J/mol) Vap": getattr(pyunits.pint_registry, "J/mole"),
+                "Molar Enthalpy (J/mol) Liq": getattr(pyunits.pint_registry, "J/mole"),
+            },
+            "Shell Inlet": {
+                "Molar Flow (mol/s)": pytest.approx(5, rel=1e-4),
+                "Mass Flow (kg/s)": pytest.approx(0.090076, rel=1e-4),
+                "T (K)": pytest.approx(422.6, rel=1e-4),
+                "P (Pa)": pytest.approx(101325, rel=1e-4),
+                "Vapor Fraction": pytest.approx(1, abs=1e-4),
+                "Molar Enthalpy (J/mol) Vap": pytest.approx(50000, rel=1e-4),
+                "Molar Enthalpy (J/mol) Liq": pytest.approx(11342, rel=1e-4),
+            },
+            "Shell Outlet": {
+                "Molar Flow (mol/s)": pytest.approx(1, rel=1e-4),
+                "Mass Flow (kg/s)": pytest.approx(1.8015e-2, rel=1e-4),
+                "T (K)": pytest.approx(286.34, rel=1e-4),
+                "P (Pa)": pytest.approx(1e5, rel=1e-4),
+                "Vapor Fraction": pytest.approx(0, abs=1e-4),
+                "Molar Enthalpy (J/mol) Vap": pytest.approx(2168.6, rel=1e-4),
+                "Molar Enthalpy (J/mol) Liq": pytest.approx(1000, rel=1e-4),
+            },
+            "Tube Inlet": {
+                "Molar Flow (mol/s)": pytest.approx(5, rel=1e-4),
+                "Mass Flow (kg/s)": pytest.approx(0.090076, rel=1e-4),
+                "T (K)": pytest.approx(365.88, rel=1e-4),
+                "P (Pa)": pytest.approx(101325, rel=1e-4),
+                "Vapor Fraction": pytest.approx(0, abs=1e-4),
+                "Molar Enthalpy (J/mol) Vap": pytest.approx(47926, rel=1e-4),
+                "Molar Enthalpy (J/mol) Liq": pytest.approx(7000, rel=1e-4),
+            },
+            "Tube Outlet": {
+                "Molar Flow (mol/s)": pytest.approx(1, rel=1e-4),
+                "Mass Flow (kg/s)": pytest.approx(1.8015e-2, rel=1e-4),
+                "T (K)": pytest.approx(286.34, rel=1e-4),
+                "P (Pa)": pytest.approx(1e5, rel=1e-4),
+                "Vapor Fraction": pytest.approx(0, abs=1e-4),
+                "Molar Enthalpy (J/mol) Vap": pytest.approx(2168.6, rel=1e-4),
+                "Molar Enthalpy (J/mol) Liq": pytest.approx(1000, rel=1e-4),
+            },
+        }
 
         assert stable.to_dict() == expected
 
@@ -1056,7 +1088,9 @@ class TestIAPWS_countercurrent(object):
                 "Tube Area": iapws.fs.unit.tube.area,
                 "Tube Inner Diameter": iapws.fs.unit.d_tube_inner,
                 "Tube Length": iapws.fs.unit.tube.length,
-                "Tube Outer Diameter": iapws.fs.unit.d_tube_outer}}
+                "Tube Outer Diameter": iapws.fs.unit.d_tube_outer,
+            }
+        }
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1064,46 +1098,52 @@ class TestIAPWS_countercurrent(object):
         stable = iapws.fs.unit._get_stream_table_contents()
 
         expected = {
-            'Units': {
-                'Molar Flow (mol/s)': getattr(pyunits.pint_registry, "mole/second"),
-                'Mass Flow (kg/s)': getattr(pyunits.pint_registry, "kg/second"),
-                'T (K)': getattr(pyunits.pint_registry, "K"),
-                'P (Pa)': getattr(pyunits.pint_registry, "Pa"),
-                'Vapor Fraction': getattr(pyunits.pint_registry, "dimensionless"),
-                'Molar Enthalpy (J/mol) Vap': getattr(pyunits.pint_registry, "J/mole"),
-                'Molar Enthalpy (J/mol) Liq': getattr(pyunits.pint_registry, "J/mole")},
-            'Shell Inlet': {
-                'Molar Flow (mol/s)': pytest.approx(5, rel=1e-4),
-                'Mass Flow (kg/s)': pytest.approx(0.090076, rel=1e-4),
-                'T (K)': pytest.approx(422.6, rel=1e-4),
-                'P (Pa)': pytest.approx(101325, rel=1e-4),
-                'Vapor Fraction': pytest.approx(1, abs=1e-4),
-                'Molar Enthalpy (J/mol) Vap': pytest.approx(50000, rel=1e-4),
-                'Molar Enthalpy (J/mol) Liq': pytest.approx(11342, rel=1e-4)},
-            'Shell Outlet': {
-                'Molar Flow (mol/s)': pytest.approx(1, rel=1e-4),
-                'Mass Flow (kg/s)': pytest.approx(1.8015e-2, rel=1e-4),
-                'T (K)': pytest.approx(286.34, rel=1e-4),
-                'P (Pa)': pytest.approx(1e5, rel=1e-4),
-                'Vapor Fraction': pytest.approx(0, abs=1e-4),
-                'Molar Enthalpy (J/mol) Vap': pytest.approx(2168.6, rel=1e-4),
-                'Molar Enthalpy (J/mol) Liq': pytest.approx(1000, rel=1e-4)},
-            'Tube Inlet': {
-                'Molar Flow (mol/s)': pytest.approx(5, rel=1e-4),
-                'Mass Flow (kg/s)': pytest.approx(0.090076, rel=1e-4),
-                'T (K)': pytest.approx(365.88, rel=1e-4),
-                'P (Pa)': pytest.approx(101325, rel=1e-4),
-                'Vapor Fraction': pytest.approx(0, abs=1e-4),
-                'Molar Enthalpy (J/mol) Vap': pytest.approx(47926, rel=1e-4),
-                'Molar Enthalpy (J/mol) Liq': pytest.approx(7000, rel=1e-4)},
-            'Tube Outlet': {
-                'Molar Flow (mol/s)': pytest.approx(1, rel=1e-4),
-                'Mass Flow (kg/s)': pytest.approx(1.8015e-2, rel=1e-4),
-                'T (K)': pytest.approx(286.34, rel=1e-4),
-                'P (Pa)': pytest.approx(1e5, rel=1e-4),
-                'Vapor Fraction': pytest.approx(0, abs=1e-4),
-                'Molar Enthalpy (J/mol) Vap': pytest.approx(2168.6, rel=1e-4),
-                'Molar Enthalpy (J/mol) Liq': pytest.approx(1000, rel=1e-4)}}
+            "Units": {
+                "Molar Flow (mol/s)": getattr(pyunits.pint_registry, "mole/second"),
+                "Mass Flow (kg/s)": getattr(pyunits.pint_registry, "kg/second"),
+                "T (K)": getattr(pyunits.pint_registry, "K"),
+                "P (Pa)": getattr(pyunits.pint_registry, "Pa"),
+                "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
+                "Molar Enthalpy (J/mol) Vap": getattr(pyunits.pint_registry, "J/mole"),
+                "Molar Enthalpy (J/mol) Liq": getattr(pyunits.pint_registry, "J/mole"),
+            },
+            "Shell Inlet": {
+                "Molar Flow (mol/s)": pytest.approx(5, rel=1e-4),
+                "Mass Flow (kg/s)": pytest.approx(0.090076, rel=1e-4),
+                "T (K)": pytest.approx(422.6, rel=1e-4),
+                "P (Pa)": pytest.approx(101325, rel=1e-4),
+                "Vapor Fraction": pytest.approx(1, abs=1e-4),
+                "Molar Enthalpy (J/mol) Vap": pytest.approx(50000, rel=1e-4),
+                "Molar Enthalpy (J/mol) Liq": pytest.approx(11342, rel=1e-4),
+            },
+            "Shell Outlet": {
+                "Molar Flow (mol/s)": pytest.approx(1, rel=1e-4),
+                "Mass Flow (kg/s)": pytest.approx(1.8015e-2, rel=1e-4),
+                "T (K)": pytest.approx(286.34, rel=1e-4),
+                "P (Pa)": pytest.approx(1e5, rel=1e-4),
+                "Vapor Fraction": pytest.approx(0, abs=1e-4),
+                "Molar Enthalpy (J/mol) Vap": pytest.approx(2168.6, rel=1e-4),
+                "Molar Enthalpy (J/mol) Liq": pytest.approx(1000, rel=1e-4),
+            },
+            "Tube Inlet": {
+                "Molar Flow (mol/s)": pytest.approx(5, rel=1e-4),
+                "Mass Flow (kg/s)": pytest.approx(0.090076, rel=1e-4),
+                "T (K)": pytest.approx(365.88, rel=1e-4),
+                "P (Pa)": pytest.approx(101325, rel=1e-4),
+                "Vapor Fraction": pytest.approx(0, abs=1e-4),
+                "Molar Enthalpy (J/mol) Vap": pytest.approx(47926, rel=1e-4),
+                "Molar Enthalpy (J/mol) Liq": pytest.approx(7000, rel=1e-4),
+            },
+            "Tube Outlet": {
+                "Molar Flow (mol/s)": pytest.approx(1, rel=1e-4),
+                "Mass Flow (kg/s)": pytest.approx(1.8015e-2, rel=1e-4),
+                "T (K)": pytest.approx(286.34, rel=1e-4),
+                "P (Pa)": pytest.approx(1e5, rel=1e-4),
+                "Vapor Fraction": pytest.approx(0, abs=1e-4),
+                "Molar Enthalpy (J/mol) Vap": pytest.approx(2168.6, rel=1e-4),
+                "Molar Enthalpy (J/mol) Liq": pytest.approx(1000, rel=1e-4),
+            },
+        }
 
         assert stable.to_dict() == expected
 
@@ -1317,7 +1357,9 @@ class TestSaponification_cocurrent(object):
                 "Tube Area": sapon.fs.unit.tube.area,
                 "Tube Inner Diameter": sapon.fs.unit.d_tube_inner,
                 "Tube Length": sapon.fs.unit.tube.length,
-                "Tube Outer Diameter": sapon.fs.unit.d_tube_outer}}
+                "Tube Outer Diameter": sapon.fs.unit.d_tube_outer,
+            }
+        }
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1325,51 +1367,63 @@ class TestSaponification_cocurrent(object):
         stable = sapon.fs.unit._get_stream_table_contents()
 
         expected = {
-            'Units': {
-                'Volumetric Flowrate': getattr(pyunits.pint_registry, "m**3/second"),
-                'Molar Concentration H2O': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Molar Concentration NaOH': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Molar Concentration EthylAcetate': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Molar Concentration SodiumAcetate': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Molar Concentration Ethanol': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Temperature': getattr(pyunits.pint_registry, "K"),
-                'Pressure': getattr(pyunits.pint_registry, "Pa")},
-            'Shell Inlet': {
-                'Volumetric Flowrate': pytest.approx(1e-3, rel=1e-4),
-                'Molar Concentration H2O': pytest.approx(55388, rel=1e-4),
-                'Molar Concentration NaOH': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration EthylAcetate': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration SodiumAcetate': pytest.approx(0, abs=1e-4),
-                'Molar Concentration Ethanol': pytest.approx(0, abs=1e-4),
-                'Temperature': pytest.approx(320, rel=1e-4),
-                'Pressure': pytest.approx(1.0132e+05, rel=1e-4)},
-            'Shell Outlet': {
-                'Volumetric Flowrate': pytest.approx(1.00, rel=1e-4),
-                'Molar Concentration H2O': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration NaOH': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration EthylAcetate': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration SodiumAcetate': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration Ethanol': pytest.approx(100.00, rel=1e-4),
-                'Temperature': pytest.approx(298.15, rel=1e-4),
-                'Pressure': pytest.approx(1.0132e+05, rel=1e-4)},
-            'Tube Inlet': {
-                'Volumetric Flowrate': pytest.approx(1e-3, rel=1e-4),
-                'Molar Concentration H2O': pytest.approx(55388, rel=1e-4),
-                'Molar Concentration NaOH': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration EthylAcetate': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration SodiumAcetate': pytest.approx(0, abs=1e-4),
-                'Molar Concentration Ethanol': pytest.approx(0, abs=1e-4),
-                'Temperature': pytest.approx(300, rel=1e-4),
-                'Pressure': pytest.approx(1.0132e+05, rel=1e-4)},
-            'Tube Outlet': {
-                'Volumetric Flowrate': pytest.approx(1.00, rel=1e-4),
-                'Molar Concentration H2O': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration NaOH': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration EthylAcetate': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration SodiumAcetate': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration Ethanol': pytest.approx(100.00, rel=1e-4),
-                'Temperature': pytest.approx(298.15, rel=1e-4),
-                'Pressure': pytest.approx(1.0132e+05, rel=1e-4)}}
+            "Units": {
+                "Volumetric Flowrate": getattr(pyunits.pint_registry, "m**3/second"),
+                "Molar Concentration H2O": getattr(pyunits.pint_registry, "mole/m**3"),
+                "Molar Concentration NaOH": getattr(pyunits.pint_registry, "mole/m**3"),
+                "Molar Concentration EthylAcetate": getattr(
+                    pyunits.pint_registry, "mole/m**3"
+                ),
+                "Molar Concentration SodiumAcetate": getattr(
+                    pyunits.pint_registry, "mole/m**3"
+                ),
+                "Molar Concentration Ethanol": getattr(
+                    pyunits.pint_registry, "mole/m**3"
+                ),
+                "Temperature": getattr(pyunits.pint_registry, "K"),
+                "Pressure": getattr(pyunits.pint_registry, "Pa"),
+            },
+            "Shell Inlet": {
+                "Volumetric Flowrate": pytest.approx(1e-3, rel=1e-4),
+                "Molar Concentration H2O": pytest.approx(55388, rel=1e-4),
+                "Molar Concentration NaOH": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration EthylAcetate": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration SodiumAcetate": pytest.approx(0, abs=1e-4),
+                "Molar Concentration Ethanol": pytest.approx(0, abs=1e-4),
+                "Temperature": pytest.approx(320, rel=1e-4),
+                "Pressure": pytest.approx(1.0132e05, rel=1e-4),
+            },
+            "Shell Outlet": {
+                "Volumetric Flowrate": pytest.approx(1.00, rel=1e-4),
+                "Molar Concentration H2O": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration NaOH": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration EthylAcetate": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration SodiumAcetate": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration Ethanol": pytest.approx(100.00, rel=1e-4),
+                "Temperature": pytest.approx(298.15, rel=1e-4),
+                "Pressure": pytest.approx(1.0132e05, rel=1e-4),
+            },
+            "Tube Inlet": {
+                "Volumetric Flowrate": pytest.approx(1e-3, rel=1e-4),
+                "Molar Concentration H2O": pytest.approx(55388, rel=1e-4),
+                "Molar Concentration NaOH": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration EthylAcetate": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration SodiumAcetate": pytest.approx(0, abs=1e-4),
+                "Molar Concentration Ethanol": pytest.approx(0, abs=1e-4),
+                "Temperature": pytest.approx(300, rel=1e-4),
+                "Pressure": pytest.approx(1.0132e05, rel=1e-4),
+            },
+            "Tube Outlet": {
+                "Volumetric Flowrate": pytest.approx(1.00, rel=1e-4),
+                "Molar Concentration H2O": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration NaOH": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration EthylAcetate": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration SodiumAcetate": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration Ethanol": pytest.approx(100.00, rel=1e-4),
+                "Temperature": pytest.approx(298.15, rel=1e-4),
+                "Pressure": pytest.approx(1.0132e05, rel=1e-4),
+            },
+        }
 
         assert stable.to_dict() == expected
 
@@ -1582,7 +1636,9 @@ class TestSaponification_countercurrent(object):
                 "Tube Area": sapon.fs.unit.tube.area,
                 "Tube Inner Diameter": sapon.fs.unit.d_tube_inner,
                 "Tube Length": sapon.fs.unit.tube.length,
-                "Tube Outer Diameter": sapon.fs.unit.d_tube_outer}}
+                "Tube Outer Diameter": sapon.fs.unit.d_tube_outer,
+            }
+        }
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1590,51 +1646,63 @@ class TestSaponification_countercurrent(object):
         stable = sapon.fs.unit._get_stream_table_contents()
 
         expected = {
-            'Units': {
-                'Volumetric Flowrate': getattr(pyunits.pint_registry, "m**3/second"),
-                'Molar Concentration H2O': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Molar Concentration NaOH': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Molar Concentration EthylAcetate': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Molar Concentration SodiumAcetate': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Molar Concentration Ethanol': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Temperature': getattr(pyunits.pint_registry, "K"),
-                'Pressure': getattr(pyunits.pint_registry, "Pa")},
-            'Shell Inlet': {
-                'Volumetric Flowrate': pytest.approx(1e-3, rel=1e-4),
-                'Molar Concentration H2O': pytest.approx(55388, rel=1e-4),
-                'Molar Concentration NaOH': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration EthylAcetate': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration SodiumAcetate': pytest.approx(0, abs=1e-4),
-                'Molar Concentration Ethanol': pytest.approx(0, abs=1e-4),
-                'Temperature': pytest.approx(320, rel=1e-4),
-                'Pressure': pytest.approx(1.0132e+05, rel=1e-4)},
-            'Shell Outlet': {
-                'Volumetric Flowrate': pytest.approx(1.00, rel=1e-4),
-                'Molar Concentration H2O': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration NaOH': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration EthylAcetate': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration SodiumAcetate': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration Ethanol': pytest.approx(100.00, rel=1e-4),
-                'Temperature': pytest.approx(298.15, rel=1e-4),
-                'Pressure': pytest.approx(1.0132e+05, rel=1e-4)},
-            'Tube Inlet': {
-                'Volumetric Flowrate': pytest.approx(1e-3, rel=1e-4),
-                'Molar Concentration H2O': pytest.approx(55388, rel=1e-4),
-                'Molar Concentration NaOH': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration EthylAcetate': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration SodiumAcetate': pytest.approx(0, abs=1e-4),
-                'Molar Concentration Ethanol': pytest.approx(0, abs=1e-4),
-                'Temperature': pytest.approx(300, rel=1e-4),
-                'Pressure': pytest.approx(1.0132e+05, rel=1e-4)},
-            'Tube Outlet': {
-                'Volumetric Flowrate': pytest.approx(1.00, rel=1e-4),
-                'Molar Concentration H2O': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration NaOH': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration EthylAcetate': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration SodiumAcetate': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration Ethanol': pytest.approx(100.00, rel=1e-4),
-                'Temperature': pytest.approx(298.15, rel=1e-4),
-                'Pressure': pytest.approx(1.0132e+05, rel=1e-4)}}
+            "Units": {
+                "Volumetric Flowrate": getattr(pyunits.pint_registry, "m**3/second"),
+                "Molar Concentration H2O": getattr(pyunits.pint_registry, "mole/m**3"),
+                "Molar Concentration NaOH": getattr(pyunits.pint_registry, "mole/m**3"),
+                "Molar Concentration EthylAcetate": getattr(
+                    pyunits.pint_registry, "mole/m**3"
+                ),
+                "Molar Concentration SodiumAcetate": getattr(
+                    pyunits.pint_registry, "mole/m**3"
+                ),
+                "Molar Concentration Ethanol": getattr(
+                    pyunits.pint_registry, "mole/m**3"
+                ),
+                "Temperature": getattr(pyunits.pint_registry, "K"),
+                "Pressure": getattr(pyunits.pint_registry, "Pa"),
+            },
+            "Shell Inlet": {
+                "Volumetric Flowrate": pytest.approx(1e-3, rel=1e-4),
+                "Molar Concentration H2O": pytest.approx(55388, rel=1e-4),
+                "Molar Concentration NaOH": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration EthylAcetate": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration SodiumAcetate": pytest.approx(0, abs=1e-4),
+                "Molar Concentration Ethanol": pytest.approx(0, abs=1e-4),
+                "Temperature": pytest.approx(320, rel=1e-4),
+                "Pressure": pytest.approx(1.0132e05, rel=1e-4),
+            },
+            "Shell Outlet": {
+                "Volumetric Flowrate": pytest.approx(1.00, rel=1e-4),
+                "Molar Concentration H2O": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration NaOH": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration EthylAcetate": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration SodiumAcetate": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration Ethanol": pytest.approx(100.00, rel=1e-4),
+                "Temperature": pytest.approx(298.15, rel=1e-4),
+                "Pressure": pytest.approx(1.0132e05, rel=1e-4),
+            },
+            "Tube Inlet": {
+                "Volumetric Flowrate": pytest.approx(1e-3, rel=1e-4),
+                "Molar Concentration H2O": pytest.approx(55388, rel=1e-4),
+                "Molar Concentration NaOH": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration EthylAcetate": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration SodiumAcetate": pytest.approx(0, abs=1e-4),
+                "Molar Concentration Ethanol": pytest.approx(0, abs=1e-4),
+                "Temperature": pytest.approx(300, rel=1e-4),
+                "Pressure": pytest.approx(1.0132e05, rel=1e-4),
+            },
+            "Tube Outlet": {
+                "Volumetric Flowrate": pytest.approx(1.00, rel=1e-4),
+                "Molar Concentration H2O": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration NaOH": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration EthylAcetate": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration SodiumAcetate": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration Ethanol": pytest.approx(100.00, rel=1e-4),
+                "Temperature": pytest.approx(298.15, rel=1e-4),
+                "Pressure": pytest.approx(1.0132e05, rel=1e-4),
+            },
+        }
 
         assert stable.to_dict() == expected
 
@@ -1962,7 +2030,9 @@ class TestBT_Generic_cocurrent(object):
                 "Tube Area": btx.fs.unit.tube.area,
                 "Tube Inner Diameter": btx.fs.unit.d_tube_inner,
                 "Tube Length": btx.fs.unit.tube.length,
-                "Tube Outer Diameter": btx.fs.unit.d_tube_outer}}
+                "Tube Outer Diameter": btx.fs.unit.d_tube_outer,
+            }
+        }
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1970,36 +2040,46 @@ class TestBT_Generic_cocurrent(object):
         stable = btx.fs.unit._get_stream_table_contents()
 
         expected = {
-            'Units': {
-                'Total Molar Flowrate': getattr(pyunits.pint_registry, "mole/second"),
-                'Total Mole Fraction benzene': getattr(pyunits.pint_registry, "dimensionless"),
-                'Total Mole Fraction toluene': getattr(pyunits.pint_registry, "dimensionless"),
-                'Temperature': getattr(pyunits.pint_registry, "kelvin"),
-                'Pressure': getattr(pyunits.pint_registry, "Pa")},
-            'Shell Inlet': {
-                'Total Molar Flowrate': pytest.approx(5.0, rel=1e-4),
-                'Total Mole Fraction benzene': pytest.approx(0.5, rel=1e-4),
-                'Total Mole Fraction toluene': pytest.approx(0.5, rel=1e-4),
-                'Temperature': pytest.approx(365, rel=1e-4),
-                'Pressure': pytest.approx(101325.0, rel=1e-4)},
-            'Shell Outlet': {
-                'Total Molar Flowrate': pytest.approx(100.0, rel=1e-4),
-                'Total Mole Fraction benzene': pytest.approx(0.5, rel=1e-4),
-                'Total Mole Fraction toluene': pytest.approx(0.5, rel=1e-4),
-                'Temperature': pytest.approx(300, rel=1e-4),
-                'Pressure': pytest.approx(1e5, rel=1e-4)},
-            'Tube Inlet': {
-                'Total Molar Flowrate': pytest.approx(1.0, rel=1e-4),
-                'Total Mole Fraction benzene': pytest.approx(0.5, rel=1e-4),
-                'Total Mole Fraction toluene': pytest.approx(0.5, rel=1e-4),
-                'Temperature': pytest.approx(300, rel=1e-4),
-                'Pressure': pytest.approx(101325.0, rel=1e-4)},
-            'Tube Outlet': {
-                'Total Molar Flowrate': pytest.approx(100.0, rel=1e-4),
-                'Total Mole Fraction benzene': pytest.approx(0.5, rel=1e-4),
-                'Total Mole Fraction toluene': pytest.approx(0.5, rel=1e-4),
-                'Temperature': pytest.approx(300, rel=1e-4),
-                'Pressure': pytest.approx(1e5, rel=1e-4)}}
+            "Units": {
+                "Total Molar Flowrate": getattr(pyunits.pint_registry, "mole/second"),
+                "Total Mole Fraction benzene": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "Total Mole Fraction toluene": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "Temperature": getattr(pyunits.pint_registry, "kelvin"),
+                "Pressure": getattr(pyunits.pint_registry, "Pa"),
+            },
+            "Shell Inlet": {
+                "Total Molar Flowrate": pytest.approx(5.0, rel=1e-4),
+                "Total Mole Fraction benzene": pytest.approx(0.5, rel=1e-4),
+                "Total Mole Fraction toluene": pytest.approx(0.5, rel=1e-4),
+                "Temperature": pytest.approx(365, rel=1e-4),
+                "Pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+            "Shell Outlet": {
+                "Total Molar Flowrate": pytest.approx(100.0, rel=1e-4),
+                "Total Mole Fraction benzene": pytest.approx(0.5, rel=1e-4),
+                "Total Mole Fraction toluene": pytest.approx(0.5, rel=1e-4),
+                "Temperature": pytest.approx(300, rel=1e-4),
+                "Pressure": pytest.approx(1e5, rel=1e-4),
+            },
+            "Tube Inlet": {
+                "Total Molar Flowrate": pytest.approx(1.0, rel=1e-4),
+                "Total Mole Fraction benzene": pytest.approx(0.5, rel=1e-4),
+                "Total Mole Fraction toluene": pytest.approx(0.5, rel=1e-4),
+                "Temperature": pytest.approx(300, rel=1e-4),
+                "Pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+            "Tube Outlet": {
+                "Total Molar Flowrate": pytest.approx(100.0, rel=1e-4),
+                "Total Mole Fraction benzene": pytest.approx(0.5, rel=1e-4),
+                "Total Mole Fraction toluene": pytest.approx(0.5, rel=1e-4),
+                "Temperature": pytest.approx(300, rel=1e-4),
+                "Pressure": pytest.approx(1e5, rel=1e-4),
+            },
+        }
 
         assert stable.to_dict() == expected
 

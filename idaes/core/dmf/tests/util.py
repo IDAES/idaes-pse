@@ -22,8 +22,10 @@ import tempfile
 import time
 from unittest.mock import MagicMock, patch
 import warnings
+
 # third party
 import pytest
+
 # local
 from idaes.core.dmf import dmfbase
 from idaes.core.dmf.util import mkdtemp, NamedTemporaryFile
@@ -34,21 +36,18 @@ scratchdir = None
 
 
 def init_logging():
-    """Init logging for tests.
-    """
-    log = logging.getLogger('idaes.core.dmf')
+    """Init logging for tests."""
+    log = logging.getLogger("idaes.core.dmf")
     h = logging.StreamHandler()
-    f = logging.Formatter(
-        fmt='%(asctime)s %(name)s [%(levelname)s] %(message)s')
+    f = logging.Formatter(fmt="%(asctime)s %(name)s [%(levelname)s] %(message)s")
     h.setFormatter(f)
     log.addHandler(h)
-    if os.environ.get('TEST_DEBUG', ''):
+    if os.environ.get("TEST_DEBUG", ""):
         log.setLevel(logging.DEBUG)
 
 
 def eq_(var, val, msg=None):
-    """Shorthand for common test assertion.
-    """
+    """Shorthand for common test assertion."""
     if msg:
         assert var == val, msg
     else:
@@ -56,8 +55,7 @@ def eq_(var, val, msg=None):
 
 
 def ne_(var, val, msg=None):
-    """Shorthand for common test assertion.
-    """
+    """Shorthand for common test assertion."""
     if msg:
         assert var != val, msg
     else:
@@ -65,9 +63,8 @@ def ne_(var, val, msg=None):
 
 
 def black_hole():
-    """Output destination that swallows up everything.
-    """
-    return open('/dev/null', 'w')
+    """Output destination that swallows up everything."""
+    return open("/dev/null", "w")
 
 
 def patch_modules():
@@ -77,13 +74,16 @@ def patch_modules():
     Returns:
         (mock.mock._patch_dict) Object returned by `mock.patch.dict()`.
     """
-    sm = mock_import('core.process_base', 'idaes_models', assign={
-        'core.process_base:ProcessBase':
-            'idaes.core.dmf.tests.process_base:ProcessBase'
-    })
+    sm = mock_import(
+        "core.process_base",
+        "idaes_models",
+        assign={
+            "core.process_base:ProcessBase": "idaes.core.dmf.tests.process_base:ProcessBase"
+        },
+    )
     # .. can add more to `sm` dict here..
     if sm is not None:
-        result = patch.dict('sys.modules', sm)
+        result = patch.dict("sys.modules", sm)
     else:
         result = None
     return result
@@ -108,9 +108,9 @@ def mock_import(name, package, assign=None):
           nothing is done and return value is None.
     """
     name, package = name.strip(), package.strip()
-    assert name, 'module must be non-empty'
-    assert package, 'package must be non-empty'
-    mlist = name.split('.')
+    assert name, "module must be non-empty"
+    assert package, "package must be non-empty"
+    mlist = name.split(".")
     try:
         importlib.import_module(package, mlist[0])
         return None
@@ -121,24 +121,24 @@ def mock_import(name, package, assign=None):
     modpath, curmod = package, pkg
     sys_modules = {modpath: curmod}
     for m in mlist:
-        modpath = modpath + '.' + m
+        modpath = modpath + "." + m
         curmod = getattr(curmod, m)
         sys_modules[modpath] = curmod
     # assign real modules/classes to mock ones
     if assign:
         for mock_imp, real_imp in assign.items():
             # extract class, if present
-            if ':' in mock_imp:
-                mock_imp, mock_class = mock_imp.split(':')
-                real_imp, real_class = real_imp.split(':')
+            if ":" in mock_imp:
+                mock_imp, mock_class = mock_imp.split(":")
+                real_imp, real_class = real_imp.split(":")
             else:
                 mock_class, real_class = None, None
             # import real module
-            real_pkg = real_imp.split('.')[0]
-            real_modules = '.' + real_imp[real_imp.index('.') + 1:]
+            real_pkg = real_imp.split(".")[0]
+            real_modules = "." + real_imp[real_imp.index(".") + 1 :]
             real_mod = importlib.import_module(real_modules, real_pkg)
             # assign real module, or class, to mock one
-            mock_mod, mock_imp_list = pkg, mock_imp.split('.')
+            mock_mod, mock_imp_list = pkg, mock_imp.split(".")
             if mock_class:
                 # set mock.module.path.Class = real.module.path.Class
                 for m in mock_imp_list:
@@ -160,7 +160,7 @@ class TempDir(object):
         self._origdir = None
 
     def __enter__(self):
-        self._d = mkdtemp(suffix='-dmf')
+        self._d = mkdtemp(suffix="-dmf")
         if self._chdir:
             self._origdir = os.getcwd()
             os.chdir(self._d)
@@ -183,7 +183,7 @@ class TempDir(object):
             os.chdir(self._origdir)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def tmp_dmf():
     """Test fixture to create a DMF in a temporary
     directory.
@@ -200,6 +200,3 @@ def tmp_dmf():
             time.sleep(1)
     if not removed:
         warnings.warn(f"failed to remove temporary directory: {tmpdir}")
-
-
-
