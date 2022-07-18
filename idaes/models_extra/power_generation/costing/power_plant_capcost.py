@@ -20,19 +20,24 @@ developed to calculate the capital cost of power generation plants:
 2. Supercritical CO2 power cycles (direct and indirect) (get_sCO2_unit_cost)
 
 Other methods:
-* get_fixed_OM_costs() to cost fixed O&M costs
-* get_variable_OM_costs to cost variable O&M costs
-* get_ASU_cost() to cost air separation units
-* costing_initialization() to initialize costing blocks
-* display_total_plant_costs() to display total plant cost (TPC)
-* display_bare_erected_costs() to display BEC costs
-* get_total_TPC() to display the total TPC of the entire flowsheet
-* display_flowsheet_cost() to display flowsheet cost
-* check_sCO2_costing_bounds() to display a warnning if costing model have been
-used outside the range that where designed for
+
+    - get_fixed_OM_costs() to cost fixed O&M costs
+    - get_variable_OM_costs() to cost variable O&M costs
+    - get_ASU_cost() to cost air separation units
+    - costing_initialization() to initialize costing blocks
+    - display_total_plant_costs() to display total plant cost (TPC)
+    - display_bare_erected_costs() to display BEC costs
+    - get_total_TPC() to display the total TPC of the entire flowsheet
+    - display_flowsheet_cost() to display flowsheet cost
+    - check_sCO2_costing_bounds() to display a warnning if costing model have
+      been used outside the range that where designed for
 """
 __author__ = "Costing Team (A. Noring and M. Zamarripa)"
 __version__ = "1.0.0"
+
+from pandas import DataFrame
+from sys import stdout
+import textwrap
 
 from pyomo.environ import (
     Param,
@@ -60,6 +65,8 @@ from idaes.core import (
     register_idaes_currency_units,
 )
 
+from idaes.core.util.tables import stream_table_dataframe_to_string
+
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -70,41 +77,6 @@ register_idaes_currency_units()
 # -----------------------------------------------------------------------------
 # Power Plant Costing Library
 # -----------------------------------------------------------------------------
-
-"""
-Custom dictionaries have been added as a way to add new scaling equations
-that are not based on the Bituminous Baseline report.
-New cost accounts include:
-    - 5.1.a.epri can be used to cost the Cansolv carbon capture system
-    between 90% and 97.7% capture rate. It is only valid for a flue gas CO2
-    concentration of 4%. The additional cost component of the CO2 system is
-    in account 5.1.b and remains unchanged.
- """
-
-custom_costing_exponents = {
-    "6": {
-        "5.1.a.epri": {
-            "Account Name": "Cansolv CO2 Removal System",
-            "Exponent": 2.788,
-            "Process Parameter": "CO2 Flowrate",
-        }
-    }
-}
-
-custom_costing_params = {
-    "6": {
-        "B": {
-            "5.1.a.epri": {
-                "BEC": 224191.4,
-                "Eng Fee": 0.2,
-                "Process Contingency": 0.18,
-                "Project Contingency": 0.2,
-                "RP Value": 493587.88,
-                "Units": "lb/hr",
-            }
-        }
-    }
-}
 
 import pyomo.environ as pyo
 from idaes.core import declare_process_block_class
@@ -268,19 +240,71 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # TODO: For now,  no additional process level costs to initialize
         pass
 
-    def report():
-        # to do (Daison)
-        # Display:
-        # Total Plant Cost
-        # Total fixed OM
-        # Total Variable OM
-        # total_overnight_capital
-        # total_as_spent_cost
-        # annualized_cost
-        # cost_of_electricity
-        # cost_of_capture
+    def report(self, export=False):
 
-        pass
+        var_dict = {}
+
+        if hasattr(self, "total_TPC"):
+            var_dict["Total TPC [$MM]"] = value(self.total_TPC)
+
+        if hasattr(self, "total_overnight_capital"):
+            var_dict["Total Overnigth Cost [$MM]"] = value(self.total_overnight_capital)
+
+        if hasattr(self, "total_as_spent_cost"):
+            var_dict["Total As Spent Cost [$MM]"] = value(self.total_as_spent_cost)
+
+        if hasattr(self, "annualized_cost"):
+            var_dict["Total Annualized Capital Cost [$MM/year]"] = value(
+                self.annualized_cost
+            )
+
+        if hasattr(self, "total_fixed_OM_cost"):
+            var_dict["Total fixed O&M cost [$MM/year]"] = value(
+                self.total_fixed_OM_cost
+            )
+
+        if hasattr(self, "total_variable_OM_cost"):
+            var_dict["Total variable O&M cost [$MM/year]"] = value(
+                self.total_variable_OM_cost[0]
+            )
+
+        if (
+            hasattr(self, "annualized_cost")
+            and hasattr(self, "total_fixed_OM_cost")
+            and hasattr(self, "total_variable_OM_cost")
+        ):
+            var_dict["Total Annualized Cost [$MM/year]"] = (
+                value(self.annualized_cost)
+                + value(self.total_fixed_OM_cost)
+                + value(self.total_variable_OM_cost[0])
+            )
+
+        if hasattr(self, "cost_of_electricity"):
+            var_dict["Cost of Electricity [$/MWh]"] = value(self.cost_of_electricity)
+
+        if hasattr(self, "cost_of_capture"):
+            var_dict["Cost of Capture [$/tonne]"] = value(self.cost_of_capture)
+
+        report_dir = {}
+        report_dir["Value"] = {}
+        report_dir["pos"] = {}
+
+        count = 1
+        for k, v in var_dict.items():
+            report_dir["Value"][k] = value(v)
+            report_dir["pos"][k] = count
+            count += 1
+
+        df = DataFrame.from_dict(report_dir, orient="columns")
+        del df["pos"]
+        if export:
+            df.to_csv(f"{self.local_name}_report.csv")
+
+        print("\n" + "=" * 84)
+        print(f"{self.local_name}")
+        print("-" * 84)
+        stdout.write(textwrap.indent(stream_table_dataframe_to_string(df), " " * 4))
+        print("\n" + "=" * 84 + "\n")
 
     def get_PP_costing(
         blk,
@@ -289,6 +313,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         units,
         tech,
         ccs="B",
+        CE_index_base=671.1,
         additional_costing_exponents=None,
         additional_costing_params=None,
     ):
@@ -300,30 +325,52 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         plant equipments (i.e. boiler, pumps, heat exchangers, etc.), other cost
         incurred during the plant operation (i.e. solids handling, etc.)
 
-        Scaling approach uses one main equation:
+        The scaling approach uses a main equation:
             SC = RC*(SP/RP)^Exp
 
         where:
             SC is the scaled cost
             RC is the reference cost
-            SP is the scaled operational parameter
-            RP is the reference operational parameter
+            SP is the scaled operational/design parameter
+            RP is the reference operational/design parameter
             Exp is the scaling exponent
 
-        The scaled cost is computed using ref values for different technoligies.
+        This equation is implemented when one operational/design parameter is
+        used to scale the cost
+
+        When two operational/design parameters are used to scale the cost,
+
+        the following equation is implemented:
+
+            SC = RC*w1*(SP1/RP1)^Exp + RC*w2*(SP2/RP2)^Exp
+
+        where:
+            SC is the scaled cost
+            RC is the reference cost
+            SP1 is the scaled operational/design parameter 1
+            RP1 is the reference operational/design parameter 1
+            w1 is the fraction of the cost scaled using
+            operational/design parameter 1
+            SP2 is the scaled operational/design parameter 2
+            RP2 is the reference operational/design parameter 2
+            w2 is the fraction of the cost scaled using
+            operational/design parameter 2
+            Exp is the scaling exponent
+
+        The scaled cost is computed using ref values for different technologies.
         Categories:
-        1 - Supercritical PC, air-fired, with and without CO2 capture,
+        1. Supercritical PC, air-fired, with and without CO2 capture,
         Illinois No. 6 coal
-        2 - Subcritical PC, air-fired, with and without CO2 capture,
+        2. Subcritical PC, air-fired, with and without CO2 capture,
         Illinois No. 6 coal
-        3 - Two-stage, slurry-feed, oxygen-blown gasifier with and without
+        3. Two-stage, slurry-feed, oxygen-blown gasifier with and without
         CO2 capture, Illinois No. 6 coal
-        4 - Single-stage, slurry-feed, oxygen-blown gasifier with and without
+        4. Single-stage, slurry-feed, oxygen-blown gasifier with and without
         CO2 capture, Illinois No. 6 coal
-        5 - Single-stage, dry-feed, oxygen-blown, up-flow gasifier with
+        5. Single-stage, dry-feed, oxygen-blown, up-flow gasifier with
         and without CO2 capture, Illinois No. 6 coal
-        6 - Natural gas, air-fired, with and without CO2 capture
-        7 - Advanced Ultrasupercritical PC
+        6. Natural gas, air-fired, with and without CO2 capture
+        7. Advanced Ultrasupercritical PC
 
         This method computes the capital cost of units and main components of the
         power plant, and requires a few arguments to build a constraint as part of
@@ -344,6 +391,11 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         spreadsheet.
 
         """
+        from idaes.models_extra.power_generation.costing.power_plant_capcost_custom_dict import (
+            custom_costing_exponents,
+            custom_costing_params,
+        )
+
         # ------------------------ Power Plant Cost ------------------------
 
         # check to see if a costing block already exists
@@ -368,7 +420,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # if not hasattr(fs, "costing"):
         #     fs.get_costing(year="2018")
 
-        CE_index = 671.1
+        CE_index = CE_index_base
         if additional_costing_params is not None:
             # adding custom exponents and params to the dictionary
             for key, value in additional_costing_exponents.items():
@@ -436,7 +488,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             elif tech == 7:
                 cost_accounts = AUSC_preloaded_accounts[cost_accounts]
             else:
-                AttributeError("{} technology not supported".format(self.name))
+                AttributeError("{} technology not supported".format(blk.name))
 
         # pull data for each account into dictionaries
         process_params = {}
@@ -444,7 +496,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         account_names = {}
         exponents = {}
         reference_costs = {}
+        reference_costs_init = {}
         reference_params = {}
+        cost_scaling_fractions = {}
         engineering_fees = {}
         process_contingencies = {}
         project_contingencies = {}
@@ -466,9 +520,28 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 reference_costs[account] = BB_costing_params[str(tech)][ccs][account][
                     "BEC"
                 ]
-                reference_params[account] = BB_costing_params[str(tech)][ccs][account][
-                    "RP Value"
-                ]
+                reference_costs_init[account] = (
+                    BB_costing_params[str(tech)][ccs][account]["BEC"] * 1e-3
+                )
+
+                if type(process_params[account]) == list:
+                    for i, processparam in enumerate(process_params[account]):
+                        reference_params[account, processparam] = BB_costing_params[
+                            str(tech)
+                        ][ccs][account]["RP Value"][i]
+                        cost_scaling_fractions[
+                            account, processparam
+                        ] = BB_costing_params[str(tech)][ccs][account][
+                            "Cost scaling fraction"
+                        ][
+                            i
+                        ]
+
+                elif type(process_params[account]) == str:
+                    reference_params[account] = BB_costing_params[str(tech)][ccs][
+                        account
+                    ]["RP Value"]
+
                 engineering_fees[account] = BB_costing_params[str(tech)][ccs][account][
                     "Eng Fee"
                 ]
@@ -495,9 +568,33 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     reference_costs[account] = custom_costing_params[str(tech)][ccs][
                         account
                     ]["BEC"]
-                    reference_params[account] = custom_costing_params[str(tech)][ccs][
-                        account
-                    ]["RP Value"]
+                    reference_costs_init[account] = (
+                        custom_costing_params[str(tech)][ccs][account]["BEC"] * 1e-3
+                    )
+
+                    if type(process_params[account]) == list:
+                        for i, processparam in enumerate(process_params[account]):
+                            reference_params[
+                                account, processparam
+                            ] = custom_costing_params[str(tech)][ccs][account][
+                                "RP Value"
+                            ][
+                                i
+                            ]
+
+                            cost_scaling_fractions[
+                                account, processparam
+                            ] = custom_costing_params[str(tech)][ccs][account][
+                                "Cost scaling fraction"
+                            ][
+                                i
+                            ]
+
+                    elif type(process_params[account]) == str:
+                        reference_params[account] = custom_costing_params[str(tech)][
+                            ccs
+                        ][account]["RP Value"]
+
                     engineering_fees[account] = custom_costing_params[str(tech)][ccs][
                         account
                     ]["Eng Fee"]
@@ -524,7 +621,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             elif param != param_check:
                 raise ValueError(
                     "{} cost accounts selected do not use "
-                    "the same process parameter".format(self.name)
+                    "the same process parameter".format(blk.name)
                 )
 
         # check that the user passed the correct units
@@ -554,12 +651,30 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             doc="reference cost for account",
         )
 
-        blk.ref_param = Param(
-            cost_accounts,
-            mutable=True,
-            initialize=reference_params,
-            doc="reference parameter for account",
-        )
+        if type(process_params[cost_accounts[0]]) == list:
+            if len(process_params[cost_accounts[0]]) > 1:
+                blk.ref_param = Param(
+                    cost_accounts,
+                    process_params[cost_accounts[0]],
+                    mutable=True,
+                    initialize=reference_params,
+                    doc="reference parameter for account",
+                )
+
+                blk.cost_scaling_fracs = Param(
+                    cost_accounts,
+                    process_params[cost_accounts[0]],
+                    mutable=True,
+                    initialize=cost_scaling_fractions,
+                    doc="reference parameter for account",
+                )
+        elif type(process_params[cost_accounts[0]]) == str:
+            blk.ref_param = Param(
+                cost_accounts,
+                mutable=True,
+                initialize=reference_params,
+                doc="reference parameter for account",
+            )
 
         blk.eng_fee = Param(
             cost_accounts,
@@ -585,27 +700,37 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # define variables
         blk.bare_erected_cost = Var(
             cost_accounts,
-            initialize=reference_costs,
+            initialize=reference_costs_init,
             bounds=(0, 1e4),
             doc="scaled bare erected cost in $MM",
         )
 
         blk.total_plant_cost = Var(
             cost_accounts,
-            initialize=reference_costs,
+            initialize=reference_costs_init,
             bounds=(0, 1e4),
             doc="total plant cost in $MM",
         )
 
         # rule for scaling BEC
         # reference cost is in 2018 dollars, 671.1 is CE index for 2018
-        def bare_erected_cost_rule(blk, i):
-            return (
-                blk.bare_erected_cost[i] * 1e3
-                == (CE_index / 671.1)
-                * blk.ref_cost[i]
-                * (scaled_param / blk.ref_param[i]) ** blk.exp[i]
-            )
+        def bare_erected_cost_rule(costing, i):
+            if type(process_params[i]) == list:
+                if len(process_params[i]) > 1:
+                    return costing.bare_erected_cost[i] * 1e3 == (
+                        CE_index / CE_index_base
+                    ) * costing.ref_cost[i] * sum(
+                        costing.cost_scaling_fracs[i, p]
+                        * (scaled_param[j] / costing.ref_param[i, p]) ** costing.exp[i]
+                        for j, p in enumerate(process_params[i])
+                    )
+            elif type(process_params[i]) == str:
+                return (
+                    costing.bare_erected_cost[i] * 1e3
+                    == (CE_index / CE_index_base)
+                    * costing.ref_cost[i]
+                    * (scaled_param / costing.ref_param[i]) ** costing.exp[i]
+                )
 
         blk.bare_erected_cost_eq = Constraint(
             cost_accounts, rule=bare_erected_cost_rule
@@ -1250,77 +1375,104 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         resource_prices = dict(zip(resources, prices))
 
         # if costing power make vars in fs.costing, if costing hydrogen make vars
-        # # in fs.H2_costing
-        # if mode == "power":
-        #     pass
-        # elif mode == "hydrogen":
-        #     fs.H2_costing = Block()
-        #     costing = fs.H2_costing
+        # in fs.H2_costing
+        if mode == "power":
+            costing = self.costing
+        elif mode == "hydrogen":
+            self.H2_costing = Block()
+            costing = self.H2_costing
 
         # make vars
-        self.variable_operating_costs = Var(
-            self.parent_block().time,
+        costing.variable_operating_costs = Var(
+            self.time,
             resources,
             initialize=1,
             doc="variable operating costs",
             units=cost_units,
         )
 
-        self.other_variable_costs = Var(
-            self.parent_block().time,
+        costing.other_variable_costs = Var(
+            self.time,
             initialize=0,
             doc="a variable to include non-standard O&M costs",
             units=cost_units,
         )
         # assume the user is not using this
-        self.other_variable_costs.fix(0)
+        costing.other_variable_costs.fix(0)
 
-        self.total_variable_OM_cost = Var(
-            self.parent_block().time,
+        costing.total_variable_OM_cost = Var(
+            self.time,
             initialize=1,
             doc="total variable operating and maintenance costs",
             units=cost_units,
         )
 
         # make constraints
-        @self.Constraint(self.parent_block().time, resources)
-        def variable_cost_rule(c, t, r):
-            # return c.variable_operating_costs[t, r] == (
-            #     pyunits.convert(
-            #         resource_prices[r] * resource_rates[r][t] / production_rate[t],
-            #         cost_units,
-            #     )
-            # )
-            return (
-                c.variable_operating_costs[t, r]
-                == (
-                    pyunits.convert(
-                        resource_prices[r] * resource_rates[r][t] * 365 * 85 / 100,
-                        pyunits.USD_2018,
+        if mode == "power":
+
+            @self.Constraint(self.time, resources)
+            def variable_cost_rule_power(c, t, r):
+                # return costing.variable_operating_costs[t, r] == (
+                #     pyunits.convert(
+                #         resource_prices[r] * resource_rates[r][t] / production_rate[t],
+                #         cost_units,
+                #     )
+                # )
+
+                return (
+                    costing.variable_operating_costs[t, r]
+                    == (
+                        pyunits.convert(
+                            resource_prices[r] * resource_rates[r][t] * 365 * 85 / 100,
+                            pyunits.USD_2018 / pyunits.s,
+                        )
                     )
+                    / 1e6
                 )
-                / 1e6
-            )
+
+        elif mode == "hydrogen":
+
+            @self.Constraint(self.time, resources)
+            def variable_cost_rule_hydrogen(c, t, r):
+                # return costing.variable_operating_costs[t, r] == (
+                #     pyunits.convert(
+                #         resource_prices[r] * resource_rates[r][t] / production_rate[t],
+                #         cost_units,
+                #     )
+                # )
+
+                return (
+                    costing.variable_operating_costs[t, r]
+                    == (
+                        pyunits.convert(
+                            resource_prices[r] * resource_rates[r][t] * 365 * 85 / 100,
+                            pyunits.USD_2018 / pyunits.s,
+                        )
+                    )
+                    / 1e6
+                )
 
         if mode == "power" and hasattr(self, "maintenance_material_cost"):
 
-            @self.Constraint(self.parent_block().time)
-            def total_variable_cost_rule(c, t):
+            @self.Constraint(self.time)
+            def total_variable_cost_rule_power(c, t):
                 return (
-                    c.total_variable_OM_cost[t]
-                    == sum(c.variable_operating_costs[t, r] for r in resources)
+                    c.costing.total_variable_OM_cost[t]
+                    == sum(c.costing.variable_operating_costs[t, r] for r in resources)
                     + c.maintenance_material_cost
-                    + c.other_variable_costs[t]
+                    + c.costing.other_variable_costs[t]
                 )
 
         else:
 
-            @self.Constraint(self.parent_block().time)
-            def total_variable_cost_rule(c, t):
+            @self.Constraint(self.time)
+            def total_variable_cost_rule_hydrogen(c, t):
                 return (
-                    c.total_variable_OM_cost[t]
-                    == sum(c.variable_operating_costs[t, r] for r in resources)
-                    + c.other_variable_costs[t]
+                    c.H2_costing.total_variable_OM_cost[t]
+                    == sum(
+                        c.H2_costing.variable_operating_costs[t, r] for r in resources
+                    )
+                    + c.H2_costing.other_variable_costs[t]
                 )
 
             if mode == "power":
@@ -1368,15 +1520,16 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         if hasattr(fs, "costing") and hasattr(fs.costing, "variable_operating_costs"):
 
             for i in fs.costing.variable_operating_costs.keys():
-                calculate_variable_from_constraint(
-                    fs.costing.variable_operating_costs[i],
-                    fs.costing.variable_cost_rule[i],
-                )
+                if hasattr(fs.costing, "variable_cost_rule_power"):
+                    calculate_variable_from_constraint(
+                        fs.costing.variable_operating_costs[i],
+                        fs.costing.variable_cost_rule_power[i],
+                    )
 
             for i in fs.costing.total_variable_OM_cost.keys():
                 calculate_variable_from_constraint(
                     fs.costing.total_variable_OM_cost[i],
-                    fs.costing.total_variable_cost_rule[i],
+                    fs.total_variable_cost_rule_power[i],
                 )
 
         # initialization for H2 production costs
@@ -1384,16 +1537,17 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             fs.H2_costing, "variable_operating_costs"
         ):
 
-            for i in fs.H2_costing.variable_operating_costs.keys():
-                calculate_variable_from_constraint(
-                    fs.H2_costing.variable_operating_costs[i],
-                    fs.H2_costing.variable_cost_rule[i],
-                )
+            if hasattr(fs.costing, "variable_cost_rule_hydrogen"):
+                for i in fs.H2_costing.variable_operating_costs.keys():
+                    calculate_variable_from_constraint(
+                        fs.H2_costing.variable_operating_costs[i],
+                        fs.H2_costing.variable_cost_rule_hydrogen[i],
+                    )
 
             for i in fs.H2_costing.total_variable_OM_cost.keys():
                 calculate_variable_from_constraint(
                     fs.H2_costing.total_variable_OM_cost[i],
-                    fs.H2_costing.total_variable_cost_rule[i],
+                    fs.total_variable_cost_rule_hydrogen[i],
                 )
 
     # -----------------------------------------------------------------------------

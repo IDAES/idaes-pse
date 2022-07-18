@@ -15,15 +15,17 @@ Tests for the `idaes.core.ui.fsvis.persist` module
 """
 # stdlib
 import json
+
 # ext
 import pytest
+
 # pkg
 from idaes.core.ui.fsvis import persist, errors
 
 # === Data ===
 
 bad_data = {"foo": pytest}  # can't serialize as JSON
-bad_data_str = 'Once upon a time..'
+bad_data_str = "Once upon a time.."
 data = {"foo": [{"bar": 123}]}
 data_str = json.dumps(data)
 
@@ -78,6 +80,7 @@ def test_datastoremanager_save_load(tmp_path):
     dsm.add("bar", persist.MemoryDataStore())
     _save_and_load_data_dsm("foo", dsm)
     _save_and_load_data_dsm("bar", dsm)
+
 
 # === Functions ===
 

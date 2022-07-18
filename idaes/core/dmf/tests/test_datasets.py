@@ -115,8 +115,7 @@ def pub_datasets(
 
 @pytest.fixture
 def save_restore_config():
-    """Use this to avoid changes to global config.yaml
-    """
+    """Use this to avoid changes to global config.yaml"""
     ws = datasets.get_dataset_workspace()
     config = ws / "config.yaml"
     # copy current config value
@@ -230,11 +229,12 @@ def test_retrieve(pub_datasets):
 @pytest.mark.unit
 def test_load_publication_missing_keys(dmf_workspace_path, tmp_path_factory):
     from idaes.core.dmf import datasets
+
     # Try to load bad config files
     for key in (
         datasets.PublicationDataset.NAME_KEY,
         datasets.PublicationDataset.PUBLICATION_KEY,
-        "file"
+        "file",
     ):
         p = tmp_path_factory.mktemp(f"ds_conf_missing_{key}")
         # Copy config and delete required key
@@ -251,9 +251,11 @@ def test_load_publication_missing_keys(dmf_workspace_path, tmp_path_factory):
         with pytest.raises(datasets.ConfigurationError):
             ds.load(p)
 
+
 @pytest.mark.unit
 def test_load_publication_isbn(dmf_workspace_path, tmp_path_factory):
     from idaes.core.dmf import datasets
+
     # Try to load config files with isbn
     p = tmp_path_factory.mktemp(f"ds_conf_has_isbn")
     # Copy config and delete required key

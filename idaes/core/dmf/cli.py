@@ -198,6 +198,7 @@ def base_command(verbose, quiet):
     else:
         _dmf_log.setLevel(level_from_verbosity(-quiet))
 
+
 @click.command(help="Set up the DMF configuration file.")
 @click.option(
     "--dir",

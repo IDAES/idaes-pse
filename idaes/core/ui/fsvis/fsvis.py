@@ -53,7 +53,7 @@ def visualize(
     save: Optional[Union[Path, str, bool]] = None,
     load_from_saved: bool = True,
     save_dir: Optional[Path] = None,
-    save_time_interval = 5000, # 5 seconds
+    save_time_interval=5000,  # 5 seconds
     overwrite: bool = False,
     browser: bool = True,
     port: Optional[int] = None,
@@ -107,7 +107,7 @@ def visualize(
     # Start the web server
     if web_server is None:
         web_server = FlowsheetServer(port=port)
-        web_server.add_setting('save_time_interval', save_time_interval)
+        web_server.add_setting("save_time_interval", save_time_interval)
         web_server.start()
         if not quiet:
             print("Started visualization server")
@@ -144,7 +144,10 @@ def visualize(
             # deal with duplicate names
             try:
                 save_path = _handle_existing_save_path(
-                    name, save_path, max_versions=MAX_SAVED_VERSIONS, overwrite=overwrite
+                    name,
+                    save_path,
+                    max_versions=MAX_SAVED_VERSIONS,
+                    overwrite=overwrite,
                 )
             except errors.TooManySavedVersions as err:
                 raise RuntimeError(f"In visualize(): {err}")

@@ -58,12 +58,15 @@ def get_html_docs(dmf, module_, name, sphinx_version=(1, 5, 5)):
         # Error: no configuration, or no paths configured
         conf_path = DMFConfig.configuration_path()
         if DMFConfig.configuration_exists():
-            raise ValueError(f"No documentation locations configured. "
-                             f"To set this path, set '{dmf.CONF_HELP_PATH}' in the "
-                             f"DMF configuration file: {conf_path}")
+            raise ValueError(
+                f"No documentation locations configured. "
+                f"To set this path, set '{dmf.CONF_HELP_PATH}' in the "
+                f"DMF configuration file: {conf_path}"
+            )
         else:
-            raise ValueError(f"No DMF configuration file found. "
-                             f"Expected location: {conf_path}")
+            raise ValueError(
+                f"No DMF configuration file found. " f"Expected location: {conf_path}"
+            )
 
     _log.info(f"Get HTML docs for module={module_} class={name} on paths={paths}")
     location = None
@@ -81,7 +84,9 @@ def get_html_docs(dmf, module_, name, sphinx_version=(1, 5, 5)):
                 if response.status_code == 200:
                     html_content = response.text
                 else:
-                    raise requests.RequestException(f"Bad response code: {response.status_code}")
+                    raise requests.RequestException(
+                        f"Bad response code: {response.status_code}"
+                    )
             except requests.RequestException as err:
                 _log.debug(f"Error getting documentation index from '{url}': {err}")
         else:
@@ -104,7 +109,7 @@ def get_html_docs(dmf, module_, name, sphinx_version=(1, 5, 5)):
                 if is_web:
                     parsed_ref = urlparse(ref)
                     location = f"{p}/{parsed_ref.path}"
-                else: # file
+                else:  # file
                     if os.path.isabs(p):
                         location = os.path.join(p, ref)
                     else:
@@ -133,8 +138,7 @@ def _get_object_name(obj):
 
 
 def _find_refs(tree, module, name, sphinx_version):
-    """Find object/etc. refs in the HTML.
-    """
+    """Find object/etc. refs in the HTML."""
     _log.debug(f"looking for module {module}")
     # There are 3 types of refs we are looking for
     # 1. manually added with index directive

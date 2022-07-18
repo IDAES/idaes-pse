@@ -29,8 +29,7 @@ def create_module_scratch(module_name):
 
 
 def rmtree_scratch(scratch_path):
-    """Do our level best to remove all the temporary files.
-    """
+    """Do our level best to remove all the temporary files."""
     try:
         rmtree(scratch_path, ignore_errors=True)
     except Exception as err:
