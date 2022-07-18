@@ -157,8 +157,8 @@ class EnthMolSolvent:
     @staticmethod
     def return_expression(b, cobj, T):
         # Specific enthalpy
-        T = pyunits.convert(T, to_units=pyunits.K)
-        Tr = pyunits.convert(b.params.temperature_ref, to_units=pyunits.K)
+        T = pyunits.convert(T, to_units=pyunits.K) - 273.15*pyunits.K
+        Tr = pyunits.convert(b.params.temperature_ref, to_units=pyunits.K) - 273.15*pyunits.K
 
         units = b.params.get_metadata().derived_units
 
@@ -910,7 +910,7 @@ configuration = {
                     "2": (-4.51417e-4, pyunits.g / pyunits.mL / pyunits.K),
                     "3": (1.19451, pyunits.g / pyunits.mL),
                 },
-                "dh_vap": 0,  # MEA is assumed to be non-volatile
+                "dh_vap": 54000,
                 "diffus_phase_comp_coeff": {
                     "1": -13.275,
                     "2": -2198.3,
