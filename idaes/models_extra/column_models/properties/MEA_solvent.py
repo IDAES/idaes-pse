@@ -157,8 +157,11 @@ class EnthMolSolvent:
     @staticmethod
     def return_expression(b, cobj, T):
         # Specific enthalpy
-        T = pyunits.convert(T, to_units=pyunits.K) - 273.15*pyunits.K
-        Tr = pyunits.convert(b.params.temperature_ref, to_units=pyunits.K) - 273.15*pyunits.K
+        T = pyunits.convert(T, to_units=pyunits.K) - 273.15 * pyunits.K
+        Tr = (
+            pyunits.convert(b.params.temperature_ref, to_units=pyunits.K)
+            - 273.15 * pyunits.K
+        )
 
         units = b.params.get_metadata().derived_units
 
