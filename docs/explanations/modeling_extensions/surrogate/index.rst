@@ -9,6 +9,7 @@ Surrogate modeling
     ripe/index
     helmet/index
     pysmo/index
+    plotting/index
 
 .. image:: /images/ddm-software.png
     :width: 600px

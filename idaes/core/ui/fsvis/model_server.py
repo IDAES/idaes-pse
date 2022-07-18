@@ -334,7 +334,7 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         id_ = queries.get("id", None) if queries else None
         _log.info(f"do_PUT: route={u} id={id_}")
         if u.path in ("/fs",) and id_ is None:
-            self.send_error(
+            self._write_text(
                 400, message=f"Query parameter 'id' is required for '{u.path}'"
             )
             return
@@ -349,20 +349,27 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         try:
             self.server.save_flowsheet(id_, data)
         except errors.ProcessingError as err:
-            self.send_error(400, message="Invalid flowsheet", explain=str(err))
+            self._write_text(400, message=str(err))
             return
         except Exception as err:
-            self.send_error(500, message="Unknown error", explain=str(err))
+            self._write_text(500, message=str(err))
             return
-        self.send_response(200, message="success")
+        self._write_text(200, message="success")
 
     # === Internal methods ===
+
+    def _write_text(self, code, message: str):
+        value = utf8_encode(message)
+        self.send_response(code)
+        self.send_header("Content-type", "application/text")
+        self.send_header("Content-length", str(len(value)))
+        self.end_headers()
+        self.wfile.write(value)
 
     def _write_json(self, code, data):
         str_json = json.dumps(data)
         value = utf8_encode(str_json)
         self.send_response(code)
-        # self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Content-type", "application/json")
         self.send_header("Content-length", str(len(value)))
         self.end_headers()
