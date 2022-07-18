@@ -280,7 +280,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             )
 
         if hasattr(self, "cost_of_electricity"):
-            var_dict["Cost of Electricity [$MM/year]"] = value(self.cost_of_electricity)
+            var_dict["Cost of Electricity [$/MWh]"] = value(self.cost_of_electricity)
 
         if hasattr(self, "cost_of_capture"):
             var_dict["Cost of Capture [$/tonne]"] = value(self.cost_of_capture)
