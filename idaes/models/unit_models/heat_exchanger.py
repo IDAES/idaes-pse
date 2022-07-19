@@ -330,7 +330,7 @@ class HeatExchangerData(UnitModelBlockData):
         )
         # Add references to the user provided aliases (if applicable).
         # Using add_object_reference keeps these from showing up when you
-        # iterate through pyomo componets in a model
+        # iterate through pyomo components in a model
         if config.hot_side_name is not None:
             if not hasattr(self, config.hot_side_name):
                 add_object_reference(self, config.hot_side_name, hot_side)
