@@ -201,25 +201,8 @@ export class StreamTable {
         this._gridOptions.columnApi.autoSizeAllColumns();
     };
 
-    setupEvents() {
-        // This method sets up the event listeners for the table
-
-        // Set up the show/hide checkboxes for the Hide Field dropdown in the nav bar
-        let hide_fields_list = document.querySelector("#hide-fields-list")
-        let checkboxes = hide_fields_list.querySelectorAll("input[type=checkbox]");
-        // We need to save this to another variable temporarily to avoid collisions with this
-        let app = this
-        checkboxes.forEach(function(checkbox) {
-            checkbox.addEventListener('change', function() {
-                if (this.checked) {
-                    app._gridOptions.columnApi.setColumnVisible(this.id, true)
-                } 
-                else {
-                    app._gridOptions.columnApi.setColumnVisible(this.id, false)
-                };
-            });
-        });
-
+    /** Register Stream Brushing when hovering over a grid cell */
+    registerTableBrushing() {
         // Getting the main elements for the idaes canvas and the stream table
         // to be able to dispatch highlighting events to the streams existing
         // on paper and in the stream table
@@ -262,7 +245,7 @@ export class StreamTable {
         streamGridCells.forEach((gridCell) => {
             // When the mouse hovers over a grid cell, the link as well as the
             // stream column that represents the correct stream will be highlighted.
-            gridCell.addEventListener('mouseenter', function(event) {
+            gridCell.addEventListener('mouseenter', (event) => {
                 if (document.querySelector("#view-stream-highlight-btn").checked) {
                     const highlightStreamEvent = new CustomEvent(
                         'HighlightStream',
@@ -280,7 +263,7 @@ export class StreamTable {
             // When the mouse leaves a grid cell, the link as well as the
             // stream column that represents the correct stream will remove
             // the highlighting feature.
-            gridCell.addEventListener('mouseleave', function(event) {
+            gridCell.addEventListener('mouseleave', (event) => {
                 const removeHighlightStreamEvent = new CustomEvent(
                     'RemoveHighlightStream',
                     {
@@ -293,5 +276,28 @@ export class StreamTable {
                 idaesCanvas.dispatchEvent(removeHighlightStreamEvent);
             });
         });
+    }
+
+    setupEvents() {
+        // This method sets up the event listeners for the table
+
+        // Set up the show/hide checkboxes for the Hide Field dropdown in the nav bar
+        let hide_fields_list = document.querySelector("#hide-fields-list")
+        let checkboxes = hide_fields_list.querySelectorAll("input[type=checkbox]");
+        // We need to save this to another variable temporarily to avoid collisions with this
+        let app = this
+        checkboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    app._gridOptions.columnApi.setColumnVisible(this.id, true)
+                    app.registerTableBrushing()
+                }
+                else {
+                    app._gridOptions.columnApi.setColumnVisible(this.id, false)
+                };
+            });
+        });
+
+        this.registerTableBrushing()
     };
 };
