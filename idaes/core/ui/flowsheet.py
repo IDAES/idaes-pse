@@ -957,8 +957,8 @@ class FlowsheetDiff:
         for cell in self._old["cells"]:
             cell_id = cell["id"]
             if cell_id in self._cell_indices:
-                # check if cell is an element (not link) and 'position' & 'angle'
-                # keys exist in cell
+                # check if cell is an element (not link) and 'position',
+                # 'angle' & 'attrs.label' keys exist in cell
                 if "type" in cell and cell["type"] == "standard.Image":
                     if "position" in cell:
                         layout[self._cell_indices[cell_id]]["position"] = cell[
@@ -966,12 +966,26 @@ class FlowsheetDiff:
                         ]
                     if "angle" in cell:
                         layout[self._cell_indices[cell_id]]["angle"] = cell["angle"]
-                elif (
-                    "type" in cell
-                    and cell["type"] == "standard.Link"
-                    and "vertices" in cell
-                ):
-                    layout[self._cell_indices[cell_id]]["vertices"] = cell["vertices"]
+                    if "attrs" in cell and "label" in cell["attrs"]:
+                        if "attrs" not in layout[self._cell_indices[cell_id]]:
+                            layout[self._cell_indices[cell_id]]["attrs"] = {}
+                        layout[self._cell_indices[cell_id]]["attrs"]["label"] = cell[
+                            "attrs"
+                        ]["label"]
+                # check if link and if it has 'vertices' & 'labels[1]'
+                # keys exist in cell
+                elif "type" in cell and cell["type"] == "standard.Link":
+                    if "vertices" in cell:
+                        layout[self._cell_indices[cell_id]]["vertices"] = cell[
+                            "vertices"
+                        ]
+                    # labels[0] is reserved for the variables info when labels
+                    # are enabled in the UI. We are just copying labels[1] as
+                    # it has the stream/link name. e.g. s10, s_liq_outlet, etc
+                    if "labels" in cell and len(cell["labels"]) >= 2:
+                        layout[self._cell_indices[cell_id]]["labels"][1] = cell[
+                            "labels"
+                        ][1]
 
         # Update cells' labels or images
         for item in self._old["cells"]:
