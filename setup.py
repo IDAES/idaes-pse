@@ -134,6 +134,9 @@ kwargs = dict(
             "*.json.gz",
             "*.dat",
             "*.h5",
+            "*.pb",  # for Keras Surrogate folder
+            "*.data-00000-of-00001",  # for Keras Surrogate folder
+            "*.index",  # for Keras Surrogate folder
             "*.trc",
             "*.xlsx",  # idaes/dmf/tests/data_files - tabular import test files
         ]
