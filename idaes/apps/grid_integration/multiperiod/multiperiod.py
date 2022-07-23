@@ -267,9 +267,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
         """
         Retrieve the active time blocks of the pyomo model
         """
-        return [
-            b.process for b in self.blocks.values() if b.process.active
-        ]
+        return [b.process for b in self.blocks.values() if b.process.active]
 
     def _create_linking_constraints(self, b1, variable_pairs):
         """
