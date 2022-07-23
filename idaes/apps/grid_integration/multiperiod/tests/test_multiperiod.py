@@ -34,6 +34,8 @@ def build_flowsheet(m=None):
     m.fs.y = pyo.Var(within=pyo.NonNegativeReals)
     m.fs.con1 = pyo.Constraint(expr=m.fs.x + m.fs.y == 1)
 
+    return m
+
 
 def fix_dof_and_initialize(m):
     """This function fixes dof and initializes the dummy flowsheet"""
@@ -177,6 +179,19 @@ def build_multi_day_year_stochastic_model():
         unfix_dof_func=unfix_dof,
     )
 
+    return m
+
+
+@pytest.fixture(scope="module")
+def build_multi_period_model_manual():
+    m = MultiPeriodModel(
+        n_time_points=5,
+        process_model_func=build_flowsheet,
+        linking_variable_func=get_linking_variable_pairs,
+        initialization_func=fix_dof_and_initialize,
+        unfix_dof_func=unfix_dof,
+    )
+    m.build_multi_period_model()
     return m
 
 
@@ -465,3 +480,13 @@ def test_initialization_fail():
             initialization_func=fix_dof_and_initialize_2,
             unfix_dof_func=unfix_dof,
         )
+
+
+@pytest.mark.unit
+def test_multi_period_model_manual(build_multi_period_model_manual):
+    m = build_multi_period_model_manual
+
+    assert hasattr(m, "blocks")
+    assert len(m.blocks) == 5
+
+    assert degrees_of_freedom(m) == 1
