@@ -52,6 +52,10 @@ from idaes.core import (
     register_idaes_currency_units,
 )
 
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
+
 # Some more information about this module
 __author__ = "Miguel Zamarripa, Andrew Lee"
 
@@ -1016,12 +1020,31 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             integer: whether the number of units should be constrained to be
                 an integer or not (default = True).
         """
-        # Confirm that unit is a turbine
+        # Confirm that unit is a compressor
         if not blk.unit_model.config.compressor:
-            raise TypeError(
+            _log.warning(
                 "cost_compressor method is only appropriate for "
                 "pressure changers with the compressor argument "
                 "equal to True."
+            )
+        # compressor = True, and using non-isentropic assumption
+        # pumps should use the cost_pump method
+        if (
+            blk.unit_model.config.thermodynamic_assumption
+            == ThermodynamicAssumption.pump
+        ):
+            _log.warning(
+                f"{blk.unit_model.name} - pressure changers with the pump "
+                "assumption should use the cost_pump method."
+            )
+        # isothermal or adiabatic compressors are too simple to cost
+        elif blk.unit_model.config.thermodynamic_assumption in [
+            ThermodynamicAssumption.isothermal,
+            ThermodynamicAssumption.adiabatic,
+        ]:
+            _log.warning(
+                f"{blk.unit_model.name} - pressure changers without isentropic "
+                "assumption are too simple to be costed."
             )
 
         # Build generic costing variables

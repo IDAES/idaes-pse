@@ -640,7 +640,7 @@ class SumNeighborBonds(Expr):
             offset (float): Optional, coefficient to add to the expression.
                 Default=0.0
             symmetric_bonds (bool): Optional, flag to indicate if bond variables
-                should be considered symmetric. 
+                should be considered symmetric.
                 Default=False
             **kwargs: Optional, index information passed to IndexedElem if
                 interested in a subset of indices

@@ -48,10 +48,32 @@ defaults:
     shell: bash -l {0}
 
 jobs:
+  code-formatting:
+    name: Check code formatting (Black)
+    # OS and/or Python version don't make a difference, so we choose ubuntu and 3.10 for performance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+      - name: Install Black
+        # unlike the other jobs, we don't need to install IDAES and/or all the dev dependencies,
+        # but we still want to specify the Black version to use in requirements-dev.txt for local development
+        # so we extract the relevant line and pass it to a simple `pip install`
+        run: |
+          # we store the version
+          black_requirement="$(grep 'black==' requirements-dev.txt)"
+          pip --no-cache-dir install --progress-bar off "$black_requirement"
+      - name: Run Black to verify that the committed code is formatted
+        run: |
+          black --check .
+
   pytest:
     # description: Run pytest with dev dependencies
     name: pytest (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    needs: [code-formatting]
     strategy:
       fail-fast: false
       matrix:
@@ -96,6 +118,7 @@ jobs:
   build-docs:
     name: Build Sphinx docs
     runs-on: ubuntu-latest
+    needs: [code-formatting]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Conda environment
@@ -118,9 +141,11 @@ jobs:
           name: idaes-pse-docs-html
           path: docs/build/html/
           retention-days: 7
+
   pylint:
     name: pylint (errors only)
     runs-on: ubuntu-latest
+    needs: [code-formatting]
     env:
       pylint_target_dir: idaes/
       pylint_output_path: pylint.json

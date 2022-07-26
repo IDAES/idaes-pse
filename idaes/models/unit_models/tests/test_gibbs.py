@@ -446,4 +446,6 @@ class TestMethane(object):
         assert perf_dict == {
             "vars": {
                 "Heat Duty": methane.fs.unit.heat_duty[0],
-                "Pressure Change": methane.fs.unit.deltaP[0]}}
+                "Pressure Change": methane.fs.unit.deltaP[0],
+            }
+        }

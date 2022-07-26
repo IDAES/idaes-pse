@@ -124,8 +124,7 @@ def workspace_info(dirname):
 
 def init_conf(workspace):
     # type: (str) -> int
-    """Initialize the workspace.
-    """
+    """Initialize the workspace."""
     t = ColorTerm()
     # Open/create configuration file
     try:
@@ -369,8 +368,7 @@ def list_resources(path, long_format=None, relations=False):
 
 
 def _uuid_prefix(uuids, step=4, maxlen=32):
-    """Get smallest multiple of `step` len prefix that gives unique values.
-    """
+    """Get smallest multiple of `step` len prefix that gives unique values."""
     full = set(uuids)
     for n in range(step, maxlen, step):
         prefixes = {u[:n] for u in uuids}
@@ -550,7 +548,7 @@ def _import_python(path):
 def _import_file(path):
     """Create & import a resource from a generic file at `path`.
     Assume that `path` exists.
- 
+
     Args:
         path (str): File name.
     Returns:

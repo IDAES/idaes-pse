@@ -16,10 +16,8 @@ __author__ = "John Eslick"
 import pytest
 import idaes.models.properties.swco2 as swco2
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
-import pyomo.environ as pyo
 
 
-@pytest.mark.unit
 class TestBasicMix(PropertyTestHarness):
     def configure(self):
         self.prop_pack = swco2.SWCO2ParameterBlock
@@ -30,7 +28,6 @@ class TestBasicMix(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
-@pytest.mark.unit
 class TestBasicLV(PropertyTestHarness):
     def configure(self):
         self.prop_pack = swco2.SWCO2ParameterBlock
@@ -41,7 +38,6 @@ class TestBasicLV(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
-@pytest.mark.unit
 class TestBasicL(PropertyTestHarness):
     def configure(self):
         self.prop_pack = swco2.SWCO2ParameterBlock
@@ -52,7 +48,6 @@ class TestBasicL(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
-@pytest.mark.unit
 class TestBasicV(PropertyTestHarness):
     def configure(self):
         self.prop_pack = swco2.SWCO2ParameterBlock

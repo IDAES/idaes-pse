@@ -39,6 +39,7 @@ import idaes.logger as idaeslog
 from idaes.core.util import to_json
 
 
+__author__ = "Oluwamayowa Amusat"
 # Logging
 # -------
 _log = idaeslog.getLogger(__name__)

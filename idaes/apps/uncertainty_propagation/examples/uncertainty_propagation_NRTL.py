@@ -12,20 +12,35 @@
 #################################################################################
 import sys
 import os
-sys.path.append(os.path.abspath('..')) # current folder is ~/examples
-from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_uncertainty
+
+sys.path.append(os.path.abspath(".."))  # current folder is ~/examples
+from idaes.apps.uncertainty_propagation.uncertainties import (
+    quantify_propagate_uncertainty,
+)
 import pandas as pd
-from idaes.apps.uncertainty_propagation.examples.NRTL_model_scripts import NRTL_model, NRTL_model_opt
+from idaes.apps.uncertainty_propagation.examples.NRTL_model_scripts import (
+    NRTL_model,
+    NRTL_model_opt,
+)
 
 if __name__ == "__main__":
-    variable_name = ["fs.properties.tau['benzene', 'toluene']", "fs.properties.tau['toluene','benzene']"]
+    variable_name = [
+        "fs.properties.tau['benzene', 'toluene']",
+        "fs.properties.tau['toluene','benzene']",
+    ]
     current_path = os.path.dirname(os.path.realpath(__file__))
-    data = pd.read_csv(os.path.join(current_path, 'BT_NRTL_dataset.csv'))
-    def SSE(model, data):
-        expr = ((float(data["vap_benzene"]) -
-                 model.fs.flash.vap_outlet.mole_frac_comp[0, "benzene"])**2 +
-                (float(data["liq_benzene"]) -
-                 model.fs.flash.liq_outlet.mole_frac_comp[0, "benzene"])**2)
-        return expr*1E4
+    data = pd.read_csv(os.path.join(current_path, "BT_NRTL_dataset.csv"))
 
-    results =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt, data, variable_name, SSE)
+    def SSE(model, data):
+        expr = (
+            float(data["vap_benzene"])
+            - model.fs.flash.vap_outlet.mole_frac_comp[0, "benzene"]
+        ) ** 2 + (
+            float(data["liq_benzene"])
+            - model.fs.flash.liq_outlet.mole_frac_comp[0, "benzene"]
+        ) ** 2
+        return expr * 1e4
+
+    results = quantify_propagate_uncertainty(
+        NRTL_model, NRTL_model_opt, data, variable_name, SSE
+    )

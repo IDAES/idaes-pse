@@ -15,8 +15,10 @@ Deprecation path for renamed module.
 """
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The generic_models.properties.interrogator.properties_interrogator has been "
-                    "moved to idaes.models.properties.interrogator.properties_interrogator",
-                    version="2.0.0.alpha0")
+deprecation_warning(
+    "The generic_models.properties.interrogator.properties_interrogator has been "
+    "moved to idaes.models.properties.interrogator.properties_interrogator",
+    version="2.0.0.alpha0",
+)
 
 from idaes.models.properties.interrogator.properties_interrogator import *
