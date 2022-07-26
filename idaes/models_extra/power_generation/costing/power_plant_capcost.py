@@ -1376,112 +1376,112 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         # if costing power make vars in fs.costing, if costing hydrogen make vars
         # in fs.H2_costing
-        if mode == "power":
-            costing = self.costing
-        elif mode == "hydrogen":
-            self.H2_costing = Block()
-            costing = self.H2_costing
+        # if mode == "power":
+        #     costing = self.costing
+        # elif mode == "hydrogen":
+        #     self.H2_costing = Block()
+        #     costing = self.H2_costing
 
         # make vars
-        costing.variable_operating_costs = Var(
-            self.time,
+        self.variable_operating_costs = Var(
+            self.parent_block().time,
             resources,
             initialize=1,
             doc="variable operating costs",
             units=cost_units,
         )
 
-        costing.other_variable_costs = Var(
-            self.time,
+        self.other_variable_costs = Var(
+            self.parent_block().time,
             initialize=0,
             doc="a variable to include non-standard O&M costs",
             units=cost_units,
         )
         # assume the user is not using this
-        costing.other_variable_costs.fix(0)
+        self.other_variable_costs.fix(0)
 
-        costing.total_variable_OM_cost = Var(
-            self.time,
+        self.total_variable_OM_cost = Var(
+            self.parent_block().time,
             initialize=1,
             doc="total variable operating and maintenance costs",
             units=cost_units,
         )
 
-        # make constraints
-        if mode == "power":
+        # # make constraints
+        # if mode == "power":
 
-            @self.Constraint(self.time, resources)
-            def variable_cost_rule_power(c, t, r):
-                # return costing.variable_operating_costs[t, r] == (
-                #     pyunits.convert(
-                #         resource_prices[r] * resource_rates[r][t] / production_rate[t],
-                #         cost_units,
-                #     )
-                # )
+        @self.Constraint(self.parent_block().time, resources)
+        def variable_cost_rule_power(c, t, r):
+            # return costing.variable_operating_costs[t, r] == (
+            #     pyunits.convert(
+            #         resource_prices[r] * resource_rates[r][t] / production_rate[t],
+            #         cost_units,
+            #     )
+            # )
 
-                return (
-                    costing.variable_operating_costs[t, r]
-                    == (
-                        pyunits.convert(
-                            resource_prices[r] * resource_rates[r][t] * 365 * 85 / 100,
-                            pyunits.USD_2018 / pyunits.s,
-                        )
+            return (
+                c.variable_operating_costs[t, r]
+                == (
+                    pyunits.convert(
+                        resource_prices[r] * resource_rates[r][t] * 365 * 85 / 100,
+                        pyunits.USD_2018,
                     )
-                    / 1e6
                 )
+                / 1e6
+            )
 
-        elif mode == "hydrogen":
+        # elif mode == "hydrogen":
 
-            @self.Constraint(self.time, resources)
-            def variable_cost_rule_hydrogen(c, t, r):
-                # return costing.variable_operating_costs[t, r] == (
-                #     pyunits.convert(
-                #         resource_prices[r] * resource_rates[r][t] / production_rate[t],
-                #         cost_units,
-                #     )
-                # )
+            # @self.Constraint(self.time, resources)
+            # def variable_cost_rule_hydrogen(c, t, r):
+            #     # return costing.variable_operating_costs[t, r] == (
+            #     #     pyunits.convert(
+            #     #         resource_prices[r] * resource_rates[r][t] / production_rate[t],
+            #     #         cost_units,
+            #     #     )
+            #     # )
 
-                return (
-                    costing.variable_operating_costs[t, r]
-                    == (
-                        pyunits.convert(
-                            resource_prices[r] * resource_rates[r][t] * 365 * 85 / 100,
-                            pyunits.USD_2018 / pyunits.s,
-                        )
-                    )
-                    / 1e6
-                )
+            #     return (
+            #         costing.variable_operating_costs[t, r]
+            #         == (
+            #             pyunits.convert(
+            #                 resource_prices[r] * resource_rates[r][t] * 365 * 85 / 100,
+            #                 pyunits.USD_2018 / pyunits.s,
+            #             )
+            #         )
+            #         / 1e6
+            #     )
 
-        if mode == "power" and hasattr(self, "maintenance_material_cost"):
+        # if mode == "power" and hasattr(self, "maintenance_material_cost"):
 
-            @self.Constraint(self.time)
-            def total_variable_cost_rule_power(c, t):
-                return (
-                    c.costing.total_variable_OM_cost[t]
-                    == sum(c.costing.variable_operating_costs[t, r] for r in resources)
-                    + c.maintenance_material_cost
-                    + c.costing.other_variable_costs[t]
-                )
+        @self.Constraint(self.parent_block().time)
+        def total_variable_cost_rule_power(c, t):
+            return (
+                c.total_variable_OM_cost[t]
+                == sum(c.variable_operating_costs[t, r] for r in resources)
+                + c.maintenance_material_cost
+                + c.other_variable_costs[t]
+            )
 
-        else:
+        # else:
 
-            @self.Constraint(self.time)
-            def total_variable_cost_rule_hydrogen(c, t):
-                return (
-                    c.H2_costing.total_variable_OM_cost[t]
-                    == sum(
-                        c.H2_costing.variable_operating_costs[t, r] for r in resources
-                    )
-                    + c.H2_costing.other_variable_costs[t]
-                )
+            # @self.Constraint(self.time)
+            # def total_variable_cost_rule_hydrogen(c, t):
+            #     return (
+            #         c.H2_costing.total_variable_OM_cost[t]
+            #         == sum(
+            #             c.H2_costing.variable_operating_costs[t, r] for r in resources
+            #         )
+            #         + c.H2_costing.other_variable_costs[t]
+            #     )
 
-            if mode == "power":
-                _log.warning(
-                    "The variable fs.costing.maintenance_material_cost "
-                    "could not be found, total_variable_cost_rule was "
-                    "constructed without in. get_fixed_OM_costs should be"
-                    " called before get_variable_OM_costs"
-                )
+            # if mode == "power":
+            #     _log.warning(
+            #         "The variable fs.costing.maintenance_material_cost "
+            #         "could not be found, total_variable_cost_rule was "
+            #         "constructed without in. get_fixed_OM_costs should be"
+            #         " called before get_variable_OM_costs"
+            #     )
 
     def initialize_fixed_OM_costs(b):
         # This method accepts either a concrete model or a flowsheet block
