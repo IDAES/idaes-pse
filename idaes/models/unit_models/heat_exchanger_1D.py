@@ -39,7 +39,11 @@ from idaes.core import (
     FlowDirection,
     useDefault,
 )
-from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
+from idaes.models.unit_models.heat_exchanger import (
+    HeatExchangerFlowPattern,
+    hx_process_config,
+    add_hx_references,
+)
 from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
@@ -294,46 +298,6 @@ thickness of the tube""",
         ),
     )
 
-    def _process_config(self):
-        """Check for configuration errors and alternate config option names."""
-        config = self.config
-
-        if config.cold_side_name in ["hot_side", "cold_side"]:
-            raise ConfigurationError(
-                f"cold_side_name cannot be '{config.cold_side_name}'."
-            )
-        if config.hot_side_name in ["hot_side", "cold_side"]:
-            raise ConfigurationError(
-                f"hot_side_name cannot be '{config.hot_side_name}'."
-            )
-
-        if (
-            config.hot_side_name is not None
-            and config.cold_side_name is not None
-            and config.hot_side_name == config.cold_side_name
-        ):
-            raise NameError(
-                f"HeatExchanger hot and cold side cannot have the same name "
-                f"'{config.hot_side_name}'."
-            )
-
-        for o in config:
-            if not (
-                o in self.CONFIG or o in [config.hot_side_name, config.cold_side_name]
-            ):
-                raise KeyError("HeatExchanger config option {} not defined".format(o))
-
-        if config.hot_side_name is not None and config.hot_side_name in config:
-            config.hot_side.set_value(config[config.hot_side_name])
-            # Allow access to hot_side under the hot_side_name, backward
-            # compatible with the tube and shell notation
-            setattr(config, config.hot_side_name, config.hot_side)
-        if config.cold_side_name is not None and config.cold_side_name in config:
-            config.cold_side.set_value(config[config.cold_side_name])
-            # Allow access to hot_side under the cold_side_name, backward
-            # compatible with the tube and shell notation
-            setattr(config, config.cold_side_name, config.cold_side)
-
     def build(self):
         """
         Begin building model (pre-DAE transformation).
@@ -346,7 +310,7 @@ thickness of the tube""",
         """
         # Call UnitModel.build to setup dynamics
         super().build()
-        self._process_config()
+        hx_process_config(self)
 
         # Set flow directions for the control volume blocks and specify
         # dicretisation if not specified.
@@ -537,51 +501,7 @@ thickness of the tube""",
         add_object_reference(self, "cold_side_length", self.cold_side.length)
 
         # Add references to the user provided aliases if applicable
-        if self.config.hot_side_name is not None:
-            if not hasattr(self, self.config.hot_side_name):
-                add_object_reference(self, self.config.hot_side_name, self.hot_side)
-            else:
-                raise ValueError(
-                    f"{self.name} could not assign hot side alias {self.config.hot_side_name} "
-                    f"as an attribute of that name already exists."
-                )
-            if not hasattr(self, self.config.hot_side_name + "_inlet"):
-                add_object_reference(self, self.config.hot_side_name + "_inlet", self.hot_side_inlet)
-            else:
-                raise ValueError(
-                    f"{self.name} could not assign hot side inlet alias {self.config.hot_side_name}_inlet "
-                    f"as an attribute of that name already exists."
-                )
-            if not hasattr(self, self.config.hot_side_name + "_outlet"):
-                add_object_reference(self, self.config.hot_side_name + "_outlet", self.hot_side_outlet)
-            else:
-                raise ValueError(
-                    f"{self.name} could not assign hot side outlet alias {self.config.hot_side_name}_outlet "
-                    f"as an attribute of that name already exists."
-                )
-            
-        if self.config.cold_side_name is not None:
-            if not hasattr(self, self.config.cold_side_name):
-                add_object_reference(self, self.config.cold_side_name, self.cold_side)
-            else:
-                raise ValueError(
-                    f"{self.name} could not assign cold side alias {self.config.cold_side_name} "
-                    f"as an attribute of that name already exists."
-                )
-            if not hasattr(self, self.config.cold_side_name + "_inlet"):
-                add_object_reference(self, self.config.cold_side_name + "_inlet", self.cold_side_inlet)
-            else:
-                raise ValueError(
-                    f"{self.name} could not assign cold side inlet alias {self.config.cold_side_name}_inlet "
-                    f"as an attribute of that name already exists."
-                )
-            if not hasattr(self, self.config.cold_side_name + "_outlet"):
-                add_object_reference(self, self.config.cold_side_name + "_outlet", self.cold_side_outlet)
-            else:
-                raise ValueError(
-                    f"{self.name} could not assign cold side outlet alias {self.config.cold_side_name}_outlet "
-                    f"as an attribute of that name already exists."
-                )
+        add_hx_references(self)
 
         self._make_performance()
 
@@ -608,10 +528,14 @@ thickness of the tube""",
             initialize=1, doc="Diameter of hot side", units=hot_side_units("length")
         )
         self.d_cold_side_outer = Var(
-            initialize=0.011, doc="Outer diameter of cold side", units=hot_side_units("length")
+            initialize=0.011,
+            doc="Outer diameter of cold side",
+            units=hot_side_units("length"),
         )
         self.d_cold_side_inner = Var(
-            initialize=0.010, doc="Inner diameter of cold side", units=hot_side_units("length")
+            initialize=0.010,
+            doc="Inner diameter of cold side",
+            units=hot_side_units("length"),
         )
         self.N_tubes = Var(
             initialize=1, doc="Number of tubes", units=pyunits.dimensionless
@@ -671,13 +595,16 @@ thickness of the tube""",
                 doc="Convective heat transfer",
             )
             def cold_side_heat_transfer_eq(self, t, x):
-                return self.cold_side.heat[t, x] == self.cold_side_heat_transfer_coefficient[
+                return self.cold_side.heat[
+                    t, x
+                ] == self.cold_side_heat_transfer_coefficient[
                     t, x
                 ] * c.pi * pyunits.convert(
                     self.d_cold_side_inner, to_units=cold_side_units("length")
                 ) * (
                     pyunits.convert(
-                        self.temperature_wall[t, x], to_units=cold_side_units("temperature")
+                        self.temperature_wall[t, x],
+                        to_units=cold_side_units("temperature"),
                     )
                     - self.cold_side.properties[t, x].temperature
                 )
@@ -694,9 +621,9 @@ thickness of the tube""",
                 doc="wall 0D model",
             )
             def wall_0D_model(self, t, x):
-                return pyunits.convert(self.cold_side.heat[t, x], to_units=q_units) == -(
-                    self.hot_side.heat[t, x] / self.N_tubes
-                )
+                return pyunits.convert(
+                    self.cold_side.heat[t, x], to_units=q_units
+                ) == -(self.hot_side.heat[t, x] / self.N_tubes)
 
         else:
             raise NotImplementedError(
@@ -708,13 +635,17 @@ thickness of the tube""",
         self.area_calc_cold_side = Constraint(
             expr=4 * self.cold_side_area
             == c.pi
-            * pyunits.convert(self.d_cold_side_inner, to_units=cold_side_units("length")) ** 2
+            * pyunits.convert(
+                self.d_cold_side_inner, to_units=cold_side_units("length")
+            )
+            ** 2
         )
 
         # Define hot_side area in terms of hot_side and tube diameter
         self.area_calc_hot_side = Constraint(
             expr=4 * self.hot_side_area
-            == c.pi * (self.d_hot_side**2 - self.N_tubes * self.d_cold_side_outer**2)
+            == c.pi
+            * (self.d_hot_side**2 - self.N_tubes * self.d_cold_side_outer**2)
         )
 
     def initialize_build(
@@ -861,13 +792,17 @@ thickness of the tube""",
         for i, c in self.hot_side_heat_transfer_eq.items():
             iscale.constraint_scaling_transform(
                 c,
-                iscale.get_scaling_factor(self.hot_side.heat[i], default=1, warning=True),
+                iscale.get_scaling_factor(
+                    self.hot_side.heat[i], default=1, warning=True
+                ),
                 overwrite=False,
             )
 
         for i, c in self.cold_side_heat_transfer_eq.items():
             iscale.constraint_scaling_transform(
                 c,
-                iscale.get_scaling_factor(self.cold_side.heat[i], default=1, warning=True),
+                iscale.get_scaling_factor(
+                    self.cold_side.heat[i], default=1, warning=True
+                ),
                 overwrite=False,
             )

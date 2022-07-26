@@ -43,12 +43,12 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
+from idaes.models.unit_models.heat_exchanger import hx_process_config, add_hx_references
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.math import smooth_min, smooth_max
-from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import InitializationError
 import idaes.core.util.unit_costing as costing
 import idaes.logger as idaeslog
 
@@ -180,49 +180,10 @@ constructed,
         ),
     )
 
-    def _process_config(self):
-        """Check for configuration errors and alternate config option names."""
-        config = self.config
-
-        if config.cold_side_name in ["hot_side", "cold_side"]:
-            raise ConfigurationError(
-                f"cold_side_name cannot be '{config.cold_side_name}'."
-            )
-        if config.hot_side_name in ["hot_side", "cold_side"]:
-            raise ConfigurationError(
-                f"hot_side_name cannot be '{config.hot_side_name}'."
-            )
-
-        if (
-            config.hot_side_name is not None
-            and config.cold_side_name is not None
-            and config.hot_side_name == config.cold_side_name
-        ):
-            raise NameError(
-                f"HeatExchanger hot and cold side cannot have the same name '{config.hot_side_name}'."
-            )
-
-        for o in config:
-            if not (
-                o in self.CONFIG or o in [config.hot_side_name, config.cold_side_name]
-            ):
-                raise KeyError("HeatExchanger config option {} not defined".format(o))
-
-        if config.hot_side_name is not None and config.hot_side_name in config:
-            config.hot_side.set_value(config[config.hot_side_name])
-            # Allow access to hot_side under the hot_side_name, backward
-            # compatible with the tube and shell notation
-            setattr(config, config.hot_side_name, config.hot_side)
-        if config.cold_side_name is not None and config.cold_side_name in config:
-            config.cold_side.set_value(config[config.cold_side_name])
-            # Allow access to hot_side under the cold_side_name, backward
-            # compatible with the tube and shell notation
-            setattr(config, config.cold_side_name, config.cold_side)
-
     def build(self):
         # Call UnitModel.build to setup model
         super().build()
-        self._process_config()
+        hx_process_config(self)
 
         # ---------------------------------------------------------------------
         # Build hot-side control volume
@@ -303,60 +264,7 @@ constructed,
         self.heat_duty = Reference(self.cold_side.heat[:])
 
         # Add references to the user provided aliases (if applicable).
-        # Using add_object_reference keeps these from showing up when you
-        # iterate through pyomo componets in a model
-        if self.config.hot_side_name is not None:
-            if not hasattr(self, self.config.hot_side_name):
-                add_object_reference(self, self.config.hot_side_name, self.hot_side)
-            else:
-                raise ValueError(
-                    f"{self.name} could not assign hot side alias {self.config.hot_side_name} "
-                    f"as an attribute of that name already exists."
-                )
-            if not hasattr(self, self.config.hot_side_name + "_inlet"):
-                add_object_reference(
-                    self, self.config.hot_side_name + "_inlet", self.hot_side_inlet
-                )
-            else:
-                raise ValueError(
-                    f"{self.name} could not assign hot side inlet alias {self.config.hot_side_name}_inlet "
-                    f"as an attribute of that name already exists."
-                )
-            if not hasattr(self, self.config.hot_side_name + "_outlet"):
-                add_object_reference(
-                    self, self.config.hot_side_name + "_outlet", self.hot_side_outlet
-                )
-            else:
-                raise ValueError(
-                    f"{self.name} could not assign hot side outlet alias {self.config.hot_side_name}_outlet "
-                    f"as an attribute of that name already exists."
-                )
-        if self.config.cold_side_name is not None:
-            if not hasattr(self, self.config.cold_side_name):
-                add_object_reference(self, self.config.cold_side_name, self.cold_side)
-            else:
-                raise ValueError(
-                    f"{self.name} could not assign cold side alias {self.config.cold_side_name} "
-                    f"as an attribute of that name already exists."
-                )
-            if not hasattr(self, self.config.cold_side_name + "_inlet"):
-                add_object_reference(
-                    self, self.config.cold_side_name + "_inlet", self.cold_side_inlet
-                )
-            else:
-                raise ValueError(
-                    f"{self.name} could not assign cold side inlet alias {self.config.cold_side_name}_inlet "
-                    f"as an attribute of that name already exists."
-                )
-            if not hasattr(self, self.config.cold_side_name + "_outlet"):
-                add_object_reference(
-                    self, self.config.cold_side_name + "_outlet", self.cold_side_outlet
-                )
-            else:
-                raise ValueError(
-                    f"{self.name} could not assign cold side outlet alias {self.config.cold_side_name}_outlet "
-                    f"as an attribute of that name already exists."
-                )
+        add_hx_references(self)
 
         # ---------------------------------------------------------------------
         # Add performance equations

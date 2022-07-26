@@ -133,9 +133,7 @@ def test_hot_and_cold_names_same():
         NameError,
         match="HeatExchanger hot and cold side cannot have the same name 'shell'.",
     ):
-        m.fs.unit = HX1D(
-            default={"hot_side_name": "shell", "cold_side_name": "shell"}
-        )
+        m.fs.unit = HX1D(default={"hot_side_name": "shell", "cold_side_name": "shell"})
 
 
 @pytest.mark.unit
@@ -241,9 +239,7 @@ def test_config():
         m.fs.unit.config.hot_side.material_balance_type
         == MaterialBalanceType.useDefault
     )
-    assert (
-        m.fs.unit.config.hot_side.energy_balance_type == EnergyBalanceType.useDefault
-    )
+    assert m.fs.unit.config.hot_side.energy_balance_type == EnergyBalanceType.useDefault
     assert (
         m.fs.unit.config.hot_side.momentum_balance_type
         == MomentumBalanceType.pressureTotal
@@ -514,7 +510,9 @@ class TestBTX_cocurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx):
-        assert pytest.approx(5, abs=1e-3) == value(btx.fs.unit.hot_side_outlet.flow_mol[0])
+        assert pytest.approx(5, abs=1e-3) == value(
+            btx.fs.unit.hot_side_outlet.flow_mol[0]
+        )
         assert pytest.approx(322.669, abs=1e-3) == value(
             btx.fs.unit.hot_side_outlet.temperature[0]
         )
@@ -522,7 +520,9 @@ class TestBTX_cocurrent(object):
             btx.fs.unit.hot_side_outlet.pressure[0]
         )
 
-        assert pytest.approx(1, abs=1e-3) == value(btx.fs.unit.cold_side_outlet.flow_mol[0])
+        assert pytest.approx(1, abs=1e-3) == value(
+            btx.fs.unit.cold_side_outlet.flow_mol[0]
+        )
         assert pytest.approx(322.463, abs=1e-3) == value(
             btx.fs.unit.cold_side_outlet.temperature[0]
         )
@@ -763,7 +763,11 @@ class TestBTX_countercurrent(object):
             btx,
             optarg={"tol": 1e-6},
             hot_side_state_args={"flow_mol": 5, "temperature": 304, "pressure": 101325},
-            cold_side_state_args={"flow_mol": 1, "temperature": 331.5, "pressure": 101325},
+            cold_side_state_args={
+                "flow_mol": 1,
+                "temperature": 331.5,
+                "pressure": 101325,
+            },
         )
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -777,7 +781,9 @@ class TestBTX_countercurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx):
-        assert pytest.approx(5, abs=1e-3) == value(btx.fs.unit.hot_side_outlet.flow_mol[0])
+        assert pytest.approx(5, abs=1e-3) == value(
+            btx.fs.unit.hot_side_outlet.flow_mol[0]
+        )
         assert pytest.approx(304.292, abs=1e-3) == value(
             btx.fs.unit.hot_side_outlet.temperature[0]
         )
@@ -785,7 +791,9 @@ class TestBTX_countercurrent(object):
             btx.fs.unit.hot_side_outlet.pressure[0]
         )
 
-        assert pytest.approx(1, abs=1e-3) == value(btx.fs.unit.cold_side_outlet.flow_mol[0])
+        assert pytest.approx(1, abs=1e-3) == value(
+            btx.fs.unit.cold_side_outlet.flow_mol[0]
+        )
         assert pytest.approx(331.435, abs=1e-3) == value(
             btx.fs.unit.cold_side_outlet.temperature[0]
         )
@@ -1586,13 +1594,19 @@ class TestSaponification_cocurrent(object):
         assert 100.0 == value(
             sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"]
         )
-        assert 0.0 == value(sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"])
+        assert 0.0 == value(
+            sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"]
+        )
         assert 0.0 == value(sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"])
 
         assert 55388.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"])
         assert 100.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"])
-        assert 100.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"])
-        assert 0.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"])
+        assert 100.0 == value(
+            sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert 0.0 == value(
+            sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"]
+        )
         assert 0.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"])
 
         assert pytest.approx(309.4, abs=1e-1) == value(
@@ -1865,13 +1879,19 @@ class TestSaponification_countercurrent(object):
         assert 100.0 == value(
             sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"]
         )
-        assert 0.0 == value(sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"])
+        assert 0.0 == value(
+            sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"]
+        )
         assert 0.0 == value(sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"])
 
         assert 55388.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"])
         assert 100.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"])
-        assert 100.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"])
-        assert 0.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"])
+        assert 100.0 == value(
+            sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert 0.0 == value(
+            sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"]
+        )
         assert 0.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"])
 
         assert pytest.approx(309.2, abs=1e-1) == value(
@@ -2230,7 +2250,9 @@ class TestBT_Generic_cocurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_solution(self, btx):
-        assert pytest.approx(5, abs=1e-3) == value(btx.fs.unit.hot_side_outlet.flow_mol[0])
+        assert pytest.approx(5, abs=1e-3) == value(
+            btx.fs.unit.hot_side_outlet.flow_mol[0]
+        )
         assert pytest.approx(322.959, abs=1e-3) == value(
             btx.fs.unit.hot_side_outlet.temperature[0]
         )
@@ -2238,7 +2260,9 @@ class TestBT_Generic_cocurrent(object):
             btx.fs.unit.hot_side_outlet.pressure[0]
         )
 
-        assert pytest.approx(1, abs=1e-3) == value(btx.fs.unit.cold_side_outlet.flow_mol[0])
+        assert pytest.approx(1, abs=1e-3) == value(
+            btx.fs.unit.cold_side_outlet.flow_mol[0]
+        )
         assert pytest.approx(581.126, abs=1e-3) == value(
             btx.fs.unit.cold_side_outlet.temperature[0]
         )
