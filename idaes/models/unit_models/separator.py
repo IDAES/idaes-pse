@@ -1683,11 +1683,10 @@ objects linked the mixed state and all outlet states,
 
     def _get_performance_contents(self, time_point=0):
         if hasattr(self, "split_fraction"):
+            var_dict = {}
             for k in self.split_fraction.keys():
                 if k[0] == time_point:
-                    var_dict = {
-                        f"Split Fraction [{str(k[1:])}]": self.split_fraction[k]
-                    }
+                    var_dict[f"Split Fraction [{str(k[1:])}]"] = self.split_fraction[k]
             return {"vars": var_dict}
         else:
             return None
