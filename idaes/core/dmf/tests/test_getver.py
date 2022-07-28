@@ -61,11 +61,13 @@ def test_func():
 
 
 class fake_module:
-    """Solely to exercise a path where the loader has no path attr
-    """
+    """Solely to exercise a path where the loader has no path attr"""
+
     __package__ = "pytest"  # needs to match something real
+
     class fake_loader:
         pass
+
     __loader__ = fake_loader
 
 

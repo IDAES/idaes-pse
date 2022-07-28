@@ -68,7 +68,7 @@ export class Toolbar {
 
         // Save event listener
         document.querySelector("#save-btn").addEventListener("click", () => {
-            this._app.saveModel(url, this._paper.graph)
+            this._app.saveModel(url, this._paper.graph);
         });
 
         // Refresh event listener
