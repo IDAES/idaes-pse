@@ -22,8 +22,8 @@ Contents
    :class: index-table
 
    * - Getting Started (Tutorials)
-         * :doc:`Installing IDAES for users <tutorials/getting_started/index>`
-         * :doc:`Installing IDAES for developers <tutorials/advanced_install/index>`
+         * :doc:`Installing IDAES for Users <tutorials/getting_started/index>`
+         * :doc:`Installing IDAES for Contributors <tutorials/advanced_install/index>`
          * :doc:`IDAES Examples & Tutorials <tutorials/tutorials_examples>`
      - How-To Guides
          * :doc:`Setting up IDAES Models <how_to_guides/workflow/index>`
