@@ -30,6 +30,7 @@ Contents
          * :doc:`Developing Custom Models <how_to_guides/custom_models/general_model_development>`
          * :doc:`Using IDAES Flowsheet Visualizer <how_to_guides/vis/index>`
          * :doc:`Using the Data Management Framework <how_to_guides/data_management_framework/index>`
+         * :doc:`Installing Specific IDAES Versions <how_to_guides/versioned_idaes_install>`
    * - Explanations
          * :doc:`Why IDAES <explanations/why_idaes>`
          * :doc:`Concepts <explanations/concepts>`

@@ -32,7 +32,7 @@ the Miniconda install section.
     opt_dependencies
 
 .. list-table::
-   :class: index-table
+   :header-rows: 1
 
    * - System
      - Section

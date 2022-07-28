@@ -24,11 +24,12 @@ The following commands should be sufficient to get you started with installing a
 
 Installing IDAES
 ----------------
+To get IDAES fully set up on your machine, we'll go through the steps to get idaes-pse package installed as well as setting up the IDAES extensions, which includes some extra solvers and function libraries, the IDAES example files, and the IDAES tests.
 
 Install Prerequisites
 ^^^^^^^^^^^^^^^^^^^^^
 
-**Install Miniconda (optional)**
+**Install Miniconda**
 
 1. Download & install `Anaconda <https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe>`_.
 2. Install anaconda from the downloaded & open the Anaconda Prompt (Start -> "Anaconda Prompt").

@@ -49,4 +49,4 @@ Installing IDAES
 
    pip install 'idaes-pse[prerelease] @ https://github.com/myfork/idaes-pse/archive/mybranch.zip'
 
-* **For developers**: follow the :ref:`advanced user installation<tutorials/advanced_install/index:Advanced User Installation>`.
+* **For IDAES Contributors**: follow the :ref:`advanced user installation<tutorials/advanced_install/index:Advanced User Installation>`.

@@ -24,6 +24,7 @@ The following commands should be sufficient to get you started with installing a
 
 Installing IDAES
 ----------------
+To get IDAES fully set up on your machine, we'll go through the steps to get idaes-pse package installed as well as setting up the IDAES extensions, which includes some extra solvers and function libraries, the IDAES example files, and the IDAES tests.
 
 Install Prerequisites
 ^^^^^^^^^^^^^^^^^^^^^
