@@ -1404,17 +1404,17 @@ def initialize(m):
         )
         _log.info(
             "FWH6 outlet enth_mol={}".format(
-                pyo.value(fs.fwh6.desuperheat.outlet_2.enth_mol[0])
+                pyo.value(fs.fwh6.desuperheat.cold_side_outlet.enth_mol[0])
             )
         )
         _log.info(
             "FWH6 outlet flow_mol={}".format(
-                pyo.value(fs.fwh6.desuperheat.outlet_2.flow_mol[0])
+                pyo.value(fs.fwh6.desuperheat.cold_side_outlet.flow_mol[0])
             )
         )
         _log.info(
             "FWH6 outlet pressure={}".format(
-                pyo.value(fs.fwh6.desuperheat.outlet_2.pressure[0])
+                pyo.value(fs.fwh6.desuperheat.cold_side_outlet.pressure[0])
             )
         )
         _log.info(
