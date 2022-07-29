@@ -163,60 +163,46 @@ class SoecDesignData(UnitModelBlockData):
         """
         self.h2_inlet_translator = um.Translator(
             doc="Translate hydrogen side properties to electrolysis properties",
-            default={
-                "inlet_property_package": self.config.hydrogen_side_property_package,
-                "inlet_property_package_args": self.config.hydrogen_side_property_package_args,
-                "outlet_property_package": self.electrolysis_prop_params,
-                "outlet_state_defined": False,
-            },
+            inlet_property_package=self.config.hydrogen_side_property_package,
+            inlet_property_package_args=self.config.hydrogen_side_property_package_args,
+            outlet_property_package=self.electrolysis_prop_params,
+            outlet_state_defined=False,
         )
         self.electrolysis_reactor = um.StoichiometricReactor(
             doc="Electrolysis reator",
-            default={
-                "property_package": self.electrolysis_prop_params,
-                "reaction_package": self.electrolysis_rxn_params,
-                "has_pressure_change": False,
-                "has_heat_transfer": True,
-            },
+            property_package=self.electrolysis_prop_params,
+            reaction_package=self.electrolysis_rxn_params,
+            has_pressure_change=False,
+            has_heat_transfer=True,
         )
         self.o2_seperator = um.Separator(
-            default={
-                "property_package": self.electrolysis_prop_params,
-                "split_basis": um.SplittingType.componentFlow,
-                "outlet_list": ["h2_strm", "o2_strm"],
-            }
+            property_package=self.electrolysis_prop_params,
+            split_basis=um.SplittingType.componentFlow,
+            outlet_list=["h2_strm", "o2_strm"],
         )
         self.h2_outlet_translator = um.Translator(
             doc="Translate electrolysis properties to hydrogen properies",
-            default={
-                "inlet_property_package": self.electrolysis_prop_params,
-                "outlet_property_package": self.config.hydrogen_side_property_package,
-                "outlet_property_package_args": self.config.hydrogen_side_property_package_args,
-                "outlet_state_defined": False,
-            },
+            inlet_property_package=self.electrolysis_prop_params,
+            outlet_property_package=self.config.hydrogen_side_property_package,
+            outlet_property_package_args=self.config.hydrogen_side_property_package_args,
+            outlet_state_defined=False,
         )
         self.o2_translator = um.Translator(
             doc="Translate electrolysis properties to oxygen properies",
-            default={
-                "inlet_property_package": self.electrolysis_prop_params,
-                "outlet_property_package": self.config.oxygen_side_property_package,
-                "outlet_property_package_args": self.config.oxygen_side_property_package_args,
-                "outlet_state_defined": False,
-            },
+            inlet_property_package=self.electrolysis_prop_params,
+            outlet_property_package=self.config.oxygen_side_property_package,
+            outlet_property_package_args=self.config.oxygen_side_property_package_args,
+            outlet_state_defined=False,
         )
         self.o2_mixer = um.Mixer(
-            default={
-                "property_package": self.config.oxygen_side_property_package,
-                "property_package_args": self.config.oxygen_side_property_package_args,
-                "momentum_mixing_type": um.MomentumMixingType.none,
-                "inlet_list": ["sweep_strm", "o2_strm"],
-            }
+            property_package=self.config.oxygen_side_property_package,
+            property_package_args=self.config.oxygen_side_property_package_args,
+            momentum_mixing_type=um.MomentumMixingType.none,
+            inlet_list=["sweep_strm", "o2_strm"],
         )
         self.sweep_heater = um.Heater(
-            default={
-                "property_package": self.config.oxygen_side_property_package,
-                "property_package_args": self.config.oxygen_side_property_package_args,
-            }
+            property_package=self.config.oxygen_side_property_package,
+            property_package_args=self.config.oxygen_side_property_package_args,
         )
 
     def _add_arcs(self):
