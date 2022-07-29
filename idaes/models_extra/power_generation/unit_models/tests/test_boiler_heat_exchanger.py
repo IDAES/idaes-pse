@@ -65,23 +65,21 @@ solver = get_solver()
 @pytest.mark.unit
 def test_no_deprecated(caplog):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
     m.fs.prop_fluegas = FlueGasParameterBlock()
 
     caplog.clear()
     m.fs.unit = BoilerHeatExchanger(
-        default={
-            "delta_temperature_callback": delta_temperature_lmtd_callback,
-            "tube": {"property_package": m.fs.prop_steam},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
-            "has_holdup": True,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
-            "has_radiation": True,
-        }
+        delta_temperature_callback=delta_temperature_lmtd_callback,
+        tube={"property_package": m.fs.prop_steam},
+        shell={"property_package": m.fs.prop_fluegas},
+        has_pressure_change=True,
+        has_holdup=True,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        tube_arrangement=TubeArrangement.inLine,
+        side_1_water_phase="Liq",
+        has_radiation=True,
     )
     n_warn = 0
     n_depreacted = 0
