@@ -26,9 +26,9 @@ Example
   import idaes.core.util.scaling as iscale
 
   m = ConcreteModel()
-  m.fs = FlowsheetBlock(default={"dynamic": False})
+  m.fs = FlowsheetBlock(dynamic=False)
   m.fs.properties = iapws95.Iapws95ParameterBlock()
-  m.fs.valve = Valve(default={"property_package": m.fs.properties})
+  m.fs.valve = Valve(property_package=m.fs.properties)
   fin = 900 # mol/s
   pin = 200000 # Pa
   pout = 100000 # Pa
