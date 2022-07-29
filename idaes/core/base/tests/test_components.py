@@ -750,9 +750,7 @@ class TestApparent:
 
         m._apparent_set = Set()
 
-        m.comp = Apparent(
-            dissociation_species={"comp": 1}, _electrolyte=True
-        )
+        m.comp = Apparent(dissociation_species={"comp": 1}, _electrolyte=True)
 
         return m
 
@@ -776,9 +774,7 @@ class TestApparent:
 
         m.get_metadata = types.MethodType(get_metadata, m)
 
-        m.comp = Apparent(
-            dissociation_species={"comp": 1}, _electrolyte=False
-        )
+        m.comp = Apparent(dissociation_species={"comp": 1}, _electrolyte=False)
 
         for j in m.component_list:
             assert j in ["comp"]

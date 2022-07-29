@@ -55,7 +55,7 @@ def make_model(
 
     m = ConcreteModel(name="CSTR model for testing")
     if steady:
-        m.fs = FlowsheetBlock("dynamic": False)
+        m.fs = FlowsheetBlock(dynamic=False)
     else:
         m.fs = FlowsheetBlock(
             dynamic=True,
@@ -64,11 +64,9 @@ def make_model(
         )
 
     m.fs.properties = AqueousEnzymeParameterBlock()
-    m.fs.reactions = EnzymeReactionParameterBlock(
-        property_package=m.fs.properties
-    )
+    m.fs.reactions = EnzymeReactionParameterBlock(property_package=m.fs.properties)
     m.fs.cstr = CSTR(
-        has_holdup": True,
+        has_holdup=True,
         property_package=m.fs.properties,
         reaction_package=m.fs.reactions,
         material_balance_type=MaterialBalanceType.componentTotal,
