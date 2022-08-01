@@ -26,7 +26,7 @@ An example of how Property Interrogator tool is used is shown below:
     )
 
     m.fs.R01 = CSTR(
-        property_packaged=m.fs.params,
+        property_package=m.fs.params,
         reaction_package=m.fs.rxn_params,
         has_heat_of_reaction=True
     )

@@ -538,7 +538,7 @@ see property package for documentation.}""",
 
         if self.config.support_isentropic_performance_curves:
             self.performance_curve = IsentropicPerformanceCurve(
-                default=self.config.isentropic_performance_curves
+                **self.config.isentropic_performance_curves
             )
 
     def model_check(blk):

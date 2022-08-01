@@ -143,14 +143,14 @@ class SoecDesignData(UnitModelBlockData):
         and is only used internally by the unit for the electrolysis reaction.
         """
         self.electrolysis_prop_params = GenericParameterBlock(
-            default=get_prop(
+            **get_prop(
                 {"H2O", "H2", "O2"}, phases={"Vap"}, eos=self.config.reaction_eos
             ),
             doc="Physical property parameters for the electrolysis reaction",
         )
         # Electrolysis is just the hydrogen combustion reaction backward
         self.electrolysis_rxn_params = GenericReactionParameterBlock(
-            default=get_rxn(self.electrolysis_prop_params, {"h2_cmb"}),
+            **get_rxn(self.electrolysis_prop_params, {"h2_cmb"}),
             doc="Reaction parameters",
         )
 
