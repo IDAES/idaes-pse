@@ -42,13 +42,27 @@ class ControllerMVBoundType(enum.Enum):
 
     NONE: No bound on manipulated value output.
     SMOOTH_BOUND: Use a smoothed version of mv = min(max(mv_unbound, ub), lb)
-    LOGISTIC: Use a logistic function too keep mv between the bounds
+    LOGISTIC: Use a logistic function to keep mv between the bounds
     """
 
     NONE = 1
     SMOOTH_BOUND = 2
     LOGISTIC = 3
 
+class ControllerAntiwindupType(enum.Enum):
+    """Antiwindup type.
+
+    NONE: No antiwindup scheme.
+    CONDITIONAL_INTEGRATION: Error integrates only when the MV is not at a bound. Note that this scheme is "dumb"
+    because it does not distinguish between the "correct" bound and "incorrect" bound being active for a particular
+    value of integrated error. Note that switching between integrating and not integrating can cause the DAE solver to
+    slow down.
+    BACK_CALCULATION: This space currently under construction
+    """
+
+    NONE = 1
+    CONDITIONAL_INTEGRATION = 2
+    #BACK_CALCULATION = 3
 
 def smooth_heaviside(x, eps):
     eps_adjusted = eps
@@ -139,6 +153,25 @@ class PIDControllerData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
+        "antiwindup_type",
+        ConfigValue(
+            default=ControllerAntiwindupType.NONE,
+            domain=In(
+                [
+                    ControllerAntiwindupType.NONE,
+                    ControllerAntiwindupType.CONDITIONAL_INTEGRATION
+                    #ControllerMVBoundType.BACK_CALCULATION,
+                ]
+            ),
+            description="Type of antiwindup technique to use.",
+            doc=(
+                """Type of antiwindup technique to use. See the controller documentation
+                for details on the mathematical formulation. 
+                """
+            ),
+        ),
+    )
+    CONFIG.declare(
         "derivative_on_error",
         ConfigValue(
             default=False,
@@ -182,6 +215,12 @@ class PIDControllerData(UnitModelBlockData):
             raise TypeError(
                 f"manipulated_var must reference a Var not {self.manipulated_var[time_0].ctype}"
             )
+
+        if not self.config.antiwindup_type == ControllerAntiwindupType.NONE:
+            if not self.config.type in [ControllerType.PI, ControllerType.PID]:
+                raise ConfigurationError("User specified antiwindup method for controller without integral action.")
+            if self.config.mv_bound_type == ControllerMVBoundType.NONE:
+                raise ConfigurationError("User specified antiwindup method for unbounded MV.")
 
         # Get the appropriate units for various contoller varaibles
         mv_units = pyo.units.get_units(self.manipulated_var[time_0])
@@ -253,7 +292,6 @@ class PIDControllerData(UnitModelBlockData):
         )
 
         # Error expression or variable (variable required for derivative term)
-        # FIXME this has derivative kick
         if self.config.type in [ControllerType.PD, ControllerType.PID] and self.config.derivative_on_error:
             self.error = pyo.Var(
                 time_set, initialize=0, doc="Error variable", units=pv_units
@@ -387,9 +425,8 @@ class PIDControllerData(UnitModelBlockData):
             @self.Constraint(time_set, doc="de_i(t)/dt = e(t)")
             # FIXME rename?
             def error_from_integral_eqn(b, t):
-                if not self.config.mv_bound_type == ControllerMVBoundType.NONE:
+                if self.config.antiwindup_type ==ControllerAntiwindupType.CONDITIONAL_INTEGRATION:
                     # It fails when the "wrong" bound is active for a given expression of error
-                    sgn = b.gain_p[t] / smooth_abs(b.gain_p[t], 1e-8)
                     return b.integral_of_error_dot[t] == b.error[t] * (
                         smooth_heaviside(
                             (b.mv_unbounded[t] - b.mv_lb) / (b.mv_ub - b.mv_lb), 0.005
