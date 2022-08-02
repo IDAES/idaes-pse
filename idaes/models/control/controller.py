@@ -420,6 +420,11 @@ class PIDControllerData(UnitModelBlockData):
                 ) == b.mv_ub - b.mv_lb
             return b.manipulated_var[t] == b.mv_unbounded[t]
 
+        # deactivate the time 0 mv_eqn instead of skip, should be fine since
+        # first time step always exists.
+        if self.config.calculate_initial_integral:
+            self.mv_eqn[time_set.first()].deactivate()
+
         if self.config.type in [ControllerType.PI, ControllerType.PID]:
 
             @self.Constraint(time_set, doc="de_i(t)/dt = e(t)")
@@ -440,6 +445,3 @@ class PIDControllerData(UnitModelBlockData):
                     return b.integral_of_error_dot[t] == b.error[t]
 
             self.error_from_integral_eqn[time_set.first()].deactivate()
-        # deactivate the time 0 mv_eqn instead of skip, should be fine since
-        # first time step always exists.
-        # self.mv_eqn[time_set.first()].deactivate()
