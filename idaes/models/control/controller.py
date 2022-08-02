@@ -23,7 +23,7 @@ import pyomo.dae as pyodae
 from idaes.core import UnitModelBlockData, declare_process_block_class
 from pyomo.common.config import ConfigValue, In
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.math import smooth_bound
+from idaes.core.util.math import smooth_bound, smooth_abs
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 
@@ -49,6 +49,9 @@ class ControllerMVBoundType(enum.Enum):
     SMOOTH_BOUND = 2
     LOGISTIC = 3
 
+def smooth_heaviside(x, eps):
+    eps_adjusted = eps
+    return 1 / (1 + pyo.exp(-2 * x / eps_adjusted))
 
 @declare_process_block_class(
     "PIDController",
@@ -157,6 +160,7 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
             raise TypeError(
                 f"process_var must reference a Var or Expression not {self.process_var[time_0].ctype}"
             )
+        # FIXME lazy copy and pasting
         if not issubclass(self.process_var[time_0].ctype, pyo.Var):
             raise TypeError(
                 f"manipulated_var must reference a Var not {self.process_var[time_0].ctype}"
@@ -171,33 +175,34 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
             pv_units = pyo.units.dimensionless
         gain_p_units = mv_units / pv_units
 
-        # Parameters
-        self.mv_lb = pyo.Param(
-            mutable=True,
-            initialize=0.05,
-            doc="Controller output lower bound",
-            units=mv_units,
-        )
-        self.mv_ub = pyo.Param(
-            mutable=True,
-            initialize=1,
-            doc="Controller output upper bound",
-            units=mv_units,
-        )
-        self.smooth_eps = pyo.Param(
-            mutable=True,
-            initialize=1e-4,
-            doc="Smoothing parameter for controller output limits when the bound"
-            " type is SMOOTH_BOUND",
-            units=mv_units,
-        )
-        self.logistic_bound_k = pyo.Param(
-            mutable=True,
-            initialize=4,
-            doc="Smoothing parameter for controller output limits when the bound"
-            " type is LOGISTIC",
-            units=mv_units,
-        )
+        if not self.config.mv_bound_type == ControllerMVBoundType.NONE:
+            # Parameters
+            self.mv_lb = pyo.Param(
+                mutable=True,
+                initialize=0.05,
+                doc="Controller output lower bound",
+                units=mv_units,
+            )
+            self.mv_ub = pyo.Param(
+                mutable=True,
+                initialize=1,
+                doc="Controller output upper bound",
+                units=mv_units,
+            )
+            self.smooth_eps = pyo.Param(
+                mutable=True,
+                initialize=1e-4,
+                doc="Smoothing parameter for controller output limits when the bound"
+                " type is SMOOTH_BOUND",
+                units=mv_units,
+            )
+            self.logistic_bound_k = pyo.Param(
+                mutable=True,
+                initialize=4,
+                doc="Smoothing parameter for controller output limits when the bound"
+                " type is LOGISTIC",
+                units=mv_units,
+            )
 
         # Variable for basic controller settings may change with time.
         self.setpoint = pyo.Var(
@@ -231,6 +236,7 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
         )
 
         # Error expression or variable (variable required for derivative term)
+        # FIXME this has derivative kick
         if self.config.type in [ControllerType.PD, ControllerType.PID]:
 
             self.error = pyo.Var(
@@ -269,10 +275,6 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
                 units=pv_units,
                 doc="de_i(t)/dt",
             )
-
-            @self.Constraint(time_set, doc="de_i(t)/dt = e(t)")
-            def error_from_integral_eqn(b, t):
-                return b.error[t] == b.integral_of_error_dot[t]
 
             if self.config.calculate_initial_integral:
                 t0 = time_set.first()
@@ -348,6 +350,21 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
                 ) == b.mv_ub - b.mv_lb
             return b.manipulated_var[t] == b.mv_unbounded[t]
 
+        if self.config.type in [ControllerType.PI, ControllerType.PID]:
+            @self.Constraint(time_set, doc="de_i(t)/dt = e(t)")
+            # FIXME rename?
+            def error_from_integral_eqn(b, t):
+                if not self.config.mv_bound_type == ControllerMVBoundType.NONE:
+                    # It fails when the "wrong" bound is active for a given expression of error
+                    sgn = b.gain_p[t]/smooth_abs(b.gain_p[t], 1e-8)
+                    return b.integral_of_error_dot[t] == b.error[t] * (
+                            smooth_heaviside((b.mv_unbounded[t] - b.mv_lb) / (b.mv_ub-b.mv_lb), 0.005)
+                            # 1
+                            - smooth_heaviside((b.mv_unbounded[t] - b.mv_ub) / (b.mv_ub-b.mv_lb), 0.005)
+                    )
+                else:
+                    return b.integral_of_error_dot[t] == b.error[t]
+            self.error_from_integral_eqn[time_set.first()].deactivate()
         # deactivate the time 0 mv_eqn instead of skip, should be fine since
         # first time step always exists.
-        self.mv_eqn[time_set.first()].deactivate()
+        #self.mv_eqn[time_set.first()].deactivate()
