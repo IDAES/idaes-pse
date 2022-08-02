@@ -11,22 +11,21 @@
 # license information.
 #################################################################################
 """
-Basic PID control test using a tank with steam flowing through it.  The
-controller is set up to maintain a tank pressure by adjusting the inlet valve
-position.
+Tests to ensure the controller behaves as expected when antiwindup is and isn't
+activated. It turns out that you need to work really hard in order to get
+windup issues in an (approximately) first order system. What to do? Use an
+(approximately) second order system, of course!
 
-           valve_1   +----+
-  steam ----|><|-->--| ta |    valve_2
-                     | nk |-----|><|--->--- steam
-                     +----+
+           valve_1   +----+                +----+   valve_3
+  steam ----|><|-->--| ta |    valve_2     | ta |----|><|-->--- steam
+                     | nk |-----|><|--->---| nk |
+                     | _1 |                | _2 |
+                     +----+                +----+
 
-To test there are two basic things:
-  1. That the problem with control goes to the steady state solution
-  2. That the dynamic problem with control can be split smoothly across two
-     different models representing different adjacent time periods.
+
 """
 
-__author__ = "John Eslick"
+__author__ = "Douglas Allan, John Eslick"
 
 import pytest
 import pyomo.environ as pyo
@@ -171,7 +170,7 @@ def create_model(
             "property_package": m.fs.prop_water,
         }
     )
-    m.fs.tank = Heater(
+    m.fs.tank_1 = Heater(
         default={
             "has_holdup": True,
             "material_balance_type": MaterialBalanceType.componentTotal,
@@ -187,11 +186,27 @@ def create_model(
             "property_package": m.fs.prop_water,
         }
     )
+    m.fs.tank_2 = Heater(
+        default={
+            "has_holdup": True,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+            "property_package": m.fs.prop_water,
+        }
+    )
+    m.fs.valve_3 = Valve(
+        default={
+            "dynamic": False,
+            "has_holdup": False,
+            "pressure_flow_callback": _valve_pressure_flow_cb,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+            "property_package": m.fs.prop_water,
+        }
+    )
     if not steady_state:
         # Add a controller
         m.fs.ctrl = PIDController(
             default={
-                "process_var": m.fs.tank.control_volume.properties_out[:].pressure,
+                "process_var": m.fs.tank_2.control_volume.properties_out[:].pressure,
                 "manipulated_var": m.fs.valve_1.valve_opening,
                 "calculate_initial_integral": calc_integ,
                 "mv_bound_type": ControllerMVBoundType.SMOOTH_BOUND,
@@ -205,7 +220,15 @@ def create_model(
     # by default, so I'll make that assumption here, I don't actually expect
     # liquid to form but who knows. The phase_fraction in the control volume is
     # volumetric phase fraction hence the densities.
-    @m.fs.tank.Constraint(m.fs.time)
+    @m.fs.tank_1.Constraint(m.fs.time)
+    def vol_frac_vap(b, t):
+        return (
+            b.control_volume.properties_out[t].phase_frac["Vap"]
+            * b.control_volume.properties_out[t].dens_mol
+            / b.control_volume.properties_out[t].dens_mol_phase["Vap"]
+        ) == (b.control_volume.phase_fraction[t, "Vap"])
+
+    @m.fs.tank_2.Constraint(m.fs.time)
     def vol_frac_vap(b, t):
         return (
             b.control_volume.properties_out[t].phase_frac["Vap"]
@@ -214,8 +237,10 @@ def create_model(
         ) == (b.control_volume.phase_fraction[t, "Vap"])
 
     # Connect the models
-    m.fs.v1_to_tank = Arc(source=m.fs.valve_1.outlet, destination=m.fs.tank.inlet)
-    m.fs.tank_to_v2 = Arc(source=m.fs.tank.outlet, destination=m.fs.valve_2.inlet)
+    m.fs.v1_to_tank_1 = Arc(source=m.fs.valve_1.outlet, destination=m.fs.tank_1.inlet)
+    m.fs.tank_1_to_v2 = Arc(source=m.fs.tank_1.outlet, destination=m.fs.valve_2.inlet)
+    m.fs.v2_to_tank_2 = Arc(source=m.fs.valve_2.outlet, destination=m.fs.tank_2.inlet)
+    m.fs.tank_2_to_v3 = Arc(source=m.fs.tank_2.outlet, destination=m.fs.valve_3.inlet)
 
     # Add the stream constraints and do the DAE transformation
     pyo.TransformationFactory("network.expand_arcs").apply_to(m.fs)
@@ -230,19 +255,23 @@ def create_model(
     # Fix the input variables
     m.fs.valve_1.inlet.enth_mol.fix(50000)
     m.fs.valve_1.inlet.pressure.fix(5e5)
-    m.fs.valve_2.outlet.pressure.fix(101325)
+    m.fs.valve_3.outlet.pressure.fix(101325)
     m.fs.valve_1.Cv.fix(0.001)
     m.fs.valve_2.Cv.fix(0.001)
+    m.fs.valve_3.Cv.fix(0.001)
     m.fs.valve_1.valve_opening.fix(initial_valve1_opening)
     m.fs.valve_2.valve_opening.fix(1)
-    m.fs.tank.heat_duty.fix(0)
-    m.fs.tank.control_volume.volume.fix(2.0)
+    m.fs.valve_3.valve_opening.fix(1)
+    m.fs.tank_1.heat_duty.fix(0)
+    m.fs.tank_1.control_volume.volume.fix(2.0)
+    m.fs.tank_2.heat_duty.fix(0)
+    m.fs.tank_2.control_volume.volume.fix(2.0)
     if not steady_state:
         m.fs.ctrl.gain_p.fix(1e-6)
         m.fs.ctrl.gain_i.fix(1e-5)
         m.fs.ctrl.gain_d.fix(1e-6)
         m.fs.ctrl.derivative_term[m.fs.time.first()].fix(0)
-        m.fs.ctrl.setpoint.fix(3e5)
+        m.fs.ctrl.setpoint.fix(1.5e5)
         m.fs.ctrl.mv_ref.fix(0)
         m.fs.ctrl.mv_lb = 0.0
         m.fs.ctrl.mv_ub = 1.0
@@ -254,18 +283,22 @@ def create_model(
         m.fs.valve_1.inlet.flow_mol[t] = 100  # initial guess on flow
     # simple initialize
     m.fs.valve_1.initialize()
-    propagate_state(m.fs.v1_to_tank)
-    m.fs.tank.initialize()
-    propagate_state(m.fs.tank_to_v2)
+    propagate_state(m.fs.v1_to_tank_1)
+    m.fs.tank_1.initialize()
+    propagate_state(m.fs.tank_1_to_v2)
+    m.fs.valve_2.initialize()
+    propagate_state(m.fs.v2_to_tank_2)
+    m.fs.tank_2.initialize()
+    propagate_state(m.fs.tank_2_to_v3)
     # Can't specify both flow and outlet pressure so free the outlet pressure
     # for initialization and refix it after.  Inlet flow gets fixed in init
     op = {}
     for t in m.fs.time:
-        op[t] = pyo.value(m.fs.valve_2.outlet.pressure[t])
-        m.fs.valve_2.outlet.pressure[t].unfix()
-    m.fs.valve_2.initialize()
+        op[t] = pyo.value(m.fs.valve_3.outlet.pressure[t])
+        m.fs.valve_3.outlet.pressure[t].unfix()
+    m.fs.valve_3.initialize()
     for t in m.fs.time:
-        m.fs.valve_2.outlet.pressure[t].fix(op[t])
+        m.fs.valve_3.outlet.pressure[t].fix(op[t])
     if not steady_state:
         m.fs.ctrl.deactivate()
         m.fs.valve_1.valve_opening.fix()
@@ -444,18 +477,18 @@ def test_setpoint_change_windup():
     # don't worry these steady state problems solve super fast
     m_steady, solver = create_model(tee=False)
     m_steady.fs.valve_1.inlet.pressure.fix(5.0e5)
-    m_steady.fs.tank.control_volume.properties_out[0].pressure.fix(2.0e5)
+    m_steady.fs.tank_2.control_volume.properties_out[0].pressure.fix(1.5e5)
     m_steady.fs.valve_1.valve_opening[0].unfix()
-    solver.solve(m_steady, tee=False)
+    solver.solve(m_steady, tee=True)
     s1_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
 
-    m_steady.fs.tank.control_volume.properties_out[0].pressure.fix(3.5e5)
-    solver.solve(m_steady, tee=False)
+    m_steady.fs.tank_2.control_volume.properties_out[0].pressure.fix(2.0e5)
+    solver.solve(m_steady, tee=True)
     s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
 
     # Next create a model for the 0 to 5 sec time period
     m_dynamic, solver = create_model(
-        steady_state=False, time_set=[0, 6], nfe=60, calc_integ=True, tee=False, derivative_on_error=False,
+        steady_state=False, time_set=[0, 6], nfe=20, calc_integ=True, tee=True, derivative_on_error=False,
         initial_valve1_opening=s1_valve, antiwindup=ControllerAntiwindupType.CONDITIONAL_INTEGRATION
     )
     # Retune controller to result in windup
@@ -463,7 +496,7 @@ def test_setpoint_change_windup():
     m_dynamic.fs.ctrl.gain_i.fix(1e-4)
     m_dynamic.fs.ctrl.gain_d.fix(0)
     # Add a step change in outlet setpoint
-    _add_setpoint_step(m_dynamic, time=m_dynamic.fs.time.at(3), value=3.5e5)
+    _add_setpoint_step(m_dynamic, time=m_dynamic.fs.time.at(3), value=2.0e5)
     solver.solve(m_dynamic, tee=False)
 
     # Check that we reach the expected steady state (almost) by t = 5.6 and t=12
@@ -482,8 +515,8 @@ def test_setpoint_change_windup():
     return m_dynamic, solver
 
 if __name__ == "__main__":
-    #m, solver = test_setpoint_change_windup()
-    m, solver = test_setpoint_change_derivative_on_pv()
+    m, solver = test_setpoint_change_windup()
+    #m, solver = test_setpoint_change_derivative_on_pv()
 
     plot_grid_dynamic(
         x=m.fs.time,
