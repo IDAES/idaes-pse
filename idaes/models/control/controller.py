@@ -21,7 +21,7 @@ import pyomo.environ as pyo
 import pyomo.dae as pyodae
 
 from idaes.core import UnitModelBlockData, declare_process_block_class
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import ConfigValue, In, Bool
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_bound, smooth_abs
 import idaes.logger as idaeslog
@@ -49,9 +49,11 @@ class ControllerMVBoundType(enum.Enum):
     SMOOTH_BOUND = 2
     LOGISTIC = 3
 
+
 def smooth_heaviside(x, eps):
     eps_adjusted = eps
     return 1 / (1 + pyo.exp(-2 * x / eps_adjusted))
+
 
 @declare_process_block_class(
     "PIDController",
@@ -97,13 +99,13 @@ class PIDControllerData(UnitModelBlockData):
             description="Type of bounds to apply to the manipulated variable (mv)).",
             doc=(
                 """Type of bounds to apply to the manipulated variable output. If,
-bounds are applied, the model parameters **mv_lb** and **mv_ub** set the bounds.
-The **default** is ControllerMVBoundType.NONE. See the controller documentation
-for details on the mathematical formulation. The options are:
-**ControllerMVBoundType.NONE** no bounds, **ControllerMVBoundType.SMOOTH_BOUND**
-smoothed mv = min(max(mv_unbound, ub), lb), and **ControllerMVBoundType.LOGISTIC**
-logistic function to enforce bounds.
-"""
+                bounds are applied, the model parameters **mv_lb** and **mv_ub** set the bounds.
+                The **default** is ControllerMVBoundType.NONE. See the controller documentation
+                for details on the mathematical formulation. The options are:
+                **ControllerMVBoundType.NONE** no bounds, **ControllerMVBoundType.SMOOTH_BOUND**
+                smoothed mv = min(max(mv_unbound, ub), lb), and **ControllerMVBoundType.LOGISTIC**
+                logistic function to enforce bounds.
+                """
             ),
         ),
     )
@@ -111,7 +113,7 @@ logistic function to enforce bounds.
         "calculate_initial_integral",
         ConfigValue(
             default=True,
-            domain=bool,
+            domain=Bool,
             description="Calculate the initial integral term value if True",
             doc="Calculate the initial integral term value if True",
         ),
@@ -129,12 +131,26 @@ logistic function to enforce bounds.
                 ]
             ),
             description="Control type",
-            doc="""Controller type. The **deafult** = ControllerType.PI and the
-options are: **ControllerType.P** Proportional, **ControllerType.PI**
-proportional and integral, **ControllerType.PD** proportional and derivative, and
-**ControllerType.PID** proportional, integral, and derivative
-
-""",
+            doc="""Controller type. The **default** = ControllerType.PI and the
+                options are: **ControllerType.P** Proportional, **ControllerType.PI**
+                proportional and integral, **ControllerType.PD** proportional and derivative, and
+                **ControllerType.PID** proportional, integral, and derivative
+                """,
+        ),
+    )
+    CONFIG.declare(
+        "derivative_on_error",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            description="Whether basing derivative action on process var or error",
+            doc="""Naive implementations of derivative action can cause large spikes in 
+                control when the setpoint is changed. One solution is to use the (negative)
+                derivative of the process variable to calculate derivative action instead
+                of using the derivative of setpoint error. If **True**, use the derivative of
+                setpoint error to calculate derivative action. If **False** (default), use the
+                (negative) derivative of the process variable instead.
+                """,
         ),
     )
 
@@ -146,7 +162,9 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
 
         # Check for required config
         if self.config.process_var is None or self.config.manipulated_var is None:
-            raise ConfigurationError("Controller config requires 'pv' and 'mv'")
+            raise ConfigurationError(
+                "Controller config requires specifying process_var and manipulated_var"
+            )
         self.process_var = pyo.Reference(self.config.process_var)
         self.manipulated_var = pyo.Reference(self.config.manipulated_var)
 
@@ -160,10 +178,9 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
             raise TypeError(
                 f"process_var must reference a Var or Expression not {self.process_var[time_0].ctype}"
             )
-        # FIXME lazy copy and pasting
-        if not issubclass(self.process_var[time_0].ctype, pyo.Var):
+        if not issubclass(self.manipulated_var[time_0].ctype, pyo.Var):
             raise TypeError(
-                f"manipulated_var must reference a Var not {self.process_var[time_0].ctype}"
+                f"manipulated_var must reference a Var not {self.manipulated_var[time_0].ctype}"
             )
 
         # Get the appropriate units for various contoller varaibles
@@ -237,8 +254,7 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
 
         # Error expression or variable (variable required for derivative term)
         # FIXME this has derivative kick
-        if self.config.type in [ControllerType.PD, ControllerType.PID]:
-
+        if self.config.type in [ControllerType.PD, ControllerType.PID] and self.config.derivative_on_error:
             self.error = pyo.Var(
                 time_set, initialize=0, doc="Error variable", units=pv_units
             )
@@ -247,18 +263,34 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
             def error_eqn(b, t):
                 return b.error[t] == b.setpoint[t] - b.process_var[t]
 
-            self.derivative_of_error = pyodae.DerivativeVar(
+            self.derivative_term = pyodae.DerivativeVar(
                 self.error,
                 wrt=self.flowsheet().time,
                 initialize=0,
                 units=pv_units / time_units,
             )
-
         else:
-
             @self.Expression(time_set, doc="Error expression")
             def error(b, t):
                 return b.setpoint[t] - b.process_var[t]
+
+            if self.config.type in [ControllerType.PD, ControllerType.PID] and not self.config.derivative_on_error:
+                # Need to create a Var because process_var might be an Expression
+                self.negative_pv = pyo.Var(
+                    time_set, initialize=0, doc="Negative of process variable", units=pv_units
+                )
+
+                @self.Constraint(time_set, doc="Negative process variable equation")
+                def negative_pv_eqn(b, t):
+                    return b.negative_pv[t] == - b.process_var[t]
+
+                self.derivative_term = pyodae.DerivativeVar(
+                    self.negative_pv,
+                    wrt=self.flowsheet().time,
+                    initialize=0,
+                    units=pv_units / time_units,
+                )
+
 
         # integral term written de_i(t)/dt = e(t)
         if self.config.type in [ControllerType.PI, ControllerType.PID]:
@@ -297,7 +329,7 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
                             b.manipulated_var[t0]
                             - b.mv_ref[t0]
                             - b.gain_p[t0] * b.error[t0]
-                            - b.gain_d[t0] * b.derivative_of_error[t0]
+                            - b.gain_d[t0] * b.derivative_term[t0]
                         )
                         / b.gain_i[t0]
                     )
@@ -309,7 +341,7 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
                     b.mv_ref[t]
                     + b.gain_p[t] * b.error[t]
                     + b.gain_i[t] * b.integral_of_error[t]
-                    + b.gain_d[t] * b.derivative_of_error[t]
+                    + b.gain_d[t] * b.derivative_term[t]
                 )
             elif self.config.type == ControllerType.PI:
                 return (
@@ -321,7 +353,7 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
                 return (
                     b.mv_ref[t]
                     + b.gain_p[t] * b.error[t]
-                    + b.gain_d[t] * b.derivative_of_error[t]
+                    + b.gain_d[t] * b.derivative_term[t]
                 )
             elif self.config.type == ControllerType.P:
                 return b.mv_ref[t] + b.gain_p[t] * b.error[t]
@@ -351,20 +383,26 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
             return b.manipulated_var[t] == b.mv_unbounded[t]
 
         if self.config.type in [ControllerType.PI, ControllerType.PID]:
+
             @self.Constraint(time_set, doc="de_i(t)/dt = e(t)")
             # FIXME rename?
             def error_from_integral_eqn(b, t):
                 if not self.config.mv_bound_type == ControllerMVBoundType.NONE:
                     # It fails when the "wrong" bound is active for a given expression of error
-                    sgn = b.gain_p[t]/smooth_abs(b.gain_p[t], 1e-8)
+                    sgn = b.gain_p[t] / smooth_abs(b.gain_p[t], 1e-8)
                     return b.integral_of_error_dot[t] == b.error[t] * (
-                            smooth_heaviside((b.mv_unbounded[t] - b.mv_lb) / (b.mv_ub-b.mv_lb), 0.005)
-                            # 1
-                            - smooth_heaviside((b.mv_unbounded[t] - b.mv_ub) / (b.mv_ub-b.mv_lb), 0.005)
+                        smooth_heaviside(
+                            (b.mv_unbounded[t] - b.mv_lb) / (b.mv_ub - b.mv_lb), 0.005
+                        )
+                        # 1
+                        - smooth_heaviside(
+                            (b.mv_unbounded[t] - b.mv_ub) / (b.mv_ub - b.mv_lb), 0.005
+                        )
                     )
                 else:
                     return b.integral_of_error_dot[t] == b.error[t]
+
             self.error_from_integral_eqn[time_set.first()].deactivate()
         # deactivate the time 0 mv_eqn instead of skip, should be fine since
         # first time step always exists.
-        #self.mv_eqn[time_set.first()].deactivate()
+        # self.mv_eqn[time_set.first()].deactivate()

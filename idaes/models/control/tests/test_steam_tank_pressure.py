@@ -163,6 +163,7 @@ def create_model(
                 "calculate_initial_integral": calc_integ,
                 "mv_bound_type": ControllerMVBoundType.SMOOTH_BOUND,
                 "type": ControllerType.PID,  # rather use PI, but testing all terms
+                "derivative_on_error": True
             }
         )
 
@@ -206,7 +207,7 @@ def create_model(
         m.fs.ctrl.gain_p.fix(1e-6)
         m.fs.ctrl.gain_i.fix(1e-5)
         m.fs.ctrl.gain_d.fix(1e-6)
-        m.fs.ctrl.derivative_of_error[m.fs.time.first()].fix(0)
+        m.fs.ctrl.derivative_term[m.fs.time.first()].fix(0)
         m.fs.ctrl.setpoint.fix(3e5)
         m.fs.ctrl.mv_ref.fix(0)
         m.fs.ctrl.mv_lb = 0.0
