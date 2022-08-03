@@ -43,6 +43,7 @@ from idaes.models.control.controller import (
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 from idaes.core.util.plot import plot_grid_dynamic
+import idaes.core.util.scaling as iscale
 
 
 def _valve_pressure_flow_cb(b):
@@ -158,7 +159,7 @@ def create_model(
     m.fs = FlowsheetBlock(default=fs_cfg)
     # Create a property parameter block
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.LG}
+        default={"phase_presentation": iapws95.PhaseType.G}
     )
     # Create the valve and tank models
     m.fs.valve_1 = Valve(
@@ -220,21 +221,21 @@ def create_model(
     # by default, so I'll make that assumption here, I don't actually expect
     # liquid to form but who knows. The phase_fraction in the control volume is
     # volumetric phase fraction hence the densities.
-    @m.fs.tank_1.Constraint(m.fs.time)
-    def vol_frac_vap(b, t):
-        return (
-            b.control_volume.properties_out[t].phase_frac["Vap"]
-            * b.control_volume.properties_out[t].dens_mol
-            / b.control_volume.properties_out[t].dens_mol_phase["Vap"]
-        ) == (b.control_volume.phase_fraction[t, "Vap"])
-
-    @m.fs.tank_2.Constraint(m.fs.time)
-    def vol_frac_vap(b, t):
-        return (
-            b.control_volume.properties_out[t].phase_frac["Vap"]
-            * b.control_volume.properties_out[t].dens_mol
-            / b.control_volume.properties_out[t].dens_mol_phase["Vap"]
-        ) == (b.control_volume.phase_fraction[t, "Vap"])
+    # @m.fs.tank_1.Constraint(m.fs.time)
+    # def vol_frac_vap(b, t):
+    #     return (
+    #         b.control_volume.properties_out[t].phase_frac["Vap"]
+    #         * b.control_volume.properties_out[t].dens_mol
+    #         / b.control_volume.properties_out[t].dens_mol_phase["Vap"]
+    #     ) == (b.control_volume.phase_fraction[t, "Vap"])
+    #
+    # @m.fs.tank_2.Constraint(m.fs.time)
+    # def vol_frac_vap(b, t):
+    #     return (
+    #         b.control_volume.properties_out[t].phase_frac["Vap"]
+    #         * b.control_volume.properties_out[t].dens_mol
+    #         / b.control_volume.properties_out[t].dens_mol_phase["Vap"]
+    #     ) == (b.control_volume.phase_fraction[t, "Vap"])
 
     # Connect the models
     m.fs.v1_to_tank_1 = Arc(source=m.fs.valve_1.outlet, destination=m.fs.tank_1.inlet)
@@ -254,7 +255,7 @@ def create_model(
 
     # Fix the input variables
     m.fs.valve_1.inlet.enth_mol.fix(50000)
-    m.fs.valve_1.inlet.pressure.fix(5e5)
+    m.fs.valve_1.inlet.pressure.fix(10e5)
     m.fs.valve_3.outlet.pressure.fix(101325)
     m.fs.valve_1.Cv.fix(0.001)
     m.fs.valve_2.Cv.fix(0.001)
@@ -271,13 +272,16 @@ def create_model(
         m.fs.ctrl.gain_i.fix(1e-5)
         m.fs.ctrl.gain_d.fix(1e-6)
         m.fs.ctrl.derivative_term[m.fs.time.first()].fix(0)
-        m.fs.ctrl.setpoint.fix(1.5e5)
+        m.fs.ctrl.setpoint.fix(2e5)
         m.fs.ctrl.mv_ref.fix(0)
         m.fs.ctrl.mv_lb = 0.0
         m.fs.ctrl.mv_ub = 1.0
 
+    iscale.calculate_scaling_factors(m)
+
     # Initialize the model
-    solver = get_solver(options={"max_iter": 50})
+
+    solver = get_solver(options={"max_iter": 75, "nlp_scaling_method": "user-scaling"})
 
     for t in m.fs.time:
         m.fs.valve_1.inlet.flow_mol[t] = 100  # initial guess on flow
@@ -302,11 +306,13 @@ def create_model(
     if not steady_state:
         m.fs.ctrl.deactivate()
         m.fs.valve_1.valve_opening.fix()
+    print("Model solve for initialization")
     solver.solve(m, tee=tee)
     if not steady_state:
         m.fs.ctrl.activate()
         m.fs.valve_1.valve_opening.unfix()
         m.fs.valve_1.valve_opening[m.fs.time.first()].fix()
+        print("Model solve for controller initialization")
         solver.solve(m, tee=tee)
     # Return the model and solver
     return m, solver
@@ -479,25 +485,27 @@ def test_setpoint_change_windup():
     m_steady.fs.valve_1.inlet.pressure.fix(5.0e5)
     m_steady.fs.tank_2.control_volume.properties_out[0].pressure.fix(1.5e5)
     m_steady.fs.valve_1.valve_opening[0].unfix()
-    solver.solve(m_steady, tee=True)
+    solver.solve(m_steady, tee=False)
     s1_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
+    print(f"Steady state 1 valve opening: {s1_valve}")
 
     m_steady.fs.tank_2.control_volume.properties_out[0].pressure.fix(2.0e5)
-    solver.solve(m_steady, tee=True)
+    solver.solve(m_steady, tee=False)
     s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
+    print(f"Steady state 2 valve opening: {s2_valve}")
 
     # Next create a model for the 0 to 5 sec time period
     m_dynamic, solver = create_model(
-        steady_state=False, time_set=[0, 6], nfe=20, calc_integ=True, tee=True, derivative_on_error=False,
-        initial_valve1_opening=s1_valve, antiwindup=ControllerAntiwindupType.CONDITIONAL_INTEGRATION
+        steady_state=False, time_set=[0, 12], nfe=10, calc_integ=True, tee=True, derivative_on_error=False,
+        initial_valve1_opening=s1_valve, antiwindup=ControllerAntiwindupType.NONE
     )
     # Retune controller to result in windup
-    m_dynamic.fs.ctrl.gain_p.fix(1e-8)
-    m_dynamic.fs.ctrl.gain_i.fix(1e-4)
-    m_dynamic.fs.ctrl.gain_d.fix(0)
+    # m_dynamic.fs.ctrl.gain_p.fix(1e-8)
+    # m_dynamic.fs.ctrl.gain_i.fix(1e-4)
+    # m_dynamic.fs.ctrl.gain_d.fix(0)
     # Add a step change in outlet setpoint
     _add_setpoint_step(m_dynamic, time=m_dynamic.fs.time.at(3), value=2.0e5)
-    solver.solve(m_dynamic, tee=False)
+    solver.solve(m_dynamic, tee=True)
 
     # Check that we reach the expected steady state (almost) by t = 5.6 and t=12
     # assert pyo.value(
@@ -523,7 +531,7 @@ if __name__ == "__main__":
         xlabel="time (s)",
         y=[
             m.fs.valve_1.valve_opening,
-            m.fs.tank.control_volume.properties_out[:].pressure,
+            m.fs.tank_2.control_volume.properties_out[:].pressure,
             m.fs.valve_1.control_volume.properties_in[:].pressure,
         ],
         ylabel=[
