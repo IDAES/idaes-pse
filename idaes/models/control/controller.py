@@ -26,6 +26,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_bound, smooth_abs
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
+from idaes.core.util import scaling as iscale
 
 
 class ControllerType(enum.Enum):
@@ -353,23 +354,21 @@ class PIDControllerData(UnitModelBlockData):
                 def initial_integral_error_eqn(b):
                     if self.config.type == ControllerType.PI:
                         return (
-                            self.integral_of_error[t0]
+                            b.gain_i[t0] * self.integral_of_error[t0]
                             == (
                                 b.manipulated_var[t0]
                                 - b.mv_ref[t0]
                                 - b.gain_p[t0] * b.error[t0]
                             )
-                            / b.gain_i[t0]
                         )
                     return (
-                        self.integral_of_error[t0]
+                        b.gain_i[t0] * self.integral_of_error[t0]
                         == (
                             b.manipulated_var[t0]
                             - b.mv_ref[t0]
                             - b.gain_p[t0] * b.error[t0]
                             - b.gain_d[t0] * b.derivative_term[t0]
                         )
-                        / b.gain_i[t0]
                     )
 
         @self.Expression(time_set, doc="Unbounded output for manipulated variable")
@@ -445,3 +444,72 @@ class PIDControllerData(UnitModelBlockData):
                     return b.integral_of_error_dot[t] == b.error[t]
 
             self.error_from_integral_eqn[time_set.first()].deactivate()
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+        gsf = iscale.get_scaling_factor
+        ssf = lambda c, v: iscale.set_scaling_factor(c, v, overwrite=False)
+        cst = lambda c, v: iscale.constraint_scaling_transform(c, v, overwrite=False)
+
+        # orig_pv = self.config.process_var
+        # orig_mv = self.config.manipulated_var
+        time_set = self.flowsheet().time
+        t0 = time_set.first()
+
+        sf_pv = iscale.get_scaling_factor(self.process_var[t0])
+        sf_mv = iscale.get_scaling_factor(self.manipulated_var[t0])
+        # Don't like calling scaling laterally like this, but we need scaling factors for the pv and mv
+        if sf_pv is None:
+            try:
+                iscale.calculate_scaling_factors(self.config.process_var.parent_block())
+            except RecursionError:
+                raise ConfigurationError(
+                    f"Circular scaling dependency detected in Controller {self.name}. The only way this should be "
+                    "able to happen is if a loop of controllers exists manipulating each others setpoints without "
+                    "terminating in an actual process variable."
+                )
+        if sf_mv is None:
+            try:
+                iscale.calculate_scaling_factors(self.config.manipulated_var.parent_block())
+            except RecursionError:
+                raise ConfigurationError(
+                    f"Circular scaling dependency detected in Controller {self.name}. The only way this should be "
+                    "able to happen is if a loop of controllers exists manipulating each others setpoints without "
+                    "terminating in an actual process variable."
+                )
+
+        if self.config.calculate_initial_integral:
+            sf_mv = gsf(self.manipulated_var[t0], default=1, warning=True)
+            cst(self.initial_integral_error_eqn, sf_mv)
+
+        for t in time_set:
+            sf_pv = gsf(self.process_var[t], default=1, warning=True)
+            sf_mv = gsf(self.manipulated_var[t], default=1, warning=True)
+
+            ssf(self.setpoint[t], sf_pv)
+            ssf(self.mv_ref[t], sf_mv)
+            cst(self.mv_eqn[t], sf_mv)
+
+            if self.config.type in [ControllerType.PD, ControllerType.PID]:
+                if self.config.derivative_on_error:
+                    ssf(self.error[t], sf_pv)
+                    cst(self.error_eqn[t], sf_pv)
+                else:
+                    ssf(self.negative_pv[t], sf_pv)
+                    cst(self.negative_pv_eqn[t], sf_pv)
+
+            if self.config.type in [ControllerType.PI, ControllerType.PID]:
+                try:
+                    tau_I = pyo.value(self.gain_p[t] / self.gain_i[t])
+                except ZeroDivisionError:
+                    # Integral mode turned off. If first time period, use one. Otherwise, use previous value
+                    if t == t0:
+                        tau_I = 1
+                ssf(self.integral_of_error[t], sf_pv / tau_I)
+
+                cst(self.error_from_integral_eqn[t], sf_pv)
+
+
+
+
+

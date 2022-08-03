@@ -277,7 +277,16 @@ def create_model(
         m.fs.ctrl.mv_lb = 0.0
         m.fs.ctrl.mv_ub = 1.0
 
+    for t in m.fs.time:
+        # For debugging purposes.
+        for valve in [m.fs.valve_1, m.fs.valve_2, m.fs.valve_3]:
+            iscale.set_scaling_factor(valve.control_volume.work[t], 1)
+            iscale.set_scaling_factor(valve.valve_opening[t], 1)
+        for tank in [m.fs.tank_1, m.fs.tank_2]:
+            iscale.set_scaling_factor(tank.control_volume.heat[t], 1)
+            iscale.set_scaling_factor(tank.control_volume.volume[t], 1)
     iscale.calculate_scaling_factors(m)
+    iscale.scale_time_discretization_equations(m, 1/10)
 
     # Initialize the model
 
@@ -499,6 +508,7 @@ def test_setpoint_change_windup():
         steady_state=False, time_set=[0, 12], nfe=10, calc_integ=True, tee=True, derivative_on_error=False,
         initial_valve1_opening=s1_valve, antiwindup=ControllerAntiwindupType.NONE
     )
+    return m_dynamic, solver
     # Retune controller to result in windup
     # m_dynamic.fs.ctrl.gain_p.fix(1e-8)
     # m_dynamic.fs.ctrl.gain_i.fix(1e-4)
