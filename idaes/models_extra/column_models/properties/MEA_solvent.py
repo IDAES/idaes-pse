@@ -151,7 +151,8 @@ class EnthMolSolvent:
             CpMolSolvent.build_parameters(cobj)
 
         cobj.dh_vap = Var(
-            doc="Heat of vaporization of component @ Tref", units=pyunits.J / pyunits.mol
+            doc="Heat of vaporization of component @ Tref",
+            units=pyunits.J / pyunits.mol,
         )
         set_param_from_config(cobj, param="dh_vap")
 
@@ -914,7 +915,7 @@ configuration = {
                     "2": (-4.51417e-4, pyunits.g / pyunits.mL / pyunits.K),
                     "3": (1.19451, pyunits.g / pyunits.mL),
                 },
-                "dh_vap": 58000, # [3]
+                "dh_vap": 58000,  # [3]
                 "diffus_phase_comp_coeff": {
                     "1": -13.275,
                     "2": -2198.3,

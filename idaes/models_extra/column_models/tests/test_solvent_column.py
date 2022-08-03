@@ -17,8 +17,13 @@ Author: Paul Akula, Anuja Deshpande, Andrew Lee
 import pytest
 
 # Import Pyomo libraries
-from pyomo.environ import (ConcreteModel, value, SolverStatus, 
-TerminationCondition, TransformationFactory)
+from pyomo.environ import (
+    ConcreteModel,
+    value,
+    SolverStatus,
+    TerminationCondition,
+    TransformationFactory,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 # Import IDAES Libraries
@@ -236,11 +241,11 @@ class TestStripperColumn:
         # Set up property package
         m.fs.vapor_properties = GenericParameterBlock(default=wet_co2)
         m.fs.liquid_properties_stripper = GenericParameterBlock(default=liquid_config)
-        
+
         # Set the heat of absorption value in stripper
         m.fs.liquid_properties_stripper.CO2.dh_abs_co2.unfix()
         m.fs.liquid_properties_stripper.CO2.dh_abs_co2.fix(-97000)
-        
+
         # Create an instance of the column in the flowsheet
         m.fs.unit = PackedColumn(
             default={
@@ -278,41 +283,66 @@ class TestStripperColumn:
 
         # Apply scaling
         for x in m.fs.unit.liquid_phase.length_domain:
-            iscale.set_scaling_factor(m.fs.unit.liquid_phase.properties[0, x].mole_frac_phase_comp_true['Liq','CO2'], 1e4)
-        
+            iscale.set_scaling_factor(
+                m.fs.unit.liquid_phase.properties[0, x].mole_frac_phase_comp_true[
+                    "Liq", "CO2"
+                ],
+                1e4,
+            )
+
         for (t, x, j), v in m.fs.unit.pressure_equil.items():
-            if x!=0:
-                iscale.set_scaling_factor(v, 1/value(m.fs.unit.liquid_phase.properties[t, x].fug_phase_comp["Liq", j]))
+            if x != 0:
+                iscale.set_scaling_factor(
+                    v,
+                    1
+                    / value(
+                        m.fs.unit.liquid_phase.properties[t, x].fug_phase_comp["Liq", j]
+                    ),
+                )
             else:
                 iscale.set_scaling_factor(v, 1)
-                
+
         for (t, x, j), v in m.fs.unit.interphase_mass_transfer.items():
-            if x!=0:
-                iscale.set_scaling_factor(v, 1/value(m.fs.unit.interphase_mass_transfer[t, x, j]))
+            if x != 0:
+                iscale.set_scaling_factor(
+                    v, 1 / value(m.fs.unit.interphase_mass_transfer[t, x, j])
+                )
             else:
                 iscale.set_scaling_factor(v, 1)
-                
+
         for x in m.fs.unit.vapor_phase.length_domain:
             iscale.set_scaling_factor(m.fs.unit.vapor_phase.heat[0, x], 1e-2)
-            
-            iscale.set_scaling_factor(m.fs.unit.vapor_phase.enthalpy_transfer[0, x], 0.1)
-            
-            iscale.set_scaling_factor(m.fs.unit.vapor_phase._enthalpy_flow[0, x, 'Vap'], 1e-4)
-            
-            iscale.set_scaling_factor(m.fs.unit.vapor_phase.enthalpy_flow_dx[0, x, 'Vap'], 1e-3)
-        
+
+            iscale.set_scaling_factor(
+                m.fs.unit.vapor_phase.enthalpy_transfer[0, x], 0.1
+            )
+
+            iscale.set_scaling_factor(
+                m.fs.unit.vapor_phase._enthalpy_flow[0, x, "Vap"], 1e-4
+            )
+
+            iscale.set_scaling_factor(
+                m.fs.unit.vapor_phase.enthalpy_flow_dx[0, x, "Vap"], 1e-3
+            )
+
         for x in m.fs.unit.liquid_phase.length_domain:
-            iscale.set_scaling_factor(m.fs.unit.liquid_phase._enthalpy_flow[0, x, 'Liq'], 1e-6)
-            
-            iscale.set_scaling_factor(m.fs.unit.liquid_phase.enthalpy_flow_dx[0, x, 'Liq'], 1e-3)
-            
-            iscale.set_scaling_factor(m.fs.unit.liquid_phase.enthalpy_transfer[0, x], 0.1)
-            
+            iscale.set_scaling_factor(
+                m.fs.unit.liquid_phase._enthalpy_flow[0, x, "Liq"], 1e-6
+            )
+
+            iscale.set_scaling_factor(
+                m.fs.unit.liquid_phase.enthalpy_flow_dx[0, x, "Liq"], 1e-3
+            )
+
+            iscale.set_scaling_factor(
+                m.fs.unit.liquid_phase.enthalpy_transfer[0, x], 0.1
+            )
+
             iscale.set_scaling_factor(m.fs.unit.liquid_phase.heat[0, x], 1e-2)
-    
+
         iscale.calculate_scaling_factors(m.fs.unit)
-        
-        xfrm = TransformationFactory('contrib.strip_var_bounds')
+
+        xfrm = TransformationFactory("contrib.strip_var_bounds")
         xfrm.apply_to(m, reversible=True)
 
         return m

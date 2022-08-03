@@ -300,8 +300,8 @@ class TestStripperHeatDuty(object):
         m.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix(0.1183)
 
         m.fs.unit.heat_duty.fix(-6264)
-        
-        xfrm = TransformationFactory('contrib.strip_var_bounds')
+
+        xfrm = TransformationFactory("contrib.strip_var_bounds")
         xfrm.apply_to(m, reversible=True)
 
         return m
