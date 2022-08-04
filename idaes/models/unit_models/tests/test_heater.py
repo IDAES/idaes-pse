@@ -194,9 +194,7 @@ class TestBTX(object):
     def test_get_performance_contents(self, btx):
         perf_dict = btx.fs.unit._get_performance_contents()
 
-        assert perf_dict == {
-            "vars": {
-                "Heat Duty": btx.fs.unit.heat_duty[0]}}
+        assert perf_dict == {"vars": {"Heat Duty": btx.fs.unit.heat_duty[0]}}
 
 
 # -----------------------------------------------------------------------------
@@ -310,9 +308,7 @@ class TestIAPWS(object):
     def test_get_performance_contents(self, iapws):
         perf_dict = iapws.fs.unit._get_performance_contents()
 
-        assert perf_dict == {
-            "vars": {
-                "Heat Duty": iapws.fs.unit.heat_duty[0]}}
+        assert perf_dict == {"vars": {"Heat Duty": iapws.fs.unit.heat_duty[0]}}
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -482,9 +478,7 @@ class TestSaponification(object):
     def test_get_performance_contents(self, sapon):
         perf_dict = sapon.fs.unit._get_performance_contents()
 
-        assert perf_dict == {
-            "vars": {
-                "Heat Duty": sapon.fs.unit.heat_duty[0]}}
+        assert perf_dict == {"vars": {"Heat Duty": sapon.fs.unit.heat_duty[0]}}
 
 
 # -----------------------------------------------------------------------------
@@ -599,6 +593,4 @@ class TestBT_Generic(object):
     def test_get_performance_contents(self, btg):
         perf_dict = btg.fs.unit._get_performance_contents()
 
-        assert perf_dict == {
-            "vars": {
-                "Heat Duty": btg.fs.unit.heat_duty[0]}}
+        assert perf_dict == {"vars": {"Heat Duty": btg.fs.unit.heat_duty[0]}}

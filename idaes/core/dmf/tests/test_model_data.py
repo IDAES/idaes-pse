@@ -26,14 +26,17 @@ import idaes.core.dmf.model_data as da
 
 _data_dir = os.path.join(this_file_dir(), "data_files")
 
+
 @pytest.mark.unit
 def test_bin_data():
     def make_data_frame():
-        return pd.DataFrame(data={
-            "power": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, None],
-            "x1": [2, 3, 4, 6, 7, 9, 3, 1, 3, 3, 2, 3, 4],
-            "x2": [4, 5, 6, 3, 5, 8, 4, 1, 4, 5, 2, 6, 5],
-        })
+        return pd.DataFrame(
+            data={
+                "power": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, None],
+                "x1": [2, 3, 4, 6, 7, 9, 3, 1, 3, 3, 2, 3, 4],
+                "x2": [4, 5, 6, 3, 5, 8, 4, 1, 4, 5, 2, 6, 5],
+            }
+        )
 
     df = make_data_frame()
     hist = da.bin_data(
@@ -45,19 +48,16 @@ def test_bin_data():
         min_value=2,
         max_value=10,
     )
-    assert hist[0]==2
-    assert hist[1]==4
-    assert hist[2]==3
+    assert hist[0] == 2
+    assert hist[1] == 4
+    assert hist[2] == 3
     assert 3 not in hist
     assert "pb no." in df
     assert "pb power" in df
 
     df = make_data_frame()
     hist = da.bin_data(
-        df, bin_by="power",
-        bin_no="pb no.",
-        bin_nom="pb power",
-        bin_size=4
+        df, bin_by="power", bin_no="pb no.", bin_nom="pb power", bin_size=4
     )
     assert hist[0] == 3
     assert hist[1] == 4
@@ -71,7 +71,7 @@ def test_bin_data():
     assert 0 in r
     assert 1 in r
     assert 2 in r
-    assert 3 not in r # not enough points
+    assert 3 not in r  # not enough points
 
     assert r[0]["x1"] == pytest.approx(1.0)
 
@@ -145,6 +145,7 @@ def test_map_data_use_ambient_pressure():
 
     # Check that the unit conversions are okay
     assert df["P"]["1901-3-3 12:00"] == pytest.approx(195886, rel=1e-4)
+
 
 @pytest.mark.component
 def test_map_data_use_ambient_pressure2():
@@ -241,9 +242,11 @@ def test_unit_coversion():
         assert len(w) > 0
         found = False
         for wa in w:
-            if (issubclass(wa.category, UserWarning) and str(wa.message) ==
-                "In unit conversion, from unit 'MYPRESSURE'"
-                " is not defined. No conversion."):
+            if (
+                issubclass(wa.category, UserWarning)
+                and str(wa.message) == "In unit conversion, from unit 'MYPRESSURE'"
+                " is not defined. No conversion."
+            ):
                 found = True
                 break
         if not found:

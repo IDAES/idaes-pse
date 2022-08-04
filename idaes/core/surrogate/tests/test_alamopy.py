@@ -122,9 +122,10 @@ class TestAlamoTrainer:
         )
 
         with pytest.raises(
-                ValueError,
-                match="ALAMO does not support the presence of spaces in variable names. "
-                "Found space in input names: x 1."):
+            ValueError,
+            match="ALAMO does not support the presence of spaces in variable names. "
+            "Found space in input names: x 1.",
+        ):
             alamo_trainer._verify_inputs()
 
     @pytest.mark.unit
@@ -144,9 +145,10 @@ class TestAlamoTrainer:
         )
 
         with pytest.raises(
-                ValueError,
-                match="ALAMO does not support the presence of spaces in variable names. "
-                "Found space in output names: z 1."):
+            ValueError,
+            match="ALAMO does not support the presence of spaces in variable names. "
+            "Found space in output names: z 1.",
+        ):
             alamo_trainer._verify_inputs()
 
     @pytest.mark.unit
@@ -908,12 +910,13 @@ class TestAlamoTrainer:
         alamo_trainer._output_labels = ["z1", "z2"]
 
         alamo_trainer._trcfile = os.path.join(dirpath, "foo.trc")
-        
+
         with pytest.raises(
-                FileNotFoundError,
-                match="Error occured when trying to read the ALAMO trace file - "
-                "this probably indicates that a trace file was not created by "
-                "the ALAMO executable. Please check the ALAMO output logs."):
+            FileNotFoundError,
+            match="Error occured when trying to read the ALAMO trace file - "
+            "this probably indicates that a trace file was not created by "
+            "the ALAMO executable. Please check the ALAMO output logs.",
+        ):
             alamo_trainer._read_trace_file(
                 alamo_trainer._trcfile, has_validation_data=True
             )

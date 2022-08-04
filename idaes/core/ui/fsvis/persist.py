@@ -20,6 +20,7 @@ from abc import ABC, abstractmethod
 import json
 from pathlib import Path
 from typing import Dict, Union
+
 # package
 from idaes import logger
 from . import errors
@@ -28,7 +29,6 @@ _log = logger.getLogger(__name__)
 
 
 class DataStore(ABC):
-
     @abstractmethod
     def save(self, data: Union[Dict, str]):
         """Save data.
@@ -48,7 +48,7 @@ class DataStore(ABC):
         pass
 
     @classmethod
-    def create(cls, dest=None) -> 'DataStore':
+    def create(cls, dest=None) -> "DataStore":
         """Factory method to create and return the appropriate DataStore subclass
         given a destination.
 
@@ -195,8 +195,8 @@ def _parse_json(data) -> Dict:
 
 
 class DataStoreManager:
-    """Manage operations on multiple id/data-store pairs.
-    """
+    """Manage operations on multiple id/data-store pairs."""
+
     def __init__(self):
         self._id_store = {}
         self._id_path = {}  # maps identifiers to Path objects
@@ -260,4 +260,3 @@ class DataStoreManager:
         except KeyError:
             raise KeyError(f"Unknown flowsheet '{id_}'")
         return store
-
