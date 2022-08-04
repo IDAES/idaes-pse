@@ -48,6 +48,7 @@ from idaes.core import (
     Component,
 )
 from idaes.core.util.math import smooth_max
+from idaes.core.util.exceptions import BurntToast
 from idaes.core.util.exceptions import ConfigurationError
 import idaes
 import idaes.core.util.scaling as iscale
@@ -1513,7 +1514,13 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase Enthalpy
         def rule_enth_mol_phase(b, p):
-            return self.func_h(delta[p], tau) * params.uc_kJ_per_kg_to_J_per_mol
+            if params.config.phase_presentation == PhaseType.LG or params.config.phase_presentation == PhaseType.MIX:
+                return self.func_h(delta[p], tau) * params.uc_kJ_per_kg_to_J_per_mol
+            elif params.config.phase_presentation == PhaseType.L or params.config.phase_presentation == PhaseType.G:
+                return self.enth_mol
+            else:
+                # The only time this should be encountered is if somebody's enhancing this property framework.
+                return BurntToast(f"Unknown phase presentation {params.config.phase_presentation} encountered.")
 
         self.enth_mol_phase = Expression(
             phlist,
