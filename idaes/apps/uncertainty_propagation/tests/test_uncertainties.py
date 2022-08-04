@@ -30,9 +30,9 @@ from pyomo.environ import *
 import pyomo.contrib.parmest.parmest as parmest
 
 
-ipopt_available = SolverFactory('ipopt').available(exception_flag=False)
-kaug_available = SolverFactory('k_aug').available(exception_flag=False)
-dotsens_available = SolverFactory('dot_sens').available(exception_flag=False)
+ipopt_available = SolverFactory("ipopt").available(exception_flag=False)
+kaug_available = SolverFactory("k_aug").available(exception_flag=False)
+dotsens_available = SolverFactory("dot_sens").available(exception_flag=False)
 
 
 @pytest.mark.skipif(not ipopt_available, reason="The 'ipopt' command is not available")
