@@ -27,6 +27,7 @@ from pyomo.environ import (
     Constraint,
     Reference,
     check_optimal_termination,
+    Reals
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.common.deprecation import deprecated
@@ -66,13 +67,13 @@ class ThermodynamicAssumption(Enum):
 
 @declare_process_block_class("IsentropicPerformanceCurve")
 class IsentropicPerformanceCurveData(ProcessBlockData):
-    """Block that holds performance curves. Typically these are in the form of
+    """Block that holds performance curves. Typically, these are in the form of
     constraints that relate head, efficiency, or pressure ratio to volumetric
-    or mass flow.  Additional varaibles can be included if needed, such as
+    or mass flow.  Additional variables can be included if needed, such as
     speed. For convenience an option is provided to add head expressions to the
     block. performance curves, and any additional variables, constraints, or
     expressions can be added to this block either via callback provided to the
-    configuration, or after the model is constructued."""
+    configuration, or after the model is constructed."""
 
     CONFIG = ProcessBlockData.CONFIG(
         doc="Configuration dictionary for the performance curve block."
@@ -304,7 +305,7 @@ see property package for documentation.}""",
             }
         )
 
-        # Add geomerty variables to control volume
+        # Add geometry variables to control volume
         if self.config.has_holdup:
             self.control_volume.add_geometry()
 
@@ -322,8 +323,8 @@ see property package for documentation.}""",
         )
 
         # Add energy balance
-        self.control_volume.add_energy_balances(
-            balance_type=self.config.energy_balance_type, has_work_transfer=True
+        eb = self.control_volume.add_energy_balances(
+             balance_type=self.config.energy_balance_type, has_work_transfer=True
         )
 
         # add momentum balance
@@ -342,6 +343,16 @@ see property package for documentation.}""",
         # Construct performance equations
         # Set references to balance terms at unit level
         # Add Work transfer variable 'work'
+        # If the 'work' variable wasn't already built on the control volume but is needed, create it now.
+        if not hasattr(self.control_volume, 'work') and self.config.thermodynamic_assumption == ThermodynamicAssumption.pump and eb is None:
+                units = self.config.property_package.get_metadata().get_derived_units
+                self.control_volume.work = Var(
+                    self.flowsheet().time,
+                    domain=Reals,
+                    initialize=0.0,
+                    doc="Work transferred into control volume",
+                    units=units("power"),
+                )
         self.work_mechanical = Reference(self.control_volume.work[:])
 
         # Add Momentum balance variable 'deltaP'
@@ -444,7 +455,7 @@ see property package for documentation.}""",
 
         @self.Constraint(self.flowsheet().time)
         def zero_work_equation(b, t):
-            return self.control_volume.work[t] == 0
+            return b.control_volume.work[t] == 0
 
     def add_isentropic(self):
         """
@@ -811,10 +822,10 @@ see property package for documentation.}""",
         )
         if activate_performance_curves:
             blk.performance_curve.deactivate()
-            # The performance curves will provide (maybe indirectly) efficency
+            # The performance curves will provide (maybe indirectly) efficiency
             # and/or pressure ratio. To get through the standard isentropic
             # pressure changer init, we'll see if the user provided a guess for
-            # pressure ratio or isentropic efficency and fix them if need. If
+            # pressure ratio or isentropic efficiency and fix them if needed. If
             # not fixed and no guess provided, fill in something reasonable
             # until the performance curves are turned on.
             unfix_eff = {}
@@ -1140,7 +1151,7 @@ see property package for documentation.}""",
                     )
                     iscale.constraint_scaling_transform(c, sf)
             else:
-                # There are some other material balance types but they create
+                # There are some other material balance types, but they create
                 # constraints with different names.
                 _log.warning(f"Unknown material balance type {mb_type}")
 
