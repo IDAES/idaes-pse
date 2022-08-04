@@ -27,7 +27,7 @@ from pyomo.environ import (
     Constraint,
     Reference,
     check_optimal_termination,
-    Reals
+    Reals,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.common.deprecation import deprecated
@@ -324,7 +324,7 @@ see property package for documentation.}""",
 
         # Add energy balance
         eb = self.control_volume.add_energy_balances(
-             balance_type=self.config.energy_balance_type, has_work_transfer=True
+            balance_type=self.config.energy_balance_type, has_work_transfer=True
         )
 
         # add momentum balance
@@ -344,15 +344,19 @@ see property package for documentation.}""",
         # Set references to balance terms at unit level
         # Add Work transfer variable 'work'
         # If the 'work' variable wasn't already built on the control volume but is needed, create it now.
-        if not hasattr(self.control_volume, 'work') and self.config.thermodynamic_assumption == ThermodynamicAssumption.pump and eb is None:
-                units = self.config.property_package.get_metadata().get_derived_units
-                self.control_volume.work = Var(
-                    self.flowsheet().time,
-                    domain=Reals,
-                    initialize=0.0,
-                    doc="Work transferred into control volume",
-                    units=units("power"),
-                )
+        if (
+            not hasattr(self.control_volume, "work")
+            and self.config.thermodynamic_assumption == ThermodynamicAssumption.pump
+            and eb is None
+        ):
+            units = self.config.property_package.get_metadata().get_derived_units
+            self.control_volume.work = Var(
+                self.flowsheet().time,
+                domain=Reals,
+                initialize=0.0,
+                doc="Work transferred into control volume",
+                units=units("power"),
+            )
         self.work_mechanical = Reference(self.control_volume.work[:])
 
         # Add Momentum balance variable 'deltaP'
@@ -1151,7 +1155,7 @@ see property package for documentation.}""",
                     )
                     iscale.constraint_scaling_transform(c, sf)
             else:
-                # There are some other material balance types, but they create
+                # There are some other material balance types but they create
                 # constraints with different names.
                 _log.warning(f"Unknown material balance type {mb_type}")
 
