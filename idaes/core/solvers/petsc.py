@@ -231,7 +231,14 @@ def find_discretization_equations(m, time):
     disc_eqns = []
     for var in m.component_objects(pyo.Var):
         if isinstance(var, pyodae.DerivativeVar):
-            if time in ComponentSet(var.get_continuousset_list()):
+            cont_set_set = ComponentSet(var.get_continuousset_list())
+            if time in ComponentSet(cont_set_set):
+                if len(cont_set_set) > 1:
+                    raise NotImplementedError(
+                        f"IDAES presently does not support PETSc for second order or higher derivatives like {var.name} "
+                        "that are differentiated at least once with respect to time. Please reformulate your model so "
+                        "it does not contain such a derivative (such as by introducing intermediate variables)."
+                    )
                 parent = var.parent_block()
                 name = var.local_name + "_disc_eq"
                 disc_eq = getattr(parent, name)
