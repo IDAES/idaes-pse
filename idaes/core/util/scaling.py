@@ -754,26 +754,24 @@ def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
         return spla.norm(jac, ord) * la.norm(jac_inv, ord)
 
 
-def scale_time_discretization_equations(m, time_scaling_factor):
+def scale_time_discretization_equations(fs, time_scaling_factor):
     """
     Get the condition number of the scaled or unscaled Jacobian matrix of a model.
 
     Args:
-        m: calculate the condition number of the Jacobian from this model.
-        scaled: if True use scaled Jacobian, else use unscaled
-        ord: norm order, None = Frobenius, see scipy.sparse.linalg.norm for more
-        pinv: Use pseudoinverse, works for non-square matrixes
-        jac: (optional) perviously calculated jacobian
+        fs: Flowsheet whose time discretization equations are being scaled
+        time_scaling_factor: Scaling factor to use for time. For time-stepping discretization methods with a uniform
+        time step dt, a good scaling factor is 1/dt.
 
     Returns:
         (float) Condition number
     """
 
     # Copy and pasted from solvers.petsc.find_discretization_equations then modified
-    for var in m.component_objects(pyo.Var):
+    for var in fs.component_objects(pyo.Var):
         if isinstance(var, DerivativeVar):
             cont_set_set = ComponentSet(var.get_continuousset_list())
-            if m.fs.time in cont_set_set:
+            if fs.time in cont_set_set:
                 if len(cont_set_set) > 1:
                     _log.warning(
                         "IDAES presently does not support automatically scaling discretization equations for "
@@ -796,12 +794,20 @@ def scale_time_discretization_equations(m, time_scaling_factor):
                     if get_scaling_factor(var[i]) is None:
                         s_state = get_scaling_factor(state_var[i], default=1, warning=True)
                         set_scaling_factor(var[i], s_state/time_scaling_factor)
-                    # FIXME are we sure that the first index will always be time?
                     s_var = get_scaling_factor(var[i])
+                    # FIXME are we sure that the first index will always be time?
                     if type(i) == float or type(i) == int:
-                        if not i == m.fs.time.first():
+                        t = i
+                    else:
+                        t = i[0]
+                    if t == fs.time.first() or t == fs.time.last():
+                        try:
                             constraint_scaling_transform(disc_eq[i], s_var, overwrite=False)
-                    elif not i[0] == m.fs.time.first():
+                        except:
+                            # Discretization equations may or may not exist at the first or last time points
+                            # depending on the method. Backwards skips first, forwards skips last
+                            pass
+                    else:
                         constraint_scaling_transform(disc_eq[i], s_var, overwrite=False)
 
 class CacheVars(object):
