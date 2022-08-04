@@ -57,24 +57,43 @@ h2 {
   background: #eeffcc;
 }
 
-/* Collapsible section, basically HTML's details & summary */
+/* Collapsible section for hidden content*/
+.collapsible {
+    margin: 2%;
+}
+
 .collapsible .header {
     display: inline;
     clear: both;
 }
 
 .collapsible .header p:before {
-    content: "▶";
+    font-family: "FontAwesome"; 
+    content: "\f0fe";
     padding-right: 5px;
+    color: #2470a1;
 }
 
 .collapsible .header.open p:before {
-    content: "▼";
+    font-family: "FontAwesome"; 
+    content: "\f146";
     padding-right: 5px;
+    color: #2470a1;
 }
 
-.collapsible {
-    margin: 1%;
+.collapsible .header p:after {
+    content: "(See More)";
+    padding: 5px;
+    font-size: 75%;
+    color: #2470a1;
+    
+}
+
+.collapsible .header.open p:after {
+    content: "(See Less)";
+    padding: 5px;
+    font-size: 75%;
+    color: #2470a1;
 }
 
 /* Sidebar for quickstar guides*/

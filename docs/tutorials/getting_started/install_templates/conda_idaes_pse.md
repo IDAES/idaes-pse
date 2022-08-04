@@ -11,4 +11,4 @@ We recommend using Conda to manage your environment & modules.
 
 .. note:: The command above will install the most recent stable (release) version of IDAES.
           To install other versions of IDAES, including pre-release versions, 
-          refer to the `Versioned IDAES Installation <../how_to_guides/versioned_idaes_install>_` guide
+          refer to the :doc:`Versioned IDAES Installation <../../how_to_guides/versioned_idaes_install>` guide
