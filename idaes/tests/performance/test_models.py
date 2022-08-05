@@ -21,6 +21,7 @@ from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.timing import TicTocTimer
 
 from idaes.models.properties.modular_properties.examples.tests import test_HC_PR
+from idaes.models.unit_models.tests import test_heat_exchanger_1D
 
 
 class TestModel(unittest.TestCase):
@@ -63,4 +64,11 @@ class TestMisc(TestModel):
     def test_hydrocarbon_PR_properties(self):
         self._run_test(
             test_HC_PR.build_model, test_HC_PR.initialize_model, test_HC_PR.solve_model
+        )
+
+    def test_heat_exchanger_1D_IAPWS(self):
+        self._run_test(
+            test_heat_exchanger_1D.build_model,
+            test_heat_exchanger_1D.initialize_model,
+            test_heat_exchanger_1D.solve_model,
         )

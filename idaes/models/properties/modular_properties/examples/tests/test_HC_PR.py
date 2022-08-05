@@ -269,9 +269,7 @@ class TestParamBlock(object):
 class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
-        build_model()
-
-        return model
+        return build_model()
 
     @pytest.mark.integration
     def test_build(self, model):
