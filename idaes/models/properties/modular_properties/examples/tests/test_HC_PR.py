@@ -82,6 +82,8 @@ def build_model():
     model.props[1].mole_frac_comp["heptene"].fix(0.077)
     model.props[1].mole_frac_comp["octene"].fix(0.076)
 
+    assert degrees_of_freedom(model.props[1]) == 0
+
     return model
 
 
@@ -268,8 +270,6 @@ class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         build_model()
-
-        assert degrees_of_freedom(model.props[1]) == 0
 
         return model
 

@@ -22,10 +22,6 @@ from pyomo.common.timing import TicTocTimer
 
 from idaes.models.properties.modular_properties.examples.tests import test_HC_PR
 
-from idaes.core.solvers import get_solver
-
-solver = get_solver()
-
 
 class TestModel(unittest.TestCase):
     def recordData(self, name, value):
