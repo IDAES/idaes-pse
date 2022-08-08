@@ -95,8 +95,8 @@ class VesselMaterial(StrEnum):
     Carpenter20CB3 = "Carpenter20CB3"
     Nickel200 = "Nickel200"
     Monel400 = "Monel400"
-    Inconel600 = "inconel600"
-    Incoloy825 = "incoloy825"
+    Inconel600 = "Inconel600"
+    Incoloy825 = "Incoloy825"
     Titanium = "Titanium"
 
 
@@ -156,7 +156,7 @@ class PumpMaterial(StrEnum):
     StainlessSteel = "StainlessSteel"
     HastelloyC = "HastelloyC"
     Monel = "Monel"
-    Nickel = "Mickel"
+    Nickel = "Nickel"
     Titanium = "Titanium"
     NiAlBronze = "NiAlBronze"
     CarbonSteel = "CarbonSteel"
