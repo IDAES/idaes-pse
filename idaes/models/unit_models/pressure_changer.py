@@ -27,6 +27,7 @@ from pyomo.environ import (
     Constraint,
     Reference,
     check_optimal_termination,
+    Reals,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.common.deprecation import deprecated
@@ -66,13 +67,13 @@ class ThermodynamicAssumption(Enum):
 
 @declare_process_block_class("IsentropicPerformanceCurve")
 class IsentropicPerformanceCurveData(ProcessBlockData):
-    """Block that holds performance curves. Typically these are in the form of
+    """Block that holds performance curves. Typically, these are in the form of
     constraints that relate head, efficiency, or pressure ratio to volumetric
-    or mass flow.  Additional varaibles can be included if needed, such as
+    or mass flow.  Additional variables can be included if needed, such as
     speed. For convenience an option is provided to add head expressions to the
     block. performance curves, and any additional variables, constraints, or
     expressions can be added to this block either via callback provided to the
-    configuration, or after the model is constructued."""
+    configuration, or after the model is constructed."""
 
     CONFIG = ProcessBlockData.CONFIG(
         doc="Configuration dictionary for the performance curve block."
@@ -104,8 +105,8 @@ class IsentropicPerformanceCurveData(ProcessBlockData):
             try:
 
                 @self.Expression(self.flowsheet().time)
-                def head_isentropic(b, t):  # units are energy/mass
-                    b = b.parent_block()
+                def head_isentropic(self, t):  # units are energy/mass
+                    b = self.parent_block()
                     if hasattr(b.control_volume.properties_in[t], "flow_mass"):
                         return (
                             b.work_isentropic[t]
@@ -119,8 +120,8 @@ class IsentropicPerformanceCurveData(ProcessBlockData):
                         )
 
                 @self.Expression(self.flowsheet().time)
-                def head(b, t):  # units are energy/mass
-                    b = b.parent_block()
+                def head(self, t):  # units are energy/mass
+                    b = self.parent_block()
                     if hasattr(b.control_volume.properties_in[t], "flow_mass"):
                         return (
                             b.work_mechanical[t]
@@ -304,7 +305,7 @@ see property package for documentation.}""",
             }
         )
 
-        # Add geomerty variables to control volume
+        # Add geometry variables to control volume
         if self.config.has_holdup:
             self.control_volume.add_geometry()
 
@@ -322,7 +323,7 @@ see property package for documentation.}""",
         )
 
         # Add energy balance
-        self.control_volume.add_energy_balances(
+        eb = self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type, has_work_transfer=True
         )
 
@@ -342,6 +343,20 @@ see property package for documentation.}""",
         # Construct performance equations
         # Set references to balance terms at unit level
         # Add Work transfer variable 'work'
+        # If the 'work' variable wasn't already built on the control volume but is needed, create it now.
+        if (
+            not hasattr(self.control_volume, "work")
+            and self.config.thermodynamic_assumption == ThermodynamicAssumption.pump
+            and eb is None
+        ):
+            units = self.config.property_package.get_metadata().get_derived_units
+            self.control_volume.work = Var(
+                self.flowsheet().time,
+                domain=Reals,
+                initialize=0.0,
+                doc="Work transferred into control volume",
+                units=units("power"),
+            )
         self.work_mechanical = Reference(self.control_volume.work[:])
 
         # Add Momentum balance variable 'deltaP'
@@ -352,10 +367,10 @@ see property package for documentation.}""",
 
         # Pressure Ratio
         @self.Constraint(self.flowsheet().time, doc="Pressure ratio constraint")
-        def ratioP_calculation(b, t):
+        def ratioP_calculation(self, t):
             return (
-                b.ratioP[t] * b.control_volume.properties_in[t].pressure
-                == b.control_volume.properties_out[t].pressure
+                self.ratioP[t] * self.control_volume.properties_in[t].pressure
+                == self.control_volume.properties_out[t].pressure
             )
 
         # Construct equations for thermodynamic assumption
@@ -391,24 +406,28 @@ see property package for documentation.}""",
         )
 
         @self.Constraint(self.flowsheet().time, doc="Pump fluid work constraint")
-        def fluid_work_calculation(b, t):
-            return b.work_fluid[t] == (
+        def fluid_work_calculation(self, t):
+            return self.work_fluid[t] == (
                 (
-                    b.control_volume.properties_out[t].pressure
-                    - b.control_volume.properties_in[t].pressure
+                    self.control_volume.properties_out[t].pressure
+                    - self.control_volume.properties_in[t].pressure
                 )
-                * b.control_volume.properties_out[t].flow_vol
+                * self.control_volume.properties_out[t].flow_vol
             )
 
         # Actual work
         @self.Constraint(
             self.flowsheet().time, doc="Actual mechanical work calculation"
         )
-        def actual_work(b, t):
-            if b.config.compressor:
-                return b.work_fluid[t] == (b.work_mechanical[t] * b.efficiency_pump[t])
+        def actual_work(self, t):
+            if self.config.compressor:
+                return self.work_fluid[t] == (
+                    self.work_mechanical[t] * self.efficiency_pump[t]
+                )
             else:
-                return b.work_mechanical[t] == (b.work_fluid[t] * b.efficiency_pump[t])
+                return self.work_mechanical[t] == (
+                    self.work_fluid[t] * self.efficiency_pump[t]
+                )
 
     def add_isothermal(self):
         """
@@ -425,10 +444,10 @@ see property package for documentation.}""",
             self.flowsheet().time,
             doc="For isothermal condition: Equate inlet and " "outlet temperature",
         )
-        def isothermal(b, t):
+        def isothermal(self, t):
             return (
-                b.control_volume.properties_in[t].temperature
-                == b.control_volume.properties_out[t].temperature
+                self.control_volume.properties_in[t].temperature
+                == self.control_volume.properties_out[t].temperature
             )
 
     def add_adiabatic(self):
@@ -443,7 +462,7 @@ see property package for documentation.}""",
         """
 
         @self.Constraint(self.flowsheet().time)
-        def zero_work_equation(b, t):
+        def zero_work_equation(self, t):
             return self.control_volume.work[t] == 0
 
     def add_isentropic(self):
@@ -487,10 +506,10 @@ see property package for documentation.}""",
         @self.Constraint(
             self.flowsheet().time, doc="Pressure for isentropic calculations"
         )
-        def isentropic_pressure(b, t):
+        def isentropic_pressure(self, t):
             return (
-                b.properties_isentropic[t].pressure
-                == b.control_volume.properties_out[t].pressure
+                self.properties_isentropic[t].pressure
+                == self.control_volume.properties_out[t].pressure
             )
 
         # This assumes isentropic composition is the same as outlet
@@ -502,25 +521,25 @@ see property package for documentation.}""",
 
         # This assumes isentropic entropy is the same as inlet
         @self.Constraint(self.flowsheet().time, doc="Isentropic assumption")
-        def isentropic(b, t):
+        def isentropic(self, t):
             return (
-                b.properties_isentropic[t].entr_mol
-                == b.control_volume.properties_in[t].entr_mol
+                self.properties_isentropic[t].entr_mol
+                == self.control_volume.properties_in[t].entr_mol
             )
 
         # Isentropic work
         @self.Constraint(
             self.flowsheet().time, doc="Calculate work of isentropic process"
         )
-        def isentropic_energy_balance(b, t):
-            return b.work_isentropic[t] == (
+        def isentropic_energy_balance(self, t):
+            return self.work_isentropic[t] == (
                 sum(
-                    b.properties_isentropic[t].get_enthalpy_flow_terms(p)
-                    for p in b.properties_isentropic.phase_list
+                    self.properties_isentropic[t].get_enthalpy_flow_terms(p)
+                    for p in self.properties_isentropic.phase_list
                 )
                 - sum(
-                    b.control_volume.properties_in[t].get_enthalpy_flow_terms(p)
-                    for p in b.control_volume.properties_in.phase_list
+                    self.control_volume.properties_in[t].get_enthalpy_flow_terms(p)
+                    for p in self.control_volume.properties_in.phase_list
                 )
             )
 
@@ -528,14 +547,14 @@ see property package for documentation.}""",
         @self.Constraint(
             self.flowsheet().time, doc="Actual mechanical work calculation"
         )
-        def actual_work(b, t):
-            if b.config.compressor:
-                return b.work_isentropic[t] == (
-                    b.work_mechanical[t] * b.efficiency_isentropic[t]
+        def actual_work(self, t):
+            if self.config.compressor:
+                return self.work_isentropic[t] == (
+                    self.work_mechanical[t] * self.efficiency_isentropic[t]
                 )
             else:
-                return b.work_mechanical[t] == (
-                    b.work_isentropic[t] * b.efficiency_isentropic[t]
+                return self.work_mechanical[t] == (
+                    self.work_isentropic[t] * self.efficiency_isentropic[t]
                 )
 
         if self.config.support_isentropic_performance_curves:
@@ -811,10 +830,10 @@ see property package for documentation.}""",
         )
         if activate_performance_curves:
             blk.performance_curve.deactivate()
-            # The performance curves will provide (maybe indirectly) efficency
+            # The performance curves will provide (maybe indirectly) efficiency
             # and/or pressure ratio. To get through the standard isentropic
             # pressure changer init, we'll see if the user provided a guess for
-            # pressure ratio or isentropic efficency and fix them if need. If
+            # pressure ratio or isentropic efficiency and fix them if needed. If
             # not fixed and no guess provided, fill in something reasonable
             # until the performance curves are turned on.
             unfix_eff = {}
@@ -922,7 +941,7 @@ see property package for documentation.}""",
             Expression,
         ):
 
-            def tmp_rule(b, t):
+            def tmp_rule(self, t):
                 return (
                     blk.properties_isentropic[t].temperature
                     == blk.control_volume.properties_in[t].temperature
