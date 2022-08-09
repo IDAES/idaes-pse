@@ -95,7 +95,7 @@ def get_model(dynamic=False):
 
     # water tank
     m.fs.tank = WaterTank(
-        tank_type=simple_tank,
+        tank_type="simple_tank",
         has_holdup=True,
         property_package=m.fs.prop_water,
     )
