@@ -32,7 +32,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
                                pairs to link between time steps
         periodic_variable_func: a function that returns a tuple of variable
                                 pairs to link between last and first time steps
-        use_stochastic_build: Uses `build_stochastic_multiperiod` method if set to True
+        use_stochastic_build: Uses `build_stochastic_multi_period` method if set to True
         set_days: list containing the set of representative days
         set_years: list containing the set of years
         set_scenarios: list containing the set of scenarios
@@ -111,11 +111,11 @@ class MultiPeriodModel(pyo.ConcreteModel):
             if solver is None:
                 solver = get_solver()
 
-            logging.basicConfig(level=outlvl)
             _logger = logging.getLogger(__name__)
+            _logger.setLevel(outlvl)
 
             # Build the stochastic multiperiod optimization model
-            self.build_stochastic_multiperiod(
+            self.build_stochastic_multi_period(
                 flowsheet_options,
                 initialization_options,
                 unfix_dof_options,
@@ -170,7 +170,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
         if solver is None:
             solver = get_solver()
 
-        self.initialize_multiperiod_model(
+        self.initialize_multi_period_model(
             flowsheet_options, initialization_options, solver, False, timer
         )
 
@@ -285,7 +285,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
         for (i, pair) in enumerate(variable_pairs):
             b1.periodic_constraints[i] = pair[0] == pair[1]
 
-    def build_stochastic_multiperiod(
+    def build_stochastic_multi_period(
         self,
         flowsheet_options,
         initialization_options,
@@ -395,7 +395,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
             if self.get_periodic_variable_pairs is not None:
                 _logger.warning(
                     f"A method is provided for get_periodic_variable_pairs. "
-                    f"build_stochastic_multiperiod method does not support periodic "
+                    f"build_stochastic_multi_period method does not support periodic "
                     f"constraints, so the user needs to add them manually."
                 )
 
@@ -415,13 +415,13 @@ class MultiPeriodModel(pyo.ConcreteModel):
 
         timer.toc("Completed the formulation of the multiperiod optimization problem.")
 
-        self.initialize_multiperiod_model(
+        self.initialize_multi_period_model(
             flowsheet_options, initialization_options, solver, True, timer
         )
 
         self.unfix_degrees_of_freedom(unfix_dof_options, True, timer)
 
-    def initialize_multiperiod_model(
+    def initialize_multi_period_model(
         self,
         flowsheet_options,
         initialization_options,
@@ -436,7 +436,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
             flowsheet_options: dict containing the arguments needed to create an instance of a flowsheet
             initialization_options: dict containing the arguments needed to initialize the flowsheet
             solver: pyomo solver object
-            use_stochastic_build: Set it to True if `build_stochastic_multiperiod` method is used
+            use_stochastic_build: Set it to True if `build_stochastic_multi_period` method is used
             time: Timer object
         """
         if self.initialization_func is None:
@@ -491,7 +491,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
 
         Args:
             unfix_dof_options: dict containing the arguments needed for `unfix_dof_func`
-            use_stochastic_build: Set it to True if `build_stochastic_multiperiod` method is used
+            use_stochastic_build: Set it to True if `build_stochastic_multi_period` method is used
             time: Timer object
         """
         if self.unfix_dof_func is None:
