@@ -297,12 +297,10 @@ see property package for documentation.}""",
 
         # Add a control volume to the unit including setting up dynamics.
         self.control_volume = ControlVolume0DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         # Add geometry variables to control volume
@@ -559,7 +557,7 @@ see property package for documentation.}""",
 
         if self.config.support_isentropic_performance_curves:
             self.performance_curve = IsentropicPerformanceCurve(
-                default=self.config.isentropic_performance_curves
+                **self.config.isentropic_performance_curves
             )
 
     def model_check(blk):
