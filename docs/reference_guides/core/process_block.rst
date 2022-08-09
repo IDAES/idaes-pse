@@ -28,8 +28,7 @@ ProcessBlockData class.
           self.y = Var(initialize=self.config.yinit)
 
 The following example demonstrates creating a scalar instance of the new class.
-The keyword arguments are used to pass information on the the MyBlockData
-ConfigBlock.
+The keyword arguments are used to pass information on the MyBlockData ConfigBlock.
 
 .. testcode::
 
