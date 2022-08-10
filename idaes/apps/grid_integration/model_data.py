@@ -131,12 +131,14 @@ class GeneratorModelData:
     """
 
     p_min = RealValueValidator(min_val=0)
+    p_min_agc = RealValueValidator(min_val=0)
     min_down_time = RealValueValidator(min_val=0)
     min_up_time = RealValueValidator(min_val=0)
     ramp_up_60min = RealValueValidator(min_val=0)
     ramp_down_60min = RealValueValidator(min_val=0)
 
     p_max = AtLeastPminValidator()
+    p_max_agc = AtLeastPminValidator()
     shutdown_capacity = AtLeastPminValidator()
     startup_capacity = AtLeastPminValidator()
 
@@ -161,6 +163,8 @@ class GeneratorModelData:
         self.generator_type = generator_type
         self.p_min = p_min
         self.p_max = p_max
+        self.p_min_agc = p_min
+        self.p_max_agc = p_max
         self.min_down_time = min_down_time
         self.min_up_time = min_up_time
         self.ramp_up_60min = ramp_up_60min

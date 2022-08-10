@@ -118,6 +118,8 @@ def test_flowsheet_server_run(flowsheet_server, flash_model):
     print("Bogus PUT")
     resp = requests.put(f"http://{srv.ip}:{srv.port}/fs")
     assert not resp.ok
+    resp = requests.put(f"http://localhost:{srv.port}/fs?id=bogus_id")
+    assert not resp.ok
     # test getting setting values
     resp = requests.get(f"http://{srv.ip}:{srv.port}/setting")
     assert not resp.ok
