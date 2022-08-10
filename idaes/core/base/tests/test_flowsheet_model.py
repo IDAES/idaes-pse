@@ -179,7 +179,7 @@ class TestBuild(object):
     @pytest.mark.unit
     def test_ss_time_set(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False, "time_set": [1, 2, 3]})
+        m.fs = FlowsheetBlock(dynamic=False, time_set=[1, 2, 3])
 
         assert m.fs.config.dynamic is False
         assert isinstance(m.fs.time, Set)

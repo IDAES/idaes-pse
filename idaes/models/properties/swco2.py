@@ -94,7 +94,7 @@ def htpx(T=None, P=None, x=None):
     Returns:
         Total molar enthalpy [J/mol].
     """
-    prop = SWCO2StateBlock(default={"parameters": SWCO2ParameterBlock()})
+    prop = SWCO2StateBlock(parameters=SWCO2ParameterBlock())
     return _htpx(
         T=T,
         P=P,
