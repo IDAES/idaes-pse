@@ -267,7 +267,7 @@ def car_example():
     return m
 
 
-def dae_with_non_time_indexed_constraint(nfe=1):
+def dae_with_non_time_indexed_constraint(nfe=1, transformation_method="dae.finite_difference", scheme="BACKWARD"):
     """This provides a DAE model for solver testing. This model contains a non-
     time-indexed variable and constraint and a fixed derivative to test some
     edge cases.
@@ -276,7 +276,11 @@ def dae_with_non_time_indexed_constraint(nfe=1):
     https://archimede.dm.uniba.it/~testset/report/chemakzo.pdf.
 
     Args:
-        None
+        nfe: Number of finite elements to use in discretization
+        transformation_method: Discretization method. Presently,
+            options are "dae.finite_difference" and "dae.collocation".
+        scheme: Scheme to use in discretization method. Check Pyomo
+            DAE documentation for more info
 
     Returns:
         (tuple): Pyomo ConcreteModel, correct solved value for y[1] to y[6]
@@ -328,7 +332,7 @@ def dae_with_non_time_indexed_constraint(nfe=1):
 
     @model.Constraint(model.t)
     def eq_y6(b, t):
-        return b.ydot[t, 6] == b.Ks * b.y[t, 1] * b.y[t, 4] - b.y[t, 6]
+        return 0 == b.Ks * b.y[t, 1] * b.y[t, 4] - b.y[t, 6]
 
     @model.Constraint(model.t)
     def eq_r1(b, t):
@@ -366,8 +370,8 @@ def dae_with_non_time_indexed_constraint(nfe=1):
     model.eq_ydot4[0].deactivate()
     model.eq_ydot5[0].deactivate()
 
-    discretizer = pyo.TransformationFactory("dae.finite_difference")
-    discretizer.apply_to(model, nfe=nfe, scheme="BACKWARD")
+    discretizer = pyo.TransformationFactory(transformation_method)
+    discretizer.apply_to(model, nfe=nfe, scheme=scheme)
     model.ydot[:, 6].fix(0)
 
     return (

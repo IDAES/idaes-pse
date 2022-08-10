@@ -28,6 +28,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import number_activated_objectives
 import idaes.core.util.scaling as sc
 import logging
+from idaes.core.solvers.tests.test_petsc import dae_with_non_time_indexed_constraint
 
 __author__ = "John Eslick, Tim Bartholomew"
 
@@ -189,7 +190,7 @@ def test_map_scaling_factor(caplog):
 
 
 @pytest.mark.unit
-def test_propogate_indexed_scaling():
+def test_propagate_indexed_scaling():
     m = pyo.ConcreteModel()
     m.b = pyo.Block()
     m.a = pyo.Var()
@@ -1134,3 +1135,20 @@ def test_extreme_jacobian_rows_and_columns():
 
     out = sc.extreme_jacobian_rows(m)
     assert len(out) == 0
+
+
+@pytest.mark.unit
+def test_scaling_discretization_equations():
+    m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint(nfe=3)
+
+    for t in m.time:
+        sc.set_scaling_factor(m.y[t, 1], 1)
+        sc.set_scaling_factor(m.y[t, 2], 10)
+        sc.set_scaling_factor(m.y[t, 3], 0.1)
+        sc.set_scaling_factor(m.y[t, 4, 1000])
+        sc.set_scaling_factor(m.y[t, 5, 13])
+
+    sc.scale_time_discretization_equations(m, 1)
+
+    # for
+    # sc.get_constraint_transform_applied_scaling_factor
