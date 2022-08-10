@@ -18,15 +18,18 @@ An example of how Property Interrogator tool is used is shown below:
     from idaes.models.properties.interrogator import PropertyInterrogatorBlock, ReactionInterrogatorBlock
 
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyo.units.s})
+    m.fs = FlowsheetBlock(dynamic=True, time_units=pyo.units.s)
 
     m.fs.params = PropertyInterrogatorBlock()
     m.fs.rxn_params = ReactionInterrogatorBlock(
-            default={"property_package": m.fs.params})
+        property_package=m.fs.params
+    )
 
-    m.fs.R01 = CSTR(default={"property_package": m.fs.params,
-                             "reaction_package": m.fs.rxn_params,
-                             "has_heat_of_reaction": True})
+    m.fs.R01 = CSTR(
+        property_package=m.fs.params,
+        reaction_package=m.fs.rxn_params,
+        has_heat_of_reaction=True
+    )
 
 .. note::
     Flowsheets constructed using the Property Interrogator tools are not solvable flowsheets, and will result in errors if sent to a solver.
@@ -66,4 +69,3 @@ Class Documentation
 
 .. autoclass:: ReactionInterrogatorData
    :members:
-
