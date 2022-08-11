@@ -568,7 +568,6 @@ class TestIAPWS(object):
 
             Tout = pytest.approx(cases["Tout"][i], rel=1e-2)
             Pout = pytest.approx(cases["Pout"][i] * 1000, rel=1e-2)
-            Pout = pytest.approx(cases["Pout"][i] * 1000, rel=1e-2)
             W = pytest.approx(cases["W"][i] * 1000, rel=1e-2)
             xout = pytest.approx(xout, rel=1e-2)
             prop_out = iapws.fs.unit.control_volume.properties_out[0]
@@ -844,6 +843,42 @@ class TestPump(object):
         assert m.fs.unit.config.property_package is m.fs.properties
 
         assert_units_consistent(m.fs.unit)
+
+    @pytest.mark.unit
+    def test_pump_work_term_added_w_energybalancetype_none(self):
+        # Check that work term is created when energy balance type none
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        m.fs.unit = Pump(
+            default={
+                "property_package": m.fs.properties,
+                "energy_balance_type": EnergyBalanceType.none,
+            }
+        )
+
+        assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.none
+        assert hasattr(m.fs.unit.control_volume, "work")
+        assert hasattr(m.fs.unit, "work_mechanical")
+
+    @pytest.mark.unit
+    def test_pressure_changer_work_term_added_w_energybalancetype_none(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        m.fs.unit = PressureChanger(
+            default={
+                "property_package": m.fs.properties,
+                "thermodynamic_assumption": ThermodynamicAssumption.pump,
+                "energy_balance_type": EnergyBalanceType.none,
+            }
+        )
+        assert hasattr(m.fs.unit.control_volume, "work")
+        assert hasattr(m.fs.unit, "work_mechanical")
 
 
 @pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")

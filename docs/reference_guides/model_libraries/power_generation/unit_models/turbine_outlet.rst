@@ -22,9 +22,9 @@ Example
     from idaes.models.properties import iapws95
 
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.turb = HelmTurbineOutletStage(default={"property_package": m.fs.properties})
+    m.fs.turb = HelmTurbineOutletStage(property_package=m.fs.properties)
     # set inlet
     m.fs.turb.inlet[:].enth_mol.fix(47115)
     m.fs.turb.inlet[:].flow_mol.fix(15000)

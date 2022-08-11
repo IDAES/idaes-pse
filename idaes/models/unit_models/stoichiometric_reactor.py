@@ -206,13 +206,11 @@ see reaction package for documentation.}""",
 
         # Build Control Volume
         self.control_volume = ControlVolume0DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-                "reaction_package": self.config.reaction_package,
-                "reaction_package_args": self.config.reaction_package_args,
-            }
+            dynamic=self.config.dynamic,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
+            reaction_package=self.config.reaction_package,
+            reaction_package_args=self.config.reaction_package_args,
         )
 
         self.control_volume.add_state_blocks(has_phase_equilibrium=False)
