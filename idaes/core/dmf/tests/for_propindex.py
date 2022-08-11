@@ -15,13 +15,20 @@ from pyomo.environ import units as pyunits
 
 
 class IndexMePlease1(PhysicalParameterBlock):
-
     @classmethod
     def define_metadata(cls, m):
-        m.add_default_units({'temperature': pyunits.K,
-                             'time': pyunits.s,
-                             'length': pyunits.m,
-                             'mass': pyunits.kg,
-                             'amount': pyunits.mol})
-        m.add_properties({'pressure': {'units': 'Pa', 'method': 'foo'},
-                          'temperature': {'method': 'bar'}})
+        m.add_default_units(
+            {
+                "temperature": pyunits.K,
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+            }
+        )
+        m.add_properties(
+            {
+                "pressure": {"units": "Pa", "method": "foo"},
+                "temperature": {"method": "bar"},
+            }
+        )

@@ -12,10 +12,12 @@
 #################################################################################
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The supercritical_steam_cycle module has been moved to "
-                    "idaes.models_extra.power_generation.flowsheets."
-                    "supercritical_steam_cycle",
-                    version="2.0.0.alpha0")
+deprecation_warning(
+    "The supercritical_steam_cycle module has been moved to "
+    "idaes.models_extra.power_generation.flowsheets."
+    "supercritical_steam_cycle",
+    version="2.0.0.alpha0",
+)
 
 from idaes.models_extra.power_generation.flowsheets.supercritical_steam_cycle.supercritical_steam_cycle import (
     main,

@@ -187,7 +187,7 @@ class FlowsheetSerializer:
         self.labels = {}
         self._stream_table_df = None
         self._ordered_stream_names = deque()
-        self._out_json = {"model": {}, "routing_config" : {}}
+        self._out_json = {"model": {}, "routing_config": {}}
         self._serialized_contents = defaultdict(dict)
         self._used_ports = set()
         self._known_endpoints = set()
@@ -324,6 +324,7 @@ class FlowsheetSerializer:
         Return:
             The dataframe that now has valid JSON
         """
+
         def get_valid_unit_format(pint_unit):
             """Get different formats from the Units' pint object"""
             if isinstance(pint_unit, pint.Unit):
@@ -507,7 +508,7 @@ class FlowsheetSerializer:
 
     def _construct_model_json(self):
         from idaes.core.util.tables import (
-            create_stream_table_ui
+            create_stream_table_ui,
         )  # deferred to avoid circular import
 
         # Get the stream table and add it to the model json
@@ -582,17 +583,14 @@ class FlowsheetSerializer:
 
     def _add_port_item(self, cell_index, group, id):
         """Add port item to jointjs element"""
-        new_port_item = {
-            "group": group,
-            "id": id
-        }
+        new_port_item = {"group": group, "id": id}
         if new_port_item not in self._out_json["cells"][cell_index]["ports"]["items"]:
-            self._out_json["cells"][cell_index]["ports"]["items"].append(
-                new_port_item
-            )
+            self._out_json["cells"][cell_index]["ports"]["items"].append(new_port_item)
 
     def _construct_jointjs_json(self):
-        def create_jointjs_image(unit_icon: UnitModelIcon, unit_name, unit_type, x_pos, y_pos):
+        def create_jointjs_image(
+            unit_icon: UnitModelIcon, unit_name, unit_type, x_pos, y_pos
+        ):
             """Create jointjs element 'standard.Image' type in json format"""
             try:
                 return self._create_image_jointjs_json(
@@ -605,7 +603,7 @@ class FlowsheetSerializer:
                 )
             except KeyError as e:
                 self._logger.info(
-                    f'Unable to find icon for {unit_type}. Using default icon'
+                    f"Unable to find icon for {unit_type}. Using default icon"
                 )
                 default_icon = UnitModelIcon()
                 return self._create_image_jointjs_json(
@@ -616,7 +614,7 @@ class FlowsheetSerializer:
                     unit_type,
                     default_icon.link_positions,
                 )
-        
+
         def adjust_image_position(x_pos, y_pos, y_starting_pos):
             """Based on the position of the last added element, we calculate
             the x,y position of the next element.
@@ -658,13 +656,21 @@ class FlowsheetSerializer:
             dest_unit_icon = UnitModelIcon(dest_unit_type)
 
             if src_unit_name not in track_jointjs_elements:
-                cell_index = create_jointjs_image(src_unit_icon, src_unit_name, src_unit_type, x_pos, y_pos)
-                x_pos, y_pos, y_starting_pos = adjust_image_position(x_pos, y_pos, y_starting_pos)
+                cell_index = create_jointjs_image(
+                    src_unit_icon, src_unit_name, src_unit_type, x_pos, y_pos
+                )
+                x_pos, y_pos, y_starting_pos = adjust_image_position(
+                    x_pos, y_pos, y_starting_pos
+                )
                 track_jointjs_elements[src_unit_name] = cell_index
 
             if dest_unit_name not in track_jointjs_elements:
-                cell_index = create_jointjs_image(dest_unit_icon, dest_unit_name, dest_unit_type, x_pos, y_pos)
-                x_pos, y_pos, y_starting_pos = adjust_image_position(x_pos, y_pos, y_starting_pos)
+                cell_index = create_jointjs_image(
+                    dest_unit_icon, dest_unit_name, dest_unit_type, x_pos, y_pos
+                )
+                x_pos, y_pos, y_starting_pos = adjust_image_position(
+                    x_pos, y_pos, y_starting_pos
+                )
                 track_jointjs_elements[dest_unit_name] = cell_index
 
             # TODO Figure out how to denote different connection direction types.
@@ -685,15 +691,11 @@ class FlowsheetSerializer:
 
             # Add source port
             self._add_port_item(
-                track_jointjs_elements[src_unit_name],
-                src_port,
-                src_port_id
+                track_jointjs_elements[src_unit_name], src_port, src_port_id
             )
             # Add destination port
             self._add_port_item(
-                track_jointjs_elements[dest_unit_name],
-                dest_port,
-                dest_port_id
+                track_jointjs_elements[dest_unit_name], dest_port, dest_port_id
             )
 
             link_index = self._create_link_jointjs_json(
@@ -710,29 +712,35 @@ class FlowsheetSerializer:
             # the link to connect horizontally from the left side.
             if link_name not in self._out_json["routing_config"]:
                 self._out_json["routing_config"][link_name] = {
-                    'cell_index': link_index,
-                    'cell_config': {
-                        'gap': {
-                            'source': {
-                                'x': 0,
-                                'y': 0
-                            },
-                            'destination': {
-                                'x': 0,
-                                'y': 0
-                            }
+                    "cell_index": link_index,
+                    "cell_config": {
+                        "gap": {
+                            "source": {"x": 0, "y": 0},
+                            "destination": {"x": 0, "y": 0},
                         }
-                    }
+                    },
                 }
-            cell_config_gap = self._out_json["routing_config"][link_name]["cell_config"]["gap"]
-            if src_unit_icon.routing_config and src_port in src_unit_icon.routing_config:
+            cell_config_gap = self._out_json["routing_config"][link_name][
+                "cell_config"
+            ]["gap"]
+            if (
+                src_unit_icon.routing_config
+                and src_port in src_unit_icon.routing_config
+            ):
                 # The port group has to be specified in the routing config
-                cell_config_gap["source"] = src_unit_icon.routing_config[src_port]["gap"]
+                cell_config_gap["source"] = src_unit_icon.routing_config[src_port][
+                    "gap"
+                ]
 
-            if dest_unit_icon.routing_config and dest_port in dest_unit_icon.routing_config:
+            if (
+                dest_unit_icon.routing_config
+                and dest_port in dest_unit_icon.routing_config
+            ):
                 # The port group has to be specified in the routing config
-                cell_config_gap["destination"] = dest_unit_icon.routing_config[dest_port]["gap"]
-        
+                cell_config_gap["destination"] = dest_unit_icon.routing_config[
+                    dest_port
+                ]["gap"]
+
     def _create_image_jointjs_json(self, x_pos, y_pos, name, image, title, port_groups):
         # Create the jointjs for a given image
 
@@ -757,10 +765,12 @@ class FlowsheetSerializer:
                 "image": {"xlinkHref": "/images/icons/" + image},
                 "label": {"text": name},
                 "root": {"title": title},
-            }
+            },
         }
         self._out_json["cells"].append(entry)
-        return len(self._out_json["cells"]) - 1 # return the index of the newly added cell
+        return (
+            len(self._out_json["cells"]) - 1
+        )  # return the index of the newly added cell
 
     def _create_link_jointjs_json(
         self, source_port, dest_port, source_id, dest_id, name, label
@@ -779,12 +789,7 @@ class FlowsheetSerializer:
             "router": {"name": "manhattan", "padding": padding},
             "connector": {"name": "jumpover", "attrs": {"line": {"stroke": "#5c9adb"}}},
             "id": name,
-            "attrs": {
-                "line": {
-                    "stroke": '#979797',
-                    "stroke-width": 2
-                }
-            },
+            "attrs": {"line": {"stroke": "#979797", "stroke-width": 2}},
             "labels": [
                 # This label MUST be first or the show/hide will fail
                 {
@@ -813,7 +818,9 @@ class FlowsheetSerializer:
             "z": z,
         }
         self._out_json["cells"].append(entry)
-        return len(self._out_json["cells"]) - 1 # return the index of the newly added cell
+        return (
+            len(self._out_json["cells"]) - 1
+        )  # return the index of the newly added cell
 
     class _PseudoUnit:
         """
@@ -874,12 +881,15 @@ class FlowsheetDiff:
             Merged dict with structure as described in :func:`validate_flowsheet()`.
         """
         if bool(self):
+            model = self._new["model"]
+            routing_config = self._new["routing_config"]
+            if do_copy:
+                model = copy.deepcopy(self._new["model"])
+                routing_config = copy.deepcopy(self._new["routing_config"])
             result = {
-                "model": copy.deepcopy(self._new["model"])
-                if do_copy
-                else self._new["model"],
+                "model": model,
                 "cells": self._layout,
-                "routing_config": self._new["routing_config"]
+                "routing_config": routing_config,
             }
         else:
             # diff is empty, return 'old' object
@@ -911,6 +921,16 @@ class FlowsheetDiff:
                     diff["add"][cls][key] = copy.deepcopy(new_data[key])
                     n += 1
                 elif old_data[key] != new_data[key]:
+                    if cls == "arcs":
+                        # Update source and destination unit models as well
+                        src_unit_model = old_data[key]["source"]
+                        dest_unit_model = old_data[key]["dest"]
+                        diff["change"]["unit_models"][src_unit_model] = copy.deepcopy(
+                            new_model["unit_models"][src_unit_model]
+                        )
+                        diff["change"]["unit_models"][dest_unit_model] = copy.deepcopy(
+                            new_model["unit_models"][dest_unit_model]
+                        )
                     diff["change"][cls][key] = copy.deepcopy(new_data[key])
                     n += 1
             # Remove
@@ -933,13 +953,18 @@ class FlowsheetDiff:
         for cls in self._diff["add"]:
             for id_ in self._diff["add"][cls]:
                 values = self._diff["add"][cls][id_]
-                if cls == "arcs":
-                    new_item = self._new_arc(id_, values)
-                else:
-                    new_item = self._new_unit_model(id_, values, x, y)
-                    x, y = x + 100, y + 100
+                new_item = None
+                for cell in self._new["cells"]:
+                    if cell["id"] == id_:
+                        new_item = copy.deepcopy(cell)
+                if not new_item:
+                    if cls == "arcs":
+                        new_item = self._new_arc(id_, values)
+                    else:
+                        new_item = self._new_unit_model(id_, values, x, y)
+                        x, y = x + 100, y + 100
                 layout.append(new_item)
-        # Change, remove, and simply copy
+        # Change, remove, and simply copy cells
         for item in self._old["cells"]:
             id_ = item["id"]
             cls = "arcs" if "source" in item else "unit_models"
@@ -947,10 +972,17 @@ class FlowsheetDiff:
                 continue
             elif id_ in self._diff["change"][cls]:
                 values = self._diff["change"][cls][id_]
+                new_item = None
+                for cell in self._new["cells"]:
+                    if cell["id"] == id_:
+                        new_item = copy.deepcopy(cell)
+                        if cls == "unit_models" and "position" in item:
+                            # Make sure we copy the old position for the graph to be consistent position wise
+                            new_item["position"] = item["position"]
                 if cls == "arcs":
-                    new_item = self._update_arc(item, values)
+                    self._update_arc(new_item, values)
                 else:
-                    new_item = self._update_unit_model(item, values)
+                    self._update_unit_model(new_item, values)
                 layout.append(new_item)
             else:
                 layout.append(copy.deepcopy(item))
@@ -987,11 +1019,7 @@ class FlowsheetDiff:
 
     @staticmethod
     def _update_arc(item, values):
-        new_item = copy.deepcopy(item)
-        new_item["source"]["id"] = values["source"]
-        new_item["target"]["id"] = values["dest"]
-        new_item["labels"][0]["attrs"]["text"]["text"] = values["label"]
-        return new_item
+        item["labels"][0]["attrs"]["text"]["text"] = values["label"]
 
     @staticmethod
     def _new_unit_model(name, values, x, y):
@@ -1011,7 +1039,5 @@ class FlowsheetDiff:
 
     @staticmethod
     def _update_unit_model(item, values):
-        new_item = copy.deepcopy(item)
-        new_item["attrs"]["image"]["xlinkHref"] = values["image"]
-        new_item["attrs"]["root"]["title"] = values["type"]
-        return new_item
+        item["attrs"]["image"]["xlinkHref"] = values["image"]
+        item["attrs"]["root"]["title"] = values["type"]

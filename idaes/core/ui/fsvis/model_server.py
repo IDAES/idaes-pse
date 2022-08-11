@@ -50,8 +50,7 @@ class FlowsheetServer(http.server.HTTPServer):
     """
 
     def __init__(self, port=None):
-        """Create HTTP server
-        """
+        """Create HTTP server"""
         self._port = port or find_free_port()
         _log.info(f"Starting HTTP server on localhost, port {self._port}")
         super().__init__(("127.0.0.1", self._port), FlowsheetServerHandler)
@@ -65,8 +64,7 @@ class FlowsheetServer(http.server.HTTPServer):
         return self._port
 
     def start(self):
-        """Start the server, which will spawn a thread.
-        """
+        """Start the server, which will spawn a thread."""
         self._thr = threading.Thread(target=self._run)
         self._thr.setDaemon(True)
         self._thr.start()
@@ -99,7 +97,6 @@ class FlowsheetServer(http.server.HTTPServer):
             _log.warning(f"key '{key}' is not set in the flowsheet settings block")
             return None
         return self._settings_block[key]
-
 
     def add_flowsheet(self, id_, flowsheet, store: persist.DataStore) -> str:
         """Add a flowsheet, and also the method of saving it.
@@ -205,9 +202,7 @@ class FlowsheetServer(http.server.HTTPServer):
         else:
             # Otherwise, save this merged value before returning it
             num, pl = len(diff), "s" if len(diff) > 1 else ""
-            _log.debug(
-                f"Stored flowsheet and model in memory differ by {num} item{pl}"
-            )
+            _log.debug(f"Stored flowsheet and model in memory differ by {num} item{pl}")
             self.save_flowsheet(id_, diff.merged())
         # Return [a copy of the] merged value
         return diff.merged(do_copy=True)
@@ -218,8 +213,7 @@ class FlowsheetServer(http.server.HTTPServer):
         return self._dsm.load(id_)
 
     def _get_flowsheet_obj(self, id_):
-        """Get a flowsheet with the given ID.
-        """
+        """Get a flowsheet with the given ID."""
         return self._flowsheets[id_]
 
     @staticmethod
@@ -231,8 +225,7 @@ class FlowsheetServer(http.server.HTTPServer):
         return result
 
     def _run(self):
-        """Run in a separate thread.
-        """
+        """Run in a separate thread."""
         _log.debug(f"Serve forever on localhost:{self._port}")
         try:
             self.serve_forever()
@@ -242,11 +235,12 @@ class FlowsheetServer(http.server.HTTPServer):
 
 
 class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
-    """Handle requests from the IDAES flowsheet visualization (IFV) web page.
-    """
+    """Handle requests from the IDAES flowsheet visualization (IFV) web page."""
 
     def __init__(self, *args, **kwargs):
-        self.directory = None  # silence warning about initialization outside constructor
+        self.directory = (
+            None  # silence warning about initialization outside constructor
+        )
         super().__init__(*args, **kwargs)
         # Server should return text/javascript MIME type for served JS files (issue 259)
         self.extensions_map[".js"] = "text/javascript"
@@ -280,7 +274,8 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
             setting_key_ = queries.get("setting_key", None) if queries else None
             if setting_key_ is None:
                 self.send_error(
-                    400, message=f"Query parameter 'setting_key' is required for '{u.path}'"
+                    400,
+                    message=f"Query parameter 'setting_key' is required for '{u.path}'",
                 )
                 return
             self._get_setting(setting_key_)
@@ -290,8 +285,7 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
             super().do_GET()
 
     def _get_app(self, id_):
-        """Read index file, process to insert flowsheet identifier, and return it.
-        """
+        """Read index file, process to insert flowsheet identifier, and return it."""
         p = Path(_template_dir / "index.html")
         with open(p, "r", encoding="utf-8") as fp:
             s = fp.read()
@@ -330,18 +324,17 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         Returns:
             Setting value
         """
-        self._write_json(200, {'setting_value': self.server.get_setting(setting_key_)})
+        self._write_json(200, {"setting_value": self.server.get_setting(setting_key_)})
 
     # === PUT ===
 
     def do_PUT(self):
-        """Process a request to store data.
-        """
+        """Process a request to store data."""
         u, queries = self._parse_flowsheet_url(self.path)
         id_ = queries.get("id", None) if queries else None
         _log.info(f"do_PUT: route={u} id={id_}")
         if u.path in ("/fs",) and id_ is None:
-            self.send_error(
+            self._write_text(
                 400, message=f"Query parameter 'id' is required for '{u.path}'"
             )
             return
@@ -356,20 +349,27 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         try:
             self.server.save_flowsheet(id_, data)
         except errors.ProcessingError as err:
-            self.send_error(400, message="Invalid flowsheet", explain=str(err))
+            self._write_text(400, message=str(err))
             return
         except Exception as err:
-            self.send_error(500, message="Unknown error", explain=str(err))
+            self._write_text(500, message=str(err))
             return
-        self.send_response(200, message="success")
+        self._write_text(200, message="success")
 
     # === Internal methods ===
+
+    def _write_text(self, code, message: str):
+        value = utf8_encode(message)
+        self.send_response(code)
+        self.send_header("Content-type", "application/text")
+        self.send_header("Content-length", str(len(value)))
+        self.end_headers()
+        self.wfile.write(value)
 
     def _write_json(self, code, data):
         str_json = json.dumps(data)
         value = utf8_encode(str_json)
         self.send_response(code)
-        # self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Content-type", "application/json")
         self.send_header("Content-length", str(len(value)))
         self.end_headers()
@@ -392,8 +392,7 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
     # === Logging ===
 
     def log_message(self, fmt, *args):
-        """Override to send messages to our module logger instead of stderr
-        """
+        """Override to send messages to our module logger instead of stderr"""
         msg = "%s - - [%s] %s" % (
             self.address_string(),
             self.log_date_time_string(),

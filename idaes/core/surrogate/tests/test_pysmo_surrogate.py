@@ -1119,7 +1119,7 @@ class TestPysmoSurrogate:
     def pysmo_surr2_krg(self):
         training_data = {
             "x1": [1, 2, 3, 4, 5],
-            "x2": [5, 6, 7, 8, 9],
+            "x2": [7, 6, 9, 5, 8],
             "z1": [10, 20, 30, 40, 50],
             "z2": [6, 8, 10, 12, 14],
         }
@@ -1717,7 +1717,7 @@ class TestPysmoSurrogate:
         sol, rbf_trained = pysmo_surr2_rbf
         out = rbf_trained.evaluate_surrogate(inputs)
         for i in range(inputs.shape[0]):
-            assert pytest.approx(out["z1"][i], rel=1e-6) == (
+            assert pytest.approx(out["z1"][i], rel=1e-6, abs=1e-8) == (
                 (
                     10
                     + 40
@@ -1795,7 +1795,7 @@ class TestPysmoSurrogate:
                     )
                 )
             )
-            assert pytest.approx(out["z2"][i], rel=1e-6) == (
+            assert pytest.approx(out["z2"][i], rel=1e-6, abs=1e-8) == (
                 (
                     6
                     + 8
@@ -1889,24 +1889,6 @@ class TestPysmoSurrogate:
         assert blk.outputs["z1"].bounds == (None, None)
         assert isinstance(blk.pysmo_constraint, Constraint)
         assert len(blk.pysmo_constraint) == 2
-        assert str(blk.pysmo_constraint["z1"].body) == (
-            "outputs[z1] - (10 + 40*(-{}*exp(- (0.05*(((inputs[x1] - 1)/4)**2 + ((inputs[x2] - 5)/4)**2)**0.5)**2) - {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.25)**2 + ((inputs[x2] - 5)/4 - 0.25)**2)**0.5)**2) + {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.5)**2 + ((inputs[x2] - 5)/4 - 0.5)**2)**0.5)**2) - {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.75)**2 + ((inputs[x2] - 5)/4 - 0.75)**2)**0.5)**2) + {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 1.0)**2 + ((inputs[x2] - 5)/4 - 1.0)**2)**0.5)**2)))".format(
-                abs(sol._data["z1"]._model.weights[0, 0]),
-                abs(sol._data["z1"]._model.weights[1, 0]),
-                abs(sol._data["z1"]._model.weights[2, 0]),
-                abs(sol._data["z1"]._model.weights[3, 0]),
-                abs(sol._data["z1"]._model.weights[4, 0]),
-            )
-        )
-        assert str(blk.pysmo_constraint["z2"].body) == (
-            "outputs[z2] - (6 + 8*(-{}*exp(- (0.05*(((inputs[x1] - 1)/4)**2 + ((inputs[x2] - 5)/4)**2)**0.5)**2) - {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.25)**2 + ((inputs[x2] - 5)/4 - 0.25)**2)**0.5)**2) + {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.5)**2 + ((inputs[x2] - 5)/4 - 0.5)**2)**0.5)**2) - {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 0.75)**2 + ((inputs[x2] - 5)/4 - 0.75)**2)**0.5)**2) + {}*exp(- (0.05*(((inputs[x1] - 1)/4 - 1.0)**2 + ((inputs[x2] - 5)/4 - 1.0)**2)**0.5)**2)))".format(
-                abs(sol._data["z2"]._model.weights[0, 0]),
-                abs(sol._data["z2"]._model.weights[1, 0]),
-                abs(sol._data["z2"]._model.weights[2, 0]),
-                abs(sol._data["z2"]._model.weights[3, 0]),
-                abs(sol._data["z2"]._model.weights[4, 0]),
-            )
-        )
 
     @pytest.mark.unit
     def test_evaluate_multisurrogate_kriging(self, pysmo_surr2_krg):
@@ -1920,90 +1902,80 @@ class TestPysmoSurrogate:
         out = krg_trained.evaluate_surrogate(inputs)
         for i in range(inputs.shape[0]):
             assert pytest.approx(out["z1"][i], rel=1e-2) == (
-                -19894.397849368
+                -7507.921579707475
                 * exp(
                     -(
-                        0.027452451845611077 * ((inputs["x1"][i] - 1) / 4) ** 2
-                        + 0.0010443446337808024 * ((inputs["x2"][i] - 5) / 4) ** 2
+                        0.044124735560275304 * ((inputs["x1"][i] - 1) / 4) ** 2
+                        + 0.001 * ((inputs["x2"][i] - 5) / 4 - 0.5) ** 2
                     )
                 )
-                + 38162.96786869278
+                + 15454.174740136026
                 * exp(
                     -(
-                        0.027452451845611077 * ((inputs["x1"][i] - 1) / 4 - 0.25) ** 2
-                        + 0.0010443446337808024
-                        * ((inputs["x2"][i] - 5) / 4 - 0.25) ** 2
+                        0.044124735560275304 * ((inputs["x1"][i] - 1) / 4 - 0.25) ** 2
+                        + 0.001 * ((inputs["x2"][i] - 5) / 4 - 0.25) ** 2
                     )
                 )
-                - 1.6681948100955743e-06
+                - 4531.029221784704
                 * exp(
                     -(
-                        0.027452451845611077 * ((inputs["x1"][i] - 1) / 4 - 0.5) ** 2
-                        + 0.0010443446337808024 * ((inputs["x2"][i] - 5) / 4 - 0.5) ** 2
+                        0.044124735560275304 * ((inputs["x1"][i] - 1) / 4 - 0.5) ** 2
+                        + 0.001 * ((inputs["x2"][i] - 5) / 4 - 1.0) ** 2
                     )
                 )
-                - 38162.96786638197
+                - 9320.651261114403
                 * exp(
                     -(
-                        0.027452451845611077 * ((inputs["x1"][i] - 1) / 4 - 0.75) ** 2
-                        + 0.0010443446337808024
-                        * ((inputs["x2"][i] - 5) / 4 - 0.75) ** 2
+                        0.044124735560275304 * ((inputs["x1"][i] - 1) / 4 - 0.75) ** 2
+                        + 0.001 * ((inputs["x2"][i] - 5) / 4) ** 2
                     )
                 )
-                + 19894.397848724166
+                + 5905.427322470428
                 * exp(
                     -(
-                        0.027452451845611077 * ((inputs["x1"][i] - 1) / 4 - 1.0) ** 2
-                        + 0.0010443446337808024 * ((inputs["x2"][i] - 5) / 4 - 1.0) ** 2
+                        0.044124735560275304 * ((inputs["x1"][i] - 1) / 4 - 1.0) ** 2
+                        + 0.001 * ((inputs["x2"][i] - 5) / 4 - 0.75) ** 2
                     )
                 )
-                + 30.00000000077694
+                + 27.201100480392512
             )
             assert pytest.approx(out["z2"][i], rel=1e-2) == (
-                (
-                    -3978.867791629029
-                    * exp(
-                        -(
-                            0.02749666901085125 * ((inputs["x1"][i] - 1) / 4) ** 2
-                            + 0.001000000000000049 * ((inputs["x2"][i] - 5) / 4) ** 2
-                        )
+                -1501.5841957038108
+                * exp(
+                    -(
+                        0.04412462103209179 * ((inputs["x1"][i] - 1) / 4) ** 2
+                        + 0.001 * ((inputs["x2"][i] - 5) / 4 - 0.5) ** 2
                     )
-                    + 7632.569074293324
-                    * exp(
-                        -(
-                            0.02749666901085125
-                            * ((inputs["x1"][i] - 1) / 4 - 0.25) ** 2
-                            + 0.001000000000000049
-                            * ((inputs["x2"][i] - 5) / 4 - 0.25) ** 2
-                        )
-                    )
-                    - 3.5124027300266805e-07
-                    * exp(
-                        -(
-                            0.02749666901085125 * ((inputs["x1"][i] - 1) / 4 - 0.5) ** 2
-                            + 0.001000000000000049
-                            * ((inputs["x2"][i] - 5) / 4 - 0.5) ** 2
-                        )
-                    )
-                    - 7632.569073828787
-                    * exp(
-                        -(
-                            0.02749666901085125
-                            * ((inputs["x1"][i] - 1) / 4 - 0.75) ** 2
-                            + 0.001000000000000049
-                            * ((inputs["x2"][i] - 5) / 4 - 0.75) ** 2
-                        )
-                    )
-                    + 3978.8677915156522
-                    * exp(
-                        -(
-                            0.02749666901085125 * ((inputs["x1"][i] - 1) / 4 - 1.0) ** 2
-                            + 0.001000000000000049
-                            * ((inputs["x2"][i] - 5) / 4 - 1.0) ** 2
-                        )
-                    )
-                    + 9.999999999902883
                 )
+                + 3090.83421508662
+                * exp(
+                    -(
+                        0.04412462103209179 * ((inputs["x1"][i] - 1) / 4 - 0.25) ** 2
+                        + 0.001 * ((inputs["x2"][i] - 5) / 4 - 0.25) ** 2
+                    )
+                )
+                - 906.2056548932875
+                * exp(
+                    -(
+                        0.04412462103209179 * ((inputs["x1"][i] - 1) / 4 - 0.5) ** 2
+                        + 0.001 * ((inputs["x2"][i] - 5) / 4 - 1.0) ** 2
+                    )
+                )
+                - 1864.1297383033075
+                * exp(
+                    -(
+                        0.04412462103209179 * ((inputs["x1"][i] - 1) / 4 - 0.75) ** 2
+                        + 0.001 * ((inputs["x2"][i] - 5) / 4) ** 2
+                    )
+                )
+                + 1181.085373813784
+                * exp(
+                    -(
+                        0.04412462103209179 * ((inputs["x1"][i] - 1) / 4 - 1.0) ** 2
+                        + 0.001 * ((inputs["x2"][i] - 5) / 4 - 0.75) ** 2
+                    )
+                )
+                + 9.440220252159808
             )
 
     @pytest.mark.unit

@@ -28,32 +28,31 @@ ProcessBlockData class.
           self.y = Var(initialize=self.config.yinit)
 
 The following example demonstrates creating a scalar instance of the new class.
-The ``default`` key word argument is used to pass information on the the
-MyBlockData ConfigBlock.
+The keyword arguments are used to pass information on the MyBlockData ConfigBlock.
 
 .. testcode::
 
     m = ConcreteModel()
-    m.b = MyBlock(default={"xinit":1, "yinit":2})
+    m.b = MyBlock(xinit=1, yinit=2)
 
 The next example creates an indexed MyBlock instance.  In this case, each block is
-configured the same, using the ``default`` argument.
+configured the same, using the keyword arguments.
 
-.. testcode:: 
-
-    m = ConcreteModel()
-    m.b = MyBlock([0,1,2,3,4], default={"xinit":1, "yinit":2})
-
-The next example uses the ``initialize`` argument to override the configuration of
-the first block. Initialize is a dictionary of dictionaries where the key of the
-top level dictionary is the block index and the second level dictionary is
-arguments for the config block.
-
-.. testcode:: 
+.. testcode::
 
     m = ConcreteModel()
-    m.b = MyBlock([0,1,2,3,4], default={"xinit":1, "yinit":2},
-                  initialize={0:{"xinit":1, "yinit":2}})
+    m.b = MyBlock([0,1,2,3,4], xinit=1, yinit=2)
+
+The next example uses the ``initialize`` argument to override the default
+configuration for block 0. Initialize is a dictionary of dictionaries where the
+key is the block index and the value is the configuration dictionary.
+
+.. testcode::
+
+    m = ConcreteModel()
+    m.b = MyBlock(
+        [0,1,2,3,4], xinit=1, yinit=2, initialize={0:{"xinit":1, "yinit":2}}
+    )
 
 The next example shows a more complicated configuration where there are three
 configurations, one for the first block, one for the last block, and one for the
@@ -63,7 +62,7 @@ dictionary.  In this case 0 is mapped to 0, 4 is mapped to 4, and all elements
 between 0 and 4 are mapped to 1.  A lambda function is used to convert the block
 index to the correct index in initialize.
 
-.. testcode:: 
+.. testcode::
 
     m = ConcreteModel()
     m.b = MyBlock(

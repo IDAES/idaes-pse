@@ -26,14 +26,13 @@ from . import errors
 from .resource import Resource
 from .resource import Triple, triple_from_resource_relations
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+__author__ = "Dan Gunter <dkgunter@lbl.gov>"
 
 _log = logging.getLogger(__name__)
 
 
 class ResourceDB(object):
-    """A database interface to all the resources within a given DMF workspace.
-    """
+    """A database interface to all the resources within a given DMF workspace."""
 
     def __init__(self, dbfile=None, connection=None):
         """Initialize from DMF and given configuration field.
@@ -59,7 +58,7 @@ class ResourceDB(object):
             except IOError:
                 raise errors.FileError('Cannot open resource DB "{}"'.format(dbfile))
             # turn off caching, otherwise update() does not work properly
-            self._db = db.table('resources', cache_size=0)
+            self._db = db.table("resources", cache_size=0)
 
     def __len__(self):
         return len(self._db)
@@ -77,10 +76,11 @@ class ResourceDB(object):
         Returns:
             generator of int|Resource, depending on the value of `id_only`
         """
+
         def as_resource(_r):
             _log.debug(f"as_resource: id_={_r['id_']}")
             rsrc = Resource(value=_r)
-            rsrc.v['doc_id'] = _r.doc_id
+            rsrc.v["doc_id"] = _r.doc_id
             return rsrc
 
         # with no filter, do a find-all
@@ -94,7 +94,7 @@ class ResourceDB(object):
         filter_expr = self._create_filter_expr(filter_dict, flags)
 
         # return results for query
-        _log.debug('Find resources matching: {}'.format(filter_expr))
+        _log.debug("Find resources matching: {}".format(filter_expr))
         results = self._db.search(filter_expr)
         for r in results:
             if id_only:
@@ -118,11 +118,11 @@ class ResourceDB(object):
                 continue  # XXX: Issue a warning?
             # strip off list-query operator
             qry_all = False
-            if isinstance(v, list) and k.endswith('!'):
+            if isinstance(v, list) and k.endswith("!"):
                 k, qry_all = k[:-1], True
             # Get the query[field1][field2][..][fieldN] object
             qry = q
-            for field in k.split('.'):
+            for field in k.split("."):
                 qry = qry[field]
             # A list value means find these value(s) in the
             # list value of the record. By default, any matching
@@ -137,7 +137,7 @@ class ResourceDB(object):
                         list_expr = None
                         for list_k, list_v in v[0].items():
                             list_qry = Query()
-                            for field in list_k.split('.'):
+                            for field in list_k.split("."):
                                 list_qry = list_qry[field]
                             list_cond = cls._expr_to_query(
                                 list_qry, list_v, flags=flags
@@ -193,14 +193,14 @@ class ResourceDB(object):
         if isinstance(v, datetime):
             return v.timestamp()
         # support for special string '@' values
-        elif isinstance(v, str) and len(v) > 0 and v[0] == '@':
-            if v == '@true':
+        elif isinstance(v, str) and len(v) > 0 and v[0] == "@":
+            if v == "@true":
                 return True
-            if v == '@false':
+            if v == "@false":
                 return False
             return v
         # for a regex, return a Python regex obj
-        elif isinstance(v, str) and len(v) > 0 and v[0] == '~':
+        elif isinstance(v, str) and len(v) > 0 and v[0] == "~":
             return re.compile(v[1:])
         # default is no transformation
         else:
@@ -212,23 +212,22 @@ class ResourceDB(object):
         if not op:
             raise ValueError(f"empty operator for value `{value}`")
         # just a clumsy switch statement..
-        if op == '$gt':
+        if op == "$gt":
             cond = query > value
-        elif op == '$ge':
+        elif op == "$ge":
             cond = query >= value
-        elif op == '$lt':
+        elif op == "$lt":
             cond = query < value
-        elif op == '$le':
+        elif op == "$le":
             cond = query <= value
-        elif op == '$ne':
+        elif op == "$ne":
             cond = query != value
         else:
-            raise ValueError('Unexpected operator: {}'.format(op))
+            raise ValueError("Unexpected operator: {}".format(op))
         return cond
 
     def find_one(self, *args, **kwargs):
-        """Same as `find()`, but returning only first value or None.
-        """
+        """Same as `find()`, but returning only first value or None."""
         result = None
         for value in self.find(*args, **kwargs):
             result = value
@@ -263,7 +262,7 @@ class ResourceDB(object):
         for rsrc in resource_list:
             # print(f"@@ process resource: {rsrc[Resource.ID_FIELD]}")
             # print(f"@@ resource relations: {rsrc['relations']}")
-            for rrel in rsrc['relations']:
+            for rrel in rsrc["relations"]:
                 uuid = rsrc[Resource.ID_FIELD]
                 rel = triple_from_resource_relations(uuid, rrel)
                 # skip start of edge, get metadata, etc. at end of edge
@@ -322,7 +321,7 @@ class ResourceDB(object):
 
         def as_resource(_r):
             rsrc = Resource(value=_r)
-            rsrc.v['doc_id'] = _r.doc_id
+            rsrc.v["doc_id"] = _r.doc_id
             return rsrc
 
         item = self._db.get(doc_id=identifier)
