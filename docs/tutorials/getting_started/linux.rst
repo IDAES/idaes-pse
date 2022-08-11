@@ -18,7 +18,8 @@ The following commands should be sufficient to get you started with installing a
 .. literalinclude:: install_templates/quickstart.md
    :language: bash
    :linenos:
-   :lines: 1-5,7,10-
+   :start-after: modification warning
+   :lines: 1-6,8,11-
 
 ------------------------------------------------
 
@@ -31,7 +32,7 @@ Install Prerequisites
 
 **Install  Miniconda**
 
-1. Download `Anaconda <https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh>`_
+1. Download `Miniconda <https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh>`_
 2. Open a terminal window & run the downloaded script.
 
 **Install Dependencies**

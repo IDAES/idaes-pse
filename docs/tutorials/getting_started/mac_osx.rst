@@ -18,7 +18,8 @@ The following commands should be sufficient to get you started with installing a
 .. literalinclude:: install_templates/quickstart.md
    :language: bash
    :linenos:
-   :lines: 1-5,7,10-
+   :start-after: modification warning
+   :lines: 1-6,10,11-
 
 ------------------------------------------------
 
@@ -31,7 +32,7 @@ Install Prerequisites
 
 **Install  Miniconda**
 
-1. Download `Anaconda <https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh>`_
+1. Download `Miniconda <https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh>`_
 2. Open a terminal window & run the downloaded script.
 
 Install IDAES-PSE
@@ -45,21 +46,20 @@ Install IDAES Extensions
 
 .. include:: install_templates/extensions.md
 
-.. warning:: The IDAES binary extensions are not yet supported on Mac/OSX.
+.. warning:: 
 
-   .. raw:: html
+   The IDAES binary extensions are not yet supported on Mac/OSX.
 
-      <details>
-       <summary> Fallback solution </summary>
+   .. container:: collapsible
 
-   As a fallback (assuming you are using a conda env) you can install
-   the open source ipopt solver with the command ``conda install -c
-   conda-forge ipopt`` though this will not have all the features
-   of our extensions package.
+      .. container:: header
 
-   .. raw:: html
+         **Fallback solution**
 
-      </details>
+      As a fallback (assuming you are using a conda env) you can install
+      the open source ipopt solver with the command ``conda install -c
+      conda-forge ipopt`` though this will not have all the features
+      of our extensions package.
 
 
 Install IDAES Examples

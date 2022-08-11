@@ -18,7 +18,8 @@ The following commands should be sufficient to get you started with installing a
 .. literalinclude:: install_templates/quickstart.md
    :language: bash
    :linenos:
-   :lines: 1-5,7,10-
+   :start-after: modification warning
+   :lines: 1-6,8,11-
 
 ------------------------------------------------
 
@@ -31,7 +32,7 @@ Install Prerequisites
 
 **Install Miniconda**
 
-1. Download & install `Anaconda <https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe>`_.
+1. Download & install `Miniconda <https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe>`_.
 2. Install anaconda from the downloaded & open the Anaconda Prompt (Start -> "Anaconda Prompt").
 
 Install IDAES-PSE

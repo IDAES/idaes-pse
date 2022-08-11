@@ -7,5 +7,5 @@ may see some "Error" level log messages, but they are okay, and produced by test
 error handling. The number of tests that failed and succeeded is reported at the end of the pytest
 output. 
 
-You can report problems on the |github-issues|
+You can ask questions using the `Github Discussion Forum <https://github.com/IDAES/idaes-pse/discussions>`_ or report problems on the |github-issues|
 (Please try to be specific about the command and the offending output.)
