@@ -7,36 +7,55 @@ Process Costing Library
 Introduction
 ------------
 
-.. note:: The power plant costing method is available for most of the unit operations in the IDAES Unit Model Library (Compressor, CSTR, Flash, Heater, HeatExchanger, HeatExchangerNTU, PFR, PressureChanger, Pump, StoichiometricReactor, Turbine, and generic vessels).
+.. rubric:: IDAES Process Costing Framework
 
-The process costing module outlines capital cost methodology for generic IDAES unit operations based on costing correlations that take unit configuration, material, size and other factors for unit costing into consideration.
+This document outlines an example process costing library to support IDAES unit models. For a general overview of costing capabilities in IDAES, see the :ref:`IDAES Process Costing Framework<reference_guides/core/costing/costing_framework:IDAES Process Costing Framework>`.
 
+.. note:: Process costing methods are available for most of the unit operations in the IDAES Unit Model Library (Compressor, CSTR, Flash, Heater, HeatExchanger, HeatExchangerNTU, PFR, PressureChanger, Pump, StoichiometricReactor, Turbine, and generic vessels).
 
-The framework includes factors for vessel shell thickness and dimensions, material properties for equipment shells and tubes, and tray types for distillation columns. The framework assumes a 2018 cost basis, and does not yet support heat exchangers requiring both shell and tube area (HX1D).
-
-When an instance of a unit model is passed to a `UnitModelCostingBlock`, a new sub-block is created 
-on that unit named `costing` (i.e. `flowsheet.unit.costing`). All variables and constraints related to costing will be 
-constructed within this new block (see detailed documentation for each unit for details on these variables and constraints).
-
-Note that a `FlowsheetCostingBlock` must already exist, and users must also pass the correct costing method from the SSLW module as an argument (see the example below for details on proper implementation).
-
+The process costing module outlines capital cost methodology for generic IDAES unit operations assuming a 2018 cost basis.
 
 Table 1. Main Variables added to the unit block ("self.costing").
 
-=========================== ============================== ============ ===============================================================================
-Variable                    Symbol                         Units        Notes
-=========================== ============================== ============ ===============================================================================
-Purchase cost               :math:`purchase\_cost`         dollars      Purchase cost
-Base cost per unit          :math:`base\_cost\_per\_unit`  unitless     Base cost per unit
-Base cost                   :math:`base\_cost`             unitless     Base cost (base cost per unit * number of units)
-Number of units             :math:`number\_of\_units`      unitless     Number of units to be costed (to take advantage of the economics of scale)
-=========================== ============================== ============ ===============================================================================
+=========================== ============================== ======== ==========================================================================
+Variable                    Symbol                         Units    Notes
+=========================== ============================== ======== ==========================================================================
+Purchase cost               :math:`purchase\_cost`         dollars  Purchase cost
+Base cost per unit          :math:`base\_cost\_per\_unit`  unitless Base cost per unit
+Base cost                   :math:`base\_cost`             unitless Base cost (base cost per unit * number of units)
+Number of units             :math:`number\_of\_units`      unitless Number of units to be costed (to take advantage of the economics of scale)
+=========================== ============================== ======== ==========================================================================
 
 .. note:: number of units by default is fixed to 1 and the user must unfix this variable to optimize the number of units. Also, `number of units` can be built as a continuous variable or an integer variable. If the latter, the user must provide an mip solver. Use the global costing argument for this purpose (integer_n_units=True or False).
 
+Available IDAES Process Costing Module Methods
+----------------------------------------------
+
+A default costing module has been developed primarily based on base cost and purchase cost correlations 
+from the following reference with some exceptions (noted in the documentation as appropiate).
+
+Process and Product Design Principles: Synthesis, Analysis, and Evaluation. Seider, Seader, Lewin, Windagdo, 3rd Ed. John Wiley and Sons. Chapter 22. Cost Accounting and Capital Cost Estimation
+
+Users should refer to the reference above for details of the costing correlations, however, a summary of this methods is provided below.
+
+The base costing framework provides a method to automatically register currency units for the costing block based on Chemical Engineering (CE) Cost Index conversion rates for US Dollars. IDAES will check is Pyomo has standard currency units registered, and if not will load unit conversions between USD at CE indices of 500 and 394, as well as USD annually from 1990 to 2020.
+    
+Table 2. Cost basis for each unit model.
+
+=========================== =========================  ==============
+Unit Model                  Basis                      Units
+=========================== =========================  ==============
+heat exchanger              :math:`area`               :math:`ft^2`
+pump                        :math:`fluid_{work}`       :math:`ft^3/s`
+compressor                  :math:`mechanical_{work}`  :math:`hp`
+turbine                     :math:`mechanical_{work}`  :math:`hp`
+vessels                     :math:`D , L`              :math:`ft`
+fired heaters               :math:`heat\_duty`         :math:`BTU/hr`
+=========================== =========================  ==============
+
 Example
 ^^^^^^^
-Below is a simple example of how to add cost correlations to a flowsheet including a heat exchanger using the default IDAES costing module.
+Below is a simple example of how to add SSLW cost correlations to a flowsheet including a heat exchanger:
 
 
 .. code:: python
@@ -91,136 +110,64 @@ Below is a simple example of how to add cost correlations to a flowsheet includi
     opt.options = {'tol': 1e-6, 'max_iter': 50}
     results = opt.solve(m, tee=True)
 
-Units
-^^^^^
-
-It is important to highlight that the costing method interrogates the property 
-package to determine the units of this model, if the user provided the correct 
-units in the metadata dictionary (see property models for additional information), 
-the model units will be converted to the right units. 
-For example: in this example area is in m^2, while the cost correlations for heat 
-exchangers require units to be in ft^2. Therefore, the costing method will convert 
-the units to ft^2. The use of Pyomo-unit conversion tools is under development.
-
-Available IDAES Costing Module Methods
---------------------------------------
-
-A default costing module has been developed primarily based on base cost and purchase cost correlations 
-from the following reference with some exceptions (noted in the documentation as appropiate).
-
-Process and Product Design Principles: Synthesis, Analysis, and Evaluation. Seider, Seader, Lewin, Windagdo, 3rd Ed. John Wiley and Sons. Chapter 22. Cost Accounting and Capital Cost Estimation
-
-Users should refer to the reference above for details of the costing correlations, however, a summary of this methods is provided below.
-    
-Table 2. Cost basis for each unit model.
-
-=========================== =========================  ===========
-Unit Model                  Basis                      Units      
-=========================== =========================  ===========
-heat exchanger              :math:`area`               ft^2       
-pump                        :math:`fluid_{work}`       ft^3/s     
-compressor                  :math:`mechanical_{work}`  hp         
-turbine                     :math:`mechanical_{work}`  hp         
-vessels                     :math:`D , L`              ft         
-fired heaters               :math:`heat\_duty`         BTU/hr         
-=========================== =========================  ===========
-
 Unit Mapping
 ^^^^^^^^^^^^
 
-As a convenience for users, common unit models are mapped with appropriate costing methods. Therefore, for quick costing with defaults, users may import the `unit_mapping` dictionary and pass the unit model type as below:
+As a convenience for users, common unit models are mapped with appropriate costing methods if no costing method is passed:
 
-.. code:: python
+Table 2. Mapped costing method for each unit model.
 
-    unit_mapping = {  
-            CSTR: cost_vertical_vessel,  
-            Compressor: cost_compressor,  
-            Flash: cost_vertical_vessel,  
-            Heater: cost_fired_heater,  
-            HeatExchanger: cost_heat_exchanger,  
-            HeatExchangerNTU: cost_heat_exchanger,  
-            PFR: cost_horizontal_vessel,  
-            PressureChanger: cost_pressure_changer,  
-            Pump: cost_pump,  
-            StoichiometricReactor: cost_horizontal_vessel,  
-            Turbine: cost_turbine,  
-        }
+=========================== =========================
+Unit Model                  Costing Method
+=========================== =========================
+CSTR                        cost_vertical_vessel
+Compressor                  cost_compressor
+Flash                       cost_vertical_vessel
+Heater                      cost_fired_heater
+HeatExchanger               cost_heat_exchanger
+HeatExchangerNTU            cost_heat_exchanger
+PFR                         cost_horizontal_vessel
+PressureChanger             cost_pressure_changer
+Pump                        cost_pump
+StoichiometricReactor       cost_horizontal_vessel
+Turbine                     cost_turbine
+=========================== =========================
 
-    costing_method = unit_mapping[type(blk)]
-
-The mapping is inheritance aware, e.g. pumps will try costing with `cost_pump()` and fall back to `cost_pressure_changer()`.
-
-For example, using default unit mapping the heat exchanger example would add costing as:
-
-.. code:: python
-
-    m.fs.H101.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": SSLWCostingData.unit_mapping[HeatExchanger],  # passing the imported class object
-            "costing_method_arguments": {
-                    "material_type": HeaterMaterial.CarbonSteel,
-                    "heat_source": HeaterSource.Fuel
-            }
-        }
-    )
-
-The unit mapping is particularly useful when defining costing for a group of unit models with similar costing arguments and variables, such as vessels, by only passing the model class and not a specific costing method. In the code below, a flowsheet containing two `Flash` vessels, a `CSTR` unit and a `StoichiometricReactor` may be costed compactly via a loop:
-
-.. code:: python
-
-    from idaes.models.costing.SSLW import VesselMaterial
-    from idaes.core.util.constants import Constants
-    from pyomo.environ import Var, Constraint, units as pyunits, Param, value
-    from idaes.models.unit_models import StoichiometricReactor, Flash, CSTR
-
-    # Map unit models to unit classes
-    # Will pass to unit_mapping which calls costing methods based on unit class
-    unit_class_mapping = {
-        m.fs.R101: StoichiometricReactor,
-        m.fs.F101: Flash,
-        m.fs.F102: Flash,
-        m.fs.R102: CSTR}
-
-    # Costing for vessels - m.fs.R101, m.fs.F101, m.fs.F102, m.fs.R102
-
-    # Loop over units
-    for unit in [m.fs.R101, m.fs.F101, m.fs.F102, m.fs.R102]:
-        # Get correct unit class for unit model
-        unit_class = unit_class_mapping[unit]
-        
-        # Add dimension variables and constraint if they don't exist
-        if not hasattr(unit, "diameter"):
-            unit.diameter = Var(initialize=1, units=pyunits.m)
-        if not hasattr(unit, "length"):
-            unit.length = Var(initialize=1, units=pyunits.m)
-        if hasattr(unit, "volume"):  # if volume exists, set diameter from volume
-            unit.volume_eq = Constraint(expr=unit.volume[0] == unit.length * unit.diameter**2 * 0.25 * Constants.pi)
-        else:  # fix diameter directly
-            unit.diameter.fix(0.2214 * pyunits.m)
-        # Either way, fix L/D to calculate L from D
-        # chose constant L/D of 3 for this example - this could also be a dictionary indexed by vessel/unit model
-        unit.L_over_D = Constraint(expr=unit.length == 3 * unit.diameter)
-            
-        # Define vessel costing
-        unit.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": unit.parent_block().costing,  # e.g. m.fs.R101.costing
-                "costing_method": SSLWCostingData.unit_mapping[unit_class],  # e.g. cost_vertical_vessel()
-                "costing_method_arguments": {
-                    "material_type": VesselMaterial.CarbonSteel,
-                    "shell_thickness": 1.25 * pyunits.inch,
-                    
-                }
-            }
-        )
+The mapping follows unit model hierarchy (inheritance) and the framework will find the best match among available costing methods. For example, pumps will try costing with `cost_pump()` and fall back to `cost_pressure_changer()`.
 
 Heat Exchanger Cost
 ^^^^^^^^^^^^^^^^^^^
 
-The purchse cost is computed based on the base unit cost and three correction factors (Eq. 22.43 in Seider et al.). The base cost is computed depending on the heat exchanger type selected by the user:
+.. note:: IDAES does not yet support costing for heat exchangers requiring both shell and tube area (HX1D).
 
-.. math:: self.costing.purchase\_cost = pressure\_factor*material\_factor*L\_factor*self.costing.base\_cost*(CE_{index}/500)
+The purchse cost is computed based on the base unit cost and three correction factors (Eq. 22.43 in Seider et al.), and is adjusted by user-defined currency units with the appropriate CE index value. The base cost is computed depending on the heat exchanger type selected by the user.
+
+The heat exchanger costing method has three arguments, hx_type = heat exchanger type, material_type = construction material, and tube_lengh = tube length.
+
+* hx_type : 
+    * 'floating_head'
+    * 'fixed_head'
+    * 'Utube'\*
+    * 'Kettle_vap'
+* material_type: 
+    * 'CarbonSteelCarbonSteel'
+    * 'CarbonSteelBrass'
+    * 'CarbonSteelStainlessSteel'\*
+    * 'CarbonSteelMonel'
+    * 'CarbonSteelTitanium'
+    * 'CarbonSteelCrMoSteel'
+    * 'CrMoSteelCrMoSteel'
+    * 'MonelMonel'
+    * 'TitaniumTitanium',
+* tube_length:
+    * '8ft'
+    * '12ft'\*
+    * '16ft'
+    * '20ft'
+
+where '*' corresponds to the default options. Additionally, users may pass an argument 'integer' (defaults to `True``) whether the number of units should be restricted to an integer or not.
+
+.. math:: self.costing.purchase\_cost = pressure\_factor*material\_factor*L\_factor*self.costing.base\_cost
 
 .. math:: self.costing.base\_cost\_per\_unit = \exp{(\alpha_{1} - \alpha_{2}*\log{area*hx\_os} + \alpha_{3}*(\log{area*hx\_os})^{2})}
 
@@ -233,18 +180,8 @@ where:
 * pressure_factor - is the pressure design correction factor
 * material_factor - is the construction material correction factor
 * length_factor - is the tube length correction factor
-* CE_index - is a global parameter for Chemical Enginering cost index for years 2010-2019
 * hx_os - heat exchanger oversize factor (default = 1)
-* area is a reference object and (self.area is the model variable)
-
-The heat exchanger costing method has three arguments, hx_type = heat exchanger type, material_type = construction material, and tube_lengh = tube length.
-
-* hx_type : 'floating_head', 'fixed_head', 'Utube'\*, 'Kettle_vap'
-* material_type: 'CarbonSteelCarbonSteel', 'CarbonSteelBrass', 'CarbonSteelStainlessSteel'\*, 'CarbonSteelMonel', 'CarbonSteelTitanium', 'CarbonSteelCrMoSteel', 'CrMoSteelCrMoSteel', 'MonelMonel', 'TitaniumTitanium',
-* tube_length: '8ft', '12ft'\*, '16ft', '20ft'
-
-where '*' corresponds to the default options. Additionally, users may pass an argument 'integer' (defaults to `True``) whether the number of units should be restricted to an integer or not.
-
+* area - heat exchanger area
 
 Table 3. Base cost factors for heat exchanger type.
 
@@ -319,7 +256,7 @@ Turbine Cost Model
 """"""""""""""""""
 The turbine cost is based on the mechanical work of unit (work_mechanical), this correlation has been obtained using the NETL Report (DOE/NETL 2015).
 
-.. math:: self.costing.purchase\_cost = 580*(mechanical_{work})^{0.81}
+.. math:: self.costing.purchase\_cost = 530*(mechanical_{work})^{0.81}
 
 DOE/NETL, 2015, report. Cost and performance Baseline for Fossil Energy Plants. Volume 1a: Bituminous Coal (PC) and Natural Gas to Electricity. Revision 3
 
@@ -336,7 +273,18 @@ Three subtypes are supported for costing of pumps, which can be set using the "p
 
 Additionally, there are an array of additional pump options:
 
-* material_type: 'CastIron', 'DuctileIron', 'CastSteel', 'Bronze', 'StainlessSteel'\*, 'HastelloyC', 'Monel', 'Nickel', 'Titanium', 'NiAlBronze', 'CarbonSteel'
+* material_type:
+    * 'CastIron'
+    * 'DuctileIron'
+    * 'CastSteel'
+    * 'Bronze'
+    * 'StainlessSteel'\*
+    * 'HastelloyC'
+    * 'Monel'
+    * 'Nickel'
+    * 'Titanium'
+    * 'NiAlBronze'
+    * 'CarbonSteel'
 
 In the lists above, \* marks the default options. Additionally, users may pass an argument 'integer' (defaults to True) whether the number of units should be restricted to an integer or not.
 
@@ -346,8 +294,17 @@ Centrifugal Pump
 The centrifugal pump cost has two main components, the cost of the pump and the cost of the motor. The pump cost is based on the fluid work (work_fluid), pump head, and size factor. 
 Additional arguments are required:
 
-* pump_type_factor = empirical factor (see table 6) of 1.1, 1.2, 1.3, 1.4\*, 2.1, 2.2
-* pump_motor_type_factor = 'open'\*, 'enclosed', 'explosion_proof'
+* pump_type_factor (empirical factor, see table 6):
+    * 1.1
+    * 1.2
+    * 1.3
+    * 1.4\*
+    * 2.1
+    * 2.2
+* pump_motor_type_factor:
+    * 'open'\*
+    * 'enclosed'
+    * 'explosion_proof'
 
 In the lists above, \* marks the default options.
 
@@ -357,13 +314,13 @@ The unit purchase cost is obtained by adding the motor and pump costs.
 .. math:: self.costing.purchase\_cost = self.costing.pump\_purchase\_cost + self.costing.motor\_purchase\_cost
 
 To compute the purchase cost of the centrifugal pump, first we obtain the pump size factor (S) with Eq. 22.13, then we obtain the base cost with Eq. 22.14.
-Finally, the purchase cost of the pump is obtained in Eq. 22.15. (Seider et al.)
+Finally, the purchase cost of the pump is obtained in Eq. 22.15. (Seider et al.) and is adjusted by user-defined currency units with the appropriate CE index value.
 
 .. math:: S = QH^{0.5}
 
 .. math:: self.costing.pump\_base\_cost\_per\_unit = \exp{(9.7171 - 0.6019*\log{S} + 0.0519*(\log{S})^{2})}
 
-.. math:: self.costing.pump\_purchase\_cost = F_{T}*material\_factor*self.costing.pump\_base\_cost*(CE_{index}/500)
+.. math:: self.costing.pump\_purchase\_cost = F_{T}*material\_factor*self.costing.pump\_base\_cost
 
 .. math:: self.costing.base\_cost = self.costing.pump\_base\_cost\_per\_unit * self.costing.number\_of\_units
 
@@ -413,9 +370,9 @@ titanium          9.70
 Electric Motor Pumps
 ++++++++++++++++++++
 
-A centrifugal pump is usually driven by an electric motor, the `self.costing.motor_purchase_cost` is calculated based on the power consumption.
+A centrifugal pump is usually driven by an electric motor, the `self.costing.motor_purchase_cost` is calculated based on the power consumption and is adjusted by user-defined currency units with the appropriate CE index value.
 
-.. math:: self.motor_purchase_cost = FT * self.costing.motor\_base\_cost * (CE_{index}/500)  (Eq. 22.20)
+.. math:: self.motor_purchase_cost = FT * self.costing.motor\_base\_cost  (Eq. 22.20)
 
 .. math:: self.costing.motor\_base\_cost = self.costing.motor\_base\_cost\_per\_unit * self.costing.number\_of\_units
 
@@ -456,10 +413,10 @@ External Gear Pumps
 +++++++++++++++++++
 
 External gear pumps are not as common as the contrifugal pump, and various methods can be used to correlate base cost. Eq. 22.21 in Seider et al.
-Here the purchase cost is computed as a function of the volumetric flowrate (Q) in gpm Eq. 22.22 in Seider et al.
+Here the purchase cost is computed as a function of the volumetric flowrate (Q) in gpm Eq. 22.22 in Seider et al. and is adjusted by user-defined currency units with the appropriate CE index value.
 
 
-.. math:: self.costing.pump\_purchase\_cost = material\_factor * self.costing.pump\_base\_cost * (CE_{index}/500)
+.. math:: self.costing.pump\_purchase\_cost = material\_factor * self.costing.pump\_base\_cost
 
 .. math:: self.costing.pump\_base\_cost = self.costing.pump\_base\_cost\_per\_unit * self.costing.number\_of\_units
 
@@ -470,9 +427,9 @@ Here the purchase cost is computed as a function of the volumetric flowrate (Q) 
 Reciprocating Plunger Pumps
 +++++++++++++++++++++++++++
 
-The cost correlation method used here is based on the brake horsepower (PB).
+The cost correlation method used here is based on the brake horsepower (PB) and is adjusted by user-defined currency units with the appropriate CE index value.
 
-.. math:: self.costing.pump\_purchase\_cost = material\_factor * self.costing.pump\_base\_cost * (CE_{index}/500)  (Eq. 22.22)
+.. math:: self.costing.pump\_purchase\_cost = material\_factor * self.costing.pump\_base\_cost  (Eq. 22.22)
 
 .. math:: self.costing.pump\_base\_cost = self.costing.pump\_base\_cost\_per\_unit * self.costing.number\_of\_units
 
@@ -500,23 +457,35 @@ Mover (Compressor, Fan, Blower)
 If the unit represents a "Mover", the user can select to cost it as a compressor, fan, or blower. 
 Therefore, the user must set the "mover_type" argument.
 
-* mover_type= 'compressor'\* or 'fan' or 'blower' (upper/lower case sensitive)
+* mover_type (upper/lower case sensitive):
+    * 'compressor'\*
+    * 'fan'
+    * 'blower'
 
 In the list above, \* marks the default option.
 
 Compressor Cost
 +++++++++++++++
-The compressor cost is based on the mechanical work of the unit. 
+The compressor cost is based on the mechanical work of the unit and is adjusted by user-defined currency units with the appropriate CE index value.
 Additional arguments are required to estimate the cost such as compressor type, 
 driver mover type, and materials of construction (material_type).
 
-* compressor_type = 'Centrifugal'\*, 'Reciprocating', 'Screw'
-* driver_mover_type = 'ElectricMotor'\*, 'SteamTurbine', 'GasTurbine'
-* material_type = 'CarbonSteel', 'StainlessSteel'\*, 'NickelAlloy'
+* compressor_type:
+    * 'Centrifugal'\*
+    * 'Reciprocating'
+    * 'Screw'
+* driver_mover_type:
+    * 'ElectricMotor'\*
+    * 'SteamTurbine'
+    * 'GasTurbine'
+* material_type:
+    * 'CarbonSteel'
+    * StainlessSteel'\*
+    * 'NickelAlloy'
 
 where '*' corresponds to the default options. Additionally, users may pass an argument 'integer' (defaults to True) whether the number of units should be restricted to an integer or not.
 
-.. math:: self.costing.purchase\_cost = (CE_{index}/500)* F_{D} * material\_factor * self.costing.base\_cost
+.. math:: self.costing.purchase\_cost = F_{D} * material\_factor * self.costing.base\_cost
 
 .. math:: self.costing.base\_cost = self.costing.base\_cost\_per\_unit * self.costing.number\_of\_units
 
@@ -565,9 +534,18 @@ The fan cost is a function of the actual cubic feet per minute (Q) entering the 
 Additional arguments are required to estimate the fan cost such as mover_type='fan', fan_head_factor,
 fan_type, and material_type.
 
-* fan_type = 'CentrifugalBackward'\*, 'CentrifugalStraight', 'VaneAxial', 'TubeAxial'
-* fan_head_factor = defaults to 1.45, see table 14
-* material_type = 'CarbonSteel', 'Fiberglass', 'StainlessSteel'\*, 'NickelAlloy'
+* fan_type:
+    * 'CentrifugalBackward'\*
+    * 'CentrifugalStraight'
+    * 'VaneAxial'
+    * 'TubeAxial'
+* fan_head_factor:
+    * defaults to 1.45, see table 14
+* material_type
+    * 'CarbonSteel'
+    * 'Fiberglass'
+    * 'StainlessSteel'\*
+    * 'NickelAlloy'
 
 where '*' corresponds to the default options. Additionally, users may pass an argument 'integer' (defaults to True) whether the number of units should be restricted to an integer or not.
 
@@ -578,7 +556,7 @@ Table 13. Typical Operating Ranges of Fans
 
 =========================== ================ =================
 Fan type                    Flow rate (ACFM)  Total head inH2O
-ACFM^a inH2O
+:math:`ACFM^a`` inH2O
 =========================== ================ =================
 Centrifugal backward curved  1000-100000      1-40
 Centrifugal straight radial  1000-20000       1-30
@@ -587,9 +565,9 @@ Tube axial                   2000-800000      0.00-10
 =========================== ================ =================
 
 
-Finally, the purchase cost of the fan is given by base cost, material factor, and fan head factor. While, the base cost is given as a function of the ACFM (Q).
+Finally, the purchase cost of the fan is given by base cost, material factor, and fan head factor, and is adjusted by user-defined currency units with the appropriate CE index value.. While, the base cost is given as a function of the ACFM (Q).
 
-.. math:: self.costing.purchase\_cost = (CE_{index}/500) * head\_factor * material\_factor * self.costing.base\_cost
+.. math:: self.costing.purchase\_cost = head\_factor * material\_factor * self.costing.base\_cost
 
 .. math:: self.costing.base\_cost = self.costing.base\_cost\_per\_unit * self.costing.number\_of\_units
 
@@ -623,11 +601,18 @@ nickel_alloy     5.0
 Blower Cost
 +++++++++++
 
-The blower cost is based on the brake horsepower, which can be calculated with the inlet volumetric flow rate and pressure (cfm and lbf/in^2, respectivelly).
+The blower cost is based on the brake horsepower, which can be calculated with the inlet volumetric flow rate and pressure (:math:`cfm` and :math:`lbf/in^2` respectivelly).
 Additional arguments are required to estimate the blower cost such as mover_type='blower', blower_type, and materials of construction (material_type).
 
-* blower_type = 'Centrifugal'\*, 'Rotary'
-* material_type = 'CarbonSteel', 'Aluminum', 'Fiberglass', 'StainlessSteel'\*, 'NickelAlloy'
+* blower_type:
+    * 'Centrifugal'\*
+    * 'Rotary'
+* material_type
+    * 'CarbonSteel'
+    * 'Aluminum'
+    * 'Fiberglass'
+    * 'StainlessSteel'\*
+    * 'NickelAlloy'
 
 where '*' corresponds to the default options. Additionally, users may pass an argument 'integer' (defaults to True) whether the number of units should be restricted to an integer or not.
 
@@ -657,8 +642,18 @@ Fired Heater
 Indirect fired heaters, also called fired heaters, process heaters, and furnaces, are used to heat or vaporize process streams at elevated temperatures (beyond where steam is usually employed).
 This method computes the purchase cost of the fired heater based on the heat duty, fuel used (fired_type), pressure design, and materials of construction (material_type).
 
-* fuel_type = 'Fuel'\*, 'Reformer', 'Pyrolysis', 'HotWater', 'Salts', 'DowthermA', 'SteamBoiler'
-* material_type = 'CarbonSteel'\*, 'CrMoSteel', 'StainlessSteel'
+* fuel_type:
+    * 'Fuel'\*
+    * 'Reformer'
+    * 'Pyrolysis'
+    * 'HotWater'
+    * 'Salts'
+    * 'DowthermA'
+    * 'SteamBoiler'
+* material_type
+    * 'CarbonSteel'\*
+    * 'CrMoSteel'
+    * 'StainlessSteel'
 
 where '*' corresponds to the default options. Additionally, users may pass an argument 'integer' (defaults to True) whether the number of units should be restricted to an integer or not.
 
@@ -707,9 +702,9 @@ steam_boiler:
 
 .. math:: self.costing.base\_cost = self.costing.base\_cost\_per\_unit * self.costing.number\_of\_units
 
-Finally, the purchase cost is given by:
+Finally, the purchase cost (adjusted by user-defined currency units with the appropriate CE index value)is given by:
 
-.. math:: self.purchase\_cost = (CE_{index}/500) * pressure\_design * material\_factor * base\_cost
+.. math:: self.purchase\_cost = pressure\_design * material\_factor * base\_cost
 
 
 Cost of Pressure Vessels and Towers for Distillation
@@ -719,18 +714,49 @@ Pressure vessels cost is based on the weight of the vessel, the cost of platform
 This method constructs by defaul the cost of pressure vessels with platforms and ladders, and trays cost can be calculated if trays= `True`. This method requires a few arguments to build the cost of vessel. 
 We recommend using this method to cost reactors (`StoichiometricReactor`, `CSTR`` or `PFR``), flash tanks, vessels, and distillation columns.
 
-* vertical = `False`, `True`
-* material_type = 'CarbonSteel'\*, 'LowAlloySteel', 'StainlessSteel304', 'StainlessSteel316', 'Carpenter20CB3', 'Nickel200', 'Money400', 'Inconel600', 'Incoloy825', 'Titanium'
-* shell_thickness = material property  including pressure allowance, defaults to 1.25 inches (Pyomo units)
-* weight_limit = 1, 2 (1: 1000 to 920,000 lb, 2: 9000 to 2.5M lb only for vertical vessels)
-* aspect_ratio_range = 1, 2 (1: 3 < D < 21, 12 < L < 40; 2: 3 < D < 24, 27 < L < 170; all in ft D: diameter, L: length) only for vertical vessels
-* include_platform_ladders= `True`, `False` : to build platforms and ladders cost
-* vessel_diameter = component to use as diameter variable, defaults to unit.diameter
-* vessel_length = component to use as length variable, defaults to unit.length
-* number_of_units = integer or Pyomo component to use for number of parallel units to be costed, defaults to 1
-* number_of_trays = component to use for number of distillation trays in vessel, defaults to `None`
-* tray_material = 'CarbonSteel', 'StainlessSteel303', 'StainlessSteel316', 'Carpenter20CB3', 'Monel'
-* tray_type = 'Sieve', 'Valve', 'BubbleCap'
+* vertical:
+    * `False`\*
+    * `True`
+* material_type
+    * 'CarbonSteel'\*
+    * 'LowAlloySteel'
+    * 'StainlessSteel304'
+    * 'StainlessSteel316'
+    * 'Carpenter20CB3'
+    * 'Nickel200'
+    * 'Money400'
+    * 'Inconel600'
+    * 'Incoloy825'
+    * 'Titanium'
+* shell_thickness
+    * material property (including pressure allowance), defaults to 1.25 inches (Pyomo units)
+* weight_limit:
+    * 1: 1000 to 920,000 lb\*
+    * 2: 9000 to 2.5M lb (only for vertical vessels)
+* aspect_ratio_range (all in ft D: diameter, L: length):
+    * 1: 3 < D < 21, 12 < L < 40\*
+    * 2: 3 < D < 24, 27 < L < 170; only for vertical vessels
+* include_platform_ladders:
+    * `True`\*
+    * `False`
+* vessel_diameter:
+    * component to use as diameter variable, defaults to unit.diameter
+* vessel_length:
+    * component to use as length variable, defaults to unit.length
+* number_of_units:
+    * integer or Pyomo component to use for number of parallel units to be costed, defaults to 1
+* number_of_trays:
+    * component to use for number of distillation trays in vessel, defaults to `None`
+* tray_material:
+    * 'CarbonSteel'\*
+    * 'StainlessSteel303'
+    * 'StainlessSteel316'
+    * 'Carpenter20CB3'
+    * 'Monel'
+* tray_type:
+    * 'Sieve'\*
+    * 'Valve'
+    * 'BubbleCap'
 
 where '*' corresponds to the default options.
 
@@ -749,9 +775,9 @@ For example:
 
 Table 17. Materials of construction factor and material density
 
-================== ====== ==========================
-Material Factor    (FM)   methal density (lb/in^3)
-================== ====== ==========================
+================== ====== ================================
+Material Factor    (FM)   methal density (:math:`lb/in^3`)
+================== ====== ================================
 carbon_steel       1      0.284
 low_alloy_steel    1.2    0.271
 stain_steel_304    1.7    0.270
@@ -762,7 +788,7 @@ monel_400          3.6    0.319
 inconel_600        3.9    0.3071
 incoloy_825        3.7    0.2903
 titanium           7.7    0.1628
-================== ====== ==========================
+================== ====== ================================
 
 Vessel Cost
 """""""""""
@@ -789,9 +815,9 @@ Vertical vessels (2: 9,000 < W < 2.5M lb):
 
 .. math:: weight = self.weight / self.costing.number\_of\_units
 
-The vessel purchase cost is given by:
+The vessel purchase cost (adjusted by user-defined currency units with the appropriate CE index value) is given by:
 
-.. math:: self.vessel\_purchase\_cost = (CE_{index}/500) * material\_factor * self.base\_cost + (self.base\_cost\_platf\_ladders * self.costing.number\_of\_units)
+.. math:: self.vessel\_purchase\_cost = material\_factor * self.base\_cost + (self.base\_cost\_platf\_ladders * self.costing.number\_of\_units)
 
 note that if PL = `False`, the cost of platforms and ladders is not included.
 
@@ -849,9 +875,9 @@ The tray base cost is then calculated as:
 
 .. math:: self.base\_cost\_trays = 468.00*\exp{(0.1739*D)}
 
-The purchase cost of the trays is given by:
+The purchase cost of the trays (adjusted by user-defined currency units with the appropriate CE index value) is given by:
 
-.. math:: self.purchase\_cost\_trays = (CE_{index}/500)* self.number\_trays * self.number\_tray\_factor * self.type\_tray\_factor * self.tray\_material\_factor * self.base\_cost\_trays
+.. math:: self.purchase\_cost\_trays = self.number\_trays * self.number\_tray\_factor * self.type\_tray\_factor * self.tray\_material\_factor * self.base\_cost\_trays
 
 Module Classes
 ^^^^^^^^^^^^^^^^^
