@@ -26,14 +26,15 @@ override the default temperature difference calculation.
 
   # Create an empty flowsheet and steam property parameter block.
   model = pe.ConcreteModel()
-  model.fs = FlowsheetBlock(default={"dynamic": False})
+  model.fs = FlowsheetBlock(dynamic=False)
   model.fs.properties = iapws95.Iapws95ParameterBlock()
 
   # Add a Heater model to the flowsheet.
-  model.fs.heat_exchanger = HeatExchanger(default={
-          "delta_temperature_callback":delta_temperature_amtd_callback,
-          "shell":{"property_package": model.fs.properties},
-          "tube":{"property_package": model.fs.properties}})
+  model.fs.heat_exchanger = HeatExchanger(
+      delta_temperature_callback=delta_temperature_amtd_callback,
+      shell={"property_package": model.fs.properties},
+      tube={"property_package": model.fs.properties}
+  )
 
   model.fs.heat_exchanger.area.fix(1000)
   model.fs.heat_exchanger.overall_heat_transfer_coefficient[0].fix(100)

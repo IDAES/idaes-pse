@@ -137,11 +137,12 @@ curves. The first does not use a callback the second does.
 
   solver = SolverFactory('ipopt')
   m = ConcreteModel()
-  m.fs = FlowsheetBlock(default={"dynamic": False})
+  m.fs = FlowsheetBlock(dynamic=False)
   m.fs.properties = iapws95.Iapws95ParameterBlock()
-  m.fs.unit = Turbine(default={
-      "property_package": m.fs.properties,
-      "support_isentropic_performance_curves":True})
+  m.fs.unit = Turbine(
+      property_package=m.fs.properties,
+      support_isentropic_performance_curves=True
+  )
 
   # Add performance curves
   @m.fs.unit.performance_curve.Constraint(m.fs.config.time)
@@ -181,7 +182,7 @@ The next example shows how to use a callback to add performance curves.
 
   solver = SolverFactory('ipopt')
   m = ConcreteModel()
-  m.fs = FlowsheetBlock(default={"dynamic": False})
+  m.fs = FlowsheetBlock(dynamic=False)
   m.fs.properties = iapws95.Iapws95ParameterBlock()
 
   def perf_callback(blk):
@@ -197,10 +198,11 @@ The next example shows how to use a callback to add performance curves.
       def pc_isen_head_eqn(b, t):
           return b.head_isentropic[t]/1000 == -75530.8/1000*units.J/units.kg
 
-  m.fs.unit = Turbine(default={
-      "property_package": m.fs.properties,
-      "support_isentropic_performance_curves":True,
-      "isentropic_performance_curves": {"build_callback": perf_callback}})
+  m.fs.unit = Turbine(
+      property_package=m.fs.properties,
+      support_isentropic_performance_curves=True,
+      isentropic_performance_curves={"build_callback": perf_callback}
+  )
 
   # set inputs
   m.fs.unit.inlet.flow_mol[0].fix(1000)  # mol/s
