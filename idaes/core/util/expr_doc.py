@@ -10,24 +10,24 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-try:
-    from pyomo.core.expr.sympy_tools import (
-        _prod,
-        _sum,
-        _functionMap,
-        _operatorMap,
-        _pyomo_operator_map,
-    )
-except ImportError:
-    from pyomo.core.base.symbolic import (
-        _prod,
-        _sum,
-        _functionMap,
-        _operatorMap,
-        _pyomo_operator_map,
-    )
 
-from pyomo.environ import ExternalFunction, Var, Expression, value
+import re
+
+from pyomo.core.expr.sympy_tools import (
+    _prod,
+    _sum,
+    _functionMap,
+    _operatorMap,
+    _pyomo_operator_map,
+    _configure_sympy,
+)
+try:
+    import sympy
+    _configure_sympy(sympy, True)
+except:
+    pass
+
+from pyomo.environ import ExternalFunction, Var, Expression, value, units as pu
 from pyomo.core.base.constraint import _ConstraintData, Constraint
 from pyomo.core.base.expression import _ExpressionData
 from pyomo.core.base.block import _BlockData
@@ -35,11 +35,6 @@ from pyomo.core.expr.visitor import StreamBasedExpressionVisitor
 from pyomo.core.expr.numeric_expr import ExternalFunctionExpression, ExpressionBase
 from pyomo.core.expr import current as EXPR, native_types
 from pyomo.common.collections import ComponentMap
-
-import sympy
-from IPython.display import display, Markdown
-
-import re
 
 # TODO<jce> Look into things like sum operator and template expressions
 
@@ -176,7 +171,7 @@ class Pyomo2SympyVisitor(StreamBasedExpressionVisitor):
         else:
             return _op(*tuple(values))
 
-    def beforeChild(self, node, child):
+    def beforeChild(self, node, child, child_idx):
         # Don't replace native or sympy types
         if type(child) in native_types:
             return False, child
@@ -208,7 +203,7 @@ def sympify_expression(expr):
     #
     object_map = PyomoSympyBimap()
     visitor = Pyomo2SympyVisitor(object_map)
-    is_expr, ans = visitor.beforeChild(None, expr)
+    is_expr, ans = visitor.beforeChild(None, expr, None)
     try:  # If I explicitly ask for a named expression then descend into it.
         if expr.is_named_expression_type():
             is_expr = True
@@ -236,11 +231,12 @@ def _add_docs(object_map, docs, typ, head):
     whead = True  # write heading before adding first item
     for i, sc in enumerate(object_map.sympyVars()):
         c = object_map.getPyomoSymbol(sc)
+        cdat = c
         c = c.parent_component()  # Document the parent for indexed comps
         if not isinstance(c, typ):
             continue
         if whead:  # add heading if is first entry in this section
-            docs += "**{}** | **Doc** | **Path**\n".format(head)
+            docs += "**{}** | **Doc** | **Path** | **UoM**\n".format(head)
             whead = False
         if id(c) not in docked:
             docked.add(id(c))  # make sure we don't get a line for every index
@@ -248,7 +244,7 @@ def _add_docs(object_map, docs, typ, head):
                 s = object_map.parent_symbol[c][1]
             except KeyError:  # non-indexed vars
                 s = object_map.sympy2latex[sc]
-            docs += "${}$|{}|{}\n".format(s, c.doc, c)
+            docs += "${}$|{}|{}|{}\n".format(s, c.doc, c, pu.get_units(cdat))
     return docs
 
 
@@ -267,7 +263,7 @@ def to_latex(expr):
     # This next bit documents the expression, could use a lot of work, but
     # for now it generates markdown tables that are resonably readable in a
     # jupyter notebook.
-    docs = "\nSymbol | Doc | Path\n ---: | --- | ---\n"
+    docs = "\nSymbol | Doc | Path | UoM\n ---: | --- | --- | ---\n"
     docs = _add_docs(object_map, docs, Var, "Variable")
     docs = _add_docs(object_map, docs, Expression, "Expression")
     docs = _add_docs(object_map, docs, ExternalFunction, "Function")
@@ -301,33 +297,61 @@ def document_constraints(comp, doc=True, descend_into=True):
     s = None
     if isinstance(comp, _ExpressionData):
         d = to_latex(comp)
-        if doc:
-            s = "$${}$$\n{}".format(d["latex_expr"], d["where"])
+        try:
+            sy = comp.latex_symbol
+        except:
+            sy = None
+        try:
+            d["latex_expr"] = comp.latex_nice_expr
+        except:
+            pass
+        if sy is not None:
+            if doc:
+                s = "$${} = {}$$\n{}".format(sy, d["latex_expr"], d["where"])
+            else:
+                s = "$${} = {}$$".format(sy, d["latex_expr"])
         else:
-            s = "$${}$$".format(d["latex_expr"])
+            if doc:
+                s = "$${}$$\n{}".format(d["latex_expr"], d["where"])
+            else:
+                s = "$${}$$".format(d["latex_expr"])
     elif isinstance(comp, _ConstraintData):
         d = to_latex(comp.body)
-        if doc:
-            s = "$${} \le {}\le {}$$\n{}".format(
-                comp.lower, d["latex_expr"], comp.upper, d["where"]
-            )
+        if comp.upper != comp.lower:
+            if doc:
+                s = "$${} \le {}\le {}$$\n{}".format(
+                    comp.lower, d["latex_expr"], comp.upper, d["where"]
+                )
+            else:
+                s = "$${} \le {}\le {}$$".format(comp.lower, d["latex_expr"], comp.upper)
         else:
-            s = "$${} \le {}\le {}$$".format(comp.lower, d["latex_expr"], comp.upper)
+            if doc:
+                s = "$${} = {}$$\n{}".format(
+                    comp.lower, d["latex_expr"], d["where"]
+                )
+            else:
+                s = "$${} = {}$$".format(comp.lower, d["latex_expr"])
     elif isinstance(comp, _BlockData):
         cs = []
         for c in comp.component_data_objects(Constraint, descend_into=descend_into):
             if not c.active:
                 continue
-            cs.append("## {}".format(c))
+            cs.append("**Constraint:** {}".format(c))
             cs.append(document_constraints(c, doc))
+        for c in comp.component_data_objects(Expression, descend_into=descend_into):
+            if not c.active:
+                continue
+            cs.append("**Expression:** {}".format(c))
+            cs.append(document_constraints(c, doc))
+        for c in comp.component_data_objects(Var, descend_into=descend_into):
+            if not c.fixed:
+                continue
+            cs.append(f"**Fixed Var:** {c} = {value(c)}")
+            try:
+                sy = c.latex_symbol
+            except:
+                sy = None
+            if sy is not None:
+                cs.append("$${} = {} \\text{{ {} }}$$".format(sy, value(c), pu.get_units(c)))
         s = "\n".join(cs)
     return s
-
-
-def ipython_document_constraints(comp, doc=True, descend_into=True):
-    """
-    See document_constraints, this just directly displays the markdown instead
-    of returning a string.
-    """
-    s = document_constraints(comp, doc, descend_into)
-    display(Markdown(s))
