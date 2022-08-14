@@ -37,6 +37,8 @@ from idaes.core import (
     Component,
 )
 
+
+# make sure the required shared libraries load
 try:
     _flib_ad = find_library("libadolc")
     if _flib_ad is None:
@@ -918,7 +920,7 @@ change.
         """
         return available()
 
-    def htpx(
+    def _suh_tpx(
         self,
         T=None,
         p=None,
@@ -926,6 +928,7 @@ change.
         units=None,
         amount_basis=None,
         with_units=False,
+        prop="h",
     ):
         """
         Convenience function to calculate enthalpy from temperature and either
@@ -937,17 +940,28 @@ change.
             T: Temperature
             P: Pressure, None if saturated
             x: Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
-               superheated or subcooled
+                superheated or subcooled
+            units: The units to report the result in, if None use the default
+                units appropriate for the ammount basis.
+            amount_basis (AmountBasis): Whether to use a mass or mole basis
+            with_units (bool): if Ture return an expression with units
         Returns:
-            Total molar enthalpy [J/mol].
+            Total molar enthalpy.
         """
         if amount_basis is None:
             amount_basis = self.config.amount_basis
         if units is None:
-            if amount_basis == AmountBasis.MOLE:
-                units = pyo.units.J / pyo.units.mol
+            if prop in ["h", "u"]:
+                if amount_basis == AmountBasis.MOLE:
+                    units = pyo.units.J / pyo.units.mol
+                else:
+                    units = pyo.units.J / pyo.units.kg
             else:
-                units = pyo.units.J / pyo.units.kg
+                if amount_basis == AmountBasis.MOLE:
+                    units = pyo.units.J / pyo.units.mol / pyo.units.K
+                else:
+                    units = pyo.units.J / pyo.units.kg / pyo.units.K
+
         te = HelmholtzThermoExpressions(self, self, amount_basis=amount_basis)
         tmin = pyo.value(self.temperature_min)
         tmax = pyo.value(self.temperature_max)
@@ -979,9 +993,52 @@ change.
                     x = 1
                 else:
                     x = 0
-        if with_units:
-            return pyo.value(pyo.units.convert(te.h(T=T, p=p, x=x), units)) * units
-        return pyo.value(pyo.units.convert(te.h(T=T, p=p, x=x), units))
+        if prop == "h":
+            if with_units:
+                return pyo.value(pyo.units.convert(te.h(T=T, p=p, x=x), units)) * units
+            return pyo.value(pyo.units.convert(te.h(T=T, p=p, x=x), units))
+        elif prop == "s":
+            if with_units:
+                return pyo.value(pyo.units.convert(te.s(T=T, p=p, x=x), units)) * units
+            return pyo.value(pyo.units.convert(te.s(T=T, p=p, x=x), units))
+        elif prop == "u":
+            if with_units:
+                return pyo.value(pyo.units.convert(te.u(T=T, p=p, x=x), units)) * units
+            return pyo.value(pyo.units.convert(te.u(T=T, p=p, x=x), units))
+
+    def htpx(
+        self,
+        T=None,
+        p=None,
+        x=None,
+        units=None,
+        amount_basis=None,
+        with_units=False,
+    ):
+        return _suh_tpx(T=T, p=p, x=x, units=units, amount_basis=amount_basis, with_units=with_units, prop="h")
+
+    def stpx(
+        self,
+        T=None,
+        p=None,
+        x=None,
+        units=None,
+        amount_basis=None,
+        with_units=False,
+    ):
+        return _suh_tpx(T=T, p=p, x=x, units=units, amount_basis=amount_basis, with_units=with_units, prop="s")
+
+    def utpx(
+        self,
+        T=None,
+        p=None,
+        x=None,
+        units=None,
+        amount_basis=None,
+        with_units=False,
+    ):
+        return _suh_tpx(T=T, p=p, x=x, units=units, amount_basis=amount_basis, with_units=with_units, prop="u")
+
 
     def _set_default_scaling(self):
         """Set default scaling parameters to be used if not otherwise set"""
@@ -989,13 +1046,16 @@ change.
         # TODO<jce> leaving flow to not break things, but plan to remove it and
         #     make the user specify with no default.
         self.set_default_scaling("flow_mol", 1e-4)
+        self.set_default_scaling("flow_mass", 1)
         self.set_default_scaling("flow_mol_comp", 1e-4)
+        self.set_default_scaling("flow_mass_comp", 1)
         self.set_default_scaling("flow_vol", 100)
         self.set_default_scaling("flow_mass", 1)
 
         # Set some scalings with reasonable a priori values
         self.set_default_scaling("temperature_crit", 1e-2)
         self.set_default_scaling("enth_mol", 1e-3)
+        self.set_default_scaling("enth_mass", 1e-3)
         self.set_default_scaling("temperature", 1e-1)
         self.set_default_scaling("pressure", 1e-6)
         self.set_default_scaling("vapor_frac", 1e1)
@@ -1012,29 +1072,44 @@ change.
         self.set_default_scaling("dens_phase_red", 1)
         self.set_default_scaling("enth_mol_sat_phase", 1e-2, index="Liq")
         self.set_default_scaling("enth_mol_sat_phase", 1e-4, index="Vap")
+        self.set_default_scaling("enth_mass_sat_phase", 1e-2, index="Liq")
+        self.set_default_scaling("enth_mass_sat_phase", 1e-4, index="Vap")
         self.set_default_scaling("dh_vap_mol", 1e-4)
+        self.set_default_scaling("dh_vap_mass", 1e-4)
         self.set_default_scaling("energy_internal_mol_phase", 1e-2, index="Liq")
         self.set_default_scaling("energy_internal_mol_phase", 1e-4)
+        self.set_default_scaling("energy_internal_mass_phase", 1e-2, index="Liq")
+        self.set_default_scaling("energy_internal_mass_phase", 1e-4)
         self.set_default_scaling("enth_mol_phase", 1e-2, index="Liq")
         self.set_default_scaling("enth_mol_phase", 1e-4, index="Vap")
         self.set_default_scaling("entr_mol_phase", 1e-1, index="Liq")
         self.set_default_scaling("entr_mol_phase", 1e-1, index="Vap")
+        self.set_default_scaling("enth_mass_phase", 1e-2, index="Liq")
+        self.set_default_scaling("enth_mass_phase", 1e-4, index="Vap")
+        self.set_default_scaling("entr_mass_phase", 1e-1, index="Liq")
+        self.set_default_scaling("entr_mass_phase", 1e-1, index="Vap")
         self.set_default_scaling("cp_mol_phase", 1e-2, index="Liq")
         self.set_default_scaling("cp_mol_phase", 1e-2, index="Vap")
         self.set_default_scaling("cv_mol_phase", 1e-2, index="Liq")
         self.set_default_scaling("cv_mol_phase", 1e-2, index="Vap")
+        self.set_default_scaling("cp_mass_phase", 1e-2, index="Liq")
+        self.set_default_scaling("cp_mass_phase", 1e-2, index="Vap")
+        self.set_default_scaling("cv_mass_phase", 1e-2, index="Liq")
+        self.set_default_scaling("cv_mass_phase", 1e-2, index="Vap")
         self.set_default_scaling("dens_mol_phase", 1e-2, index="Liq")
         self.set_default_scaling("dens_mol_phase", 1e-4, index="Vap")
         self.set_default_scaling("phase_frac", 10)
-        self.set_default_scaling("enth_mol", 1e-3)
         self.set_default_scaling("energy_internal_mol", 1e-3)
+        self.set_default_scaling("energy_internal_mass", 1e-3)
         self.set_default_scaling("entr_mol", 1e-1)
+        self.set_default_scaling("entr_mass", 1e-1)
         self.set_default_scaling("cp_mol", 1e-2)
         self.set_default_scaling("cv_mol", 1e-2)
+        self.set_default_scaling("cp_mass", 1e-2)
+        self.set_default_scaling("cv_mass", 1e-2)
         self.set_default_scaling("dens_mass", 1)
         self.set_default_scaling("dens_mol", 1e-3)
         self.set_default_scaling("heat_capacity_ratio", 1e1)
-        self.set_default_scaling("enth_mass", 1)
 
     def _create_component_and_phase_objects(self):
         # Create chemical component objects
