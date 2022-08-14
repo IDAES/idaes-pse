@@ -32,7 +32,7 @@ import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 
 # Set up solver
-solver = get_solver(options={"max_iter":20})
+solver = get_solver(options={"max_iter": 20})
 
 
 @pytest.mark.unit
@@ -126,7 +126,7 @@ def test_initialize():
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
     iscale.calculate_scaling_factors(m)
-    turb.initialize(outlvl=idaeslog.ERROR, optarg={"max_iter":20})
+    turb.initialize(outlvl=idaeslog.ERROR, optarg={"max_iter": 20})
     turb.ip_stages[1].inlet.unfix()
 
     for t in m.fs.time:
@@ -139,7 +139,6 @@ def test_initialize():
         m.fs.reheat.inlet.pressure[t].value = pyo.value(
             turb.hp_split[7].outlet_1_state[t].pressure
         )
-    m.fs.reheat.initialize(outlvl=idaeslog.ERROR, optarg={"max_iter":20})
 
     def reheat_T_rule(b, t):
         return m.fs.reheat.control_volume.properties_out[t].temperature == 880
@@ -147,6 +146,8 @@ def test_initialize():
     m.fs.reheat.temperature_out_equation = pyo.Constraint(
         m.fs.reheat.flowsheet().time, rule=reheat_T_rule
     )
+
+    m.fs.reheat.initialize(outlvl=idaeslog.ERROR, optarg={"max_iter": 20})
 
     m.fs.turb.outlet_stage.control_volume.properties_out[0].pressure.fix()
 
@@ -179,7 +180,7 @@ def test_initialize_calc_cf():
     hin = pyo.value(iapws95.htpx(T=880 * pyo.units.K, P=p * pyo.units.Pa))
     m.fs.turb.ip_stages[1].inlet.enth_mol[0].value = hin
     # m.fs.turb.ip_stages[1].inlet.flow_mol[0].value = 25220.0
-    #m.fs.turb.ip_stages[1].inlet.pressure[0].value = p
+    # m.fs.turb.ip_stages[1].inlet.pressure[0].value = p
 
     for i, s in turb.hp_stages.items():
         s.ratioP[:] = 0.88
@@ -202,7 +203,6 @@ def test_initialize_calc_cf():
     turb.lp_split[11].split_fraction[0, "outlet_2"].fix(0.04)
 
     # Congiure with reheater for a full test
-    #turb.ip_stages[1].inlet.fix()
     turb.inlet_split.inlet.flow_mol.unfix()
     turb.inlet_mix.use_equal_pressure_constraint()
     for i in m.fs.turb.inlet_stage:
@@ -230,7 +230,7 @@ def test_initialize_calc_cf():
         calculate_outlet_cf=True,
         copy_disconneted_flow=True,
         copy_disconneted_pressure=True,
-        optarg={"max_iter":20}
+        optarg={"max_iter": 20},
     )
     turb.ip_stages[1].inlet.unfix()
 
@@ -247,13 +247,12 @@ def test_initialize_calc_cf():
 
     def reheat_T_rule(b, t):
         return m.fs.reheat.control_volume.properties_out[t].temperature == 880
+
     m.fs.reheat.temperature_out_equation = pyo.Constraint(
         m.fs.reheat.flowsheet().time, rule=reheat_T_rule
     )
 
-    m.fs.reheat.initialize(outlvl=idaeslog.ERROR, optarg={"max_iter":20})
-
-
+    m.fs.reheat.initialize(outlvl=idaeslog.ERROR, optarg={"max_iter": 20})
 
     m.fs.turb.outlet_stage.control_volume.properties_out[0].pressure.fix()
 
