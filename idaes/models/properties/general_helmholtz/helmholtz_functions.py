@@ -39,11 +39,23 @@ from idaes.core import (
 
 try:
     _flib_ad = find_library("libadolc")
+    if _flib_ad is None:
+        _flib_ad = find_library("libadolc-2")
     ctypes.cdll.LoadLibrary(_flib_ad)
 except:
     _flib_ad = None
 
-_flib = find_library("general_helmholtz_external.so")
+try:
+    _flib = find_library("general_helmholtz_external.so")
+    ctypes.cdll.LoadLibrary(_flib)
+except:
+    _flib = None
+
+def available():
+    """Returns True if the shared library is installed and loads propertly
+    otherwise returns False
+    """
+    return (_flib is not None) and (_flib_ad is not None)
 
 class StateVars(enum.Enum):
     """
@@ -197,7 +209,7 @@ _external_function_map = {
         "units": pyo.units.kJ / pyo.units.kg,
         "arg_units": [dimensionless, pyo.units.kPa, dimensionless],
         "doc": "h_v(p, tau)",
-        "latex_symbol": "\h_v"
+        "latex_symbol": "\h_v",
     },
     "hlpt_func": {  # liquid enthalpy
         "fname": "hlpt",
@@ -401,7 +413,7 @@ def add_helmholtz_external_functions(blk, names=None):
                 function=fdict["fname"],
                 units=fdict["units"],
                 arg_units=fdict["arg_units"],
-                doc=fdict.get("doc", None)
+                doc=fdict.get("doc", None),
             ),
         )
 
@@ -900,10 +912,11 @@ change.
         ),
     )
 
-    def available():
-        """Return whether the shared library is available. If it is not this cannot
-        be used."""
-        return _flib is not None
+    def available(self):
+        """Returns True if the shared library is installed and loads propertly
+        otherwise returns False
+        """
+        return available()
 
     def htpx(
         self,
@@ -929,7 +942,7 @@ change.
             Total molar enthalpy [J/mol].
         """
         if amount_basis is None:
-            amount_basis=self.config.amount_basis
+            amount_basis = self.config.amount_basis
         if units is None:
             if amount_basis == AmountBasis.MOLE:
                 units = pyo.units.J / pyo.units.mol
@@ -1045,7 +1058,9 @@ change.
 
     def build(self):
         super().build()
-        from idaes.models.properties.general_helmholtz.helmholtz_state import HelmholtzStateBlock
+        from idaes.models.properties.general_helmholtz.helmholtz_state import (
+            HelmholtzStateBlock,
+        )
 
         self._state_block_class = HelmholtzStateBlock
         # set the component_list as required for the generic IDAES properties
@@ -1341,7 +1356,12 @@ change.
             x = h_l[t] / 2 + h_v[t] / 2
             if xlim is None and ylim is None:
                 plt.text(x, y, f"T = {t} K", ha="center")
-            elif xlim is not None and ylim is not None and (xlim[1] < x < xlim[1]) and (ylim[0] < y < ylim[1]):
+            elif (
+                xlim is not None
+                and ylim is not None
+                and (xlim[1] < x < xlim[1])
+                and (ylim[0] < y < ylim[1])
+            ):
                 plt.text(x, y, f"T = {t} K", ha="center")
             elif xlim is not None and (xlim[1] < x < xlim[1]):
                 plt.text(x, y, f"T = {t} K", ha="center")
@@ -1390,8 +1410,7 @@ change.
         if len(x) > 1:
             x.append(x[0])
             y.append(y[0])
-        plt.plot(x, y, c='black')
-
+        plt.plot(x, y, c="black")
 
         # Titles
         plt.title(f"P-H Diagram for {self.pure_component}")
@@ -1459,9 +1478,9 @@ change.
             )
 
         # plot saturaion curves use log scale for pressure
-        #plt.yscale("log")
-        plt.plot(s_sat_l_vec, tc/tau_sat_vec, c="b", label="sat liquid")
-        plt.plot(s_sat_v_vec, tc/tau_sat_vec, c="r", label="sat vapor")
+        # plt.yscale("log")
+        plt.plot(s_sat_l_vec, tc / tau_sat_vec, c="b", label="sat liquid")
+        plt.plot(s_sat_v_vec, tc / tau_sat_vec, c="r", label="sat vapor")
 
         # Points for critical point and triple point
         deltat_l = pyo.value(self.delta_liq_func(self.pure_component, pt, tc / tt))
@@ -1480,15 +1499,13 @@ change.
         if len(x) > 1:
             x.append(x[0])
             y.append(y[0])
-        plt.plot(x, y, c='black')
-
+        plt.plot(x, y, c="black")
 
         plt.title(f"T-S Diagram for {self.pure_component}")
         plt.xlabel("Entropy (kJ/kg/K)")
         plt.ylabel("Temperature (K)")
         plt.show()
         return plt
-
 
     def pt_diagram(self, ylim=None, xlim=None, points={}, figsize=None, dpi=None):
         # Add external functions needed to plot PH-diagram
@@ -1544,14 +1561,13 @@ change.
 
         # plot saturaion curves use log scale for pressure
         plt.yscale("log")
-        plt.plot(tc/tau_sat_vec, p_sat_vec, c="m", label="sat")
-        plt.plot([tc, tc], [pc, pc*10], c="m", label="sat")
-        plt.plot([tc, tc*1.1], [pc, pc], c="m", label="sat")
+        plt.plot(tc / tau_sat_vec, p_sat_vec, c="m", label="sat")
+        plt.plot([tc, tc], [pc, pc * 10], c="m", label="sat")
+        plt.plot([tc, tc * 1.1], [pc, pc], c="m", label="sat")
 
         # Points for critical point and triple point
         plt.scatter([tc], [pc])
         plt.scatter([tt], [pt])
-
 
         plt.title(f"P-T Diagram for {self.pure_component}")
         plt.ylabel("Pressure (kPa)")

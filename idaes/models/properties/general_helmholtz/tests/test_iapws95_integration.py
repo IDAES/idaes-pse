@@ -277,7 +277,7 @@ def test_heater_tpx_lg_total():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = HelmholtzParameterBlock(
-        pure_component='h2o',
+        pure_component="h2o",
         phase_presentation=PhaseType.LG,
         state_vars=StateVars.TPX,
     )
@@ -313,7 +313,7 @@ def test_heater_tpx_lg_total_2():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = HelmholtzParameterBlock(
-        pure_component='h2o',
+        pure_component="h2o",
         phase_presentation=PhaseType.LG,
         state_vars=StateVars.TPX,
     )
@@ -350,7 +350,7 @@ def test_heater_tpx_lg_phase():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = HelmholtzParameterBlock(
-        pure_component='h2o',
+        pure_component="h2o",
         phase_presentation=PhaseType.LG,
         state_vars=StateVars.TPX,
     )

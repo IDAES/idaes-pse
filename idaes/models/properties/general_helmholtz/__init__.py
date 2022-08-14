@@ -16,5 +16,7 @@ from .helmholtz_functions import (
     AmountBasis,
     HelmholtzThermoExpressions,
     HelmholtzParameterBlock,
+    add_helmholtz_external_functions,
+    available,
 )
 from .helmholtz_state import HelmholtzStateBlock, HelmholtzStateBlockData
