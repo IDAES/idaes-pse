@@ -53,11 +53,13 @@ try:
 except:
     _flib = None
 
+
 def available():
     """Returns True if the shared library is installed and loads propertly
     otherwise returns False
     """
     return (_flib is not None) and (_flib_ad is not None)
+
 
 class StateVars(enum.Enum):
     """
@@ -1015,7 +1017,15 @@ change.
         amount_basis=None,
         with_units=False,
     ):
-        return _suh_tpx(T=T, p=p, x=x, units=units, amount_basis=amount_basis, with_units=with_units, prop="h")
+        return self._suh_tpx(
+            T=T,
+            p=p,
+            x=x,
+            units=units,
+            amount_basis=amount_basis,
+            with_units=with_units,
+            prop="h",
+        )
 
     def stpx(
         self,
@@ -1026,7 +1036,15 @@ change.
         amount_basis=None,
         with_units=False,
     ):
-        return _suh_tpx(T=T, p=p, x=x, units=units, amount_basis=amount_basis, with_units=with_units, prop="s")
+        return self._suh_tpx(
+            T=T,
+            p=p,
+            x=x,
+            units=units,
+            amount_basis=amount_basis,
+            with_units=with_units,
+            prop="s",
+        )
 
     def utpx(
         self,
@@ -1037,8 +1055,15 @@ change.
         amount_basis=None,
         with_units=False,
     ):
-        return _suh_tpx(T=T, p=p, x=x, units=units, amount_basis=amount_basis, with_units=with_units, prop="u")
-
+        return self._suh_tpx(
+            T=T,
+            p=p,
+            x=x,
+            units=units,
+            amount_basis=amount_basis,
+            with_units=with_units,
+            prop="u",
+        )
 
     def _set_default_scaling(self):
         """Set default scaling parameters to be used if not otherwise set"""
