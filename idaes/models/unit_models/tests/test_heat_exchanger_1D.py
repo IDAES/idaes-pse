@@ -703,51 +703,50 @@ class TestBTX_countercurrent(object):
 
 
 # -----------------------------------------------------------------------------
-def build_model():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+class HX1D_Model:
+    def build_model():
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.LG}
-    )
+        m.fs.properties = iapws95.Iapws95ParameterBlock(
+            default={"phase_presentation": iapws95.PhaseType.LG}
+        )
 
-    m.fs.unit = HX1D(
-        default={
-            "shell_side": {"property_package": m.fs.properties},
-            "tube_side": {"property_package": m.fs.properties},
-            "flow_type": HeatExchangerFlowPattern.cocurrent,
-        }
-    )
+        m.fs.unit = HX1D(
+            default={
+                "shell_side": {"property_package": m.fs.properties},
+                "tube_side": {"property_package": m.fs.properties},
+                "flow_type": HeatExchangerFlowPattern.cocurrent,
+            }
+        )
 
-    m.fs.unit.d_shell.fix(1.04)
-    m.fs.unit.d_tube_outer.fix(0.01167)
-    m.fs.unit.d_tube_inner.fix(0.01067)
-    m.fs.unit.N_tubes.fix(10)
-    m.fs.unit.shell_length.fix(4.85)
-    m.fs.unit.tube_length.fix(4.85)
-    m.fs.unit.shell_heat_transfer_coefficient.fix(2000)
-    m.fs.unit.tube_heat_transfer_coefficient.fix(51000)
+        m.fs.unit.d_shell.fix(1.04)
+        m.fs.unit.d_tube_outer.fix(0.01167)
+        m.fs.unit.d_tube_inner.fix(0.01067)
+        m.fs.unit.N_tubes.fix(10)
+        m.fs.unit.shell_length.fix(4.85)
+        m.fs.unit.tube_length.fix(4.85)
+        m.fs.unit.shell_heat_transfer_coefficient.fix(2000)
+        m.fs.unit.tube_heat_transfer_coefficient.fix(51000)
 
-    m.fs.unit.shell_inlet.flow_mol[0].fix(5)
-    m.fs.unit.shell_inlet.enth_mol[0].fix(50000)
-    m.fs.unit.shell_inlet.pressure[0].fix(101325)
+        m.fs.unit.shell_inlet.flow_mol[0].fix(5)
+        m.fs.unit.shell_inlet.enth_mol[0].fix(50000)
+        m.fs.unit.shell_inlet.pressure[0].fix(101325)
 
-    m.fs.unit.tube_inlet.flow_mol[0].fix(5)
-    m.fs.unit.tube_inlet.enth_mol[0].fix(7000)
-    m.fs.unit.tube_inlet.pressure[0].fix(101325)
+        m.fs.unit.tube_inlet.flow_mol[0].fix(5)
+        m.fs.unit.tube_inlet.enth_mol[0].fix(7000)
+        m.fs.unit.tube_inlet.pressure[0].fix(101325)
 
-    return m
+        return m
 
+    def initialize_model(model):
+        model.fs.unit.initialize()
 
-def initialize_model(model):
-    model.fs.unit.initialize()
+    def solve_model(model):
+        results = solver.solve(model)
 
-
-def solve_model(model):
-    results = solver.solve(model)
-
-    # Check for optimal solution
-    assert check_optimal_termination(results)
+        # Check for optimal solution
+        assert check_optimal_termination(results)
 
 
 @pytest.mark.iapws
@@ -755,7 +754,7 @@ def solve_model(model):
 class TestIAPWS_cocurrent(object):
     @pytest.fixture(scope="class")
     def iapws(self):
-        return build_model()
+        return HX1D_Model.build_model()
 
     @pytest.mark.unit
     def test_build(self, iapws):
