@@ -28,34 +28,33 @@ from idaes.core.util.model_statistics import (
     activated_equalities_generator,
 )
 import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 
 # Set up solver
-solver = get_solver()
+solver = get_solver(options={"max_iter": 20})
 
 
 @pytest.mark.unit
 def build_turbine_for_run_test():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     # roughly based on NETL baseline studies
     m.fs.turb = HelmTurbineMultistage(
-        default={
-            "property_package": m.fs.properties,
-            "num_hp": 7,
-            "num_ip": 14,
-            "num_lp": 11,
-            "hp_split_locations": [4, 7],
-            "ip_split_locations": [5, 14],
-            "lp_split_locations": [4, 7, 9, 11],
-            "hp_disconnect": [7],
-            "ip_split_num_outlets": {14: 3},
-        }
+        property_package=m.fs.properties,
+        num_hp=7,
+        num_ip=14,
+        num_lp=11,
+        hp_split_locations=[4, 7],
+        ip_split_locations=[5, 14],
+        lp_split_locations=[4, 7, 9, 11],
+        hp_disconnect=[7],
+        ip_split_num_outlets={14: 3},
     )
 
     # Add reheater
-    m.fs.reheat = Heater(default={"property_package": m.fs.properties})
+    m.fs.reheat = Heater(property_package=m.fs.properties)
     m.fs.hp_to_reheat = Arc(
         source=m.fs.turb.hp_split[7].outlet_1, destination=m.fs.reheat.inlet
     )
@@ -114,8 +113,20 @@ def test_initialize():
     turb.inlet_split.inlet.flow_mol.unfix()
     turb.inlet_mix.use_equal_pressure_constraint()
 
+    for i, s in turb.inlet_stage.items():
+        iscale.set_scaling_factor(s.control_volume.work, 1e-5)
+    for i, s in turb.hp_stages.items():
+        iscale.set_scaling_factor(s.control_volume.work, 1e-5)
+    for i, s in turb.ip_stages.items():
+        iscale.set_scaling_factor(s.control_volume.work, 1e-5)
+    for i, s in turb.lp_stages.items():
+        iscale.set_scaling_factor(s.control_volume.work, 1e-5)
+    iscale.set_scaling_factor(turb.outlet_stage.control_volume.work, 1e-5)
+    iscale.set_scaling_factor(m.fs.reheat.control_volume.heat, 1e-5)
+
+    pyo.TransformationFactory("network.expand_arcs").apply_to(m)
     iscale.calculate_scaling_factors(m)
-    turb.initialize(outlvl=1)
+    turb.initialize(outlvl=idaeslog.ERROR, optarg={"max_iter": 20})
     turb.ip_stages[1].inlet.unfix()
 
     for t in m.fs.time:
@@ -128,7 +139,6 @@ def test_initialize():
         m.fs.reheat.inlet.pressure[t].value = pyo.value(
             turb.hp_split[7].outlet_1_state[t].pressure
         )
-    m.fs.reheat.initialize(outlvl=4)
 
     def reheat_T_rule(b, t):
         return m.fs.reheat.control_volume.properties_out[t].temperature == 880
@@ -137,7 +147,8 @@ def test_initialize():
         m.fs.reheat.flowsheet().time, rule=reheat_T_rule
     )
 
-    pyo.TransformationFactory("network.expand_arcs").apply_to(m)
+    m.fs.reheat.initialize(outlvl=idaeslog.ERROR, optarg={"max_iter": 20})
+
     m.fs.turb.outlet_stage.control_volume.properties_out[0].pressure.fix()
 
     assert degrees_of_freedom(m) == 0
@@ -165,11 +176,9 @@ def test_initialize_calc_cf():
 
     # Set the inlet of the ip section, which is disconnected
     # here to insert reheater
-    p = 7.802e06
+    p = 1.4e06
     hin = pyo.value(iapws95.htpx(T=880 * pyo.units.K, P=p * pyo.units.Pa))
     m.fs.turb.ip_stages[1].inlet.enth_mol[0].value = hin
-    # m.fs.turb.ip_stages[1].inlet.flow_mol[0].value = 25220.0
-    m.fs.turb.ip_stages[1].inlet.pressure[0].value = p
 
     for i, s in turb.hp_stages.items():
         s.ratioP[:] = 0.88
@@ -192,15 +201,35 @@ def test_initialize_calc_cf():
     turb.lp_split[11].split_fraction[0, "outlet_2"].fix(0.04)
 
     # Congiure with reheater for a full test
-    turb.ip_stages[1].inlet.fix()
     turb.inlet_split.inlet.flow_mol.unfix()
     turb.inlet_mix.use_equal_pressure_constraint()
     for i in m.fs.turb.inlet_stage:
         m.fs.turb.inlet_stage[i].ratioP[0] = 0.6
         turb.throttle_valve[i].Cv.fix()
         turb.throttle_valve[i].valve_opening.fix()
+
+    for i, s in turb.inlet_stage.items():
+        iscale.set_scaling_factor(s.control_volume.work, 1e-5)
+    for i, s in turb.hp_stages.items():
+        iscale.set_scaling_factor(s.control_volume.work, 1e-5)
+    for i, s in turb.ip_stages.items():
+        iscale.set_scaling_factor(s.control_volume.work, 1e-5)
+    for i, s in turb.lp_stages.items():
+        iscale.set_scaling_factor(s.control_volume.work, 1e-5)
+    iscale.set_scaling_factor(turb.outlet_stage.control_volume.work, 1e-5)
+    iscale.set_scaling_factor(m.fs.reheat.control_volume.heat, 1e-5)
+
+    pyo.TransformationFactory("network.expand_arcs").apply_to(m)
+
     iscale.calculate_scaling_factors(m)
-    turb.initialize(outlvl=1, calculate_inlet_cf=True, calculate_outlet_cf=True)
+    turb.initialize(
+        outlvl=idaeslog.DEBUG,
+        calculate_inlet_cf=True,
+        calculate_outlet_cf=True,
+        copy_disconneted_flow=True,
+        copy_disconneted_pressure=True,
+        optarg={"max_iter": 20},
+    )
     turb.ip_stages[1].inlet.unfix()
 
     for t in m.fs.time:
@@ -213,7 +242,6 @@ def test_initialize_calc_cf():
         m.fs.reheat.inlet.pressure[t].value = pyo.value(
             turb.hp_split[7].outlet_1_state[t].pressure
         )
-    m.fs.reheat.initialize(outlvl=4)
 
     def reheat_T_rule(b, t):
         return m.fs.reheat.control_volume.properties_out[t].temperature == 880
@@ -222,8 +250,14 @@ def test_initialize_calc_cf():
         m.fs.reheat.flowsheet().time, rule=reheat_T_rule
     )
 
-    pyo.TransformationFactory("network.expand_arcs").apply_to(m)
+    m.fs.reheat.initialize(outlvl=idaeslog.ERROR, optarg={"max_iter": 20})
+
     m.fs.turb.outlet_stage.control_volume.properties_out[0].pressure.fix()
+
+    eq_cons = activated_equalities_generator(m)
+    for c in eq_cons:
+        if abs(c.body() - c.lower) > 1e-4:
+            print(f"{c}, {abs(c.body() - c.lower)}")
 
     assert degrees_of_freedom(m) == 0
     solver.solve(m, tee=True)
