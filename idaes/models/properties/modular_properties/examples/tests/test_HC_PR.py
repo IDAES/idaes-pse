@@ -337,7 +337,7 @@ class TestStateBlock(object):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
-        initialize_model(model)
+        HC_PR_Model.initialize_model(model)
 
         assert degrees_of_freedom(model) == 0
 
@@ -354,7 +354,7 @@ class TestStateBlock(object):
 
     @pytest.mark.integration
     def test_solve(self, model):
-        solve_model(model)
+        HC_PR_Model.solve_model(model)
 
     @pytest.mark.integration
     def test_solution(self, model):

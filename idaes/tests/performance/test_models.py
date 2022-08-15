@@ -74,7 +74,6 @@ class TestModel(unittest.TestCase):
         timer.tic(None)
         try:
             assert_units_consistent(model)
-            self.recordData("unit consistency", timer.toc("unit consistency"))
 
             if not consistent_units:
                 # If consistent_units is False we expected this to fail, so raise Exception
@@ -85,6 +84,8 @@ class TestModel(unittest.TestCase):
                 pass
             else:
                 raise
+        finally:
+            self.recordData("unit consistency", timer.toc("unit consistency"))
 
         # Initialize model and record execution time
         gc.collect()
