@@ -286,7 +286,7 @@ _external_function_map = {
         "units": dimensionless,
         "arg_units": [
             dimensionless,
-            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kJ / pyo.units.kg,
             pyo.units.kPa,
         ],
     },
@@ -295,7 +295,7 @@ _external_function_map = {
         "units": dimensionless,
         "arg_units": [
             dimensionless,
-            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kJ / pyo.units.kg,
             pyo.units.kPa,
         ],
     },
@@ -569,8 +569,8 @@ class HelmholtzThermoExpressions(object):
         self.add_funcs(names=["h_func"])
         h = blk.h_func(c, delta_liq, tau) * (1 - x) + blk.h_func(c, delta_vap, tau) * x
         if self.amount_basis == AmountBasis.MOLE:
-            return h * self.param.uc["kJ/kg/K to J/mol/K"]
-        return h * self.param.uc["kJ/kg/K to J/kg/K"]
+            return h * self.param.uc["kJ/kg to J/mol"]
+        return h * self.param.uc["kJ/kg to J/kg"]
 
     def h_liq(self, **kwargs):
         """Liquid phase enthalpy"""
@@ -578,8 +578,8 @@ class HelmholtzThermoExpressions(object):
         self.add_funcs(names=["h_func"])
         h = blk.h_func(c, delta_liq, tau)
         if self.amount_basis == AmountBasis.MOLE:
-            return h * self.param.uc["kJ/kg/K to J/mol/K"]
-        return h * self.param.uc["kJ/kg/K to J/kg/K"]
+            return h * self.param.uc["kJ/kg to J/mol"]
+        return h * self.param.uc["kJ/kg to J/kg"]
 
     def h_vap(self, **kwargs):
         """Vapor phase enthalpy"""
@@ -587,8 +587,8 @@ class HelmholtzThermoExpressions(object):
         self.add_funcs(names=["h_func"])
         h = blk.h_func(c, delta_vap, tau)
         if self.amount_basis == AmountBasis.MOLE:
-            return h * self.param.uc["kJ/kg/K to J/mol/K"]
-        return h * self.param.uc["kJ/kg/K to J/kg/K"]
+            return h * self.param.uc["kJ/kg to J/mol"]
+        return h * self.param.uc["kJ/kg to J/kg"]
 
     def u(self, **kwargs):
         """Mixed phase internal energy"""
@@ -596,8 +596,8 @@ class HelmholtzThermoExpressions(object):
         self.add_funcs(names=["u_func"])
         u = blk.u_func(c, delta_liq, tau) * (1 - x) + blk.u_func(c, delta_vap, tau) * x
         if self.amount_basis == AmountBasis.MOLE:
-            return u * self.param.uc["kJ/kg/K to J/mol/K"]
-        return u * self.param.uc["kJ/kg/K to J/kg/K"]
+            return u * self.param.uc["kJ/kg to J/mol"]
+        return u * self.param.uc["kJ/kg to J/kg"]
 
     def u_liq(self, **kwargs):
         """Liquid phase internal energy"""
@@ -605,8 +605,8 @@ class HelmholtzThermoExpressions(object):
         self.add_funcs(names=["u_func"])
         u = blk.u_func(c, delta_liq, tau)
         if self.amount_basis == AmountBasis.MOLE:
-            return u * self.param.uc["kJ/kg/K to J/mol/K"]
-        return u * self.param.uc["kJ/kg/K to J/kg/K"]
+            return u * self.param.uc["kJ/kg to J/mol"]
+        return u * self.param.uc["kJ/kg to J/kg"]
 
     def u_vap(self, **kwargs):
         """Vapor phase internal energy"""
@@ -614,8 +614,8 @@ class HelmholtzThermoExpressions(object):
         self.add_funcs(names=["u_func"])
         u = blk.u_func(c, delta_vap, tau)
         if self.amount_basis == AmountBasis.MOLE:
-            return u * self.param.uc["kJ/kg/K to J/mol/K"]
-        return u * self.param.uc["kJ/kg/K to J/kg/K"]
+            return u * self.param.uc["kJ/kg to J/mol"]
+        return u * self.param.uc["kJ/kg to J/kg"]
 
     def g(self, **kwargs):
         """Mixed phase Gibb's free energy"""
@@ -623,8 +623,8 @@ class HelmholtzThermoExpressions(object):
         self.add_funcs(names=["g_func"])
         g = blk.g_func(c, delta_liq, tau) * (1 - x) + blk.g_func(c, delta_vap, tau) * x
         if self.amount_basis == AmountBasis.MOLE:
-            return g * self.param.uc["kJ/kg/K to J/mol/K"]
-        return g * self.param.uc["kJ/kg/K to J/kg/K"]
+            return g * self.param.uc["kJ/kg to J/mol"]
+        return g * self.param.uc["kJ/kg to J/kg"]
 
     def g_liq(self, **kwargs):
         """Liquid phase Gibb's free energy"""
@@ -632,8 +632,8 @@ class HelmholtzThermoExpressions(object):
         self.add_funcs(names=["g_func"])
         g = blk.g_func(c, delta_liq, tau)
         if self.amount_basis == AmountBasis.MOLE:
-            return g * self.param.uc["kJ/kg/K to J/mol/K"]
-        return g * self.param.uc["kJ/kg/K to J/kg/K"]
+            return g * self.param.uc["kJ/kg to J/mol"]
+        return g * self.param.uc["kJ/kg to J/kg"]
 
     def g_vap(self, **kwargs):
         """Vapor phase Gibb's free energy"""
@@ -641,8 +641,8 @@ class HelmholtzThermoExpressions(object):
         self.add_funcs(names=["g_func"])
         g = blk.g_func(c, delta_vap, tau)
         if self.amount_basis == AmountBasis.MOLE:
-            return g * self.param.uc["kJ/kg/K to J/mol/K"]
-        return g * self.param.uc["kJ/kg/K to J/kg/K"]
+            return g * self.param.uc["kJ/kg to J/mol"]
+        return g * self.param.uc["kJ/kg to J/kg"]
 
     def f(self, **kwargs):
         """Mixed phase Helmholtz free energy"""
@@ -650,8 +650,8 @@ class HelmholtzThermoExpressions(object):
         self.add_funcs(names=["f_func"])
         f = blk.f_func(c, delta_liq, tau) * (1 - x) + blk.f_func(c, delta_vap, tau) * x
         if self.amount_basis == AmountBasis.MOLE:
-            return f * self.param.uc["kJ/kg/K to J/mol/K"]
-        return f * self.param.uc["kJ/kg/K to J/kg/K"]
+            return f * self.param.uc["kJ/kg to J/mol"]
+        return f * self.param.uc["kJ/kg to J/kg"]
 
     def f_liq(self, **kwargs):
         """Liquid phase Helmholtz free energy"""
@@ -659,8 +659,8 @@ class HelmholtzThermoExpressions(object):
         self.add_funcs(names=["f_func"])
         f = blk.f_func(c, delta_liq, tau)
         if self.amount_basis == AmountBasis.MOLE:
-            return f * self.param.uc["kJ/kg/K to J/mol/K"]
-        return f * self.param.uc["kJ/kg/K to J/kg/K"]
+            return f * self.param.uc["kJ/kg to J/mol"]
+        return f * self.param.uc["kJ/kg to J/kg"]
 
     def f_vap(self, **kwargs):
         """Vapor phase Helmholtz free energy"""
@@ -668,8 +668,8 @@ class HelmholtzThermoExpressions(object):
         self.add_funcs(names=["f_func"])
         f = blk.f_func(c, delta_vap, tau)
         if self.amount_basis == AmountBasis.MOLE:
-            return f * self.param.uc["kJ/kg/K to J/mol/K"]
-        return f * self.param.uc["kJ/kg/K to J/kg/K"]
+            return f * self.param.uc["kJ/kg to J/mol"]
+        return f * self.param.uc["kJ/kg to J/kg"]
 
     def p(self, **kwargs):
         """Pressure"""
@@ -678,7 +678,7 @@ class HelmholtzThermoExpressions(object):
         # The following line looks a bit weird, but it is okay.  When in the
         # two-phase region the pressure for both phases is the same
         p = blk.p_func(c, delta_liq, tau) * (1 - x) + blk.p_func(c, delta_vap, tau) * x
-        return p * self.param.uc_kPa_to_Pa
+        return p * self.param.uc["kPa to Pa"]
 
     def v_mol(self, **kwargs):
         """Mixed phase molar volume"""
@@ -1516,8 +1516,6 @@ change.
         plt.title(f"P-H Diagram for {self.pure_component}")
         plt.xlabel("Enthalpy (kJ/kg)")
         plt.ylabel("Pressure (kPa)")
-
-        plt.show()
         return plt
 
     def st_diagram(self, ylim=None, xlim=None, points={}, figsize=None, dpi=None):
@@ -1604,7 +1602,6 @@ change.
         plt.title(f"T-S Diagram for {self.pure_component}")
         plt.xlabel("Entropy (kJ/kg/K)")
         plt.ylabel("Temperature (K)")
-        plt.show()
         return plt
 
     def pt_diagram(self, ylim=None, xlim=None, points={}, figsize=None, dpi=None):
@@ -1672,7 +1669,6 @@ change.
         plt.title(f"P-T Diagram for {self.pure_component}")
         plt.ylabel("Pressure (kPa)")
         plt.xlabel("Temperature (K)")
-        plt.show()
         return plt
 
     @classmethod
