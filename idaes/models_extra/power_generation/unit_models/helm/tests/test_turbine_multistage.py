@@ -179,8 +179,6 @@ def test_initialize_calc_cf():
     p = 1.4e06
     hin = pyo.value(iapws95.htpx(T=880 * pyo.units.K, P=p * pyo.units.Pa))
     m.fs.turb.ip_stages[1].inlet.enth_mol[0].value = hin
-    # m.fs.turb.ip_stages[1].inlet.flow_mol[0].value = 25220.0
-    # m.fs.turb.ip_stages[1].inlet.pressure[0].value = p
 
     for i, s in turb.hp_stages.items():
         s.ratioP[:] = 0.88
