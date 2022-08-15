@@ -21,17 +21,17 @@ from pyomo.common.tee import capture_output
 
 
 # Throw the standard levels in here, just let you access it all in one place
-CRITICAL = logging.CRITICAL # 50
-ERROR = logging.ERROR # 40
-WARNING = logging.WARNING # 30
-INFO_LOW = 21 #Most important info
-INFO = logging.INFO # 20  #Medium info (default)
-INFO_HIGH = 19 #Less improtant important info
-DEBUG = logging.DEBUG # 10
-NOTSET = logging.NOTSET # 0
+CRITICAL = logging.CRITICAL  # 50
+ERROR = logging.ERROR  # 40
+WARNING = logging.WARNING  # 30
+INFO_LOW = 21  # Most important info
+INFO = logging.INFO  # 20  #Medium info (default)
+INFO_HIGH = 19  # Less improtant important info
+DEBUG = logging.DEBUG  # 10
+NOTSET = logging.NOTSET  # 0
 
 
-levelname = { # the level name of all our extra info levels is "INFO"
+levelname = {  # the level name of all our extra info levels is "INFO"
     INFO_HIGH: "INFO",
     INFO_LOW: "INFO",
 }
@@ -85,7 +85,7 @@ def _getLogger(name, logger_name="idaes", level=None, tag=None):
 
 
 def getIdaesLogger(name, level=None, tag=None):
-    """ Return an idaes logger.
+    """Return an idaes logger.
 
     Args:
         name: usually __name__
@@ -100,8 +100,9 @@ def getIdaesLogger(name, level=None, tag=None):
 
 getLogger = getIdaesLogger
 
+
 def getSolveLogger(name, level=None, tag=None):
-    """ Get a solver logger
+    """Get a solver logger
 
     Args:
         name: logger name is "idaes.solve." + name (if name starts with "idaes."
@@ -114,8 +115,9 @@ def getSolveLogger(name, level=None, tag=None):
     """
     return _getLogger(name=name, logger_name="idaes.solve", level=level, tag=tag)
 
+
 def getInitLogger(name, level=None, tag=None):
-    """ Get a model initialization logger
+    """Get a model initialization logger
 
     Args:
         name: Object name (usually Pyomo Component name)
@@ -129,7 +131,7 @@ def getInitLogger(name, level=None, tag=None):
 
 
 def getModelLogger(name, level=None, tag=None):
-    """ Get a logger for an IDAES model. This function helps users keep their
+    """Get a logger for an IDAES model. This function helps users keep their
     loggers in a standard location and use the IDAES logging config.
 
     Args:
@@ -141,8 +143,7 @@ def getModelLogger(name, level=None, tag=None):
     Returns:
         logger
     """
-    return _getLogger(name=name, logger_name="idaes.model",
-                      level=level, tag=tag)
+    return _getLogger(name=name, logger_name="idaes.model", level=level, tag=tag)
 
 
 def condition(res):
@@ -167,6 +168,7 @@ def condition(res):
     except:
         return s
 
+
 def solver_capture_on():
     """This function turns on the solver capture for the solver_log context
     manager. If this is on, solver output within the solver_log context
@@ -174,6 +176,7 @@ def solver_capture_on():
 
     """
     idaes.cfg.logger_capture_solver = True
+
 
 def solver_capture_off():
     """This function turns off the solver capture for the solver_log context
@@ -183,9 +186,11 @@ def solver_capture_off():
     """
     idaes.cfg.logger_capture_solver = False
 
+
 def solver_capture():
     """Return True if solver capture is on or False otherwise."""
     return idaes.cfg.logger_capture_solver
+
 
 def log_tags():
     """Returns a set of logging tags to be logged.
@@ -194,6 +199,7 @@ def log_tags():
         (set) tags to be logged
     """
     return idaes.cfg.logger_tags
+
 
 def set_log_tags(tags):
     """Specify a set of tags to be logged
@@ -209,6 +215,7 @@ def set_log_tags(tags):
             raise ValueError("{} is not a valid logging tag".format(m))
     idaes.cfg.logger_tags = set(tags)
 
+
 def add_log_tag(tag):
     """Add a tag to the list of tags to log.
 
@@ -221,6 +228,7 @@ def add_log_tag(tag):
     if tag not in idaes.cfg.valid_logger_tags.union({None}):
         raise ValueError("{} is not a valid logging tag".format(tag))
     idaes.cfg.logger_tags.add(tag)
+
 
 def remove_log_tag(tag):
     """Remove a tag from the list of tags to log.
@@ -236,6 +244,7 @@ def remove_log_tag(tag):
     except ValueError:
         pass
 
+
 def valid_log_tags():
     """Returns a set of valid logging tag names.
 
@@ -243,6 +252,7 @@ def valid_log_tags():
         (set) valid tag names
     """
     return idaes.cfg.valid_logger_tags.union({None})
+
 
 def add_valid_log_tag(tag):
     """Add a tag name to the list of valid names.
@@ -269,11 +279,11 @@ class IOToLogTread(threading.Thread):
         self.stream = stream
         self.sleep = sleep
         self.stop = threading.Event()
-        self.pos=0
+        self.pos = 0
 
     def log_value(self):
         try:
-            v = self.stream.getvalue()[self.pos:]
+            v = self.stream.getvalue()[self.pos :]
         except ValueError:
             self.stop.set()
             return
@@ -288,7 +298,7 @@ class IOToLogTread(threading.Thread):
             self.stop.wait(self.sleep)
             if self.stop.isSet():
                 self.log_value()
-                self.pos=0
+                self.pos = 0
                 return
 
 

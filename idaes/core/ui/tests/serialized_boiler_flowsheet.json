@@ -1,0 +1,4492 @@
+{
+    "model": {
+        "stream_table": {
+            "index": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14
+            ],
+            "columns": [
+                "Variable",
+                "Units",
+                "s_tube_inlet_2",
+                "s_shell_inlet_1",
+                "s_tube_inlet_1",
+                "econ2ww",
+                "ww2prsh",
+                "prsh2plsh",
+                "plsh2fsh",
+                "FSHtoATMP1",
+                "fg_fsh2_separator",
+                "fg_fsh2rh",
+                "fg_fsh2PrSH",
+                "fg_rhtomix",
+                "fg_prsh2mix",
+                "fg_mix2econ",
+                "s_outlet_1",
+                "s_shell_outlet_1",
+                "s_tube_outlet_1"
+            ],
+            "data": [
+                [
+                    "Molar Flow (mol/s)",
+                    {
+                        "raw": "mole / second",
+                        "html": "mol/s",
+                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                    },
+                    [
+                        1,
+                        "unfixed"
+                    ],
+                    "-",
+                    [
+                        1,
+                        "unfixed"
+                    ],
+                    [
+                        1,
+                        "unfixed"
+                    ],
+                    [
+                        1,
+                        "unfixed"
+                    ],
+                    [
+                        1,
+                        "unfixed"
+                    ],
+                    [
+                        1,
+                        "unfixed"
+                    ],
+                    [
+                        1,
+                        "unfixed"
+                    ],
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    [
+                        1,
+                        "unfixed"
+                    ],
+                    "-",
+                    [
+                        1,
+                        "unfixed"
+                    ]
+                ],
+                [
+                    "Mass Flow (kg/s)",
+                    {
+                        "raw": "kilogram / second",
+                        "html": "kg/s",
+                        "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}"
+                    },
+                    [
+                        0.01802,
+                        "expression"
+                    ],
+                    "-",
+                    [
+                        0.01802,
+                        "expression"
+                    ],
+                    [
+                        0.01802,
+                        "expression"
+                    ],
+                    [
+                        0.01802,
+                        "expression"
+                    ],
+                    [
+                        0.01802,
+                        "expression"
+                    ],
+                    [
+                        0.01802,
+                        "expression"
+                    ],
+                    [
+                        0.01802,
+                        "expression"
+                    ],
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    [
+                        0.01802,
+                        "expression"
+                    ],
+                    "-",
+                    [
+                        0.01802,
+                        "expression"
+                    ]
+                ],
+                [
+                    "T (K)",
+                    {
+                        "raw": "kelvin",
+                        "html": "K",
+                        "latex": "\\mathrm{K}"
+                    },
+                    [
+                        286.34379,
+                        "expression"
+                    ],
+                    "-",
+                    [
+                        286.34379,
+                        "expression"
+                    ],
+                    [
+                        286.34379,
+                        "expression"
+                    ],
+                    [
+                        286.34379,
+                        "expression"
+                    ],
+                    [
+                        286.34379,
+                        "expression"
+                    ],
+                    [
+                        286.34379,
+                        "expression"
+                    ],
+                    [
+                        286.34379,
+                        "expression"
+                    ],
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    [
+                        286.34379,
+                        "expression"
+                    ],
+                    "-",
+                    [
+                        286.34379,
+                        "expression"
+                    ]
+                ],
+                [
+                    "P (Pa)",
+                    {
+                        "raw": "pascal",
+                        "html": "Pa",
+                        "latex": "\\mathrm{Pa}"
+                    },
+                    [
+                        100000.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    [
+                        100000.0,
+                        "unfixed"
+                    ],
+                    [
+                        100000.0,
+                        "unfixed"
+                    ],
+                    [
+                        100000.0,
+                        "unfixed"
+                    ],
+                    [
+                        100000.0,
+                        "unfixed"
+                    ],
+                    [
+                        100000.0,
+                        "unfixed"
+                    ],
+                    [
+                        100000.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    [
+                        100000.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    [
+                        100000.0,
+                        "unfixed"
+                    ]
+                ],
+                [
+                    "Vapor Fraction",
+                    {
+                        "raw": "dimensionless",
+                        "html": "",
+                        "latex": ""
+                    },
+                    [
+                        0.0,
+                        "expression"
+                    ],
+                    "-",
+                    [
+                        0.0,
+                        "expression"
+                    ],
+                    [
+                        0.0,
+                        "expression"
+                    ],
+                    [
+                        0.0,
+                        "expression"
+                    ],
+                    [
+                        0.0,
+                        "expression"
+                    ],
+                    [
+                        0.0,
+                        "expression"
+                    ],
+                    [
+                        0.0,
+                        "expression"
+                    ],
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    [
+                        0.0,
+                        "expression"
+                    ],
+                    "-",
+                    [
+                        0.0,
+                        "expression"
+                    ]
+                ],
+                [
+                    "Molar Enthalpy (J/mol) Vap",
+                    {
+                        "raw": "joule / mole",
+                        "html": "J/mol",
+                        "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}"
+                    },
+                    [
+                        2168.59605,
+                        null
+                    ],
+                    "-",
+                    [
+                        2168.59605,
+                        null
+                    ],
+                    [
+                        2168.59605,
+                        null
+                    ],
+                    [
+                        2168.59605,
+                        null
+                    ],
+                    [
+                        2168.59605,
+                        null
+                    ],
+                    [
+                        2168.59605,
+                        null
+                    ],
+                    [
+                        2168.59605,
+                        null
+                    ],
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    [
+                        2168.59605,
+                        null
+                    ],
+                    "-",
+                    [
+                        2168.59605,
+                        null
+                    ]
+                ],
+                [
+                    "Molar Enthalpy (J/mol) Liq",
+                    {
+                        "raw": "joule / mole",
+                        "html": "J/mol",
+                        "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}"
+                    },
+                    [
+                        1000.0,
+                        null
+                    ],
+                    "-",
+                    [
+                        1000.0,
+                        null
+                    ],
+                    [
+                        1000.0,
+                        null
+                    ],
+                    [
+                        1000.0,
+                        null
+                    ],
+                    [
+                        1000.0,
+                        null
+                    ],
+                    [
+                        1000.0,
+                        null
+                    ],
+                    [
+                        1000.0,
+                        null
+                    ],
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    [
+                        1000.0,
+                        null
+                    ],
+                    "-",
+                    [
+                        1000.0,
+                        null
+                    ]
+                ],
+                [
+                    "flow_mol_comp N2",
+                    {
+                        "raw": "mole / second",
+                        "html": "mol/s",
+                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                    },
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-"
+                ],
+                [
+                    "flow_mol_comp O2",
+                    {
+                        "raw": "mole / second",
+                        "html": "mol/s",
+                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                    },
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-"
+                ],
+                [
+                    "flow_mol_comp NO",
+                    {
+                        "raw": "mole / second",
+                        "html": "mol/s",
+                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                    },
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-"
+                ],
+                [
+                    "flow_mol_comp CO2",
+                    {
+                        "raw": "mole / second",
+                        "html": "mol/s",
+                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                    },
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-"
+                ],
+                [
+                    "flow_mol_comp H2O",
+                    {
+                        "raw": "mole / second",
+                        "html": "mol/s",
+                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                    },
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-"
+                ],
+                [
+                    "flow_mol_comp SO2",
+                    {
+                        "raw": "mole / second",
+                        "html": "mol/s",
+                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                    },
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    [
+                        1.0,
+                        "unfixed"
+                    ],
+                    "-"
+                ],
+                [
+                    "temperature",
+                    {
+                        "raw": "kelvin",
+                        "html": "K",
+                        "latex": "\\mathrm{K}"
+                    },
+                    "-",
+                    [
+                        500,
+                        "unfixed"
+                    ],
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    [
+                        500,
+                        "unfixed"
+                    ],
+                    [
+                        500,
+                        "unfixed"
+                    ],
+                    [
+                        500,
+                        "unfixed"
+                    ],
+                    [
+                        500,
+                        "unfixed"
+                    ],
+                    [
+                        500,
+                        "unfixed"
+                    ],
+                    [
+                        500,
+                        "unfixed"
+                    ],
+                    "-",
+                    [
+                        500,
+                        "unfixed"
+                    ],
+                    "-"
+                ],
+                [
+                    "pressure",
+                    {
+                        "raw": "pascal",
+                        "html": "Pa",
+                        "latex": "\\mathrm{Pa}"
+                    },
+                    "-",
+                    [
+                        101325.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    [
+                        101325.0,
+                        "unfixed"
+                    ],
+                    [
+                        101325.0,
+                        "unfixed"
+                    ],
+                    [
+                        101325.0,
+                        "unfixed"
+                    ],
+                    [
+                        101325.0,
+                        "unfixed"
+                    ],
+                    [
+                        101325.0,
+                        "unfixed"
+                    ],
+                    [
+                        101325.0,
+                        "unfixed"
+                    ],
+                    "-",
+                    [
+                        101325.0,
+                        "unfixed"
+                    ],
+                    "-"
+                ]
+            ]
+        },
+        "id": "boiler",
+        "unit_models": {
+            "ECON": {
+                "type": "boiler_heat_exchanger",
+                "image": "/images/icons/default.svg",
+                "performance_contents": {
+                    "0": {
+                        "Variable": "HX Coefficient",
+                        "Value": 100.0
+                    },
+                    "1": {
+                        "Variable": "HX Area",
+                        "Value": 1000.0
+                    },
+                    "2": {
+                        "Variable": "Heat Duty",
+                        "Value": 0.0
+                    }
+                },
+                "stream_contents": {
+                    "0": {
+                        "Variable": "Molar Flow (mol/s)",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": 1,
+                        "Hot Outlet": 1,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "1": {
+                        "Variable": "Mass Flow (kg/s)",
+                        "Units": {
+                            "raw": "kilogram / second",
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": 0.01802,
+                        "Hot Outlet": 0.01802,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "2": {
+                        "Variable": "T (K)",
+                        "Units": {
+                            "raw": "kelvin",
+                            "html": "K",
+                            "latex": "\\mathrm{K}"
+                        },
+                        "Hot Inlet": 286.34379,
+                        "Hot Outlet": 286.34379,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "3": {
+                        "Variable": "P (Pa)",
+                        "Units": {
+                            "raw": "pascal",
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}"
+                        },
+                        "Hot Inlet": 100000.0,
+                        "Hot Outlet": 100000.0,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "4": {
+                        "Variable": "Vapor Fraction",
+                        "Units": {
+                            "raw": "dimensionless",
+                            "html": "",
+                            "latex": ""
+                        },
+                        "Hot Inlet": 0.0,
+                        "Hot Outlet": 0.0,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "5": {
+                        "Variable": "Molar Enthalpy (J/mol) Vap",
+                        "Units": {
+                            "raw": "joule / mole",
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}"
+                        },
+                        "Hot Inlet": 2168.59605,
+                        "Hot Outlet": 2168.59605,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "6": {
+                        "Variable": "Molar Enthalpy (J/mol) Liq",
+                        "Units": {
+                            "raw": "joule / mole",
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}"
+                        },
+                        "Hot Inlet": 1000.0,
+                        "Hot Outlet": 1000.0,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "7": {
+                        "Variable": "flow_mol_comp N2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "8": {
+                        "Variable": "flow_mol_comp O2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "9": {
+                        "Variable": "flow_mol_comp NO",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "10": {
+                        "Variable": "flow_mol_comp CO2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "11": {
+                        "Variable": "flow_mol_comp H2O",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "12": {
+                        "Variable": "flow_mol_comp SO2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "13": {
+                        "Variable": "temperature",
+                        "Units": {
+                            "raw": "kelvin",
+                            "html": "K",
+                            "latex": "\\mathrm{K}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 500,
+                        "Cold Outlet": 500
+                    },
+                    "14": {
+                        "Variable": "pressure",
+                        "Units": {
+                            "raw": "pascal",
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 101325.0,
+                        "Cold Outlet": 101325.0
+                    }
+                }
+            },
+            "PrSH": {
+                "type": "boiler_heat_exchanger",
+                "image": "/images/icons/default.svg",
+                "performance_contents": {
+                    "0": {
+                        "Variable": "HX Coefficient",
+                        "Value": 100.0
+                    },
+                    "1": {
+                        "Variable": "HX Area",
+                        "Value": 1000.0
+                    },
+                    "2": {
+                        "Variable": "Heat Duty",
+                        "Value": 0.0
+                    }
+                },
+                "stream_contents": {
+                    "0": {
+                        "Variable": "Molar Flow (mol/s)",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": 1,
+                        "Hot Outlet": 1,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "1": {
+                        "Variable": "Mass Flow (kg/s)",
+                        "Units": {
+                            "raw": "kilogram / second",
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": 0.01802,
+                        "Hot Outlet": 0.01802,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "2": {
+                        "Variable": "T (K)",
+                        "Units": {
+                            "raw": "kelvin",
+                            "html": "K",
+                            "latex": "\\mathrm{K}"
+                        },
+                        "Hot Inlet": 286.34379,
+                        "Hot Outlet": 286.34379,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "3": {
+                        "Variable": "P (Pa)",
+                        "Units": {
+                            "raw": "pascal",
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}"
+                        },
+                        "Hot Inlet": 100000.0,
+                        "Hot Outlet": 100000.0,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "4": {
+                        "Variable": "Vapor Fraction",
+                        "Units": {
+                            "raw": "dimensionless",
+                            "html": "",
+                            "latex": ""
+                        },
+                        "Hot Inlet": 0.0,
+                        "Hot Outlet": 0.0,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "5": {
+                        "Variable": "Molar Enthalpy (J/mol) Vap",
+                        "Units": {
+                            "raw": "joule / mole",
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}"
+                        },
+                        "Hot Inlet": 2168.59605,
+                        "Hot Outlet": 2168.59605,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "6": {
+                        "Variable": "Molar Enthalpy (J/mol) Liq",
+                        "Units": {
+                            "raw": "joule / mole",
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}"
+                        },
+                        "Hot Inlet": 1000.0,
+                        "Hot Outlet": 1000.0,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "7": {
+                        "Variable": "flow_mol_comp N2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "8": {
+                        "Variable": "flow_mol_comp O2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "9": {
+                        "Variable": "flow_mol_comp NO",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "10": {
+                        "Variable": "flow_mol_comp CO2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "11": {
+                        "Variable": "flow_mol_comp H2O",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "12": {
+                        "Variable": "flow_mol_comp SO2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "13": {
+                        "Variable": "temperature",
+                        "Units": {
+                            "raw": "kelvin",
+                            "html": "K",
+                            "latex": "\\mathrm{K}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 500,
+                        "Cold Outlet": 500
+                    },
+                    "14": {
+                        "Variable": "pressure",
+                        "Units": {
+                            "raw": "pascal",
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 101325.0,
+                        "Cold Outlet": 101325.0
+                    }
+                }
+            },
+            "FSH": {
+                "type": "boiler_heat_exchanger",
+                "image": "/images/icons/default.svg",
+                "performance_contents": {
+                    "0": {
+                        "Variable": "HX Coefficient",
+                        "Value": 100.0
+                    },
+                    "1": {
+                        "Variable": "HX Area",
+                        "Value": 1000.0
+                    },
+                    "2": {
+                        "Variable": "Heat Duty",
+                        "Value": 0.0
+                    }
+                },
+                "stream_contents": {
+                    "0": {
+                        "Variable": "Molar Flow (mol/s)",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": 1,
+                        "Hot Outlet": 1,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "1": {
+                        "Variable": "Mass Flow (kg/s)",
+                        "Units": {
+                            "raw": "kilogram / second",
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": 0.01802,
+                        "Hot Outlet": 0.01802,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "2": {
+                        "Variable": "T (K)",
+                        "Units": {
+                            "raw": "kelvin",
+                            "html": "K",
+                            "latex": "\\mathrm{K}"
+                        },
+                        "Hot Inlet": 286.34379,
+                        "Hot Outlet": 286.34379,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "3": {
+                        "Variable": "P (Pa)",
+                        "Units": {
+                            "raw": "pascal",
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}"
+                        },
+                        "Hot Inlet": 100000.0,
+                        "Hot Outlet": 100000.0,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "4": {
+                        "Variable": "Vapor Fraction",
+                        "Units": {
+                            "raw": "dimensionless",
+                            "html": "",
+                            "latex": ""
+                        },
+                        "Hot Inlet": 0.0,
+                        "Hot Outlet": 0.0,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "5": {
+                        "Variable": "Molar Enthalpy (J/mol) Vap",
+                        "Units": {
+                            "raw": "joule / mole",
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}"
+                        },
+                        "Hot Inlet": 2168.59605,
+                        "Hot Outlet": 2168.59605,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "6": {
+                        "Variable": "Molar Enthalpy (J/mol) Liq",
+                        "Units": {
+                            "raw": "joule / mole",
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}"
+                        },
+                        "Hot Inlet": 1000.0,
+                        "Hot Outlet": 1000.0,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "7": {
+                        "Variable": "flow_mol_comp N2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "8": {
+                        "Variable": "flow_mol_comp O2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "9": {
+                        "Variable": "flow_mol_comp NO",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "10": {
+                        "Variable": "flow_mol_comp CO2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "11": {
+                        "Variable": "flow_mol_comp H2O",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "12": {
+                        "Variable": "flow_mol_comp SO2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "13": {
+                        "Variable": "temperature",
+                        "Units": {
+                            "raw": "kelvin",
+                            "html": "K",
+                            "latex": "\\mathrm{K}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 500,
+                        "Cold Outlet": 500
+                    },
+                    "14": {
+                        "Variable": "pressure",
+                        "Units": {
+                            "raw": "pascal",
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 101325.0,
+                        "Cold Outlet": 101325.0
+                    }
+                }
+            },
+            "RH": {
+                "type": "boiler_heat_exchanger",
+                "image": "/images/icons/default.svg",
+                "performance_contents": {
+                    "0": {
+                        "Variable": "HX Coefficient",
+                        "Value": 100.0
+                    },
+                    "1": {
+                        "Variable": "HX Area",
+                        "Value": 1000.0
+                    },
+                    "2": {
+                        "Variable": "Heat Duty",
+                        "Value": 0.0
+                    }
+                },
+                "stream_contents": {
+                    "0": {
+                        "Variable": "Molar Flow (mol/s)",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": 1,
+                        "Hot Outlet": 1,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "1": {
+                        "Variable": "Mass Flow (kg/s)",
+                        "Units": {
+                            "raw": "kilogram / second",
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": 0.01802,
+                        "Hot Outlet": 0.01802,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "2": {
+                        "Variable": "T (K)",
+                        "Units": {
+                            "raw": "kelvin",
+                            "html": "K",
+                            "latex": "\\mathrm{K}"
+                        },
+                        "Hot Inlet": 286.34379,
+                        "Hot Outlet": 286.34379,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "3": {
+                        "Variable": "P (Pa)",
+                        "Units": {
+                            "raw": "pascal",
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}"
+                        },
+                        "Hot Inlet": 100000.0,
+                        "Hot Outlet": 100000.0,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "4": {
+                        "Variable": "Vapor Fraction",
+                        "Units": {
+                            "raw": "dimensionless",
+                            "html": "",
+                            "latex": ""
+                        },
+                        "Hot Inlet": 0.0,
+                        "Hot Outlet": 0.0,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "5": {
+                        "Variable": "Molar Enthalpy (J/mol) Vap",
+                        "Units": {
+                            "raw": "joule / mole",
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}"
+                        },
+                        "Hot Inlet": 2168.59605,
+                        "Hot Outlet": 2168.59605,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "6": {
+                        "Variable": "Molar Enthalpy (J/mol) Liq",
+                        "Units": {
+                            "raw": "joule / mole",
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}"
+                        },
+                        "Hot Inlet": 1000.0,
+                        "Hot Outlet": 1000.0,
+                        "Cold Inlet": "-",
+                        "Cold Outlet": "-"
+                    },
+                    "7": {
+                        "Variable": "flow_mol_comp N2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "8": {
+                        "Variable": "flow_mol_comp O2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "9": {
+                        "Variable": "flow_mol_comp NO",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "10": {
+                        "Variable": "flow_mol_comp CO2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "11": {
+                        "Variable": "flow_mol_comp H2O",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "12": {
+                        "Variable": "flow_mol_comp SO2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 1.0,
+                        "Cold Outlet": 1.0
+                    },
+                    "13": {
+                        "Variable": "temperature",
+                        "Units": {
+                            "raw": "kelvin",
+                            "html": "K",
+                            "latex": "\\mathrm{K}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 500,
+                        "Cold Outlet": 500
+                    },
+                    "14": {
+                        "Variable": "pressure",
+                        "Units": {
+                            "raw": "pascal",
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}"
+                        },
+                        "Hot Inlet": "-",
+                        "Hot Outlet": "-",
+                        "Cold Inlet": 101325.0,
+                        "Cold Outlet": 101325.0
+                    }
+                }
+            },
+            "PlSH": {
+                "type": "heater",
+                "image": "/images/icons/heater_2.svg",
+                "performance_contents": {
+                    "0": {
+                        "Variable": "Heat Duty",
+                        "Value": 0.0
+                    }
+                },
+                "stream_contents": {
+                    "0": {
+                        "Variable": "Molar Flow (mol/s)",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Inlet": 1.0,
+                        "Outlet": 1.0
+                    },
+                    "1": {
+                        "Variable": "Mass Flow (kg/s)",
+                        "Units": {
+                            "raw": "kilogram / second",
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}"
+                        },
+                        "Inlet": 0.01802,
+                        "Outlet": 0.01802
+                    },
+                    "2": {
+                        "Variable": "T (K)",
+                        "Units": {
+                            "raw": "kelvin",
+                            "html": "K",
+                            "latex": "\\mathrm{K}"
+                        },
+                        "Inlet": 286.34379,
+                        "Outlet": 286.34379
+                    },
+                    "3": {
+                        "Variable": "P (Pa)",
+                        "Units": {
+                            "raw": "pascal",
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}"
+                        },
+                        "Inlet": 100000.0,
+                        "Outlet": 100000.0
+                    },
+                    "4": {
+                        "Variable": "Vapor Fraction",
+                        "Units": {
+                            "raw": "dimensionless",
+                            "html": "",
+                            "latex": ""
+                        },
+                        "Inlet": 0.0,
+                        "Outlet": 0.0
+                    },
+                    "5": {
+                        "Variable": "Molar Enthalpy (J/mol) Vap",
+                        "Units": {
+                            "raw": "joule / mole",
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}"
+                        },
+                        "Inlet": 2168.59605,
+                        "Outlet": 2168.59605
+                    },
+                    "6": {
+                        "Variable": "Molar Enthalpy (J/mol) Liq",
+                        "Units": {
+                            "raw": "joule / mole",
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}"
+                        },
+                        "Inlet": 1000.0,
+                        "Outlet": 1000.0
+                    }
+                }
+            },
+            "Water_wall": {
+                "type": "heater",
+                "image": "/images/icons/heater_2.svg",
+                "performance_contents": {
+                    "0": {
+                        "Variable": "Heat Duty",
+                        "Value": 0.0
+                    }
+                },
+                "stream_contents": {
+                    "0": {
+                        "Variable": "Molar Flow (mol/s)",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Inlet": 1.0,
+                        "Outlet": 1.0
+                    },
+                    "1": {
+                        "Variable": "Mass Flow (kg/s)",
+                        "Units": {
+                            "raw": "kilogram / second",
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}"
+                        },
+                        "Inlet": 0.01802,
+                        "Outlet": 0.01802
+                    },
+                    "2": {
+                        "Variable": "T (K)",
+                        "Units": {
+                            "raw": "kelvin",
+                            "html": "K",
+                            "latex": "\\mathrm{K}"
+                        },
+                        "Inlet": 286.34379,
+                        "Outlet": 286.34379
+                    },
+                    "3": {
+                        "Variable": "P (Pa)",
+                        "Units": {
+                            "raw": "pascal",
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}"
+                        },
+                        "Inlet": 100000.0,
+                        "Outlet": 100000.0
+                    },
+                    "4": {
+                        "Variable": "Vapor Fraction",
+                        "Units": {
+                            "raw": "dimensionless",
+                            "html": "",
+                            "latex": ""
+                        },
+                        "Inlet": 0.0,
+                        "Outlet": 0.0
+                    },
+                    "5": {
+                        "Variable": "Molar Enthalpy (J/mol) Vap",
+                        "Units": {
+                            "raw": "joule / mole",
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}"
+                        },
+                        "Inlet": 2168.59605,
+                        "Outlet": 2168.59605
+                    },
+                    "6": {
+                        "Variable": "Molar Enthalpy (J/mol) Liq",
+                        "Units": {
+                            "raw": "joule / mole",
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}"
+                        },
+                        "Inlet": 1000.0,
+                        "Outlet": 1000.0
+                    }
+                }
+            },
+            "Spl1": {
+                "type": "separator",
+                "image": "/images/icons/splitter.svg",
+                "performance_contents": {
+                    "0": {
+                        "Variable": "Split Fraction [('outlet_1',)]",
+                        "Value": 0.5
+                    },
+                    "1": {
+                        "Variable": "Split Fraction [('outlet_2',)]",
+                        "Value": 0.5
+                    }
+                },
+                "stream_contents": {
+                    "0": {
+                        "Variable": "flow_mol_comp N2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Inlet": 1.0,
+                        "outlet_1": 1.0,
+                        "outlet_2": 1.0
+                    },
+                    "1": {
+                        "Variable": "flow_mol_comp O2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Inlet": 1.0,
+                        "outlet_1": 1.0,
+                        "outlet_2": 1.0
+                    },
+                    "2": {
+                        "Variable": "flow_mol_comp NO",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Inlet": 1.0,
+                        "outlet_1": 1.0,
+                        "outlet_2": 1.0
+                    },
+                    "3": {
+                        "Variable": "flow_mol_comp CO2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Inlet": 1.0,
+                        "outlet_1": 1.0,
+                        "outlet_2": 1.0
+                    },
+                    "4": {
+                        "Variable": "flow_mol_comp H2O",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Inlet": 1.0,
+                        "outlet_1": 1.0,
+                        "outlet_2": 1.0
+                    },
+                    "5": {
+                        "Variable": "flow_mol_comp SO2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Inlet": 1.0,
+                        "outlet_1": 1.0,
+                        "outlet_2": 1.0
+                    },
+                    "6": {
+                        "Variable": "temperature",
+                        "Units": {
+                            "raw": "kelvin",
+                            "html": "K",
+                            "latex": "\\mathrm{K}"
+                        },
+                        "Inlet": 500.0,
+                        "outlet_1": 500.0,
+                        "outlet_2": 500.0
+                    },
+                    "7": {
+                        "Variable": "pressure",
+                        "Units": {
+                            "raw": "pascal",
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}"
+                        },
+                        "Inlet": 101325.0,
+                        "outlet_1": 101325.0,
+                        "outlet_2": 101325.0
+                    }
+                }
+            },
+            "mix1": {
+                "type": "mixer",
+                "image": "/images/icons/mixer.svg",
+                "performance_contents": {},
+                "stream_contents": {
+                    "0": {
+                        "Variable": "flow_mol_comp N2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Reheat_out": 1.0,
+                        "PrSH_out": 1.0,
+                        "Outlet": 1.0
+                    },
+                    "1": {
+                        "Variable": "flow_mol_comp O2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Reheat_out": 1.0,
+                        "PrSH_out": 1.0,
+                        "Outlet": 1.0
+                    },
+                    "2": {
+                        "Variable": "flow_mol_comp NO",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Reheat_out": 1.0,
+                        "PrSH_out": 1.0,
+                        "Outlet": 1.0
+                    },
+                    "3": {
+                        "Variable": "flow_mol_comp CO2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Reheat_out": 1.0,
+                        "PrSH_out": 1.0,
+                        "Outlet": 1.0
+                    },
+                    "4": {
+                        "Variable": "flow_mol_comp H2O",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Reheat_out": 1.0,
+                        "PrSH_out": 1.0,
+                        "Outlet": 1.0
+                    },
+                    "5": {
+                        "Variable": "flow_mol_comp SO2",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Reheat_out": 1.0,
+                        "PrSH_out": 1.0,
+                        "Outlet": 1.0
+                    },
+                    "6": {
+                        "Variable": "temperature",
+                        "Units": {
+                            "raw": "kelvin",
+                            "html": "K",
+                            "latex": "\\mathrm{K}"
+                        },
+                        "Reheat_out": 500.0,
+                        "PrSH_out": 500.0,
+                        "Outlet": 500.0
+                    },
+                    "7": {
+                        "Variable": "pressure",
+                        "Units": {
+                            "raw": "pascal",
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}"
+                        },
+                        "Reheat_out": 101325.0,
+                        "PrSH_out": 101325.0,
+                        "Outlet": 101325.0
+                    }
+                }
+            },
+            "ATMP1": {
+                "type": "mixer",
+                "image": "/images/icons/mixer.svg",
+                "performance_contents": {},
+                "stream_contents": {
+                    "0": {
+                        "Variable": "Molar Flow (mol/s)",
+                        "Units": {
+                            "raw": "mole / second",
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}"
+                        },
+                        "Steam": 1.0,
+                        "SprayWater": 1.0,
+                        "Outlet": 1.0
+                    },
+                    "1": {
+                        "Variable": "Mass Flow (kg/s)",
+                        "Units": {
+                            "raw": "kilogram / second",
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}"
+                        },
+                        "Steam": 0.01802,
+                        "SprayWater": 0.01802,
+                        "Outlet": 0.01802
+                    },
+                    "2": {
+                        "Variable": "T (K)",
+                        "Units": {
+                            "raw": "kelvin",
+                            "html": "K",
+                            "latex": "\\mathrm{K}"
+                        },
+                        "Steam": 286.34379,
+                        "SprayWater": 286.34379,
+                        "Outlet": 286.34379
+                    },
+                    "3": {
+                        "Variable": "P (Pa)",
+                        "Units": {
+                            "raw": "pascal",
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}"
+                        },
+                        "Steam": 100000.0,
+                        "SprayWater": 100000.0,
+                        "Outlet": 100000.0
+                    },
+                    "4": {
+                        "Variable": "Vapor Fraction",
+                        "Units": {
+                            "raw": "dimensionless",
+                            "html": "",
+                            "latex": ""
+                        },
+                        "Steam": 0.0,
+                        "SprayWater": 0.0,
+                        "Outlet": 0.0
+                    },
+                    "5": {
+                        "Variable": "Molar Enthalpy (J/mol) Vap",
+                        "Units": {
+                            "raw": "joule / mole",
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}"
+                        },
+                        "Steam": 2168.59605,
+                        "SprayWater": 2168.59605,
+                        "Outlet": 2168.59605
+                    },
+                    "6": {
+                        "Variable": "Molar Enthalpy (J/mol) Liq",
+                        "Units": {
+                            "raw": "joule / mole",
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}"
+                        },
+                        "Steam": 1000.0,
+                        "SprayWater": 1000.0,
+                        "Outlet": 1000.0
+                    }
+                }
+            },
+            "outlet_1": {
+                "type": "product",
+                "image": "/images/icons/product.svg"
+            },
+            "shell_outlet_1": {
+                "type": "product",
+                "image": "/images/icons/product.svg"
+            },
+            "tube_inlet_1": {
+                "type": "feed",
+                "image": "/images/icons/feed.svg"
+            },
+            "shell_inlet_1": {
+                "type": "feed",
+                "image": "/images/icons/feed.svg"
+            },
+            "tube_inlet_2": {
+                "type": "feed",
+                "image": "/images/icons/feed.svg"
+            },
+            "tube_outlet_1": {
+                "type": "product",
+                "image": "/images/icons/product.svg"
+            }
+        },
+        "arcs": {
+            "econ2ww": {
+                "source": "ECON",
+                "dest": "Water_wall",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000."
+            },
+            "ww2prsh": {
+                "source": "Water_wall",
+                "dest": "PrSH",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000."
+            },
+            "prsh2plsh": {
+                "source": "PrSH",
+                "dest": "PlSH",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000."
+            },
+            "plsh2fsh": {
+                "source": "PlSH",
+                "dest": "FSH",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000."
+            },
+            "FSHtoATMP1": {
+                "source": "FSH",
+                "dest": "ATMP1",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000."
+            },
+            "fg_fsh2_separator": {
+                "source": "FSH",
+                "dest": "Spl1",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325."
+            },
+            "fg_fsh2rh": {
+                "source": "Spl1",
+                "dest": "RH",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325."
+            },
+            "fg_fsh2PrSH": {
+                "source": "Spl1",
+                "dest": "PrSH",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325."
+            },
+            "fg_rhtomix": {
+                "source": "RH",
+                "dest": "mix1",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325."
+            },
+            "fg_prsh2mix": {
+                "source": "PrSH",
+                "dest": "mix1",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325."
+            },
+            "fg_mix2econ": {
+                "source": "mix1",
+                "dest": "ECON",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325."
+            },
+            "s_outlet_1": {
+                "source": "ATMP1",
+                "dest": "outlet_1",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000."
+            },
+            "s_shell_outlet_1": {
+                "source": "ECON",
+                "dest": "shell_outlet_1",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325."
+            },
+            "s_tube_inlet_1": {
+                "source": "tube_inlet_1",
+                "dest": "ECON",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000."
+            },
+            "s_shell_inlet_1": {
+                "source": "shell_inlet_1",
+                "dest": "FSH",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325."
+            },
+            "s_tube_inlet_2": {
+                "source": "tube_inlet_2",
+                "dest": "RH",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000."
+            },
+            "s_tube_outlet_1": {
+                "source": "RH",
+                "dest": "tube_outlet_1",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000."
+            }
+        }
+    },
+    "routing_config": {
+        "econ2ww": {
+            "cell_index": 2,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "ww2prsh": {
+            "cell_index": 4,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "prsh2plsh": {
+            "cell_index": 6,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "plsh2fsh": {
+            "cell_index": 8,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "FSHtoATMP1": {
+            "cell_index": 10,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "fg_fsh2_separator": {
+            "cell_index": 12,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "fg_fsh2rh": {
+            "cell_index": 14,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "fg_fsh2PrSH": {
+            "cell_index": 15,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "fg_rhtomix": {
+            "cell_index": 17,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "fg_prsh2mix": {
+            "cell_index": 18,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "fg_mix2econ": {
+            "cell_index": 19,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "s_outlet_1": {
+            "cell_index": 21,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "s_shell_outlet_1": {
+            "cell_index": 23,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "s_tube_inlet_1": {
+            "cell_index": 25,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "s_shell_inlet_1": {
+            "cell_index": 27,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "s_tube_inlet_2": {
+            "cell_index": 29,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        },
+        "s_tube_outlet_1": {
+            "cell_index": 31,
+            "cell_config": {
+                "gap": {
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    },
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    }
+                }
+            }
+        }
+    },
+    "cells": [
+        {
+            "type": "standard.Image",
+            "position": {
+                "x": 10,
+                "y": 10
+            },
+            "size": {
+                "width": 50,
+                "height": 50
+            },
+            "angle": 0,
+            "id": "ECON",
+            "z": 1,
+            "ports": {
+                "groups": {
+                    "in": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 10,
+                                "y": 35
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    },
+                    "out": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 41,
+                                "y": 35
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    }
+                },
+                "items": [
+                    {
+                        "group": "out",
+                        "id": 0
+                    },
+                    {
+                        "group": "in",
+                        "id": 21
+                    },
+                    {
+                        "group": "out",
+                        "id": 24
+                    },
+                    {
+                        "group": "in",
+                        "id": 27
+                    }
+                ]
+            },
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/default.svg"
+                },
+                "label": {
+                    "text": "ECON"
+                },
+                "root": {
+                    "title": "boiler_heat_exchanger"
+                }
+            }
+        },
+        {
+            "type": "standard.Image",
+            "position": {
+                "x": 110,
+                "y": 110
+            },
+            "size": {
+                "width": 50,
+                "height": 50
+            },
+            "angle": 0,
+            "id": "Water_wall",
+            "z": 1,
+            "ports": {
+                "groups": {
+                    "in": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 6,
+                                "y": 25,
+                                "dx": 1,
+                                "dy": 1
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    },
+                    "out": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 43,
+                                "y": 25,
+                                "dx": 1,
+                                "dy": 1
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 1
+                    },
+                    {
+                        "group": "out",
+                        "id": 2
+                    }
+                ]
+            },
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/heater_2.svg"
+                },
+                "label": {
+                    "text": "Water_wall"
+                },
+                "root": {
+                    "title": "heater"
+                }
+            }
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "ECON",
+                "port": 0
+            },
+            "target": {
+                "id": "Water_wall",
+                "port": 1
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "econ2ww",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "econ2ww"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        },
+        {
+            "type": "standard.Image",
+            "position": {
+                "x": 210,
+                "y": 210
+            },
+            "size": {
+                "width": 50,
+                "height": 50
+            },
+            "angle": 0,
+            "id": "PrSH",
+            "z": 1,
+            "ports": {
+                "groups": {
+                    "in": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 10,
+                                "y": 35
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    },
+                    "out": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 41,
+                                "y": 35
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 3
+                    },
+                    {
+                        "group": "out",
+                        "id": 4
+                    },
+                    {
+                        "group": "in",
+                        "id": 15
+                    },
+                    {
+                        "group": "out",
+                        "id": 18
+                    }
+                ]
+            },
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/default.svg"
+                },
+                "label": {
+                    "text": "PrSH"
+                },
+                "root": {
+                    "title": "boiler_heat_exchanger"
+                }
+            }
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "Water_wall",
+                "port": 2
+            },
+            "target": {
+                "id": "PrSH",
+                "port": 3
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "ww2prsh",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "ww2prsh"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        },
+        {
+            "type": "standard.Image",
+            "position": {
+                "x": 310,
+                "y": 310
+            },
+            "size": {
+                "width": 50,
+                "height": 50
+            },
+            "angle": 0,
+            "id": "PlSH",
+            "z": 1,
+            "ports": {
+                "groups": {
+                    "in": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 6,
+                                "y": 25,
+                                "dx": 1,
+                                "dy": 1
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    },
+                    "out": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 43,
+                                "y": 25,
+                                "dx": 1,
+                                "dy": 1
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 5
+                    },
+                    {
+                        "group": "out",
+                        "id": 6
+                    }
+                ]
+            },
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/heater_2.svg"
+                },
+                "label": {
+                    "text": "PlSH"
+                },
+                "root": {
+                    "title": "heater"
+                }
+            }
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "PrSH",
+                "port": 4
+            },
+            "target": {
+                "id": "PlSH",
+                "port": 5
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "prsh2plsh",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "prsh2plsh"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        },
+        {
+            "type": "standard.Image",
+            "position": {
+                "x": 410,
+                "y": 410
+            },
+            "size": {
+                "width": 50,
+                "height": 50
+            },
+            "angle": 0,
+            "id": "FSH",
+            "z": 1,
+            "ports": {
+                "groups": {
+                    "in": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 10,
+                                "y": 35
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    },
+                    "out": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 41,
+                                "y": 35
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 7
+                    },
+                    {
+                        "group": "out",
+                        "id": 8
+                    },
+                    {
+                        "group": "out",
+                        "id": 10
+                    },
+                    {
+                        "group": "in",
+                        "id": 29
+                    }
+                ]
+            },
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/default.svg"
+                },
+                "label": {
+                    "text": "FSH"
+                },
+                "root": {
+                    "title": "boiler_heat_exchanger"
+                }
+            }
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "PlSH",
+                "port": 6
+            },
+            "target": {
+                "id": "FSH",
+                "port": 7
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "plsh2fsh",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "plsh2fsh"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        },
+        {
+            "type": "standard.Image",
+            "position": {
+                "x": 510,
+                "y": 510
+            },
+            "size": {
+                "width": 50,
+                "height": 50
+            },
+            "angle": 0,
+            "id": "ATMP1",
+            "z": 1,
+            "ports": {
+                "groups": {
+                    "in": {
+                        "position": {
+                            "name": "left",
+                            "args": {}
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    },
+                    "out": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 48,
+                                "y": 25,
+                                "dx": 1,
+                                "dy": 1
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 9
+                    },
+                    {
+                        "group": "out",
+                        "id": 22
+                    }
+                ]
+            },
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/mixer.svg"
+                },
+                "label": {
+                    "text": "ATMP1"
+                },
+                "root": {
+                    "title": "mixer"
+                }
+            }
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "FSH",
+                "port": 8
+            },
+            "target": {
+                "id": "ATMP1",
+                "port": 9
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "FSHtoATMP1",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "FSHtoATMP1"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        },
+        {
+            "type": "standard.Image",
+            "position": {
+                "x": 610,
+                "y": 610
+            },
+            "size": {
+                "width": 50,
+                "height": 50
+            },
+            "angle": 0,
+            "id": "Spl1",
+            "z": 1,
+            "ports": {
+                "groups": {
+                    "in": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 2,
+                                "y": 25,
+                                "dx": 1,
+                                "dy": 1
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    },
+                    "out": {
+                        "position": {
+                            "name": "right",
+                            "args": {}
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 11
+                    },
+                    {
+                        "group": "out",
+                        "id": 12
+                    },
+                    {
+                        "group": "out",
+                        "id": 14
+                    }
+                ]
+            },
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/splitter.svg"
+                },
+                "label": {
+                    "text": "Spl1"
+                },
+                "root": {
+                    "title": "separator"
+                }
+            }
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "FSH",
+                "port": 10
+            },
+            "target": {
+                "id": "Spl1",
+                "port": 11
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "fg_fsh2_separator",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "fg_fsh2_separator"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        },
+        {
+            "type": "standard.Image",
+            "position": {
+                "x": 710,
+                "y": 710
+            },
+            "size": {
+                "width": 50,
+                "height": 50
+            },
+            "angle": 0,
+            "id": "RH",
+            "z": 1,
+            "ports": {
+                "groups": {
+                    "in": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 10,
+                                "y": 35
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    },
+                    "out": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 41,
+                                "y": 35
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 13
+                    },
+                    {
+                        "group": "out",
+                        "id": 16
+                    },
+                    {
+                        "group": "in",
+                        "id": 31
+                    },
+                    {
+                        "group": "out",
+                        "id": 32
+                    }
+                ]
+            },
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/default.svg"
+                },
+                "label": {
+                    "text": "RH"
+                },
+                "root": {
+                    "title": "boiler_heat_exchanger"
+                }
+            }
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "Spl1",
+                "port": 12
+            },
+            "target": {
+                "id": "RH",
+                "port": 13
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "fg_fsh2rh",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "fg_fsh2rh"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "Spl1",
+                "port": 14
+            },
+            "target": {
+                "id": "PrSH",
+                "port": 15
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "fg_fsh2PrSH",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "fg_fsh2PrSH"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        },
+        {
+            "type": "standard.Image",
+            "position": {
+                "x": 100,
+                "y": 10
+            },
+            "size": {
+                "width": 50,
+                "height": 50
+            },
+            "angle": 0,
+            "id": "mix1",
+            "z": 1,
+            "ports": {
+                "groups": {
+                    "in": {
+                        "position": {
+                            "name": "left",
+                            "args": {}
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    },
+                    "out": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 48,
+                                "y": 25,
+                                "dx": 1,
+                                "dy": 1
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 17
+                    },
+                    {
+                        "group": "in",
+                        "id": 19
+                    },
+                    {
+                        "group": "out",
+                        "id": 20
+                    }
+                ]
+            },
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/mixer.svg"
+                },
+                "label": {
+                    "text": "mix1"
+                },
+                "root": {
+                    "title": "mixer"
+                }
+            }
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "RH",
+                "port": 16
+            },
+            "target": {
+                "id": "mix1",
+                "port": 17
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "fg_rhtomix",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "fg_rhtomix"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "PrSH",
+                "port": 18
+            },
+            "target": {
+                "id": "mix1",
+                "port": 19
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "fg_prsh2mix",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "fg_prsh2mix"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "mix1",
+                "port": 20
+            },
+            "target": {
+                "id": "ECON",
+                "port": 21
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "fg_mix2econ",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "fg_mix2econ"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        },
+        {
+            "type": "standard.Image",
+            "position": {
+                "x": 200,
+                "y": 110
+            },
+            "size": {
+                "width": 50,
+                "height": 50
+            },
+            "angle": 0,
+            "id": "outlet_1",
+            "z": 1,
+            "ports": {
+                "groups": {
+                    "in": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 2,
+                                "y": 25,
+                                "dx": 1,
+                                "dy": 1
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 23
+                    }
+                ]
+            },
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/product.svg"
+                },
+                "label": {
+                    "text": "outlet_1"
+                },
+                "root": {
+                    "title": "product"
+                }
+            }
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "ATMP1",
+                "port": 22
+            },
+            "target": {
+                "id": "outlet_1",
+                "port": 23
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "s_outlet_1",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "s_outlet_1"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        },
+        {
+            "type": "standard.Image",
+            "position": {
+                "x": 300,
+                "y": 210
+            },
+            "size": {
+                "width": 50,
+                "height": 50
+            },
+            "angle": 0,
+            "id": "shell_outlet_1",
+            "z": 1,
+            "ports": {
+                "groups": {
+                    "in": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 2,
+                                "y": 25,
+                                "dx": 1,
+                                "dy": 1
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 25
+                    }
+                ]
+            },
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/product.svg"
+                },
+                "label": {
+                    "text": "shell_outlet_1"
+                },
+                "root": {
+                    "title": "product"
+                }
+            }
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "ECON",
+                "port": 24
+            },
+            "target": {
+                "id": "shell_outlet_1",
+                "port": 25
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "s_shell_outlet_1",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "s_shell_outlet_1"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        },
+        {
+            "type": "standard.Image",
+            "position": {
+                "x": 400,
+                "y": 310
+            },
+            "size": {
+                "width": 50,
+                "height": 50
+            },
+            "angle": 0,
+            "id": "tube_inlet_1",
+            "z": 1,
+            "ports": {
+                "groups": {
+                    "out": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 48,
+                                "y": 25,
+                                "dx": 1,
+                                "dy": 1
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    }
+                },
+                "items": [
+                    {
+                        "group": "out",
+                        "id": 26
+                    }
+                ]
+            },
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/feed.svg"
+                },
+                "label": {
+                    "text": "tube_inlet_1"
+                },
+                "root": {
+                    "title": "feed"
+                }
+            }
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "tube_inlet_1",
+                "port": 26
+            },
+            "target": {
+                "id": "ECON",
+                "port": 27
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "s_tube_inlet_1",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "s_tube_inlet_1"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        },
+        {
+            "type": "standard.Image",
+            "position": {
+                "x": 500,
+                "y": 410
+            },
+            "size": {
+                "width": 50,
+                "height": 50
+            },
+            "angle": 0,
+            "id": "shell_inlet_1",
+            "z": 1,
+            "ports": {
+                "groups": {
+                    "out": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 48,
+                                "y": 25,
+                                "dx": 1,
+                                "dy": 1
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    }
+                },
+                "items": [
+                    {
+                        "group": "out",
+                        "id": 28
+                    }
+                ]
+            },
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/feed.svg"
+                },
+                "label": {
+                    "text": "shell_inlet_1"
+                },
+                "root": {
+                    "title": "feed"
+                }
+            }
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "shell_inlet_1",
+                "port": 28
+            },
+            "target": {
+                "id": "FSH",
+                "port": 29
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "s_shell_inlet_1",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "s_shell_inlet_1"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        },
+        {
+            "type": "standard.Image",
+            "position": {
+                "x": 600,
+                "y": 510
+            },
+            "size": {
+                "width": 50,
+                "height": 50
+            },
+            "angle": 0,
+            "id": "tube_inlet_2",
+            "z": 1,
+            "ports": {
+                "groups": {
+                    "out": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 48,
+                                "y": 25,
+                                "dx": 1,
+                                "dy": 1
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    }
+                },
+                "items": [
+                    {
+                        "group": "out",
+                        "id": 30
+                    }
+                ]
+            },
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/feed.svg"
+                },
+                "label": {
+                    "text": "tube_inlet_2"
+                },
+                "root": {
+                    "title": "feed"
+                }
+            }
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "tube_inlet_2",
+                "port": 30
+            },
+            "target": {
+                "id": "RH",
+                "port": 31
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "s_tube_inlet_2",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "s_tube_inlet_2"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        },
+        {
+            "type": "standard.Image",
+            "position": {
+                "x": 700,
+                "y": 610
+            },
+            "size": {
+                "width": 50,
+                "height": 50
+            },
+            "angle": 0,
+            "id": "tube_outlet_1",
+            "z": 1,
+            "ports": {
+                "groups": {
+                    "in": {
+                        "position": {
+                            "name": "left",
+                            "args": {
+                                "x": 2,
+                                "y": 25,
+                                "dx": 1,
+                                "dy": 1
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>"
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 33
+                    }
+                ]
+            },
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/product.svg"
+                },
+                "label": {
+                    "text": "tube_outlet_1"
+                },
+                "root": {
+                    "title": "product"
+                }
+            }
+        },
+        {
+            "type": "standard.Link",
+            "source": {
+                "id": "RH",
+                "port": 32
+            },
+            "target": {
+                "id": "tube_outlet_1",
+                "port": 33
+            },
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "connector": {
+                "name": "jumpover",
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                }
+            },
+            "id": "s_tube_outlet_1",
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "white",
+                            "stroke-width": 0,
+                            "fill-opacity": 0
+                        },
+                        "text": {
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                            "fill": "black",
+                            "text-anchor": "left",
+                            "display": "none"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "s_tube_outlet_1"
+                        }
+                    }
+                }
+            ],
+            "z": 2
+        }
+    ]
+}

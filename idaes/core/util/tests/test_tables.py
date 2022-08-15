@@ -32,6 +32,7 @@ from idaes.core import (
 from idaes.core.util.tables import (
     arcs_to_stream_dict,
     create_stream_table_dataframe,
+    create_stream_table_ui,
     stream_table_dataframe_to_string,
     generate_table,
     tag_state_quantities,
@@ -86,6 +87,29 @@ def m():
     m.fs.stream_array = Arc(range(2), rule=stream_array_rule)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
+
+    return m
+
+
+@pytest.fixture()
+def m_with_variable_types():
+    """Flash unit model. Use '.fs' attribute to get the flowsheet."""
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    # Flash properties
+    m.fs.properties = BTXParameterBlock(
+        default={
+            "valid_phase": ("Liq", "Vap"),
+            "activity_coeff_model": "Ideal",
+            "state_vars": "FTPz",
+        }
+    )
+    # Flash unit
+    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    # Adding fixed and unfixed variables
+    m.fs.flash.inlet.pressure.fix(3.14)
+    m.fs.flash.inlet.pressure.unfix()
+    m.fs.flash.inlet.temperature.fix(368)
 
     return m
 
@@ -241,6 +265,18 @@ def test_create_stream_table_dataframe_from_Arc(m):
 
 
 @pytest.mark.unit
+def test_create_stream_table_ui(m_with_variable_types):
+    m = m_with_variable_types
+
+    state_name = "state"
+    state_dict = {state_name: m.fs.flash.inlet}
+    df = create_stream_table_ui(state_dict)
+
+    assert df.loc["pressure"][state_name] == (3.14, "unfixed")
+    assert df.loc["temperature"][state_name] == (368, "fixed")
+
+
+@pytest.mark.unit
 def test_create_stream_table_dataframe_wrong_type(m):
     with pytest.raises(TypeError):
         create_stream_table_dataframe({"state": m.fs.tank1})
@@ -256,9 +292,10 @@ def test_create_stream_table_dataframe_ordering(m):
     df = create_stream_table_dataframe(state_dict)
 
     columns = list(df)
-    assert columns[0] == "state1"
-    assert columns[1] == "state3"
-    assert columns[2] == "state2"
+    assert columns[0] == "Units"
+    assert columns[1] == "state1"
+    assert columns[2] == "state3"
+    assert columns[3] == "state2"
 
 
 @pytest.mark.unit

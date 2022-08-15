@@ -261,6 +261,7 @@ class TestingModel:
 
 
 class TestingForecaster(AbstractPriceForecaster):
+
     """
     A fake forecaster class for testing.
     """

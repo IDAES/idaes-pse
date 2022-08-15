@@ -18,6 +18,7 @@ _command_import_start_time = time.time()
 from idaes.commands.base import command_base as cb
 
 import pkgutil
+
 # import all the commands
 for loader, module_name, is_pkg in pkgutil.walk_packages(__path__):
     if module_name == "base":

@@ -1228,6 +1228,7 @@ class Bidder(StochasticProgramBidder):
                 full_bids[t][gen]["p_cost"] = bids[t_idx][gen]
                 full_bids[t][gen]["p_min"] = min([p[0] for p in bids[t_idx][gen]])
                 full_bids[t][gen]["p_max"] = max([p[0] for p in bids[t_idx][gen]])
+
                 full_bids[t][gen]["startup_capacity"] = full_bids[t][gen]["p_min"]
                 full_bids[t][gen]["shutdown_capacity"] = full_bids[t][gen]["p_min"]
 

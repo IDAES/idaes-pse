@@ -65,23 +65,21 @@ solver = get_solver()
 @pytest.mark.unit
 def test_no_deprecated(caplog):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
     m.fs.prop_fluegas = FlueGasParameterBlock()
 
     caplog.clear()
     m.fs.unit = BoilerHeatExchanger(
-        default={
-            "delta_temperature_callback": delta_temperature_lmtd_callback,
-            "tube": {"property_package": m.fs.prop_steam},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
-            "has_holdup": True,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
-            "has_radiation": True,
-        }
+        delta_temperature_callback=delta_temperature_lmtd_callback,
+        tube={"property_package": m.fs.prop_steam},
+        shell={"property_package": m.fs.prop_fluegas},
+        has_pressure_change=True,
+        has_holdup=True,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        tube_arrangement=TubeArrangement.inLine,
+        side_1_water_phase="Liq",
+        has_radiation=True,
     )
     n_warn = 0
     n_depreacted = 0
@@ -91,144 +89,6 @@ def test_no_deprecated(caplog):
     # TODO: 1 warning due to overloading initialize, not sure what the rest
     # of this is about
     assert n_warn == 0  # 1 DeltaTMethod Enum and 1 for delta_T_method option
-
-
-@pytest.mark.unit
-def test_deprecated_delta_T_method(caplog):
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
-    m.fs.prop_fluegas = FlueGasParameterBlock()
-
-    caplog.clear()
-    m.fs.unit = BoilerHeatExchanger(
-        default={
-            "delta_temperature_callback": delta_temperature_lmtd_callback,
-            "tube": {"property_package": m.fs.prop_steam},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
-            "has_holdup": True,
-            "delta_T_method": HeatExchangerFlowPattern.countercurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
-            "has_radiation": True,
-        }
-    )
-    n_warn = 0
-    n_depreacted = 0
-    for record in caplog.records:
-        if record.levelno == idaeslog.WARNING:
-            n_warn += 1
-        if "deprecated" in record.msg:
-            n_depreacted += 1
-    assert n_warn == 1  # overload initialize and detalT method
-    assert n_depreacted == 1
-    assert m.fs.unit.config.flow_pattern == HeatExchangerFlowPattern.countercurrent
-
-
-@pytest.mark.unit
-def test_deprecated_delta_T_method_enum1(caplog):
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
-    m.fs.prop_fluegas = FlueGasParameterBlock()
-
-    caplog.clear()
-    m.fs.unit = BoilerHeatExchanger(
-        default={
-            "delta_temperature_callback": delta_temperature_lmtd_callback,
-            "tube": {"property_package": m.fs.prop_steam},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
-            "has_holdup": True,
-            "delta_T_method": DeltaTMethod.counterCurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
-            "has_radiation": True,
-        }
-    )
-    n_warn = 0
-    n_depreacted = 0
-    for record in caplog.records:
-        if record.levelno == idaeslog.WARNING:
-            n_warn += 1
-        if "deprecated" in record.msg:
-            n_depreacted += 1
-    assert n_warn == 3
-    assert n_depreacted == 3
-    assert m.fs.unit.config.flow_pattern == HeatExchangerFlowPattern.countercurrent
-
-
-@pytest.mark.unit
-def test_deprecated_delta_T_method_enum1(caplog):
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
-    m.fs.prop_fluegas = FlueGasParameterBlock()
-
-    caplog.clear()
-    m.fs.unit = BoilerHeatExchanger(
-        default={
-            "delta_temperature_callback": delta_temperature_lmtd_callback,
-            "tube": {"property_package": m.fs.prop_steam},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
-            "has_holdup": True,
-            "delta_T_method": DeltaTMethod.coCurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
-            "has_radiation": True,
-        }
-    )
-    n_warn = 0
-    n_depreacted = 0
-    for record in caplog.records:
-        if record.levelno == idaeslog.WARNING:
-            n_warn += 1
-        if "deprecated" in record.msg:
-            n_depreacted += 1
-    assert n_warn == 3
-    assert n_depreacted == 3
-    assert m.fs.unit.config.flow_pattern == HeatExchangerFlowPattern.cocurrent
-
-
-@pytest.mark.unit
-def test_deprecated_prop_pack(caplog):
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
-    m.fs.prop_fluegas = FlueGasParameterBlock()
-
-    caplog.clear()
-    m.fs.unit = BoilerHeatExchanger(
-        default={
-            "delta_temperature_callback": delta_temperature_lmtd_callback,
-            "side_1_property_package": m.fs.prop_steam,
-            "side_2_property_package": m.fs.prop_fluegas,
-            "has_pressure_change": True,
-            "has_holdup": True,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
-            "has_radiation": True,
-        }
-    )
-    n_warn = 0
-    n_depreacted = 0
-    for record in caplog.records:
-        if record.levelno == idaeslog.WARNING:
-            n_warn += 1
-        if "deprecated" in record.msg:
-            n_depreacted += 1
-    assert n_warn == 2
-    assert n_depreacted == 2
-    assert isinstance(
-        m.fs.unit.config.hot_side_config.property_package, FlueGasParameterBlock
-    )
-    assert isinstance(
-        m.fs.unit.config.cold_side_config.property_package,
-        iapws95.Iapws95ParameterBlock,
-    )
 
 
 def tc(delta_temperature_callback=delta_temperature_underwood_tune_callback):
