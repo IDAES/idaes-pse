@@ -27,12 +27,14 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
-    number_total_constraints)
+    number_total_constraints,
+)
 from idaes.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
 
-from idaes.models_extra.power_generation.properties.sofc.sofc_keras_surrogate \
-    import SofcSurrogate
+from idaes.models_extra.power_generation.properties.sofc.sofc_keras_surrogate import (
+    SofcSurrogate,
+)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -105,16 +107,19 @@ def test_solve(build_rom):
     assert pyo.check_optimal_termination(results)
 
     assert pytest.approx(976.9, abs=1e-1) == pyo.value(
-        m.fs.sofc.anode_outlet_temperature[0])
+        m.fs.sofc.anode_outlet_temperature[0]
+    )
 
     assert pytest.approx(998.5, abs=1e-1) == pyo.value(
-        m.fs.sofc.cathode_outlet_temperature[0])
+        m.fs.sofc.cathode_outlet_temperature[0]
+    )
 
-    assert pytest.approx(0.876, abs=1e-3) == pyo.value(
-        m.fs.sofc.stack_voltage[0])
+    assert pytest.approx(0.876, abs=1e-3) == pyo.value(m.fs.sofc.stack_voltage[0])
 
     assert pytest.approx(1022.1, abs=1e-1) == pyo.value(
-        m.fs.sofc.max_cell_temperature[0])
+        m.fs.sofc.max_cell_temperature[0]
+    )
 
     assert pytest.approx(99.4, abs=1e-1) == pyo.value(
-        m.fs.sofc.delta_cell_temperature[0])
+        m.fs.sofc.delta_cell_temperature[0]
+    )

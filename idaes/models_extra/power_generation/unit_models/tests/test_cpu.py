@@ -25,8 +25,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import unit model
-from idaes.models_extra.power_generation.unit_models.cpu import \
-    CarbonProcessingUnit
+from idaes.models_extra.power_generation.unit_models.cpu import CarbonProcessingUnit
 
 from idaes.core.solvers import get_solver
 
@@ -77,7 +76,9 @@ def test_cpu(model):
     results = solver.solve(model, tee=True)
 
     # test outlet flowrates, CO2 purity, heat duty, and work
-    assert pytest.approx(1103.3, abs=1e-1) == pyo.value(model.fs.cpu.pureco2.flow_mol[0])
+    assert pytest.approx(1103.3, abs=1e-1) == pyo.value(
+        model.fs.cpu.pureco2.flow_mol[0]
+    )
     assert pytest.approx(37.1, abs=1e-1) == pyo.value(model.fs.cpu.water.flow_mol[0])
     assert pytest.approx(119.6, abs=1e-1) == pyo.value(model.fs.cpu.vent.flow_mol[0])
 
@@ -88,4 +89,3 @@ def test_cpu(model):
 
     assert degrees_of_freedom(model) == 0
     assert pyo.check_optimal_termination(results)
-
