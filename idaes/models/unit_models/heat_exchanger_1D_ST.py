@@ -11,7 +11,9 @@
 # license information.
 #################################################################################
 """
-Generic IDAES 1D Heat Exchanger Model with overall area and heat transfer coefficient
+Basic IDAES 1D Heat Exchanger Model.
+
+1D Single pass shell and tube HX model with 0D wall conduction model
 """
 # Import Python libraries
 from enum import Enum
@@ -23,7 +25,6 @@ from pyomo.environ import (
     Constraint,
     value,
     units as pyunits,
-    as_quantity,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
@@ -54,10 +55,16 @@ from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
 
-__author__ = "Jaffer Ghouse, Andrew Lee"
+__author__ = "Jaffer Ghouse"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+class WallConductionType(Enum):
+    zero_dimensional = 0
+    one_dimensional = 1
+    two_dimensional = 2
 
 
 @declare_process_block_class("HeatExchanger1D")
@@ -256,6 +263,20 @@ discretizing length domain (default=3)""",
 (default)
 - HeatExchangerFlowPattern.countercurrent: hot side flows from 0 to 1
 cold side flows from 1 to 0""",
+        ),
+    )
+    CONFIG.declare(
+        "has_wall_conduction",
+        ConfigValue(
+            default=WallConductionType.zero_dimensional,
+            domain=In(WallConductionType),
+            description="Conduction model for cold side wall",
+            doc="""Argument to enable type of wall heat conduction model.
+- WallConductionType.zero_dimensional - 0D wall model (default),
+- WallConductionType.one_dimensional - 1D wall model along the thickness of the
+tube,
+- WallConductionType.two_dimensional - 2D wall model along the lenghth and
+thickness of the tube""",
         ),
     )
     CONFIG.declare(
@@ -473,39 +494,16 @@ cold side flows from 1 to 0""",
         self.add_inlet_port(name="cold_side_inlet", block=self.cold_side)
         self.add_outlet_port(name="cold_side_outlet", block=self.cold_side)
 
+        # Add reference to control volume geometry
+        add_object_reference(self, "hot_side_area", self.hot_side.area)
+        add_object_reference(self, "hot_side_length", self.hot_side.length)
+        add_object_reference(self, "cold_side_area", self.cold_side.area)
+        add_object_reference(self, "cold_side_length", self.cold_side.length)
+
         # Add references to the user provided aliases if applicable
         add_hx_references(self)
 
-        self._make_geometry()
         self._make_performance()
-
-    def _make_geometry(self):
-        # Add reference to control volume geometry
-        add_object_reference(self, "area", self.hot_side.area)
-        add_object_reference(self, "length", self.hot_side.length)
-
-        # Equate hot and cold side geometries
-        hot_side_units = (
-            self.config.hot_side.property_package.get_metadata().get_derived_units
-        )
-
-        @self.Constraint(self.flowsheet().time, doc="Equating hot and cold side areas")
-        def area_equality(self, t):
-            return (
-                pyunits.convert(self.cold_side.area, to_units=hot_side_units("area"))
-                == self.hot_side.area
-            )
-
-        @self.Constraint(
-            self.flowsheet().time, doc="Equating hot and cold side lengths"
-        )
-        def length_equality(self, t):
-            return (
-                pyunits.convert(
-                    self.cold_side.length, to_units=hot_side_units("length")
-                )
-                == self.hot_side.length
-            )
 
     def _make_performance(self):
         """
@@ -520,46 +518,135 @@ cold side flows from 1 to 0""",
         hot_side_units = (
             self.config.hot_side.property_package.get_metadata().get_derived_units
         )
+        cold_side_units = (
+            self.config.cold_side.property_package.get_metadata().get_derived_units
+        )
+
+        # Unit model variables
+        # HX dimensions
+        self.d_hot_side = Var(
+            initialize=1, doc="Diameter of hot side", units=hot_side_units("length")
+        )
+        self.d_cold_side_outer = Var(
+            initialize=0.011,
+            doc="Outer diameter of cold side",
+            units=hot_side_units("length"),
+        )
+        self.d_cold_side_inner = Var(
+            initialize=0.010,
+            doc="Inner diameter of cold side",
+            units=hot_side_units("length"),
+        )
+        self.N_tubes = Var(
+            initialize=1, doc="Number of tubes", units=pyunits.dimensionless
+        )
+
+        # Note: In addition to the above variables, "hot_side_length" and
+        # "cold_side_length" need to be fixed at the flowsheet level
 
         # Performance variables
-        self.heat_transfer_coefficient = Var(
+        self.hot_side_heat_transfer_coefficient = Var(
             self.flowsheet().time,
             self.hot_side.length_domain,
             initialize=50,
-            doc="Average heat transfer coefficient",
+            doc="Heat transfer coefficient",
             units=hot_side_units("heat_transfer_coefficient"),
         )
-
-        @self.Constraint(
+        self.cold_side_heat_transfer_coefficient = Var(
             self.flowsheet().time,
-            self.hot_side.length_domain,
-            doc="Heat transfer between hot_side and cold_side",
+            self.cold_side.length_domain,
+            initialize=50,
+            doc="Heat transfer coefficient",
+            units=cold_side_units("heat_transfer_coefficient"),
         )
-        def heat_transfer_eq(self, t, x):
-            return self.hot_side.heat[t, x] == -(
-                self.heat_transfer_coefficient[t, x]
-                * self.area
-                / self.length
-                * (
-                    self.hot_side.properties[t, x].temperature
-                    - pyunits.convert(
-                        self.cold_side.properties[t, x].temperature,
-                        to_units=hot_side_units("temperature"),
+
+        # Wall 0D model (Q_hot_side = Q_cold_side*N_tubes)
+        if self.config.has_wall_conduction == WallConductionType.zero_dimensional:
+            self.temperature_wall = Var(
+                self.flowsheet().time,
+                self.cold_side.length_domain,
+                initialize=298.15,
+                units=hot_side_units("temperature"),
+            )
+
+            # Performance equations
+            # Energy transfer between hot_side and cold_side wall
+
+            @self.Constraint(
+                self.flowsheet().time,
+                self.hot_side.length_domain,
+                doc="Heat transfer between hot_side and cold_side",
+            )
+            def hot_side_heat_transfer_eq(self, t, x):
+                return self.hot_side.heat[t, x] == -self.N_tubes * (
+                    self.hot_side_heat_transfer_coefficient[t, x]
+                    * c.pi
+                    * self.d_cold_side_outer
+                    * (
+                        self.hot_side.properties[t, x].temperature
+                        - self.temperature_wall[t, x]
                     )
                 )
+
+            # Energy transfer between cold_side wall and cold_side
+            @self.Constraint(
+                self.flowsheet().time,
+                self.cold_side.length_domain,
+                doc="Convective heat transfer",
+            )
+            def cold_side_heat_transfer_eq(self, t, x):
+                return self.cold_side.heat[
+                    t, x
+                ] == self.cold_side_heat_transfer_coefficient[
+                    t, x
+                ] * c.pi * pyunits.convert(
+                    self.d_cold_side_inner, to_units=cold_side_units("length")
+                ) * (
+                    pyunits.convert(
+                        self.temperature_wall[t, x],
+                        to_units=cold_side_units("temperature"),
+                    )
+                    - self.cold_side.properties[t, x].temperature
+                )
+
+            if hot_side_units("length") is None:
+                # Backwards compatability check
+                q_units = None
+            else:
+                q_units = hot_side_units("power") / hot_side_units("length")
+            # Wall 0D model
+            @self.Constraint(
+                self.flowsheet().time,
+                self.hot_side.length_domain,
+                doc="wall 0D model",
+            )
+            def wall_0D_model(self, t, x):
+                return pyunits.convert(
+                    self.cold_side.heat[t, x], to_units=q_units
+                ) == -(self.hot_side.heat[t, x] / self.N_tubes)
+
+        else:
+            raise NotImplementedError(
+                "{} HeatExchanger1D has not yet implemented support for "
+                "wall conduction models."
             )
 
-        q_units = hot_side_units("power") / hot_side_units("length")
-
-        @self.Constraint(
-            self.flowsheet().time,
-            self.shell.length_domain,
-            doc="Heat conservation equality",
+        # Define cold_side area in terms of tube diameter
+        self.area_calc_cold_side = Constraint(
+            expr=4 * self.cold_side_area
+            == c.pi
+            * pyunits.convert(
+                self.d_cold_side_inner, to_units=cold_side_units("length")
+            )
+            ** 2
         )
-        def heat_conservation(self, t, x):
-            return pyunits.convert(self.cold_side.heat[t, x], to_units=q_units) == -(
-                self.hot_side.heat[t, x]
-            )
+
+        # Define hot_side area in terms of hot_side and tube diameter
+        self.area_calc_hot_side = Constraint(
+            expr=4 * self.hot_side_area
+            == c.pi
+            * (self.d_hot_side**2 - self.N_tubes * self.d_cold_side_outer**2)
+        )
 
     def initialize_build(
         self,
@@ -593,113 +680,74 @@ cold side flows from 1 to 0""",
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
-        # Get length and area values
-        if self.area.fixed:
-            # Most likely case
-            self.cold_side.area.set_value(self.area)
-        elif self.cold_side.area.fixed:
-            # This would be unusual, but check
-            self.area.set_value(self.cold_side.area)
-        else:
-            # No fixed value for area - we will assume the user knows what they are doing
-            pass
-
-        if self.length.fixed:
-            # Most likely case
-            self.cold_side.length.set_value(self.length)
-        elif self.cold_side.length.fixed:
-            # This would be unusual, but check
-            self.length.set_value(self.cold_side.length)
-        else:
-            # No fixed value for length - we will assume the user knows what they are doing
-            pass
-
-        # Initialize control volumes blocks
-        Afix = self.hot_side.area.fixed
-        self.hot_side.area.fix()
-        Lfix = self.hot_side.length.fixed
-        self.hot_side.length.fix()
+        # Initialize hot_side block
         flags_hot_side = self.hot_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=hot_side_state_args,
         )
-        if not Afix:
-            self.hot_side.area.unfix()
-        if not Lfix:
-            self.hot_side.length.unfix()
 
-        Afix = self.cold_side.area.fixed
-        self.cold_side.area.fix()
-        Lfix = self.cold_side.length.fixed
-        self.cold_side.length.fix()
         flags_cold_side = self.cold_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=cold_side_state_args,
         )
-        if not Afix:
-            self.cold_side.area.unfix()
-        if not Lfix:
-            self.cold_side.length.unfix()
 
         init_log.info_high("Initialization Step 1 Complete.")
 
         # ---------------------------------------------------------------------
-        # Solve unit with fixed heat duty
-        # Guess heat duty based on 1/4 of maximum driving force
-        hot_side_units = (
-            self.config.hot_side.property_package.get_metadata().get_derived_units
-        )
-        cold_side_units = (
-            self.config.cold_side.property_package.get_metadata().get_derived_units
-        )
-        Q = value(
-            0.25
-            * self.heat_transfer_coefficient[0, 0]
-            * self.area
-            / self.length
-            * (
-                self.hot_side.properties[0, 0].temperature
-                - pyunits.convert(
-                    self.cold_side.properties[0, 0].temperature,
-                    to_units=hot_side_units("temperature"),
-                )
+        # Solve unit
+        # Wall 0D
+        if self.config.has_wall_conduction == WallConductionType.zero_dimensional:
+            hot_side_units = (
+                self.config.hot_side.property_package.get_metadata().get_derived_units
             )
-        )
+            for t in self.flowsheet().time:
+                for z in self.hot_side.length_domain:
+                    self.temperature_wall[t, z].fix(
+                        value(
+                            0.5
+                            * (
+                                self.hot_side.properties[t, 0].temperature
+                                + pyunits.convert(
+                                    self.cold_side.properties[t, 0].temperature,
+                                    to_units=hot_side_units("temperature"),
+                                )
+                            )
+                        )
+                    )
 
-        # Fix heat duties
-        for v in self.hot_side.heat.values():
-            v.fix(-Q)
-        for v in self.cold_side.heat.values():
-            v.fix(
-                pyunits.convert_value(
-                    Q,
-                    to_units=cold_side_units("power") / cold_side_units("length"),
-                    from_units=hot_side_units("power") / hot_side_units("length"),
-                )
+            self.cold_side.deactivate()
+            self.cold_side_heat_transfer_eq.deactivate()
+            self.wall_0D_model.deactivate()
+
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(self, tee=slc.tee)
+            init_log.info_high(
+                "Initialization Step 2 {}.".format(idaeslog.condition(res))
             )
 
-        # Deactivate heat duty constraints
-        self.heat_transfer_eq.deactivate()
-        self.heat_conservation.deactivate()
+            self.cold_side.activate()
+            self.cold_side_heat_transfer_eq.activate()
 
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(self, tee=slc.tee)
-        init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(self, tee=slc.tee)
+            init_log.info_high(
+                "Initialization Step 3 {}.".format(idaeslog.condition(res))
+            )
 
-        # Unfix heat duty and reactivate constraints
-        for v in self.hot_side.heat.values():
-            v.unfix()
-        for v in self.cold_side.heat.values():
-            v.unfix()
-        self.heat_transfer_eq.activate()
-        self.heat_conservation.activate()
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(self, tee=slc.tee)
-        init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
+            self.wall_0D_model.activate()
+            self.temperature_wall.unfix()
+
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(self, tee=slc.tee)
+            init_log.info_high(
+                "Initialization Step 4 {}.".format(idaeslog.condition(res))
+            )
+        else:
+            res = None
 
         self.hot_side.release_state(flags_hot_side)
         self.cold_side.release_state(flags_cold_side)
@@ -715,8 +763,14 @@ cold side flows from 1 to 0""",
     def _get_performance_contents(self, time_point=0):
         # TODO: Set this up to use user names if available
         var_dict = {}
-        var_dict["Area"] = self.area
-        var_dict["Length"] = self.length
+        var_dict["Hot Side Area"] = self.hot_side.area
+        var_dict["Hot Side Diameter"] = self.d_hot_side
+        var_dict["Hot Side Length"] = self.hot_side.length
+        var_dict["Cold Side Area"] = self.cold_side.area
+        var_dict["Cold Side Outer Diameter"] = self.d_cold_side_outer
+        var_dict["Cold Side Inner Diameter"] = self.d_cold_side_inner
+        var_dict["Cold Side Length"] = self.cold_side.length
+        var_dict["Number of Tubes"] = self.N_tubes
 
         return {"vars": var_dict}
 
@@ -735,7 +789,7 @@ cold side flows from 1 to 0""",
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        for i, c in self.heat_transfer_eq.items():
+        for i, c in self.hot_side_heat_transfer_eq.items():
             iscale.constraint_scaling_transform(
                 c,
                 iscale.get_scaling_factor(
@@ -744,11 +798,11 @@ cold side flows from 1 to 0""",
                 overwrite=False,
             )
 
-        for i, c in self.heat_conservation.items():
+        for i, c in self.cold_side_heat_transfer_eq.items():
             iscale.constraint_scaling_transform(
                 c,
                 iscale.get_scaling_factor(
-                    self.hot_side.heat[i], default=1, warning=True
+                    self.cold_side.heat[i], default=1, warning=True
                 ),
                 overwrite=False,
             )
