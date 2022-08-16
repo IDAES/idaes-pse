@@ -58,7 +58,6 @@ class StrValidator(BaseValidator):
             )
 
 
-
 class RealValueValidator(BaseValidator):
 
     """
