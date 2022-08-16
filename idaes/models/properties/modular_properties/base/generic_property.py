@@ -337,7 +337,7 @@ class GenericParameterData(PhysicalParameterBlock):
                         )
                     )
 
-            self.add_component(str(p), ptype(default=d))
+            self.add_component(str(p), ptype(**d))
 
         # Check if we need to create electrolyte component lists
         if self._electrolyte:
@@ -392,7 +392,7 @@ class GenericParameterData(PhysicalParameterBlock):
                     )
                 )
 
-            self.add_component(c, ctype(default=d))
+            self.add_component(c, ctype(**d))
 
         # If this is an electrolyte system, we now need to build the actual
         # component lists

@@ -50,12 +50,10 @@ def _make_heater_control_volume(o, name, config, dynamic=None, has_holdup=None):
     o.add_component(
         name,
         ControlVolume0DBlock(
-            default={
-                "dynamic": dynamic,
-                "has_holdup": has_holdup,
-                "property_package": config.property_package,
-                "property_package_args": config.property_package_args,
-            }
+            dynamic=dynamic,
+            has_holdup=has_holdup,
+            property_package=config.property_package,
+            property_package_args=config.property_package_args,
         ),
     )
     control_volume = getattr(o, name)

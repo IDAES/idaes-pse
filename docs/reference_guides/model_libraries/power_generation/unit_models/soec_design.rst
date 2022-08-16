@@ -40,7 +40,7 @@ are not necessarily realistic.
 
   def soec_example_flowsheet(eos=EosType.PR):
       m = pyo.ConcreteModel()
-      m.fs = FlowsheetBlock(default={"dynamic":False})
+      m.fs = FlowsheetBlock(dynamic=False)
 
       sweep_comp = {
           "O2":0.2074,
@@ -56,19 +56,17 @@ are not necessarily realistic.
       }
 
       m.fs.o2_side_prop_params = GenericParameterBlock(
-          default=get_prop(sweep_comp, {"Vap"}, eos=eos),
+          **get_prop(sweep_comp, {"Vap"}, eos=eos),
           doc="Air property parameters",
       )
       m.fs.h2_side_prop_params = GenericParameterBlock(
-          default=get_prop(feed_comp, {"Vap"}, eos=eos),
+          **get_prop(feed_comp, {"Vap"}, eos=eos),
           doc="Flue gas property parameters",
       )
       m.fs.soec = SoecDesign(
-          default={
-              "oxygen_side_property_package": m.fs.o2_side_prop_params,
-              "hydrogen_side_property_package": m.fs.h2_side_prop_params,
-              "reaction_eos": eos
-          }
+          oxygen_side_property_package=m.fs.o2_side_prop_params,
+          hydrogen_side_property_package=m.fs.h2_side_prop_params,
+          reaction_eos=eos
       )
 
       m.fs.soec.hydrogen_side_inlet.temperature.fix(1023)
