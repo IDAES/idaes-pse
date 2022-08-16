@@ -104,7 +104,7 @@ Once the custom costing package (e.g. `idaes/models/costing/custom.py`) has been
     from idaes.models.costing.Custom import CustomCosting
     
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     
     m.fs.costing = CustomCosting()
 
