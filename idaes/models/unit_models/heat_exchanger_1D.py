@@ -553,7 +553,7 @@ cold side flows from 1 to 0""",
 
         @self.Constraint(
             self.flowsheet().time,
-            self.shell.length_domain,
+            self.hot_side.length_domain,
             doc="Heat conservation equality",
         )
         def heat_conservation(self, t, x):
