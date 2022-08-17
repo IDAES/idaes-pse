@@ -16,6 +16,7 @@ from .helmholtz_functions import (
     AmountBasis,
     HelmholtzThermoExpressions,
     HelmholtzParameterBlock,
+    HelmholtzParameterBlockData,
     add_helmholtz_external_functions,
     available,
 )

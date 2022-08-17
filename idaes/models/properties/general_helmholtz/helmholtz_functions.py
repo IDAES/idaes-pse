@@ -133,17 +133,23 @@ _external_function_map = {
         "arg_units": [dimensionless, dimensionless, dimensionless],
         "doc": "f(comp, delta, tau)",
     },
-    "cv_func": {  # entropy
+    "cv_func": {  # constant volume heat capacity
         "fname": "cv",
         "units": pyo.units.kJ / pyo.units.kg / pyo.units.K,
         "arg_units": [dimensionless, dimensionless, dimensionless],
         "doc": "cv(comp, delta, tau)",
     },
-    "cp_func": {  # entropy
+    "cp_func": {  # constant pressure heat capacity
         "fname": "cp",
         "units": pyo.units.kJ / pyo.units.kg / pyo.units.K,
         "arg_units": [dimensionless, dimensionless, dimensionless],
         "doc": "cp(comp, delta, tau)",
+    },
+    "w_func": {  # entropy
+        "fname": "w",
+        "units": pyo.units.m / pyo.units.s,
+        "arg_units": [dimensionless, dimensionless, dimensionless],
+        "doc": "w(comp, delta, tau)",
     },
     # Dimensionless Helmholtz energy to calculate other thermo properties
     "phi0_func": {  # ideal part
@@ -332,6 +338,16 @@ _external_function_map = {
         "units": pyo.units.kJ / pyo.units.kg / pyo.units.K,
         "arg_units": [dimensionless],
     },
+    "t_star_func": {
+        "fname": "t_star",
+        "units": pyo.units.K,
+        "arg_units": [dimensionless],
+    },
+    "rho_star_func": {
+        "fname": "rho_star",
+        "units": pyo.units.kg / pyo.units.m**3,
+        "arg_units": [dimensionless],
+    },
     "pc_func": {
         "fname": "pc",
         "units": pyo.units.kPa,
@@ -486,9 +502,9 @@ class HelmholtzThermoExpressions(object):
         if p is not None:
             p *= self.param.uc["Pa to kPa"]
         if T is not None:
-            tau = self.param.temperature_crit / T
+            tau = self.param.temperature_star / T
         if tau is not None:
-            T = self.param.temperature_crit / tau
+            T = self.param.temperature_star / tau
         # 2.) find the block with the external functions
         blk = self.blk
 
@@ -685,7 +701,7 @@ class HelmholtzThermoExpressions(object):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         v = (
             ((1 - x) / delta_liq + x / delta_vap)
-            / self.param.dens_mass_crit
+            / self.param.dens_mass_star
             * self.param.mw
         )
         return v
@@ -693,13 +709,13 @@ class HelmholtzThermoExpressions(object):
     def v_mol_liq(self, **kwargs):
         """Liquid phase molar volume"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        v = self.param.mw / delta_liq / self.param.dens_mass_crit
+        v = self.param.mw / delta_liq / self.param.dens_mass_star
         return v
 
     def v_mol_vap(self, **kwargs):
         """Vapor phase molar volume"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        v = self.param.mw / delta_vap / self.param.dens_mass_crit
+        v = self.param.mw / delta_vap / self.param.dens_mass_star
         return v
 
     def x(self, **kwargs):
@@ -710,7 +726,7 @@ class HelmholtzThermoExpressions(object):
     def T(self, **kwargs):
         """Temperature"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return self.param.temperature_crit / tau
+        return self.param.temperature_star / tau
 
     def tau(self, **kwargs):
         """Critical Temperature (K)/Temperature (K)"""
@@ -725,12 +741,12 @@ class HelmholtzThermoExpressions(object):
     def rho_liq(self, **kwargs):
         """Return liquid phase mass density expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return delta_liq * self.param.dens_mass_crit
+        return delta_liq * self.param.dens_mass_star
 
     def rho_mol_liq(self, **kwargs):
         """Return liquid phase molar density expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return delta_liq * self.param.dens_mass_crit / self.param.mw
+        return delta_liq * self.param.dens_mass_star / self.param.mw
 
     def delta_vap(self, **kwargs):
         """Return vapor phase reduced density (dens/critical dens) expression"""
@@ -740,18 +756,18 @@ class HelmholtzThermoExpressions(object):
     def rho_vap(self, **kwargs):
         """Return vapor phase mass density expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return delta_vap * self.param.dens_mass_crit
+        return delta_vap * self.param.dens_mass_star
 
     def rho_mol_vap(self, **kwargs):
         """Return vapor phase molar density expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return delta_vap * self.param.dens_mass_crit / self.param.mw
+        return delta_vap * self.param.dens_mass_star / self.param.mw
 
     def cv_liq(self, **kwargs):
         """Return liquid phase constant volume heat capacity expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["cv_func"])
-        cv = blk.func_cv(c, delta_liq, tau)
+        cv = blk.cv_func(c, delta_liq, tau)
         if self.amount_basis == AmountBasis.MOLE:
             return cv * self.param.uc["kJ/kg/K to J/mol/K"]
         return cv * self.param.uc["kJ/kg/K to J/kg/K"]
@@ -768,8 +784,8 @@ class HelmholtzThermoExpressions(object):
     def cp_liq(self, **kwargs):
         """Return liquid phase constant volume heat capacity expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        self.add_funcs(names=["cv_func"])
-        cp = blk.func_cp(c, delta_liq, tau)
+        self.add_funcs(names=["cp_func"])
+        cp = blk.cp_func(c, delta_liq, tau)
         if self.amount_basis == AmountBasis.MOLE:
             return cp * self.param.uc["kJ/kg/K to J/mol/K"]
         return cp * self.param.uc["kJ/kg/K to J/kg/K"]
@@ -777,28 +793,36 @@ class HelmholtzThermoExpressions(object):
     def cp_vap(self, **kwargs):
         """Return vapor phase constant volume heat capacity expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        self.add_funcs(names=["cv_func"])
+        self.add_funcs(names=["cp_func"])
         cp = blk.cp_func(c, delta_vap, tau)
         if self.amount_basis == AmountBasis.MOLE:
             return cp * self.param.uc["kJ/kg/K to J/mol/K"]
         return cp * self.param.uc["kJ/kg/K to J/kg/K"]
 
+    def w(self, **kwargs):
+        """Return speed of sound expression, this may not make sense
+in the two phase region
+        """
+        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["w_func"])
+        return blk.w_func(c, delta_liq, tau) * (1 - x) + blk.w_func(c, delta_vap, tau) * x
+
     def w_liq(self, **kwargs):
         """Return liquid phase speed of sound expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["w_func"])
-        return blk.func_w(c, delta_liq, tau)
+        return blk.w_func(c, delta_liq, tau)
 
     def w_vap(self, **kwargs):
         """Return vapor phase speed of sound expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["w_func"])
-        return blk.func_w(delta_vap, tau)
+        return blk.w_func(c, delta_vap, tau)
 
     def p_sat(self, T=None, tau=None):
         """Return saturation pressure as a function of T or tau"""
         if T is not None:
-            tau = self.param.temperature_crit / T
+            tau = self.param.temperature_star / T
         elif tau is not None:
             pass
         else:
@@ -812,34 +836,38 @@ class HelmholtzThermoExpressions(object):
     def delta_liq_sat(self, T=None, tau=None):
         """Return saturation pressure as a function of T or tau"""
         if T is not None:
-            tau = self.param.temperature_crit / T
+            tau = self.param.temperature_star / T
         elif tau is not None:
             pass
         else:
             raise RuntimeError("delta_liq_sat expression requires either T or tau arg")
+        self.add_funcs(names=["delta_sat_l_func"])
         return self.blk.delta_sat_l_func(self.param.pure_component, tau)
 
     def delta_vap_sat(self, T=None, tau=None):
         """Return saturation pressure as a function of T or tau"""
         if T is not None:
-            tau = self.param.temperature_crit / T
+            tau = self.param.temperature_star / T
         elif tau is not None:
             pass
         else:
             raise RuntimeError("delta_vap_sat expression requires either T or tau arg")
+        self.add_funcs(names=["delta_sat_v_func"])
         return self.blk.delta_sat_v_func(self.param.pure_component, tau)
 
     def T_sat(self, p):
         """Return saturation temperature as a function of p"""
-        p *= self.param.uc_Pa_to_kPa
-        return self.param.temperature_crit / self.blk.tau_sat_func(
+        p *= self.param.uc["Pa to kPa"]
+        self.add_funcs(names=["tau_sat_func"])
+        return self.param.temperature_star / self.blk.tau_sat_func(
             self.param.pure_component, p
         )
 
     def tau_sat(self, p):
         """Return saturation tau as a function of p"""
-        p *= self.param.uc_Pa_to_kPa
-        return self.blk.func_tau_sat(self.param.pure_component, p)
+        p *= self.param.uc["Pa to kPa"]
+        self.add_funcs(names=["tau_sat_func"])
+        return self.blk.tau_sat_func(self.param.pure_component, p)
 
 
 @declare_process_block_class("HelmholtzParameterBlock")
@@ -1079,6 +1107,7 @@ change.
 
         # Set some scalings with reasonable a priori values
         self.set_default_scaling("temperature_crit", 1e-2)
+        self.set_default_scaling("temperature_star", 1e-2)
         self.set_default_scaling("enth_mol", 1e-3)
         self.set_default_scaling("enth_mass", 1e-3)
         self.set_default_scaling("temperature", 1e-1)
@@ -1187,7 +1216,9 @@ change.
                 # Critical properties
                 "pc_func",  # Critical pressure
                 "tc_func",  # Critical temperature
+                "t_star_func",  # Critical temperature
                 "rhoc_func",  # Critical density
+                "rho_star_func",  # Critical temperature
                 # Tripple point properties
                 "pt_func",  # Tripple point pressure
                 "tt_func",  # Tripple point temperature
@@ -1251,6 +1282,10 @@ change.
         )
         self.default_pressure_bounds = (self.pressure_min, self.pressure_max)
         self.add_param(
+            "temperature_star",
+            pu.convert(self.t_star_func(cmp), pu.K),
+        )
+        self.add_param(
             "temperature_crit",
             pu.convert(self.tc_func(cmp), pu.K),
         )
@@ -1271,6 +1306,14 @@ change.
             pu.convert((self.temperature_crit + self.temperature_trip) / 2.0, pu.K),
         )
         self.default_temperature_bounds = (self.temperature_min, self.temperature_max)
+        self.add_param(
+            "dens_mass_star",
+            pu.convert(self.rho_star_func(cmp), pu.kg / pu.m**3),
+        )
+        self.add_param(
+            "dens_mol_star",
+            pu.convert(self.dens_mass_star / self.mw, pu.mol / pu.m**3),
+        )
         self.add_param(
             "dens_mass_crit",
             pu.convert(self.rhoc_func(cmp), pu.kg / pu.m**3),
@@ -1299,7 +1342,7 @@ change.
             self.hlpt_func(
                 cmp,
                 self.pressure_trip * self.uc["Pa to kPa"],
-                self.temperature_crit / self.temperature_trip,
+                self.temperature_star / self.temperature_trip,
             )
             * self.uc["kJ/kg to J/mol"],
         )
@@ -1308,7 +1351,7 @@ change.
             self.hlpt_func(
                 cmp,
                 self.pressure_trip * self.uc["Pa to kPa"],
-                self.temperature_crit / self.temperature_trip,
+                self.temperature_star / self.temperature_trip,
             )
             * self.uc["kJ/kg to J/kg"],
         )
@@ -1317,7 +1360,7 @@ change.
             self.hlpt_func(
                 cmp,
                 self.pressure_max * self.uc["Pa to kPa"],
-                self.temperature_crit / self.temperature_max,
+                self.temperature_star / self.temperature_max,
             )
             * self.uc["kJ/kg to J/mol"],
         )
@@ -1326,7 +1369,7 @@ change.
             self.hlpt_func(
                 cmp,
                 self.pressure_max * self.uc["Pa to kPa"],
-                self.temperature_crit / self.temperature_max,
+                self.temperature_star / self.temperature_max,
             )
             * self.uc["kJ/kg to J/kg"],
         )
@@ -1398,14 +1441,15 @@ change.
         pc = pyo.value(pyo.units.convert(self.pressure_crit, pyo.units.kPa))
         pt = pyo.value(pyo.units.convert(self.pressure_trip, pyo.units.kPa))
         tc = pyo.value(self.temperature_crit)
+        ts = pyo.value(self.temperature_star)
         tt = pyo.value(self.temperature_trip)
         pmax = pyo.value(pyo.units.convert(self.pressure_max, pyo.units.kPa))
 
         # Temperatures to plot the saturation from triple point to critical
-        # in the form of tau (Tc/T)
+        # in the form of tau (Tstar/T)
         tau_sat_vec = np.linspace(
             1,
-            pyo.value(self.temperature_crit) / (pyo.value(self.temperature_trip)),
+            pyo.value(self.temperature_star) / (pyo.value(self.temperature_trip)),
             200,
         )
         #
@@ -1445,7 +1489,7 @@ change.
 
         # plot isotherms in sat region
         for t in t_vec:
-            tau = pyo.value(self.temperature_crit) / t
+            tau = pyo.value(self.temperature_star) / t
             p[t] = pyo.value(self.p_sat_func(self.pure_component, tau))
             delta_l = pyo.value(self.delta_sat_l_func(self.pure_component, tau))
             delta_v = pyo.value(self.delta_sat_v_func(self.pure_component, tau))
@@ -1470,7 +1514,7 @@ change.
 
         # Isotherms from the liquid side
         for t in t_vec:
-            tau = pyo.value(self.temperature_crit) / t
+            tau = pyo.value(self.temperature_star) / t
             p_vec = np.logspace(np.log10(p[t]), np.log10(pmax), 50)
             h_vec = [None] * len(p_vec)
             for i, pv in enumerate(p_vec):
@@ -1479,7 +1523,7 @@ change.
 
         # Isotherms from vapor side
         for t in t_vec:
-            tau = pyo.value(self.temperature_crit) / t
+            tau = pyo.value(self.temperature_star) / t
             p_vec = np.logspace(np.log10(pt / 10), np.log10(p[t]), 50)
 
             h_vec = [None] * len(p_vec)
@@ -1488,15 +1532,15 @@ change.
             plt.plot(h_vec, p_vec, c="g")
 
         # Points for critical point and triple point
-        deltat_l = pyo.value(self.delta_liq_func(self.pure_component, pt, tc / tt))
-        deltat_v = pyo.value(self.delta_vap_func(self.pure_component, pt, tc / tt))
+        deltat_l = pyo.value(self.delta_liq_func(self.pure_component, pt, ts / tt))
+        deltat_v = pyo.value(self.delta_vap_func(self.pure_component, pt, ts / tt))
         hc = pyo.value(self.h_func(self.pure_component, 1, 1))
-        ht = pyo.value(self.h_func(self.pure_component, deltat_l, tc / tt))
-        htv = pyo.value(self.h_func(self.pure_component, deltat_v, tc / tt))
-        ut = pyo.value(self.s_func(self.pure_component, deltat_l, tc / tt))
-        utv = pyo.value(self.s_func(self.pure_component, deltat_v, tc / tt))
-        st = pyo.value(self.u_func(self.pure_component, deltat_l, tc / tt))
-        stv = pyo.value(self.u_func(self.pure_component, deltat_v, tc / tt))
+        ht = pyo.value(self.h_func(self.pure_component, deltat_l, ts / tt))
+        htv = pyo.value(self.h_func(self.pure_component, deltat_v, ts / tt))
+        ut = pyo.value(self.s_func(self.pure_component, deltat_l, ts / tt))
+        utv = pyo.value(self.s_func(self.pure_component, deltat_v, ts / tt))
+        st = pyo.value(self.u_func(self.pure_component, deltat_l, ts / tt))
+        stv = pyo.value(self.u_func(self.pure_component, deltat_v, ts / tt))
         plt.scatter([hc], [pc])
         plt.scatter([ht], [pt])
 
@@ -1545,6 +1589,7 @@ change.
         pc = pyo.value(pyo.units.convert(self.pressure_crit, pyo.units.kPa))
         pt = pyo.value(pyo.units.convert(self.pressure_trip, pyo.units.kPa))
         tc = pyo.value(self.temperature_crit)
+        ts = pyo.value(self.temperature_star)
         tt = pyo.value(self.temperature_trip)
         pmax = pyo.value(pyo.units.convert(self.pressure_max, pyo.units.kPa))
 
@@ -1552,7 +1597,7 @@ change.
         # in the form of tau (Tc/T)
         tau_sat_vec = np.linspace(
             1,
-            pyo.value(self.temperature_crit) / (pyo.value(self.temperature_trip)),
+            pyo.value(self.temperature_star) / (pyo.value(self.temperature_trip)),
             200,
         )
         #
@@ -1577,13 +1622,13 @@ change.
 
         # plot saturaion curves use log scale for pressure
         # plt.yscale("log")
-        plt.plot(s_sat_l_vec, tc / tau_sat_vec, c="b", label="sat liquid")
-        plt.plot(s_sat_v_vec, tc / tau_sat_vec, c="r", label="sat vapor")
+        plt.plot(s_sat_l_vec, ts / tau_sat_vec, c="b", label="sat liquid")
+        plt.plot(s_sat_v_vec, ts / tau_sat_vec, c="r", label="sat vapor")
 
         # Points for critical point and triple point
-        deltat_l = pyo.value(self.delta_liq_func(self.pure_component, pt, tc / tt))
+        deltat_l = pyo.value(self.delta_liq_func(self.pure_component, pt, ts / tt))
         sc = pyo.value(self.s_func(self.pure_component, 1, 1))
-        st = pyo.value(self.s_func(self.pure_component, deltat_l, tc / tt))
+        st = pyo.value(self.s_func(self.pure_component, deltat_l, ts / tt))
         plt.scatter([sc], [tc])
         plt.scatter([st], [tt])
 
@@ -1631,6 +1676,7 @@ change.
         pc = pyo.value(pyo.units.convert(self.pressure_crit, pyo.units.kPa))
         pt = pyo.value(pyo.units.convert(self.pressure_trip, pyo.units.kPa))
         tc = pyo.value(self.temperature_crit)
+        ts = pyo.value(self.temperature_star)
         tt = pyo.value(self.temperature_trip)
         pmax = pyo.value(pyo.units.convert(self.pressure_max, pyo.units.kPa))
 
@@ -1638,7 +1684,7 @@ change.
         # in the form of tau (Tc/T)
         tau_sat_vec = np.linspace(
             1,
-            pyo.value(self.temperature_crit) / (pyo.value(self.temperature_trip)),
+            pyo.value(self.temperature_star) / (pyo.value(self.temperature_trip)),
             200,
         )
         p_sat_vec = [None] * len(tau_sat_vec)
@@ -1658,7 +1704,7 @@ change.
 
         # plot saturaion curves use log scale for pressure
         plt.yscale("log")
-        plt.plot(tc / tau_sat_vec, p_sat_vec, c="m", label="sat")
+        plt.plot(ts / tau_sat_vec, p_sat_vec, c="m", label="sat")
         plt.plot([tc, tc], [pc, pc * 10], c="m", label="sat")
         plt.plot([tc, tc * 1.1], [pc, pc], c="m", label="sat")
 
@@ -1676,8 +1722,10 @@ change.
         obj.add_properties(
             {
                 "temperature_crit": {"method": None, "units": "K"},
+                "temperature_star": {"method": None, "units": "K"},
                 "pressure_crit": {"method": None, "units": "Pa"},
                 "dens_mass_crit": {"method": None, "units": "kg/m^3"},
+                "dens_mass_star": {"method": None, "units": "kg/m^3"},
                 "specific_gas_constant": {"method": None, "units": "J/kg.K"},
                 "mw": {"method": None, "units": "kg/mol"},
                 "temperature_sat": {"method": "None", "units": "K"},
