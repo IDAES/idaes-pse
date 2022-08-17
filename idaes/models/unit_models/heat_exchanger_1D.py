@@ -479,6 +479,21 @@ cold side flows from 1 to 0""",
         self._make_geometry()
         self._make_performance()
 
+        hot_side_units = (
+            self.config.hot_side.property_package.get_metadata().get_derived_units
+        )
+        q_units = hot_side_units("power") / hot_side_units("length")
+
+        @self.Constraint(
+            self.flowsheet().time,
+            self.hot_side.length_domain,
+            doc="Heat conservation equality",
+        )
+        def heat_conservation(self, t, x):
+            return pyunits.convert(self.cold_side.heat[t, x], to_units=q_units) == -(
+                self.hot_side.heat[t, x]
+            )
+
     def _make_geometry(self):
         # Add reference to control volume geometry
         add_object_reference(self, "area", self.hot_side.area)
@@ -547,18 +562,6 @@ cold side flows from 1 to 0""",
                         to_units=hot_side_units("temperature"),
                     )
                 )
-            )
-
-        q_units = hot_side_units("power") / hot_side_units("length")
-
-        @self.Constraint(
-            self.flowsheet().time,
-            self.hot_side.length_domain,
-            doc="Heat conservation equality",
-        )
-        def heat_conservation(self, t, x):
-            return pyunits.convert(self.cold_side.heat[t, x], to_units=q_units) == -(
-                self.hot_side.heat[t, x]
             )
 
     def initialize_build(
