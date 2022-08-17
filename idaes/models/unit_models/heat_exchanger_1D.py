@@ -261,19 +261,19 @@ cold side flows from 1 to 0""",
     CONFIG.declare(
         "hot_side_name",
         ConfigValue(
-            default="shell",
+            default=None,
             domain=str,
             doc="Hot side name, sets control volume and inlet and outlet names. "
-            "Default = 'shell'.",
+            "Default = None.",
         ),
     )
     CONFIG.declare(
         "cold_side_name",
         ConfigValue(
-            default="tube",
+            default=None,
             domain=str,
             doc="Cold side name, sets control volume and inlet and outlet names. "
-            "Default = 'tube'.",
+            "Default = None.",
         ),
     )
 
@@ -713,7 +713,6 @@ cold side flows from 1 to 0""",
         init_log.info("Initialization Complete.")
 
     def _get_performance_contents(self, time_point=0):
-        # TODO: Set this up to use user names if available
         var_dict = {}
         var_dict["Area"] = self.area
         var_dict["Length"] = self.length
@@ -721,13 +720,19 @@ cold side flows from 1 to 0""",
         return {"vars": var_dict}
 
     def _get_stream_table_contents(self, time_point=0):
-        # TODO : Set this up to use user provided names if available
+        # Get names for hot and cold sides
+        hot_name = self.config.hot_side_name
+        if hot_name is None:
+            hot_name = "Hot Side"
+        cold_name = self.config.cold_side_name
+        if cold_name is None:
+            cold_name = "Cold Side"
         return create_stream_table_dataframe(
             {
-                "Hot Side Inlet": self.hot_side_inlet,
-                "Hot Side Outlet": self.hot_side_outlet,
-                "Cold Side Inlet": self.cold_side_inlet,
-                "Cold Side Outlet": self.cold_side_outlet,
+                f"{hot_name} Inlet": self.hot_side_inlet,
+                f"{hot_name} Outlet": self.hot_side_outlet,
+                f"{cold_name} Inlet": self.cold_side_inlet,
+                f"{cold_name} Outlet": self.cold_side_outlet,
             },
             time_point=time_point,
         )

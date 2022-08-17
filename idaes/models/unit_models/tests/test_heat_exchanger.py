@@ -593,28 +593,28 @@ class TestBTX_cocurrent(object):
                     "temperature": getattr(pyunits.pint_registry, "kelvin"),
                     "pressure": getattr(pyunits.pint_registry, "Pa"),
                 },
-                "Hot Inlet": {
+                "Hot Side Inlet": {
                     "flow_mol": 5.0,
                     "mole_frac_comp benzene": 0.5,
                     "mole_frac_comp toluene": 0.5,
                     "temperature": 365,
                     "pressure": 101325.0,
                 },
-                "Hot Outlet": {
+                "Hot Side Outlet": {
                     "flow_mol": 1.0,
                     "mole_frac_comp benzene": 0.5,
                     "mole_frac_comp toluene": 0.5,
                     "temperature": 298.15,
                     "pressure": 101325.0,
                 },
-                "Cold Inlet": {
+                "Cold Side Inlet": {
                     "flow_mol": 1.0,
                     "mole_frac_comp benzene": 0.5,
                     "mole_frac_comp toluene": 0.5,
                     "temperature": 300,
                     "pressure": 101325.0,
                 },
-                "Cold Outlet": {
+                "Cold Side Outlet": {
                     "flow_mol": 1.0,
                     "mole_frac_comp benzene": 0.5,
                     "mole_frac_comp toluene": 0.5,
@@ -838,28 +838,28 @@ class TestBTX_cocurrent_alt_name(object):
                     "temperature": getattr(pyunits.pint_registry, "kelvin"),
                     "pressure": getattr(pyunits.pint_registry, "Pa"),
                 },
-                "Hot Inlet": {
+                "hot Inlet": {
                     "flow_mol": 5.0,
                     "mole_frac_comp benzene": 0.5,
                     "mole_frac_comp toluene": 0.5,
                     "temperature": 365,
                     "pressure": 101325.0,
                 },
-                "Hot Outlet": {
+                "hot Outlet": {
                     "flow_mol": 1.0,
                     "mole_frac_comp benzene": 0.5,
                     "mole_frac_comp toluene": 0.5,
                     "temperature": 298.15,
                     "pressure": 101325.0,
                 },
-                "Cold Inlet": {
+                "cold Inlet": {
                     "flow_mol": 1.0,
                     "mole_frac_comp benzene": 0.5,
                     "mole_frac_comp toluene": 0.5,
                     "temperature": 300,
                     "pressure": 101325.0,
                 },
-                "Cold Outlet": {
+                "cold Outlet": {
                     "flow_mol": 1.0,
                     "mole_frac_comp benzene": 0.5,
                     "mole_frac_comp toluene": 0.5,
@@ -1115,7 +1115,7 @@ class TestIAPWS_countercurrent(object):
                         pyunits.pint_registry, "J/mole"
                     ),
                 },
-                "Hot Inlet": {
+                "Hot Side Inlet": {
                     "Molar Flow (mol/s)": 100,
                     "Mass Flow (kg/s)": 1.8015,
                     "T (K)": 352.67,
@@ -1124,7 +1124,7 @@ class TestIAPWS_countercurrent(object):
                     "Molar Enthalpy (J/mol) Vap": 47398,
                     "Molar Enthalpy (J/mol) Liq": 6000,
                 },
-                "Hot Outlet": {
+                "Hot Side Outlet": {
                     "Molar Flow (mol/s)": 1,
                     "Mass Flow (kg/s)": 1.8015e-2,
                     "T (K)": 286.34,
@@ -1133,7 +1133,7 @@ class TestIAPWS_countercurrent(object):
                     "Molar Enthalpy (J/mol) Vap": 2168.6,
                     "Molar Enthalpy (J/mol) Liq": 1000,
                 },
-                "Cold Inlet": {
+                "Cold Side Inlet": {
                     "Molar Flow (mol/s)": 100,
                     "Mass Flow (kg/s)": 1.8015,
                     "T (K)": 339.43,
@@ -1142,7 +1142,7 @@ class TestIAPWS_countercurrent(object):
                     "Molar Enthalpy (J/mol) Vap": 46685,
                     "Molar Enthalpy (J/mol) Liq": 5000,
                 },
-                "Cold Outlet": {
+                "Cold Side Outlet": {
                     "Molar Flow (mol/s)": 1,
                     "Mass Flow (kg/s)": 1.8015e-2,
                     "T (K)": 286.34,
@@ -1398,7 +1398,7 @@ class TestSaponification_crossflow(object):
                     "Temperature": getattr(pyunits.pint_registry, "K"),
                     "Pressure": getattr(pyunits.pint_registry, "Pa"),
                 },
-                "Hot Inlet": {
+                "Hot Side Inlet": {
                     "Volumetric Flowrate": 1e-3,
                     "Molar Concentration H2O": 55388,
                     "Molar Concentration NaOH": 100.00,
@@ -1408,7 +1408,7 @@ class TestSaponification_crossflow(object):
                     "Temperature": 320,
                     "Pressure": 1.0132e05,
                 },
-                "Hot Outlet": {
+                "Hot Side Outlet": {
                     "Volumetric Flowrate": 1.00,
                     "Molar Concentration H2O": 100.00,
                     "Molar Concentration NaOH": 100.00,
@@ -1418,7 +1418,7 @@ class TestSaponification_crossflow(object):
                     "Temperature": 298.15,
                     "Pressure": 1.0132e05,
                 },
-                "Cold Inlet": {
+                "Cold Side Inlet": {
                     "Volumetric Flowrate": 1e-3,
                     "Molar Concentration H2O": 55388,
                     "Molar Concentration NaOH": 100.00,
@@ -1428,7 +1428,7 @@ class TestSaponification_crossflow(object):
                     "Temperature": 300,
                     "Pressure": 1.0132e05,
                 },
-                "Cold Outlet": {
+                "Cold Side Outlet": {
                     "Volumetric Flowrate": 1.00,
                     "Molar Concentration H2O": 100.00,
                     "Molar Concentration NaOH": 100.00,
@@ -1792,28 +1792,28 @@ class TestBT_Generic_cocurrent(object):
                     "Temperature": getattr(pyunits.pint_registry, "kelvin"),
                     "Pressure": getattr(pyunits.pint_registry, "Pa"),
                 },
-                "Hot Inlet": {
+                "Hot Side Inlet": {
                     "Total Molar Flowrate": 5.0,
                     "Total Mole Fraction benzene": 0.5,
                     "Total Mole Fraction toluene": 0.5,
                     "Temperature": 365,
                     "Pressure": 101325.0,
                 },
-                "Hot Outlet": {
+                "Hot Side Outlet": {
                     "Total Molar Flowrate": 100.0,
                     "Total Mole Fraction benzene": 0.5,
                     "Total Mole Fraction toluene": 0.5,
                     "Temperature": 300,
                     "Pressure": 1e5,
                 },
-                "Cold Inlet": {
+                "Cold Side Inlet": {
                     "Total Molar Flowrate": 1.0,
                     "Total Mole Fraction benzene": 0.5,
                     "Total Mole Fraction toluene": 0.5,
                     "Temperature": 300,
                     "Pressure": 101325.0,
                 },
-                "Cold Outlet": {
+                "Cold Side Outlet": {
                     "Total Molar Flowrate": 100.0,
                     "Total Mole Fraction benzene": 0.5,
                     "Total Mole Fraction toluene": 0.5,

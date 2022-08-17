@@ -657,12 +657,19 @@ class HeatExchangerData(UnitModelBlockData):
         return {"vars": var_dict, "exprs": expr_dict}
 
     def _get_stream_table_contents(self, time_point=0):
+        # Get names for hot and cold sides
+        hot_name = self.config.hot_side_name
+        if hot_name is None:
+            hot_name = "Hot Side"
+        cold_name = self.config.cold_side_name
+        if cold_name is None:
+            cold_name = "Cold Side"
         return create_stream_table_dataframe(
             {
-                "Hot Inlet": self.hot_side_inlet,
-                "Hot Outlet": self.hot_side_outlet,
-                "Cold Inlet": self.cold_side_inlet,
-                "Cold Outlet": self.cold_side_outlet,
+                f"{hot_name} Inlet": self.hot_side_inlet,
+                f"{hot_name} Outlet": self.hot_side_outlet,
+                f"{cold_name} Inlet": self.cold_side_inlet,
+                f"{cold_name} Outlet": self.cold_side_outlet,
             },
             time_point=time_point,
         )

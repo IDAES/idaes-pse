@@ -226,8 +226,8 @@ def test_config():
     assert m.fs.unit.config.finite_elements == 20
     assert m.fs.unit.config.collocation_points == 5
 
-    assert m.fs.unit.config.hot_side_name == "shell"
-    assert m.fs.unit.config.cold_side_name == "tube"
+    assert m.fs.unit.config.hot_side_name == None
+    assert m.fs.unit.config.cold_side_name == None
 
     # Check hot side config arguments
     assert len(m.fs.unit.config.hot_side) == 11
@@ -319,6 +319,8 @@ class TestBTX_cocurrent(object):
             default={
                 "hot_side": {"property_package": m.fs.properties},
                 "cold_side": {"property_package": m.fs.properties},
+                "hot_side_name": "Shell",
+                "cold_side_name": "Tube",
                 "flow_type": HeatExchangerFlowPattern.cocurrent,
             }
         )
@@ -345,33 +347,33 @@ class TestBTX_cocurrent(object):
 
     @pytest.mark.unit
     def test_build(self, btx):
-        assert hasattr(btx.fs.unit, "hot_side_inlet")
-        assert len(btx.fs.unit.hot_side_inlet.vars) == 4
-        assert hasattr(btx.fs.unit.hot_side_inlet, "flow_mol")
-        assert hasattr(btx.fs.unit.hot_side_inlet, "mole_frac_comp")
-        assert hasattr(btx.fs.unit.hot_side_inlet, "temperature")
-        assert hasattr(btx.fs.unit.hot_side_inlet, "pressure")
+        assert hasattr(btx.fs.unit, "Shell_inlet")
+        assert len(btx.fs.unit.Shell_inlet.vars) == 4
+        assert hasattr(btx.fs.unit.Shell_inlet, "flow_mol")
+        assert hasattr(btx.fs.unit.Shell_inlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.Shell_inlet, "temperature")
+        assert hasattr(btx.fs.unit.Shell_inlet, "pressure")
 
-        assert hasattr(btx.fs.unit, "cold_side_inlet")
-        assert len(btx.fs.unit.cold_side_inlet.vars) == 4
-        assert hasattr(btx.fs.unit.cold_side_inlet, "flow_mol")
-        assert hasattr(btx.fs.unit.cold_side_inlet, "mole_frac_comp")
-        assert hasattr(btx.fs.unit.cold_side_inlet, "temperature")
-        assert hasattr(btx.fs.unit.cold_side_inlet, "pressure")
+        assert hasattr(btx.fs.unit, "Tube_inlet")
+        assert len(btx.fs.unit.Tube_inlet.vars) == 4
+        assert hasattr(btx.fs.unit.Tube_inlet, "flow_mol")
+        assert hasattr(btx.fs.unit.Tube_inlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.Tube_inlet, "temperature")
+        assert hasattr(btx.fs.unit.Tube_inlet, "pressure")
 
         assert hasattr(btx.fs.unit, "hot_side_outlet")
-        assert len(btx.fs.unit.hot_side_outlet.vars) == 4
-        assert hasattr(btx.fs.unit.hot_side_outlet, "flow_mol")
-        assert hasattr(btx.fs.unit.hot_side_outlet, "mole_frac_comp")
-        assert hasattr(btx.fs.unit.hot_side_outlet, "temperature")
-        assert hasattr(btx.fs.unit.hot_side_outlet, "pressure")
+        assert len(btx.fs.unit.Shell_outlet.vars) == 4
+        assert hasattr(btx.fs.unit.Shell_outlet, "flow_mol")
+        assert hasattr(btx.fs.unit.Shell_outlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.Shell_outlet, "temperature")
+        assert hasattr(btx.fs.unit.Shell_outlet, "pressure")
 
-        assert hasattr(btx.fs.unit, "cold_side_outlet")
-        assert len(btx.fs.unit.cold_side_outlet.vars) == 4
-        assert hasattr(btx.fs.unit.cold_side_outlet, "flow_mol")
-        assert hasattr(btx.fs.unit.cold_side_outlet, "mole_frac_comp")
-        assert hasattr(btx.fs.unit.cold_side_outlet, "temperature")
-        assert hasattr(btx.fs.unit.cold_side_outlet, "pressure")
+        assert hasattr(btx.fs.unit, "Tube_outlet")
+        assert len(btx.fs.unit.Tube_outlet.vars) == 4
+        assert hasattr(btx.fs.unit.Tube_outlet, "flow_mol")
+        assert hasattr(btx.fs.unit.Tube_outlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.Tube_outlet, "temperature")
+        assert hasattr(btx.fs.unit.Tube_outlet, "pressure")
 
         assert hasattr(btx.fs.unit, "area")
         assert hasattr(btx.fs.unit, "length")
@@ -423,28 +425,28 @@ class TestBTX_cocurrent(object):
                 "temperature": getattr(pyunits.pint_registry, "kelvin"),
                 "pressure": getattr(pyunits.pint_registry, "Pa"),
             },
-            "Hot Side Inlet": {
+            "Shell Inlet": {
                 "flow_mol": pytest.approx(5.0, rel=1e-4),
                 "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
                 "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
                 "temperature": pytest.approx(365, rel=1e-4),
                 "pressure": pytest.approx(101325.0, rel=1e-4),
             },
-            "Hot Side Outlet": {
+            "Shell Outlet": {
                 "flow_mol": pytest.approx(1, rel=1e-4),
                 "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
                 "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
                 "temperature": pytest.approx(298.15, rel=1e-4),
                 "pressure": pytest.approx(101325.0, rel=1e-4),
             },
-            "Cold Side Inlet": {
+            "Tube Inlet": {
                 "flow_mol": pytest.approx(1.0, rel=1e-4),
                 "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
                 "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
                 "temperature": pytest.approx(300, rel=1e-4),
                 "pressure": pytest.approx(101325.0, rel=1e-4),
             },
-            "Cold Side Outlet": {
+            "Tube Outlet": {
                 "flow_mol": pytest.approx(1, rel=1e-4),
                 "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
                 "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
