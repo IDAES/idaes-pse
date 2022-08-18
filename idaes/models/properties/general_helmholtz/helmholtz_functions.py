@@ -801,11 +801,13 @@ class HelmholtzThermoExpressions(object):
 
     def w(self, **kwargs):
         """Return speed of sound expression, this may not make sense
-in the two phase region
+        in the two phase region
         """
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["w_func"])
-        return blk.w_func(c, delta_liq, tau) * (1 - x) + blk.w_func(c, delta_vap, tau) * x
+        return (
+            blk.w_func(c, delta_liq, tau) * (1 - x) + blk.w_func(c, delta_vap, tau) * x
+        )
 
     def w_liq(self, **kwargs):
         """Return liquid phase speed of sound expression"""
@@ -1412,6 +1414,206 @@ change.
     def initialize(self, *args, **kwargs):
         pass
 
+    def dome_data(
+        self,
+        amount_basis=None,
+        pressure_unit=pyo.units.kPa,
+        energy_unit=pyo.units.kJ,
+        mass_unit=pyo.units.kg,
+        mol_unit=pyo.units.kmol,
+    ):
+        """Get data to plot the two-phase dome or saturation curve"""
+        add_helmholtz_external_functions(
+            self,
+            [
+                "p_sat_func",
+                "delta_sat_l_func",
+                "delta_sat_v_func",
+                "h_func",
+                "s_func",
+            ],
+        )
+        if amount_basis is None:
+            amount_basis = self.config.amount_basis
+
+        tau_c = pyo.value(self.temperature_star / self.temperature_crit)
+        tau_t = pyo.value(self.temperature_star / self.temperature_trip)
+        # use logspace to get more points close to critical point
+        tau_dist_vec = np.logspace(-5, 0, 60)
+        tau_vec = [tau_c + td * (tau_t - tau_c) for td in tau_dist_vec]
+        tau_vec = [tau_c] + tau_vec
+
+        p_vec = [
+            pyo.value(
+                pyo.units.convert(
+                    self.p_sat_func(self.pure_component, tau), pressure_unit
+                )
+            )
+            for tau in tau_vec
+        ]
+        delta_sat_l_vec = [
+            pyo.value(self.delta_sat_l_func(self.pure_component, tau))
+            for tau in tau_vec
+        ]
+        delta_sat_v_vec = [
+            pyo.value(self.delta_sat_v_func(self.pure_component, tau))
+            for tau in tau_vec
+        ]
+        if amount_basis == AmountBasis.MOLE:
+            s_liq_vec = [
+                pyo.value(
+                    pyo.units.convert(
+                        self.s_func(self.pure_component, delta, tau)
+                        * self.uc["kJ/kg/K to J/mol/K"],
+                        energy_unit / mol_unit / pyo.units.K,
+                    )
+                )
+                for delta, tau in zip(delta_sat_l_vec, tau_vec)
+            ]
+            s_vap_vec = [
+                pyo.value(
+                    pyo.units.convert(
+                        self.s_func(self.pure_component, delta, tau)
+                        * self.uc["kJ/kg/K to J/mol/K"],
+                        energy_unit / mol_unit / pyo.units.K,
+                    )
+                )
+                for delta, tau in zip(delta_sat_v_vec, tau_vec)
+            ]
+            h_liq_vec = [
+                pyo.value(
+                    pyo.units.convert(
+                        self.h_func(self.pure_component, delta, tau)
+                        * self.uc["kJ/kg to J/mol"],
+                        energy_unit / mol_unit,
+                    )
+                )
+                for delta, tau in zip(delta_sat_l_vec, tau_vec)
+            ]
+            h_vap_vec = [
+                pyo.value(
+                    pyo.units.convert(
+                        self.h_func(self.pure_component, delta, tau)
+                        * self.uc["kJ/kg to J/mol"],
+                        energy_unit / mol_unit,
+                    )
+                )
+                for delta, tau in zip(delta_sat_v_vec, tau_vec)
+            ]
+        else:
+            s_liq_vec = [
+                pyo.value(
+                    pyo.units.convert(
+                        self.s_func(self.pure_component, delta, tau),
+                        energy_unit / mass_unit / pyo.units.K,
+                    )
+                )
+                for delta, tau in zip(delta_sat_l_vec, tau_vec)
+            ]
+            s_vap_vec = [
+                pyo.value(
+                    pyo.units.convert(
+                        self.s_func(self.pure_component, delta, tau),
+                        energy_unit / mass_unit / pyo.units.K,
+                    )
+                )
+                for delta, tau in zip(delta_sat_v_vec, tau_vec)
+            ]
+            h_liq_vec = [
+                pyo.value(
+                    pyo.units.convert(
+                        self.h_func(self.pure_component, delta, tau),
+                        energy_unit / mass_unit,
+                    )
+                )
+                for delta, tau in zip(delta_sat_l_vec, tau_vec)
+            ]
+            h_vap_vec = [
+                pyo.value(
+                    pyo.units.convert(
+                        self.h_func(self.pure_component, delta, tau),
+                        energy_unit / mass_unit,
+                    )
+                )
+                for delta, tau in zip(delta_sat_v_vec, tau_vec)
+            ]
+
+        return {
+            "T": [pyo.value(self.temperature_star / tau) for tau in tau_vec],
+            "tau": tau_vec,
+            "p": p_vec,
+            "delta_liq": delta_sat_l_vec,
+            "delta_vap": delta_sat_v_vec,
+            "h_liq": h_liq_vec,
+            "h_vap": h_vap_vec,
+            "s_liq": s_liq_vec,
+            "s_vap": s_vap_vec,
+        }
+
+    def isotherms(self, temperatures=[]):
+        add_helmholtz_external_functions(
+            self,
+            [
+                "p_sat_func",
+                "delta_liq_func",
+                "delta_vap_func",
+                "h_func",
+                "s_func",
+            ],
+        )
+        d = {}
+
+        pt = pyo.value(pyo.units.convert(self.pressure_trip, pyo.units.kPa))
+        pc = pyo.value(pyo.units.convert(self.pressure_crit, pyo.units.kPa))
+        pmax = pyo.value(pyo.units.convert(self.pressure_max, pyo.units.kPa))
+
+        def _pvec(d, tau, p1, p2=None, phase="sat"):
+            if phase=="sat":
+                p_vec = [p1, p1]
+            elif phase=="liq":
+                dist_vec = np.logspace(-4, -0.25, 20)
+                vec = [p1 + pd * (p2 - p1) for pd in dist_vec]
+                p_vec = [p1] + vec
+            else:
+                dist_vec = np.logspace(-4, -0.3, 20)
+                vec = [p1 + pd * (p2 - p1) for pd in dist_vec]
+                p_vec = [p1] + vec + np.linspace(vec[-1], p2, 10).tolist()
+            if phase == 'liq' or phase == 'sc':
+                delta = [pyo.value(self.delta_liq_func(self.pure_component, p, tau)) for p in p_vec]
+            elif phase == 'vap':
+                delta = [pyo.value(self.delta_vap_func(self.pure_component, p, tau)) for p in p_vec]
+            else: # sat
+                delta = [
+                    pyo.value(self.delta_liq_func(self.pure_component, p_vec[0], tau)),
+                    pyo.value(self.delta_vap_func(self.pure_component, p_vec[1], tau)),
+                ]
+            h_vec = [pyo.value(self.h_func(self.pure_component, dv, tau)) for dv in delta]
+            s_vec = [pyo.value(self.s_func(self.pure_component, dv, tau)) for dv in delta]
+            d["p"] = p_vec
+            d["delta"] = delta
+            d["h"] = h_vec
+            d["s"] = s_vec
+
+        for t in temperatures:
+            d[t] = {}
+            d2 = d[t]
+            tau = self.temperature_star / t
+
+            for key in ["liq", "vap", "sat", "sc"]:
+                d2[key] = {}
+
+            if t >= pyo.value(self.temperature_crit):
+                _pvec(d2["sc"], tau, pc, pmax, "sc")
+                _pvec(d2["vap"], tau, pc, pt, "vap")
+            else:
+                p_sat = pyo.value(self.p_sat_func(self.pure_component, tau))
+                _pvec(d2["liq"], tau, p_sat, pmax, "liq")
+                _pvec(d2["sat"], tau, p_sat, p_sat, "sat")
+                _pvec(d2["vap"], tau, p_sat, pt, "vap")
+
+        return d
+
+
     def ph_diagram(self, ylim=None, xlim=None, points={}, figsize=None, dpi=None):
         # Add external functions needed to plot PH-diagram
         add_helmholtz_external_functions(
@@ -1445,39 +1647,12 @@ change.
         tt = pyo.value(self.temperature_trip)
         pmax = pyo.value(pyo.units.convert(self.pressure_max, pyo.units.kPa))
 
-        # Temperatures to plot the saturation from triple point to critical
-        # in the form of tau (Tstar/T)
-        tau_sat_vec = np.linspace(
-            1,
-            pyo.value(self.temperature_star) / (pyo.value(self.temperature_trip)),
-            200,
-        )
-        #
-        p_sat_vec = [None] * len(tau_sat_vec)
-        delta_sat_v_vec = [None] * len(tau_sat_vec)
-        delta_sat_l_vec = [None] * len(tau_sat_vec)
-        h_sat_v_vec = [None] * len(tau_sat_vec)
-        h_sat_l_vec = [None] * len(tau_sat_vec)
-
-        for i, tau in enumerate(tau_sat_vec):
-            p_sat_vec[i] = pyo.value(self.p_sat_func(self.pure_component, tau))
-            delta_sat_l_vec[i] = pyo.value(
-                self.delta_sat_l_func(self.pure_component, tau)
-            )
-            delta_sat_v_vec[i] = pyo.value(
-                self.delta_sat_v_func(self.pure_component, tau)
-            )
-            h_sat_v_vec[i] = pyo.value(
-                self.h_func(self.pure_component, delta_sat_v_vec[i], tau)
-            )
-            h_sat_l_vec[i] = pyo.value(
-                self.h_func(self.pure_component, delta_sat_l_vec[i], tau)
-            )
+        dome = self.dome_data()
 
         # plot saturaion curves use log scale for pressure
         plt.yscale("log")
-        plt.plot(h_sat_l_vec, p_sat_vec, c="b", label="sat liquid")
-        plt.plot(h_sat_v_vec, p_sat_vec, c="r", label="sat vapor")
+        plt.plot(dome["h_liq"], dome["p"], c="b", label="sat liquid")
+        plt.plot(dome["h_vap"], dome["p"], c="r", label="sat vapor")
 
         # Temperatures for isotherms
         t_vec = np.linspace(
@@ -1488,61 +1663,11 @@ change.
         h_v = {}
 
         # plot isotherms in sat region
-        for t in t_vec:
-            tau = pyo.value(self.temperature_star) / t
-            p[t] = pyo.value(self.p_sat_func(self.pure_component, tau))
-            delta_l = pyo.value(self.delta_sat_l_func(self.pure_component, tau))
-            delta_v = pyo.value(self.delta_sat_v_func(self.pure_component, tau))
-            h_v[t] = pyo.value(self.h_func(self.pure_component, delta_v, tau))
-            h_l[t] = pyo.value(self.h_func(self.pure_component, delta_l, tau))
-            plt.plot([h_l[t], h_v[t]], [p[t], p[t]], c="g")
-            y = p[t]
-            x = h_l[t] / 2 + h_v[t] / 2
-            if xlim is None and ylim is None:
-                plt.text(x, y, f"T = {t} K", ha="center")
-            elif (
-                xlim is not None
-                and ylim is not None
-                and (xlim[1] < x < xlim[1])
-                and (ylim[0] < y < ylim[1])
-            ):
-                plt.text(x, y, f"T = {t} K", ha="center")
-            elif xlim is not None and (xlim[1] < x < xlim[1]):
-                plt.text(x, y, f"T = {t} K", ha="center")
-            elif ylim is not None and (ylim[0] < y < ylim[1]):
-                plt.text(x, y, f"T = {t} K", ha="center")
-
-        # Isotherms from the liquid side
-        for t in t_vec:
-            tau = pyo.value(self.temperature_star) / t
-            p_vec = np.logspace(np.log10(p[t]), np.log10(pmax), 50)
-            h_vec = [None] * len(p_vec)
-            for i, pv in enumerate(p_vec):
-                h_vec[i] = pyo.value(self.hlpt_func(self.pure_component, pv, tau))
-            plt.plot(h_vec, p_vec, c="g")
-
-        # Isotherms from vapor side
-        for t in t_vec:
-            tau = pyo.value(self.temperature_star) / t
-            p_vec = np.logspace(np.log10(pt / 10), np.log10(p[t]), 50)
-
-            h_vec = [None] * len(p_vec)
-            for i, pv in enumerate(p_vec):
-                h_vec[i] = pyo.value(self.hvpt_func(self.pure_component, pv, tau))
-            plt.plot(h_vec, p_vec, c="g")
-
-        # Points for critical point and triple point
-        deltat_l = pyo.value(self.delta_liq_func(self.pure_component, pt, ts / tt))
-        deltat_v = pyo.value(self.delta_vap_func(self.pure_component, pt, ts / tt))
-        hc = pyo.value(self.h_func(self.pure_component, 1, 1))
-        ht = pyo.value(self.h_func(self.pure_component, deltat_l, ts / tt))
-        htv = pyo.value(self.h_func(self.pure_component, deltat_v, ts / tt))
-        ut = pyo.value(self.s_func(self.pure_component, deltat_l, ts / tt))
-        utv = pyo.value(self.s_func(self.pure_component, deltat_v, ts / tt))
-        st = pyo.value(self.u_func(self.pure_component, deltat_l, ts / tt))
-        stv = pyo.value(self.u_func(self.pure_component, deltat_v, ts / tt))
-        plt.scatter([hc], [pc])
-        plt.scatter([ht], [pt])
+        #isotherms = self.isotherms(temperatures=t_vec.tolist())
+        #for t, dat in isotherms.items():
+        #    for phase in ["sc", "liq", "vap", "sat"]:
+        #        if dat[phase]:
+        #            plt.plot(dat[phase]["h"], dat[phase]["p"], c='g')
 
         x = []
         y = []
@@ -1593,44 +1718,12 @@ change.
         tt = pyo.value(self.temperature_trip)
         pmax = pyo.value(pyo.units.convert(self.pressure_max, pyo.units.kPa))
 
-        # Temperatures to plot the saturation from triple point to critical
-        # in the form of tau (Tc/T)
-        tau_sat_vec = np.linspace(
-            1,
-            pyo.value(self.temperature_star) / (pyo.value(self.temperature_trip)),
-            200,
-        )
-        #
-        delta_sat_v_vec = [None] * len(tau_sat_vec)
-        delta_sat_l_vec = [None] * len(tau_sat_vec)
-        s_sat_v_vec = [None] * len(tau_sat_vec)
-        s_sat_l_vec = [None] * len(tau_sat_vec)
-
-        for i, tau in enumerate(tau_sat_vec):
-            delta_sat_l_vec[i] = pyo.value(
-                self.delta_sat_l_func(self.pure_component, tau)
-            )
-            delta_sat_v_vec[i] = pyo.value(
-                self.delta_sat_v_func(self.pure_component, tau)
-            )
-            s_sat_v_vec[i] = pyo.value(
-                self.s_func(self.pure_component, delta_sat_v_vec[i], tau)
-            )
-            s_sat_l_vec[i] = pyo.value(
-                self.s_func(self.pure_component, delta_sat_l_vec[i], tau)
-            )
+        dome = self.dome_data()
 
         # plot saturaion curves use log scale for pressure
         # plt.yscale("log")
-        plt.plot(s_sat_l_vec, ts / tau_sat_vec, c="b", label="sat liquid")
-        plt.plot(s_sat_v_vec, ts / tau_sat_vec, c="r", label="sat vapor")
-
-        # Points for critical point and triple point
-        deltat_l = pyo.value(self.delta_liq_func(self.pure_component, pt, ts / tt))
-        sc = pyo.value(self.s_func(self.pure_component, 1, 1))
-        st = pyo.value(self.s_func(self.pure_component, deltat_l, ts / tt))
-        plt.scatter([sc], [tc])
-        plt.scatter([st], [tt])
+        plt.plot(dome["s_liq"], dome["T"], c="b", label="sat liquid")
+        plt.plot(dome["s_vap"], dome["T"], c="r", label="sat vapor")
 
         x = []
         y = []
@@ -1709,8 +1802,8 @@ change.
         plt.plot([tc, tc * 1.1], [pc, pc], c="m", label="sat")
 
         # Points for critical point and triple point
-        plt.scatter([tc], [pc])
-        plt.scatter([tt], [pt])
+        #plt.scatter([tc], [pc])
+        #plt.scatter([tt], [pt])
 
         plt.title(f"P-T Diagram for {self.pure_component}")
         plt.ylabel("Pressure (kPa)")
