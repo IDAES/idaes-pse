@@ -80,7 +80,7 @@ After Miniconda is installed, we recommend creating a separate conda environment
 
 .. code-block:: sh
 
-    conda create -n idaes python=3.7
+    conda create -n idaes python=3.8
     conda activate idaes
 
 .. note::
@@ -97,7 +97,7 @@ Now that conda and pip are installed, and you are in the "idaes" conda environme
     idaes get-extensions
 
 .. warning::
-    The IDAES binary extensions are not supported on Intel-based macOS
+    The IDAES binary extensions are not yet supported on Mac/OSX
 
 .. note::
     This ``pip install`` command would override any package within the conda environment,
