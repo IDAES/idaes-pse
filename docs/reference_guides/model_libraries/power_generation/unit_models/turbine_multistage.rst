@@ -49,20 +49,21 @@ reheater.  In this example, a heater block is a stand-in for a reheater model.
   solver.options = {'tol': 1e-6}
 
   m = ConcreteModel()
-  m.fs = FlowsheetBlock(default={"dynamic": False})
+  m.fs = FlowsheetBlock(dynamic=False)
   m.fs.properties = iapws95.Iapws95ParameterBlock()
-  m.fs.turb = HelmTurbineMultistage(default={
-      "property_package": m.fs.properties,
-      "num_hp": 7,
-      "num_ip": 14,
-      "num_lp": 11,
-      "hp_split_locations": [4,7],
-      "ip_split_locations": [5, 14],
-      "lp_split_locations": [4,7,9,11],
-      "hp_disconnect": [7], # 7 is last stage in hp so disconnect hp from ip
-      "ip_split_num_outlets": {14:3}})
+  m.fs.turb = HelmTurbineMultistage(
+      property_package=m.fs.properties,
+      num_hp=7,
+      num_ip=14,
+      num_lp=11,
+      hp_split_locations=[4,7],
+      ip_split_locations=[5, 14],
+      lp_split_locations=[4,7,9,11],
+      hp_disconnect=[7], # 7 is last stage in hp so disconnect hp from ip
+      ip_split_num_outlets={14:3}
+  )
   # Add reheater (for example using a simple heater block)
-  m.fs.reheat = Heater(default={"property_package": m.fs.properties})
+  m.fs.reheat = Heater(property_package=m.fs.properties)
   # Add Arcs (streams) to connect the HP and IP sections through reheater
   m.fs.hp_to_reheat = Arc(source=m.fs.turb.hp_split[7].outlet_1,
                           destination=m.fs.reheat.inlet)

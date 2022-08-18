@@ -201,7 +201,7 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
                 initialize[i]["parameters"] = self
 
         return self.state_block_class(  # pylint: disable=not-callable
-            *args, **kwargs, default=default, initialize=initialize
+            *args, **kwargs, **default, initialize=initialize
         )
 
     def get_phase_component_set(self):

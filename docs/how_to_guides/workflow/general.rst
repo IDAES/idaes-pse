@@ -65,7 +65,7 @@ whether the model will be steady-state or dynamic, and to define the time domain
 
 .. code-block:: python
 
-    m.fs = FlowsheetBlock(default={"dynamic": False}
+    m.fs = FlowsheetBlock(dynamic=False)
 
 .. note::
 
@@ -96,7 +96,7 @@ process.
 
 .. code-block:: python
 
-    m.fs.unit01 = UnitModel(default={"property_package": m.fs.properties_1})
+    m.fs.unit01 = UnitModel(property_package=m.fs.properties_1)
 
 2.5 Define Unit Model Connectivity
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
