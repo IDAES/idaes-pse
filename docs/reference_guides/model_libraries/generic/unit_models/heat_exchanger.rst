@@ -32,8 +32,8 @@ override the default temperature difference calculation.
   # Add a Heater model to the flowsheet.
   model.fs.heat_exchanger = HeatExchanger(
       delta_temperature_callback=delta_temperature_amtd_callback,
-      "hot_side_name": "shell",
-      "cold_side_name": "tube",
+      "hot_side_name"="shell",
+      "cold_side_name"="tube",
       shell={"property_package": model.fs.properties},
       tube={"property_package": model.fs.properties}
   )
