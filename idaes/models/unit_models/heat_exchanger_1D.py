@@ -13,9 +13,6 @@
 """
 Generic IDAES 1D Heat Exchanger Model with overall area and heat transfer coefficient
 """
-# Import Python libraries
-from enum import Enum
-
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
@@ -47,7 +44,6 @@ from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.util.constants import Constants as c
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
 
@@ -289,7 +285,7 @@ cold side flows from 1 to 0""",
         """
         # Call UnitModel.build to setup dynamics
         super().build()
-        hx_process_config(self)
+        self._process_config()
 
         # Set flow directions for the control volume blocks and specify
         # dicretisation if not specified.
@@ -494,23 +490,22 @@ cold side flows from 1 to 0""",
                 self.hot_side.heat[t, x]
             )
 
-    def _make_geometry(self):
-        # Add reference to control volume geometry
-        add_object_reference(self, "area", self.hot_side.area)
-        add_object_reference(self, "length", self.hot_side.length)
+    def _process_config(self):
+        hx_process_config(self)
 
-        # Equate hot and cold side geometries
+    def _make_geometry(self):
         hot_side_units = (
             self.config.hot_side.property_package.get_metadata().get_derived_units
         )
 
-        @self.Constraint(self.flowsheet().time, doc="Equating hot and cold side areas")
-        def area_equality(self, t):
-            return (
-                pyunits.convert(self.cold_side.area, to_units=hot_side_units("area"))
-                == self.hot_side.area
-            )
+        self.area = Var(
+            initialize=1, units=hot_side_units("area"), doc="Heat transfer area"
+        )
 
+        # Add reference to control volume geometry
+        add_object_reference(self, "length", self.hot_side.length)
+
+        # Equate hot and cold side lengths
         @self.Constraint(
             self.flowsheet().time, doc="Equating hot and cold side lengths"
         )
@@ -521,6 +516,11 @@ cold side flows from 1 to 0""",
                 )
                 == self.hot_side.length
             )
+
+        # Also need to set cross-sectional areas for control volumes
+        # For now, fix ot a nominal value of 1
+        self.cold_side.area.fix(1)
+        self.hot_side.area.fix(1)
 
     def _make_performance(self):
         """
