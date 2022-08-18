@@ -22,14 +22,15 @@ Contents
    :class: index-table
 
    * - Getting Started (Tutorials)
-         * :doc:`Installing IDAES for users <tutorials/getting_started/index>`
-         * :doc:`Installing IDAES for developers <tutorials/advanced_install/index>`
+         * :doc:`Installing IDAES for Users <tutorials/getting_started/index>`
+         * :doc:`Installing IDAES for Contributors <tutorials/advanced_install/index>`
          * :doc:`IDAES Examples & Tutorials <tutorials/tutorials_examples>`
      - How-To Guides
          * :doc:`Setting up IDAES Models <how_to_guides/workflow/index>`
          * :doc:`Developing Custom Models <how_to_guides/custom_models/general_model_development>`
          * :doc:`Using IDAES Flowsheet Visualizer <how_to_guides/vis/index>`
          * :doc:`Using the Data Management Framework <how_to_guides/data_management_framework/index>`
+         * :doc:`Installing Specific IDAES Versions <how_to_guides/versioned_idaes_install>`
    * - Explanations
          * :doc:`Why IDAES <explanations/why_idaes>`
          * :doc:`Concepts <explanations/concepts>`
