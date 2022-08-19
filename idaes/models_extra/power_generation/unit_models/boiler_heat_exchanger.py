@@ -140,7 +140,7 @@ def delta_temperature_underwood_tune_callback(b):
 
 @declare_process_block_class("BoilerHeatExchanger")
 class BoilerHeatExchangerData(HeatExchangerData):
-    CONFIG = HeatExchangerData.CONFIG()  # TODO: Revert this implicit=True)
+    CONFIG = HeatExchangerData.CONFIG(implicit=True)
 
     CONFIG.declare(
         "tube_arrangement",
