@@ -33,6 +33,7 @@ from idaes.core.util.model_statistics import (
     activated_constraints_set,
 )
 from idaes.core.solvers import get_solver
+from idaes.tests.performance.performance_test_base import PerformanceTestClass
 
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
@@ -58,45 +59,44 @@ def _as_quantity(x):
 
 # Test for configuration dictionaries with parameters from Properties of Gases
 # and liquids 4th edition
-class HC_PR_Model:
-    def build_model():
-        model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration)
+def build_model():
+    model = ConcreteModel()
+    model.params = GenericParameterBlock(default=configuration)
 
-        model.props = model.params.build_state_block(
-            [1], default={"defined_state": True}
-        )
+    model.props = model.params.build_state_block([1], default={"defined_state": True})
 
-        # Fix state
-        model.props[1].flow_mol.fix(1)
-        model.props[1].temperature.fix(295.00)
-        model.props[1].pressure.fix(1e5)
-        model.props[1].mole_frac_comp["hydrogen"].fix(0.077)
-        model.props[1].mole_frac_comp["methane"].fix(0.077)
-        model.props[1].mole_frac_comp["ethane"].fix(0.077)
-        model.props[1].mole_frac_comp["propane"].fix(0.077)
-        model.props[1].mole_frac_comp["nbutane"].fix(0.077)
-        model.props[1].mole_frac_comp["ibutane"].fix(0.077)
-        model.props[1].mole_frac_comp["ethylene"].fix(0.077)
-        model.props[1].mole_frac_comp["propene"].fix(0.077)
-        model.props[1].mole_frac_comp["butene"].fix(0.077)
-        model.props[1].mole_frac_comp["pentene"].fix(0.077)
-        model.props[1].mole_frac_comp["hexene"].fix(0.077)
-        model.props[1].mole_frac_comp["heptene"].fix(0.077)
-        model.props[1].mole_frac_comp["octene"].fix(0.076)
+    # Fix state
+    model.props[1].flow_mol.fix(1)
+    model.props[1].temperature.fix(295.00)
+    model.props[1].pressure.fix(1e5)
+    model.props[1].mole_frac_comp["hydrogen"].fix(0.077)
+    model.props[1].mole_frac_comp["methane"].fix(0.077)
+    model.props[1].mole_frac_comp["ethane"].fix(0.077)
+    model.props[1].mole_frac_comp["propane"].fix(0.077)
+    model.props[1].mole_frac_comp["nbutane"].fix(0.077)
+    model.props[1].mole_frac_comp["ibutane"].fix(0.077)
+    model.props[1].mole_frac_comp["ethylene"].fix(0.077)
+    model.props[1].mole_frac_comp["propene"].fix(0.077)
+    model.props[1].mole_frac_comp["butene"].fix(0.077)
+    model.props[1].mole_frac_comp["pentene"].fix(0.077)
+    model.props[1].mole_frac_comp["hexene"].fix(0.077)
+    model.props[1].mole_frac_comp["heptene"].fix(0.077)
+    model.props[1].mole_frac_comp["octene"].fix(0.076)
 
-        assert degrees_of_freedom(model.props[1]) == 0
+    return model
 
-        return model
 
-    def initialize_model(model):
-        model.props.initialize(optarg={"tol": 1e-6})
+def initialize_model(model):
+    model.props.initialize(optarg={"tol": 1e-6})
 
-    def solve_model(model):
-        results = solver.solve(model)
 
-        # Check for optimal solution
-        assert check_optimal_termination(results)
+@pytest.mark.performance
+class Test_HC_PR_Performance(PerformanceTestClass):
+    def build_model(self):
+        return build_model()
+
+    def initialize_model(self, model):
+        initialize_model(model)
 
 
 class TestParamBlock(object):
@@ -270,7 +270,7 @@ class TestParamBlock(object):
 class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
-        return HC_PR_Model.build_model()
+        return Tbuild_model()
 
     @pytest.mark.integration
     def test_build(self, model):
@@ -337,7 +337,7 @@ class TestStateBlock(object):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
-        HC_PR_Model.initialize_model(model)
+        initialize_model(model)
 
         assert degrees_of_freedom(model) == 0
 
