@@ -70,7 +70,6 @@ Users should define their costing package as below to properly overload the base
             # process level costs go here
             pass
 
-        @staticmethod
         def initialize_build(self):
             """
             Here we can add intialization steps for the things we built in
@@ -80,6 +79,7 @@ Users should define their costing package as below to properly overload the base
             # additional initialization steps go here
             pass
 
+        @staticmethod
         def cost_example_method(
             blk,
             arg_1=Option1.option,
@@ -113,7 +113,7 @@ Adding Capital Costing For a Specific Unit
 
 From here, users may add capital costing for a specific unit in the process, in this case a `Heater`.
 
-First, define the `Heater``` unit:
+First, define the `Heater` unit:
 
 .. code:: python
 
@@ -140,7 +140,7 @@ Using an existing IDAES costing library (e.g. SSLW), users may populate a costin
 
 .. code:: python
 
-    from idaes.models.costing.sslw import SSLWCosting, SSLWCostingData
+    from idaes.models.costing.SSLW import SSLWCosting, SSLWCostingData
     from idaes.core import UnitModelCostingBlock
     from idaes.models.costing.SSLW import HeaterMaterial, HeaterSource
 
@@ -161,7 +161,7 @@ The SSLW package contains a `unit_mapping` method to automatically lookup the pr
 
 .. code:: python
 
-    from idaes.models.costing.sslw import SSLWCosting, SSLWCostingData
+    from idaes.models.costing.SSLW import SSLWCosting, SSLWCostingData
     from idaes.core import UnitModelCostingBlock
     from idaes.models.costing.SSLW import HeaterMaterial, HeaterSource
 
@@ -275,7 +275,7 @@ These costs are the sums of their respective quantities, for example `m.fs.costi
 
 .. code:: python
 
-    m.fs.costing.CustomCosting().cost_process()
+    m.fs.costing.cost_process()
 
 Units of Measurement
 --------------------

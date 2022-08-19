@@ -18,7 +18,7 @@ from the following reference with some exceptions (noted in the documentation as
 
 Process and Product Design Principles: Synthesis, Analysis, and Evaluation. Seider, Seader, Lewin, Windagdo, 3rd Ed. John Wiley and Sons. Chapter 22. Cost Accounting and Capital Cost Estimation
 
-This library implements some of the methods described in the source, and outlines capital cost methodology for generic IDAES unit operations. The module employs Pyomo currency units using a basis Chemical Engineering Cost Index value of 500 (USD CE500) - this index creates a relative comparison scale for capital costs betweens years. Users may then pass a desired year (default USD 2018 for the SSLW costing module) and the framework will automatically convert currency units using a built-in dictionary of year/cost index definitions. The base costing framework provides a method to automatically register currency units for the costing block based on Chemical Engineering (CE) Cost Index conversion rates for US Dollars. IDAES will check is Pyomo has standard currency units registered, and if not will load unit conversions between USD at CE indices of 500 and 394, as well as USD annually from 1990 to 2020. Users should refer to the reference above for details of the costing correlations, however, a summary of the methods is provided below.
+This library implements some of the methods described in the source, and outlines capital cost methodology for generic IDAES unit operations. The module employs Pyomo currency units using a basis Chemical Engineering Cost Index value of 500 (USD CE500) - this index creates a relative comparison scale for capital costs betweens years. Users may then pass a desired year (default USD 2018 for the SSLW costing module) and the framework will automatically convert currency units using a built-in dictionary of year/cost index definitions. The base costing framework provides a method to automatically register currency units for the costing block based on Chemical Engineering (CE) Cost Index conversion rates for US Dollars. IDAES will check if Pyomo has standard currency units registered, and if not will load unit conversions between USD at CE indices of 500 and 394, as well as USD annually from 1990 to 2020. Users should refer to the reference above for details of the costing correlations, however, a summary of the methods is provided below.
 
 Available IDAES Process Costing Module Methods
 ----------------------------------------------
@@ -36,7 +36,7 @@ Base cost                   :math:`base\_cost`             unitless Base cost (b
 Number of units             :math:`number\_of\_units`      unitless Number of units to be costed (to take advantage of the economics of scale)
 =========================== ============================== ======== ==========================================================================
 
-.. note:: number of units by default is fixed to 1 and the user must unfix this variable to optimize the number of units. Also, `number of units` can be built as a continuous variable or an integer variable. If the latter, the user must provide an mip solver. Use the global costing argument for this purpose (integer_n_units=True or False).
+.. note:: number of units by default is fixed to 1 and the user must unfix this variable to optimize the number of units. Also, `number_of_units` can be built as a continuous variable or an integer variable. If the latter, the user must provide a MIP solver. Use the global costing argument for this purpose (integer_n_units=True or False).
 
 For a particular unit model, capital costs are assumed to scale with a selected basis quantity:
 
@@ -374,13 +374,13 @@ Electric Motor Pumps
 
 A centrifugal pump is usually driven by an electric motor, the `self.costing.motor_purchase_cost` is calculated based on the power consumption and is adjusted by user-defined currency units with the appropriate CE index value.
 
-.. math:: self.motor_purchase_cost = FT * self.costing.motor\_base\_cost  (Eq. 22.20)
+.. math:: self.costing.motor\_purchase\_cost = FT * self.costing.motor\_base\_cost  (Eq. 22.20)
 
 .. math:: self.costing.motor\_base\_cost = self.costing.motor\_base\_cost\_per\_unit * self.costing.number\_of\_units
 
 .. math:: Q  = self.Q / self.costing.number\_of\_units
 
-.. math:: self.costing.self.costing.motor\_base\_cost\_per\_unit = \exp{(5.8259 + 0.13141\log{PC} + 0.053255(\log{PC})^{2} + 0.028628(\log{PC})^{3} - 0.0035549(\log{PC})^{4})}  (Eq. 22.19)
+.. math:: self.costing.motor\_base\_cost\_per\_unit = \exp{(5.8259 + 0.13141\log{PC} + 0.053255(\log{PC})^{2} + 0.028628(\log{PC})^{3} - 0.0035549(\log{PC})^{4})}  (Eq. 22.19)
 
 .. math:: PC = \frac{P_{T}}{\eta_{P}\eta_{M}} = \frac{P_{B}}{\eta_{M}} = \frac{Q H \rho}{33000\eta_{P}\eta_{M}}    (Eq. 22.16)
 
@@ -608,7 +608,7 @@ nickel_alloy     5.0
 Blower Cost
 +++++++++++
 
-The blower cost is based on the brake horsepower, which can be calculated with the inlet volumetric flow rate and pressure (:math:`cfm` and :math:`lbf/in^2` respectivelly).
+The blower cost is based on the brake horsepower, which can be calculated with the inlet volumetric flow rate and pressure (:math:`cfm` and :math:`lbf/in^2` respectively).
 
 Additional arguments are required to estimate the blower cost such as mover_type='blower', blower_type, and materials of construction ('*' corresponds to the default options):
 
