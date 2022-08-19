@@ -374,7 +374,16 @@ class ShellAndTube1DData(HeatExchanger1DData):
             iscale.constraint_scaling_transform(
                 c,
                 iscale.get_scaling_factor(
-                    self.cold_side.heat[i], default=1, warning=True
+                    self.hot_side.heat[i], default=1, warning=True
+                ),
+                overwrite=False,
+            )
+
+        for i, c in self.heat_conservation.items():
+            iscale.constraint_scaling_transform(
+                c,
+                iscale.get_scaling_factor(
+                    self.hot_side.heat[i], default=1, warning=True
                 ),
                 overwrite=False,
             )

@@ -46,9 +46,6 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
     BTXParameterBlock,
 )
 from idaes.models.properties import iapws95
-from idaes.models.properties.examples.saponification_thermo import (
-    SaponificationParameterBlock,
-)
 
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.model_statistics import (
@@ -1139,6 +1136,8 @@ class TestIAPWS_countercurrent(object):
         m.fs.unit.cold_side_inlet.flow_mol[0].fix(5)
         m.fs.unit.cold_side_inlet.enth_mol[0].fix(7000)
         m.fs.unit.cold_side_inlet.pressure[0].fix(101325)
+
+        # iscale.calculate_scaling_factors(m)
 
         return m
 
