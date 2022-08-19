@@ -132,14 +132,14 @@ export class StreamTable {
                             return '<span class="streamtable-cell">' + params.value + '</span>';
                         }
                     });
+                    let list_item = document.createElement("li");
+                    let checkbox_item = document.createElement("div");
+                    checkbox_item.class = "checkbox";
+                    // checkbox_item.id = column_header + "-checkbox"
+                    checkbox_item.innerHTML = '<label class="fancy-checkbox"><input type="checkbox" value="' + column_header + '" id="' + column_header + '" checked><i class="fas fa-check checked"></i><i class="far fa-circle unchecked"></i>' + column_header + '</label>';
+                    list_item.appendChild(checkbox_item);
+                    hide_fields_list.appendChild(list_item);
                 }
-                let list_item = document.createElement("li");
-                let checkbox_item = document.createElement("div");
-                checkbox_item.class = "checkbox";
-                // checkbox_item.id = column_header + "-checkbox"
-                checkbox_item.innerHTML = '<label class="fancy-checkbox"><input type="checkbox" value="' + column_header + '" id="' + column_header + '" checked><i class="fas fa-check checked"></i><i class="far fa-circle unchecked"></i>' + column_header + '</label>';
-                list_item.appendChild(checkbox_item);
-                hide_fields_list.appendChild(list_item);
             };
         };
 
