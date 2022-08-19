@@ -19,23 +19,31 @@ from idaes.apps.grid_integration import Bidder
 from idaes.apps.grid_integration import PlaceHolderForecaster
 from idaes.apps.grid_integration import DoubleLoopCoordinator
 from idaes.apps.grid_integration.examples.thermal_generator import ThermalGenerator
+from idaes.apps.grid_integration.examples.utils import (
+    rts_gmlc_generator_dataframe,
+    rts_gmlc_bus_dataframe,
+    daily_da_price_means,
+    daily_rt_price_means,
+    daily_da_price_stds,
+    daily_rt_price_stds,
+)
 
 this_module_dir = os.path.dirname(__file__)
 
-generator = "102_STEAM_3"
+generator = "10_STEAM"
 tracking_horizon = 4
-bidding_horizon = 48
+day_ahead_bidding_horizon = 48
+real_time_bidding_horizon = tracking_horizon
 n_scenario = 10
 n_tracking_hour = 1
 
-# read generator param data
-rts_gmlc_dataframe = pd.read_csv(os.path.join(this_module_dir, "gen.csv"))
-
 # create forecaster
-price_forecasts_df = pd.read_csv(
-    os.path.join(this_module_dir, "lmp_forecasts_concat.csv")
+forecaster = PlaceHolderForecaster(
+    daily_da_price_means=daily_da_price_means,
+    daily_rt_price_means=daily_rt_price_means,
+    daily_da_price_stds=daily_da_price_stds,
+    daily_rt_price_stds=daily_rt_price_stds,
 )
-forecaster = PlaceHolderForecaster(price_forecasts_df=price_forecasts_df)
 
 # create solver
 solver = pyo.SolverFactory("cbc")
@@ -44,30 +52,40 @@ solver = pyo.SolverFactory("cbc")
 
 # make a tracker
 tracking_model_object = ThermalGenerator(
-    rts_gmlc_dataframe=rts_gmlc_dataframe, horizon=tracking_horizon, generator=generator
+    rts_gmlc_generator_dataframe=rts_gmlc_generator_dataframe,
+    rts_gmlc_bus_dataframe=rts_gmlc_bus_dataframe,
+    generator=generator,
 )
 thermal_tracker = Tracker(
     tracking_model_object=tracking_model_object,
+    tracking_horizon=tracking_horizon,
     n_tracking_hour=n_tracking_hour,
     solver=solver,
 )
 
 # make a projection tracker
 projection_tracking_model_object = ThermalGenerator(
-    rts_gmlc_dataframe=rts_gmlc_dataframe, horizon=tracking_horizon, generator=generator
+    rts_gmlc_generator_dataframe=rts_gmlc_generator_dataframe,
+    rts_gmlc_bus_dataframe=rts_gmlc_bus_dataframe,
+    generator=generator,
 )
 thermal_projection_tracker = Tracker(
     tracking_model_object=projection_tracking_model_object,
+    tracking_horizon=tracking_horizon,
     n_tracking_hour=n_tracking_hour,
     solver=solver,
 )
 
 # create a bidder
 bidding_model_object = ThermalGenerator(
-    rts_gmlc_dataframe=rts_gmlc_dataframe, horizon=bidding_horizon, generator=generator
+    rts_gmlc_generator_dataframe=rts_gmlc_generator_dataframe,
+    rts_gmlc_bus_dataframe=rts_gmlc_bus_dataframe,
+    generator=generator,
 )
 thermal_bidder = Bidder(
     bidding_model_object=bidding_model_object,
+    day_ahead_horizon=day_ahead_bidding_horizon,
+    real_time_horizon=real_time_bidding_horizon,
     n_scenario=n_scenario,
     solver=solver,
     forecaster=forecaster,
