@@ -81,7 +81,7 @@ Variable          Name                       Notes
 ================= ========================== ==================================
 :math:`L`         length                     Reference to hot_side.length
 :math:`A`         area                       Overall heat transfer area
-:math:`U_{t,x}`  heat_transfer_coefficient  Average heat transfer coefficient
+:math:`U_{t,x}`   heat_transfer_coefficient  Average heat transfer coefficient
 ================= ========================== ==================================
 
 Additional Constraints
