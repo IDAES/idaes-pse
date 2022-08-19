@@ -473,7 +473,6 @@ class DoubleLoopCoordinator:
         ]
 
         if is_first_day:
-            # self.current_DA_prices = DA_prices
             self.current_avail_DA_prices = DA_prices
         else:
             self.current_avail_DA_prices = self.current_DA_prices + DA_prices
