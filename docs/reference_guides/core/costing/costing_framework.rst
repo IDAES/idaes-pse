@@ -101,7 +101,7 @@ Once the custom costing package (e.g. `idaes/models/costing/custom.py`) has been
 
     from pyomo.environ import ConcreteModel
     from idaes.core import FlowsheetBlock
-    from idaes.models.costing.Custom import CustomCosting
+    from my_costing_module import CustomCosting
     
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -181,9 +181,9 @@ Alternatively, users may pass their own custom costing methods after writing the
 
 .. code:: python
 
-    from idaes.models.costing.custom import CustomCosting, CustomCostingData
+    from my_costing_module import CustomCosting, CustomCostingData
     from idaes.core import UnitModelCostingBlock
-    from idaes.models.costing.custom import Option1, Option2
+    from my_costing_module import Option1, Option2
 
     # add a flowsheet costing block
     m.fs.costing = CustomCosting()

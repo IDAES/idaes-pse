@@ -380,7 +380,7 @@ A centrifugal pump is usually driven by an electric motor, the `self.costing.mot
 
 .. math:: Q  = self.Q / self.costing.number\_of\_units
 
-.. math:: self.costing.motor\_base\_cost\_per\_unit = \exp{(5.8259 + 0.13141\log{PC} + 0.053255(\log{PC})^{2} + 0.028628(\log{PC})^{3} - 0.0035549(\log{PC})^{4})}  (Eq. 22.19)
+.. math:: self.costing.motor\_base\_cost\_per\_unit = e^{(5.8259 + 0.13141\log{PC} + \\ 0.053255(\log{PC})^{2} + 0.028628(\log{PC})^{3} - 0.0035549(\log{PC})^{4})}  (Eq. 22.19)
 
 .. math:: PC = \frac{P_{T}}{\eta_{P}\eta_{M}} = \frac{P_{B}}{\eta_{M}} = \frac{Q H \rho}{33000\eta_{P}\eta_{M}}    (Eq. 22.16)
 
@@ -556,7 +556,7 @@ fan_type, and material_type ('*' corresponds to the default options):
 
 Additionally, users may pass an argument 'integer' (defaults to True) whether the number of units should be restricted to an integer or not.
 
-To select the correct fan type users must calculate the total head in inH2O and select the proper fan type from table 13.
+To select the correct fan type users must calculate the total head in inches of water (inH2O) and select the proper fan type from table 13.
 Additionally, the user must select the head factor (head_factor) from table 14.
 
 Table 13. Typical Operating Ranges of Fans
@@ -814,10 +814,10 @@ titanium           7.7    0.1628
 Vessel Cost
 """""""""""
 
-The weight of the unit is calculated based on the methal density, length, Diameter, and shell thickness. `shel_thickness` is a parameter initialized to 1.25, 
+The weight of the unit is calculated based on the methal density, length, Diameter, and shell thickness. `shell_thickness` is a parameter initialized to 1.25, 
 however, the user must calculate the shell wall minimum thickness computd from the ASME pressure vessel code (tp) add the average vessel thickness, the necessary wall thickness (tE), and select the appropriate shell_thickness.
 
-.. math:: self.weight == \pi * ((D*12) + self.shell\_thickness) * ((L*12)+(0.8*D*12))*self.shell\_thickness*self.material\_density
+.. math:: self.weight == \pi * ((D*12) + self.shell\_thickness) * ((L*12) \\ +(0.8*D*12))*self.shell\_thickness*self.material\_density
 
 The base cost of the vessel is given by:
 Horizontal vessels (1: 1000 < W < 920,000 lb):
@@ -838,7 +838,7 @@ Vertical vessels (2: 9,000 < W < 2.5M lb):
 
 The vessel purchase cost (adjusted by user-defined currency units with the appropriate CE index value) is given by:
 
-.. math:: self.vessel\_purchase\_cost = material\_factor * self.base\_cost + (self.base\_cost\_platf\_ladders * self.costing.number\_of\_units)
+.. math:: self.vessel\_purchase\_cost = material\_factor * self.base\_cost \\ + (self.base\_cost\_platforms\_ladders * self.costing.number\_of\_units)
 
 note that if PL = `False`, the cost of platforms and ladders is not included.
 
@@ -854,15 +854,15 @@ Base Cost of Platforms and ladders
 The cost of platforms and ladders is based on the diamter and length in ft.
 Horizontal vessels (1: 3 < D < 12 ft):
 
-.. math:: self.base\_cost\_platf\_ladders = 20059*D^{0.20294}
+.. math:: self.base\_cost\_platforms\_ladders = 20059*D^{0.20294}
 
 Vertical vessels (1: 3 < D < 12 ft and 12 < L  < 40 ft):
 
-.. math:: self.base\_cost\_platf\_ladders = 361.8*D^{0.73960} * L^{0.70684}
+.. math:: self.base\_cost\_platforms\_ladders = 361.8*D^{0.73960} * L^{0.70684}
 
 Vertical vessels (2: 3 < D < 24 ft and 27 < L  < 170 ft):
 
-.. math:: self.base\_cost\_platf\_ladders = 300.9*D^{0.63316} * L^{0.80161}
+.. math:: self.base\_cost\_platforms\_ladders = 300.9*D^{0.63316} * L^{0.80161}
 
 
 Purchase Cost of Plates
@@ -898,7 +898,7 @@ The tray base cost is then calculated as:
 
 The purchase cost of the trays (adjusted by user-defined currency units with the appropriate CE index value) is given by:
 
-.. math:: self.purchase\_cost\_trays = self.number\_trays * self.number\_tray\_factor * self.type\_tray\_factor * self.tray\_material\_factor * self.base\_cost\_trays
+.. math:: self.purchase\_cost\_trays = self.number\_trays * self.number\_tray\_factor \\ * self.type\_tray\_factor * self.tray\_material\_factor * self.base\_cost\_trays
 
 Module Classes
 ^^^^^^^^^^^^^^
