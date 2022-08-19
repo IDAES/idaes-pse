@@ -313,6 +313,13 @@ class ModelTag:
             return False
 
     @property
+    def fixed(self):
+        """Get the tagged variable if the tag is not a variable, raise TypeError"""
+        if not self.is_var:
+            return False
+        return self.expression.fixed
+
+    @property
     def is_indexed(self):
         """Returns whether the tagged expression is an indexed."""
         try:

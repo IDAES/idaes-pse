@@ -221,7 +221,7 @@ def _add_docs(object_map, docs, typ, head):
 
     Args:
         object_map (PyomoSympyBimap): Pyomo, sympy, LaTeX mapping
-        docs: string containing a mardown table
+        docs: string containing a markdown table
         typ: the class of objects to document (Var, Expression, ExternalFunction)
         head: a string to used in the sybol table heading for this class of objects
     Returns:
@@ -229,22 +229,28 @@ def _add_docs(object_map, docs, typ, head):
     """
     docked = set()  # components already documented, mainly for indexed compoents
     whead = True  # write heading before adding first item
-    for i, sc in enumerate(object_map.sympyVars()):
-        c = object_map.getPyomoSymbol(sc)
-        cdat = c
-        c = c.parent_component()  # Document the parent for indexed comps
-        if not isinstance(c, typ):
-            continue
-        if whead:  # add heading if is first entry in this section
-            docs += "**{}** | **Doc** | **Path** | **UoM**\n".format(head)
-            whead = False
-        if id(c) not in docked:
-            docked.add(id(c))  # make sure we don't get a line for every index
-            try:  # just document the parent of indexed vars
-                s = object_map.parent_symbol[c][1]
-            except KeyError:  # non-indexed vars
-                s = object_map.sympy2latex[sc]
-            docs += "${}$|{}|{}|{}\n".format(s, c.doc, c, pu.get_units(cdat))
+
+    if not isinstance(object_map, (list, tuple)):
+        object_map = [object_map]
+
+    for om in object_map:
+        for i, sc in enumerate(om.sympyVars()):
+            c = om.getPyomoSymbol(sc)
+            cdat = c
+            c = c.parent_component()  # Document the parent for indexed comps
+            if not isinstance(c, typ):
+                continue
+            if whead:  # add heading if is first entry in this section
+                docs += f"**{head}** | **Doc** | **Path** | **UoM**\n"
+                docs += "---: | --- | --- | ---\n"
+                whead = False
+            if id(c) not in docked:
+                docked.add(id(c))  # make sure we don't get a line for every index
+                try:  # just document the parent of indexed vars
+                    s = om.parent_symbol[c][1]
+                except KeyError:  # non-indexed vars
+                    s = om.sympy2latex[sc]
+                docs += "${}$|{}|{}|{}\n".format(s, c.doc, c, pu.get_units(cdat))
     return docs
 
 
@@ -273,10 +279,11 @@ def to_latex(expr):
         "sympy_expr": sympy_expr,
         "where": docs,
         "latex_expr": sympy.latex(sympy_expr, symbol_names=object_map.sympy2latex),
+        "object_map": object_map
     }
 
 
-def document_constraints(comp, doc=True, descend_into=True):
+def document_constraints(comp, doc=True, descend_into=True, fixed_vars=False, to_doc=None):
     """
     Provides nicely formatted constraint documetntation in markdown format,
     assuming the $$latex math$$ and $latex math$ syntax is supported.
@@ -294,9 +301,12 @@ def document_constraints(comp, doc=True, descend_into=True):
     Returns:
         A string in markdown format with equations in LaTeX form.
     """
+    if to_doc is None:
+        to_doc = []
     s = None
     if isinstance(comp, _ExpressionData):
         d = to_latex(comp)
+        to_doc.append(d["object_map"])
         try:
             sy = comp.latex_symbol
         except:
@@ -317,6 +327,11 @@ def document_constraints(comp, doc=True, descend_into=True):
                 s = "$${}$$".format(d["latex_expr"])
     elif isinstance(comp, _ConstraintData):
         d = to_latex(comp.body)
+        to_doc.append(d["object_map"])
+        try:
+            return f"$${comp.latex_nice_expr}$$"
+        except:
+            pass
         if comp.upper != comp.lower:
             if doc:
                 s = "$${} \le {}\le {}$$\n{}".format(
@@ -336,22 +351,27 @@ def document_constraints(comp, doc=True, descend_into=True):
         for c in comp.component_data_objects(Constraint, descend_into=descend_into):
             if not c.active:
                 continue
-            cs.append("**Constraint:** {}".format(c))
-            cs.append(document_constraints(c, doc))
+            cs.append("\n**Constraint:** {}\n".format(c))
+            cs.append(document_constraints(c, doc, to_doc=to_doc))
         for c in comp.component_data_objects(Expression, descend_into=descend_into):
             if not c.active:
                 continue
-            cs.append("**Expression:** {}".format(c))
-            cs.append(document_constraints(c, doc))
-        for c in comp.component_data_objects(Var, descend_into=descend_into):
-            if not c.fixed:
-                continue
-            cs.append(f"**Fixed Var:** {c} = {value(c)}")
-            try:
-                sy = c.latex_symbol
-            except:
-                sy = None
-            if sy is not None:
-                cs.append("$${} = {} \\text{{ {} }}$$".format(sy, value(c), pu.get_units(c)))
+            cs.append("\n**Expression:** {}\n".format(c))
+            cs.append(document_constraints(c, doc, to_doc=to_doc))
+        if fixed_vars:
+            for c in comp.component_data_objects(Var, descend_into=descend_into):
+                if not c.fixed:
+                    continue
+                cs.append(f"**Fixed Var:** {c} = {value(c)}")
+                try:
+                    sy = c.latex_symbol
+                except:
+                    sy = None
+                if sy is not None:
+                    cs.append("$${} = {} \\text{{ {} }}$$".format(sy, value(c), pu.get_units(c)))
         s = "\n".join(cs)
+        docs = "\n"
+        docs_var = _add_docs(to_doc, docs, Var, "Variable")
+        docs_expr = _add_docs(to_doc, docs, Expression, "Expression")
+        s = "\n".join([s, docs_var, docs_expr])
     return s
