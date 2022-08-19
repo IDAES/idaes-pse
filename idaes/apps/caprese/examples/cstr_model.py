@@ -55,40 +55,32 @@ def make_model(
 
     m = ConcreteModel(name="CSTR model for testing")
     if steady:
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
     else:
         m.fs = FlowsheetBlock(
-            default={
-                "dynamic": True,
-                "time_set": time_set,
-                "time_units": pyunits.minute,
-            }
+            dynamic=True,
+            time_set=time_set,
+            time_units=pyunits.minute,
         )
 
     m.fs.properties = AqueousEnzymeParameterBlock()
-    m.fs.reactions = EnzymeReactionParameterBlock(
-        default={"property_package": m.fs.properties}
-    )
+    m.fs.reactions = EnzymeReactionParameterBlock(property_package=m.fs.properties)
     m.fs.cstr = CSTR(
-        default={
-            "has_holdup": True,
-            "property_package": m.fs.properties,
-            "reaction_package": m.fs.reactions,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "energy_balance_type": EnergyBalanceType.enthalpyTotal,
-            "momentum_balance_type": MomentumBalanceType.none,
-            "has_heat_of_reaction": True,
-        }
+        has_holdup=True,
+        property_package=m.fs.properties,
+        reaction_package=m.fs.reactions,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        energy_balance_type=EnergyBalanceType.enthalpyTotal,
+        momentum_balance_type=MomentumBalanceType.none,
+        has_heat_of_reaction=True,
     )
 
     m.fs.mixer = Mixer(
-        default={
-            "property_package": m.fs.properties,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "momentum_mixing_type": MomentumMixingType.none,
-            "num_inlets": 2,
-            "inlet_list": ["S_inlet", "E_inlet"],
-        }
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        momentum_mixing_type=MomentumMixingType.none,
+        num_inlets=2,
+        inlet_list=["S_inlet", "E_inlet"],
     )
     # Allegedly the proper energy balance is being used...
 
