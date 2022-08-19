@@ -14,7 +14,9 @@ Example
 -------
 
 The example below demonstrates how to initialize the HeatExchanger model, and
-override the default temperature difference calculation.
+override the default temperature difference calculation. This example also
+demonstrates how to assign custom names to the hot and cold sides of the heat
+exchanger.
 
 .. testcode::
 
@@ -66,18 +68,19 @@ The user may also provide constraints to calculate the heat transfer coefficient
 Model Structure
 ---------------
 
-The ``HeatExchanger`` model contains two ``ControlVolume0DBlock`` blocks. By default the
-hot side is named ``shell`` and the cold side is named ``tube``. These names are configurable.
-The sign convention is that duty is positive for heat flowing from the hot side to the cold
-side.  Aside from the sign convention there is no requirement that the hot side be hotter
-than the cold side.
+The ``HeatExchanger`` model contains two ``ControlVolume0DBlock`` blocks which are named ``hot_side`` and ``cold_side``.
+These names are configurable using the ``hot_side_name`` and ``cold_side_name`` configuration arguments, in which case
+aliases are assigned to the control volumes and associated Ports using the names provided (note that ``hot_side`` and
+``cold_side`` will always work). The sign convention is that duty is positive for heat flowing from the hot side to the cold
+side.  Aside from the sign convention there is no requirement that the hot side be hotter than the cold side, however
+some formulations for the average temperature driving force may require that hte hot side be hotter than the cold side.
 
 The control volumes are configured the same as the ``ControlVolume0DBlock`` in the
 :ref:`Heater model <reference_guides/model_libraries/generic/unit_models/heater:Heater>`. The ``HeatExchanger`` model contains additional
 constraints that calculate the amount of heat transferred from the hot side to the cold side.
 
 The ``HeatExchanger`` has two inlet ports and two outlet ports. By default these are
-``shell_inlet``, ``tube_inlet``, ``shell_outlet``, and ``tube_outlet``. If the user
+``hot_side_inlet``, ``cold_side_inlet``, ``hot_side_outlet``, and ``cold_side_outlet``. If the user
 supplies different hot and cold side names the inlet and outlets are named accordingly.
 
 Variables
@@ -119,8 +122,8 @@ Class Documentation
 -------------------
 
 .. Note::
-  The ``hot_side_config`` and ``cold_side_config`` can also be supplied using the name of
-  the hot and cold sides (``shell`` and ``tube`` by default) as in :ref:`the example <reference_guides/model_libraries/generic/unit_models/heat_exchanger:Example>`.
+  The ``hot_side`` and ``cold_side`` can also be supplied using the name of
+  the hot and cold sides as in :ref:`the example <reference_guides/model_libraries/generic/unit_models/heat_exchanger:Example>`.
 
 .. autoclass:: HeatExchanger
    :members:

@@ -381,9 +381,6 @@ class TestBTX_cocurrent(object):
         assert hasattr(btx.fs.unit, "heat_transfer_eq")
         assert hasattr(btx.fs.unit, "heat_conservation")
 
-        assert btx.fs.unit.hot_side.area.fixed
-        assert btx.fs.unit.cold_side.area.fixed
-
         assert number_variables(btx) == 824
         assert number_total_constraints(btx) == 781
         assert number_unused_variables(btx) == 10

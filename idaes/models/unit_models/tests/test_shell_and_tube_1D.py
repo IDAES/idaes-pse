@@ -1489,8 +1489,6 @@ class TestBT_Generic_cocurrent(object):
             }
         )
 
-        m.fs.unit.length.fix(4.85)
-
         m.fs.unit.shell_diameter.fix(1.04)
         m.fs.unit.tube_outer_diameter.fix(0.01167)
         m.fs.unit.tube_inner_diameter.fix(0.01067)

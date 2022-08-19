@@ -517,11 +517,6 @@ cold side flows from 1 to 0""",
                 == self.hot_side.length
             )
 
-        # Also need to set cross-sectional areas for control volumes
-        # For now, fix ot a nominal value of 1
-        self.cold_side.area.fix(1)
-        self.hot_side.area.fix(1)
-
     def _make_performance(self):
         """
         Constraints for unit model.
@@ -596,17 +591,7 @@ cold side flows from 1 to 0""",
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
-        # Get length and area values
-        if self.area.fixed:
-            # Most likely case
-            self.cold_side.area.set_value(self.area)
-        elif self.cold_side.area.fixed:
-            # This would be unusual, but check
-            self.area.set_value(self.cold_side.area)
-        else:
-            # No fixed value for area - we will assume the user knows what they are doing
-            pass
-
+        # Get length values
         if self.length.fixed:
             # Most likely case
             self.cold_side.length.set_value(self.length)
@@ -618,8 +603,6 @@ cold side flows from 1 to 0""",
             pass
 
         # Initialize control volumes blocks
-        Afix = self.hot_side.area.fixed
-        self.hot_side.area.fix()
         Lfix = self.hot_side.length.fixed
         self.hot_side.length.fix()
         flags_hot_side = self.hot_side.initialize(
@@ -628,13 +611,9 @@ cold side flows from 1 to 0""",
             solver=solver,
             state_args=hot_side_state_args,
         )
-        if not Afix:
-            self.hot_side.area.unfix()
         if not Lfix:
             self.hot_side.length.unfix()
 
-        Afix = self.cold_side.area.fixed
-        self.cold_side.area.fix()
         Lfix = self.cold_side.length.fixed
         self.cold_side.length.fix()
         flags_cold_side = self.cold_side.initialize(
@@ -643,8 +622,6 @@ cold side flows from 1 to 0""",
             solver=solver,
             state_args=cold_side_state_args,
         )
-        if not Afix:
-            self.cold_side.area.unfix()
         if not Lfix:
             self.cold_side.length.unfix()
 
