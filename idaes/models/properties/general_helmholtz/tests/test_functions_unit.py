@@ -1030,19 +1030,36 @@ def test_r134a_transport():
         )
     )
 
-    assert pytest.approx(0.0021397, rel=3e-1) == pyo.value(
+    assert pytest.approx(0.0021397, rel=1e-2) == pyo.value(
         pyo.units.convert(
             te.viscosity_liq(T=170 * pyo.units.K, x=0),
             pyo.units.Pa * pyo.units.s,
         )
     )
 
-    assert pytest.approx(5.7956e-05, rel=1e-1) == pyo.value(
+    assert pytest.approx(5.7956e-05, rel=1e-2) == pyo.value(
         pyo.units.convert(
             te.viscosity_liq(T=370 * pyo.units.K, x=0),
             pyo.units.Pa * pyo.units.s,
         )
     )
+
+    assert pytest.approx(0.14516, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_liq(T=170 * pyo.units.K, x=0),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
+
+
+    assert pytest.approx(0.093414, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_liq(T=270 * pyo.units.K, x=0),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
+
+
     assert pytest.approx(6.8353e-06, rel=1e-2) == pyo.value(
         pyo.units.convert(
             te.viscosity_vap(T=170 * pyo.units.K, x=1),
@@ -1054,5 +1071,19 @@ def test_r134a_transport():
         pyo.units.convert(
             te.viscosity_vap(T=370 * pyo.units.K, x=1),
             pyo.units.Pa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(0.0030921, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_vap(T=170 * pyo.units.K, x=0),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(0.011241, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_vap(T=270 * pyo.units.K, x=0),
+            pyo.units.W / pyo.units.m / pyo.units.K,
         )
     )
