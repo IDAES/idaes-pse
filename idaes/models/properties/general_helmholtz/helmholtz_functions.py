@@ -826,19 +826,23 @@ class HelmholtzThermoExpressions(object):
 
     def viscosity_liq(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return supported_components[c]._viscosity(self.param, delta_liq, tau)
+        return supported_components[c]._viscosity(self.param, delta_liq, tau, blk)
 
     def viscosity_vap(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return supported_components[c]._viscosity(self.param, delta_vap, tau)
+        return supported_components[c]._viscosity(self.param, delta_vap, tau, blk)
 
     def thermal_conductivity_liq(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return supported_components[c]._thermal_conductivity(self.param, delta_liq, tau)
+        return supported_components[c]._thermal_conductivity(
+            self.param, delta_liq, tau, blk
+        )
 
     def thermal_conductivity_vap(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return supported_components[c]._thermal_conductivity(self.param, delta_vap, tau)
+        return supported_components[c]._thermal_conductivity(
+            self.param, delta_vap, tau, blk
+        )
 
     def p_sat(self, T=None, tau=None):
         """Return saturation pressure as a function of T or tau"""

@@ -1051,14 +1051,12 @@ def test_r134a_transport():
         )
     )
 
-
     assert pytest.approx(0.093414, rel=1e-2) == pyo.value(
         pyo.units.convert(
             te.thermal_conductivity_liq(T=270 * pyo.units.K, x=0),
             pyo.units.W / pyo.units.m / pyo.units.K,
         )
     )
-
 
     assert pytest.approx(6.8353e-06, rel=1e-2) == pyo.value(
         pyo.units.convert(
@@ -1088,6 +1086,7 @@ def test_r134a_transport():
         )
     )
 
+
 @pytest.mark.unit
 @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
 def test_r1234ze_transport():
@@ -1099,28 +1098,65 @@ def test_r1234ze_transport():
 
     assert pytest.approx(0.0098503, rel=1e-3) == pyo.value(
         pyo.units.convert(
-            te.thermal_conductivity_vap(T=250 * pyo.units.K, p=0.05e6 * pyo.units.Pa, x=1),
+            te.thermal_conductivity_vap(
+                T=250 * pyo.units.K, p=0.05e6 * pyo.units.Pa, x=1
+            ),
             pyo.units.W / pyo.units.m / pyo.units.K,
         )
     )
 
     assert pytest.approx(0.013933, rel=1e-3) == pyo.value(
         pyo.units.convert(
-            te.thermal_conductivity_vap(T=300 * pyo.units.K, p=0.1e6 * pyo.units.Pa, x=1),
+            te.thermal_conductivity_vap(
+                T=300 * pyo.units.K, p=0.1e6 * pyo.units.Pa, x=1
+            ),
             pyo.units.W / pyo.units.m / pyo.units.K,
         )
     )
 
     assert pytest.approx(0.10066, rel=1e-3) == pyo.value(
         pyo.units.convert(
-            te.thermal_conductivity_liq(T=250 * pyo.units.K, p=20e6 * pyo.units.Pa, x=0),
+            te.thermal_conductivity_liq(
+                T=250 * pyo.units.K, p=20e6 * pyo.units.Pa, x=0
+            ),
             pyo.units.W / pyo.units.m / pyo.units.K,
         )
     )
 
     assert pytest.approx(0.085389, rel=1e-2) == pyo.value(
         pyo.units.convert(
-            te.thermal_conductivity_liq(T=300 * pyo.units.K, p=20e6 * pyo.units.Pa, x=0),
+            te.thermal_conductivity_liq(
+                T=300 * pyo.units.K, p=20e6 * pyo.units.Pa, x=0
+            ),
             pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
+
+    # roughly 0 pressure
+    assert pytest.approx(11.777, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_vap(T=300 * pyo.units.K, p=1e-3 * pyo.units.Pa, x=1),
+            pyo.units.microPa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(12.041, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_vap(T=300 * pyo.units.K, p=1e5 * pyo.units.Pa, x=1),
+            pyo.units.microPa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(10.522, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.rho_mol_liq(T=300 * pyo.units.K, p=10e6 * pyo.units.Pa, x=0),
+            pyo.units.mol / pyo.units.l,
+        )
+    )
+
+    assert pytest.approx(217.89, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_liq(T=300 * pyo.units.K, p=10e6 * pyo.units.Pa, x=0),
+            pyo.units.microPa * pyo.units.s,
         )
     )
