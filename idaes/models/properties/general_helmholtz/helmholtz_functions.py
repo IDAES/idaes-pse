@@ -36,6 +36,9 @@ from idaes.core import (
     Phase,
     Component,
 )
+from idaes.models.properties.general_helmholtz.components import (
+    components as supported_components,
+)
 
 
 # make sure the required shared libraries load
@@ -821,6 +824,22 @@ class HelmholtzThermoExpressions(object):
         self.add_funcs(names=["w_func"])
         return blk.w_func(c, delta_vap, tau)
 
+    def viscosity_liq(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        return supported_components[c]._viscosity(self.param, delta_liq, tau)
+
+    def viscosity_vap(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        return supported_components[c]._viscosity(self.param, delta_vap, tau)
+
+    def thermal_conductivity_liq(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        return supported_components[c]._thermal_conductivity(self.param, delta_liq, tau)
+
+    def thermal_conductivity_vap(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        return supported_components[c]._thermal_conductivity(self.param, delta_vap, tau)
+
     def p_sat(self, T=None, tau=None):
         """Return saturation pressure as a function of T or tau"""
         if T is not None:
@@ -1189,6 +1208,10 @@ change.
 
     def build(self):
         super().build()
+        # Check if the specified compoent is supported
+        if self.config.pure_component not in supported_components:
+            raise RuntimeError(f"Component {self.config.pure_component} not supported.")
+        # This is imported here to avoid a circular import
         from idaes.models.properties.general_helmholtz.helmholtz_state import (
             HelmholtzStateBlock,
         )
@@ -1568,9 +1591,9 @@ change.
         pmax = pyo.value(pyo.units.convert(self.pressure_max, pyo.units.kPa))
 
         def _pvec(d, tau, p1, p2=None, phase="sat"):
-            if phase=="sat":
+            if phase == "sat":
                 p_vec = [p1, p1]
-            elif phase=="liq":
+            elif phase == "liq":
                 dist_vec = np.logspace(-4, -0.25, 20)
                 vec = [p1 + pd * (p2 - p1) for pd in dist_vec]
                 p_vec = [p1] + vec
@@ -1578,17 +1601,27 @@ change.
                 dist_vec = np.logspace(-4, -0.3, 20)
                 vec = [p1 + pd * (p2 - p1) for pd in dist_vec]
                 p_vec = [p1] + vec + np.linspace(vec[-1], p2, 10).tolist()
-            if phase == 'liq' or phase == 'sc':
-                delta = [pyo.value(self.delta_liq_func(self.pure_component, p, tau)) for p in p_vec]
-            elif phase == 'vap':
-                delta = [pyo.value(self.delta_vap_func(self.pure_component, p, tau)) for p in p_vec]
-            else: # sat
+            if phase == "liq" or phase == "sc":
+                delta = [
+                    pyo.value(self.delta_liq_func(self.pure_component, p, tau))
+                    for p in p_vec
+                ]
+            elif phase == "vap":
+                delta = [
+                    pyo.value(self.delta_vap_func(self.pure_component, p, tau))
+                    for p in p_vec
+                ]
+            else:  # sat
                 delta = [
                     pyo.value(self.delta_liq_func(self.pure_component, p_vec[0], tau)),
                     pyo.value(self.delta_vap_func(self.pure_component, p_vec[1], tau)),
                 ]
-            h_vec = [pyo.value(self.h_func(self.pure_component, dv, tau)) for dv in delta]
-            s_vec = [pyo.value(self.s_func(self.pure_component, dv, tau)) for dv in delta]
+            h_vec = [
+                pyo.value(self.h_func(self.pure_component, dv, tau)) for dv in delta
+            ]
+            s_vec = [
+                pyo.value(self.s_func(self.pure_component, dv, tau)) for dv in delta
+            ]
             d["p"] = p_vec
             d["delta"] = delta
             d["h"] = h_vec
@@ -1612,7 +1645,6 @@ change.
                 _pvec(d2["vap"], tau, p_sat, pt, "vap")
 
         return d
-
 
     def ph_diagram(self, ylim=None, xlim=None, points={}, figsize=None, dpi=None):
         # Add external functions needed to plot PH-diagram
@@ -1663,8 +1695,8 @@ change.
         h_v = {}
 
         # plot isotherms in sat region
-        #isotherms = self.isotherms(temperatures=t_vec.tolist())
-        #for t, dat in isotherms.items():
+        # isotherms = self.isotherms(temperatures=t_vec.tolist())
+        # for t, dat in isotherms.items():
         #    for phase in ["sc", "liq", "vap", "sat"]:
         #        if dat[phase]:
         #            plt.plot(dat[phase]["h"], dat[phase]["p"], c='g')
@@ -1802,8 +1834,8 @@ change.
         plt.plot([tc, tc * 1.1], [pc, pc], c="m", label="sat")
 
         # Points for critical point and triple point
-        #plt.scatter([tc], [pc])
-        #plt.scatter([tt], [pt])
+        # plt.scatter([tc], [pc])
+        # plt.scatter([tt], [pt])
 
         plt.title(f"P-T Diagram for {self.pure_component}")
         plt.ylabel("Pressure (kPa)")

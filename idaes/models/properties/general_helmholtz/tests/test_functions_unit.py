@@ -936,3 +936,123 @@ def test_expression_writter_sat():
             pyo.units.K,
         )
     )
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_h2o_transport():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="h2o", amount_basis=AmountBasis.MASS
+    )
+    te = HelmholtzThermoExpressions(m, m.hparam)
+
+    assert pytest.approx(0.00085375, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_liq(T=300 * pyo.units.K, x=0),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(5.5307e-05, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_liq(T=640 * pyo.units.K, x=0),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(9.7596e-06, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_vap(T=300 * pyo.units.K, x=1),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(2.7860e-05, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_vap(T=640 * pyo.units.K, x=1),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_co2_transport():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="co2", amount_basis=AmountBasis.MASS
+    )
+    te = HelmholtzThermoExpressions(m, m.hparam)
+
+    assert pytest.approx(0.00017249, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_liq(T=240 * pyo.units.K, x=0),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(5.3192e-05, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_liq(T=300 * pyo.units.K, x=0),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(1.1062e-05, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_vap(T=220 * pyo.units.K, x=1),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(2.0811e-05, rel=1e-1) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_vap(T=300 * pyo.units.K, x=1),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_r134a_transport():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="r134a", amount_basis=AmountBasis.MASS
+    )
+    te = HelmholtzThermoExpressions(m, m.hparam)
+
+    assert pytest.approx(1590.7, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.rho_liq(T=170 * pyo.units.K, x=0),
+            pyo.units.kg / pyo.units.m**3,
+        )
+    )
+
+    assert pytest.approx(0.0021397, rel=3e-1) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_liq(T=170 * pyo.units.K, x=0),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(5.7956e-05, rel=1e-1) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_liq(T=370 * pyo.units.K, x=0),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
+    assert pytest.approx(6.8353e-06, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_vap(T=170 * pyo.units.K, x=1),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(2.1336e-05, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_vap(T=370 * pyo.units.K, x=1),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
