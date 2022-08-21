@@ -1087,3 +1087,40 @@ def test_r134a_transport():
             pyo.units.W / pyo.units.m / pyo.units.K,
         )
     )
+
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_r1234ze_transport():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="r1234ze", amount_basis=AmountBasis.MASS
+    )
+    te = HelmholtzThermoExpressions(m, m.hparam)
+
+    assert pytest.approx(0.0098503, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_vap(T=250 * pyo.units.K, p=0.05e6 * pyo.units.Pa, x=1),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(0.013933, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_vap(T=300 * pyo.units.K, p=0.1e6 * pyo.units.Pa, x=1),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(0.10066, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_liq(T=250 * pyo.units.K, p=20e6 * pyo.units.Pa, x=0),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(0.085389, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_liq(T=300 * pyo.units.K, p=20e6 * pyo.units.Pa, x=0),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
