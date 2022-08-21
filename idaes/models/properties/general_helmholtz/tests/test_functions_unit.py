@@ -975,6 +975,20 @@ def test_h2o_transport():
         )
     )
 
+    assert pytest.approx(0.60944, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_liq(T=300 * pyo.units.K, x=0),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(0.018563, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_vap(T=300 * pyo.units.K, x=1),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
+
 
 @pytest.mark.unit
 @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
@@ -1010,6 +1024,13 @@ def test_co2_transport():
         pyo.units.convert(
             te.viscosity_vap(T=300 * pyo.units.K, x=1),
             pyo.units.Pa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(0.011424, rel=1e-1) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_vap(T=220 * pyo.units.K, x=1),
+            pyo.units.W / pyo.units.m / pyo.units.K,
         )
     )
 
