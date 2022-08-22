@@ -19,7 +19,10 @@ Author: A. Noring
 
 import pytest
 
-pytest.importorskip("tensorflow", reason="tensorflow must be installed to enable SOFC keras surrogates tests")
+pytest.importorskip(
+    "tensorflow",
+    reason="tensorflow must be installed to enable SOFC keras surrogates tests",
+)
 # Import Pyomo libraries
 import pyomo.environ as pyo
 
