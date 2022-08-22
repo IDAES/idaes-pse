@@ -18,7 +18,7 @@ Author: Jaffer Ghouse
 import pytest
 
 from pyomo.environ import (
-    check_optimal_termination,
+    assert_optimal_termination,
     ConcreteModel,
     value,
     units as pyunits,
@@ -378,7 +378,7 @@ class TestBTX_cocurrent(object):
         results = solver.solve(btx)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -641,7 +641,7 @@ class TestBTX_countercurrent(object):
         results = solver.solve(btx)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -910,7 +910,7 @@ class TestIAPWS_cocurrent(object):
         results = solver.solve(iapws)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -1171,7 +1171,7 @@ class TestIAPWS_countercurrent(object):
         results = solver.solve(iapws)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -1451,7 +1451,7 @@ class TestSaponification_cocurrent(object):
         results = solver.solve(sapon)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -1730,7 +1730,7 @@ class TestSaponification_countercurrent(object):
         results = solver.solve(sapon)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -2107,7 +2107,7 @@ class TestBT_Generic_cocurrent(object):
         results = solver.solve(btx)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
