@@ -234,7 +234,7 @@ Pressure Changer Cost
 
 The costing of a pressure changer unit model is more complicated, because the pressure changer 
 model can be imported into the flowsheet object representing a pump, turbine, compressor, or a 
-simply pressure changer (fan, blower, etc.). The `cost_pressure_changer` method currently supports costing of pumps, turbines, and compressors. The method authomatically interrogates the flowsheet object to determine if the unit is being used as a pump, turbine, or compressor. 
+simple pressure changer (fan, blower, etc.). The `cost_pressure_changer` method currently supports costing of pumps, turbines, and compressors. The method automatically interrogates the flowsheet object to determine if the unit is being used as a pump, turbine, or compressor. 
 
 The `cost_pressure_changer()` method authomatically determines if the unit model is being used as a pump, 
 turbine, or compressor based on the `compressor` and `thermodynamic_assumption` configuration 
@@ -388,7 +388,7 @@ A centrifugal pump is usually driven by an electric motor, the `self.costing.mot
 
 .. math:: \eta_{M} = 0.80 + 0.0319\log{PB} - 0.00182(\log{PB})^{2}   (Eq. 22.18)
 
-Efficiencies are valid for PB in the range of 1 to 1500Hp and Q in the range of 50 to 5000 gpm
+Efficiencies are valid for PB in the range of 1 to 1500 Hp and Q in the range of 50 to 5000 gpm
 
 where:
 
@@ -797,7 +797,7 @@ For example:
 Table 17. Materials of construction factor and material density
 
 ================== ====== ================================
-Material Factor    (FM)   methal density (:math:`lb/in^3`)
+Material Factor    (FM)   metal density (:math:`lb/in^3`)
 ================== ====== ================================
 carbon_steel       1      0.284
 low_alloy_steel    1.2    0.271
@@ -814,8 +814,8 @@ titanium           7.7    0.1628
 Vessel Cost
 """""""""""
 
-The weight of the unit is calculated based on the methal density, length, Diameter, and shell thickness. `shell_thickness` is a parameter initialized to 1.25, 
-however, the user must calculate the shell wall minimum thickness computd from the ASME pressure vessel code (tp) add the average vessel thickness, the necessary wall thickness (tE), and select the appropriate shell_thickness.
+The weight of the unit is calculated based on the metal density, length, diameter, and shell thickness. `shell_thickness` is a parameter initialized to 1.25, 
+however, the user must calculate the shell wall minimum thickness computed from the ASME pressure vessel code (tp) add the average vessel thickness, the necessary wall thickness (tE), and select the appropriate shell_thickness.
 
 .. math:: self.weight == \pi * ((D*12) + self.shell\_thickness) * ((L*12) \\ +(0.8*D*12))*self.shell\_thickness*self.material\_density
 
