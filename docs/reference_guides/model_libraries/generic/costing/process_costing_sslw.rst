@@ -27,14 +27,14 @@ When generating a costing block `self.costing` for a unit model `self` (e.g. `m.
 
 Table 1. Main Variables added to the unit block ("self.costing").
 
-=========================== ============================== ======== ==========================================================================
+=========================== ============================== ======== ===========================================================================
 Variable                    Symbol                         Units    Notes
-=========================== ============================== ======== ==========================================================================
-Purchase cost               :math:`purchase\_cost`         dollars  Purchase cost
-Base cost per unit          :math:`base\_cost\_per\_unit`  unitless Base cost per unit
-Base cost                   :math:`base\_cost`             unitless Base cost (base cost per unit * number of units)
+=========================== ============================== ======== ===========================================================================
+Purchase cost               :math:`purchase\_cost`         dollars  Equipment cost adjusted for pressure, material, length and quantity factors
+Base cost per unit          :math:`base\_cost\_per\_unit`  unitless Base cost per unit before adjustment (from costing correlations)
+Base cost                   :math:`base\_cost`             unitless Base cost of total set of units (base cost per unit * number of units)
 Number of units             :math:`number\_of\_units`      unitless Number of units to be costed (to take advantage of the economics of scale)
-=========================== ============================== ======== ==========================================================================
+=========================== ============================== ======== ===========================================================================
 
 .. note:: number of units by default is fixed to 1 and the user must unfix this variable to optimize the number of units. Also, `number_of_units` can be built as a continuous variable or an integer variable. If the latter, the user must provide a MIP solver. Use the global costing argument for this purpose (integer_n_units=True or False).
 
@@ -93,7 +93,7 @@ Below is a example of how to add and solve an SSLW costing block for a flowsheet
     m.fs.costing = SSLWCosting()
     m.fs.H101.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing,
-        costing_method=SSLWCostingData.cost_fired_heater,
+        costing_method=SSLWCostingData.cost_heat_exchanger,
         costing_method_arguments={
             "hx_type": HXType.Utube,
             "material_type": HXMaterial.StainlessSteelStainlessSteel,
