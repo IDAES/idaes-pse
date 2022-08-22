@@ -33,7 +33,7 @@ from idaes.core.util.model_statistics import (
     activated_constraints_set,
 )
 from idaes.core.solvers import get_solver
-from idaes.tests.performance.performance_test_base import PerformanceTestClass
+from idaes.tests.performance.performance_test_base import PerformanceBaseClass
 
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
@@ -91,7 +91,7 @@ def initialize_model(model):
 
 
 @pytest.mark.performance
-class Test_HC_PR_Performance(PerformanceTestClass):
+class Test_HC_PR_Performance(PerformanceBaseClass):
     def build_model(self):
         return build_model()
 
@@ -270,7 +270,7 @@ class TestParamBlock(object):
 class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
-        return Tbuild_model()
+        return build_model()
 
     @pytest.mark.integration
     def test_build(self, model):
@@ -354,7 +354,9 @@ class TestStateBlock(object):
 
     @pytest.mark.integration
     def test_solve(self, model):
-        HC_PR_Model.solve_model(model)
+        results = solver.solve(model)
+
+        assert_optimal_termination(results)
 
     @pytest.mark.integration
     def test_solution(self, model):

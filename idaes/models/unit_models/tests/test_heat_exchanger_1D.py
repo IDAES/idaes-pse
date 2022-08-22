@@ -60,7 +60,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
-from idaes.tests.performance.performance_test_base import PerformanceTestClass
+from idaes.tests.performance.performance_test_base import PerformanceBaseClass
 
 # Imports to assemble BT-PR with different units
 from idaes.core import LiquidPhase, VaporPhase, Component
@@ -740,7 +740,7 @@ def build_model():
 
 
 @pytest.mark.performance
-class Test_HX1D_Performance(PerformanceTestClass):
+class Test_HX1D_Performance(PerformanceBaseClass):
     def build_model(self):
         return build_model()
 

@@ -27,7 +27,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 solver = get_solver()
 
 
-class PerformanceTestClass(unittest.TestCase):
+class PerformanceBaseClass:  # unittest.TestCase):
     """
     Base class for running the IDAES Performance Test Suite.
 
