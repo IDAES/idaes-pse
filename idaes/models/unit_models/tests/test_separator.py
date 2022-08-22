@@ -822,7 +822,11 @@ class TestSaponification(object):
         perf_dict = sapon.fs.unit._get_performance_contents()
 
         assert perf_dict == {
-            "vars": {"Split Fraction [('c',)]": sapon.fs.unit.split_fraction[0, "c"]}
+            "vars": {
+                "Split Fraction [('a',)]": sapon.fs.unit.split_fraction[0, "a"],
+                "Split Fraction [('B',)]": sapon.fs.unit.split_fraction[0, "B"],
+                "Split Fraction [('c',)]": sapon.fs.unit.split_fraction[0, "c"],
+            }
         }
 
     @pytest.mark.ui
@@ -1141,9 +1145,18 @@ class TestBTXIdeal(object):
 
         assert perf_dict == {
             "vars": {
+                "Split Fraction [('outlet_1', 'Liq')]": btx.fs.unit.split_fraction[
+                    0, "outlet_1", "Liq"
+                ],
+                "Split Fraction [('outlet_1', 'Vap')]": btx.fs.unit.split_fraction[
+                    0, "outlet_1", "Vap"
+                ],
+                "Split Fraction [('outlet_2', 'Liq')]": btx.fs.unit.split_fraction[
+                    0, "outlet_2", "Liq"
+                ],
                 "Split Fraction [('outlet_2', 'Vap')]": btx.fs.unit.split_fraction[
                     0, "outlet_2", "Vap"
-                ]
+                ],
             }
         }
 
@@ -1407,9 +1420,15 @@ class TestIAPWS(object):
 
         assert perf_dict == {
             "vars": {
+                "Split Fraction [('outlet_1', 'H2O')]": iapws.fs.unit.split_fraction[
+                    0, "outlet_1", "H2O"
+                ],
+                "Split Fraction [('outlet_2', 'H2O')]": iapws.fs.unit.split_fraction[
+                    0, "outlet_2", "H2O"
+                ],
                 "Split Fraction [('outlet_3', 'H2O')]": iapws.fs.unit.split_fraction[
                     0, "outlet_3", "H2O"
-                ]
+                ],
             }
         }
 

@@ -40,7 +40,6 @@ h2 {
 }
 
 /* Set table values to top align & add padding in index-table*/
-
 .index-table.docutils tbody td {
 	vertical-align: top;
     padding-top: 16px;
@@ -52,4 +51,56 @@ h2 {
     background: none;
     color: #404040;
     border-top: none;
+}
+
+.simulated-codeblock.literal-block pre{
+  background: #eeffcc;
+}
+
+/* Collapsible section for hidden content*/
+.collapsible {
+    margin: 2%;
+}
+
+.collapsible .header {
+    display: inline;
+    clear: both;
+}
+
+.collapsible .header p:before {
+    font-family: "FontAwesome"; 
+    content: "\f0fe";
+    padding-right: 5px;
+    color: #2470a1;
+}
+
+.collapsible .header.open p:before {
+    font-family: "FontAwesome"; 
+    content: "\f146";
+    padding-right: 5px;
+    color: #2470a1;
+}
+
+.collapsible .header p:after {
+    content: "(See More)";
+    padding: 5px;
+    font-size: 75%;
+    color: #2470a1;
+    
+}
+
+.collapsible .header.open p:after {
+    content: "(See Less)";
+    padding: 5px;
+    font-size: 75%;
+    color: #2470a1;
+}
+
+/* Sidebar for quickstar guides*/
+.quickstart-toc.sidebar{
+    width: 25%;
+}
+
+.quickstart-toc.sidebar .sidebar-title{
+    text-align: center;
 }
