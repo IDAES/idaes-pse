@@ -31,7 +31,7 @@ from pyomo.network.port import Port
 
 # package
 from idaes import logger
-from idaes.core.ui.icons import UnitModelIcon
+from idaes.core.ui.icons.icons import UnitModelIcon
 
 _log = logger.getLogger(__name__)
 
@@ -182,7 +182,8 @@ class FlowsheetSerializer:
         self.unit_models = {}  # {unit: {"name": unit.getname(), "type": str?}}
         self.streams = {}  # {Arc.getname(): Arc} or {Port.getname(): Port}
         self.ports = {}  # {Port: parent_unit}
-        self.edges = defaultdict(list)  # {name: {"source": unit, "dest": unit}}
+        self.edges = defaultdict(dict)  # {name: {"source": unit, "dest": unit}}
+        self.adj_list = defaultdict(set)  # {name: (neighbor1, neighbor2, ...)}
         self.orphaned_ports = {}
         self.labels = {}
         self._stream_table_df = None
@@ -291,10 +292,13 @@ class FlowsheetSerializer:
         used_ports = set()
         for name, stream in self.streams.items():
             try:  # This is necessary because for internally-nested arcs we may not record ports
+                src = self.ports[stream.source]
+                dst = self.ports[stream.dest]
                 self.edges[name] = {
-                    "source": self.ports[stream.source],
-                    "dest": self.ports[stream.dest],
+                    "source": src,
+                    "dest": dst,
                 }
+                self.adj_list[src.getname()].add(dst.getname())
                 used_ports.add(stream.source)
                 used_ports.add(stream.dest)
             except KeyError as error:
@@ -464,6 +468,7 @@ class FlowsheetSerializer:
                 src = unit_port if type_ == self.FEED else self.ports[port]
                 dst = unit_port if type_ != self.FEED else self.ports[port]
                 self.edges[edge_name] = {"source": src, "dest": dst}
+                self.adj_list[src.getname()].add(dst.getname())
                 # Add label
                 self.labels[edge_name] = f"{type_} info"
                 # Check if we can add the port to the stream table

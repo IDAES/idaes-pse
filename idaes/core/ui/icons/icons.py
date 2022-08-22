@@ -9,6 +9,8 @@
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
+#
+# Author: Abdelrahman Elbashandy
 #################################################################################
 import os
 import json
