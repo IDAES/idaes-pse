@@ -311,17 +311,12 @@ class ShellAndTube1DData(HeatExchanger1DData):
 
         self.cold_side.activate()
         self.cold_side_heat_transfer_eq.activate()
-
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(self, tee=slc.tee)
-        init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
-
         self.heat_conservation.activate()
         self.temperature_wall.unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
-        init_log.info_high("Initialization Step 4 {}.".format(idaeslog.condition(res)))
+        init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
         self.hot_side.release_state(flags_hot_side)
         self.cold_side.release_state(flags_cold_side)
@@ -362,6 +357,11 @@ class ShellAndTube1DData(HeatExchanger1DData):
         super(UnitModelBlockData, self).calculate_scaling_factors()
 
         for i, c in self.hot_side_heat_transfer_eq.items():
+            print(
+                iscale.get_scaling_factor(
+                    self.hot_side.heat[i], default=1, warning=False
+                )
+            )
             iscale.constraint_scaling_transform(
                 c,
                 iscale.get_scaling_factor(

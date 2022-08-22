@@ -64,15 +64,15 @@ def initialization_tester(m, dof=0, unit=None, **init_kwargs):
     A method to test initialization methods on IDAES models. This method is
     designed to be used as part of the tests for most models.
 
-    This method checks that the initialization methods runs as expceted
-    and that the state of the model (active/deactive and fixed/unfixed)
+    This method checks that the initialization methods runs as expected
+    and that the state of the model (active/inactive and fixed/unfixed)
     remains the same.
 
-    This method also add some dummy constraitns to the model and deactivates
+    This method also add some dummy constraints to the model and deactivates
     them to make sure that the initialization does not affect their status.
 
     Args:
-        m: a Concrete mdoel which contains a flowsheet and a model named unit
+        m: a Concrete model which contains a flowsheet and a model named unit
             (i.e. m.fs.unit) which will be initialized
         dof: expected degrees of freedom during initialization, default=0
         unit: unit object to test, if None assume m.fs.unit, default='None'

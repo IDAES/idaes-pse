@@ -1137,8 +1137,6 @@ class TestIAPWS_countercurrent(object):
         m.fs.unit.cold_side_inlet.enth_mol[0].fix(7000)
         m.fs.unit.cold_side_inlet.pressure[0].fix(101325)
 
-        # iscale.calculate_scaling_factors(m)
-
         return m
 
     @pytest.mark.unit
