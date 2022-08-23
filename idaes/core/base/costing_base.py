@@ -448,7 +448,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                     pyo.units.convert(agg_var * cost_var, to_units=c_units / t_units)
                 )
             except AttributeError:
-                return blk.aggregate_flow_costs[ftype] == 0 * c_units / t_units
+                blk.aggregate_flow_costs[ftype].fix(0 * c_units / t_units)
+                return pyo.Constraint.Skip
 
     def _build_costing_methods_map(self):
         """

@@ -640,7 +640,7 @@ class TestFlowsheetCostingBlock:
         )
         assert len(costing.costing.aggregate_flow_costs) == 2
         assert isinstance(costing.costing.aggregate_flow_costs_constraint, Constraint)
-        assert len(costing.costing.aggregate_flow_costs_constraint) == 2
+        assert len(costing.costing.aggregate_flow_costs_constraint) == 1
 
     @pytest.mark.unit
     def test_unit_consistency(self, costing):
