@@ -76,10 +76,50 @@ export class Toolbar {
             this._app.refreshModel(url, this._paper)
         });
 
-        // Flowsheet to SVG export event listener
-        document.querySelector("#export-flowsheet-btn").addEventListener("click", () => {
+        // Flowsheet to PNG export event listener
+        document.querySelector("#export-flowsheet-png-btn").addEventListener("click", () => {
             let p = this._paper.paper;
-            // Make sure to hide all of the vertices and bars on the links 
+            // Make sure to hide all of the vertices and bars on the links
+            // so they don't show up in the PNG
+            p.hideTools();
+            p.toPNG(function(png) {
+                new joint.ui.Lightbox({
+                    image: png,
+                    downloadable: true,
+                    fileName: model_id.concat(".png")
+                }).open();
+            }, {
+                preserveDimensions: true,
+                convertImagesToDataUris: true,
+                useComputedStyles: true,
+                stylesheet: '.scalable * { vector-effect: non-scaling-stroke }'
+            });
+        });
+
+        // Flowsheet to JPEG export event listener
+        document.querySelector("#export-flowsheet-jpg-btn").addEventListener("click", () => {
+            let p = this._paper.paper;
+            // Make sure to hide all of the vertices and bars on the links
+            // so they don't show up in the JPEG
+            p.hideTools();
+            p.toJPEG(function(jpeg) {
+                new joint.ui.Lightbox({
+                    image: jpeg,
+                    downloadable: true,
+                    fileName: model_id.concat(".jpeg")
+                }).open();
+            }, {
+                preserveDimensions: true,
+                convertImagesToDataUris: true,
+                useComputedStyles: true,
+                stylesheet: '.scalable * { vector-effect: non-scaling-stroke }'
+            });
+        });
+
+        // Flowsheet to SVG export event listener
+        document.querySelector("#export-flowsheet-svg-btn").addEventListener("click", () => {
+            let p = this._paper.paper;
+            // Make sure to hide all of the vertices and bars on the links
             // so they don't show up in the SVG
             p.hideTools();
             p.toSVG(function(svg) {
