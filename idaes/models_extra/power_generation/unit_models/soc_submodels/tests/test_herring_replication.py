@@ -78,7 +78,10 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.properties.modular_properties import (
     GenericParameterBlock,
 )
-from idaes.power_generation.properties.natural_gas_PR import get_prop, EosType
+from idaes.models_extra.power_generation.properties.natural_gas_PR import (
+    get_prop,
+    EosType,
+)
 from idaes.models_extra.power_generation.unit_models.soc_submodels import (
     SolidOxideCell,
     SolidOxideModuleSimple,

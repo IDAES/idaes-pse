@@ -29,7 +29,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.properties import iapws95
 from idaes.core.solvers import get_solver
 import idaes.core.util.unit_costing as cs
-from idaes.power_generation.properties import FlueGasParameterBlock
+from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
 from idaes.models.unit_models.pressure_changer import (
     PressureChanger,
     ThermodynamicAssumption,
