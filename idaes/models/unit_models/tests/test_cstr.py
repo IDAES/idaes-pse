@@ -14,7 +14,6 @@
 Tests for CSTR unit model.
 Authors: Andrew Lee, Vibhav Dabadghao
 """
-from io import StringIO
 
 import pytest
 from pyomo.environ import check_optimal_termination, ConcreteModel, units, value, Var
@@ -262,22 +261,3 @@ class TestSaponification(object):
                 "Pressure Change": sapon.fs.unit.deltaP[0],
             }
         }
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_costing(self, sapon):
-        sapon.fs.unit.get_costing()
-        assert isinstance(sapon.fs.unit.costing.purchase_cost, Var)
-        sapon.fs.unit.diameter.fix(2)
-        results = solver.solve(sapon)
-        # Check for optimal solution
-        assert check_optimal_termination(results)
-        assert pytest.approx(29790.11975, abs=1e3) == value(
-            sapon.fs.unit.costing.base_cost
-        )
-        assert pytest.approx(40012.2523, abs=1e3) == value(
-            sapon.fs.unit.costing.purchase_cost
-        )
-
-        assert_units_consistent(sapon.fs.unit.costing)

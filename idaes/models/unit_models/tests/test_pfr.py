@@ -16,7 +16,6 @@ Tests for ControlVolumeBlockData.
 Author: Andrew Lee
 """
 import pytest
-from io import StringIO
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, value, Var, units
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
@@ -278,21 +277,3 @@ class TestSaponification(object):
         perf_dict = sapon.fs.unit._get_performance_contents()
 
         assert perf_dict == {"vars": {"Area": sapon.fs.unit.area}}
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_costing(self, sapon):
-        sapon.fs.unit.get_costing()
-        assert isinstance(sapon.fs.unit.costing.purchase_cost, Var)
-        results = solver.solve(sapon)
-        # Check for optimal solution
-        assert check_optimal_termination(results)
-        assert pytest.approx(9869.51230, abs=1e3) == value(
-            sapon.fs.unit.costing.base_cost
-        )
-        assert pytest.approx(16025.42623, abs=1e3) == value(
-            sapon.fs.unit.costing.purchase_cost
-        )
-
-        assert_units_consistent(sapon.fs.unit.costing)

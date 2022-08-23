@@ -40,7 +40,6 @@ from idaes.core import (
 from idaes.models.unit_models.heat_exchanger import (
     delta_temperature_lmtd_callback,
     delta_temperature_lmtd2_callback,
-    # delta_temperature_lmtd3_callback,
     delta_temperature_amtd_callback,
     delta_temperature_underwood_callback,
     HeatExchanger,
@@ -289,7 +288,6 @@ def basic_model(cb=delta_temperature_lmtd_callback):
     m.fs.unit.overall_heat_transfer_coefficient.fix(100)
 
     assert degrees_of_freedom(m) == 0
-    m.fs.unit.get_costing()
     m.fs.unit.initialize()
     return m
 
@@ -359,38 +357,8 @@ def basic_model3(cb=delta_temperature_lmtd_callback):
 @pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.unit
-def test_costing():
-    m = basic_model(delta_temperature_lmtd_callback)
-
-    assert m.fs.unit.costing.purchase_cost.value == pytest.approx(529738.6793, 1e-5)
-
-    assert_units_consistent(m.fs.unit.costing)
-
-    results = solver.solve(m)
-
-    # Check for optimal solution
-    assert check_optimal_termination(results)
-
-    # Check Solution
-
-    # hot in end
-    assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(0.464879, rel=1e-3)
-    # hot out end
-    assert value(m.fs.unit.delta_temperature_out[0]) == pytest.approx(
-        0.465069, rel=1e-3
-    )
-    assert value(m.fs.unit.heat_duty[0]) == pytest.approx(46497.44)
-
-    # Costing
-    assert m.fs.unit.costing.purchase_cost.value == pytest.approx(529738.6793, 1e-5)
-
-
-@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.unit
 def test_lmtd2_cb():
     m = basic_model(delta_temperature_lmtd2_callback)
-    assert_units_consistent(m.fs.unit.costing)
     results = solver.solve(m)
     # hot in end
     assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(0.464879, rel=1e-3)
@@ -434,7 +402,6 @@ def test_lmtd2_cross_cb():
 @pytest.mark.unit
 def test_lmtd3_cb():
     m = basic_model(delta_temperature_lmtd2_callback)
-    assert_units_consistent(m.fs.unit.costing)
     results = solver.solve(m)
     # hot in end
     assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(0.464879, rel=1e-3)
@@ -451,7 +418,6 @@ def test_lmtd3_cb():
 def test_amtd_cb():
     # since the delta T at both ends, AMTD ends up about the same as LMTD
     m = basic_model(delta_temperature_amtd_callback)
-    assert_units_consistent(m.fs.unit.costing)
     results = solver.solve(m)
     # hot in end
     assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(0.464879, rel=1e-3)
@@ -467,7 +433,6 @@ def test_amtd_cb():
 @pytest.mark.unit
 def test_underwood_cb():
     m = basic_model(delta_temperature_underwood_callback)
-    assert_units_consistent(m.fs.unit.costing)
     results = solver.solve(m)
     # hot in end
     assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(0.464879, rel=1e-3)

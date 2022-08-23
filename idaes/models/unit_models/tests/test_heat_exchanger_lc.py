@@ -16,7 +16,6 @@ Tests for 0D lumped capacitance heat exchanger model
 Author: Rusty Gentile, John Eslick, Andrew Lee
 """
 import pytest
-from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -51,14 +50,13 @@ from idaes.core import (
     MomentumBalanceType,
 )
 
-from idaes.models.properties import swco2, iapws95
+from idaes.models.properties import iapws95
 from idaes.models.unit_models import (
     HeatExchangerLumpedCapacitance,
     HeatExchangerFlowPattern,
 )
 
 from idaes.models.unit_models.heat_exchanger import delta_temperature_lmtd_callback
-import numpy as np
 
 # Get default solver for testing
 solver = get_solver()
@@ -171,40 +169,8 @@ class TestHXRegression(object):
         m.fs.unit.ua_cold_side.fix(200 * 1000)
 
         assert degrees_of_freedom(m) == 0
-        m.fs.unit.get_costing()
         m.fs.unit.initialize()
         return m
-
-    @pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
-    def test_costing(self, basic_model):
-
-        m = basic_model  # (delta_temperature_lmtd_callback)
-
-        assert m.fs.unit.costing.purchase_cost.value == pytest.approx(529738.6793, 1e-5)
-
-        assert_units_consistent(m.fs.unit.costing)
-
-        results = solver.solve(m)
-
-        # Check for optimal solution
-        assert check_optimal_termination(results)
-
-        # Check Solution
-
-        # hot in end
-        assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(
-            0.464879, rel=1e-3
-        )
-        # hot out end
-        assert value(m.fs.unit.delta_temperature_out[0]) == pytest.approx(
-            0.465069, rel=1e-3
-        )
-        assert value(m.fs.unit.heat_duty[0]) == pytest.approx(46497.44)
-
-        # Costing
-        assert m.fs.unit.costing.purchase_cost.value == pytest.approx(529738.6793, 1e-5)
 
     @pytest.fixture(scope="class")
     def sapon(self):
