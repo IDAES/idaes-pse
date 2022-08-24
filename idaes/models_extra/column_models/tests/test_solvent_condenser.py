@@ -303,13 +303,13 @@ class TestStripperHeatDuty(object):
 
         xfrm = TransformationFactory("contrib.strip_var_bounds")
         xfrm.apply_to(m, reversible=True)
-        
-        # Note: The strip_var_bounds transformation is used to remove the 
-        # bounds from all the variables in the model. This helps the model 
+
+        # Note: The strip_var_bounds transformation is used to remove the
+        # bounds from all the variables in the model. This helps the model
         # converge if the variables are very close to one of their bounds.
-        # However, an alternate method would be to specify an appropriate 
-        # value for the solver option bound_push during model initialization 
-        # such that the minimum absolute distance from the initial point to 
+        # However, an alternate method would be to specify an appropriate
+        # value for the solver option bound_push during model initialization
+        # such that the minimum absolute distance from the initial point to
         # the bounds is reduced beyond the default value of 0.01.
 
         return m
