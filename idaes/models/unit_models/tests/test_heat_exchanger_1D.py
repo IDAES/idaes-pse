@@ -25,6 +25,7 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+import pyomo.common.unittest as unittest
 
 import idaes
 from idaes.core import (
@@ -60,7 +61,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
-from idaes.tests.performance.performance_test_base import PerformanceBaseClass
+from idaes.core.util.performance import PerformanceBaseClass
 
 # Imports to assemble BT-PR with different units
 from idaes.core import LiquidPhase, VaporPhase, Component
@@ -740,7 +741,7 @@ def build_model():
 
 
 @pytest.mark.performance
-class Test_HX1D_Performance(PerformanceBaseClass):
+class Test_HX1D_Performance(PerformanceBaseClass, unittest.TestCase):
     def build_model(self):
         return build_model()
 

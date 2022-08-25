@@ -24,7 +24,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
-from pyomo.common.unittest import assertStructuredAlmostEqual
+import pyomo.common.unittest as unittest
 
 from idaes.core import Component
 from idaes.core.util.model_statistics import (
@@ -33,7 +33,7 @@ from idaes.core.util.model_statistics import (
     activated_constraints_set,
 )
 from idaes.core.solvers import get_solver
-from idaes.tests.performance.performance_test_base import PerformanceBaseClass
+from idaes.core.util.performance import PerformanceBaseClass
 
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
@@ -91,7 +91,7 @@ def initialize_model(model):
 
 
 @pytest.mark.performance
-class Test_HC_PR_Performance(PerformanceBaseClass):
+class Test_HC_PR_Performance(PerformanceBaseClass, unittest.TestCase):
     def build_model(self):
         return build_model()
 
@@ -165,7 +165,7 @@ class TestParamBlock(object):
 
         assert model.params.config.state_definition == FTPx
 
-        assertStructuredAlmostEqual(
+        unittest.assertStructuredAlmostEqual(
             model.params.config.state_bounds,
             {
                 "flow_mol": (0, 100, 1000, pyunits.mol / pyunits.s),

@@ -118,6 +118,8 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     if not config.option.performance:
         setattr(config.option, "markexpr", "not performance")
+    else:
+        setattr(config.option, "markexpr", "performance")
 
 
 ####
