@@ -633,14 +633,16 @@ class TestFlowsheetCostingBlock:
         # This should have been skipped
         assert not hasattr(costing.costing, "aggregate_flow_test_flow_1")
         assert not hasattr(costing.costing, "aggregate_flow_test_flow_1_constraint")
+        # unused flows do not get added to aggregate_flow_costs
+        assert "test_flow_1" not in costing.costing.aggregate_flow_costs
 
         assert isinstance(costing.costing.aggregate_flow_costs, Var)
         assert str(pyunits.USD_test / pyunits.year) == str(
             costing.costing.aggregate_flow_costs.get_units()
         )
-        assert len(costing.costing.aggregate_flow_costs) == 2
+        assert len(costing.costing.aggregate_flow_costs) == 1
         assert isinstance(costing.costing.aggregate_flow_costs_constraint, Constraint)
-        assert len(costing.costing.aggregate_flow_costs_constraint) == 2
+        assert len(costing.costing.aggregate_flow_costs_constraint) == 1
 
     @pytest.mark.unit
     def test_unit_consistency(self, costing):
@@ -681,4 +683,3 @@ class TestFlowsheetCostingBlock:
                 10 * 42, from_units=1 / pyunits.s, to_units=1 / pyunits.year
             )
         )
-        assert costing.costing.aggregate_flow_costs["test_flow_1"].value == (0)
