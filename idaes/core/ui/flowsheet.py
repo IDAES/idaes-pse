@@ -32,6 +32,7 @@ from pyomo.network.port import Port
 # package
 from idaes import logger
 from idaes.core.ui.icons.icons import UnitModelIcon
+from idaes.core.ui.icons.positioning import UnitModelsPositioning
 
 _log = logger.getLogger(__name__)
 
@@ -199,6 +200,7 @@ class FlowsheetSerializer:
         self._logger = logger.getLogger(__name__)
         self.name = name
         self.flowsheet = flowsheet
+        self._positioning_model = None
         # serialize
         self._ingest_flowsheet()
         self._construct_output_json()
@@ -508,6 +510,7 @@ class FlowsheetSerializer:
         return f"{base_name}_{self._unit_name_used_count[base_name]}"
 
     def _construct_output_json(self):
+        self._positioning_model = UnitModelsPositioning()
         self._construct_model_json()
         self._construct_jointjs_json()
 

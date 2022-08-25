@@ -23,10 +23,6 @@ class Node:
         self.id = id
         self.level = level # equivalent to row number in a matrix
         self.rank = rank   # equivalent to col number in a matrix
-        self.parent_level = -1
-        self.parent_rank = -1
-        self.direct_parents = set()
-        self.direct_children = set()
 
 class UnitModelsPositioning:
     """Represents icon positioning information for a given unit model."""
@@ -53,8 +49,9 @@ class UnitModelsPositioning:
 
         # metadata for the positioning algorithm
         self._allocated_positions = {} # Save used (x,y) positions
-        self._max_depth = 0
+        self._layer_max_depth = {}
         self._levels = {}
+        self._abstract_layout = {}
 
         # These are how much we move each unit away from each other in each direction
         self._X = 70
@@ -62,6 +59,19 @@ class UnitModelsPositioning:
 
         # Computing
         self._assign_default_positions()
+
+        # module's main engine
+        self._publish_levels_and_ranks()
+        self._build_matrix()
+        print("self._abstract_layout:")
+        print(self._abstract_layout)
+
+
+    def get_unit_model_position(self, unit_model_name: str):
+        """returns (x,y) position of the given unit_model"""
+        if unit_model_name not in self._allocated_positions:
+            raise KeyError(f"${unit_model_name} doesn't exist in the current layout")
+        return self._allocated_positions[unit_model_name]
 
 
     def set_X(self, x: int):
@@ -145,7 +155,7 @@ class UnitModelsPositioning:
             self._levels[feed_name] = 0
             queue.append(feed_node)
             visited_nodes.add(feed_name) # add to visited nodes
-            self._max_depth = 1 # We know there are feeds
+            self._layer_max_depth[feed_name] = 1
 
         while queue:
             node = queue.popleft()
@@ -155,35 +165,64 @@ class UnitModelsPositioning:
                 child_node = self._nodes[child]
                 if child not in visited_nodes:
                     # Prepare node and its child relationships
-                    child_node.parent_level = node.level
-                    child_node.parent_rank = node.rank
                     child_node.level = node.level
                     child_node.rank = node.rank + 1
-                    child_node.direct_parents.add(node.id)
-                    node.direct_children.add(child_node.id)
 
                     queue.append(child_node)
                     visited_nodes.add(child) # add to visited nodes
-                    self._max_depth = max(self._max_depth, child_node.rank)
+                    self._layer_max_depth[node.level] = max(self._layer_max_depth[node.level], child_node.rank)
 
                     # This is for just feeds
                     if node.level in self._levels:
                         self._levels[node.level] += 1
         # After finishing this previous loop, all the nodes should be visited
-        assert len(visited_nodes) == self._N, "Some nodes aren't accessible through"
+        assert len(visited_nodes) == self._N, "Some nodes aren't accessible through feeds"
 
         # Merge unused levels
         # .copy() because we are modifying the original self._levels
         for level, count in self._levels.copy().items():
             if count == 0:
+                # get rid of this level
                 self._levels.pop(level)
+                self._layer_max_depth.pop(level)
                 assert len(self._adj_list[level]) > 0, f"Feed '${level}' isn't connected to any unit model"
+
                 # Merge this feed into any of its children's level.
                 # self._adj_list[level] is a 'set' remember? Not indexable.
                 any_child_node = self._nodes[next(iter(self._adj_list[level]))]
                 self._nodes[level].level = any_child_node.level
 
 
+    def _build_matrix(self):
+        """This builds the matrix. By matrix we mean a data representation that
+           will make assigning positions to each unit model easier.
+
+           Sorting the levels with the most depth won't matter. I would be
+           interested to see the layout if we does.
+        """
+        # TODO This could be improved using a DFS I think to layout unit models
+        # more consistently.
+
+        for _, unit_info in self._unit_models.items():
+            unit_name = unit_info['name']
+            node = self._nodes[unit_name]
+
+            if node.level not in self._abstract_layout:
+                self._abstract_layout[node.level] = {
+                    'nodes': [],
+                    'width': self._layer_max_depth[node.level],
+                    'height': 1
+                }
+                for i in range(self._layer_max_depth[node.level] + 1):
+                    self._abstract_layout[node.level]['nodes'].append([])
+
+            self._abstract_layout[node.level][node.rank].append(node.id)
+            # Get the maximum height of this level
+            self._abstract_layout[node.level]['height'] = max(
+                self._abstract_layout[node.level]['height'],
+                len(self._abstract_layout[node.level][node.rank])
+            )
+
     def _assign_positions(self):
         """Assign an (x,y) position for each unit_model"""
-        
+        pass
