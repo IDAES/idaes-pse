@@ -510,7 +510,7 @@ class FlowsheetSerializer:
         return f"{base_name}_{self._unit_name_used_count[base_name]}"
 
     def _construct_output_json(self):
-        self._positioning_model = UnitModelsPositioning()
+        self._positioning_model = UnitModelsPositioning(self.adj_list, self.unit_models)
         self._construct_model_json()
         self._construct_jointjs_json()
 
@@ -623,27 +623,11 @@ class FlowsheetSerializer:
                     default_icon.link_positions,
                 )
 
-        def adjust_image_position(x_pos, y_pos, y_starting_pos):
-            """Based on the position of the last added element, we calculate
-            the x,y position of the next element.
-            """
-            # If x_pos it greater than 700 then start another diagonal line
-            if x_pos >= 700:
-                x_pos = 100
-                y_pos = y_starting_pos
-                y_starting_pos += 100
-            else:
-                x_pos += 100
-                y_pos += 100
-
-            return x_pos, y_pos, y_starting_pos
-
         self._out_json["cells"] = []
 
         # Start out in the top left corner until we get a better inital layout
         x_pos = 10
         y_pos = 10
-        y_starting_pos = 10
 
         track_jointjs_elements = {}
 
@@ -664,20 +648,16 @@ class FlowsheetSerializer:
             dest_unit_icon = UnitModelIcon(dest_unit_type)
 
             if src_unit_name not in track_jointjs_elements:
+                x_pos, y_pos = self._positioning_model.get_position(src_unit_name)
                 cell_index = create_jointjs_image(
                     src_unit_icon, src_unit_name, src_unit_type, x_pos, y_pos
-                )
-                x_pos, y_pos, y_starting_pos = adjust_image_position(
-                    x_pos, y_pos, y_starting_pos
                 )
                 track_jointjs_elements[src_unit_name] = cell_index
 
             if dest_unit_name not in track_jointjs_elements:
+                x_pos, y_pos = self._positioning_model.get_position(dest_unit_name)
                 cell_index = create_jointjs_image(
                     dest_unit_icon, dest_unit_name, dest_unit_type, x_pos, y_pos
-                )
-                x_pos, y_pos, y_starting_pos = adjust_image_position(
-                    x_pos, y_pos, y_starting_pos
                 )
                 track_jointjs_elements[dest_unit_name] = cell_index
 

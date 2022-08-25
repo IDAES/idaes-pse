@@ -39,7 +39,7 @@ class UnitModelIcon:
 
         # Loading the Unit Models mappings
         dir_path = os.path.dirname(os.path.realpath(__file__))
-        mappings_file = os.path.join(dir_path, "mappings", "mappings.json")
+        mappings_file = os.path.join(dir_path, os.pardir, "mappings", "mappings.json")
         with open(mappings_file, "r") as mappings_f:
             self._mapping = json.load(mappings_f)
         self._model_details = self._get_mapping(unit_model, default)

@@ -15,7 +15,6 @@
 
 
 from collections import deque
-from idaes.core.ui.flowsheet import FlowsheetSerializer
 
 class Node:
     """A node represents a unit model or an element in JointJs terms"""
@@ -27,13 +26,18 @@ class Node:
 class UnitModelsPositioning:
     """Represents icon positioning information for a given unit model."""
 
+    # Key that represents feeds
+    FEED = "feed"
+
+    # Key that represents products
+    PRODUCT = "product"
+
     def __init__(self, adj_list: dict, unit_models: dict):
         """Construct the layout of a given directed graphical flowsheet.
 
         Args:
             adj_list: Adjacency list, a directed graph representation for the given flowsheet
             unit_models: FlowsheetSerializer's self.unit_models to get each unit_model's info
-
         """
         self._adj_list = adj_list
         self._unit_models = unit_models
@@ -51,23 +55,27 @@ class UnitModelsPositioning:
         self._allocated_positions = {} # Save used (x,y) positions
         self._layer_max_depth = {}
         self._levels = {}
+        self._level_nodes = {}
         self._abstract_layout = {}
 
         # These are how much we move each unit away from each other in each direction
-        self._X = 70
-        self._Y = 50
+        self._X = 130
+        self._Y = 120
+
+        # Should represent the average radius of a unit model icon
+        self._dx = 20
+        self._dy = 20
 
         # Computing
         self._assign_default_positions()
 
         # module's main engine
         self._publish_levels_and_ranks()
-        self._build_matrix()
-        print("self._abstract_layout:")
-        print(self._abstract_layout)
+        self._build_abstract_layout()
+        self._assign_positions()
 
 
-    def get_unit_model_position(self, unit_model_name: str):
+    def get_position(self, unit_model_name: str):
         """returns (x,y) position of the given unit_model"""
         if unit_model_name not in self._allocated_positions:
             raise KeyError(f"${unit_model_name} doesn't exist in the current layout")
@@ -84,6 +92,16 @@ class UnitModelsPositioning:
         self._Y = y
 
 
+    def set_dx(self, dx: int):
+        """sets dx. dx is the average horizontal radius of a unit model"""
+        self._dx = dx
+
+
+    def set_dy(self, dy: int):
+        """sets dy. dy is the average vertical radius of a unit model"""
+        self._dy = dy
+
+
     def _assign_default_positions(self):
         """Old implementation of unit model positioning. It positions unit models
            on a diagonal.
@@ -93,7 +111,7 @@ class UnitModelsPositioning:
         y_starting_pos = 10
 
         for _, unit_info in self._unit_models.items():
-            unit_name, unit_type = unit_info['name'], unit_info['type']
+            unit_name = unit_info['name']
             # If x_pos it greater than 700 then start another diagonal line
             if x_pos >= 700:
                 x_pos = 100
@@ -118,9 +136,9 @@ class UnitModelsPositioning:
             unit_name, unit_type = unit_info['name'], unit_info['type']
             # Create a node for this unit model and add it to our nodes map
             self._nodes[unit_name] = Node(id = unit_name)
-            if unit_type == FlowsheetSerializer.FEED:
+            if unit_type == self.FEED:
                 self._feeds.add(unit_name)
-            elif unit_type == FlowsheetSerializer.PRODUCT:
+            elif unit_type == self.PRODUCT:
                 self._products.add(unit_name)
 
 
@@ -153,9 +171,10 @@ class UnitModelsPositioning:
             feed_node = self._nodes[feed_name]
             feed_node.level = feed_name
             self._levels[feed_name] = 0
+            self._level_nodes[feed_name] = {feed_name} # python 'set'
             queue.append(feed_node)
             visited_nodes.add(feed_name) # add to visited nodes
-            self._layer_max_depth[feed_name] = 1
+            self._layer_max_depth[feed_name] = 0
 
         while queue:
             node = queue.popleft()
@@ -173,7 +192,7 @@ class UnitModelsPositioning:
                     self._layer_max_depth[node.level] = max(self._layer_max_depth[node.level], child_node.rank)
 
                     # This is for just feeds
-                    if node.level in self._levels:
+                    if node.id in self._levels:
                         self._levels[node.level] += 1
         # After finishing this previous loop, all the nodes should be visited
         assert len(visited_nodes) == self._N, "Some nodes aren't accessible through feeds"
@@ -185,44 +204,102 @@ class UnitModelsPositioning:
                 # get rid of this level
                 self._levels.pop(level)
                 self._layer_max_depth.pop(level)
+                self._level_nodes.pop(level)
+
                 assert len(self._adj_list[level]) > 0, f"Feed '${level}' isn't connected to any unit model"
 
                 # Merge this feed into any of its children's level.
                 # self._adj_list[level] is a 'set' remember? Not indexable.
                 any_child_node = self._nodes[next(iter(self._adj_list[level]))]
                 self._nodes[level].level = any_child_node.level
+                self._level_nodes[any_child_node.level].add(level)
 
 
-    def _build_matrix(self):
-        """This builds the matrix. By matrix we mean a data representation that
-           will make assigning positions to each unit model easier.
+    def _build_abstract_layout(self):
+        """This builds the abstract layout. A data representation that will
+           make assigning positions to each unit model easier.
 
            Sorting the levels with the most depth won't matter. I would be
            interested to see the layout if we does.
+
+           Implementation: BFS to layout unit models in order.
         """
-        # TODO This could be improved using a DFS I think to layout unit models
-        # more consistently.
 
-        for _, unit_info in self._unit_models.items():
-            unit_name = unit_info['name']
-            node = self._nodes[unit_name]
+        queue = deque()
 
-            if node.level not in self._abstract_layout:
-                self._abstract_layout[node.level] = {
-                    'nodes': [],
-                    'width': self._layer_max_depth[node.level],
-                    'height': 1
-                }
-                for i in range(self._layer_max_depth[node.level] + 1):
-                    self._abstract_layout[node.level]['nodes'].append([])
+        visited_nodes = set()
+        for _, feed_set in self._level_nodes.items():
+            for feed_name in feed_set:
+                queue.append(feed_name)
 
-            self._abstract_layout[node.level][node.rank].append(node.id)
-            # Get the maximum height of this level
-            self._abstract_layout[node.level]['height'] = max(
-                self._abstract_layout[node.level]['height'],
-                len(self._abstract_layout[node.level][node.rank])
-            )
+        while queue:
+            node_name = queue.popleft()
+
+            if node_name not in visited_nodes:
+                print("_build_abstract_layout - node_name:", node_name)
+                visited_nodes.add(node_name)
+
+                node = self._nodes[node_name]
+
+                if node.level not in self._abstract_layout:
+                    self._abstract_layout[node.level] = {
+                        'nodes': [],
+                        'width': self._layer_max_depth[node.level] + 1,
+                        'height': 1
+                    }
+                    for _ in range(self._layer_max_depth[node.level] + 1):
+                        self._abstract_layout[node.level]['nodes'].append([])
+
+                self._abstract_layout[node.level]['nodes'][node.rank].append(node.id)
+                # Get the maximum height of this level
+                self._abstract_layout[node.level]['height'] = max(
+                    self._abstract_layout[node.level]['height'],
+                    len(self._abstract_layout[node.level]['nodes'][node.rank])
+                )
+
+                # Add children to queue
+                for child_name in self._adj_list[node_name]:
+                    queue.append(child_name)
+
 
     def _assign_positions(self):
-        """Assign an (x,y) position for each unit_model"""
-        pass
+        """Assign an (x,y) position to each unit_model"""
+
+        height = 0
+        levels = list(self._levels.keys())
+        for l, level in enumerate(levels):
+            x = 0
+
+            level_height = self._abstract_layout[level]['height']
+            level_nodes = self._abstract_layout[level]['nodes']
+
+            for rank_nodes in level_nodes:
+                y = height
+                center_node_i = len(rank_nodes) // 2
+                if len(rank_nodes) % 2 != 0: # odd number of nodes
+                    node = rank_nodes[center_node_i]
+                    self._allocated_positions[node] = (x, y)
+                    for i in range(center_node_i - 1, -1, -1):
+                        y -= self._dy + self._Y
+                        node = rank_nodes[i]
+                        self._allocated_positions[node] = (x, y)
+                    y = height
+                    for i in range(center_node_i + 1, len(rank_nodes)):
+                        y += self._dy + self._Y
+                        node = rank_nodes[i]
+                        self._allocated_positions[node] = (x, y)
+                else:
+                    y = height - center_node_i * self._Y - (center_node_i - 1) * self._dy
+                    for i in range(len(rank_nodes)):
+                        node = rank_nodes[i]
+                        self._allocated_positions[node] = (x, y)
+                        # Pass the level trunk/axis or (y = height)
+                        if i == center_node_i - 1:
+                            y += 2 * self._Y
+                        else:
+                            y += self._Y + self._dy
+
+                x += self._X + self._dx
+            if l < len(levels) - 1:
+                next_level_height = self._abstract_layout[levels[l+1]]['height']
+                height += (self._Y + self._dy) * max(level_height, next_level_height)
