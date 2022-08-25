@@ -1699,9 +1699,9 @@ change.
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
         if ylim is not None:
-            ax.ylim(ylim)
+            ax.set_ylim(ylim)
         if xlim is not None:
-            ax.xlim(xlim)
+            ax.set_xlim(xlim)
 
         # Get some parameters for plot limits
         pc = pyo.value(pyo.units.convert(self.pressure_crit, pyo.units.kPa))
@@ -1799,12 +1799,12 @@ change.
                 "delta_vap_func",
             ],
         )
-        plt.figure(figsize=figsize, dpi=dpi)
+        fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
         if ylim is not None:
-            plt.ylim(ylim)
+            ax.set_ylim(ylim)
         if xlim is not None:
-            plt.xlim(xlim)
+            ax.set_xlim(xlim)
 
         # Get some parameters for plot limits
         pc = pyo.value(pyo.units.convert(self.pressure_crit, pyo.units.kPa))
@@ -1818,14 +1818,14 @@ change.
 
         # plot saturaion curves use log scale for pressure
         # plt.yscale("log")
-        plt.plot(dome["s_liq"], dome["T"], c="b", label="sat liquid")
-        plt.plot(dome["s_vap"], dome["T"], c="r", label="sat vapor")
+        ax.plot(dome["s_liq"], dome["T"], c="b", label="sat liquid")
+        ax.plot(dome["s_vap"], dome["T"], c="r", label="sat vapor")
 
         x = []
         y = []
         for p, v in points.items():
-            plt.scatter([v[0]], [v[1]])
-            plt.text(v[0], v[1], p, ha="center", fontsize="xx-large")
+            ax.scatter([v[0]], [v[1]])
+            ax.text(v[0], v[1], p, ha="center", fontsize="xx-large")
             x.append(v[0])
             y.append(v[1])
         if len(x) > 1:
@@ -1833,10 +1833,10 @@ change.
             y.append(y[0])
         plt.plot(x, y, c="black")
 
-        plt.title(f"T-S Diagram for {self.pure_component}")
-        plt.xlabel("Entropy (kJ/kg/K)")
-        plt.ylabel("Temperature (K)")
-        return plt
+        ax.set_title(f"T-S Diagram for {self.pure_component}")
+        ax.set_xlabel("Entropy (kJ/kg/K)")
+        ax.set_ylabel("Temperature (K)")
+        return fig, ax
 
     def pt_diagram(self, ylim=None, xlim=None, points={}, figsize=None, dpi=None):
         # Add external functions needed to plot PH-diagram
@@ -1857,9 +1857,9 @@ change.
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
         if ylim is not None:
-            ax.ylim(ylim)
+            ax.set_ylim(ylim)
         if xlim is not None:
-            ax.xlim(xlim)
+            ax.set_xlim(xlim)
 
         # Get some parameters for plot limits
         pc = pyo.value(pyo.units.convert(self.pressure_crit, pyo.units.kPa))
