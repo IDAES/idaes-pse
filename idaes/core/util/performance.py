@@ -19,6 +19,7 @@ import pytest
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.timing import TicTocTimer
 from pyomo.environ import assert_optimal_termination
+import pyomo.common.unittest as unittest
 
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -46,16 +47,28 @@ class PerformanceBaseClass:
         is provided by the base class.
 
     Developers may add additional test methods to the derived class to run additional
-    performance tests if desired. These methods should all start with 'test_' in order
-    to be discovered by pytest.
+    performance tests if desired. These methods should use standard pytest marks and
+    naming conventions.
 
     Usage:
 
-    Performance tests should inherit from this based class and decorate the derived
-    class or overloaded methods with the 'performance' pytest mark. This will
-    automatically categorize all tests in this class as performance tests which will
-    only be run when explicitly called for.
+    Performance tests should inherit from this based class and unittest.TestCase.
+    Inheritance from TestCase is used to make the derived classes easily discoverable
+    for use outside the performance testing infrastructure. The derived class should
+    be decorated with the 'performance' pytest mark. This will automatically categorize
+    all tests in this class as performance tests which will only be run when explicitly
+    called for.
+
+    Raises:
+        TypeError is derived class does not inherit from unittest.TestCase.
     """
+
+    def __init_subclass__(cls):
+        if unittest.TestCase not in cls.mro():
+            raise TypeError(
+                "Classes derived from PerformanceBaseClass must also inherit from "
+                "unittest.TestCase."
+            )
 
     def recordData(self, name, value):
         """
