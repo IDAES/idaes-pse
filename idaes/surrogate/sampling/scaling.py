@@ -15,8 +15,10 @@ Deprecation path for renamed module.
 """
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The idaes.surrogate.sampling.scaling module has been "
-                    "moved to idaes.core.surrogate.sampling.scaling",
-                    version="2.0.0.alpha0")
+deprecation_warning(
+    "The idaes.surrogate.sampling.scaling module has been "
+    "moved to idaes.core.surrogate.sampling.scaling",
+    version="2.0.0.alpha0",
+)
 
 from idaes.core.surrogate.sampling.scaling import *

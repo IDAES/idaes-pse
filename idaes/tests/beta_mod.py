@@ -14,6 +14,7 @@
 
 # Declare this module to be a "beta module"
 import idaes.beta
+
 idaes.beta.declare_beta_module()
 
 reference_value = 42

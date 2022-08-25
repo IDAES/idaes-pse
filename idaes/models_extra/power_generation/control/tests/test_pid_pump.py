@@ -78,32 +78,26 @@ def get_model(dynamic=False):
     if dynamic:
         m.dynamic = True
         m.fs = FlowsheetBlock(
-            default={
-                "dynamic": True,
-                "time_set": [0, 50, 1000],
-                "time_units": pyo.units.s,
-            }
+            dynamic=True,
+            time_set=[0, 50, 1000],
+            time_units=pyo.units.s,
         )
     else:
         m.dynamic = False
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
 
     # water pump
     m.fs.pump = WaterPump(
-        default={
-            "dynamic": False,
-            "property_package": m.fs.prop_water,
-        }
+        dynamic=False,
+        property_package=m.fs.prop_water,
     )
 
     # water tank
     m.fs.tank = WaterTank(
-        default={
-            "tank_type": "simple_tank",
-            "has_holdup": True,
-            "property_package": m.fs.prop_water,
-        }
+        tank_type="simple_tank",
+        has_holdup=True,
+        property_package=m.fs.prop_water,
     )
 
     m.fs.valve = WaterValve(

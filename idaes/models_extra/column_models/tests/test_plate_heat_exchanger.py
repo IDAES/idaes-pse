@@ -211,10 +211,10 @@ class TestPHE(object):
 
         assert pytest.approx(244327, rel=1e-5) == value(phe.fs.unit.heat_duty[0])
 
-        assert pytest.approx(365.288, rel=1e-5) == value(
+        assert pytest.approx(345.612, rel=1e-5) == value(
             phe.fs.unit.hot_outlet.temperature[0]
         )
-        assert pytest.approx(356.952, rel=1e-5) == value(
+        assert pytest.approx(372.776, rel=1e-5) == value(
             phe.fs.unit.cold_outlet.temperature[0]
         )
 

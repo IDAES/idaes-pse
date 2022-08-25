@@ -46,7 +46,7 @@ and override the default temperature difference calculation.
     m = ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # Add property packages to flowsheet library
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
@@ -54,16 +54,14 @@ and override the default temperature difference calculation.
 
     # Create unit models
     m.fs.ECON = BoilerHeatExchanger(
-        default={
-            "tube: {"property_package": m.fs.prop_water},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
-            "has_holdup": False,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
-            "has_radiation": False
-        }
+        tube={"property_package": m.fs.prop_water},
+        shell={"property_package": m.fs.prop_fluegas},
+        has_pressure_change=True,
+        has_holdup=False,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        tube_arrangement=TubeArrangement.inLine,
+        side_1_water_phase="Liq",
+        has_radiation=False
     )
 
     # Set Inputs

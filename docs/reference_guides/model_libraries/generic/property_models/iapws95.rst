@@ -35,15 +35,17 @@ provides a simple example for using water properties.
 
   # Create an empty flowsheet and steam property parameter block.
   model = pe.ConcreteModel()
-  model.fs = FlowsheetBlock(default={"dynamic": False})
-  model.fs.properties = iapws95.Iapws95ParameterBlock(default={
-    "phase_presentation":iapws95.PhaseType.LG,
-    "state_vars":iapws95.StateVars.PH})
+  model.fs = FlowsheetBlock(dynamic=False)
+  model.fs.properties = iapws95.Iapws95ParameterBlock(
+    phase_presentation=iapws95.PhaseType.LG,
+    state_vars=iapws95.StateVars.PH
+  )
 
   # Add a Heater model to the flowsheet.
-  model.fs.heater = Heater(default={
-    "property_package": model.fs.properties,
-    "material_balance_type": MaterialBalanceType.componentTotal})
+  model.fs.heater = Heater(
+    property_package=model.fs.properties,
+    material_balance_type=MaterialBalanceType.componentTotal
+  )
 
   # Setup the heater model by fixing the inputs and heat duty
   model.fs.heater.inlet[:].enth_mol.fix(4000)

@@ -41,15 +41,17 @@ are not necessarily realistic.
 
   def make_fwh_model():
       model = pyo.ConcreteModel()
-      model.fs = FlowsheetBlock(default={
-          "dynamic": False,
-          "default_property_package": iapws95.Iapws95ParameterBlock()})
+      model.fs = FlowsheetBlock(
+          dynamic=False,
+          default_property_package=iapws95.Iapws95ParameterBlock()
+      )
       model.fs.properties = model.fs.config.default_property_package
-      model.fs.fwh = FWH0D(default={
-          "has_desuperheat":True,
-          "has_drain_cooling":True,
-          "has_drain_mixer":True,
-          "property_package":model.fs.properties})
+      model.fs.fwh = FWH0D(
+          has_desuperheat=True,
+          has_drain_cooling=True,
+          has_drain_mixer=True,
+          property_package=model.fs.properties
+      )
 
       model.fs.fwh.desuperheat.inlet_1.flow_mol.fix(100)
       model.fs.fwh.desuperheat.inlet_1.flow_mol.unfix()

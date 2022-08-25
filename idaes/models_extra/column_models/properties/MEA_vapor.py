@@ -133,15 +133,17 @@ class Diffus:
         def diffus_binary(i, j):
             return (
                 1.013e-2
-                * (pyunits.kilogram/pyunits.m/pyunits.s**2) * pyunits.m**4 * ((pyunits.kilogram/pyunits.mol)**0.5)
+                * (pyunits.kilogram / pyunits.m / pyunits.s**2)
+                * pyunits.m**4
+                * ((pyunits.kilogram / pyunits.mol) ** 0.5)
                 / pyunits.s
                 / pyunits.K**1.75
                 * T**1.75
                 / blk.pressure
                 * sqrt(1e-3 * (1 / blk.mw_comp[i] + 1 / blk.mw_comp[j]))
                 / (
-                    pobj.diffus_binary_param[i] ** (1/3)
-                    + pobj.diffus_binary_param[j] ** (1/3)
+                    pobj.diffus_binary_param[i] ** (1 / 3)
+                    + pobj.diffus_binary_param[j] ** (1 / 3)
                 )
                 ** 2
             )
@@ -176,7 +178,7 @@ def visc_d_comp(blk, pobj, i):
             )
             * pyunits.Pa
             * pyunits.s
-            * (1/(pyunits.K)**(pobj.visc_d_h2o_coeff_2))
+            * (1 / (pyunits.K) ** (pobj.visc_d_h2o_coeff_2))
         )
     elif i == "CO2":
         return (
@@ -187,7 +189,7 @@ def visc_d_comp(blk, pobj, i):
             )
             * pyunits.Pa
             * pyunits.s
-            * (1/(pyunits.K)**(pobj.visc_d_co2_coeff_2))
+            * (1 / (pyunits.K) ** (pobj.visc_d_co2_coeff_2))
         )
     elif i == "N2":
         return (
@@ -304,7 +306,9 @@ class ThermalCond:
             p3 = getattr(pobj, "therm_cond_" + j.lower() + "_coeff_3")
             p4 = getattr(pobj, "therm_cond_" + j.lower() + "_coeff_4")
             return (
-                p1 * (1/(pyunits.K)**(p2)) * (pyunits.joule/(pyunits.m*pyunits.K*pyunits.s))
+                p1
+                * (1 / (pyunits.K) ** (p2))
+                * (pyunits.joule / (pyunits.m * pyunits.K * pyunits.s))
                 * blk.temperature**p2
                 / ((1 + p3 / blk.temperature) + (p4 / blk.temperature**2))
             )

@@ -32,6 +32,7 @@ Assumptions:
 References:
     [1] Hilliard thesis (1998)
     [2] Morgan et.al (2015)
+    [3] NIST Webbook, https://webbook.nist.gov/
 """
 # Import Pyomo units
 from pyomo.environ import exp, log, units as pyunits, Var, Expression
@@ -150,15 +151,19 @@ class EnthMolSolvent:
             CpMolSolvent.build_parameters(cobj)
 
         cobj.dh_vap = Var(
-            doc="Heat of absorption of component @ Tref", units=pyunits.J / pyunits.mol
+            doc="Heat of vaporization of component @ Tref",
+            units=pyunits.J / pyunits.mol,
         )
         set_param_from_config(cobj, param="dh_vap")
 
     @staticmethod
     def return_expression(b, cobj, T):
         # Specific enthalpy
-        T = pyunits.convert(T, to_units=pyunits.K)
-        Tr = pyunits.convert(b.params.temperature_ref, to_units=pyunits.K)
+        T = pyunits.convert(T, to_units=pyunits.K) - 273.15 * pyunits.K
+        Tr = (
+            pyunits.convert(b.params.temperature_ref, to_units=pyunits.K)
+            - 273.15 * pyunits.K
+        )
 
         units = b.params.get_metadata().derived_units
 
@@ -187,25 +192,29 @@ class N2OAnalogy:
     @staticmethod
     def build_parameters(cobj, phase, h_type):
         cobj.lwm_coeff_1 = Var(
-                doc="N2O Analogy Henry's constant coefficient 1",
-                units=pyunits.dimensionless)
+            doc="N2O Analogy Henry's constant coefficient 1",
+            units=pyunits.dimensionless,
+        )
         set_param_from_config(cobj, param="lwm_coeff", index="1")
-        
+
         cobj.lwm_coeff_2 = Var(
-                doc="N2O Analogy Henry's constant coefficient 2",
-                units=pyunits.dimensionless)
+            doc="N2O Analogy Henry's constant coefficient 2",
+            units=pyunits.dimensionless,
+        )
         set_param_from_config(cobj, param="lwm_coeff", index="2")
-        
+
         cobj.lwm_coeff_3 = Var(
-                doc="N2O Analogy Henry's constant coefficient 3",
-                units=pyunits.dimensionless)
+            doc="N2O Analogy Henry's constant coefficient 3",
+            units=pyunits.dimensionless,
+        )
         set_param_from_config(cobj, param="lwm_coeff", index="3")
-        
+
         cobj.lwm_coeff_4 = Var(
-                doc="N2O Analogy Henry's constant coefficient 4",
-                units=pyunits.dimensionless)
+            doc="N2O Analogy Henry's constant coefficient 4",
+            units=pyunits.dimensionless,
+        )
         set_param_from_config(cobj, param="lwm_coeff", index="4")
-        
+
     @staticmethod
     def return_expression(b, p, j, T):
         cobj = b.params.get_component(j)
@@ -906,7 +915,7 @@ configuration = {
                     "2": (-4.51417e-4, pyunits.g / pyunits.mL / pyunits.K),
                     "3": (1.19451, pyunits.g / pyunits.mL),
                 },
-                "dh_vap": 0,  # MEA is assumed to be non-volatile
+                "dh_vap": 58000,  # [3]
                 "diffus_phase_comp_coeff": {
                     "1": -13.275,
                     "2": -2198.3,
@@ -938,10 +947,10 @@ configuration = {
                 "mw": (0.04401, pyunits.kg / pyunits.mol),
                 "dh_abs_co2": -84000,
                 "lwm_coeff": {
-                    '1': 1.70981,
-                    '2': 0.03972,
-                    '3': -4.3e-4,
-                    '4': -2.20377,
+                    "1": 1.70981,
+                    "2": 0.03972,
+                    "3": -4.3e-4,
+                    "4": -2.20377,
                 },
                 "diffus_phase_comp_coeff": {
                     "1": 2.35e-6,

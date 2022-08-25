@@ -15,8 +15,10 @@ Deprecation path for renamed module.
 """
 from pyomo.common.deprecation import deprecation_warning
 
-deprecation_warning("The generic_models.properties.core.reactions.dh_rxn has been "
-                    "moved to idaes.models.properties.modular_properties.reactions.dh_rxn",
-                    version="2.0.0.alpha0")
+deprecation_warning(
+    "The generic_models.properties.core.reactions.dh_rxn has been "
+    "moved to idaes.models.properties.modular_properties.reactions.dh_rxn",
+    version="2.0.0.alpha0",
+)
 
 from idaes.models.properties.modular_properties.reactions.dh_rxn import *

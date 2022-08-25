@@ -48,17 +48,18 @@ def strlist(x, sep=", "):
 
 
 def get_file(file_or_path, mode="r"):
-    """Open a file for reading, or simply return the file object.
-    """
+    """Open a file for reading, or simply return the file object."""
     if hasattr(file_or_path, "read"):
         return file_or_path
     return open(file_or_path, mode)
 
 
-def as_path(f: Union[Path, str, None],
-            must_exist: bool = False,
-            must_be_dir: bool = False,
-            must_be_file: bool = False) -> Path:
+def as_path(
+    f: Union[Path, str, None],
+    must_exist: bool = False,
+    must_be_dir: bool = False,
+    must_be_file: bool = False,
+) -> Path:
     """Simply coerce input to a `Path`.
 
     Args:
@@ -132,8 +133,7 @@ def get_module_author(mod):
 
 
 class TempDir(object):
-    """Simple context manager for mkdtemp().
-    """
+    """Simple context manager for mkdtemp()."""
 
     def __init__(self, *args):
         self._d = None
@@ -532,8 +532,7 @@ _pow_abbr = "KMGTPE"
 
 
 def size_prefix(number, base2=False):
-    """Return an abbreviation for the size, up to E (exa)
-    """
+    """Return an abbreviation for the size, up to E (exa)"""
     fudge = 1e-12
     if number == 0:
         return "0"
@@ -560,6 +559,7 @@ def size_prefix(number, base2=False):
         num_str = f"{negative}{npow:.1f}{abbr}{extra}"
     return num_str
 
+
 # Edge-case temporary dir handling
 
 # Cache this, since the result of gettempdir() is also cached
@@ -576,14 +576,18 @@ def fail_if_tempdir_is_curdir():
             curdir = os.curdir
         _is_curdir = td == curdir
     if _is_curdir:
-        raise RuntimeError("abort: temporary directory is going to be in "
-                           "the current directory. Please set one of the "
-                           "following environment variables to a suitable "
-                           "directory: TMPDIR, TEMP, or TMP")
+        raise RuntimeError(
+            "abort: temporary directory is going to be in "
+            "the current directory. Please set one of the "
+            "following environment variables to a suitable "
+            "directory: TMPDIR, TEMP, or TMP"
+        )
+
 
 def mkdtemp(*args, **kwargs):
     fail_if_tempdir_is_curdir()
     return tempfile.mkdtemp(*args, **kwargs)
+
 
 def NamedTemporaryFile(*args, **kwargs):
     fail_if_tempdir_is_curdir()
