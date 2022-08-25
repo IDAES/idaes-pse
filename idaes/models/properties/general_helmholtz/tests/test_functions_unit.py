@@ -1181,3 +1181,60 @@ def test_r1234ze_transport():
             pyo.units.microPa * pyo.units.s,
         )
     )
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_initialize_param_block():
+    # this should do absolutely nothing, so just make sure there is no exception
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="r1234ze", amount_basis=AmountBasis.MASS
+    )
+    m.hparam.initialize()
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_errors():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="r1234ze", amount_basis=AmountBasis.MASS
+    )
+    te = HelmholtzThermoExpressions(m, m.hparam)
+    with pytest.raises(RuntimeError):
+        te.viscosity_vap(T=300 * pyo.units.K, p=1e5 * pyo.units.Pa)
+    with pytest.raises(RuntimeError):
+        te.p_sat()
+    with pytest.raises(RuntimeError):
+        te.delta_liq_sat()
+    with pytest.raises(RuntimeError):
+        te.delta_vap_sat()
+    with pytest.raises(RuntimeError):
+        m.err_param = HelmholtzParameterBlock(
+            pure_component="not a real thing", amount_basis=AmountBasis.MASS
+        )
+    with pytest.raises(RuntimeError):
+        # Can't specify all tree T, P, x
+        h = m.hparam.htpx(T=300 * pyo.units.K, p=10 * pyo.units.Pa, x=0.0)
+    with pytest.raises(RuntimeError):
+        # Temperature way too high
+        h = m.hparam.htpx(T=300e7 * pyo.units.K, x=0.0)
+    with pytest.raises(RuntimeError):
+        # Vapor fraction > 1.0
+        h = m.hparam.htpx(T=300 * pyo.units.K, x=10.0)
+    with pytest.raises(RuntimeError):
+        # Pressure way too high
+        h = m.hparam.htpx(p=300e17 * pyo.units.Pa, x=0.0)
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_plot_no_excpetion():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="r1234ze", amount_basis=AmountBasis.MASS
+    )
+    m.hparam.ph_diagram(isotherms=True)
+    m.hparam.st_diagram()
+    m.hparam.pt_diagram()

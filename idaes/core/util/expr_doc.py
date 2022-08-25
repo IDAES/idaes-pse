@@ -242,7 +242,7 @@ def _add_docs(object_map, docs, typ, head):
                 continue
             if whead:  # add heading if is first entry in this section
                 docs += f"**{head}** | **Doc** | **Path** | **UoM**\n"
-                docs += "---: | --- | --- | ---\n"
+                docs += ":--- | :--- | :--- | :---\n"
                 whead = False
             if id(c) not in docked:
                 docked.add(id(c))  # make sure we don't get a line for every index

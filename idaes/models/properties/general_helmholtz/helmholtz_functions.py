@@ -16,6 +16,7 @@ __author__ = "John Eslick"
 
 import enum
 import ctypes
+import math
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -39,7 +40,9 @@ from idaes.core import (
 from idaes.models.properties.general_helmholtz.components import (
     components as supported_components,
 )
+import idaes.logger as idaeslog
 
+_log = idaeslog.getLogger(__name__)
 
 # make sure the required shared libraries load
 try:
@@ -51,6 +54,8 @@ except:
     _flib_ad = None
 
 try:
+    # When compling these, I don't bother changing the extension based on OS,
+    # so the file name is always ends in .so. It's fine.
     _flib = find_library("general_helmholtz_external.so")
     ctypes.cdll.LoadLibrary(_flib)
 except:
@@ -1248,16 +1253,16 @@ change.
                 "t_star_func",  # Critical temperature
                 "rhoc_func",  # Critical density
                 "rho_star_func",  # Critical temperature
-                # Tripple point properties
-                "pt_func",  # Tripple point pressure
-                "tt_func",  # Tripple point temperature
-                "rhot_l_func",  # Tripple point liquid density
-                "rhot_v_func",  # Tripple point vapor density
-                # Tripple point properties
-                "pt_func",  # Tripple point pressure
-                "tt_func",  # Tripple point temperature
-                "rhot_l_func",  # Tripple point liquid density
-                "rhot_v_func",  # Tripple point vapor density
+                # triple point properties
+                "pt_func",  # triple point pressure
+                "tt_func",  # triple point temperature
+                "rhot_l_func",  # triple point liquid density
+                "rhot_v_func",  # triple point vapor density
+                # triple point properties
+                "pt_func",  # triple point pressure
+                "tt_func",  # triple point temperature
+                "rhot_l_func",  # triple point liquid density
+                "rhot_v_func",  # triple point vapor density
                 # Bounds
                 "pmin_func",  # pmin
                 "tmin_func",  # tmin
@@ -1448,8 +1453,28 @@ change.
         energy_unit=pyo.units.kJ,
         mass_unit=pyo.units.kg,
         mol_unit=pyo.units.kmol,
+        n = 60,
     ):
-        """Get data to plot the two-phase dome or saturation curve"""
+        """Get data to plot the two-phase dome or saturation curve.  This data
+        can be used to plot the 2 phase dome for p-h and t-s diagrams and the
+        saturation curve on the p-t diagram.
+
+        Args:
+            amount_bases (AmountBasis): Mass or mole basis. Get from parameter
+                block if None.
+            pressure_unit (PyomoUnit): Pressure units of measure
+            energy_unit (PyomoUnit): Energy units of measure
+            mass_unit (PyomoUnit): Mass units of measure
+            mol_unit (PyomoUnit): Mole unit of measure
+
+        Returns:
+            dict: dictonary with the keys {'T', 'tau', 'p', 'delta_liq',
+                'delta_vap', 'h_liq', 'h_vap', 's_liq', 's_vap'} each a list of
+                numbers corresponding to states along the two-phase dome.
+        """
+
+        # Attach the external functions needed to this parameter block (self) as
+        # Pyomo ExternalFunction.
         add_helmholtz_external_functions(
             self,
             [
@@ -1460,16 +1485,22 @@ change.
                 "s_func",
             ],
         )
+        # Set the amount basis, if not provided by the user get it from this
+        # paraemeter block (self)
         if amount_basis is None:
             amount_basis = self.config.amount_basis
 
+        # We'll do the calcuation based on temeprautre.  We want more points
+        # near the critical point, so use log space to get that. The lower bound
+        # for temperature is the triple point and the upper bound is the
+        # critical point.  Here temperature is as tau = T*/T.
         tau_c = pyo.value(self.temperature_star / self.temperature_crit)
         tau_t = pyo.value(self.temperature_star / self.temperature_trip)
-        # use logspace to get more points close to critical point
-        tau_dist_vec = np.logspace(-5, 0, 60)
+        tau_dist_vec = np.logspace(-5, 0, n)
         tau_vec = [tau_c + td * (tau_t - tau_c) for td in tau_dist_vec]
         tau_vec = [tau_c] + tau_vec
 
+        # Get pressures by calling the p_sat function from the temperature vector
         p_vec = [
             pyo.value(
                 pyo.units.convert(
@@ -1478,10 +1509,15 @@ change.
             )
             for tau in tau_vec
         ]
+
+        # Get the reduced density vector for the liquid, from this and
+        # tau we can clculate all the rest of the properties for sat liquid
         delta_sat_l_vec = [
             pyo.value(self.delta_sat_l_func(self.pure_component, tau))
             for tau in tau_vec
         ]
+        # Get the reduced density vector for the liquid, from this and
+        # tau we can clculate all the rest of the properties for sat liquid
         delta_sat_v_vec = [
             pyo.value(self.delta_sat_v_func(self.pure_component, tau))
             for tau in tau_vec
@@ -1577,7 +1613,7 @@ change.
             "s_vap": s_vap_vec,
         }
 
-    def isotherms(self, temperatures=[]):
+    def isotherms(self, temperatures):
         add_helmholtz_external_functions(
             self,
             [
@@ -1588,11 +1624,10 @@ change.
                 "s_func",
             ],
         )
-        d = {}
-
         pt = pyo.value(pyo.units.convert(self.pressure_trip, pyo.units.kPa))
         pc = pyo.value(pyo.units.convert(self.pressure_crit, pyo.units.kPa))
         pmax = pyo.value(pyo.units.convert(self.pressure_max, pyo.units.kPa))
+        d = {}
 
         def _pvec(d, tau, p1, p2=None, phase="sat"):
             if phase == "sat":
@@ -1650,30 +1685,23 @@ change.
 
         return d
 
-    def ph_diagram(self, ylim=None, xlim=None, points={}, figsize=None, dpi=None):
-        # Add external functions needed to plot PH-diagram
-        add_helmholtz_external_functions(
-            self,
-            [
-                "p_sat_func",
-                "tau_sat_func",
-                "delta_sat_l_func",
-                "delta_sat_v_func",
-                "h_func",
-                "s_func",
-                "u_func",
-                "hlpt_func",
-                "hvpt_func",
-                "delta_liq_func",
-                "delta_vap_func",
-            ],
-        )
-        plt.figure(figsize=figsize, dpi=dpi)
+    def ph_diagram(
+        self,
+        ylim=None,
+        xlim=None,
+        points={},
+        figsize=None,
+        dpi=None,
+        isotherms=None,
+        isotherms_line_format=None,
+        isotherms_label=True,
+    ):
+        fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
         if ylim is not None:
-            plt.ylim(ylim)
+            ax.ylim(ylim)
         if xlim is not None:
-            plt.xlim(xlim)
+            ax.xlim(xlim)
 
         # Get some parameters for plot limits
         pc = pyo.value(pyo.units.convert(self.pressure_crit, pyo.units.kPa))
@@ -1686,9 +1714,9 @@ change.
         dome = self.dome_data()
 
         # plot saturaion curves use log scale for pressure
-        plt.yscale("log")
-        plt.plot(dome["h_liq"], dome["p"], c="b", label="sat liquid")
-        plt.plot(dome["h_vap"], dome["p"], c="r", label="sat vapor")
+        ax.set_yscale("log")
+        ax.plot(dome["h_liq"], dome["p"], c="b", label="sat liquid")
+        ax.plot(dome["h_vap"], dome["p"], c="r", label="sat vapor")
 
         # Temperatures for isotherms
         t_vec = np.linspace(
@@ -1698,32 +1726,64 @@ change.
         h_l = {}
         h_v = {}
 
-        # plot isotherms in sat region
-        # isotherms = self.isotherms(temperatures=t_vec.tolist())
-        # for t, dat in isotherms.items():
-        #    for phase in ["sc", "liq", "vap", "sat"]:
-        #        if dat[phase]:
-        #            plt.plot(dat[phase]["h"], dat[phase]["p"], c='g')
-
+        if isotherms is not None:  # plot isotherms
+            if isinstance(isotherms, np.ndarray):
+                t_vec = isotherms.tolist()
+            elif isinstance(isotherms, (list, tuple)):
+                t_vec = isotherms
+            else:
+                t_vec = np.linspace(
+                    pyo.value(self.temperature_trip),
+                    pyo.value(self.temperature_crit),
+                    6,
+                ).tolist()
+            isotherm_data = self.isotherms(temperatures=t_vec)
+            if isotherms_line_format is None:
+                isotherms_line_format = {"c": "g"}
+            for t, dat in isotherm_data.items():
+                for phase in ["sc", "liq", "vap", "sat"]:
+                    if dat[phase]:
+                        ax.plot(
+                            dat[phase]["h"], dat[phase]["p"], **isotherms_line_format
+                        )
+            if isotherms_label:
+                for t, dat in isotherm_data.items():
+                    if dat["sat"]:
+                        ppos = dat["sat"]["p"][0]
+                        hpos = (dat["sat"]["h"][0] + dat["sat"]["h"][1]) / 2.0
+                        angle = -30
+                    else:
+                        ppos = dat["vap"]["p"][0]
+                        hpos = dat["vap"]["h"][0]
+                        angle = -30
+                    ax.text(
+                        hpos,
+                        ppos,
+                        f"{t:.2f}  K",
+                        fontsize="small",
+                        ha="center",
+                        va="center",
+                        rotation=angle,
+                    )
         x = []
         y = []
         for p, v in points.items():
-            plt.scatter([v[0]], [v[1]])
-            plt.text(v[0], v[1], p, ha="center", fontsize="xx-large")
+            ax.scatter([v[0]], [v[1]])
+            ax.text(v[0], v[1], p, ha="center", fontsize="xx-large")
             x.append(v[0])
             y.append(v[1])
-        if len(x) > 1:
+        if len(x) > 1:  # This closes the loop
             x.append(x[0])
             y.append(y[0])
-        plt.plot(x, y, c="black")
+        ax.plot(x, y, c="black")
 
         # Titles
-        plt.title(f"P-H Diagram for {self.pure_component}")
-        plt.xlabel("Enthalpy (kJ/kg)")
-        plt.ylabel("Pressure (kPa)")
-        return plt
+        ax.set_title(f"P-H Diagram for {self.pure_component}")
+        ax.set_xlabel("Enthalpy (kJ/kg)")
+        ax.set_ylabel("Pressure (kPa)")
+        return fig, ax
 
-    def st_diagram(self, ylim=None, xlim=None, points={}, figsize=None, dpi=None):
+    def ts_diagram(self, ylim=None, xlim=None, points={}, figsize=None, dpi=None):
         # Add external functions needed to plot PH-diagram
         add_helmholtz_external_functions(
             self,
@@ -1794,12 +1854,12 @@ change.
                 "delta_vap_func",
             ],
         )
-        plt.figure(figsize=figsize, dpi=dpi)
+        fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
         if ylim is not None:
-            plt.ylim(ylim)
+            ax.ylim(ylim)
         if xlim is not None:
-            plt.xlim(xlim)
+            ax.xlim(xlim)
 
         # Get some parameters for plot limits
         pc = pyo.value(pyo.units.convert(self.pressure_crit, pyo.units.kPa))
@@ -1832,19 +1892,24 @@ change.
             )
 
         # plot saturaion curves use log scale for pressure
-        plt.yscale("log")
-        plt.plot(ts / tau_sat_vec, p_sat_vec, c="m", label="sat")
-        plt.plot([tc, tc], [pc, pc * 10], c="m", label="sat")
-        plt.plot([tc, tc * 1.1], [pc, pc], c="m", label="sat")
+        ax.set_yscale("log")
+        ax.plot(ts / tau_sat_vec, p_sat_vec, c="m", label="sat")
+        ax.plot([tc, tc], [pc, pc * 10], c="m", label="sat")
+        ax.plot([tc, tc * 1.1], [pc, pc], c="m", label="sat")
 
         # Points for critical point and triple point
         # plt.scatter([tc], [pc])
         # plt.scatter([tt], [pt])
 
-        plt.title(f"P-T Diagram for {self.pure_component}")
-        plt.ylabel("Pressure (kPa)")
-        plt.xlabel("Temperature (K)")
-        return plt
+        ax.set_title(f"P-T Diagram for {self.pure_component}")
+        ax.set_ylabel("Pressure (kPa)")
+        ax.set_xlabel("Temperature (K)")
+        return fig, ax
+
+    # In case you can't rember the axis order in the diagrams
+    hp_diagram = ph_diagram
+    tp_diagram = pt_diagram
+    st_diagram = ts_diagram
 
     @classmethod
     def define_metadata(cls, obj):
