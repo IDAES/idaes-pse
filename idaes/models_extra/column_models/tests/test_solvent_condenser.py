@@ -18,6 +18,7 @@ Authors: Andrew Lee
 import pytest
 from pyomo.environ import (
     check_optimal_termination,
+    TransformationFactory,
     ConcreteModel,
     Constraint,
     Param,
@@ -79,10 +80,10 @@ class TestStripperVaporFlow(object):
         m.fs.unit.reflux.flow_mol[0].fix(0.1083)
 
         iscale.set_scaling_factor(
-            m.fs.unit.vapor_phase.mass_transfer_term[0, "Vap", "CO2"], 1e4
+            m.fs.unit.vapor_phase.mass_transfer_term[0, "Vap", "CO2"], 1e5
         )
         iscale.set_scaling_factor(
-            m.fs.unit.vapor_phase.mass_transfer_term[0, "Vap", "H2O"], 10
+            m.fs.unit.vapor_phase.mass_transfer_term[0, "Vap", "H2O"], 100
         )
 
         iscale.set_scaling_factor(
@@ -92,7 +93,7 @@ class TestStripperVaporFlow(object):
             m.fs.unit.vapor_phase.properties_out[0].fug_phase_comp["Vap", "CO2"], 1e-5
         )
         iscale.set_scaling_factor(
-            m.fs.unit.vapor_phase.properties_out[0].fug_phase_comp["Vap", "H2O"], 1e-3
+            m.fs.unit.vapor_phase.properties_out[0].fug_phase_comp["Vap", "H2O"], 1e-4
         )
         iscale.set_scaling_factor(
             m.fs.unit.vapor_phase.properties_out[0].temperature, 1e-2
@@ -205,7 +206,7 @@ class TestStripperVaporFlow(object):
             model.fs.unit.vapor_outlet.temperature[0]
         )
 
-        assert pytest.approx(-6264.72, rel=1e-5) == value(model.fs.unit.heat_duty[0])
+        assert pytest.approx(-6278.10, rel=1e-5) == value(model.fs.unit.heat_duty[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -300,6 +301,17 @@ class TestStripperHeatDuty(object):
 
         m.fs.unit.heat_duty.fix(-6264)
 
+        xfrm = TransformationFactory("contrib.strip_var_bounds")
+        xfrm.apply_to(m, reversible=True)
+
+        # Note: The strip_var_bounds transformation is used to remove the
+        # bounds from all the variables in the model. This helps the model
+        # converge if the variables are very close to one of their bounds.
+        # However, an alternate method would be to specify an appropriate
+        # value for the solver option bound_push during model initialization
+        # such that the minimum absolute distance from the initial point to
+        # the bounds is reduced beyond the default value of 0.01.
+
         return m
 
     @pytest.mark.build
@@ -365,7 +377,7 @@ class TestStripperHeatDuty(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(0.108291, rel=1e-5) == value(
+        assert pytest.approx(0.108117, rel=1e-5) == value(
             model.fs.unit.reflux.flow_mol[0]
         )
         assert pytest.approx(0, abs=1e-3) == value(
@@ -380,23 +392,23 @@ class TestStripperHeatDuty(object):
         assert pytest.approx(184360, rel=1e-5) == value(
             model.fs.unit.reflux.pressure[0]
         )
-        assert pytest.approx(303.250, rel=1e-5) == value(
+        assert pytest.approx(303.376, rel=1e-5) == value(
             model.fs.unit.reflux.temperature[0]
         )
 
-        assert pytest.approx(1.0034, rel=1e-5) == value(
+        assert pytest.approx(1.00358, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.flow_mol[0]
         )
-        assert pytest.approx(0.976758, rel=1e-5) == value(
+        assert pytest.approx(0.976580, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"]
         )
-        assert pytest.approx(0.0232509, rel=1e-5) == value(
+        assert pytest.approx(0.0234192, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"]
         )
         assert pytest.approx(184360, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.pressure[0]
         )
-        assert pytest.approx(303.250, rel=1e-5) == value(
+        assert pytest.approx(303.376, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.temperature[0]
         )
 

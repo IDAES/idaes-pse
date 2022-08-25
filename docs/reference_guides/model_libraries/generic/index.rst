@@ -11,3 +11,4 @@ off these models.
     property_models/index
     unit_models/index
     control/index
+    costing/index
