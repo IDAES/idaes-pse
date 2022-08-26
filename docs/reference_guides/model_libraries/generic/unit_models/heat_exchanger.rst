@@ -65,6 +65,14 @@ frequently fixed are two of:
 
 The user may also provide constraints to calculate the heat transfer coefficient.
 
+.. note::
+    For model initialization, the in-built routine currently only supports defining two of area, heat transfer
+    coefficient and heat duty as fixed variables. Fixing of temperature differences or driving forces is not
+    currently supported. Also note that it is assumed that if a time-indexed variable (i.e. heat duty) is fixed
+    that it will be fixed at all points in time during initialization. Users wishing to solve models with alternative
+    specifications should first initialize the model using one of the supported options, or write a custom
+    initialization routine for their specification.
+
 Model Structure
 ---------------
 

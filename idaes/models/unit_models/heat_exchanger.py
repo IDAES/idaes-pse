@@ -591,36 +591,45 @@ class HeatExchangerData(UnitModelBlockData):
         s1_units = self.hot_side.heat.get_units()
         s2_units = self.cold_side.heat.get_units()
 
-        if duty is None:
-            # Assume 1000 J/s and check for unitless properties
-            if s1_units is None and s2_units is None:
-                # Backwards compatability for unitless properties
-                s1_duty = -1000
-                s2_duty = 1000
+        # Check to see if heat duty is fixed
+        # WE will assume that if the first point is fixed, it is fixed at all points
+        if not self.cold_side.heat[self.flowsheet().time.first()].fixed:
+            cs_fixed = False
+            if duty is None:
+                # Assume 1000 J/s and check for unitless properties
+                if s1_units is None and s2_units is None:
+                    # Backwards compatibility for unitless properties
+                    s1_duty = -1000
+                    s2_duty = 1000
+                else:
+                    s1_duty = pyunits.convert_value(
+                        -1000, from_units=pyunits.W, to_units=s1_units
+                    )
+                    s2_duty = pyunits.convert_value(
+                        1000, from_units=pyunits.W, to_units=s2_units
+                    )
             else:
-                s1_duty = pyunits.convert_value(
-                    -1000, from_units=pyunits.W, to_units=s1_units
+                # Duty provided with explicit units
+                s1_duty = -pyunits.convert_value(
+                    duty[0], from_units=duty[1], to_units=s1_units
                 )
                 s2_duty = pyunits.convert_value(
-                    1000, from_units=pyunits.W, to_units=s2_units
+                    duty[0], from_units=duty[1], to_units=s2_units
                 )
-        else:
-            # Duty provided with explicit units
-            s1_duty = -pyunits.convert_value(
-                duty[0], from_units=duty[1], to_units=s1_units
-            )
-            s2_duty = pyunits.convert_value(
-                duty[0], from_units=duty[1], to_units=s2_units
-            )
 
-        self.cold_side.heat.fix(s2_duty)
-        for i in self.hot_side.heat:
-            self.hot_side.heat[i].value = s1_duty
+            self.cold_side.heat.fix(s2_duty)
+            for i in self.hot_side.heat:
+                self.hot_side.heat[i].value = s1_duty
+        else:
+            cd_fixed = True
+            for i in self.hot_side.heat:
+                self.hot_side.heat[i].set_value(self.cold_side.heat[i])
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
-        self.cold_side.heat.unfix()
+        if not cs_fixed:
+            self.cold_side.heat.unfix()
         self.heat_transfer_equation.activate()
         # ---------------------------------------------------------------------
         # Solve unit
