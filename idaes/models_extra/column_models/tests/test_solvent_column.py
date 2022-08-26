@@ -17,7 +17,13 @@ Author: Paul Akula, Anuja Deshpande, Andrew Lee
 import pytest
 
 # Import Pyomo libraries
-from pyomo.environ import ConcreteModel, value, SolverStatus, TerminationCondition
+from pyomo.environ import (
+    ConcreteModel,
+    value,
+    SolverStatus,
+    TerminationCondition,
+    TransformationFactory,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 # Import IDAES Libraries
@@ -132,44 +138,44 @@ class TestAbsorberColumn:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(22.0991, rel=1e-5) == value(
+        assert pytest.approx(22.649833, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.flow_mol[0]
         )
-        assert pytest.approx(0.0436641, rel=1e-5) == value(
+        assert pytest.approx(0.04261887, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"]
         )
-        assert pytest.approx(0.159923, rel=1e-5) == value(
+        assert pytest.approx(0.180333, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"]
         )
-        assert pytest.approx(0.73668, rel=1e-5) == value(
+        assert pytest.approx(0.718769, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "N2"]
         )
-        assert pytest.approx(0.0597309, rel=1e-5) == value(
+        assert pytest.approx(0.058278, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "O2"]
         )
         assert pytest.approx(107650, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.pressure[0]
         )
-        assert pytest.approx(327.433, rel=1e-5) == value(
+        assert pytest.approx(328.456, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.temperature[0]
         )
 
-        assert pytest.approx(37.1209, rel=1e-5) == value(
+        assert pytest.approx(36.5701, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.flow_mol[0]
         )
-        assert pytest.approx(0.0550919, rel=1e-5) == value(
+        assert pytest.approx(0.0559114, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "CO2"]
         )
-        assert pytest.approx(0.825299, rel=1e-5) == value(
+        assert pytest.approx(0.8226781, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "H2O"]
         )
-        assert pytest.approx(0.119609, rel=1e-5) == value(
+        assert pytest.approx(0.121410, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "MEA"]
         )
         assert pytest.approx(107650, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.pressure[0]
         )
-        assert pytest.approx(335.497, rel=1e-5) == value(
+        assert pytest.approx(334.574, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.temperature[0]
         )
 
@@ -234,7 +240,11 @@ class TestStripperColumn:
 
         # Set up property package
         m.fs.vapor_properties = GenericParameterBlock(default=wet_co2)
-        m.fs.liquid_properties = GenericParameterBlock(default=liquid_config)
+        m.fs.liquid_properties_stripper = GenericParameterBlock(default=liquid_config)
+
+        # Set the heat of absorption value in stripper
+        m.fs.liquid_properties_stripper.CO2.dh_abs_co2.unfix()
+        m.fs.liquid_properties_stripper.CO2.dh_abs_co2.fix(-97000)
 
         # Create an instance of the column in the flowsheet
         m.fs.unit = PackedColumn(
@@ -242,7 +252,7 @@ class TestStripperColumn:
                 "finite_elements": 10,
                 "has_pressure_change": False,
                 "vapor_phase": {"property_package": m.fs.vapor_properties},
-                "liquid_phase": {"property_package": m.fs.liquid_properties},
+                "liquid_phase": {"property_package": m.fs.liquid_properties_stripper},
             }
         )
 
@@ -272,7 +282,68 @@ class TestStripperColumn:
         m.fs.unit.area_interfacial.fix(200)
 
         # Apply scaling
+        for x in m.fs.unit.liquid_phase.length_domain:
+            iscale.set_scaling_factor(
+                m.fs.unit.liquid_phase.properties[0, x].mole_frac_phase_comp_true[
+                    "Liq", "CO2"
+                ],
+                1e4,
+            )
+
+        for (t, x, j), v in m.fs.unit.pressure_equil.items():
+            if x != 0:
+                iscale.set_scaling_factor(
+                    v,
+                    1
+                    / value(
+                        m.fs.unit.liquid_phase.properties[t, x].fug_phase_comp["Liq", j]
+                    ),
+                )
+            else:
+                iscale.set_scaling_factor(v, 1)
+
+        for (t, x, j), v in m.fs.unit.interphase_mass_transfer.items():
+            if x != 0:
+                iscale.set_scaling_factor(
+                    v, 1 / value(m.fs.unit.interphase_mass_transfer[t, x, j])
+                )
+            else:
+                iscale.set_scaling_factor(v, 1)
+
+        for x in m.fs.unit.vapor_phase.length_domain:
+            iscale.set_scaling_factor(m.fs.unit.vapor_phase.heat[0, x], 1e-2)
+
+            iscale.set_scaling_factor(
+                m.fs.unit.vapor_phase.enthalpy_transfer[0, x], 0.1
+            )
+
+            iscale.set_scaling_factor(
+                m.fs.unit.vapor_phase._enthalpy_flow[0, x, "Vap"], 1e-4
+            )
+
+            iscale.set_scaling_factor(
+                m.fs.unit.vapor_phase.enthalpy_flow_dx[0, x, "Vap"], 1e-3
+            )
+
+        for x in m.fs.unit.liquid_phase.length_domain:
+            iscale.set_scaling_factor(
+                m.fs.unit.liquid_phase._enthalpy_flow[0, x, "Liq"], 1e-6
+            )
+
+            iscale.set_scaling_factor(
+                m.fs.unit.liquid_phase.enthalpy_flow_dx[0, x, "Liq"], 1e-3
+            )
+
+            iscale.set_scaling_factor(
+                m.fs.unit.liquid_phase.enthalpy_transfer[0, x], 0.1
+            )
+
+            iscale.set_scaling_factor(m.fs.unit.liquid_phase.heat[0, x], 1e-2)
+
         iscale.calculate_scaling_factors(m.fs.unit)
+
+        xfrm = TransformationFactory("contrib.strip_var_bounds")
+        xfrm.apply_to(m, reversible=True)
 
         return m
 
@@ -314,38 +385,38 @@ class TestStripperColumn:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert pytest.approx(11.3723, rel=1e-5) == value(
+        assert pytest.approx(13.50864, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.flow_mol[0]
         )
-        assert pytest.approx(0.12857, rel=1e-5) == value(
+        assert pytest.approx(0.109306, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"]
         )
-        assert pytest.approx(0.87143, rel=1e-5) == value(
+        assert pytest.approx(0.890693, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"]
         )
         assert pytest.approx(183430, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.pressure[0]
         )
-        assert pytest.approx(403.912, rel=1e-5) == value(
+        assert pytest.approx(391.686, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.temperature[0]
         )
 
-        assert pytest.approx(90.6037, rel=1e-5) == value(
+        assert pytest.approx(88.4673, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.flow_mol[0]
         )
-        assert pytest.approx(0.0175250, rel=1e-5) == value(
+        assert pytest.approx(0.0177850, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "CO2"]
         )
-        assert pytest.approx(0.877858, rel=1e-5) == value(
+        assert pytest.approx(0.8750719, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "H2O"]
         )
-        assert pytest.approx(0.104616, rel=1e-5) == value(
+        assert pytest.approx(0.107143, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.mole_frac_comp[0, "MEA"]
         )
         assert pytest.approx(183430, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.pressure[0]
         )
-        assert pytest.approx(394.014, rel=1e-5) == value(
+        assert pytest.approx(394.134, rel=1e-5) == value(
             model.fs.unit.liquid_outlet.temperature[0]
         )
 

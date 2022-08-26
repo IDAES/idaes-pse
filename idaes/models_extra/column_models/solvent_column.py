@@ -631,14 +631,13 @@ and used when constructing these
             if x == self.vapor_phase.length_domain.first():
                 return Constraint.Skip
             else:
-                zb = self.liquid_phase.length_domain.prev(x)
-                return blk.vapor_phase.enthalpy_transfer[t, x] == -(
+                return blk.vapor_phase.enthalpy_transfer[t, x] == (
                     (
                         sum(
-                            blk.liquid_phase.properties[t, zb].enth_mol_phase_comp[
-                                "Liq", j
+                            blk.vapor_phase.properties[t, x].enth_mol_phase_comp[
+                                "Vap", j
                             ]
-                            * blk.liquid_phase.mass_transfer_term[t, zb, "Liq", j]
+                            * blk.vapor_phase.mass_transfer_term[t, x, "Vap", j]
                             for j in equilibrium_comp
                         )
                     )
