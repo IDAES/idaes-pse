@@ -726,6 +726,27 @@ class HelmholtzThermoExpressions(object):
         v = self.param.mw / delta_vap / self.param.dens_mass_star
         return v
 
+    def v_mass(self, **kwargs):
+        """Mixed phase molar volume"""
+        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        v = (
+            ((1 - x) / delta_liq + x / delta_vap)
+            / self.param.dens_mass_star
+        )
+        return v
+
+    def v_mass_liq(self, **kwargs):
+        """Liquid phase molar volume"""
+        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        v = 1 / delta_liq / self.param.dens_mass_star
+        return v
+
+    def v_mass_vap(self, **kwargs):
+        """Vapor phase molar volume"""
+        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        v = 1 / delta_vap / self.param.dens_mass_star
+        return v
+
     def x(self, **kwargs):
         """Vapor faction"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
