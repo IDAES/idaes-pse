@@ -375,17 +375,17 @@ class HelmholtzStateBlockData(StateBlockData):
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
-                "flow_mol": self.flow_mass,
-                "entr_mol": self.entr_mol,
+                "flow_mass": self.flow_mass,
+                "entr_mass": self.entr_mass,
                 "pressure": self.pressure,
             }
             self.extensive_set = ComponentSet((self.flow_mass,))
             self.intensive_set = ComponentSet((self.entr_mass, self.pressure))
         elif self.state_vars == StateVars.PU and self.amount_basis == AmountBasis.MOLE:
             self.energy_internal_mol = pyo.Var(
-                initialize=params.default_internal_energy_mol_value,
+                initialize=params.default_energy_internal_mol_value,
                 doc="Total molar internal energy",
-                bounds=params.default_internal_energy_mol_bounds,
+                bounds=params.default_energy_internal_mol_bounds,
                 units=pyunits.J / pyunits.mol,
             )
             u_mass = self.energy_internal_mol * params.uc["J/mol to kJ/kg"]
@@ -395,7 +395,7 @@ class HelmholtzStateBlockData(StateBlockData):
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vfu_func(cmp, s_mass, P),
+                    expr=self.vfu_func(cmp, u_mass, P),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -407,9 +407,9 @@ class HelmholtzStateBlockData(StateBlockData):
             self.intensive_set = ComponentSet((self.energy_internal_mol, self.pressure))
         elif self.state_vars == StateVars.PU and self.amount_basis == AmountBasis.MASS:
             self.energy_internal_mass = pyo.Var(
-                initialize=params.default_internal_energy_mass_value,
+                initialize=params.default_energy_internal_mass_value,
                 doc="Total internal energy per mass",
-                bounds=params.default_internal_energy_mass_bounds,
+                bounds=params.default_energy_internal_mass_bounds,
                 units=pyunits.J / pyunits.kg,
             )
             u_mass = self.energy_internal_mass * params.uc["J/kg to kJ/kg"]
@@ -419,7 +419,7 @@ class HelmholtzStateBlockData(StateBlockData):
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vfu_func(cmp, s_mass, P),
+                    expr=self.vfu_func(cmp, u_mass, P),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -818,7 +818,6 @@ class HelmholtzStateBlockData(StateBlockData):
             doc="Phase isochoric heat capacity",
         )
         # Phase speed of sound
-        """
         def rule_speed_sound_phase(b, p):
             return self.w_func(cmp, delta[p], tau)
 
@@ -827,7 +826,6 @@ class HelmholtzStateBlockData(StateBlockData):
             rule=rule_speed_sound_phase,
             doc="Phase speed of sound or saturated if phase doesn't exist",
         )
-        """
         # Phase Mole density
         def rule_dens_mol_phase(b, p):
             return self.dens_mass_phase[p] / mw

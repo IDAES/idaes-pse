@@ -1438,6 +1438,98 @@ change.
             self.enthalpy_mol_min,
             self.enthalpy_mol_max,
         )
+        self.add_param(
+            "entropy_mol_min",
+            self.slpt_func(
+                cmp,
+                self.pressure_trip * self.uc["Pa to kPa"],
+                self.temperature_star / self.temperature_trip,
+            )
+            * self.uc["kJ/kg/K to J/mol/K"],
+        )
+        self.add_param(
+            "entropy_mass_min",
+            self.slpt_func(
+                cmp,
+                self.pressure_trip * self.uc["Pa to kPa"],
+                self.temperature_star / self.temperature_trip,
+            )
+            * self.uc["kJ/kg/K to J/kg/K"],
+        )
+        self.add_param(
+            "entropy_mol_max",
+            self.slpt_func(
+                cmp,
+                self.pressure_max * self.uc["Pa to kPa"],
+                self.temperature_star / self.temperature_max,
+            )
+            * self.uc["kJ/kg/K to J/mol/K"],
+        )
+        self.add_param(
+            "entropy_mass_max",
+            self.slpt_func(
+                cmp,
+                self.pressure_max * self.uc["Pa to kPa"],
+                self.temperature_star / self.temperature_max,
+            )
+            * self.uc["kJ/kg/K to J/kg/K"],
+        )
+        self.add_param("default_entropy_mass_value", self.entropy_mass_min)
+        self.add_param("default_entropy_mol_value", self.entropy_mol_min)
+        self.default_entropy_mass_bounds = (
+            self.entropy_mass_min,
+            self.entropy_mass_max,
+        )
+        self.default_entropy_mol_bounds = (
+            self.entropy_mol_min,
+            self.entropy_mol_max,
+        )
+        self.add_param(
+            "energy_internal_mol_min",
+            self.ulpt_func(
+                cmp,
+                self.pressure_trip * self.uc["Pa to kPa"],
+                self.temperature_star / self.temperature_trip,
+            )
+            * self.uc["kJ/kg to J/mol"],
+        )
+        self.add_param(
+            "energy_internal_mass_min",
+            self.ulpt_func(
+                cmp,
+                self.pressure_trip * self.uc["Pa to kPa"],
+                self.temperature_star / self.temperature_trip,
+            )
+            * self.uc["kJ/kg to J/kg"],
+        )
+        self.add_param(
+            "energy_internal_mol_max",
+            self.ulpt_func(
+                cmp,
+                self.pressure_max * self.uc["Pa to kPa"],
+                self.temperature_star / self.temperature_max,
+            )
+            * self.uc["kJ/kg to J/mol"],
+        )
+        self.add_param(
+            "energy_internal_mass_max",
+            self.ulpt_func(
+                cmp,
+                self.pressure_max * self.uc["Pa to kPa"],
+                self.temperature_star / self.temperature_max,
+            )
+            * self.uc["kJ/kg to J/kg"],
+        )
+        self.add_param("default_energy_internal_mass_value", self.energy_internal_mass_min)
+        self.add_param("default_energy_internal_mol_value", self.energy_internal_mol_min)
+        self.default_energy_internal_mass_bounds = (
+            self.energy_internal_mass_min,
+            self.energy_internal_mass_max,
+        )
+        self.default_energy_internal_mol_bounds = (
+            self.energy_internal_mol_min,
+            self.energy_internal_mol_max,
+        )
 
         # Smoothing arameters for TPX complimentarity form
         if self.config.state_vars == StateVars.TPX:
