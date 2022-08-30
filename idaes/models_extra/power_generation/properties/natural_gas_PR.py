@@ -437,7 +437,7 @@ _component_params = {
 
 
 # returns a configuration dictionary for the list of specified components
-def get_prop(components=None, phases="Vap", eos=EosType.PR):
+def get_prop(components=None, phases="Vap", eos=EosType.PR, scaled=False):
     if components is None:
         components = list(_component_params.keys())
     configuration = {
@@ -487,10 +487,16 @@ def get_prop(components=None, phases="Vap", eos=EosType.PR):
     # Fill the binary parameters with zeros.
     d = configuration["parameter_data"]
     d["PR_kappa"] = {(a, b): 0 for a in c for b in c}
+
+    # Change to scaled units if specified
+    if scaled:
+        configuration["base_units"]["mass"] = pyunits.Mg
+        configuration["base_units"]["amount"] = pyunits.kmol
+
     return configuration
 
 
-def get_rxn(property_package, reactions=None):
+def get_rxn(property_package, reactions=None, scaled=False):
     rxns = {
         "property_package": property_package,
         "base_units": {
@@ -637,6 +643,10 @@ def get_rxn(property_package, reactions=None):
             },
         },
     }
+    # Change to scaled units if specified
+    if scaled:
+        rxns["base_units"]["mass"] = pyunits.Mg
+        rxns["base_units"]["amount"] = pyunits.kmol
     if reactions is None:
         return rxns
     else:

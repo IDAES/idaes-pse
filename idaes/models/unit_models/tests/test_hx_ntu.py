@@ -384,10 +384,10 @@ class TestHXNTU(object):
             model.fs.unit.cold_side_outlet.pressure[0]
         )
 
-        assert pytest.approx(364.311, rel=1e-5) == value(
+        assert pytest.approx(343.995, rel=1e-5) == value(
             model.fs.unit.hot_side_outlet.temperature[0]
         )
-        assert pytest.approx(357.935, rel=1e-5) == value(
+        assert pytest.approx(374.333, rel=1e-5) == value(
             model.fs.unit.cold_side_outlet.temperature[0]
         )
 
