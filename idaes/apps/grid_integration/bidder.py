@@ -1206,7 +1206,7 @@ class Bidder(StochasticProgramBidder):
                     "cost_curve_type": "piecewise",
                     "values": bids[t][gen],
                 }
-                
+
                 try:
                     tx_utils.validate_and_clean_cost_curve(
                         curve=temp_curve,

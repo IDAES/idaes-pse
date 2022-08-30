@@ -708,4 +708,3 @@ class Backcaster(AbstractPrescientPriceForecaster):
                 self._historical_da_prices[b] = self._historical_da_prices[b][24:]
 
         return
-        

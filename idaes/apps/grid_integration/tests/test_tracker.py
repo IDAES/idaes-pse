@@ -49,6 +49,7 @@ class TestMissingModel:
             if a != missing_attr:
                 setattr(self, a, self.attr_dict[a])
 
+
 horizon = 4
 
 horizon = 4

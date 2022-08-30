@@ -51,7 +51,7 @@ class TestingModel:
         self.pmin = self.model_data.p_min
         self.pmax = self.model_data.p_max
         self.marginal_cost = self.model_data.p_cost[0][1]
-        
+
     @property
     def model_data(self):
         return self._model_data
