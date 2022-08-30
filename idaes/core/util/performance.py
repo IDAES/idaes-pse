@@ -56,7 +56,7 @@ class PerformanceBaseClass:
     Inheritance from TestCase is used to make the derived classes easily discoverable
     for use outside the performance testing infrastructure. The derived class should
     be decorated with the 'performance' pytest mark. This will automatically categorize
-    all tests in this class as performance tests which will only be run when explicitly
+    all tests in this class as performance tests that will only be run when explicitly
     called for.
 
     Raises:
@@ -75,7 +75,7 @@ class PerformanceBaseClass:
         A method for recording data associated with a test.
         """
         tmp = getattr(self, "testdata", None)
-        if not tmp is None:
+        if tmp is not None:
             tmp[name] = value
 
     def build_model(self):
