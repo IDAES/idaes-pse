@@ -16,12 +16,15 @@
 
 from collections import deque
 
+
 class Node:
     """A node represents a unit model or an element in JointJs terms"""
+
     def __init__(self, id: str, level: int = 0, rank: int = 0) -> None:
         self.id = id
-        self.level = level # equivalent to row number in a matrix
-        self.rank = rank   # equivalent to col number in a matrix
+        self.level = level  # equivalent to row number in a matrix
+        self.rank = rank  # equivalent to col number in a matrix
+
 
 class UnitModelsPositioning:
     """Represents icon positioning information for a given unit model."""
@@ -52,7 +55,7 @@ class UnitModelsPositioning:
         self._N = len(unit_models)
 
         # metadata for the positioning algorithm
-        self._allocated_positions = {} # Save used (x,y) positions
+        self._allocated_positions = {}  # Save used (x,y) positions
         self._layer_max_depth = {}
         self._levels = {}
         self._level_nodes = {}
@@ -74,44 +77,38 @@ class UnitModelsPositioning:
         self._build_abstract_layout()
         self._assign_positions()
 
-
     def get_position(self, unit_model_name: str):
         """returns (x,y) position of the given unit_model"""
         if unit_model_name not in self._allocated_positions:
             raise KeyError(f"${unit_model_name} doesn't exist in the current layout")
         return self._allocated_positions[unit_model_name]
 
-
     def set_X(self, x: int):
         """sets X to x. X is how much we move in a horizontal direction"""
         self._X = x
-
 
     def set_Y(self, y: int):
         """sets Y to y. Y is how much we move in a vertical direction"""
         self._Y = y
 
-
     def set_dx(self, dx: int):
         """sets dx. dx is the average horizontal radius of a unit model"""
         self._dx = dx
-
 
     def set_dy(self, dy: int):
         """sets dy. dy is the average vertical radius of a unit model"""
         self._dy = dy
 
-
     def _assign_default_positions(self):
         """Old implementation of unit model positioning. It positions unit models
-           on a diagonal.
+        on a diagonal.
         """
         x_pos = 10
         y_pos = 10
         y_starting_pos = 10
 
         for _, unit_info in self._unit_models.items():
-            unit_name = unit_info['name']
+            unit_name = unit_info["name"]
             # If x_pos it greater than 700 then start another diagonal line
             if x_pos >= 700:
                 x_pos = 100
@@ -123,44 +120,42 @@ class UnitModelsPositioning:
 
             self._allocated_positions[unit_name] = (x_pos, y_pos)
 
-
     def _identify_feeds_products(self):
         """Identify feeds and products. This will be useful for multiple
-           reasons:
-            - feeds will be our entry point to the graph
-            - calculate the number of non feed nor product unit models to know 
-              the grid size
-            - be able to control where feeds and products should be located
+        reasons:
+         - feeds will be our entry point to the graph
+         - calculate the number of non feed nor product unit models to know
+           the grid size
+         - be able to control where feeds and products should be located
         """
         for _, unit_info in self._unit_models.items():
-            unit_name, unit_type = unit_info['name'], unit_info['type']
+            unit_name, unit_type = unit_info["name"], unit_info["type"]
             # Create a node for this unit model and add it to our nodes map
-            self._nodes[unit_name] = Node(id = unit_name)
+            self._nodes[unit_name] = Node(id=unit_name)
             if unit_type == self.FEED:
                 self._feeds.add(unit_name)
             elif unit_type == self.PRODUCT:
                 self._products.add(unit_name)
 
-
     def _publish_levels_and_ranks(self):
         """This sets each node or unit_model to a level and a rank.
-           
-           A level is like a trunk of a tree everything will branch off. Each
-           level shares the same name of a feed. The feed that shares the name
-           of the level doesn't have an effect on the level itself. That feed
-           just got lucky to have that level get its name as an identifier.
 
-           A rank is the depth of that node. It's equivalent to a matrix's
-           column level.
-        
-           We also find the max depth of the maximally stretched directed
-           cyclic graph.
-           This is useful for to know the maximum the number of columns we can
-           stretch the graph upon.
+        A level is like a trunk of a tree everything will branch off. Each
+        level shares the same name of a feed. The feed that shares the name
+        of the level doesn't have an effect on the level itself. That feed
+        just got lucky to have that level get its name as an identifier.
 
-           Implementation: BFS - Breadth First Search to know the oldest
-           parent(s) each node has because that oldest parent(s) will be the
-           main factor of where the node is going to be located.
+        A rank is the depth of that node. It's equivalent to a matrix's
+        column level.
+
+        We also find the max depth of the maximally stretched directed
+        cyclic graph.
+        This is useful for to know the maximum the number of columns we can
+        stretch the graph upon.
+
+        Implementation: BFS - Breadth First Search to know the oldest
+        parent(s) each node has because that oldest parent(s) will be the
+        main factor of where the node is going to be located.
         """
         queue = deque()
 
@@ -171,9 +166,9 @@ class UnitModelsPositioning:
             feed_node = self._nodes[feed_name]
             feed_node.level = feed_name
             self._levels[feed_name] = 0
-            self._level_nodes[feed_name] = {feed_name} # python 'set'
+            self._level_nodes[feed_name] = {feed_name}  # python 'set'
             queue.append(feed_node)
-            visited_nodes.add(feed_name) # add to visited nodes
+            visited_nodes.add(feed_name)  # add to visited nodes
             self._layer_max_depth[feed_name] = 0
 
         while queue:
@@ -188,14 +183,18 @@ class UnitModelsPositioning:
                     child_node.rank = node.rank + 1
 
                     queue.append(child_node)
-                    visited_nodes.add(child) # add to visited nodes
-                    self._layer_max_depth[node.level] = max(self._layer_max_depth[node.level], child_node.rank)
+                    visited_nodes.add(child)  # add to visited nodes
+                    self._layer_max_depth[node.level] = max(
+                        self._layer_max_depth[node.level], child_node.rank
+                    )
 
                     # This is for just feeds
                     if node.id in self._levels:
                         self._levels[node.level] += 1
         # After finishing this previous loop, all the nodes should be visited
-        assert len(visited_nodes) == self._N, "Some nodes aren't accessible through feeds"
+        assert (
+            len(visited_nodes) == self._N
+        ), "Some nodes aren't accessible through feeds"
 
         # Merge unused levels
         # .copy() because we are modifying the original self._levels
@@ -206,7 +205,9 @@ class UnitModelsPositioning:
                 self._layer_max_depth.pop(level)
                 self._level_nodes.pop(level)
 
-                assert len(self._adj_list[level]) > 0, f"Feed '${level}' isn't connected to any unit model"
+                assert (
+                    len(self._adj_list[level]) > 0
+                ), f"Feed '${level}' isn't connected to any unit model"
 
                 # Merge this feed into any of its children's level.
                 # self._adj_list[level] is a 'set' remember? Not indexable.
@@ -214,15 +215,14 @@ class UnitModelsPositioning:
                 self._nodes[level].level = any_child_node.level
                 self._level_nodes[any_child_node.level].add(level)
 
-
     def _build_abstract_layout(self):
         """This builds the abstract layout. A data representation that will
-           make assigning positions to each unit model easier.
+        make assigning positions to each unit model easier.
 
-           Sorting the levels with the most depth won't matter. I would be
-           interested to see the layout if we does.
+        Sorting the levels with the most depth won't matter. I would be
+        interested to see the layout if we does.
 
-           Implementation: BFS to layout unit models in order.
+        Implementation: BFS to layout unit models in order.
         """
 
         queue = deque()
@@ -243,24 +243,23 @@ class UnitModelsPositioning:
 
                 if node.level not in self._abstract_layout:
                     self._abstract_layout[node.level] = {
-                        'nodes': [],
-                        'width': self._layer_max_depth[node.level] + 1,
-                        'height': 1
+                        "nodes": [],
+                        "width": self._layer_max_depth[node.level] + 1,
+                        "height": 1,
                     }
                     for _ in range(self._layer_max_depth[node.level] + 1):
-                        self._abstract_layout[node.level]['nodes'].append([])
+                        self._abstract_layout[node.level]["nodes"].append([])
 
-                self._abstract_layout[node.level]['nodes'][node.rank].append(node.id)
+                self._abstract_layout[node.level]["nodes"][node.rank].append(node.id)
                 # Get the maximum height of this level
-                self._abstract_layout[node.level]['height'] = max(
-                    self._abstract_layout[node.level]['height'],
-                    len(self._abstract_layout[node.level]['nodes'][node.rank])
+                self._abstract_layout[node.level]["height"] = max(
+                    self._abstract_layout[node.level]["height"],
+                    len(self._abstract_layout[node.level]["nodes"][node.rank]),
                 )
 
                 # Add children to queue
                 for child_name in self._adj_list[node_name]:
                     queue.append(child_name)
-
 
     def _assign_positions(self):
         """Assign an (x,y) position to each unit_model"""
@@ -270,13 +269,13 @@ class UnitModelsPositioning:
         for l, level in enumerate(levels):
             x = 0
 
-            level_height = self._abstract_layout[level]['height']
-            level_nodes = self._abstract_layout[level]['nodes']
+            level_height = self._abstract_layout[level]["height"]
+            level_nodes = self._abstract_layout[level]["nodes"]
 
             for rank_nodes in level_nodes:
                 y = height
                 center_node_i = len(rank_nodes) // 2
-                if len(rank_nodes) % 2 != 0: # odd number of nodes
+                if len(rank_nodes) % 2 != 0:  # odd number of nodes
                     node = rank_nodes[center_node_i]
                     self._allocated_positions[node] = (x, y)
                     for i in range(center_node_i - 1, -1, -1):
@@ -289,7 +288,11 @@ class UnitModelsPositioning:
                         node = rank_nodes[i]
                         self._allocated_positions[node] = (x, y)
                 else:
-                    y = height - center_node_i * self._Y - (center_node_i - 1) * self._dy
+                    y = (
+                        height
+                        - center_node_i * self._Y
+                        - (center_node_i - 1) * self._dy
+                    )
                     for i in range(len(rank_nodes)):
                         node = rank_nodes[i]
                         self._allocated_positions[node] = (x, y)
@@ -301,5 +304,5 @@ class UnitModelsPositioning:
 
                 x += self._X + self._dx
             if l < len(levels) - 1:
-                next_level_height = self._abstract_layout[levels[l+1]]['height']
+                next_level_height = self._abstract_layout[levels[l + 1]]["height"]
                 height += (self._Y + self._dy) * max(level_height, next_level_height)
