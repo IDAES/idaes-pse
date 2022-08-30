@@ -1,0 +1,696 @@
+{
+    "cells": [
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/feed.svg"
+                },
+                "label": {
+                    "text": "inlet_1"
+                },
+                "root": {
+                    "title": "feed"
+                }
+            },
+            "id": "inlet_1",
+            "ports": {
+                "groups": {
+                    "out": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 48,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "out",
+                        "id": 0
+                    }
+                ]
+            },
+            "position": {
+                "x": 10,
+                "y": 10
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/flash.svg"
+                },
+                "label": {
+                    "text": "flash"
+                },
+                "root": {
+                    "title": "flash"
+                }
+            },
+            "id": "flash",
+            "ports": {
+                "groups": {
+                    "bottom": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 25,
+                                "y": 50
+                            },
+                            "name": "bottom"
+                        }
+                    },
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 8,
+                                "dy": 0
+                            },
+                            "name": "left"
+                        }
+                    },
+                    "out": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": -8,
+                                "dy": 0
+                            },
+                            "name": "right"
+                        }
+                    },
+                    "top": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 25,
+                                "y": 0
+                            },
+                            "name": "top"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 1
+                    },
+                    {
+                        "group": "out",
+                        "id": 2
+                    },
+                    {
+                        "group": "out",
+                        "id": 4
+                    }
+                ]
+            },
+            "position": {
+                "x": 110,
+                "y": 110
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "s_inlet_1",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "Flow_mol -inf\nMole_frac_comp benzene 0.5\nMole_frac_comp toluene 0.5\nTemperature inf\nPressure na",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "s_inlet_1"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "source": {
+                "id": "inlet_1",
+                "port": 0
+            },
+            "target": {
+                "id": "flash",
+                "port": 1
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/product.svg"
+                },
+                "label": {
+                    "text": "liq_outlet_1"
+                },
+                "root": {
+                    "title": "product"
+                }
+            },
+            "id": "liq_outlet_1",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 2,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 3
+                    }
+                ]
+            },
+            "position": {
+                "x": 210,
+                "y": 210
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "s_liq_outlet_1",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "product info",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "s_liq_outlet_1"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "source": {
+                "id": "flash",
+                "port": 2
+            },
+            "target": {
+                "id": "liq_outlet_1",
+                "port": 3
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/product.svg"
+                },
+                "label": {
+                    "text": "vap_outlet_1"
+                },
+                "root": {
+                    "title": "product"
+                }
+            },
+            "id": "vap_outlet_1",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 2,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 5
+                    }
+                ]
+            },
+            "position": {
+                "x": 310,
+                "y": 310
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "s_vap_outlet_1",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "product info",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "s_vap_outlet_1"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "source": {
+                "id": "flash",
+                "port": 4
+            },
+            "target": {
+                "id": "vap_outlet_1",
+                "port": 5
+            },
+            "type": "standard.Link",
+            "z": 2
+        }
+    ],
+    "model": {
+        "arcs": {
+            "s_inlet_1": {
+                "dest": "flash",
+                "label": "Flow_mol -inf\nMole_frac_comp benzene 0.5\nMole_frac_comp toluene 0.5\nTemperature inf\nPressure na",
+                "source": "inlet_1"
+            },
+            "s_liq_outlet_1": {
+                "dest": "liq_outlet_1",
+                "label": "product info",
+                "source": "flash"
+            },
+            "s_vap_outlet_1": {
+                "dest": "vap_outlet_1",
+                "label": "product info",
+                "source": "flash"
+            }
+        },
+        "id": "demo",
+        "stream_table": {
+            "columns": [
+                "Variable",
+                "Units",
+                "s_inlet_1"
+            ],
+            "data": [
+                [
+                    "flow_mol",
+                    {
+                        "html": "mol/s",
+                        "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                        "raw": "mole / second"
+                    },
+                    [
+                        -Infinity,
+                        "fixed"
+                    ]
+                ],
+                [
+                    "mole_frac_comp benzene",
+                    {
+                        "html": "",
+                        "latex": "",
+                        "raw": "dimensionless"
+                    },
+                    [
+                        0.5,
+                        "fixed"
+                    ]
+                ],
+                [
+                    "mole_frac_comp toluene",
+                    {
+                        "html": "",
+                        "latex": "",
+                        "raw": "dimensionless"
+                    },
+                    [
+                        0.5,
+                        "fixed"
+                    ]
+                ],
+                [
+                    "temperature",
+                    {
+                        "html": "K",
+                        "latex": "\\mathrm{K}",
+                        "raw": "kelvin"
+                    },
+                    [
+                        Infinity,
+                        "fixed"
+                    ]
+                ],
+                [
+                    "pressure",
+                    {
+                        "html": "Pa",
+                        "latex": "\\mathrm{Pa}",
+                        "raw": "pascal"
+                    },
+                    [
+                        NaN,
+                        "fixed"
+                    ]
+                ]
+            ],
+            "index": [
+                0,
+                1,
+                2,
+                3,
+                4
+            ]
+        },
+        "unit_models": {
+            "flash": {
+                "image": "/images/icons/flash.svg",
+                "performance_contents": {
+                    "0": {
+                        "Value": 0,
+                        "Variable": "Heat Duty"
+                    },
+                    "1": {
+                        "Value": 0,
+                        "Variable": "Pressure Change"
+                    }
+                },
+                "stream_contents": {
+                    "0": {
+                        "Inlet": "-Inf",
+                        "Liquid Outlet": 0.5,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Vapor Outlet": 0.5,
+                        "Variable": "flow_mol"
+                    },
+                    "1": {
+                        "Inlet": 0.5,
+                        "Liquid Outlet": 0.5,
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
+                        "Vapor Outlet": 0.5,
+                        "Variable": "mole_frac_comp benzene"
+                    },
+                    "2": {
+                        "Inlet": 0.5,
+                        "Liquid Outlet": 0.5,
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
+                        "Vapor Outlet": 0.5,
+                        "Variable": "mole_frac_comp toluene"
+                    },
+                    "3": {
+                        "Inlet": "Inf",
+                        "Liquid Outlet": 298.15,
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
+                        "Vapor Outlet": 298.15,
+                        "Variable": "temperature"
+                    },
+                    "4": {
+                        "Inlet": "NaN",
+                        "Liquid Outlet": 101325.0,
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
+                        "Vapor Outlet": 101325.0,
+                        "Variable": "pressure"
+                    }
+                },
+                "type": "flash"
+            },
+            "inlet_1": {
+                "image": "/images/icons/feed.svg",
+                "type": "feed"
+            },
+            "liq_outlet_1": {
+                "image": "/images/icons/product.svg",
+                "type": "product"
+            },
+            "vap_outlet_1": {
+                "image": "/images/icons/product.svg",
+                "type": "product"
+            }
+        }
+    },
+    "routing_config": {
+        "s_inlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 2
+        },
+        "s_liq_outlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 4
+        },
+        "s_vap_outlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 6
+        }
+    }
+}

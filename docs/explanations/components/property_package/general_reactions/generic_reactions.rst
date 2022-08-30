@@ -1,7 +1,7 @@
 Defining Reaction Packages
 ==========================
 
-.. contents:: Contents 
+.. contents:: Contents
     :depth: 2
 
 Introduction
@@ -27,7 +27,7 @@ The most common way to use the Generic Reaction Package Framework is to create a
 
     m.fs.thermo_properties = PhysicalParameterBlock()
 
-    m.fs.reaction_properties = GenericReactionParameterBlock(default={"property_package": m.fs.thermo_properties, config_dict})
+    m.fs.reaction_properties = GenericReactionParameterBlock(property_package=m.fs.thermo_properties, **config_dict)
 
 In the above example, the PhysicalParameterBlock object can be from any thermophysical property package suitable for the user's application.
 

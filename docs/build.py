@@ -71,7 +71,7 @@ def run_apidoc(clean=True, dry_run=False, **kwargs):
 def postprocess_apidoc(root):
     """Perform postprocessing on generated apidoc files"""
     # Remove :noindex: from all entries in given modules
-    remove_noindex = ["idaes.dmf"]
+    remove_noindex = ["idaes.core.dmf"]
     for module in remove_noindex:
         module_path = root / (module + ".rst")
         _log.debug(f"Looking for :noindex: in {module_path}")
@@ -100,13 +100,7 @@ def run_html(clean=True, vb=0, timeout=0, dry_run=False, nprocs=1, **kwargs):
                 shutil.rmtree(build_dir)
         if os.path.exists(output_file):
             os.unlink(output_file)
-    args = [
-        "sphinx-build",
-        "-M", "html",
-        ".",
-        build_dir,
-        "-w", output_file
-    ]
+    args = ["sphinx-build", "-M", "html", ".", build_dir, "-w", output_file]
     # run
     verbosity = "-q" if vb <= 0 else "-" + "v" * vb
     args.append(verbosity)

@@ -15,10 +15,10 @@
 """
 
 from pyomo.environ import (
-        Reference,
-        ComponentUID,
-        Objective,
-        )
+    Reference,
+    ComponentUID,
+    Objective,
+)
 from pyomo.dae import DerivativeVar
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.util.slices import slice_component_along_sets
@@ -27,20 +27,22 @@ from pyomo.contrib.incidence_analysis.interface import IncidenceGraphInterface
 
 import idaes.apps.caprese.nmpc_var as nmpc_var
 from idaes.apps.caprese.common.config import (
-        VariableCategory,
-        ConstraintCategory,
-        )
+    VariableCategory,
+    ConstraintCategory,
+)
+
 VC = VariableCategory
 CC = ConstraintCategory
 
 CATEGORY_TYPE_MAP = {
-        VariableCategory.DIFFERENTIAL: nmpc_var.DiffVar,
-        VariableCategory.ALGEBRAIC: nmpc_var.AlgVar,
-        VariableCategory.DERIVATIVE: nmpc_var.DerivVar,
-        VariableCategory.INPUT: nmpc_var.InputVar,
-        VariableCategory.FIXED: nmpc_var.FixedVar,
-        VariableCategory.MEASUREMENT: nmpc_var.MeasuredVar,
-        }
+    VariableCategory.DIFFERENTIAL: nmpc_var.DiffVar,
+    VariableCategory.ALGEBRAIC: nmpc_var.AlgVar,
+    VariableCategory.DERIVATIVE: nmpc_var.DerivVar,
+    VariableCategory.INPUT: nmpc_var.InputVar,
+    VariableCategory.FIXED: nmpc_var.FixedVar,
+    VariableCategory.MEASUREMENT: nmpc_var.MeasuredVar,
+}
+
 
 def _is_derivative_wrt(var, time):
     parent = var.parent_component()
@@ -79,26 +81,26 @@ def _identify_derivative_if_differential(condata, wrt, include_fixed=False):
                 deriv = var
             else:
                 raise RuntimeError(
-                "Categorization currently requires only one differential "
-                "variable to be present in each differential equation. "
-                "Got %s and %s in constraint %s."
-                % (deriv.name, var.name, condata.name)
+                    "Categorization currently requires only one differential "
+                    "variable to be present in each differential equation. "
+                    "Got %s and %s in constraint %s."
+                    % (deriv.name, var.name, condata.name)
                 )
     is_diff = False if deriv is None else True
     return is_diff, deriv
 
 
 def categorize_dae_variables_and_constraints(
-        model,
-        dae_vars,
-        dae_cons,
-        time,
-        index=None,
-        input_vars=None,
-        disturbance_vars=None,
-        input_cons=None,
-        active_inequalities=None,
-        ):
+    model,
+    dae_vars,
+    dae_cons,
+    time,
+    index=None,
+    input_vars=None,
+    disturbance_vars=None,
+    input_cons=None,
+    active_inequalities=None,
+):
     # Index that we access when we need to work with a specific data
     # object. This would be less necessary if constructing CUIDs was
     # efficient, or if we could do the equivalent of `identify_variables`
@@ -163,18 +165,21 @@ def categorize_dae_variables_and_constraints(
 
     # Filter out inputs and disturbances. These are "not variables"
     # for the sake of having a square DAE model.
-    dae_vars = [var for var in dae_vars if var[t1] not in input_var_set
-            and var[t1] not in disturbance_var_set]
-    dae_cons = [con for con in dae_cons if con[t1] not in input_con_set
-            and (con[t1].equality or con[t1] in active_inequality_set)]
+    dae_vars = [
+        var
+        for var in dae_vars
+        if var[t1] not in input_var_set and var[t1] not in disturbance_var_set
+    ]
+    dae_cons = [
+        con
+        for con in dae_cons
+        if con[t1] not in input_con_set
+        and (con[t1].equality or con[t1] in active_inequality_set)
+    ]
 
     dae_map = ComponentMap()
-    dae_map.update(
-            (var[t1], var) for var in dae_vars
-            )
-    dae_map.update(
-            (con[t1], con) for con in dae_cons
-            )
+    dae_map.update((var[t1], var) for var in dae_vars)
+    dae_map.update((con[t1], con) for con in dae_cons)
 
     diff_eqn_map = ComponentMap()
     for con in dae_cons:
@@ -212,45 +217,50 @@ def categorize_dae_variables_and_constraints(
     constraints = [con[t1] for con in dae_cons]
 
     present_cons = [con for con in constraints if con.active]
-    active_var_set = ComponentSet(var for con in present_cons
-            for var in identify_variables(con.expr, include_fixed=False))
+    active_var_set = ComponentSet(
+        var
+        for con in present_cons
+        for var in identify_variables(con.expr, include_fixed=False)
+    )
     present_vars = [var for var in variables if var in active_var_set]
 
     # Filter out fixed vars and inactive constraints.
     # We could do this check earlier (before constructing igraph)
     # by just checking var.fixed and con.active...
-    #_present_vars = [var for var in variables if not var.fixed]
-    #_present_cons = [con for con in constraints if con.active]
-    #present_vars = [var for var in variables if var in _nlp._vardata_to_idx]
-    #present_cons = [con for con in constraints if con in _nlp._condata_to_idx]
+    # _present_vars = [var for var in variables if not var.fixed]
+    # _present_cons = [con for con in constraints if con.active]
+    # present_vars = [var for var in variables if var in _nlp._vardata_to_idx]
+    # present_cons = [con for con in constraints if con in _nlp._condata_to_idx]
 
     var_block_map, con_block_map = igraph.block_triangularize(
-            present_vars,
-            present_cons,
-            )
+        present_vars,
+        present_cons,
+    )
     derivdatas = []
     diff_vardatas = []
     discdatas = []
     diff_condatas = []
-    for deriv, disc, diff_var, diff_con in zip(potential_deriv, potential_disc,
-            potential_diff_var, potential_diff_eqn):
+    for deriv, disc, diff_var, diff_con in zip(
+        potential_deriv, potential_disc, potential_diff_var, potential_diff_eqn
+    ):
         derivdata = deriv[t1]
         discdata = disc[t1]
         diff_vardata = diff_var[t1]
         diff_condata = diff_con[t1]
         # Check:
         if (
-                # a. Variables are actually used (not fixed), and
-                #    constraints are active
-                derivdata in var_block_map and
-                diff_vardata in var_block_map and
-                discdata in con_block_map and
-                diff_condata in con_block_map and
-                # b. The diff var can be matched with the disc eqn and 
-                #    the deriv var can be matched with the diff eqn.
-                (var_block_map[diff_vardata] == con_block_map[discdata]) and
-                (var_block_map[derivdata] == con_block_map[diff_condata])
-                ):
+            # a. Variables are actually used (not fixed), and
+            #    constraints are active
+            derivdata in var_block_map
+            and diff_vardata in var_block_map
+            and discdata in con_block_map
+            and diff_condata in con_block_map
+            and
+            # b. The diff var can be matched with the disc eqn and
+            #    the deriv var can be matched with the diff eqn.
+            (var_block_map[diff_vardata] == con_block_map[discdata])
+            and (var_block_map[derivdata] == con_block_map[diff_condata])
+        ):
             # Under these conditions, assuming the Jacobian of the diff eqns
             # with respect to the derivatives is nonsingular, a sufficient
             # condition for nonsingularity (of the submodel with fixed inputs
@@ -266,7 +276,7 @@ def categorize_dae_variables_and_constraints(
     discs = [dae_map[condata] for condata in discdatas]
     diff_cons = [dae_map[condata] for condata in diff_condatas]
 
-    not_alg_set = ComponentSet(derivdatas+diff_vardatas+discdatas+diff_condatas)
+    not_alg_set = ComponentSet(derivdatas + diff_vardatas + discdatas + diff_condatas)
     alg_vars = []
     unused_vars = []
     for vardata in variables:
@@ -291,20 +301,20 @@ def categorize_dae_variables_and_constraints(
         model.del_component(model._temp_dummy_obj)
 
     var_category_dict = {
-            VC.INPUT: input_vars,
-            VC.DIFFERENTIAL: diff_vars,
-            VC.DERIVATIVE: derivs,
-            VC.ALGEBRAIC: alg_vars,
-            VC.DISTURBANCE: disturbance_vars,
-            VC.UNUSED: unused_vars,
-            }
+        VC.INPUT: input_vars,
+        VC.DIFFERENTIAL: diff_vars,
+        VC.DERIVATIVE: derivs,
+        VC.ALGEBRAIC: alg_vars,
+        VC.DISTURBANCE: disturbance_vars,
+        VC.UNUSED: unused_vars,
+    }
     con_category_dict = {
-            CC.INPUT: input_cons,
-            CC.DIFFERENTIAL: diff_cons,
-            CC.DISCRETIZATION: discs,
-            CC.ALGEBRAIC: alg_cons,
-            CC.UNUSED: unused_cons,
-            }
+        CC.INPUT: input_cons,
+        CC.DIFFERENTIAL: diff_cons,
+        CC.DISCRETIZATION: discs,
+        CC.ALGEBRAIC: alg_cons,
+        CC.UNUSED: unused_cons,
+    }
     return var_category_dict, con_category_dict
 
 
@@ -378,7 +388,7 @@ def categorize_dae_variables(dae_vars, time, inputs, measurements=None):
             # Add to list of fixed variables, and don't remove its state variable.
             fixed_vars.append(deriv_slice)
         elif var0.fixed:
-            # In this case the derivative has been used as an initial condition. 
+            # In this case the derivative has been used as an initial condition.
             # Still want to include it in the list of derivatives.
             measured_vars.append(deriv_slice)
             state_slice = dae_map.pop(state[index0])
@@ -395,7 +405,7 @@ def categorize_dae_variables(dae_vars, time, inputs, measurements=None):
             diff_vars.append(state_slice)
 
     if updated_input_set:
-        raise RuntimeError('Not all inputs could be found')
+        raise RuntimeError("Not all inputs could be found")
     assert len(deriv_vars) == len(diff_vars)
 
     for var0, time_slice in dae_map.items():
@@ -410,13 +420,13 @@ def categorize_dae_variables(dae_vars, time, inputs, measurements=None):
             alg_vars.append(time_slice)
 
     category_list_map = {
-            VariableCategory.DERIVATIVE: deriv_vars,
-            VariableCategory.DIFFERENTIAL: diff_vars,
-            VariableCategory.ALGEBRAIC: alg_vars,
-            VariableCategory.INPUT: input_vars,
-            VariableCategory.FIXED: fixed_vars,
-            VariableCategory.MEASUREMENT: measured_vars,
-            }
+        VariableCategory.DERIVATIVE: deriv_vars,
+        VariableCategory.DIFFERENTIAL: diff_vars,
+        VariableCategory.ALGEBRAIC: alg_vars,
+        VariableCategory.INPUT: input_vars,
+        VariableCategory.FIXED: fixed_vars,
+        VariableCategory.MEASUREMENT: measured_vars,
+    }
     if measurements is not None:
         # If the user provided their own measurements,
         # override the inferred measurements. Assume the user
@@ -425,11 +435,9 @@ def categorize_dae_variables(dae_vars, time, inputs, measurements=None):
     # NOTE: `ref` could be a regular time-indexed component (not a reference),
     # and thus won't have a `referent` attribute. Can check with `is_reference`
     category_dict = {
-            category: [
-                Reference(ref.referent, ctype=ctype)
-                for ref in category_list_map[category]
-                ]
-            for category, ctype in CATEGORY_TYPE_MAP.items()
-            }
+        category: [
+            Reference(ref.referent, ctype=ctype) for ref in category_list_map[category]
+        ]
+        for category, ctype in CATEGORY_TYPE_MAP.items()
+    }
     return category_dict
-

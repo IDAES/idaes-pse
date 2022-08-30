@@ -80,7 +80,7 @@ After Miniconda is installed, we recommend creating a separate conda environment
 
 .. code-block:: sh
 
-    conda create -n idaes python=3.7
+    conda create -n idaes python=3.8
     conda activate idaes
 
 .. note::

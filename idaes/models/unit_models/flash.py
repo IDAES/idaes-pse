@@ -18,7 +18,7 @@ import logging
 from pandas import DataFrame
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, value, Reference, Var, Block
+from pyomo.environ import Constraint, Reference, Var, Block
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
 from pyomo.common.deprecation import deprecated
@@ -41,6 +41,7 @@ from idaes.models.unit_models.separator import (
 
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.core.util.unit_costing as costing
+from idaes.core.util.units_of_measurement import report_quantity
 
 
 __author__ = "Andrew Lee, Jaffer Ghouse"
@@ -317,28 +318,57 @@ see property package for documentation.}""",
 
     def _get_stream_table_contents(self, time_point=0):
         stream_attributes = {}
+        stream_attributes["Units"] = {}
 
-        for n, v in {
-            "Inlet": "inlet",
-            "Vapor Outlet": "vap_outlet",
-            "Liquid Outlet": "liq_outlet",
-        }.items():
-            port_obj = getattr(self, v)
+        sblocks = {
+            "Inlet": self.control_volume.properties_in,
+        }
+        if not self.config.ideal_separation:
+            # If not using ideal separation, we can get outlet state directly
+            # from the state blocks
+            sblocks["Vapor Outlet"] = self.split.Vap_state
+            sblocks["Liquid Outlet"] = self.split.Liq_state
+
+        for n, v in sblocks.items():
+            dvars = v[time_point].define_display_vars()
 
             stream_attributes[n] = {}
 
-            for k in port_obj.vars:
-                for i in port_obj.vars[k].keys():
-                    if isinstance(i, float):
-                        stream_attributes[n][k] = value(port_obj.vars[k][time_point])
-                    else:
-                        if len(i) == 2:
-                            kname = str(i[1])
+            for k in dvars:
+                for i in dvars[k].keys():
+                    stream_key = k if i is None else f"{k} {i}"
+
+                    quant = report_quantity(dvars[k][i])
+
+                    stream_attributes[n][stream_key] = quant.m
+                    stream_attributes["Units"][stream_key] = quant.u
+
+        if self.config.ideal_separation:
+            # If using ideal separation, get values from Ports and hope they map
+            # to names in Inlet
+            # TODO: Add a better way to map these if necessary
+            for n, v in {
+                "Vapor Outlet": "vap_outlet",
+                "Liquid Outlet": "liq_outlet",
+            }.items():
+                port_obj = getattr(self, v)
+
+                stream_attributes[n] = {}
+
+                for k in port_obj.vars:
+                    for i in port_obj.vars[k].keys():
+                        if isinstance(i, float):
+                            quant = report_quantity(port_obj.vars[k][time_point])
+                            stream_attributes[n][k] = quant.m
+                            stream_attributes["Units"][k] = quant.u
                         else:
-                            kname = str(i[1:])
-                        stream_attributes[n][k + " " + kname] = value(
-                            port_obj.vars[k][time_point, i[1:]]
-                        )
+                            if len(i) == 2:
+                                kname = str(i[1])
+                            else:
+                                kname = str(i[1:])
+                            quant = report_quantity(port_obj.vars[k][time_point, i[1:]])
+                            stream_attributes[n][k + " " + kname] = quant.m
+                            stream_attributes["Units"][k + " " + kname] = quant.u
 
         return DataFrame.from_dict(stream_attributes, orient="columns")
 

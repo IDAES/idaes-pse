@@ -51,6 +51,9 @@ class TestMissingModel:
 
 horizon = 4
 
+horizon = 4
+
+
 @pytest.mark.unit
 def test_model_object_missing_methods():
 

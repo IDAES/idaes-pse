@@ -19,20 +19,25 @@ import importlib
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
-default_binary_release = "2.6.0"
+default_binary_release = "3.0.0"
 # Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums
-release_checksum_url = \
+release_checksum_url = (
     "https://raw.githubusercontent.com/IDAES/idaes-ext/main/releases/sha256sum_{}.txt"
+)
 # This is a list of platforms with builds
 base_platforms = (
+    "darwin-aarch64",
     "el7-x86_64",
     "el8-x86_64",
+    "el8-aarch64",
     "ubuntu1804-x86_64",
+    "ubuntu1804-aarch64",
     "ubuntu2004-x86_64",
     "ubuntu2004-aarch64",
     "ubuntu2204-x86_64",
+    "ubuntu2204-aarch64",
     "windows-x86_64",
 )
 # Map some platform names to others for get-extensions
@@ -72,6 +77,18 @@ orig_environ = {
     "LD_LIBRARY_PATH": os.environ.get("LD_LIBRARY_PATH", ""),
     "DYLD_LIBRARY_PATH": os.environ.get("DYLD_LIBRARY_PATH", ""),
 }
+# Define set of default units of measurement for common derived quantities
+default_uom = {
+    "pressure": "Pa",
+    "energy": "J",
+    "energy_mol": "J/mol",
+    "energy_mass": "J/kg",
+    "entropy": "J/K",
+    "entropy_mol": "J/mol/K",
+    "entropy_mass": "J/kg/K",
+    "power": "W",
+}
+
 
 def canonical_arch(arch):
     """Get the offical machine type in {x86_64, aarch64} if possible, otherwise
@@ -85,6 +102,7 @@ def canonical_arch(arch):
     """
     arch = arch.lower()
     return binary_arch_map.get(arch, arch)
+
 
 def canonical_distro(dist):
     """Get the offical distro name if possible, otherwise just return
@@ -100,14 +118,17 @@ def canonical_distro(dist):
     dist = dist.lower()
     return binary_distro_map.get(dist, dist)
 
+
 class ConfigBlockJSONEncoder(json.JSONEncoder):
-    """ This class handles non-serializable objects that may appear in the IDAES
+    """This class handles non-serializable objects that may appear in the IDAES
     ConfigBlock. For now this is only set objects.
     """
+
     def default(self, obj):
         if isinstance(obj, set):
             return list(obj)
         return obj
+
 
 def _new_idaes_config_block():
     """The idaes configuration is stored in a Pyomo ConfigBlock created by this.
@@ -116,6 +137,24 @@ def _new_idaes_config_block():
     the idaes configuration system to function improperly.
     """
     cfg = pyomo.common.config.ConfigBlock("idaes", implicit=True)
+    cfg.declare(
+        "warning_to_exception",
+        pyomo.common.config.ConfigValue(
+            domain=bool,
+            default=False,
+            description="Convert any logged warnings or errors to exceptions",
+            doc="Convert any logged warnings or errors to exceptions",
+        ),
+    )
+    cfg.declare(
+        "deprecation_to_exception",
+        pyomo.common.config.ConfigValue(
+            domain=bool,
+            default=False,
+            description="Convert any logged deprecation warnings to exceptions",
+            doc="Convert any logged deprecation warnings to exceptions",
+        ),
+    )
     cfg.declare(
         "logging",
         pyomo.common.config.ConfigBlock(
@@ -126,71 +165,60 @@ def _new_idaes_config_block():
         ),
     )
     cfg["logging"].declare(
-        "version", pyomo.common.config.ConfigValue(domain=int, default=1))
+        "version", pyomo.common.config.ConfigValue(domain=int, default=1)
+    )
     cfg["logging"].declare(
         "disable_existing_loggers",
-        pyomo.common.config.ConfigValue(domain=bool, default=False))
-    cfg["logging"].declare(
-        "formatters", pyomo.common.config.ConfigBlock(implicit=True))
+        pyomo.common.config.ConfigValue(domain=bool, default=False),
+    )
+    cfg["logging"].declare("formatters", pyomo.common.config.ConfigBlock(implicit=True))
     cfg["logging"]["formatters"].declare(
-        "default_format", pyomo.common.config.ConfigBlock(implicit=True))
+        "default_format", pyomo.common.config.ConfigBlock(implicit=True)
+    )
     cfg["logging"]["formatters"]["default_format"].declare(
         "format",
         pyomo.common.config.ConfigValue(
-            domain=str,
-            default="%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+            domain=str, default="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+        ),
+    )
     cfg["logging"]["formatters"]["default_format"].declare(
         "datefmt",
-        pyomo.common.config.ConfigValue(
-            domain=str,
-            default="%Y-%m-%d %H:%M:%S"))
-    cfg["logging"].declare(
-        "handlers", pyomo.common.config.ConfigBlock(implicit=True))
+        pyomo.common.config.ConfigValue(domain=str, default="%Y-%m-%d %H:%M:%S"),
+    )
+    cfg["logging"].declare("handlers", pyomo.common.config.ConfigBlock(implicit=True))
     cfg["logging"]["handlers"].declare(
-        "console", pyomo.common.config.ConfigBlock(implicit=True))
+        "console", pyomo.common.config.ConfigBlock(implicit=True)
+    )
     cfg["logging"]["handlers"]["console"].declare(
         "class",
-        pyomo.common.config.ConfigValue(
-            domain=str,
-            default="logging.StreamHandler"))
+        pyomo.common.config.ConfigValue(domain=str, default="logging.StreamHandler"),
+    )
     cfg["logging"]["handlers"]["console"].declare(
         "formatter",
-        pyomo.common.config.ConfigValue(
-            domain=str,
-            default="default_format"))
+        pyomo.common.config.ConfigValue(domain=str, default="default_format"),
+    )
     cfg["logging"]["handlers"]["console"].declare(
         "stream",
-        pyomo.common.config.ConfigValue(
-            domain=str,
-            default="ext://sys.stdout"))
+        pyomo.common.config.ConfigValue(domain=str, default="ext://sys.stdout"),
+    )
     cfg["logging"].declare(
         "loggers",
         pyomo.common.config.ConfigValue(
             domain=dict,
-            default={ # the period in the logger names is trouble for ConfigBlock
-                "idaes":{
-                    "level": "INFO",
-                    "propagate": True,
-                    "handlers": ["console"]
-                },
-                "idaes.solve":{
-                    "propagate": False,
-                    "handlers": ["console"]
-                },
-                "idaes.init":{
-                    "propagate": False,
-                    "handlers": ["console"]
-                },
-                "idaes.model":{
-                    "propagate":False,
-                    "handlers": ["console"]
-                }}))
+            default={  # the period in the logger names is trouble for ConfigBlock
+                "idaes": {"level": "INFO", "propagate": True, "handlers": ["console"]},
+                "idaes.solve": {"propagate": False, "handlers": ["console"]},
+                "idaes.init": {"propagate": False, "handlers": ["console"]},
+                "idaes.model": {"propagate": False, "handlers": ["console"]},
+            },
+        ),
+    )
     cfg.declare(
         "ipopt",
         pyomo.common.config.ConfigBlock(
             implicit=False,
             description="Default config for 'ipopt' solver",
-            doc="Default config for 'ipopt' solver"
+            doc="Default config for 'ipopt' solver",
         ),
     )
 
@@ -199,7 +227,7 @@ def _new_idaes_config_block():
         pyomo.common.config.ConfigBlock(
             implicit=True,
             description="Default solver options for 'ipopt'",
-            doc="Default solver options for 'ipopt' solver"
+            doc="Default solver options for 'ipopt' solver",
         ),
     )
 
@@ -209,7 +237,7 @@ def _new_idaes_config_block():
             domain=str,
             default="gradient-based",
             description="Ipopt NLP scaling method",
-            doc="Ipopt NLP scaling method"
+            doc="Ipopt NLP scaling method",
         ),
     )
 
@@ -219,7 +247,7 @@ def _new_idaes_config_block():
             domain=float,
             default=1e-6,
             description="Ipopt tol option",
-            doc="Ipopt tol option"
+            doc="Ipopt tol option",
         ),
     )
 
@@ -228,7 +256,7 @@ def _new_idaes_config_block():
         pyomo.common.config.ConfigBlock(
             implicit=False,
             description="Default config for 'petsc_ts' solver",
-            doc="Default config for 'petsc_ts' solver"
+            doc="Default config for 'petsc_ts' solver",
         ),
     )
 
@@ -237,7 +265,7 @@ def _new_idaes_config_block():
         pyomo.common.config.ConfigBlock(
             implicit=True,
             description="Default solver options for 'petsc_ts'",
-            doc="Default solver options for 'petsc_ts' solver"
+            doc="Default solver options for 'petsc_ts' solver",
         ),
     )
 
@@ -247,7 +275,7 @@ def _new_idaes_config_block():
             domain=int,
             default=1,
             description="Save the trajectory data from PETSc",
-            doc="Save the trajectory data from PETSc"
+            doc="Save the trajectory data from PETSc",
         ),
     )
 
@@ -257,7 +285,7 @@ def _new_idaes_config_block():
             domain=int,
             default=200,
             description="Number of nonliner solver failures before giving up",
-            doc="Number of nonliner solver failures before giving up"
+            doc="Number of nonliner solver failures before giving up",
         ),
     )
 
@@ -267,7 +295,7 @@ def _new_idaes_config_block():
             domain=int,
             default=20,
             description="Maximum number of time steps to reject",
-            doc="Maximum number of time steps to reject"
+            doc="Maximum number of time steps to reject",
         ),
     )
 
@@ -277,7 +305,7 @@ def _new_idaes_config_block():
             domain=str,
             default="beuler",
             description="TS solver to use",
-            doc="TS solver to use"
+            doc="TS solver to use",
         ),
     )
 
@@ -287,7 +315,7 @@ def _new_idaes_config_block():
             domain=str,
             default="basic",
             description="TS adaptive step size method to use",
-            doc="TS adaptive step size method to use"
+            doc="TS adaptive step size method to use",
         ),
     )
 
@@ -297,7 +325,7 @@ def _new_idaes_config_block():
             domain=str,
             default="matchstep",
             description="How to handle the final time step",
-            doc="How to handle the final time step"
+            doc="How to handle the final time step",
         ),
     )
 
@@ -317,12 +345,12 @@ def _new_idaes_config_block():
             default=True,
             domain=bool,
             description="If True, search the IDAES bin directory for executables"
-                        " first; otherwise, use IDAES bin directory as last resort.",
+            " first; otherwise, use IDAES bin directory as last resort.",
             doc="If True the IDAES bin directory will be searched for executables "
-                "first, which will result in the solvers installed by IDAES being "
-                "used in preference to solvers installed on the machine.  If False, "
-                "IDAES will only fall back on solvers installed in the IDAES bin "
-                "directory if they are not otherwise available.",
+            "first, which will result in the solvers installed by IDAES being "
+            "used in preference to solvers installed on the machine.  If False, "
+            "IDAES will only fall back on solvers installed in the IDAES bin "
+            "directory if they are not otherwise available.",
         ),
     )
 
@@ -339,15 +367,18 @@ def _new_idaes_config_block():
     cfg.declare(
         "valid_logger_tags",
         pyomo.common.config.ConfigValue(
-            default=set([
-                "framework",
-                "model",
-                "flowsheet",
-                "unit",
-                "control_volume",
-                "properties",
-                "reactions",
-                "ui"]),
+            default=set(
+                [
+                    "framework",
+                    "model",
+                    "flowsheet",
+                    "unit",
+                    "control_volume",
+                    "properties",
+                    "reactions",
+                    "ui",
+                ]
+            ),
             domain=set,
             description="List of valid logger tags",
         ),
@@ -356,14 +387,17 @@ def _new_idaes_config_block():
     cfg.declare(
         "logger_tags",
         pyomo.common.config.ConfigValue(
-            default=set([
-                "framework",
-                "model",
-                "flowsheet",
-                "unit",
-                "control_volume",
-                "properties",
-                "reactions"]),
+            default=set(
+                [
+                    "framework",
+                    "model",
+                    "flowsheet",
+                    "unit",
+                    "control_volume",
+                    "properties",
+                    "reactions",
+                ]
+            ),
             domain=set,
             description="List of logger tags to allow",
         ),
@@ -374,6 +408,14 @@ def _new_idaes_config_block():
         pyomo.common.config.ConfigValue(
             default=True,
             description="Solver output captured by logger?",
+        ),
+    )
+
+    cfg.declare(
+        "reporting_units",
+        pyomo.common.config.ConfigValue(
+            default=default_uom,
+            description="Units of measurement for reporting quantities",
         ),
     )
     return cfg
@@ -405,15 +447,46 @@ def read_config(val, cfg):
         _log.debug("Read config {}".format(config_file))
     reconfig(cfg)
 
+
 def write_config(path, cfg=None):
     if cfg is None:
         cfg = _new_idaes_config_block()
-    with open(path, 'w') as f:
+    with open(path, "w") as f:
         json.dump(cfg.value(), f, cls=ConfigBlockJSONEncoder, indent=4)
+
+
+class _WarningToExceptionFilter(logging.Filter):
+    """Filter applied to IDAES loggers returned by this module."""
+
+    @staticmethod
+    def filter(record):
+        if record.levelno >= logging.WARNING:
+            raise RuntimeError(f"Logged Warning converted to exception: {record.msg}")
+
+
+class _DeprecationToExceptionFilter(logging.Filter):
+    """Filter applied to IDAES loggers returned by this module."""
+
+    @staticmethod
+    def filter(record):
+        if record.levelno >= logging.WARNING:
+            if "deprecat" in record.msg.lower():
+                raise RuntimeError(
+                    f"Logged deprecation converted to exception: {record.msg}"
+                )
 
 
 def reconfig(cfg):
     logging.config.dictConfig(cfg.logging.value())
+    _log = logging.getLogger("idaes")
+    if cfg.deprecation_to_exception:
+        _log.addFilter(_DeprecationToExceptionFilter)
+    else:
+        _log.removeFilter(_DeprecationToExceptionFilter)
+    if cfg.warning_to_exception:
+        _log.addFilter(_WarningToExceptionFilter)
+    else:
+        _log.removeFilter(_WarningToExceptionFilter)
     setup_environment(bin_directory, cfg.use_idaes_solvers)
 
 
@@ -434,12 +507,21 @@ def create_dir(d):
 
 def get_data_directory():
     """Return the standard data directory for idaes, based on the OS."""
-    try:
-        if os.name == 'nt':  # Windows
-            data_directory = os.path.join(os.environ['LOCALAPPDATA'], "idaes")
-        else:  # any other OS
-            data_directory = os.path.join(os.environ['HOME'], ".idaes")
-    except AttributeError:
+    if "IDAES_DATA" in os.environ:
+        data_directory = os.environ["IDAES_DATA"]
+    else:
+        try:
+            if os.name == "nt":  # Windows
+                data_directory = os.path.join(os.environ["LOCALAPPDATA"], "idaes")
+            else:  # any other OS
+                data_directory = os.path.join(os.environ["HOME"], ".idaes")
+        except AttributeError:
+            data_directory = None
+    if data_directory is None or not os.path.isdir(os.path.dirname(data_directory)):
+        _log.warning(
+            "IDAES data directory location does not exist: "
+            f"{os.path.dirname(data_directory)}"
+        )
         data_directory = None
     # Standard location for executable binaries.
     if data_directory is not None:
@@ -468,14 +550,18 @@ def setup_environment(bin_directory, use_idaes_solvers):
     Returns:
         None
     """
+    if bin_directory is None:
+        return
     oe = orig_environ
     if use_idaes_solvers:
-        os.environ['PATH'] = os.pathsep.join([bin_directory, oe.get('PATH', '')])
+        os.environ["PATH"] = os.pathsep.join([bin_directory, oe.get("PATH", "")])
     else:
-        os.environ['PATH'] = os.pathsep.join([oe.get('PATH', ''), bin_directory])
-    if os.name != 'nt':  # If not Windwos set lib search path, Windows uses PATH
-        os.environ['LD_LIBRARY_PATH'] = os.pathsep.join(
-            [oe.get('LD_LIBRARY_PATH', ''), bin_directory])
-        # This is for OSX, but won't hurt other UNIX
-        os.environ['DYLD_LIBRARY_PATH'] = os.pathsep.join(
-            [oe.get('DYLD_LIBRARY_PATH', ''), bin_directory])
+        os.environ["PATH"] = os.pathsep.join([oe.get("PATH", ""), bin_directory])
+    if os.name != "nt":  # If not Windwos set lib search path, Windows uses PATH
+        os.environ["LD_LIBRARY_PATH"] = os.pathsep.join(
+            [oe.get("LD_LIBRARY_PATH", ""), bin_directory]
+        )
+        # This is for macOS, but won't hurt other UNIX
+        os.environ["DYLD_LIBRARY_PATH"] = os.pathsep.join(
+            [oe.get("DYLD_LIBRARY_PATH", ""), bin_directory]
+        )

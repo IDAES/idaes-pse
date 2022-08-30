@@ -19,6 +19,7 @@ from idaes.apps.grid_integration.tests.util import (
     testing_model_data,
 )
 from pyomo.common import unittest as pyo_unittest
+from idaes.apps.grid_integration.coordinator import prescient_avail
 
 
 class TestMissingModel:
@@ -175,6 +176,9 @@ def bidder_object():
 
 
 @pytest.mark.component
+@pytest.mark.skipif(
+    not prescient_avail, reason="Prescient (optional dependency) not available"
+)
 def test_compute_bids(bidder_object):
 
     marginal_cost = bidder_object.bidding_model_object.marginal_cost

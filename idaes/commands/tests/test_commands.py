@@ -31,7 +31,6 @@ import pytest
 
 # package
 from idaes.commands import examples, extensions, convergence, config, env_info, base
-from idaes.util.system import TemporaryDirectory
 from . import create_module_scratch, rmtree_scratch
 import idaes
 
@@ -75,7 +74,6 @@ def tempdir(request):
 
 
 class TestBaseCommand:
-
     @pytest.fixture
     def run_idaes(self, runner):
         return partial(runner.invoke, base.command_base)
@@ -160,7 +158,9 @@ def test_examples_cli_download_unstable(runner, tempdir):
     if can_write(tempdir):
         dirname = str(tempdir / "examples")
         # unstable version but no --unstable flag
-        result = runner.invoke(examples.get_examples, ["-d", dirname, "-V", "1.2.3-beta"])
+        result = runner.invoke(
+            examples.get_examples, ["-d", dirname, "-V", "1.2.3-beta"]
+        )
         assert result.exit_code == -1
 
 
@@ -214,28 +214,27 @@ def test_examples_download_bad_version():
 
 
 @pytest.mark.integration()
-def test_examples_find_python_directories():
-    with TemporaryDirectory() as tmpd:
-        root = Path(tmpd)
-        # populate a/c/file.py, a/d/file.py, b/c/file.py, b/d/file.py
-        for i in ("a", "b"):
-            # create parent
-            os.mkdir(str(root / i))
-            for j in ("c", "d"):
-                pydir = root / i / j
-                # create child dir
-                os.mkdir(str(pydir))
-                # put python file in child
-                (pydir / "file.py").open("w")
-        # find
-        found_dirs = examples.find_python_directories(root)
-        # check
-        rel_found_dirs = [d.relative_to(root) for d in found_dirs]
-        for i in ("a", "b"):
-            path_i = Path(i)
-            assert path_i in rel_found_dirs
-            for j in ("c", "d"):
-                assert path_i / j in rel_found_dirs
+def test_examples_find_python_directories(tmp_path):
+    root = tmp_path
+    # populate a/c/file.py, a/d/file.py, b/c/file.py, b/d/file.py
+    for i in ("a", "b"):
+        # create parent
+        os.mkdir(str(root / i))
+        for j in ("c", "d"):
+            pydir = root / i / j
+            # create child dir
+            os.mkdir(str(pydir))
+            # put python file in child
+            (pydir / "file.py").open("w")
+    # find
+    found_dirs = examples.find_python_directories(root)
+    # check
+    rel_found_dirs = [d.relative_to(root) for d in found_dirs]
+    for i in ("a", "b"):
+        path_i = Path(i)
+        assert path_i in rel_found_dirs
+        for j in ("c", "d"):
+            assert path_i / j in rel_found_dirs
 
 
 @pytest.mark.integration()
@@ -265,7 +264,10 @@ def test_examples_check_github_response():
     )
     # non-dict: error
     pytest.raises(
-        examples.GithubError, examples.check_github_response, 12, "hello",
+        examples.GithubError,
+        examples.check_github_response,
+        12,
+        "hello",
     )
 
 
@@ -324,9 +326,9 @@ def test_examples_cleanup(tempdir):
     examples.g_egg = eggy
     examples.clean_up_temporary_files()
     # Check that everything is removed
-    #assert not distdir.exists()
-    #assert not eggy.exists()
-    #assert not tempsubdir.exists()
+    # assert not distdir.exists()
+    # assert not eggy.exists()
+    # assert not tempsubdir.exists()
 
 
 @pytest.mark.unit
@@ -403,17 +405,16 @@ def test_examples_local(tempdir):
 
 
 @pytest.mark.integration()
-def test_illegal_dirs():
-    with TemporaryDirectory() as tmpd:
-        root = Path(tmpd)
-        # git
-        (root / ".git").mkdir()
-        try:
-            examples.download(root, "1.2.3")
-        except examples.DownloadError as err:
-            assert "exists" in str(err)
-        finally:
-            (root / ".git").rmdir()
+def test_illegal_dirs(tmp_path):
+    root = tmp_path
+    # git
+    (root / ".git").mkdir()
+    try:
+        examples.download(root, "1.2.3")
+    except examples.DownloadError as err:
+        assert "exists" in str(err)
+    finally:
+        (root / ".git").rmdir()
 
 
 @pytest.mark.integration()
@@ -552,6 +553,7 @@ def test_strip_test_cells(remove_cells_notebooks):
 # get-extensions #
 ##################
 
+
 @pytest.mark.unit
 def test_get_extensions(runner):
     result = runner.invoke(extensions.get_extensions, ["--no-download"])
@@ -569,21 +571,24 @@ def test_get_extensions_plat(runner):
     result = runner.invoke(extensions.bin_platform)
     assert result.exit_code == 0
 
+
 @pytest.mark.unit
 def test_get_extensions_bad_plat(runner):
-    result = runner.invoke(
-        extensions.bin_platform, ["--distro", "johns_good_linux42"])
+    result = runner.invoke(extensions.bin_platform, ["--distro", "johns_good_linux42"])
     assert result.exit_code == 0
     assert result.output == "No supported binaries found.\n"
+
 
 @pytest.mark.unit
 def test_extensions_license(runner):
     result = runner.invoke(extensions.extensions_license)
     assert result.exit_code == 0
 
+
 #################
 # convergence  #
 ################
+
 
 @pytest.mark.unit
 def test_conv_search(runner):
@@ -603,10 +608,12 @@ def test_conv_sample(runner):
             "10",
             "-s",
             fname,
-        ])
+        ],
+    )
     assert result.exit_code == 0
     if os.path.exists(fname):
         os.remove(fname)
+
 
 @pytest.mark.integration
 def test_conv_eval(runner):
@@ -621,16 +628,10 @@ def test_conv_eval(runner):
             "10",
             "-s",
             fname,
-        ])
+        ],
+    )
     assert result.exit_code == 0
-    result = runner.invoke(
-        convergence.convergence_eval,
-        [
-            "-s",
-            fname,
-            "-j",
-            fname2
-        ])
+    result = runner.invoke(convergence.convergence_eval, ["-s", fname, "-j", fname2])
     assert result.exit_code == 0
     with open(fname2, "r") as f:
         d = json.load(f)
@@ -641,10 +642,12 @@ def test_conv_eval(runner):
     if os.path.exists(fname2):
         os.remove(fname2)
 
+
 @pytest.mark.unit
 def test_conf_display(runner):
     result = runner.invoke(config.config_display)
     assert result.exit_code == 0
+
 
 @pytest.mark.unit
 def test_conf_file_paths(runner):
@@ -654,6 +657,7 @@ def test_conf_file_paths(runner):
     assert result.exit_code == 0
     result = runner.invoke(config.config_file, ["--local"])
     assert result.exit_code == 0
+
 
 @pytest.mark.unit
 def test_conf_file_paths(runner):
@@ -666,29 +670,38 @@ def test_conf_file_paths(runner):
     if os.path.exists(fname):
         os.remove(fname)
 
+
 @pytest.mark.unit
 def test_conf_set(runner):
     fname = os.path.join(idaes.testing_directory, "conf_test.json")
+
     def _tst(args):
-        result = runner.invoke(config.config_set, [
-            "logging:loggers:idaes.solver:handlers", "['console']"] + args)
+        result = runner.invoke(
+            config.config_set,
+            ["logging:loggers:idaes.solver:handlers", "['console']"] + args,
+        )
         assert result.exit_code == 0
         with open(fname, "r") as f:
             d = json.load(f)
             assert len(d["logging"]["loggers"]["idaes.solver"]["handlers"]) == 1
-            assert d["logging"]["loggers"]["idaes.solver"]["handlers"][0] == 'console'
-        result = runner.invoke(config.config_set, [
-            "logging:loggers:idaes.solver:handlers", "'console'", "--del"] + args)
+            assert d["logging"]["loggers"]["idaes.solver"]["handlers"][0] == "console"
+        result = runner.invoke(
+            config.config_set,
+            ["logging:loggers:idaes.solver:handlers", "'console'", "--del"] + args,
+        )
         assert result.exit_code == 0
-        result = runner.invoke(config.config_set, [
-            "logging:loggers:idaes.solver:handlers", "'console'", "--add"] + args)
+        result = runner.invoke(
+            config.config_set,
+            ["logging:loggers:idaes.solver:handlers", "'console'", "--add"] + args,
+        )
         assert result.exit_code == 0
         with open(fname, "r") as f:
             d = json.load(f)
             assert len(d["logging"]["loggers"]["idaes.solver"]["handlers"]) == 1
-            assert d["logging"]["loggers"]["idaes.solver"]["handlers"][0] == 'console'
-        result = runner.invoke(config.config_set, [
-            "ipopt_l1:options:max_iter", "100"] + args)
+            assert d["logging"]["loggers"]["idaes.solver"]["handlers"][0] == "console"
+        result = runner.invoke(
+            config.config_set, ["ipopt_l1:options:max_iter", "100"] + args
+        )
         assert result.exit_code == 0
         assert "ConfigDict" in str(type(idaes.cfg.ipopt_l1))
         assert "ConfigDict" in str(type(idaes.cfg.ipopt_l1.options))
@@ -707,6 +720,7 @@ def test_conf_set(runner):
 ##############
 # env info   #
 ##############
+
 
 @pytest.mark.unit
 def test_env_info1(runner):

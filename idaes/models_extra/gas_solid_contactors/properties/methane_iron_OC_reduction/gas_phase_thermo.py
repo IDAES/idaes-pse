@@ -242,7 +242,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         )
         # The units of parameter 1 are dependent upon the value of parameter 2:
         # [visc_d_param_1] = kg/m-s * K^(-(value([visc_d_param_2)))
-        # this is accounted for in the equation on line 655
+        # this is accounted for in the equation for visc_d_comp
         self.visc_d_param_2 = Param(
             self.component_list,
             mutable=True,
@@ -290,7 +290,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         )
         # The units of parameter 1 are dependent upon the value of parameter 2:
         # [therm_cond_param_1] = J/m-s * K^(-(1 + value([therm_cond_param_2)))
-        # this is accounted for in the equation on line 734
+        # this is accounted for in the equation for therm_cond_comp
         self.therm_cond_param_2 = Param(
             self.component_list,
             mutable=True,
@@ -353,7 +353,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         obj.add_properties(
             {
                 "flow_mol": {"method": None, "units": "mol/s"},
-                "pressure": {"method": None, "units": "bar"},
+                "pressure": {"method": None, "units": "Pa"},
                 "temperature": {"method": None, "units": "K"},
                 "mole_frac_comp": {"method": None, "units": None},
                 "mw": {"method": "_mw", "units": "kg/mol"},
@@ -1068,10 +1068,16 @@ class GasPhaseStateBlockData(StateBlockData):
             raise
 
     def _entr_mol(self):
+        units_meta = self._params.get_metadata().derived_units
+        units_entr_mol = (
+            units_meta["energy"]
+            * units_meta["amount"] ** -1
+            * units_meta["temperature"] ** -1
+        )
         self.entr_mol = Var(
-            doc="Specific Entropy [J/mol/K]",
+            doc="Specific Entropy",
             initialize=1.0,
-            units=pyunits.J / pyunits.mol / pyunits.K,
+            units=units_entr_mol,
         )
         # Specific Entropy
 

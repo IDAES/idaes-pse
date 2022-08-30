@@ -317,6 +317,12 @@ class StoreSpec(object):
                 alist = self.classes[cl][0]
                 ff = self.classes[cl][1]
                 break
+        if isinstance(o, Block._ComponentDataClass):
+            # If you're here you are trying to serialize an element of an
+            # indexed block at the top level.  We do want to allow that, so
+            # we'll pretend it's a block.
+            alist = self.classes[Block][0]
+            ff = self.classes[Block][1]
         return (alist, ff)
 
     def get_data_class_attr_list(self, o):

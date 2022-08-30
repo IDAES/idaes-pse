@@ -272,17 +272,17 @@ class HelmTurbineMultistageData(UnitModelBlockData):
 
         # Splitter to inlet that splits main flow into parallel flows for
         # paritial arc admission to the turbine
-        self.inlet_split = HelmSplitter(default=self._split_cfg(unit_cfg, ni))
-        self.throttle_valve = SteamValve(inlet_idx, default=thrtl_cfg)
-        self.inlet_stage = HelmTurbineInletStage(inlet_idx, default=unit_cfg)
+        self.inlet_split = HelmSplitter(**self._split_cfg(unit_cfg, ni))
+        self.throttle_valve = SteamValve(inlet_idx, **thrtl_cfg)
+        self.inlet_stage = HelmTurbineInletStage(inlet_idx, **unit_cfg)
         # mixer to combine the parallel flows back together
-        self.inlet_mix = HelmMixer(default=self._mix_cfg(unit_cfg, ni))
+        self.inlet_mix = HelmMixer(**self._mix_cfg(unit_cfg, ni))
         # add turbine sections.
         # inlet stage -> hp stages -> ip stages -> lp stages -> outlet stage
-        self.hp_stages = HelmTurbineStage(pyo.RangeSet(config.num_hp), default=unit_cfg)
-        self.ip_stages = HelmTurbineStage(pyo.RangeSet(config.num_ip), default=unit_cfg)
-        self.lp_stages = HelmTurbineStage(pyo.RangeSet(config.num_lp), default=unit_cfg)
-        self.outlet_stage = HelmTurbineOutletStage(default=unit_cfg)
+        self.hp_stages = HelmTurbineStage(pyo.RangeSet(config.num_hp), **unit_cfg)
+        self.ip_stages = HelmTurbineStage(pyo.RangeSet(config.num_ip), **unit_cfg)
+        self.lp_stages = HelmTurbineStage(pyo.RangeSet(config.num_lp), **unit_cfg)
+        self.outlet_stage = HelmTurbineOutletStage(**unit_cfg)
 
         for i in self.hp_stages:
             self.hp_stages[i].ratioP.fix()
@@ -310,19 +310,19 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         # put in splitters for turbine steam extractions
         if config.hp_split_locations:
             self.hp_split = HelmSplitter(
-                config.hp_split_locations, default=s_sfg_default, initialize=hp_splt_cfg
+                config.hp_split_locations, **s_sfg_default, initialize=hp_splt_cfg
             )
         else:
             self.hp_split = {}
         if config.ip_split_locations:
             self.ip_split = HelmSplitter(
-                config.ip_split_locations, default=s_sfg_default, initialize=ip_splt_cfg
+                config.ip_split_locations, **s_sfg_default, initialize=ip_splt_cfg
             )
         else:
             self.ip_split = {}
         if config.lp_split_locations:
             self.lp_split = HelmSplitter(
-                config.lp_split_locations, default=s_sfg_default, initialize=lp_splt_cfg
+                config.lp_split_locations, **s_sfg_default, initialize=lp_splt_cfg
             )
         else:
             self.lp_split = {}

@@ -113,16 +113,16 @@ class TestFlueGasBlock(object):
             model.props[1].therm_cond_phase["Vap"]
         )
 
-        assert pytest.approx(1.75238908e-05, rel=1e-8) == value(
+        assert pytest.approx(1.75238546e-05, rel=1e-8) == value(
             model.props[1].diffus_phase_comp["Vap", "CO2"]
         )
-        assert pytest.approx(2.64401704e-05, rel=1e-8) == value(
+        assert pytest.approx(2.64401213e-05, rel=1e-8) == value(
             model.props[1].diffus_phase_comp["Vap", "H2O"]
         )
-        assert pytest.approx(2.06616562e-05, rel=1e-8) == value(
+        assert pytest.approx(2.06616153e-05, rel=1e-8) == value(
             model.props[1].diffus_phase_comp["Vap", "N2"]
         )
-        assert pytest.approx(2.14370167e-05, rel=1e-8) == value(
+        assert pytest.approx(2.14369756e-05, rel=1e-8) == value(
             model.props[1].diffus_phase_comp["Vap", "O2"]
         )
 
@@ -201,9 +201,9 @@ class TestWetCO2Block(object):
             model.props[1].therm_cond_phase["Vap"]
         )
 
-        assert pytest.approx(1.90465038e-05, rel=1e-8) == value(
+        assert pytest.approx(1.90464661e-05, rel=1e-8) == value(
             model.props[1].diffus_phase_comp["Vap", "CO2"]
         )
-        assert pytest.approx(1.90465038e-05, rel=1e-8) == value(
+        assert pytest.approx(1.90464661e-05, rel=1e-8) == value(
             model.props[1].diffus_phase_comp["Vap", "H2O"]
         )

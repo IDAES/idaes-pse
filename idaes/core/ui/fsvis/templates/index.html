@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{flowsheet_id}</title>
+  <link rel="icon" href="idaes-logo.ico" type="image/x-icon">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway&display=swap">
+  <script src="https://kit.fontawesome.com/b27a429048.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/dist/styles/ag-grid.css">
+  <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/dist/styles/ag-theme-balham.css">
+  <link rel="stylesheet" type="text/css" href="/css/rappid.min.css">
+  <link rel="stylesheet" type="text/css" href="/css/bootstrap/bootstrap.css">
+  <!-- The main.css needs to be after rappid.min.css because some 
+       css elements are overridden -->
+  <link rel="stylesheet" type="text/css" href="/css/main.css">
+</head>
+
+<body>
+  <div id="app">
+    <div class="idaes-page">
+      <div id="idaes-header">
+        <div class="idaes-titlebar">
+          <div id="idaes_logo"><img src="https://idaes.org/wp-content/uploads/sites/10/2020/02/idaes-logo-300x138.png"
+          alt="IDAES logo"/></div>
+          <div id="idaes-fs-name" data-flowsheet-id="{flowsheet_id}">{flowsheet_id}</div>
+          <div id="idaes-titlebar-right"></div>
+        </div>
+        <hr>
+        <!-- Navbar for the page -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-whole-page" aria-controls="navbar-whole-page" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbar-whole-page">
+            <ul class="navbar-nav">
+              <li class="nav-item">
+                <a class="nav-link idaes-nav-button idaes-spinner-btn" id="refresh-btn">Refresh</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link idaes-nav-button idaes-spinner-btn" id="save-btn">Save</a>
+              </li>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle idaes-nav-button" id="export-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  Export
+                </a>
+                <ul id="export-list" class="dropdown-menu checkbox-menu allow-focus">
+                  <a class="dropdown-item" id="export-flowsheet-png-btn">Flowsheet as PNG</a>
+                  <a class="dropdown-item" id="export-flowsheet-jpg-btn">Flowsheet as JPEG</a>
+                  <a class="dropdown-item" id="export-flowsheet-svg-btn">Flowsheet as SVG</a>
+                  <a class="dropdown-item" id="export-stream-table-btn">Stream Table</a>
+                </ul>
+              </li>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle idaes-nav-button" id="view-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  View
+                </a>
+                <ul id="view-list" class="dropdown-menu checkbox-menu allow-focus">
+                  <li>
+                    <label class="fancy-checkbox">
+                      <input type="checkbox" id="view-flowsheet-btn" checked>
+                      <i class="fas fa-check checked"></i>
+                      <i class="far fa-circle unchecked"></i>Show Flowsheet
+                    </label>
+                  </li>
+                  <li>
+                    <label class="fancy-checkbox">
+                      <input type="checkbox" id="view-stream-table-btn" checked>
+                      <i class="fas fa-check checked"></i>
+                      <i class="far fa-circle unchecked"></i>Show Stream Table
+                    </label>
+                  </li>
+                  <li>
+                    <hr class="dotted">
+                  </li>
+                  <li>
+                    <label class="fancy-checkbox">
+                      <input type="checkbox" id="view-stream-highlight-btn" checked>
+                      <i class="fas fa-check checked"></i>
+                      <i class="far fa-circle unchecked"></i>Highlight Streams
+                    </label>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+            <ul class="navbar-nav ml-auto">
+              <li class="nav-item">
+                <a class="nav-link" id="help-btn" onclick="window.open('https://idaes-pse.readthedocs.io/en/stable/user_guide/vis/index.html','_blank')">Help</a>
+              </li>
+            </ul>
+          </div>
+        </nav> 
+      </div>
+
+      <div class="idaes-toolbar-shadow" data-original-top="60px" style="top: 60px !important;"></div>
+
+      <div id="idaes-page-contents">
+        <div id="idaes-canvas" class="idaes-container">
+          <!-- Toolbar for the flowsheet -->
+          <div class="d-flex flex-row" id="idaes-toolbar-flowsheet">
+            <div class="p-2">
+              <div class="btn-label">
+                Labels
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="labels-toggle">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div class="p-2">
+              <div class="btn-label">
+                Stream Names
+              </div>
+              <label class="switch">
+                <input type="checkbox" checked="true" id="stream-names-toggle">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div class="p-2">
+              <div class="btn-label">
+                Grid
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="grid-toggle">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div class="p-2">
+              <button class="btn" id="zoom-in-btn">
+                <i class="fas fa-search-plus fa-1x circle-icon"></i>
+              </button>
+            </div>
+            <div class="p-2">
+              <button class="btn" id="zoom-out-btn">
+                <i class="fas fa-search-minus fa-1x circle-icon"></i>
+              </button>
+            </div>
+            <div class="p-2">
+              <button class="btn" id="zoom-fit-btn">
+                <i class="fas fa-expand-arrows-alt fa-1x circle-icon"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="stream-table" class="idaes-container">
+          <div id="existing-variable-types" class="streamtable-vartype-panel"></div>
+          <!-- Navbar for stream table -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="collapse navbar-collapse p-0" id="navbar-stream-table">
+              <ul class="nav navbar-nav">
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle idaes-nav-button" id="hide-fields-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding-right: 100px; padding-bottom: 0px">
+                    Hide Fields
+                  </a>
+                  <ul id="hide-fields-list" class="dropdown-menu checkbox-menu">
+                    <!-- This will be populated by stream_table.js -->
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          </nav>
+          <div id="stream-table-container">
+            <div id="stream-table-data"  style="height: 800px;width:100%;" class="ag-theme-alpine"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  <!-- end idaes-content -->
+
+  </div>
+
+  <!-- Rappid/JointJS dependencies: -->
+  <script src="/lib/jquery/dist/jquery.js" type="text/javascript"></script>
+  <script src="/lib/lodash/lodash.min.js" type="text/javascript"></script>
+  <script src="/lib/backbone/backbone.js" type="text/javascript"></script>
+  <script src="/lib/dist/rappid.min.js" type="text/javascript"></script>
+  <script src="/lib/dist/joint.format.svg.min.js" type="text/javascript"></script>
+
+  <!-- Third party dependencies -->
+  <script src="/lib/bootstrap/bootstrap.min.js" type="text/javascript"></script>
+  <script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.noStyle.js"></script>
+
+  <!-- Application files:  -->
+  <script src="/js/paper.js" type="module" ></script>
+  <script src="/js/stream_table.js" type="module"></script>
+  <script src="/js/toolbar.js" type="module" ></script>
+  <script src="/js/main.js" type="module" ></script>
+
+  <script>
+    joint.setTheme('modern');
+  </script>
+
+</body>
+</html>

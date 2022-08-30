@@ -1,0 +1,420 @@
+body {
+  font-family: oxygen, sans-serif;
+  background: white;
+  background-size: cover;
+}
+
+hr {
+  border: 0;
+  clear:both;
+  display:block;
+  width: 100%;                
+  background-color:#d0d0d0;
+  height: 1px;
+  margin: 5px 0px 0px 0px;
+}
+
+/* Dotted border */
+hr.dotted {
+  border-top: 2px dotted #bbb;
+  margin-bottom: 10px;
+}
+
+#idaes-header {
+  margin: 20px auto 10px auto;
+  width: 90%;
+}
+
+.idaes-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  height: 100%;
+}
+
+.idaes-titlebar {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  flex-grow: 0;
+}
+
+#idaes_logo img {
+  height: 80px;
+}
+
+#idaes-fs-name {
+  font-size: 125%;
+  font-family: 'Raleway', sans-serif;
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-left: 3em;
+}
+
+#idaes-canvas {
+  position: relative;
+}
+
+#idaes-toolbar-flowsheet {
+  justify-content: flex-end;
+  position: absolute;
+  top: 20px;
+  right: 40px;
+  width: 500px;
+  height: 40px;
+  z-index: 1;
+}
+
+#idaes-titlebar-right {
+  width: 100px;
+}
+
+.idaes-content {
+  display: flex;
+  flex-grow: 1;
+}
+
+.idaes-palette {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.idaes-container {
+  min-width: 800px;
+  width: 90%;
+  height: 50%;
+  flex-grow: 1;
+  background: white;
+  margin:15px auto 15px auto;
+  padding: 12px 19px 16px 19px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.23);
+  border: solid 1px #e0e0e0;
+  resize: vertical;
+  overflow: auto;
+}
+
+#idaes-page-contents {
+  background-color: #f3f3f3;
+}
+
+.idaes-palette div {
+  color: Dodgerblue;
+}
+
+.idaes-palette div.idaes-groupsep {
+  height: 3px;
+  width: 80%;
+  background: #e5e5e5;
+  margin: 5px 0;
+}
+
+.idaes-toolbar-shadow {
+  top: 60px;
+  right: 0;
+  left: 0;
+  z-index: 28;
+  height: 5px;
+  background: linear-gradient(rgb(219, 219, 219),rgb(243, 243, 243)) repeat-x 0 0;
+  border-top: 1px solid rgb(243, 243, 243);
+}
+
+/* Checkmark styling */
+.fancy-checkbox input[type="checkbox"],
+.fancy-checkbox .checked {
+  display: none;
+}
+ 
+.fancy-checkbox input[type="checkbox"]:checked ~ .checked {
+  display: inline-block;
+}
+ 
+.fancy-checkbox input[type="checkbox"]:checked ~ .unchecked {
+  display: none;
+}
+
+.checked,
+.unchecked {
+  padding-right: 5px;
+  padding-left: 5px;
+}
+
+.dropdown-toggle[aria-expanded="true"] {
+  border-radius: 3px;
+  border: solid 1px #0b79bd;
+  background-color: #e2eff7;
+}
+
+.checkbox-menu {
+  margin-top: 17px;
+}
+
+/* Flowsheet toolbar styling */
+.circle-icon {
+    width: 26px;
+    height: 26px;
+    margin: 0;
+    padding: 4px 0px 5px 0px;
+    background-color: #0b79bd;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 20px;
+    vertical-align: middle;
+}
+
+.btn,
+.btn:hover {
+  color: white;
+  margin: 0;
+  padding: 0;
+}
+
+.btn-label {
+  margin-bottom: 2px;
+  display: inline-block;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 17px;
+  margin-top: 5px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 13px;
+  width: 13px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #0b79bd;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #0b79bd;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(13px);
+  -ms-transform: translateX(13px);
+  transform: translateX(13px);
+}
+
+.slider.round {
+  border-radius: 17px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+/* AG Grid Overrides*/
+.ag-header-cell-label {
+  background-color: #e2eff7;
+  color: #2f67ae;
+}
+
+.ag-header-cell-label, 
+.ag-row .ag-cell {
+  justify-content: center; /* align horizontal */
+  align-items: center;
+}
+.ag-header-cell,  .ag-header-group-cell, .ag-cell {
+  border: 1px solid #dadada;
+}
+
+.ag-cell {
+  padding-right: 10px;
+  padding-left: 10px;
+  padding-top: 7px;
+}
+
+/* JointJS styling and overrides */
+.joint-dialog.joint-lightbox .fg {
+  background-color: #FFFFFF;
+}
+
+.joint-lightbox {
+  display: flex;
+}
+
+.joint-dialog.joint-lightbox img {
+  padding: 10px;
+}
+
+.joint-dialog.joint-lightbox.joint-theme-modern .btn-close {
+  color: #2f2f2f;
+  top: 0;
+  right: 0;
+  opacity: .87;
+}
+
+.joint-dialog.joint-lightbox.joint-theme-modern .control-button,
+.joint-dialog.joint-lightbox.joint-theme-modern .control-button:hover {
+  background-color: #0b79bd;
+  color: #FFFFFF;
+}
+
+.joint-paper-scroller.joint-theme-modern {
+  background-color: white;
+}
+
+.joint-type-standard-image image {
+  filter: invert(65%) sepia(47%) saturate(1882%) hue-rotate(182deg) brightness(98%) contrast(92%); /* #acd0f6 */
+}
+
+.joint-type-standard-image tspan {
+  fill: #2f67ae;
+  font-weight: bold;
+}
+
+.joint-type-standard-link tspan {
+  fill: #8d8d8d;
+}
+
+/* Bootstrap toolbar styling and overrides */
+.navbar {
+  padding: 0px;
+}
+
+.nav-item {
+  width: 100px;
+  height: 31px;
+  margin: 0px 10px 10px 10px;
+  padding: 6px 0;
+}
+
+.nav-item a {
+  color: #000000 !important; /* Have to use important to overrides bootstrap's button color */
+}
+
+.nav-link {
+  text-align: center; 
+  vertical-align: middle;
+}
+
+.nav-link:hover {
+  border-radius: 3px;
+  border: solid 1px #0b79bd;
+}
+
+.nav-link:active {
+  border-radius: 3px;
+  border: solid 1px #0b79bd;
+  background-color: #e2eff7;
+}
+
+.bg-light {
+  background-color: white !important; /* Have to use important to override bootstrap's navbar background color */
+}
+
+.dropdown-item:active {
+  background-color: white;
+}
+
+/* Styling the Variables column in the Stream Table */
+.streamtable-cell {
+  display: block;
+}
+
+/* Styling the units in the Variables column in the Stream Table */
+.streamtable-units {
+  opacity: 0.6;
+  float: right;
+}
+
+.streamtable-variable-value {
+  float: right;
+}
+
+/* Styling visual indicators to identify different Variable types in the Stream Table */
+.streamtable-vartype-panel {
+  height: 1.7em;
+  display: flex;
+  gap: 1em;
+  justify-content: center;
+}
+
+.streamtable-vartype-element {
+  display: inline-flex;
+  gap: 0.3em;
+  place-content: center;
+}
+
+.streamtable-vartype-text {
+  float: right;
+}
+
+.streamtable-vartype-fixed {
+  height: 7px;
+  width:  7px;
+  margin-top: 0.5em;
+  background-color: #7526f1;
+  border-radius: 50%;
+  float: left;
+}
+
+.streamtable-vartype-parameter {
+  height: 7px;
+  width:  7px;
+  margin-top: 0.5em;
+  background-color: #74AA50;
+  border-radius: 50%;
+  float: left;
+}
+
+.streamtable-vartype-expression {
+  height: 7px;
+  width:  7px;
+  margin-top: 0.5em;
+  background-color: #EAAA00;
+  border-radius: 50%;
+  float: left;
+}
+
+/* Styling the stream table column header that corresponds to the link mouseover event */
+.link-streamtable-hover-columnheader {
+  border-top: 5px solid #0B79BD ;
+  border-left: 5px solid #0B79BD;
+  border-right: 5px solid #0B79BD;
+}
+
+/* Styling the last row in the stream table column that corresponds to the link mouseover event */
+.link-streamtable-hover-lastrow {
+  border-bottom: 5px solid #0B79BD;
+  border-left: 5px solid #0B79BD;
+  border-right: 5px solid #0B79BD;
+}
+
+/* Styling the grid cell in the stream table column that corresponds to the link mouseover event */
+.link-streamtable-hover {
+  border-left: 5px solid #0B79BD;
+  border-right: 5px solid #0B79BD;
+}

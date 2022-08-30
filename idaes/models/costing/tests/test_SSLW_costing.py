@@ -50,6 +50,7 @@ from idaes.models.unit_models import (
     StoichiometricReactor,
     Turbine,
 )
+from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
 from idaes.core.util.testing import (
     PhysicalParameterTestBlock,
     ReactionParameterTestBlock,
@@ -79,6 +80,9 @@ from idaes.models.costing.SSLW import (
     BlowerMaterial,
 )
 
+import logging
+from io import StringIO
+from pyomo.common.log import LoggingIntercept
 
 # Some more information about this module
 __author__ = "Andrew Lee"
@@ -615,6 +619,11 @@ def test_cost_pump_reciprocating(model, material_type, motor_type):
 @pytest.mark.parametrize("material_type", CompressorMaterial)
 def test_cost_compressor(model, compressor_type, drive_type, material_type):
     model.fs.unit.config.declare("compressor", ConfigValue(default=True))
+    model.fs.unit.config.declare(
+        "thermodynamic_assumption",
+        ConfigValue(default=ThermodynamicAssumption.isothermal),
+    )
+    model.fs.unit.config.thermodynamic_assumption = ThermodynamicAssumption.isentropic
     model.fs.unit.work_mechanical = Param(
         [0], initialize=101410.4, units=pyunits.J / pyunits.s
     )
@@ -652,6 +661,44 @@ def test_cost_compressor(model, compressor_type, drive_type, material_type):
                 model.fs.unit.costing.capital_cost, to_units=pyunits.USD_2018
             )
         )
+
+
+@pytest.mark.component
+@pytest.mark.parametrize("compressor_type", CompressorType)
+@pytest.mark.parametrize("drive_type", CompressorDriveType)
+@pytest.mark.parametrize("material_type", CompressorMaterial)
+def test_not_compressor(model, compressor_type, drive_type, material_type):
+    # Test exception for non-supported compressor flags
+    model.fs.unit.config.declare("compressor", ConfigValue(default=False))
+    model.fs.unit.config.declare(
+        "thermodynamic_assumption",
+        ConfigValue(default=ThermodynamicAssumption.isentropic),
+    )
+    model.fs.unit.work_mechanical = Param(
+        [0], initialize=101410.4, units=pyunits.J / pyunits.s
+    )
+
+    expected_string = (
+        "cost_compressor method is only appropriate for "
+        "pressure changers with the compressor argument "
+        "equal to True."
+    )
+
+    stream = StringIO()
+    with LoggingIntercept(stream, "idaes", logging.WARNING):
+        model.fs.unit.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": model.fs.costing,
+                "costing_method": SSLWCostingData.cost_compressor,
+                "costing_method_arguments": {
+                    "compressor_type": compressor_type,
+                    "drive_type": drive_type,
+                    "material_type": material_type,
+                },
+            }
+        )
+
+    assert expected_string in str(stream.getvalue())
 
 
 @pytest.mark.component
@@ -851,12 +898,83 @@ class TestMapping:
 
     def test_pressure_changer(self, model):
         # Add examples of supported unit models and add costing
-        model.fs.unit = PressureChanger(default={"property_package": model.fs.pparams})
+        model.fs.unit = PressureChanger(
+            default={
+                "property_package": model.fs.pparams,
+                "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
+            }
+        )
         model.fs.unit.costing = UnitModelCostingBlock(
             default={"flowsheet_costing_block": model.fs.costing}
         )
         assert model.fs.unit.costing.drive_factor.value == 1
         assert model.fs.unit.costing.material_factor.value == 2.5
+
+    def test_pump_compressor(self, model):
+        # Test exception for non-supported compressor flags
+        model.fs.unit = Compressor(
+            default={
+                "property_package": model.fs.pparams,
+                "thermodynamic_assumption": ThermodynamicAssumption.pump,
+            }
+        )
+
+        expected_string = (
+            "fs.unit - pressure changers with the pump "
+            "assumption should use the cost_pump method."
+        )
+
+        stream = StringIO()
+        with LoggingIntercept(stream, "idaes", logging.WARNING):
+            model.fs.unit.costing = UnitModelCostingBlock(
+                default={"flowsheet_costing_block": model.fs.costing}
+            )
+
+        assert expected_string in str(stream.getvalue())
+
+    def test_isothermal_compressor(self, model):
+        # Test exception for non-supported compressor flags
+        model.fs.unit = Compressor(
+            default={
+                "property_package": model.fs.pparams,
+                "thermodynamic_assumption": ThermodynamicAssumption.isothermal,
+            }
+        )
+
+        expected_string = (
+            "fs.unit - pressure changers without isentropic "
+            "assumption are too simple to be costed."
+        )
+
+        stream = StringIO()
+        with LoggingIntercept(stream, "idaes", logging.WARNING):
+            model.fs.unit.costing = UnitModelCostingBlock(
+                default={"flowsheet_costing_block": model.fs.costing}
+            )
+
+        assert expected_string in str(stream.getvalue())
+
+    def test_adiabatic_compressor(self, model):
+        # Test exception for non-supported compressor flags
+        model.fs.unit = Compressor(
+            default={
+                "property_package": model.fs.pparams,
+                "thermodynamic_assumption": ThermodynamicAssumption.adiabatic,
+            }
+        )
+
+        expected_string = (
+            "fs.unit - pressure changers without isentropic "
+            "assumption are too simple to be costed."
+        )
+
+        stream = StringIO()
+        with LoggingIntercept(stream, "idaes", logging.WARNING):
+            model.fs.unit.costing = UnitModelCostingBlock(
+                default={"flowsheet_costing_block": model.fs.costing}
+            )
+
+        assert expected_string in str(stream.getvalue())
 
     def test_pump(self):
         # Need a different property package here

@@ -54,6 +54,7 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from idaes.core.util.units_of_measurement import report_quantity
 
 __author__ = "Andrew Lee"
 
@@ -1682,14 +1683,13 @@ objects linked the mixed state and all outlet states,
 
     def _get_performance_contents(self, time_point=0):
         if hasattr(self, "split_fraction"):
+            var_dict = {}
             for k in self.split_fraction.keys():
                 if k[0] == time_point:
-                    var_dict = {
-                        f"Split Fraction [{str(k[1:])}]": self.split_fraction[k]
-                    }
+                    var_dict[f"Split Fraction [{str(k[1:])}]"] = self.split_fraction[k]
             return {"vars": var_dict}
         else:
-            return {}
+            return None
 
     def _get_stream_table_contents(self, time_point=0):
         outlet_list = self.create_outlet_list()
@@ -1701,14 +1701,16 @@ objects linked the mixed state and all outlet states,
             else:
                 io_dict["Inlet"] = self.config.mixed_state_block
 
-                for o in outlet_list:
-                    io_dict[o] = getattr(self, o + "_state")
+            for o in outlet_list:
+                io_dict[o] = getattr(self, o + "_state")
+
             return create_stream_table_dataframe(io_dict, time_point=time_point)
 
         else:
             stream_attributes = {}
+            stream_attributes["Units"] = {}
 
-            for n in outlet_list + ["inlet"]:
+            for n in ["inlet"] + outlet_list:
                 port_obj = getattr(self, n)
 
                 stream_attributes[n] = {}
@@ -1716,16 +1718,16 @@ objects linked the mixed state and all outlet states,
                 for k in port_obj.vars:
                     for i in port_obj.vars[k]:
                         if isinstance(i, float):
-                            stream_attributes[n][k] = value(
-                                port_obj.vars[k][time_point]
-                            )
+                            quant = report_quantity(port_obj.vars[k][time_point])
+                            stream_attributes[n][k] = quant.m
+                            stream_attributes["Units"][k] = quant.u
                         else:
                             if len(i) == 2:
                                 kname = str(i[1])
                             else:
                                 kname = str(i[1:])
-                            stream_attributes[n][k + " " + kname] = value(
-                                port_obj.vars[k][time_point, i[1:]]
-                            )
+                            quant = report_quantity(port_obj.vars[k][time_point, i[1:]])
+                            stream_attributes[n][k + " " + kname] = quant.m
+                            stream_attributes["Units"][k + " " + kname] = quant.u
 
             return DataFrame.from_dict(stream_attributes, orient="columns")
