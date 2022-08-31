@@ -18,6 +18,6 @@ from .helmholtz_functions import (
     HelmholtzParameterBlock,
     HelmholtzParameterBlockData,
     add_helmholtz_external_functions,
-    available,
+    helmholtz_available,
 )
 from .helmholtz_state import HelmholtzStateBlock, HelmholtzStateBlockData

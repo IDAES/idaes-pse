@@ -22,7 +22,7 @@ from idaes.models.properties.general_helmholtz import (
     StateVars,
     AmountBasis,
     add_helmholtz_external_functions,
-    available,
+    helmholtz_available as available,
 )
 
 

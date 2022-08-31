@@ -62,7 +62,7 @@ except:
     _flib = None
 
 
-def available():
+def helmholtz_available():
     """Returns True if the shared library is installed and loads propertly
     otherwise returns False
     """
@@ -996,7 +996,7 @@ change.
         """Returns True if the shared library is installed and loads propertly
         otherwise returns False
         """
-        return available()
+        return helmholtz_available()
 
     def _suh_tpx(
         self,
