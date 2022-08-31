@@ -45,6 +45,7 @@ import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
+
 class _StateBlock(StateBlock):
     """
     This class contains methods which should be applied to Property Blocks as a
