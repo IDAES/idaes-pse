@@ -185,9 +185,6 @@ class _StateBlock(StateBlock):
                     )
                     self._set_not_fixed(v.pressure, state_args, "pressure", hold_state)
 
-        # Call initialize on each data element
-        for i in self:
-            self[i].initialize(*args, **kwargs)
         return flags
 
     def release_state(self, flags, **kwargs):
@@ -233,20 +230,12 @@ class _StateBlock(StateBlock):
                     self._set_fixed(self[i].vapor_frac, f[3])
 
 
-@declare_process_block_class(
-    "HelmholtzStateBlock",
-    block_class=_StateBlock,
-    doc="""This is some placeholder doc.""",
-)
+@declare_process_block_class("HelmholtzStateBlock", block_class=_StateBlock)
 class HelmholtzStateBlockData(StateBlockData):
     """
     This is a base clase for Helmholtz equations of state using IDAES standard
     Helmholtz EOS external functions written in C++.
     """
-
-    def initialize(self, *args, **kwargs):
-        # This particular property package has no need for initialization
-        pass
 
     def _state_vars(self):
         """Create the state variables"""
@@ -487,11 +476,11 @@ class HelmholtzStateBlockData(StateBlockData):
         vf = self.vapor_frac
         tau = self.tau
         # Terms for determining if you are above, below, or at the Psat
-        self.P_under_sat = pyo.Expression(
+        self._P_under_sat = pyo.Expression(
             expr=smooth_max(0, Psat - P, eps_pu),
             doc="pressure above Psat, 0 if liqid exists [kPa]",
         )
-        self.P_over_sat = pyo.Expression(
+        self._P_over_sat = pyo.Expression(
             expr=smooth_max(0, P - Psat, eps_po),
             doc="pressure below Psat, 0 if vapor exists [kPa]",
         )
@@ -499,9 +488,9 @@ class HelmholtzStateBlockData(StateBlockData):
         # density will be calculated at the saturation or critical pressure
         def rule_dens_mass(b, p):
             if p == "Liq":
-                return rho_star * self.delta_liq_func(cmp, P + self.P_under_sat, tau)
+                return rho_star * self.delta_liq_func(cmp, P + self._P_under_sat, tau)
             else:
-                return rho_star * self.delta_vap_func(cmp, P - self.P_over_sat, tau)
+                return rho_star * self.delta_vap_func(cmp, P - self._P_over_sat, tau)
 
         self.dens_mass_phase = pyo.Expression(priv_plist, rule=rule_dens_mass)
         # Reduced Density (no _mass_ identifier because mass or mol is same)
@@ -513,7 +502,7 @@ class HelmholtzStateBlockData(StateBlockData):
         )
         if not self.config.defined_state:
             self.eq_complementarity = pyo.Constraint(
-                expr=0 == (vf * self.P_over_sat - (1 - vf) * self.P_under_sat)
+                expr=0 == (vf * self._P_over_sat - (1 - vf) * self._P_under_sat)
             )
         # eq_sat can activated to force the pressure to be the saturation
         # pressure, if you use this constraint deactivate eq_complementarity

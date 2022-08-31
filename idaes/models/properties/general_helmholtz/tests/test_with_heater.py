@@ -37,7 +37,7 @@ from idaes.models.properties.general_helmholtz import (
 solver = get_solver()
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_heater_ph_mixed_byphase():
     """Test mixed phase form with P-H state vars and phase mass balances"""
     m = ConcreteModel()
@@ -61,7 +61,7 @@ def test_heater_ph_mixed_byphase():
     assert value(prop_out.phase_frac["Vap"]) == pytest.approx(0.4046781, rel=1e-4)
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_heater_phmixed_mixed_total():
     """Test mixed phase form with P-H state vars and total mass balances"""
     m = ConcreteModel()
@@ -88,7 +88,7 @@ def test_heater_phmixed_mixed_total():
     assert value(prop_out.phase_frac["Vap"]) == pytest.approx(0.4046781, rel=1e-4)
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_heater_ph_lg_total():
     """Test liquid/vapor form with P-H state vars and total mass balances"""
     m = ConcreteModel()
@@ -117,7 +117,7 @@ def test_heater_ph_lg_total():
     assert value(prop_out.phase_frac["Vap"]) == pytest.approx(0.4046781, rel=1e-4)
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_heater_ph_lg_phase():
     """Test liquid/vapor form with P-H state vars and phase mass balances
 
@@ -143,7 +143,7 @@ def test_heater_ph_lg_phase():
     assert degrees_of_freedom(m) == -1
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_heater_ph_l_phase_two():
     """Test liquid phase only form with P-H state vars and phase mass balances
     where the result is a two phase mixture.  For the P-H vars if there are
@@ -173,11 +173,9 @@ def test_heater_ph_l_phase_two():
     assert abs(value(prop_out.temperature) - 326.166707507874) <= 1e-4
     assert abs(value(prop_in.phase_frac["Liq"]) - 1) <= 1e-6
     assert abs(value(prop_out.phase_frac["Liq"]) - 1) <= 1e-6
-    # assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
-    # assert abs(value(prop_out.phase_frac["Vap"]) - 0) <= 1e-6
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_heater_ph_l_phase():
     """Test liquid phase only form with P-H state vars and phase mass balances"""
     m = ConcreteModel()
@@ -203,11 +201,9 @@ def test_heater_ph_l_phase():
     assert abs(value(prop_out.temperature) - 326.166707507874) <= 1e-4
     assert abs(value(prop_in.phase_frac["Liq"]) - 1) <= 1e-6
     assert abs(value(prop_out.phase_frac["Liq"]) - 1) <= 1e-6
-    # assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
-    # assert abs(value(prop_out.phase_frac["Vap"]) - 0) <= 1e-6
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_heater_ph_g_phase():
     """Test vapor phase only form with P-H state vars and phase mass balances"""
     m = ConcreteModel()
@@ -230,13 +226,11 @@ def test_heater_ph_g_phase():
     prop_out = m.fs.heater.control_volume.properties_out[0]
     assert abs(value(prop_in.temperature) - 422.60419933276177) <= 1e-2
     assert abs(value(prop_out.temperature) - 698.1604861702295) <= 1e-2
-    # assert abs(value(prop_in.phase_frac["Liq"]) - 0) <= 1e-6
-    # assert abs(value(prop_out.phase_frac["Liq"]) - 0) <= 1e-6
     assert abs(value(prop_in.phase_frac["Vap"]) - 1) <= 1e-6
     assert abs(value(prop_out.phase_frac["Vap"]) - 1) <= 1e-6
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_heater_tpx_g_phase():
     """Test vapor phase only form with T-P-x state vars and phase mass balances"""
     m = ConcreteModel()
@@ -263,13 +257,11 @@ def test_heater_tpx_g_phase():
     assert degrees_of_freedom(m) == 0
     solver.solve(m)
     assert abs(value(prop_out.temperature) - 698.1604861702295) <= 1e-3
-    # assert abs(value(prop_in.phase_frac["Liq"]) - 0) <= 1e-6
-    # assert abs(value(prop_out.phase_frac["Liq"]) - 0) <= 1e-6
     assert abs(value(prop_in.phase_frac["Vap"]) - 1) <= 1e-6
     assert abs(value(prop_out.phase_frac["Vap"]) - 1) <= 1e-6
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_heater_tpx_lg_total():
     """Test liquid/vapor form with T-P-x state vars and total mass balances. In
     this case you end up with two-phases at the end.
@@ -305,7 +297,7 @@ def test_heater_tpx_lg_total():
     assert value(prop_out.phase_frac["Vap"]) == pytest.approx(0.4046781, rel=1e-4)
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_heater_tpx_lg_total_2():
     """Test liquid/vapor form with T-P-x state vars and total mass balances. In
     this case you end up with all vapor at the end.
@@ -340,7 +332,7 @@ def test_heater_tpx_lg_total_2():
     assert abs(value(prop_out.phase_frac["Vap"]) - 1) <= 1e-2
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_heater_tpx_lg_phase():
     """Test liquid/vapor form with T-P-x state vars and phase mass balances.
 
