@@ -62,10 +62,15 @@ class TestBasicV(PropertyTestHarness):
         # Helmholtz package initialization has no solver calls, so can't fail
         self.skip_initialization_raises_exception_test = True
 
+
 class TestBasicMixSP(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.MIX, "state_vars": StateVars.PS}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.MIX,
+            "state_vars": StateVars.PS,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
@@ -75,7 +80,11 @@ class TestBasicMixSP(PropertyTestHarness):
 class TestBasicLVSP(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.LG, "state_vars": StateVars.PS}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.LG,
+            "state_vars": StateVars.PS,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
@@ -85,7 +94,11 @@ class TestBasicLVSP(PropertyTestHarness):
 class TestBasicLSP(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.L, "state_vars": StateVars.PS}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.L,
+            "state_vars": StateVars.PS,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
@@ -95,16 +108,25 @@ class TestBasicLSP(PropertyTestHarness):
 class TestBasicVSP(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.G, "state_vars": StateVars.PS}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.G,
+            "state_vars": StateVars.PS,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
         self.skip_initialization_raises_exception_test = True
 
+
 class TestBasicMixUP(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.MIX, "state_vars": StateVars.PU}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.MIX,
+            "state_vars": StateVars.PU,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
@@ -114,7 +136,11 @@ class TestBasicMixUP(PropertyTestHarness):
 class TestBasicLVUP(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.LG, "state_vars": StateVars.PU}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.LG,
+            "state_vars": StateVars.PU,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
@@ -124,7 +150,11 @@ class TestBasicLVUP(PropertyTestHarness):
 class TestBasicLUP(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.L, "state_vars": StateVars.PU}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.L,
+            "state_vars": StateVars.PU,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
@@ -134,19 +164,25 @@ class TestBasicLUP(PropertyTestHarness):
 class TestBasicVUP(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.G, "state_vars": StateVars.PU}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.G,
+            "state_vars": StateVars.PU,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
         self.skip_initialization_raises_exception_test = True
 
 
-
-
 class TestBasicMixMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.MIX, "amount_basis":AmountBasis.MASS}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.MIX,
+            "amount_basis": AmountBasis.MASS,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
@@ -156,7 +192,11 @@ class TestBasicMixMass(PropertyTestHarness):
 class TestBasicLVMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.LG, "amount_basis":AmountBasis.MASS}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.LG,
+            "amount_basis": AmountBasis.MASS,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
@@ -166,7 +206,11 @@ class TestBasicLVMass(PropertyTestHarness):
 class TestBasicLMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.L, "amount_basis":AmountBasis.MASS}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.L,
+            "amount_basis": AmountBasis.MASS,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
@@ -176,7 +220,11 @@ class TestBasicLMass(PropertyTestHarness):
 class TestBasicVMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.G, "amount_basis":AmountBasis.MASS}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.G,
+            "amount_basis": AmountBasis.MASS,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
@@ -186,7 +234,12 @@ class TestBasicVMass(PropertyTestHarness):
 class TestBasicMixSPMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.MIX, "state_vars": StateVars.PS, "amount_basis":AmountBasis.MASS}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.MIX,
+            "state_vars": StateVars.PS,
+            "amount_basis": AmountBasis.MASS,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
@@ -196,7 +249,12 @@ class TestBasicMixSPMass(PropertyTestHarness):
 class TestBasicLVSPMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.LG, "state_vars": StateVars.PS, "amount_basis":AmountBasis.MASS}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.LG,
+            "state_vars": StateVars.PS,
+            "amount_basis": AmountBasis.MASS,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
@@ -206,7 +264,12 @@ class TestBasicLVSPMass(PropertyTestHarness):
 class TestBasicLSPMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.L, "state_vars": StateVars.PS, "amount_basis":AmountBasis.MASS}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.L,
+            "state_vars": StateVars.PS,
+            "amount_basis": AmountBasis.MASS,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
@@ -216,25 +279,42 @@ class TestBasicLSPMass(PropertyTestHarness):
 class TestBasicVSPMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.G, "state_vars": StateVars.PS, "amount_basis":AmountBasis.MASS}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.G,
+            "state_vars": StateVars.PS,
+            "amount_basis": AmountBasis.MASS,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
         self.skip_initialization_raises_exception_test = True
+
 
 class TestBasicMixUPMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.MIX, "state_vars": StateVars.PU, "amount_basis":AmountBasis.MASS}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.MIX,
+            "state_vars": StateVars.PU,
+            "amount_basis": AmountBasis.MASS,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
         self.skip_initialization_raises_exception_test = True
 
+
 class TestBasicLVUPMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.LG, "state_vars": StateVars.PU, "amount_basis":AmountBasis.MASS}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.LG,
+            "state_vars": StateVars.PU,
+            "amount_basis": AmountBasis.MASS,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
@@ -244,7 +324,12 @@ class TestBasicLVUPMass(PropertyTestHarness):
 class TestBasicLUPMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.L, "state_vars": StateVars.PU, "amount_basis":AmountBasis.MASS}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.L,
+            "state_vars": StateVars.PU,
+            "amount_basis": AmountBasis.MASS,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
@@ -254,7 +339,12 @@ class TestBasicLUPMass(PropertyTestHarness):
 class TestBasicVUPMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
-        self.param_args = {"pure_component": "h2o", "phase_presentation": PhaseType.G, "state_vars": StateVars.PU, "amount_basis":AmountBasis.MASS}
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.G,
+            "state_vars": StateVars.PU,
+            "amount_basis": AmountBasis.MASS,
+        }
         self.prop_args = {}
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail

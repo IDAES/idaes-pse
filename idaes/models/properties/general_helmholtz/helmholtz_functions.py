@@ -729,10 +729,7 @@ class HelmholtzThermoExpressions(object):
     def v_mass(self, **kwargs):
         """Mixed phase molar volume"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        v = (
-            ((1 - x) / delta_liq + x / delta_vap)
-            / self.param.dens_mass_star
-        )
+        v = ((1 - x) / delta_liq + x / delta_vap) / self.param.dens_mass_star
         return v
 
     def v_mass_liq(self, **kwargs):
@@ -1520,8 +1517,12 @@ change.
             )
             * self.uc["kJ/kg to J/kg"],
         )
-        self.add_param("default_energy_internal_mass_value", self.energy_internal_mass_min)
-        self.add_param("default_energy_internal_mol_value", self.energy_internal_mol_min)
+        self.add_param(
+            "default_energy_internal_mass_value", self.energy_internal_mass_min
+        )
+        self.add_param(
+            "default_energy_internal_mol_value", self.energy_internal_mol_min
+        )
         self.default_energy_internal_mass_bounds = (
             self.energy_internal_mass_min,
             self.energy_internal_mass_max,

@@ -1094,12 +1094,16 @@ class HelmholtzStateBlockData(StateBlockData):
                     sf_inte_p = iscale.get_scaling_factor(
                         self.energy_internal_mol_phase[k], default=1
                     )
-                    sf_dens_p = iscale.get_scaling_factor(self.dens_mol_phase[k], default=1)
+                    sf_dens_p = iscale.get_scaling_factor(
+                        self.dens_mol_phase[k], default=1
+                    )
                 else:
                     sf_inte_p = iscale.get_scaling_factor(
                         self.energy_internal_mass_phase[k], default=1
                     )
-                    sf_dens_p = iscale.get_scaling_factor(self.dens_mass_phase[k], default=1)
+                    sf_dens_p = iscale.get_scaling_factor(
+                        self.dens_mass_phase[k], default=1
+                    )
                 iscale.set_scaling_factor(v, sf_inte_p * sf_dens_p)
         try:
             iscale.set_scaling_factor(self.eq_sat, sf_pres / 1000.0)
