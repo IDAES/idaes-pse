@@ -758,7 +758,7 @@ def svg_tag(
         tag_map = dict()
         for tag in tag_group:
             new_tag = tag.replace("@", "_")
-            new_tag = tag.replace(" ", "_")
+            new_tag = new_tag.replace(" ", "_")
             tag_map[new_tag] = tag
 
     # Ture SVG string into XML document
