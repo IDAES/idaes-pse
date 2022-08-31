@@ -41,7 +41,9 @@ from idaes.models.properties.general_helmholtz.helmholtz_functions import (
     StateVars,
 )
 import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
 
+_log = idaeslog.getLogger(__name__)
 
 class _StateBlock(StateBlock):
     """
@@ -1037,7 +1039,7 @@ class HelmholtzStateBlockData(StateBlockData):
         return self._state_vars_dict
 
     def define_display_vars(self):
-        if self.amount_basis == AmountMole.MOLE:
+        if self.amount_basis == AmountBasis.MOLE:
             return {
                 "Molar Flow": self.flow_mol,
                 "Mass Flow": self.flow_mass,
