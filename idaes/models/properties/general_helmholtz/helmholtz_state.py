@@ -1070,11 +1070,18 @@ class HelmholtzStateBlockData(StateBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        sf_flow = iscale.get_scaling_factor(self.flow_mol, default=1)
-        sf_enth = iscale.get_scaling_factor(self.enth_mol, default=1)
-        sf_inte = iscale.get_scaling_factor(self.energy_internal_mol, default=1)
-        sf_dens = iscale.get_scaling_factor(self.dens_mol, default=1)
+        if self.params.config.amount_basis == AmountBasis.MOLE:
+            sf_flow = iscale.get_scaling_factor(self.flow_mol, default=1)
+            sf_enth = iscale.get_scaling_factor(self.enth_mol, default=1)
+            sf_inte = iscale.get_scaling_factor(self.energy_internal_mol, default=1)
+            sf_dens = iscale.get_scaling_factor(self.dens_mol, default=1)
+        else:
+            sf_flow = iscale.get_scaling_factor(self.flow_mass, default=1)
+            sf_enth = iscale.get_scaling_factor(self.enth_mass, default=1)
+            sf_inte = iscale.get_scaling_factor(self.energy_internal_mass, default=1)
+            sf_dens = iscale.get_scaling_factor(self.dens_mass, default=1)
         sf_pres = iscale.get_scaling_factor(self.pressure, default=1)
+
         for v in self.material_flow_terms.values():
             iscale.set_scaling_factor(v, sf_flow)
         for v in self.enthalpy_flow_terms.values():
@@ -1083,10 +1090,16 @@ class HelmholtzStateBlockData(StateBlockData):
             if k == "Mix":
                 iscale.set_scaling_factor(v, sf_inte * sf_dens)
             else:
-                sf_inte_p = iscale.get_scaling_factor(
-                    self.energy_internal_mol_phase[k], default=1
-                )
-                sf_dens_p = iscale.get_scaling_factor(self.dens_mol_phase[k], default=1)
+                if self.params.config.amount_basis == AmountBasis.MOLE:
+                    sf_inte_p = iscale.get_scaling_factor(
+                        self.energy_internal_mol_phase[k], default=1
+                    )
+                    sf_dens_p = iscale.get_scaling_factor(self.dens_mol_phase[k], default=1)
+                else:
+                    sf_inte_p = iscale.get_scaling_factor(
+                        self.energy_internal_mass_phase[k], default=1
+                    )
+                    sf_dens_p = iscale.get_scaling_factor(self.dens_mass_phase[k], default=1)
                 iscale.set_scaling_factor(v, sf_inte_p * sf_dens_p)
         try:
             iscale.set_scaling_factor(self.eq_sat, sf_pres / 1000.0)

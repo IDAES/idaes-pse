@@ -1566,7 +1566,7 @@ change.
         energy_unit=pyo.units.kJ,
         mass_unit=pyo.units.kg,
         mol_unit=pyo.units.kmol,
-        n = 60,
+        n=60,
     ):
         """Get data to plot the two-phase dome or saturation curve.  This data
         can be used to plot the 2 phase dome for p-h and t-s diagrams and the
@@ -1727,6 +1727,15 @@ change.
         }
 
     def isotherms(self, temperatures):
+        """Get isotherm data for a P-H diagram.
+
+        Args:
+            temperatures: A list of temperatures
+
+        Returns:
+            dict: The keys are temperatures the values are dicts with "p", "h",
+                "s", and "delta" data for the isotherm.
+        """
         add_helmholtz_external_functions(
             self,
             [
