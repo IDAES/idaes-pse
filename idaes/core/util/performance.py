@@ -64,7 +64,7 @@ class PerformanceBaseClass:
     """
 
     def __init_subclass__(cls):
-        if unittest.TestCase not in cls.mro():
+        if not issubclass(cls, unittest.TestCase):
             raise TypeError(
                 "Classes derived from PerformanceBaseClass must also inherit from "
                 "unittest.TestCase."
