@@ -21,8 +21,10 @@ from pyomo.core.expr.sympy_tools import (
     _pyomo_operator_map,
     _configure_sympy,
 )
+
 try:
     import sympy
+
     _configure_sympy(sympy, True)
 except:
     pass
@@ -279,11 +281,13 @@ def to_latex(expr):
         "sympy_expr": sympy_expr,
         "where": docs,
         "latex_expr": sympy.latex(sympy_expr, symbol_names=object_map.sympy2latex),
-        "object_map": object_map
+        "object_map": object_map,
     }
 
 
-def document_constraints(comp, doc=True, descend_into=True, fixed_vars=False, to_doc=None):
+def document_constraints(
+    comp, doc=True, descend_into=True, fixed_vars=False, to_doc=None
+):
     """
     Provides nicely formatted constraint documetntation in markdown format,
     assuming the $$latex math$$ and $latex math$ syntax is supported.
@@ -338,12 +342,12 @@ def document_constraints(comp, doc=True, descend_into=True, fixed_vars=False, to
                     comp.lower, d["latex_expr"], comp.upper, d["where"]
                 )
             else:
-                s = "$${} \le {}\le {}$$".format(comp.lower, d["latex_expr"], comp.upper)
+                s = "$${} \le {}\le {}$$".format(
+                    comp.lower, d["latex_expr"], comp.upper
+                )
         else:
             if doc:
-                s = "$${} = {}$$\n{}".format(
-                    comp.lower, d["latex_expr"], d["where"]
-                )
+                s = "$${} = {}$$\n{}".format(comp.lower, d["latex_expr"], d["where"])
             else:
                 s = "$${} = {}$$".format(comp.lower, d["latex_expr"])
     elif isinstance(comp, _BlockData):
@@ -368,7 +372,11 @@ def document_constraints(comp, doc=True, descend_into=True, fixed_vars=False, to
                 except:
                     sy = None
                 if sy is not None:
-                    cs.append("$${} = {} \\text{{ {} }}$$".format(sy, value(c), pu.get_units(c)))
+                    cs.append(
+                        "$${} = {} \\text{{ {} }}$$".format(
+                            sy, value(c), pu.get_units(c)
+                        )
+                    )
         s = "\n".join(cs)
         docs = "\n"
         docs_var = _add_docs(to_doc, docs, Var, "Variable")
