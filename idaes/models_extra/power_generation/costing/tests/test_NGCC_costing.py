@@ -78,10 +78,10 @@ def test_units1_costing(build_costing):
     RW_withdraw_accounts = ["3.2", "3.4", "3.5", "9.5", "14.6"]
     m.fs.b2 = pyo.Block()
 
-    m.fs.b2.raw_water_withdrawal = pyo.Var(initialize=2902)  # gpm
+    m.fs.b2.raw_water_withdrawal = pyo.Var(initialize=2902)  # gal/min
     m.fs.b2.raw_water_withdrawal.fix()
     get_PP_costing(
-        m.fs.b2, RW_withdraw_accounts, m.fs.b2.raw_water_withdrawal, "gpm", 6
+        m.fs.b2, RW_withdraw_accounts, m.fs.b2.raw_water_withdrawal, "gal/min", 6
     )
 
     # Accounts with fuel gas flowrate as the reference/scaling parameter
@@ -100,10 +100,10 @@ def test_units1_costing(build_costing):
     PW_discharge_accounts = ["3.7"]
     m.fs.b4 = pyo.Block()
 
-    m.fs.b4.process_water_discharge = pyo.Var(initialize=657)  # gpm
+    m.fs.b4.process_water_discharge = pyo.Var(initialize=657)  # gal/min
     m.fs.b4.process_water_discharge.fix()
     get_PP_costing(
-        m.fs.b4, PW_discharge_accounts, m.fs.b4.process_water_discharge, "gpm", 6
+        m.fs.b4, PW_discharge_accounts, m.fs.b4.process_water_discharge, "gal/min", 6
     )
 
     # Initialize costing
@@ -166,7 +166,7 @@ def test_units2_costing(build_costing):
 
     m.fs.b7.hrsg_duty = pyo.Var(initialize=HRSG_duty)  # MMBtu/hr
     m.fs.b7.hrsg_duty.fix()
-    get_PP_costing(m.fs.b7, HRSG_duty_accounts, m.fs.b7.hrsg_duty, "MMBtu/hr", 6)
+    get_PP_costing(m.fs.b7, HRSG_duty_accounts, m.fs.b7.hrsg_duty, "MBtu/hr", 6)
 
     # Accounts with gas flow to stack as the reference/scaling parameter
     # Exhibit 5-8, stream 4
@@ -220,7 +220,7 @@ def test_units3_costing(build_costing):
 
     m.fs.b10.cond_duty = pyo.Var(initialize=condenser_duty)  # MMBtu/hr
     m.fs.b10.cond_duty.fix()
-    get_PP_costing(m.fs.b10, Condenser_duty_accounts, m.fs.b10.cond_duty, "MMBtu/hr", 6)
+    get_PP_costing(m.fs.b10, Condenser_duty_accounts, m.fs.b10.cond_duty, "MBtu/hr", 6)
 
     # Accounts with cooling tower duty as the reference/scaling parameter
     # Exhibit 5-16
@@ -234,19 +234,21 @@ def test_units3_costing(build_costing):
     # MMBtu/hr
     m.fs.b11.cool_tower_duty.fix()
     get_PP_costing(
-        m.fs.b11, Cooling_tower_accounts, m.fs.b11.cool_tower_duty, "MMBtu/hr", 6
+        m.fs.b11, Cooling_tower_accounts, m.fs.b11.cool_tower_duty, "MBtu/hr", 6
     )
 
     # Accounts with circulating water flowrate as the reference/scaling
     # parameter
     Circ_water_accounts = ["9.2", "9.3", "9.4", "9.6", "9.7", "14.5"]
     m.fs.b12 = pyo.Block()
-    # Obtain circulating water flowrate in gpm
-    cir_water_flowrate = 217555  # gpm
+    # Obtain circulating water flowrate in gal/min
+    cir_water_flowrate = 217555  # gal/min
 
-    m.fs.b12.circ_water_flow = pyo.Var(initialize=cir_water_flowrate)  # gpm
+    m.fs.b12.circ_water_flow = pyo.Var(initialize=cir_water_flowrate)  # gal/min
     m.fs.b12.circ_water_flow.fix()
-    get_PP_costing(m.fs.b12, Circ_water_accounts, m.fs.b12.circ_water_flow, "gpm", 6)
+    get_PP_costing(
+        m.fs.b12, Circ_water_accounts, m.fs.b12.circ_water_flow, "gal/min", 6
+    )
 
     # Accounts with total plant gross power as the reference/scaling parameter
     # Exhibit 5-9

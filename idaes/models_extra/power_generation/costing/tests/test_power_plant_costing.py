@@ -57,9 +57,9 @@ def test_PP_costing():
     # accounts 4.x are for boiler BOP and foundations
     coal_accounts = ["1.1", "1.2", "1.3", "1.4", "2.1", "2.2", "4.11", "4.15", "4.16"]
     m.fs.boiler = pyo.Block()
-    m.fs.boiler.coal_mass_flow = pyo.Var(initialize=7238.95)  # tpd
+    m.fs.boiler.coal_mass_flow = pyo.Var(initialize=7238.95)  # ton/d
     m.fs.boiler.coal_mass_flow.fix()
-    get_PP_costing(m.fs.boiler, coal_accounts, m.fs.boiler.coal_mass_flow, "tpd", 2)
+    get_PP_costing(m.fs.boiler, coal_accounts, m.fs.boiler.coal_mass_flow, "ton/d", 2)
 
     # total fuel feed
     # accounts 3.x are for start up systems and miscellaneous plant equipment
@@ -96,7 +96,7 @@ def test_PP_costing():
     m.fs.condenser.duty_MMBtu = pyo.Var(initialize=2016)  # MMBtu/hr
     m.fs.condenser.duty_MMBtu.fix()
     get_PP_costing(
-        m.fs.condenser, cond_accounts, m.fs.condenser.duty_MMBtu, "MMBtu/hr", 2
+        m.fs.condenser, cond_accounts, m.fs.condenser.duty_MMBtu, "MBtu/hr", 2
     )
 
     # Circulating water flow rate
@@ -104,10 +104,14 @@ def test_PP_costing():
     # account 14.5 is for the pumphouse
     circ_accounts = ["9.2", "9.3", "9.4", "9.6", "9.7", "14.5"]
     m.fs.circulating_water = pyo.Block()
-    m.fs.circulating_water.vol_flow = pyo.Var(initialize=463371)  # gpm
+    m.fs.circulating_water.vol_flow = pyo.Var(initialize=463371)  # gal/min
     m.fs.circulating_water.vol_flow.fix()
     get_PP_costing(
-        m.fs.circulating_water, circ_accounts, m.fs.circulating_water.vol_flow, "gpm", 2
+        m.fs.circulating_water,
+        circ_accounts,
+        m.fs.circulating_water.vol_flow,
+        "gal/min",
+        2,
     )
 
     # Ash flow rate
@@ -306,10 +310,14 @@ def test_power_plant_costing():
     # subcritical PC
     coal_accounts = ["1.1", "1.2", "1.3"]
     m.fs.subcritical_PC = pyo.Block()
-    m.fs.subcritical_PC.coal_feed_rate = pyo.Var(initialize=7613.37)  # tpd
+    m.fs.subcritical_PC.coal_feed_rate = pyo.Var(initialize=7613.37)  # ton/d
     m.fs.subcritical_PC.coal_feed_rate.fix()
     get_PP_costing(
-        m.fs.subcritical_PC, coal_accounts, m.fs.subcritical_PC.coal_feed_rate, "tpd", 1
+        m.fs.subcritical_PC,
+        coal_accounts,
+        m.fs.subcritical_PC.coal_feed_rate,
+        "ton/d",
+        1,
     )
 
     # two-stage, slurry-feed IGCC
@@ -335,7 +343,7 @@ def test_power_plant_costing():
     m.fs.IGCC_3 = pyo.Block()
     m.fs.IGCC_3.HRSG_duty = pyo.Var(initialize=1777.86)  # MMBtu/hr
     m.fs.IGCC_3.HRSG_duty.fix()
-    get_PP_costing(m.fs.IGCC_3, HRSG_accounts, m.fs.IGCC_3.HRSG_duty, "MMBtu/hr", 5)
+    get_PP_costing(m.fs.IGCC_3, HRSG_accounts, m.fs.IGCC_3.HRSG_duty, "MBtu/hr", 5)
 
     # NGCC
     steam_turbine_accounts = ["8.1", "8.2", "8.5"]
@@ -681,7 +689,7 @@ def test_ASU_costing():
 
     m.fs.ASU = pyo.Block()
     m.fs.ASU.O2_flow = pyo.Var()
-    m.fs.ASU.O2_flow.fix(13078)  # TPD
+    m.fs.ASU.O2_flow.fix(13078)  # ton/d
 
     get_ASU_cost(m.fs.ASU, m.fs.ASU.O2_flow)
 

@@ -68,7 +68,9 @@ def model():
     m.fs.boiler = UnitModelBlock()
     coal_accounts = ["1.1", "1.2", "1.3", "1.4", "2.1", "2.2", "4.11", "4.15", "4.16"]
     # m.fs.boiler = pyo.Block()
-    m.fs.boiler.coal_mass_flow = pyo.Var(initialize=7238.95)  # tpd
+    m.fs.boiler.coal_mass_flow = pyo.Var(
+        initialize=7238.95, units=pyunits.ton / pyunits.day
+    )
     m.fs.boiler.coal_mass_flow.fix()
     # get_PP_costing(m.fs.boiler, coal_accounts,
     #                m.fs.boiler.coal_mass_flow, "tpd", 2)
@@ -80,7 +82,6 @@ def model():
             "costing_method_arguments": {
                 "cost_accounts": coal_accounts,
                 "scaled_param": m.fs.boiler.coal_mass_flow,
-                "units": "tpd",
                 "tech": 2,
                 "ccs": "A",
             },

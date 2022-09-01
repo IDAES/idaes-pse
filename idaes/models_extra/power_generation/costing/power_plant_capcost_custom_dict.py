@@ -348,7 +348,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.10.1.ccs": {
                 "BEC": 0.6 * 2082000 / 1e3,
@@ -364,7 +364,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.11.1.ccs": {
                 "BEC": 0.6 * 1855000 / 1e3,
@@ -380,7 +380,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.12.1.ccs": {
                 "BEC": 0.6 * 89000 / 1e3,
@@ -396,7 +396,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.13.1.ccs": {
                 "BEC": 0.6 * 165000 / 1e3,
@@ -412,7 +412,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.14.1.ccs": {
                 "BEC": 0.6 * 74000 / 1e3,
@@ -428,7 +428,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.15.1.ccs": {
                 "BEC": 0.6 * 1992000 / 1e3,
@@ -444,7 +444,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.16.1.ccs": {
                 "BEC": 0.6 * 2036000 / 1e3,
@@ -460,7 +460,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.17.1.ccs": {
                 "BEC": 0.6 * 46000 / 1e3,
@@ -476,7 +476,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.18.1.ccs": {
                 "BEC": 0.6 * 9000 / 1e3,
@@ -492,7 +492,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.19.1.ccs": {
                 "BEC": 0.6 * 25000 / 1e3,
@@ -508,7 +508,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.20.1.ccs": {
                 "BEC": 0.6 * 34000 / 1e3,
@@ -524,7 +524,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.21.1.ccs": {
                 "BEC": 0.6 * 260000 / 1e3,
@@ -540,7 +540,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.22.1.ccs": {
                 "BEC": 0.6 * 296000 / 1e3,
@@ -556,7 +556,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.23.1.ccs": {
                 "BEC": 0.6 * 34000 / 1e3,
@@ -572,7 +572,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.24.1.ccs": {
                 "BEC": 0.6 * 144000 / 1e3,
@@ -588,7 +588,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.25.1.ccs": {
                 "BEC": 0.6 * 135000 / 1e3,
@@ -604,7 +604,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
             "6.26.1.ccs": {
                 "BEC": 0.6 * 791000 / 1e3,
@@ -620,7 +620,7 @@ custom_costing_params = {
                 "Process Contingency": 0.12,
                 "Project Contingency": 0.2,
                 "RP Value": 672504.35,
-                "Units": "m3/hr",
+                "Units": "m**3/hr",
             },
         }
     }
