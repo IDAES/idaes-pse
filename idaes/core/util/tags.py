@@ -313,6 +313,13 @@ class ModelTag:
             return False
 
     @property
+    def fixed(self):
+        """Get the tagged variable if the tag is not a variable, raise TypeError"""
+        if not self.is_var:
+            return False
+        return self.expression.fixed
+
+    @property
     def is_indexed(self):
         """Returns whether the tagged expression is an indexed."""
         try:
@@ -751,6 +758,7 @@ def svg_tag(
         tag_map = dict()
         for tag in tag_group:
             new_tag = tag.replace("@", "_")
+            new_tag = new_tag.replace(" ", "_")
             tag_map[new_tag] = tag
 
     # Ture SVG string into XML document
