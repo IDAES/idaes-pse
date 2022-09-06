@@ -14,154 +14,85 @@ ALAMOPY: ALAMO Python
     :maxdepth: 1
 
     alamopy-cli
+    alamopy-depr
 
 The purpose of ALAMOPY (Automatic Learning of Algebraic MOdels PYthon wrapper) is to provide a wrapper for the software ALAMO which generates algebraic surrogate models of black-box systems for which a simulator or experimental setup is available. Consider a system for which the outputs **z** are an unknown function **f** of the system inputs **x**.  The software identifies a function **f**, i.e., a relationship between the inputs and outputs of the system, that best matches data (pairs of **x** and corresponding **z** values) that are collected via simulation or experimentation.
 
 Basic Usage
 -----------
 
-ALAMOPY's main function is **alamopy.alamo**. Data can be read in or simulated using available python packages. The main arguments of the alamopy.alamo python function are inputs and outputs, which are 2D arrays of data. For example
+ALAMOPY's main functions are **alamopy.AlamoTrainer**, which calls ALAMO to train surrogates from passed data, and **alamopy.AlamoSurrogate**, which populates an IDAES `SurrogateObject` with the ALAMO model. This object may then be passed directly to other IDAES methods for visualization or flowsheet integration (see the sections for Visualization and Examples below).
+
+Data can be read in or simulated using available Python packages. The main arguments of the `alamopy.AlamoTrainer`` Python function are inputs and outputs, which are 2D arrays of data with associated variable labels. Once a trained surrogate object exists, `alamopy.AlamoSurrogate` takes the model expressions, variable labels and input bounds as arguments. For example,
 
 .. code-block:: python
 
-    regression_results =alamopy.alamo(x_inputs, z_outputs, **kargs)
+  # after reading or generating a DataFrame object called `data_training`
+  trainer = AlamoTrainer(input_labels=['x1', 'x2'], output_labels=['z1', 'z2'], training_dataframe=data_training)
+  trainer.config.[Alamo Option] = [Valid Option Choice]  # see below for more details
+  success, alm_surr, msg = trainer.train_surrogate()
 
-where **\*\*kargs** is a set of named keyword arguments than can be passed to the alamo python function to customize the basis function set, names of output files, and other options available in ALAMO.
+  surrogate_expressions = trainer._results['Model']
+  input_labels = trainer._input_labels
+  output_labels = trainer._output_labels
+  xmin, xmax = [0.1, 0.8], [0.8, 1.2]
+  input_bounds = {input_labels[i]: (xmin[i], xmax[i]) for i in range(len(input_labels))}
 
+  alm_surr = AlamoSurrogate(surrogate_expressions, input_labels, output_labels, input_bounds)
 
-.. warning::
-    The *alamopy.doalamo* function is deprecated. It is being replaced with *alamopy.alamo*
+where [Alamo Option] is a valid keyword argument that can be passed to the ALAMO Python function subject a range of available [Valid Option Choices] values to customize the basis function set, names of output files, and other options available in ALAMO.
 
+User may save their trained surrogate objects by serializing to JSON, and load into a different script, notebook or environment. For example,
 
-Options for *alamopy.alamo*
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Possible arguments to be passed to ALAMO through do alamo and additional arguments that govern the behavior of doalamo.
+.. code-block:: python
+  
+  # to save a model
+  model = alm_surr.save_to_file('alamo_surrogate.json', overwrite=True)
 
-* xlabels - list of strings to label the input variables
-* zlabels - list of strings to label the output variables
-* functions - logfcns, expfcns, cosfcns, sinfcns, linfcns, intercept. These are '0-1' options to activate these functions
-* monomialpower, multi2power, multi3power, ratiopower. List of terms to be used in the respective basis functions
-* modeler - integer 1-7 determines the choice of fitness metric
+  # to load a model
+  surrogate = AlamoSurrogate.load_from_file('alamo_surrogate.json')
+
+Options for *alamopy.AlamoTrainer*
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. rubric:: ALAMOPY.ALAMO Options
+
+Below are some common arguments users may pass to ALAMO through `alamopy.AlamoTrainer` that govern the behavior of the regression procedure, solver, file characteristics and other options. See :ref: `ALAMOPY.ALAMO Options<explanations.modeling_extensions/surrogate/alamopy/alamopy-cli:ALAMOPY.ALAMO Options>` for more details on valid options and values.
+
+* input_labels - list of strings to label the input variables
+* output_labels - list of strings to label the output variables
+* logfcns, expfcns, cosfcns, sinfcns, linfcns, constant - these are '0-1' options to activate these functions
+* monomialpower, multi2power, multi3power, ratiopower - list of terms to be used in the respective basis functions
+* maxterms - maximum number of basis terms allowed in the "best fit" model
+* filename - path to ALAMO .alm input file
+* overwrite_files - True/False flag whether to overwrite files
+* modeler - integer 1-8 determines the choice of fitness metric
+* screener - integer 0-2 determines if and how the size of the model will be minimized during training
 * solvemip - '0-1' option that will force the solving of the .gms file
 
+Visualization
+-------------
 
-These options are specific to alamopy and will not change the behavior of the underlying .alm file.
+.. rubric:: Visualizing Surrogate Model Results
 
-* expandoutput - '0-1' option that can be used to collect more information from the ALAMO .lst and .trc file
-* showalm - '0-1' option that controlif the ALAMO output is printed to screen
-* almname - A string that will assign the name of the .alm file
-* outkeys - '0-1' option for dictionary indexing according to the output labels
-* outkeys - '0-1' option for dictionary indexing according to the output labels
-* outkeys - '0-1' option for dictionary indexing according to the output labels
-* savetrace - '0-1' option that controls the status of the trace file
-* savescratch - '0-1' option to save the .alm and .lst files
-* almopt -  A string option that will append a text file of the same name to the end of each .alm fille to faciliate advanced user access in an automated fashion
+For visualizing ALAMO-trained surrogates via parity and residual plots, see :ref:`Visualizing Surrogate Model Results<explanations/modeling_extensions/surrogate/plotting/index:Visualizing Surrogate Model Results>`.
 
-ALAMOPY Output
------------------
+Custom Basis Functions
+----------------------
 
-There are mutliple outputs from the running *alamopy.alamo*. Outputs include:
-
-* f(model): A callable function
-* pymodel: name of the python model written
-* model: string of the regressed model
-
-Note: A python script named after the output variables is written to the current directory. The model can be imported and used for further evaluation, for example to evaluate residuals:
-        
-.. code-block:: python
-
- import z1
- residuals = [y-z1.f(inputs[0],inputs[1]) for y,inputs in zip(z,x)]
-
-
-
-Additional Results
-------------------------
-
-After the regression of a model, ALAMOPY provides confidence interval analysis and plotting capabilities using the results output.
-
-**Plotting**
-
-The plotting capabilities of ALAMOPY are available in the **almplot** function. Almplot will plot the function based on one of the inputs.
-
-.. code-block:: python
-
-  result = alamopy.alamo(x_in, z_out, kargs)
-  alamopy.almplot(result)
-
-**Confidence intervals**
-
-Confidence intervals can similarly be calculated for the weighting of selected basis functions using the **almconfidence** function.
-
-This adds **conf_inv** (confidence intervals) and **covariance** (covariance matrix) to the results dictionary. This also gets incorporated into the plotting function if it is available.
-
-.. code-block:: python
-
-  result = alamopy.alamo(x_in, z_out, kargs)
-  result = alamopy.almconfidence(result)
-  alamopy.almplot(result)
-
-.. image:: /images/almconf.png
-    :width: 600px
-
-
-Advanced Regression Capabilities
---------------------------------
-
-Similar to ALAMO, there are advanced capabilities for customization and constrained regression facilitated by methods in ALAMOPY including custom basis functions, custom constraints on the response surface, and basis function groups. These methods interact with the regression using the alamo option file.
-
-**Custom Basis Functions**
+Similar to ALAMO, there are advanced capabilities for customization and constrained regression facilitated by methods in ALAMOPY including custom basis functions. These methods interact with the regression using the ALAMO option file.
 
 Custom basis functions can be added to the built-in functions to expand the functional forms available. To use this advanced capability in ALAMOPY, the following function is called. Note it is necessary to use the xlabels assigned to the input parameters.
 
 .. code-block:: python
 
-  addCustomFunctions(fcn_list)
-  addCustomFunctions(["x1^2 * x2^2", "...", "..." ...])
+  trainer.config.custom_basis_functions = ["x1^2 * x2^2", "...", "..." ...]
 
+.. rubric:: ALAMOPY: ALAMO Python
 
-**Custom Constraints**
-
-Custom constraints can be placed on response surface or regressed function of the output variable. In ALAMO, this is controlled using custom constraints, CUSTOMCON. The constraints, a function **g(x_inputs, z_outputs)**  are applied to a specific output variable, which is the index of the output variable, and are less than or equal to 0 **(g <= 0)**.
-
-To use this advanced capability in ALAMOPY, the following function is called. Note it is necessary to use the xlabels assigned to the input parameters.
-
-.. code-block:: python
-
-  addCustomConstraints(custom_constraint_list, **kargs)
-  addCustomConstraints(["1 z1 - x1 + x2 +1", "...", "..." ...])
-
-**Basis Function Groups and Constraints**
-
-In addition to imposing constraints on the response surface it produces, ALAMO has the ability to enforce constraints on groups of selected basis functions. To define groups in ALAMOPY, you can use the following methods. Each Basis group has an index number that will be used as reference in the group constraints. The groups are defined by three or four parameters. Options for Member-type are LIN, LOG, EXP, SIN, COS, MONO, MULTI2, MULTI3, RATIO, GRP, RBF, and CUST.
-
-.. code-block:: python
-
-  addBasisGroup(type_of_function, input_indices, powers)
-  addBasisGroups(groups)
-
-  addBasisGroup("MONO", "1", "2")
-  addBasisGroups([["LIN","1 2"],["MONO","1","2"],["GRP","1 2"]])
-
-
-With the groups defined, constraints can be placed on the groups using the constraint-types NMT (no-more-than), ATL (at-least), REQ (requires), and XCL (exclude). For NMT and ATL the integer-parameter is the number of members in the group that should be selected based on the constraint. For REQ and XCL the integer-parameter is the group-id number of excluded or required basis functions.
-
-
-To add the basis constraints to alamopy, you can use the following methods.
-
-.. code-block:: python
-
-  addBasisConstraint(group_id, output_id, constraint_type, intParam)
-  addBasisConstraints(groups_constraint_list)
-
-  addBasisConstraint(3,1,"NMT",1)
-  addBasisConstraints([[3,1,"NMT",1]])
+The prior form of ALAMOPY contains several advanced capabilities that are not yet supported by the new framework. See :ref: `ALAMOPY.ALAMO Options<explanations.modeling_extensions/surrogate/alamopy/alamopy-depr:ALAMOPY: ALAMO Python>` for more details on these methods.
 
 ALAMOPY Examples
 ----------------
 
-Three examples are included with ALMAOPY. These examples demonstrate different use cases, and provide a template for utilizing user-defined mechanisms.
-
-* ackley.py
-* branin.py 
-* camel6.py with a Jupyter notebok
+For an example of optimizing a flowsheet containing an ALAMO-trained surrogate model, see [Autothermal Reformer Flowsheet Optimization with ALAMO Surrogate Object](https://github.com/IDAES/examples-pse/blob/main/src/Examples/SurrMod/FlowsheetOptimization/ALAMO_flowsheet_optimization.ipynb).
