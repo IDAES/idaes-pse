@@ -16,16 +16,16 @@ Tests for Heat Exchanger 1D unit model.
 Author: Jaffer Ghouse
 """
 import pytest
-from io import StringIO
 
 from pyomo.environ import (
-    check_optimal_termination,
+    assert_optimal_termination,
     ConcreteModel,
     value,
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+import pyomo.common.unittest as unittest
 
 import idaes
 from idaes.core import (
@@ -61,6 +61,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
+from idaes.core.util.performance import PerformanceBaseClass
 
 # Imports to assemble BT-PR with different units
 from idaes.core import LiquidPhase, VaporPhase, Component
@@ -378,7 +379,7 @@ class TestBTX_cocurrent(object):
         results = solver.solve(btx)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -641,7 +642,7 @@ class TestBTX_countercurrent(object):
         results = solver.solve(btx)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -703,44 +704,57 @@ class TestBTX_countercurrent(object):
 
 
 # -----------------------------------------------------------------------------
+def build_model():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = iapws95.Iapws95ParameterBlock(
+        default={"phase_presentation": iapws95.PhaseType.LG}
+    )
+
+    m.fs.unit = HX1D(
+        default={
+            "shell_side": {"property_package": m.fs.properties},
+            "tube_side": {"property_package": m.fs.properties},
+            "flow_type": HeatExchangerFlowPattern.cocurrent,
+        }
+    )
+
+    m.fs.unit.d_shell.fix(1.04)
+    m.fs.unit.d_tube_outer.fix(0.01167)
+    m.fs.unit.d_tube_inner.fix(0.01067)
+    m.fs.unit.N_tubes.fix(10)
+    m.fs.unit.shell_length.fix(4.85)
+    m.fs.unit.tube_length.fix(4.85)
+    m.fs.unit.shell_heat_transfer_coefficient.fix(2000)
+    m.fs.unit.tube_heat_transfer_coefficient.fix(51000)
+
+    m.fs.unit.shell_inlet.flow_mol[0].fix(5)
+    m.fs.unit.shell_inlet.enth_mol[0].fix(50000)
+    m.fs.unit.shell_inlet.pressure[0].fix(101325)
+
+    m.fs.unit.tube_inlet.flow_mol[0].fix(5)
+    m.fs.unit.tube_inlet.enth_mol[0].fix(7000)
+    m.fs.unit.tube_inlet.pressure[0].fix(101325)
+
+    return m
+
+
+@pytest.mark.performance
+class Test_HX1D_Performance(PerformanceBaseClass, unittest.TestCase):
+    def build_model(self):
+        return build_model()
+
+    def initialize_model(self, model):
+        model.fs.unit.initialize()
+
+
 @pytest.mark.iapws
 @pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 class TestIAPWS_cocurrent(object):
     @pytest.fixture(scope="class")
     def iapws(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-
-        m.fs.properties = iapws95.Iapws95ParameterBlock(
-            default={"phase_presentation": iapws95.PhaseType.LG}
-        )
-
-        m.fs.unit = HX1D(
-            default={
-                "shell_side": {"property_package": m.fs.properties},
-                "tube_side": {"property_package": m.fs.properties},
-                "flow_type": HeatExchangerFlowPattern.cocurrent,
-            }
-        )
-
-        m.fs.unit.d_shell.fix(1.04)
-        m.fs.unit.d_tube_outer.fix(0.01167)
-        m.fs.unit.d_tube_inner.fix(0.01067)
-        m.fs.unit.N_tubes.fix(10)
-        m.fs.unit.shell_length.fix(4.85)
-        m.fs.unit.tube_length.fix(4.85)
-        m.fs.unit.shell_heat_transfer_coefficient.fix(2000)
-        m.fs.unit.tube_heat_transfer_coefficient.fix(51000)
-
-        m.fs.unit.shell_inlet.flow_mol[0].fix(5)
-        m.fs.unit.shell_inlet.enth_mol[0].fix(50000)
-        m.fs.unit.shell_inlet.pressure[0].fix(101325)
-
-        m.fs.unit.tube_inlet.flow_mol[0].fix(5)
-        m.fs.unit.tube_inlet.enth_mol[0].fix(7000)
-        m.fs.unit.tube_inlet.pressure[0].fix(101325)
-
-        return m
+        return build_model()
 
     @pytest.mark.unit
     def test_build(self, iapws):
@@ -897,7 +911,7 @@ class TestIAPWS_cocurrent(object):
         results = solver.solve(iapws)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -1158,7 +1172,7 @@ class TestIAPWS_countercurrent(object):
         results = solver.solve(iapws)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -1438,7 +1452,7 @@ class TestSaponification_cocurrent(object):
         results = solver.solve(sapon)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -1717,7 +1731,7 @@ class TestSaponification_countercurrent(object):
         results = solver.solve(sapon)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -2094,7 +2108,7 @@ class TestBT_Generic_cocurrent(object):
         results = solver.solve(btx)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration

@@ -109,7 +109,7 @@ class TestComponent:
 
     @pytest.mark.unit
     def test_is_phase_valid_liquid(self, m):
-        m.comp3 = Component(default={"valid_phase_types": PhaseType.liquidPhase})
+        m.comp3 = Component(valid_phase_types=PhaseType.liquidPhase)
 
         m.Liq = LiquidPhase()
         m.Sol = SolidPhase()
@@ -125,7 +125,7 @@ class TestComponent:
 
     @pytest.mark.unit
     def test_is_phase_valid_vapor(self, m):
-        m.comp4 = Component(default={"valid_phase_types": PhaseType.vaporPhase})
+        m.comp4 = Component(valid_phase_types=PhaseType.vaporPhase)
 
         assert not m.comp4._is_phase_valid(m.Liq)
         assert not m.comp4._is_phase_valid(m.Sol)
@@ -135,7 +135,7 @@ class TestComponent:
 
     @pytest.mark.unit
     def test_is_phase_valid_solid(self, m):
-        m.comp5 = Component(default={"valid_phase_types": PhaseType.solidPhase})
+        m.comp5 = Component(valid_phase_types=PhaseType.solidPhase)
 
         assert not m.comp5._is_phase_valid(m.Liq)
         assert m.comp5._is_phase_valid(m.Sol)
@@ -145,7 +145,7 @@ class TestComponent:
 
     @pytest.mark.unit
     def test_is_phase_valid_aqueous(self, m):
-        m.comp6 = Component(default={"valid_phase_types": PhaseType.aqueousPhase})
+        m.comp6 = Component(valid_phase_types=PhaseType.aqueousPhase)
 
         assert not m.comp6._is_phase_valid(m.Liq)
         assert not m.comp6._is_phase_valid(m.Sol)
@@ -157,7 +157,7 @@ class TestComponent:
     @pytest.mark.unit
     def test_is_phase_valid_LV(self, m):
         m.comp7 = Component(
-            default={"valid_phase_types": [PhaseType.liquidPhase, PhaseType.vaporPhase]}
+            valid_phase_types=[PhaseType.liquidPhase, PhaseType.vaporPhase]
         )
 
         assert m.comp7._is_phase_valid(m.Liq)
@@ -183,12 +183,10 @@ class TestComponent:
         m.get_metadata().default_units["temperature"] = pyunits.K
 
         m.comp = Component(
-            default={
-                "parameter_data": {
-                    "mw": 10,
-                    "pressure_crit": 1e5,
-                    "temperature_crit": 500,
-                }
+            parameter_data={
+                "mw": 10,
+                "pressure_crit": 1e5,
+                "temperature_crit": 500,
             }
         )
 
@@ -218,12 +216,10 @@ class TestComponent:
         m.get_metadata().default_units["temperature"] = pyunits.K
 
         m.comp = Component(
-            default={
-                "parameter_data": {
-                    "mw": (10, pyunits.g / pyunits.mol),
-                    "pressure_crit": (1, pyunits.bar),
-                    "temperature_crit": (900, pyunits.degR),
-                }
+            parameter_data={
+                "mw": (10, pyunits.g / pyunits.mol),
+                "pressure_crit": (1, pyunits.bar),
+                "temperature_crit": (900, pyunits.degR),
             }
         )
 
@@ -294,7 +290,7 @@ class TestSolute:
 
     @pytest.mark.unit
     def test_is_phase_valid_liquid(self, m):
-        m.comp3 = Solute(default={"valid_phase_types": PhaseType.liquidPhase})
+        m.comp3 = Solute(valid_phase_types=PhaseType.liquidPhase)
 
         m.Liq = LiquidPhase()
         m.Sol = SolidPhase()
@@ -310,7 +306,7 @@ class TestSolute:
 
     @pytest.mark.unit
     def test_is_phase_valid_vapor(self, m):
-        m.comp4 = Solute(default={"valid_phase_types": PhaseType.vaporPhase})
+        m.comp4 = Solute(valid_phase_types=PhaseType.vaporPhase)
 
         assert not m.comp4._is_phase_valid(m.Liq)
         assert not m.comp4._is_phase_valid(m.Sol)
@@ -320,7 +316,7 @@ class TestSolute:
 
     @pytest.mark.unit
     def test_is_phase_valid_solid(self, m):
-        m.comp5 = Solute(default={"valid_phase_types": PhaseType.solidPhase})
+        m.comp5 = Solute(valid_phase_types=PhaseType.solidPhase)
 
         assert not m.comp5._is_phase_valid(m.Liq)
         assert m.comp5._is_phase_valid(m.Sol)
@@ -330,7 +326,7 @@ class TestSolute:
 
     @pytest.mark.unit
     def test_is_phase_valid_aqueous(self, m):
-        m.comp6 = Solute(default={"valid_phase_types": PhaseType.aqueousPhase})
+        m.comp6 = Solute(valid_phase_types=PhaseType.aqueousPhase)
 
         assert not m.comp6._is_phase_valid(m.Liq)
         assert not m.comp6._is_phase_valid(m.Sol)
@@ -341,7 +337,7 @@ class TestSolute:
     @pytest.mark.unit
     def test_is_phase_valid_LV(self, m):
         m.comp7 = Solute(
-            default={"valid_phase_types": [PhaseType.liquidPhase, PhaseType.vaporPhase]}
+            valid_phase_types=[PhaseType.liquidPhase, PhaseType.vaporPhase]
         )
 
         assert m.comp7._is_phase_valid(m.Liq)
@@ -408,7 +404,7 @@ class TestSovent:
 
     @pytest.mark.unit
     def test_is_phase_valid_liquid(self, m):
-        m.comp3 = Solvent(default={"valid_phase_types": PhaseType.liquidPhase})
+        m.comp3 = Solvent(valid_phase_types=PhaseType.liquidPhase)
 
         m.Liq = LiquidPhase()
         m.Sol = SolidPhase()
@@ -424,7 +420,7 @@ class TestSovent:
 
     @pytest.mark.unit
     def test_is_phase_valid_vapor(self, m):
-        m.comp4 = Solvent(default={"valid_phase_types": PhaseType.vaporPhase})
+        m.comp4 = Solvent(valid_phase_types=PhaseType.vaporPhase)
 
         assert not m.comp4._is_phase_valid(m.Liq)
         assert not m.comp4._is_phase_valid(m.Sol)
@@ -434,7 +430,7 @@ class TestSovent:
 
     @pytest.mark.unit
     def test_is_phase_valid_solid(self, m):
-        m.comp5 = Solvent(default={"valid_phase_types": PhaseType.solidPhase})
+        m.comp5 = Solvent(valid_phase_types=PhaseType.solidPhase)
 
         assert not m.comp5._is_phase_valid(m.Liq)
         assert m.comp5._is_phase_valid(m.Sol)
@@ -445,7 +441,7 @@ class TestSovent:
     @pytest.mark.unit
     def test_is_phase_valid_LV(self, m):
         m.comp6 = Solvent(
-            default={"valid_phase_types": [PhaseType.liquidPhase, PhaseType.vaporPhase]}
+            valid_phase_types=[PhaseType.liquidPhase, PhaseType.vaporPhase]
         )
 
         assert m.comp6._is_phase_valid(m.Liq)
@@ -456,7 +452,7 @@ class TestSovent:
 
     @pytest.mark.unit
     def test_is_phase_valid_aqueous(self, m):
-        m.comp7 = Solvent(default={"valid_phase_types": PhaseType.aqueousPhase})
+        m.comp7 = Solvent(valid_phase_types=PhaseType.aqueousPhase)
 
         assert not m.comp7._is_phase_valid(m.Liq)
         assert not m.comp7._is_phase_valid(m.Sol)
@@ -483,7 +479,7 @@ class TestIon:
             "class for the AnionData and CationData classes, and should "
             "not be used directly",
         ):
-            m.comp = Ion(default={"_electrolyte": True})
+            m.comp = Ion(_electrolyte=True)
 
     @pytest.mark.unit
     def test_not_electrolye(self):
@@ -509,7 +505,7 @@ class TestIon:
             PropertyPackageError,
             match="comp Ion Component types should only be used with " "Aqueous Phases",
         ):
-            m.comp = Ion(default={"_electrolyte": False})
+            m.comp = Ion(_electrolyte=False)
 
 
 class TestAnion:
@@ -537,7 +533,7 @@ class TestAnion:
             PropertyPackageError,
             match="comp Ion Component types should only be used with " "Aqueous Phases",
         ):
-            m.comp = Anion(default={"_electrolyte": False})
+            m.comp = Anion(_electrolyte=False)
 
     @pytest.fixture(scope="class")
     def m(self):
@@ -561,7 +557,7 @@ class TestAnion:
 
         m.anion_set = Set()
 
-        m.comp = Anion(default={"charge": -1, "_electrolyte": True})
+        m.comp = Anion(charge=-1, _electrolyte=True)
 
         return m
 
@@ -597,14 +593,14 @@ class TestAnion:
             "configuration argument."
             " Anions must have a negative charge.",
         ):
-            m.an = Anion(default={"charge": +1, "_electrolyte": True})
+            m.an = Anion(charge=+1, _electrolyte=True)
 
     @pytest.mark.unit
     def test_no_charge(self, m):
         with pytest.raises(
             ConfigurationError, match="an was not provided with a value " "for charge."
         ):
-            m.an = Anion(default={"_electrolyte": True})
+            m.an = Anion(_electrolyte=True)
 
     @pytest.mark.unit
     def test_is_phase_valid_no_assignment(self, m):
@@ -642,7 +638,7 @@ class TestCation:
             PropertyPackageError,
             match="comp Ion Component types should only be used with " "Aqueous Phases",
         ):
-            m.comp = Cation(default={"_electrolyte": False})
+            m.comp = Cation(_electrolyte=False)
 
     @pytest.fixture(scope="class")
     def m(self):
@@ -666,7 +662,7 @@ class TestCation:
 
         m.cation_set = Set()
 
-        m.comp = Cation(default={"charge": +1, "_electrolyte": True})
+        m.comp = Cation(charge=+1, _electrolyte=True)
 
         return m
 
@@ -702,14 +698,14 @@ class TestCation:
             "configuration argument."
             " Cations must have a positive charge.",
         ):
-            m.cat = Cation(default={"charge": -1, "_electrolyte": True})
+            m.cat = Cation(charge=-1, _electrolyte=True)
 
     @pytest.mark.unit
     def test_no_charge(self, m):
         with pytest.raises(
             ConfigurationError, match="cat was not provided with a value " "for charge."
         ):
-            m.cat = Cation(default={"_electrolyte": True})
+            m.cat = Cation(_electrolyte=True)
 
     @pytest.mark.unit
     def test_is_phase_valid_no_assignment(self, m):
@@ -754,9 +750,7 @@ class TestApparent:
 
         m._apparent_set = Set()
 
-        m.comp = Apparent(
-            default={"dissociation_species": {"comp": 1}, "_electrolyte": True}
-        )
+        m.comp = Apparent(dissociation_species={"comp": 1}, _electrolyte=True)
 
         return m
 
@@ -780,9 +774,7 @@ class TestApparent:
 
         m.get_metadata = types.MethodType(get_metadata, m)
 
-        m.comp = Apparent(
-            default={"dissociation_species": {"comp": 1}, "_electrolyte": False}
-        )
+        m.comp = Apparent(dissociation_species={"comp": 1}, _electrolyte=False)
 
         for j in m.component_list:
             assert j in ["comp"]
@@ -817,7 +809,7 @@ class TestApparent:
             "Apparent components require the dissociation species to be "
             "defined.",
         ):
-            m.comp = Apparent(default={"_electrolyte": False})
+            m.comp = Apparent(_electrolyte=False)
 
     @pytest.mark.unit
     def test_config(self, m):
@@ -847,11 +839,9 @@ class TestApparent:
     @pytest.mark.unit
     def test_is_phase_valid_liquid(self, m):
         m.comp3 = Apparent(
-            default={
-                "valid_phase_types": PhaseType.liquidPhase,
-                "dissociation_species": {"comp": 1},
-                "_electrolyte": True,
-            }
+            valid_phase_types=PhaseType.liquidPhase,
+            dissociation_species={"comp": 1},
+            _electrolyte=True,
         )
 
         m.Liq = LiquidPhase()
@@ -869,11 +859,9 @@ class TestApparent:
     @pytest.mark.unit
     def test_is_phase_valid_vapor(self, m):
         m.comp4 = Apparent(
-            default={
-                "valid_phase_types": PhaseType.vaporPhase,
-                "dissociation_species": {"comp": 1},
-                "_electrolyte": True,
-            }
+            valid_phase_types=PhaseType.vaporPhase,
+            dissociation_species={"comp": 1},
+            _electrolyte=True,
         )
 
         assert not m.comp4._is_phase_valid(m.Liq)
@@ -885,11 +873,9 @@ class TestApparent:
     @pytest.mark.unit
     def test_is_phase_valid_solid(self, m):
         m.comp5 = Apparent(
-            default={
-                "valid_phase_types": PhaseType.solidPhase,
-                "dissociation_species": {"comp": 1},
-                "_electrolyte": True,
-            }
+            valid_phase_types=PhaseType.solidPhase,
+            dissociation_species={"comp": 1},
+            _electrolyte=True,
         )
 
         assert not m.comp5._is_phase_valid(m.Liq)
@@ -901,11 +887,9 @@ class TestApparent:
     @pytest.mark.unit
     def test_is_phase_valid_aqueous(self, m):
         m.comp6 = Apparent(
-            default={
-                "valid_phase_types": PhaseType.aqueousPhase,
-                "dissociation_species": {"comp": 1},
-                "_electrolyte": True,
-            }
+            valid_phase_types=PhaseType.aqueousPhase,
+            dissociation_species={"comp": 1},
+            _electrolyte=True,
         )
 
         assert not m.comp6._is_phase_valid(m.Liq)
@@ -917,11 +901,9 @@ class TestApparent:
     @pytest.mark.unit
     def test_is_phase_valid_LV(self, m):
         m.comp7 = Apparent(
-            default={
-                "valid_phase_types": [PhaseType.liquidPhase, PhaseType.vaporPhase],
-                "dissociation_species": {"comp": 1},
-                "_electrolyte": True,
-            }
+            valid_phase_types=[PhaseType.liquidPhase, PhaseType.vaporPhase],
+            dissociation_species={"comp": 1},
+            _electrolyte=True,
         )
 
         assert m.comp7._is_phase_valid(m.Liq)
