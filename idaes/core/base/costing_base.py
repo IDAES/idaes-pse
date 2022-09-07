@@ -145,6 +145,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         # Set up attributes for registering units and flows
         self._registered_unit_costing = []
         self.flow_types = pyo.Set()
+        self.used_flows = pyo.Set()
         self._registered_flows = {}
         self.defined_flows = {}
 
@@ -307,18 +308,15 @@ class FlowsheetCostingBlockData(ProcessBlockData):
             calculate_variable_from_constraint(var, cons)
 
         # Initialize aggregate flows and costs
-        for f in self.flow_types:
-            try:
-                fvar = getattr(self, f"aggregate_flow_{f}")
-                fconst = getattr(self, f"aggregate_flow_{f}_constraint")
-                calculate_variable_from_constraint(fvar, fconst)
+        for f in self.used_flows:
+            fvar = getattr(self, f"aggregate_flow_{f}")
+            fconst = getattr(self, f"aggregate_flow_{f}_constraint")
+            calculate_variable_from_constraint(fvar, fconst)
 
-                calculate_variable_from_constraint(
-                    self.aggregate_flow_costs[f],
-                    self.aggregate_flow_costs_constraint[f],
-                )
-            except AttributeError:
-                self.aggregate_flow_costs[f].set_value(0)
+            calculate_variable_from_constraint(
+                self.aggregate_flow_costs[f],
+                self.aggregate_flow_costs_constraint[f],
+            )
 
         # Call costing package initialization
         try:
@@ -418,6 +416,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         for f in self.flow_types:
             # We will use the first costed flow as representative of the whole
             if len(self._registered_flows[f]) > 0:
+                self.used_flows.add(f)
                 f1 = self._registered_flows[f][0]
                 funits = pyo.units.get_units(f1)
                 agg_var = pyo.Var(units=funits, doc=f"Aggregate flow for {f}")
@@ -435,20 +434,17 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                 self.add_component(f"aggregate_flow_{f}_constraint", agg_const)
 
         # TODO : More complex cost functions
-        self.aggregate_flow_costs = pyo.Var(self.flow_types, units=c_units / t_units)
+        self.aggregate_flow_costs = pyo.Var(self.used_flows, units=c_units / t_units)
 
         @self.Constraint(
-            self.flow_types, doc="Aggregation constraint for material flow costs"
+            self.used_flows, doc="Aggregation constraint for material flow costs"
         )
         def aggregate_flow_costs_constraint(blk, ftype):
-            try:
-                agg_var = getattr(blk, f"aggregate_flow_{ftype}")
-                cost_var = getattr(blk, f"{ftype}_cost")
-                return blk.aggregate_flow_costs[ftype] == (
-                    pyo.units.convert(agg_var * cost_var, to_units=c_units / t_units)
-                )
-            except AttributeError:
-                return blk.aggregate_flow_costs[ftype] == 0 * c_units / t_units
+            agg_var = getattr(blk, f"aggregate_flow_{ftype}")
+            cost_var = getattr(blk, f"{ftype}_cost")
+            return blk.aggregate_flow_costs[ftype] == (
+                pyo.units.convert(agg_var * cost_var, to_units=c_units / t_units)
+            )
 
     def _build_costing_methods_map(self):
         """

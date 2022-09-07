@@ -557,7 +557,7 @@ def setup_environment(bin_directory, use_idaes_solvers):
         os.environ["PATH"] = os.pathsep.join([bin_directory, oe.get("PATH", "")])
     else:
         os.environ["PATH"] = os.pathsep.join([oe.get("PATH", ""), bin_directory])
-    if os.name != "nt":  # If not Windwos set lib search path, Windows uses PATH
+    if os.name != "nt":  # If not Windows set lib search path, Windows uses PATH
         os.environ["LD_LIBRARY_PATH"] = os.pathsep.join(
             [oe.get("LD_LIBRARY_PATH", ""), bin_directory]
         )
