@@ -34,6 +34,14 @@ export class Paper {
             cursor: 'grab'
         });
 
+        this._selection = new joint.ui.Selection({
+            paper: this._paper
+        });
+
+        this._selection.removeHandle('remove');
+        this._selection.removeHandle('rotate');
+        this._selection.removeHandle('resize');
+
         // We need to save this to a variable so that we can access it later
         self = this;
 
@@ -62,6 +70,10 @@ export class Paper {
 
     get paperScroller() {
         return self._paperScroller
+    }
+
+    get selection() {
+        return self._selection
     }
 
     translate_for_angle(angle, width, height) {
@@ -110,6 +122,23 @@ export class Paper {
             );
             if (relatedLinkElement) {
                 relatedLinkElement.dispatchEvent(new Event('RemoveHighlightStream'));
+            }
+        });
+
+        // Initiate selecting when the user grabs the blank area of the paper.
+        self._paper.on('blank:pointerdown', self._selection.startSelecting);
+
+        // Select an element if CTRL/Meta key is pressed while the element is clicked.
+        self._paper.on('element:pointerup', function(cellView, evt) {
+            if (evt.ctrlKey || evt.metaKey) {
+                self._selection.collection.add(cellView.model, { silent: true });
+            }
+        });
+
+        // Unselect an element if the Shift/Meta key is pressed while a selected element is clicked.
+        self._selection.on('selection-box:pointerdown', function(elementView, evt) {
+            if (evt.shiftKey || evt.metaKey) {
+                self._selection.collection.remove(elementView.model);
             }
         });
 

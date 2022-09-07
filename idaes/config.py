@@ -19,7 +19,7 @@ import importlib
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
-default_binary_release = "2.6.3"
+default_binary_release = "3.0.0"
 # Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums
@@ -557,7 +557,7 @@ def setup_environment(bin_directory, use_idaes_solvers):
         os.environ["PATH"] = os.pathsep.join([bin_directory, oe.get("PATH", "")])
     else:
         os.environ["PATH"] = os.pathsep.join([oe.get("PATH", ""), bin_directory])
-    if os.name != "nt":  # If not Windwos set lib search path, Windows uses PATH
+    if os.name != "nt":  # If not Windows set lib search path, Windows uses PATH
         os.environ["LD_LIBRARY_PATH"] = os.pathsep.join(
             [oe.get("LD_LIBRARY_PATH", ""), bin_directory]
         )

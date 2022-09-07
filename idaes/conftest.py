@@ -31,7 +31,7 @@ import sys
 ####
 
 
-REQUIRED_MARKERS = {"unit", "component", "integration"}
+REQUIRED_MARKERS = {"unit", "component", "integration", "performance"}
 ALL_PLATFORMS = {"darwin", "linux", "win32"}
 
 
@@ -103,6 +103,23 @@ def _validate_required_markers(item, required_markers=None, expected_count=1):
             f"found: {required_markers_on_item or required_count}"
         )
         pytest.fail(msg)
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--performance",
+        action="store_true",
+        dest="performance",
+        default=False,
+        help="enable performance decorated tests",
+    )
+
+
+def pytest_configure(config):
+    if not config.option.performance:
+        setattr(config.option, "markexpr", "not performance")
+    else:
+        setattr(config.option, "markexpr", "performance")
 
 
 ####
