@@ -766,7 +766,7 @@ def scale_time_discretization_equations(fs, time_scaling_factor):
     Returns:
         (float) Condition number
     """
-
+    tname = fs.time.local_name
     # Copy and pasted from solvers.petsc.find_discretization_equations then modified
     for var in fs.component_objects(pyo.Var):
         if isinstance(var, DerivativeVar):
@@ -781,14 +781,16 @@ def scale_time_discretization_equations(fs, time_scaling_factor):
                     continue
                 state_var = var.get_state_var()
                 parent = var.parent_block()
-                # if hasattr(parent, var.local_name + "_cont_eq"):
-                #     # This eliminates one collocation method, can we get both?
-                #     raise NotImplementedError(
-                #         "IDAES presently does not support automatically scaling time discretization equations using "
-                #         "collocation."
-                #     )
 
                 disc_eq = getattr(parent, var.local_name + "_disc_eq")
+                # Look for continuity equation, which exists only for collocation with certain sets of polynomials
+                try:
+                    cont_eq = getattr(parent, var.local_name + "_" + tname + "_cont_eq")
+                except KeyError:
+                    cont_eq = None
+
+                if cont_eq is not None:
+                    pass
 
                 for i in state_var.index_set():
                     if get_scaling_factor(var[i]) is None:
@@ -805,7 +807,8 @@ def scale_time_discretization_equations(fs, time_scaling_factor):
                             constraint_scaling_transform(disc_eq[i], s_var, overwrite=False)
                         except:
                             # Discretization equations may or may not exist at the first or last time points
-                            # depending on the method. Backwards skips first, forwards skips last
+                            # depending on the method. Backwards skips first, forwards skips last, central skips
+                            # both (which means the user needs to provide additional equations)
                             pass
                     else:
                         constraint_scaling_transform(disc_eq[i], s_var, overwrite=False)
