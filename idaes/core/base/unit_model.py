@@ -616,12 +616,11 @@ Must be True if dynamic = True,
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl)
         
-        # temporary comments
-        # if not check_optimal_termination(results):
-        #     raise InitializationError(
-        #         f"{blk.name} failed to initialize successfully. Please check "
-        #         f"the output logs for more information."
-        #     )
+        if not check_optimal_termination(results):
+            raise InitializationError(
+                f"{blk.name} failed to initialize successfully. Please check "
+                f"the output logs for more information."
+            )
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
 
