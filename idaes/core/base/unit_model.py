@@ -615,7 +615,7 @@ Must be True if dynamic = True,
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl)
-        
+
         if not check_optimal_termination(results):
             raise InitializationError(
                 f"{blk.name} failed to initialize successfully. Please check "
