@@ -545,6 +545,8 @@ def HX1D_array_model():
     m.fs.unit_array = HX1D(
         unit_set,
         default={
+            "hot_side_name": "shell_side",
+            "cold_side_name": "tube_side",
             "shell_side": {"property_package": m.fs.properties},
             "tube_side": {"property_package": m.fs.properties},
         },
@@ -552,16 +554,16 @@ def HX1D_array_model():
 
     def tube_stream_array_rule(b, i):
         return {
-            "source": b.unit_array[i].tube_outlet,
-            "destination": b.unit_array[i + 1].tube_inlet,
+            "source": b.unit_array[i].tube_side_outlet,
+            "destination": b.unit_array[i + 1].tube_side_inlet,
         }
 
     m.fs.tube_stream_array = Arc(range(2), rule=tube_stream_array_rule)
 
     def shell_stream_array_rule(b, i):
         return {
-            "source": b.unit_array[i + 1].shell_outlet,
-            "destination": b.unit_array[i].shell_inlet,
+            "source": b.unit_array[i + 1].shell_side_outlet,
+            "destination": b.unit_array[i].shell_side_inlet,
         }
 
     m.fs.shell_stream_array = Arc(range(1, -1, -1), rule=shell_stream_array_rule)
@@ -573,7 +575,7 @@ def HX1D_array_model():
 @pytest.mark.unit
 def test_create_stream_table_dataframe_from_Port_HX1D(HX1D_array_model):
     m = HX1D_array_model
-    df = create_stream_table_dataframe({"state": m.fs.unit_array[0].tube_inlet})
+    df = create_stream_table_dataframe({"state": m.fs.unit_array[0].tube_side_inlet})
 
     assert df.loc["Pressure"]["state"] == pytest.approx(101325)
     assert df.loc["Temperature"]["state"] == pytest.approx(298.15)
@@ -584,7 +586,7 @@ def test_create_stream_table_dataframe_from_Port_HX1D(HX1D_array_model):
     assert df.loc["Molar Concentration SodiumAcetate"]["state"] == pytest.approx(100.0)
     assert df.loc["Molar Concentration Ethanol"]["state"] == pytest.approx(100.0)
 
-    df = create_stream_table_dataframe({"state": m.fs.unit_array[0].tube_outlet})
+    df = create_stream_table_dataframe({"state": m.fs.unit_array[0].tube_side_outlet})
 
     assert df.loc["Pressure"]["state"] == pytest.approx(101325)
     assert df.loc["Temperature"]["state"] == pytest.approx(298.15)
