@@ -447,8 +447,8 @@ def create_model():
         return (
             b.turb.inlet_split.mixed_state[t].enth_mol
             * b.turb.inlet_split.mixed_state[t].flow_mol
-            - b.fwh8.desuperheat.tube.properties_out[t].enth_mol
-            * b.fwh8.desuperheat.tube.properties_out[t].flow_mol
+            - b.fwh8.desuperheat.cold_side.properties_out[t].enth_mol
+            * b.fwh8.desuperheat.cold_side.properties_out[t].flow_mol
             + b.turb.ip_stages[1].control_volume.properties_in[t].enth_mol
             * b.turb.ip_stages[1].control_volume.properties_in[t].flow_mol
             - b.turb.hp_split[7].outlet_1.enth_mol[t]
@@ -473,11 +473,11 @@ def create_model():
     )
 
     m.fs.condenser_mix_to_condenser = Arc(
-        source=m.fs.condenser_mix.outlet, destination=m.fs.condenser.inlet_1
+        source=m.fs.condenser_mix.outlet, destination=m.fs.condenser.hot_side_inlet
     )
 
     m.fs.COND_01 = Arc(
-        source=m.fs.condenser.outlet_1, destination=m.fs.hotwell.condensate
+        source=m.fs.condenser.hot_side_outlet, destination=m.fs.hotwell.condensate
     )
 
     m.fs.COND_02 = Arc(source=m.fs.hotwell.outlet, destination=m.fs.cond_pump.inlet)
@@ -488,53 +488,59 @@ def create_model():
         source=m.fs.turb.lp_split[11].outlet_2, destination=m.fs.fwh1.drain_mix.steam
     )
     m.fs.COND_03 = Arc(
-        source=m.fs.cond_pump.outlet, destination=m.fs.fwh1.condense.inlet_2
+        source=m.fs.cond_pump.outlet, destination=m.fs.fwh1.condense.cold_side_inlet
     )
     m.fs.FWH1_DRN1 = Arc(
-        source=m.fs.fwh1.condense.outlet_1, destination=m.fs.fwh1_pump.inlet
+        source=m.fs.fwh1.condense.hot_side_outlet, destination=m.fs.fwh1_pump.inlet
     )
     m.fs.FWH1_DRN2 = Arc(
         source=m.fs.fwh1_pump.outlet, destination=m.fs.fwh1_return.fwh1_drain
     )
     m.fs.FW01A = Arc(
-        source=m.fs.fwh1.condense.outlet_2, destination=m.fs.fwh1_return.feedwater
+        source=m.fs.fwh1.condense.cold_side_outlet,
+        destination=m.fs.fwh1_return.feedwater,
     )
     # fwh2
     m.fs.FW01B = Arc(
-        source=m.fs.fwh1_return.outlet, destination=m.fs.fwh2.cooling.inlet_2
+        source=m.fs.fwh1_return.outlet, destination=m.fs.fwh2.cooling.cold_side_inlet
     )
     m.fs.FWH2_DRN = Arc(
-        source=m.fs.fwh2.cooling.outlet_1, destination=m.fs.fwh1.drain_mix.drain
+        source=m.fs.fwh2.cooling.hot_side_outlet, destination=m.fs.fwh1.drain_mix.drain
     )
     m.fs.EXTR_LP10 = Arc(
         source=m.fs.turb.lp_split[10].outlet_2,
-        destination=m.fs.fwh2.desuperheat.inlet_1,
+        destination=m.fs.fwh2.desuperheat.hot_side_inlet,
     )
     # fwh3
     m.fs.FW02 = Arc(
-        source=m.fs.fwh2.desuperheat.outlet_2, destination=m.fs.fwh3.cooling.inlet_2
+        source=m.fs.fwh2.desuperheat.cold_side_outlet,
+        destination=m.fs.fwh3.cooling.cold_side_inlet,
     )
     m.fs.FWH3_DRN = Arc(
-        source=m.fs.fwh3.cooling.outlet_1, destination=m.fs.fwh2.drain_mix.drain
+        source=m.fs.fwh3.cooling.hot_side_outlet, destination=m.fs.fwh2.drain_mix.drain
     )
     m.fs.EXTR_LP8 = Arc(
-        source=m.fs.turb.lp_split[8].outlet_2, destination=m.fs.fwh3.desuperheat.inlet_1
+        source=m.fs.turb.lp_split[8].outlet_2,
+        destination=m.fs.fwh3.desuperheat.hot_side_inlet,
     )
     # fwh4
     m.fs.FW03 = Arc(
-        source=m.fs.fwh3.desuperheat.outlet_2, destination=m.fs.fwh4.cooling.inlet_2
+        source=m.fs.fwh3.desuperheat.cold_side_outlet,
+        destination=m.fs.fwh4.cooling.cold_side_inlet,
     )
     m.fs.FWH4_DRN = Arc(
-        source=m.fs.fwh4.cooling.outlet_1, destination=m.fs.fwh3.drain_mix.drain
+        source=m.fs.fwh4.cooling.hot_side_outlet, destination=m.fs.fwh3.drain_mix.drain
     )
     m.fs.EXTR_LP4 = Arc(
-        source=m.fs.turb.lp_split[4].outlet_2, destination=m.fs.fwh4.desuperheat.inlet_1
+        source=m.fs.turb.lp_split[4].outlet_2,
+        destination=m.fs.fwh4.desuperheat.hot_side_inlet,
     )
     ############################################################################
     #  FWH5 (Deaerator) and boiler feed pump (BFP)                             #
     ############################################################################
     m.fs.FW04 = Arc(
-        source=m.fs.fwh4.desuperheat.outlet_2, destination=m.fs.fwh5_da.feedwater
+        source=m.fs.fwh4.desuperheat.cold_side_outlet,
+        destination=m.fs.fwh5_da.feedwater,
     )
     m.fs.EXTR_IP10 = Arc(
         source=m.fs.turb.ip_split[10].outlet_2, destination=m.fs.fwh5_da.steam
@@ -548,32 +554,39 @@ def create_model():
     #  High-pressure feedwater heaters                                         #
     ############################################################################
     # fwh6
-    m.fs.FW05B = Arc(source=m.fs.bfp.outlet, destination=m.fs.fwh6.cooling.inlet_2)
+    m.fs.FW05B = Arc(
+        source=m.fs.bfp.outlet, destination=m.fs.fwh6.cooling.cold_side_inlet
+    )
     m.fs.FWH6_DRN = Arc(
-        source=m.fs.fwh6.cooling.outlet_1, destination=m.fs.fwh5_da.drain
+        source=m.fs.fwh6.cooling.hot_side_outlet, destination=m.fs.fwh5_da.drain
     )
     m.fs.EXTR_IP5 = Arc(
-        source=m.fs.turb.ip_split[5].outlet_2, destination=m.fs.fwh6.desuperheat.inlet_1
+        source=m.fs.turb.ip_split[5].outlet_2,
+        destination=m.fs.fwh6.desuperheat.hot_side_inlet,
     )
     # fwh7
     m.fs.FW06 = Arc(
-        source=m.fs.fwh6.desuperheat.outlet_2, destination=m.fs.fwh7.cooling.inlet_2
+        source=m.fs.fwh6.desuperheat.cold_side_outlet,
+        destination=m.fs.fwh7.cooling.cold_side_inlet,
     )
     m.fs.FWH7_DRN = Arc(
-        source=m.fs.fwh7.cooling.outlet_1, destination=m.fs.fwh6.drain_mix.drain
+        source=m.fs.fwh7.cooling.hot_side_outlet, destination=m.fs.fwh6.drain_mix.drain
     )
     m.fs.EXTR_HP7 = Arc(
-        source=m.fs.turb.hp_split[7].outlet_2, destination=m.fs.fwh7.desuperheat.inlet_1
+        source=m.fs.turb.hp_split[7].outlet_2,
+        destination=m.fs.fwh7.desuperheat.hot_side_inlet,
     )
     # fwh8
     m.fs.FW07 = Arc(
-        source=m.fs.fwh7.desuperheat.outlet_2, destination=m.fs.fwh8.cooling.inlet_2
+        source=m.fs.fwh7.desuperheat.cold_side_outlet,
+        destination=m.fs.fwh8.cooling.cold_side_inlet,
     )
     m.fs.FWH8_DRN = Arc(
-        source=m.fs.fwh8.cooling.outlet_1, destination=m.fs.fwh7.drain_mix.drain
+        source=m.fs.fwh8.cooling.hot_side_outlet, destination=m.fs.fwh7.drain_mix.drain
     )
     m.fs.EXTR_HP4 = Arc(
-        source=m.fs.turb.hp_split[4].outlet_2, destination=m.fs.fwh8.desuperheat.inlet_1
+        source=m.fs.turb.hp_split[4].outlet_2,
+        destination=m.fs.fwh8.desuperheat.hot_side_inlet,
     )
 
     ############################################################################
@@ -614,7 +627,7 @@ def _stream_dict(m):
             "CW01": m.fs.condenser.tube.properties_in,
             "CW02": m.fs.condenser.tube.properties_out,
             "MAKEUP_01": m.fs.hotwell.makeup_state,
-            "FW08": m.fs.fwh8.desuperheat.tube.properties_out,
+            "FW08": m.fs.fwh8.desuperheat.cold_side.properties_out,
         }
     )
 
@@ -669,9 +682,9 @@ def set_model_input(m):
     ############################################################################
     #  Condenser section inputs                                                #
     ############################################################################
-    m.fs.condenser.inlet_2.flow_mol.fix(2500000)
-    m.fs.condenser.inlet_2.enth_mol.fix(1700)
-    m.fs.condenser.inlet_2.pressure.fix(500000)
+    m.fs.condenser.cold_side_inlet.flow_mol.fix(2500000)
+    m.fs.condenser.cold_side_inlet.enth_mol.fix(1700)
+    m.fs.condenser.cold_side_inlet.pressure.fix(500000)
     m.fs.condenser.area.fix(13000)
     m.fs.condenser.overall_heat_transfer_coefficient.fix(15000)
 
@@ -764,29 +777,29 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
 
     # set scaling factors
 
-    iscale.set_scaling_factor(m.fs.condenser.side_1.heat, 1e-9)
-    iscale.set_scaling_factor(m.fs.condenser.side_2.heat, 1e-9)
+    iscale.set_scaling_factor(m.fs.condenser.hot_side.heat, 1e-9)
+    iscale.set_scaling_factor(m.fs.condenser.cold_side.heat, 1e-9)
 
-    iscale.set_scaling_factor(m.fs.fwh1.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(m.fs.fwh1.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh1.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh1.condense.cold_side.heat, 1e-7)
 
-    iscale.set_scaling_factor(m.fs.fwh2.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(m.fs.fwh2.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh2.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh2.condense.cold_side.heat, 1e-7)
 
-    iscale.set_scaling_factor(m.fs.fwh3.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(m.fs.fwh3.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh3.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh3.condense.cold_side.heat, 1e-7)
 
-    iscale.set_scaling_factor(m.fs.fwh4.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(m.fs.fwh4.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh4.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh4.condense.cold_side.heat, 1e-7)
 
-    iscale.set_scaling_factor(m.fs.fwh6.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(m.fs.fwh6.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh6.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh6.condense.cold_side.heat, 1e-7)
 
-    iscale.set_scaling_factor(m.fs.fwh7.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(m.fs.fwh7.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh7.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh7.condense.cold_side.heat, 1e-7)
 
-    iscale.set_scaling_factor(m.fs.fwh8.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(m.fs.fwh8.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh8.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh8.condense.cold_side.heat, 1e-7)
 
     iscale.calculate_scaling_factors(m)
 
@@ -856,12 +869,12 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     m.fs.condenser_mix.initialize(outlvl=outlvl, optarg=solver.options)
     # initialize condenser hx
 
-    _set_port(m.fs.condenser.inlet_1, m.fs.condenser_mix.outlet)
-    _set_port(m.fs.condenser.outlet_2, m.fs.condenser.inlet_2)
+    _set_port(m.fs.condenser.hot_side_inlet, m.fs.condenser_mix.outlet)
+    _set_port(m.fs.condenser.cold_side_outlet, m.fs.condenser.cold_side_inlet)
     m.fs.condenser.initialize(outlvl=outlvl, optarg=solver.options)
 
     # initialize hotwell
-    _set_port(m.fs.hotwell.condensate, m.fs.condenser.outlet_1)
+    _set_port(m.fs.hotwell.condensate, m.fs.condenser.hot_side_outlet)
 
     m.fs.hotwell.initialize(outlvl=outlvl, optarg=solver.options)
     m.fs.hotwell.condensate.unfix()
@@ -875,15 +888,15 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     m.fs.fwh1.drain_mix.drain.flow_mol[:] = 1000
     m.fs.fwh1.drain_mix.drain.pressure[:] = 1e5
     m.fs.fwh1.drain_mix.drain.enth_mol[:] = 6117
-    _set_port(m.fs.fwh1.condense.inlet_2, m.fs.cond_pump.outlet)
+    _set_port(m.fs.fwh1.condense.cold_side_inlet, m.fs.cond_pump.outlet)
     _set_port(m.fs.fwh1.drain_mix.steam, m.fs.turb.lp_split[11].outlet_2)
     m.fs.fwh1.initialize(outlvl=outlvl, optarg=solver.options)
     # initialize fwh1 drain pump
-    _set_port(m.fs.fwh1_pump.inlet, m.fs.fwh1.condense.outlet_1)
+    _set_port(m.fs.fwh1_pump.inlet, m.fs.fwh1.condense.hot_side_outlet)
     m.fs.fwh1_pump.initialize(outlvl=5, optarg=solver.options)
     # initialize mixer to add fwh1 drain to feedwater
-    _set_port(m.fs.fwh1_return.feedwater, m.fs.fwh1.condense.outlet_2)
-    _set_port(m.fs.fwh1_return.fwh1_drain, m.fs.fwh1.condense.outlet_1)
+    _set_port(m.fs.fwh1_return.feedwater, m.fs.fwh1.condense.cold_side_outlet)
+    _set_port(m.fs.fwh1_return.fwh1_drain, m.fs.fwh1.condense.hot_side_outlet)
     m.fs.fwh1_return.initialize(outlvl=outlvl, optarg=solver.options)
     m.fs.fwh1_return.feedwater.unfix()
     m.fs.fwh1_return.fwh1_drain.unfix()
@@ -891,24 +904,24 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     m.fs.fwh2.drain_mix.drain.flow_mol[:] = 100
     m.fs.fwh2.drain_mix.drain.pressure[:] = 1.5e5
     m.fs.fwh2.drain_mix.drain.enth_mol[:] = 7000
-    _set_port(m.fs.fwh2.cooling.inlet_2, m.fs.fwh1_return.outlet)
-    _set_port(m.fs.fwh2.desuperheat.inlet_1, m.fs.turb.lp_split[10].outlet_2)
+    _set_port(m.fs.fwh2.cooling.cold_side_inlet, m.fs.fwh1_return.outlet)
+    _set_port(m.fs.fwh2.desuperheat.hot_side_inlet, m.fs.turb.lp_split[10].outlet_2)
     m.fs.fwh2.initialize(outlvl=outlvl, optarg=solver.options)
     # fwh3
     m.fs.fwh3.drain_mix.drain.flow_mol[:] = 100
     m.fs.fwh3.drain_mix.drain.pressure[:] = 2.5e5
     m.fs.fwh3.drain_mix.drain.enth_mol[:] = 8000
-    _set_port(m.fs.fwh3.cooling.inlet_2, m.fs.fwh2.desuperheat.outlet_2)
-    _set_port(m.fs.fwh3.desuperheat.inlet_1, m.fs.turb.lp_split[8].outlet_2)
+    _set_port(m.fs.fwh3.cooling.cold_side_inlet, m.fs.fwh2.desuperheat.cold_side_outlet)
+    _set_port(m.fs.fwh3.desuperheat.hot_side_inlet, m.fs.turb.lp_split[8].outlet_2)
     m.fs.fwh3.initialize(outlvl=outlvl, optarg=solver.options)
     # fwh4
-    _set_port(m.fs.fwh4.cooling.inlet_2, m.fs.fwh3.desuperheat.outlet_2)
-    _set_port(m.fs.fwh4.desuperheat.inlet_1, m.fs.turb.lp_split[4].outlet_2)
+    _set_port(m.fs.fwh4.cooling.cold_side_inlet, m.fs.fwh3.desuperheat.cold_side_outlet)
+    _set_port(m.fs.fwh4.desuperheat.hot_side_inlet, m.fs.turb.lp_split[4].outlet_2)
     m.fs.fwh4.initialize(outlvl=outlvl, optarg=solver.options)
     ############################################################################
     #  boiler feed pump and deaerator                                          #
     ############################################################################
-    _set_port(m.fs.fwh5_da.feedwater, m.fs.fwh4.desuperheat.outlet_2)
+    _set_port(m.fs.fwh5_da.feedwater, m.fs.fwh4.desuperheat.cold_side_outlet)
     _set_port(m.fs.fwh5_da.steam, m.fs.turb.ip_split[10].outlet_2)
     m.fs.fwh5_da.drain.flow_mol[:] = 2000
     m.fs.fwh5_da.drain.pressure[:] = 3e6
@@ -925,19 +938,19 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     m.fs.fwh6.drain_mix.drain.flow_mol[:] = 1000
     m.fs.fwh6.drain_mix.drain.pressure[:] = 1e7
     m.fs.fwh6.drain_mix.drain.enth_mol[:] = 9500
-    _set_port(m.fs.fwh6.cooling.inlet_2, m.fs.bfp.outlet)
-    _set_port(m.fs.fwh6.desuperheat.inlet_1, m.fs.turb.ip_split[5].outlet_2)
+    _set_port(m.fs.fwh6.cooling.cold_side_inlet, m.fs.bfp.outlet)
+    _set_port(m.fs.fwh6.desuperheat.hot_side_inlet, m.fs.turb.ip_split[5].outlet_2)
     m.fs.fwh6.initialize(outlvl=outlvl, optarg=solver.options)
     # fwh7
     m.fs.fwh7.drain_mix.drain.flow_mol[:] = 2000
     m.fs.fwh7.drain_mix.drain.pressure[:] = 1e7
     m.fs.fwh7.drain_mix.drain.enth_mol[:] = 9500
-    _set_port(m.fs.fwh7.cooling.inlet_2, m.fs.fwh6.desuperheat.outlet_2)
-    _set_port(m.fs.fwh7.desuperheat.inlet_1, m.fs.turb.hp_split[7].outlet_2)
+    _set_port(m.fs.fwh7.cooling.cold_side_inlet, m.fs.fwh6.desuperheat.cold_side_outlet)
+    _set_port(m.fs.fwh7.desuperheat.hot_side_inlet, m.fs.turb.hp_split[7].outlet_2)
     m.fs.fwh7.initialize(outlvl=outlvl, optarg=solver.options)
     # fwh8
-    _set_port(m.fs.fwh8.cooling.inlet_2, m.fs.fwh7.desuperheat.outlet_2)
-    _set_port(m.fs.fwh8.desuperheat.inlet_1, m.fs.turb.hp_split[4].outlet_2)
+    _set_port(m.fs.fwh8.cooling.cold_side_inlet, m.fs.fwh7.desuperheat.cold_side_outlet)
+    _set_port(m.fs.fwh8.desuperheat.hot_side_inlet, m.fs.turb.hp_split[4].outlet_2)
     m.fs.fwh8.initialize(outlvl=outlvl, optarg=solver.options)
     with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
         res = solver.solve(m, tee=slc.tee)

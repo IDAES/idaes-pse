@@ -330,6 +330,9 @@ class InterrogatorStateBlockData(StateBlockData):
         self._dummy_var_phase_comp = Var(
             self.params.phase_list, self.params.component_list, initialize=1
         )
+        # T and P are often involved in unit conversion checks, so need ot have units
+        self._dummy_var_T = Var(initialize=1, units=pyunits.K)
+        self._dummy_var_P = Var(initialize=1, units=pyunits.Pa)
 
     # Define standard methods and log calls before returning dummy variable
     def get_material_flow_terms(self, p, j):
@@ -383,6 +386,12 @@ class InterrogatorStateBlockData(StateBlockData):
             return self._dummy_var_phase
         elif prop.endswith("_comp"):
             return self._dummy_var_comp
+        elif prop == "temperature":
+            # Need this for unit conversion checks in some models
+            return self._dummy_var_T
+        elif prop == "pressure":
+            # Need this for unit conversion checks in some models
+            return self._dummy_var_P
         else:
             return self._dummy_var
 

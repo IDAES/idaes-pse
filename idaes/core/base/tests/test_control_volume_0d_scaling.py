@@ -148,7 +148,8 @@ def test_full_auto_scaling():
     # Unscaled variables are:
     # rate_reaction_extent (2 reactions)
     # equilibrium_reaction_extent  (2 reactions)
-    assert len(unscaled_var_list) == 4
+    # cp at inlet and outlet
+    assert len(unscaled_var_list) == 6
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
@@ -201,7 +202,8 @@ def test_full_auto_scaling_dynamic():
     # Unscaled variables are:
     # rate_reaction_extent (2 reactions, 4 time points)
     # equilibrium_reaction_extent  (2 reactions, 4 time points)
-    assert len(unscaled_var_list) == 16
+    # cp at inlet and outlet  (4 time points)
+    assert len(unscaled_var_list) == 24
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
@@ -255,7 +257,8 @@ def test_full_auto_scaling_mbtype_phase():
     # rate_reaction_extent (2 reactions, 4 time points)
     # equilibrium_reaction_extent  (2 reactions, 4 time points)
     # phase_equilibrium_generation  (2 reactions, 4 time points)
-    assert len(unscaled_var_list) == 24
+    # cp at inlet and outlet  (4 time points)
+    assert len(unscaled_var_list) == 32
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
@@ -287,7 +290,9 @@ def test_full_auto_scaling_mbtype_element():
 
     # check that all variables have scaling factors
     unscaled_var_list = list(iscale.unscaled_variables_generator(m))
-    assert len(unscaled_var_list) == 0
+    # Unscaled variables are:
+    # cp at inlet and outlet (4 time points)
+    assert len(unscaled_var_list) == 8
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0

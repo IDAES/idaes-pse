@@ -11,13 +11,8 @@
 # license information.
 #################################################################################
 """
-Basic IDAES 1D Heat Exchanger Model.
-
-1D Single pass shell and tube HX model with 0D wall conduction model
+Generic IDAES 1D Heat Exchanger Model with overall area and heat transfer coefficient
 """
-# Import Python libraries
-from enum import Enum
-
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
@@ -25,6 +20,7 @@ from pyomo.environ import (
     Constraint,
     value,
     units as pyunits,
+    as_quantity,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
@@ -39,36 +35,33 @@ from idaes.core import (
     FlowDirection,
     useDefault,
 )
-from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
+from idaes.models.unit_models.heat_exchanger import (
+    HeatExchangerFlowPattern,
+    hx_process_config,
+    add_hx_references,
+)
 from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.util.constants import Constants as c
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
 
 
-__author__ = "Jaffer Ghouse"
+__author__ = "Jaffer Ghouse, Andrew Lee"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
-
-
-class WallConductionType(Enum):
-    zero_dimensional = 0
-    one_dimensional = 1
-    two_dimensional = 2
 
 
 @declare_process_block_class("HeatExchanger1D")
 class HeatExchanger1DData(UnitModelBlockData):
     """Standard Heat Exchanger 1D Unit Model Class."""
 
-    CONFIG = UnitModelBlockData.CONFIG()
-    # Template for config arguments for shell and tube side
+    CONFIG = UnitModelBlockData.CONFIG(implicit=True)
+    # Template for config arguments for hot and cold side
     _SideTemplate = ConfigBlock()
     _SideTemplate.declare(
         "dynamic",
@@ -172,7 +165,7 @@ constructed,
             default=False,
             domain=Bool,
             description="Phase equilibrium term construction flag",
-            doc="""Argument to enable phase equilibrium on the shell side.
+            doc="""Argument to enable phase equilibrium.
 - True - include phase equilibrium term
 - False - do not include phase equilibrium term""",
         ),
@@ -194,7 +187,7 @@ calculations
         "property_package_args",
         ConfigValue(
             default={},
-            description="Arguments for constructing shell property package",
+            description="Arguments for constructing property package",
             doc="""A dict of arguments to be passed to the PropertyBlockData
 and used when constructing these
 (default = 'use_parent_value')
@@ -223,9 +216,9 @@ Pyomo documentation for supported schemes.""",
         ),
     )
 
-    # Create individual config blocks for shell and tube side
-    CONFIG.declare("shell_side", _SideTemplate(doc="shell side config arguments"))
-    CONFIG.declare("tube_side", _SideTemplate(doc="tube side config arguments"))
+    # Create individual config blocks for hot and cold side
+    CONFIG.declare("hot_side", _SideTemplate(doc="hot side config arguments"))
+    CONFIG.declare("cold_side", _SideTemplate(doc="cold side config arguments"))
 
     # Common config args for both sides
     CONFIG.declare(
@@ -255,24 +248,28 @@ discretizing length domain (default=3)""",
             domain=In(HeatExchangerFlowPattern),
             description="Flow configuration of heat exchanger",
             doc="""Flow configuration of heat exchanger
-- HeatExchangerFlowPattern.cocurrent: shell and tube flows from 0 to 1
+- HeatExchangerFlowPattern.cocurrent: hot and cold flows from 0 to 1
 (default)
-- HeatExchangerFlowPattern.countercurrent: shell side flows from 0 to 1
-tube side flows from 1 to 0""",
+- HeatExchangerFlowPattern.countercurrent: hot side flows from 0 to 1
+cold side flows from 1 to 0""",
         ),
     )
     CONFIG.declare(
-        "has_wall_conduction",
+        "hot_side_name",
         ConfigValue(
-            default=WallConductionType.zero_dimensional,
-            domain=In(WallConductionType),
-            description="Conduction model for tube wall",
-            doc="""Argument to enable type of wall heat conduction model.
-- WallConductionType.zero_dimensional - 0D wall model (default),
-- WallConductionType.one_dimensional - 1D wall model along the thickness of the
-tube,
-- WallConductionType.two_dimensional - 2D wall model along the lenghth and
-thickness of the tube""",
+            default=None,
+            domain=str,
+            doc="Hot side name, sets control volume and inlet and outlet names. "
+            "Default = None.",
+        ),
+    )
+    CONFIG.declare(
+        "cold_side_name",
+        ConfigValue(
+            default=None,
+            domain=str,
+            doc="Cold side name, sets control volume and inlet and outlet names. "
+            "Default = None.",
         ),
     )
 
@@ -287,100 +284,101 @@ thickness of the tube""",
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(HeatExchanger1DData, self).build()
+        super().build()
+        self._process_config()
 
         # Set flow directions for the control volume blocks and specify
         # dicretisation if not specified.
         if self.config.flow_type == HeatExchangerFlowPattern.cocurrent:
-            set_direction_shell = FlowDirection.forward
-            set_direction_tube = FlowDirection.forward
+            set_direction_hot = FlowDirection.forward
+            set_direction_cold = FlowDirection.forward
             if (
-                self.config.shell_side.transformation_method
-                != self.config.tube_side.transformation_method
+                self.config.hot_side.transformation_method
+                != self.config.cold_side.transformation_method
             ) or (
-                self.config.shell_side.transformation_scheme
-                != self.config.tube_side.transformation_scheme
+                self.config.hot_side.transformation_scheme
+                != self.config.cold_side.transformation_scheme
             ):
                 raise ConfigurationError(
                     "HeatExchanger1D only supports similar transformation "
-                    "schemes on the shell side and tube side domains for "
+                    "schemes on the hot and cold side domains for "
                     "both cocurrent and countercurrent flow patterns."
                 )
-            if self.config.shell_side.transformation_method is useDefault:
+            if self.config.hot_side.transformation_method is useDefault:
                 _log.warning(
                     "Discretization method was "
-                    "not specified for the shell side of the "
+                    "not specified for the hot side of the "
                     "co-current heat exchanger. "
                     "Defaulting to finite "
-                    "difference method on the shell side."
+                    "difference method on the hot side."
                 )
-                self.config.shell_side.transformation_method = "dae.finite_difference"
-            if self.config.tube_side.transformation_method is useDefault:
+                self.config.hot_side.transformation_method = "dae.finite_difference"
+            if self.config.cold_side.transformation_method is useDefault:
                 _log.warning(
                     "Discretization method was "
-                    "not specified for the tube side of the "
+                    "not specified for the cold side of the "
                     "co-current heat exchanger. "
                     "Defaulting to finite "
-                    "difference method on the tube side."
+                    "difference method on the cold side."
                 )
-                self.config.tube_side.transformation_method = "dae.finite_difference"
-            if self.config.shell_side.transformation_scheme is useDefault:
+                self.config.cold_side.transformation_method = "dae.finite_difference"
+            if self.config.hot_side.transformation_scheme is useDefault:
                 _log.warning(
                     "Discretization scheme was "
-                    "not specified for the shell side of the "
+                    "not specified for the hot side of the "
                     "co-current heat exchanger. "
                     "Defaulting to backward finite "
-                    "difference on the shell side."
+                    "difference on the hot side."
                 )
-                self.config.shell_side.transformation_scheme = "BACKWARD"
-            if self.config.tube_side.transformation_scheme is useDefault:
+                self.config.hot_side.transformation_scheme = "BACKWARD"
+            if self.config.cold_side.transformation_scheme is useDefault:
                 _log.warning(
                     "Discretization scheme was "
-                    "not specified for the tube side of the "
+                    "not specified for the cold side of the "
                     "co-current heat exchanger. "
                     "Defaulting to backward finite "
-                    "difference on the tube side."
+                    "difference on the cold side."
                 )
-                self.config.tube_side.transformation_scheme = "BACKWARD"
+                self.config.cold_side.transformation_scheme = "BACKWARD"
         elif self.config.flow_type == HeatExchangerFlowPattern.countercurrent:
-            set_direction_shell = FlowDirection.forward
-            set_direction_tube = FlowDirection.backward
-            if self.config.shell_side.transformation_method is useDefault:
+            set_direction_hot = FlowDirection.forward
+            set_direction_cold = FlowDirection.backward
+            if self.config.hot_side.transformation_method is useDefault:
                 _log.warning(
                     "Discretization method was "
-                    "not specified for the shell side of the "
+                    "not specified for the hot side of the "
                     "counter-current heat exchanger. "
                     "Defaulting to finite "
-                    "difference method on the shell side."
+                    "difference method on the hot side."
                 )
-                self.config.shell_side.transformation_method = "dae.finite_difference"
-            if self.config.tube_side.transformation_method is useDefault:
+                self.config.hot_side.transformation_method = "dae.finite_difference"
+            if self.config.cold_side.transformation_method is useDefault:
                 _log.warning(
                     "Discretization method was "
-                    "not specified for the tube side of the "
+                    "not specified for the cold side of the "
                     "counter-current heat exchanger. "
                     "Defaulting to finite "
-                    "difference method on the tube side."
+                    "difference method on the cold side."
                 )
-                self.config.tube_side.transformation_method = "dae.finite_difference"
-            if self.config.shell_side.transformation_scheme is useDefault:
+                self.config.cold_side.transformation_method = "dae.finite_difference"
+            if self.config.hot_side.transformation_scheme is useDefault:
                 _log.warning(
                     "Discretization scheme was "
-                    "not specified for the shell side of the "
+                    "not specified for the hot side of the "
                     "counter-current heat exchanger. "
                     "Defaulting to backward finite "
-                    "difference on the shell side."
+                    "difference on the hot side."
                 )
-                self.config.shell_side.transformation_scheme = "BACKWARD"
-            if self.config.tube_side.transformation_scheme is useDefault:
+                self.config.hot_side.transformation_scheme = "BACKWARD"
+            if self.config.cold_side.transformation_scheme is useDefault:
                 _log.warning(
                     "Discretization scheme was "
-                    "not specified for the tube side of the "
+                    "not specified for the cold side of the "
                     "counter-current heat exchanger. "
                     "Defaulting to forward finite "
-                    "difference on the tube side."
+                    "difference on the cold side."
                 )
-                self.config.tube_side.transformation_scheme = "BACKWARD"
+                self.config.cold_side.transformation_scheme = "BACKWARD"
         else:
             raise ConfigurationError(
                 "{} HeatExchanger1D only supports cocurrent and "
@@ -388,96 +386,136 @@ thickness of the tube""",
                 " argument was set to {}.".format(self.name, self.config.flow_type)
             )
 
-        # Control volume 1D for shell
-        self.shell = ControlVolume1DBlock(
+        # Control volume 1D for hot
+        self.hot_side = ControlVolume1DBlock(
             default={
-                "dynamic": self.config.shell_side.dynamic,
-                "has_holdup": self.config.shell_side.has_holdup,
-                "property_package": self.config.shell_side.property_package,
-                "property_package_args": self.config.shell_side.property_package_args,
-                "transformation_method": self.config.shell_side.transformation_method,
-                "transformation_scheme": self.config.shell_side.transformation_scheme,
+                "dynamic": self.config.hot_side.dynamic,
+                "has_holdup": self.config.hot_side.has_holdup,
+                "property_package": self.config.hot_side.property_package,
+                "property_package_args": self.config.hot_side.property_package_args,
+                "transformation_method": self.config.hot_side.transformation_method,
+                "transformation_scheme": self.config.hot_side.transformation_scheme,
                 "finite_elements": self.config.finite_elements,
                 "collocation_points": self.config.collocation_points,
             }
         )
 
-        self.tube = ControlVolume1DBlock(
+        self.cold_side = ControlVolume1DBlock(
             default={
-                "dynamic": self.config.tube_side.dynamic,
-                "has_holdup": self.config.tube_side.has_holdup,
-                "property_package": self.config.tube_side.property_package,
-                "property_package_args": self.config.tube_side.property_package_args,
-                "transformation_method": self.config.tube_side.transformation_method,
-                "transformation_scheme": self.config.tube_side.transformation_scheme,
+                "dynamic": self.config.cold_side.dynamic,
+                "has_holdup": self.config.cold_side.has_holdup,
+                "property_package": self.config.cold_side.property_package,
+                "property_package_args": self.config.cold_side.property_package_args,
+                "transformation_method": self.config.cold_side.transformation_method,
+                "transformation_scheme": self.config.cold_side.transformation_scheme,
                 "finite_elements": self.config.finite_elements,
                 "collocation_points": self.config.collocation_points,
             }
         )
 
-        self.shell.add_geometry(flow_direction=set_direction_shell)
-        self.tube.add_geometry(flow_direction=set_direction_tube)
+        self.hot_side.add_geometry(flow_direction=set_direction_hot)
+        self.cold_side.add_geometry(flow_direction=set_direction_cold)
 
-        self.shell.add_state_blocks(
-            information_flow=set_direction_shell,
-            has_phase_equilibrium=self.config.shell_side.has_phase_equilibrium,
+        self.hot_side.add_state_blocks(
+            information_flow=set_direction_hot,
+            has_phase_equilibrium=self.config.hot_side.has_phase_equilibrium,
         )
-        self.tube.add_state_blocks(
-            information_flow=set_direction_tube,
-            has_phase_equilibrium=self.config.tube_side.has_phase_equilibrium,
-        )
-
-        # Populate shell
-        self.shell.add_material_balances(
-            balance_type=self.config.shell_side.material_balance_type,
-            has_phase_equilibrium=self.config.shell_side.has_phase_equilibrium,
+        self.cold_side.add_state_blocks(
+            information_flow=set_direction_cold,
+            has_phase_equilibrium=self.config.cold_side.has_phase_equilibrium,
         )
 
-        self.shell.add_energy_balances(
-            balance_type=self.config.shell_side.energy_balance_type,
+        # Populate hot
+        self.hot_side.add_material_balances(
+            balance_type=self.config.hot_side.material_balance_type,
+            has_phase_equilibrium=self.config.hot_side.has_phase_equilibrium,
+        )
+
+        self.hot_side.add_energy_balances(
+            balance_type=self.config.hot_side.energy_balance_type,
             has_heat_transfer=True,
         )
 
-        self.shell.add_momentum_balances(
-            balance_type=self.config.shell_side.momentum_balance_type,
-            has_pressure_change=self.config.shell_side.has_pressure_change,
+        self.hot_side.add_momentum_balances(
+            balance_type=self.config.hot_side.momentum_balance_type,
+            has_pressure_change=self.config.hot_side.has_pressure_change,
         )
 
-        self.shell.apply_transformation()
+        self.hot_side.apply_transformation()
 
-        # Populate tube
-        self.tube.add_material_balances(
-            balance_type=self.config.tube_side.material_balance_type,
-            has_phase_equilibrium=self.config.tube_side.has_phase_equilibrium,
+        # Populate cold side
+        self.cold_side.add_material_balances(
+            balance_type=self.config.cold_side.material_balance_type,
+            has_phase_equilibrium=self.config.cold_side.has_phase_equilibrium,
         )
 
-        self.tube.add_energy_balances(
-            balance_type=self.config.tube_side.energy_balance_type,
+        self.cold_side.add_energy_balances(
+            balance_type=self.config.cold_side.energy_balance_type,
             has_heat_transfer=True,
         )
 
-        self.tube.add_momentum_balances(
-            balance_type=self.config.tube_side.momentum_balance_type,
-            has_pressure_change=self.config.tube_side.has_pressure_change,
+        self.cold_side.add_momentum_balances(
+            balance_type=self.config.cold_side.momentum_balance_type,
+            has_pressure_change=self.config.cold_side.has_pressure_change,
         )
 
-        self.tube.apply_transformation()
+        self.cold_side.apply_transformation()
 
-        # Add Ports for shell side
-        self.add_inlet_port(name="shell_inlet", block=self.shell)
-        self.add_outlet_port(name="shell_outlet", block=self.shell)
+        # Add Ports for hot side
+        self.add_inlet_port(name="hot_side_inlet", block=self.hot_side)
+        self.add_outlet_port(name="hot_side_outlet", block=self.hot_side)
 
-        # Add Ports for tube side
-        self.add_inlet_port(name="tube_inlet", block=self.tube)
-        self.add_outlet_port(name="tube_outlet", block=self.tube)
+        # Add Ports for cold side
+        self.add_inlet_port(name="cold_side_inlet", block=self.cold_side)
+        self.add_outlet_port(name="cold_side_outlet", block=self.cold_side)
+
+        # Add references to the user provided aliases if applicable
+        add_hx_references(self)
+
+        self._make_geometry()
+        self._make_performance()
+
+        hot_side_units = (
+            self.config.hot_side.property_package.get_metadata().get_derived_units
+        )
+        q_units = hot_side_units("power") / hot_side_units("length")
+
+        @self.Constraint(
+            self.flowsheet().time,
+            self.hot_side.length_domain,
+            doc="Heat conservation equality",
+        )
+        def heat_conservation(self, t, x):
+            return pyunits.convert(self.cold_side.heat[t, x], to_units=q_units) == -(
+                self.hot_side.heat[t, x]
+            )
+
+    def _process_config(self):
+        hx_process_config(self)
+
+    def _make_geometry(self):
+        hot_side_units = (
+            self.config.hot_side.property_package.get_metadata().get_derived_units
+        )
+
+        self.area = Var(
+            initialize=1, units=hot_side_units("area"), doc="Heat transfer area"
+        )
 
         # Add reference to control volume geometry
-        add_object_reference(self, "shell_area", self.shell.area)
-        add_object_reference(self, "shell_length", self.shell.length)
-        add_object_reference(self, "tube_area", self.tube.area)
-        add_object_reference(self, "tube_length", self.tube.length)
+        add_object_reference(self, "length", self.hot_side.length)
 
-        self._make_performance()
+        # Equate hot and cold side lengths
+        @self.Constraint(
+            self.flowsheet().time, doc="Equating hot and cold side lengths"
+        )
+        def length_equality(self, t):
+            return (
+                pyunits.convert(
+                    self.cold_side.length, to_units=hot_side_units("length")
+                )
+                == self.hot_side.length
+            )
 
     def _make_performance(self):
         """
@@ -489,132 +527,42 @@ thickness of the tube""",
         Returns:
             None
         """
-        shell_units = (
-            self.config.shell_side.property_package.get_metadata().get_derived_units
+        hot_side_units = (
+            self.config.hot_side.property_package.get_metadata().get_derived_units
         )
-        tube_units = (
-            self.config.tube_side.property_package.get_metadata().get_derived_units
-        )
-
-        # Unit model variables
-        # HX dimensions
-        self.d_shell = Var(
-            initialize=1, doc="Diameter of shell", units=shell_units("length")
-        )
-        self.d_tube_outer = Var(
-            initialize=0.011, doc="Outer diameter of tube", units=shell_units("length")
-        )
-        self.d_tube_inner = Var(
-            initialize=0.010, doc="Inner diameter of tube", units=shell_units("length")
-        )
-        self.N_tubes = Var(
-            initialize=1, doc="Number of tubes", units=pyunits.dimensionless
-        )
-
-        # Note: In addition to the above variables, "shell_length" and
-        # "tube_length" need to be fixed at the flowsheet level
 
         # Performance variables
-        self.shell_heat_transfer_coefficient = Var(
+        self.heat_transfer_coefficient = Var(
             self.flowsheet().time,
-            self.shell.length_domain,
+            self.hot_side.length_domain,
             initialize=50,
-            doc="Heat transfer coefficient",
-            units=shell_units("heat_transfer_coefficient"),
-        )
-        self.tube_heat_transfer_coefficient = Var(
-            self.flowsheet().time,
-            self.tube.length_domain,
-            initialize=50,
-            doc="Heat transfer coefficient",
-            units=tube_units("heat_transfer_coefficient"),
+            doc="Average heat transfer coefficient",
+            units=hot_side_units("heat_transfer_coefficient"),
         )
 
-        # Wall 0D model (Q_shell = Q_tube*N_tubes)
-        if self.config.has_wall_conduction == WallConductionType.zero_dimensional:
-            self.temperature_wall = Var(
-                self.flowsheet().time,
-                self.tube.length_domain,
-                initialize=298.15,
-                units=shell_units("temperature"),
-            )
-
-            # Performance equations
-            # Energy transfer between shell and tube wall
-
-            @self.Constraint(
-                self.flowsheet().time,
-                self.shell.length_domain,
-                doc="Heat transfer between shell and tube",
-            )
-            def shell_heat_transfer_eq(self, t, x):
-                return self.shell.heat[t, x] == -self.N_tubes * (
-                    self.shell_heat_transfer_coefficient[t, x]
-                    * c.pi
-                    * self.d_tube_outer
-                    * (
-                        self.shell.properties[t, x].temperature
-                        - self.temperature_wall[t, x]
+        @self.Constraint(
+            self.flowsheet().time,
+            self.hot_side.length_domain,
+            doc="Heat transfer between hot_side and cold_side",
+        )
+        def heat_transfer_eq(self, t, x):
+            return self.hot_side.heat[t, x] == -(
+                self.heat_transfer_coefficient[t, x]
+                * self.area
+                / self.length
+                * (
+                    self.hot_side.properties[t, x].temperature
+                    - pyunits.convert(
+                        self.cold_side.properties[t, x].temperature,
+                        to_units=hot_side_units("temperature"),
                     )
                 )
-
-            # Energy transfer between tube wall and tube
-            @self.Constraint(
-                self.flowsheet().time,
-                self.tube.length_domain,
-                doc="Convective heat transfer",
             )
-            def tube_heat_transfer_eq(self, t, x):
-                return self.tube.heat[t, x] == self.tube_heat_transfer_coefficient[
-                    t, x
-                ] * c.pi * pyunits.convert(
-                    self.d_tube_inner, to_units=tube_units("length")
-                ) * (
-                    pyunits.convert(
-                        self.temperature_wall[t, x], to_units=tube_units("temperature")
-                    )
-                    - self.tube.properties[t, x].temperature
-                )
-
-            if shell_units("length") is None:
-                # Backwards compatability check
-                q_units = None
-            else:
-                q_units = shell_units("power") / shell_units("length")
-            # Wall 0D model
-            @self.Constraint(
-                self.flowsheet().time,
-                self.shell.length_domain,
-                doc="wall 0D model",
-            )
-            def wall_0D_model(self, t, x):
-                return pyunits.convert(self.tube.heat[t, x], to_units=q_units) == -(
-                    self.shell.heat[t, x] / self.N_tubes
-                )
-
-        else:
-            raise NotImplementedError(
-                "{} HeatExchanger1D has not yet implemented support for "
-                "wall conduction models."
-            )
-
-        # Define tube area in terms of tube diameter
-        self.area_calc_tube = Constraint(
-            expr=4 * self.tube_area
-            == c.pi
-            * pyunits.convert(self.d_tube_inner, to_units=tube_units("length")) ** 2
-        )
-
-        # Define shell area in terms of shell and tube diameter
-        self.area_calc_shell = Constraint(
-            expr=4 * self.shell_area
-            == c.pi * (self.d_shell**2 - self.N_tubes * self.d_tube_outer**2)
-        )
 
     def initialize_build(
         self,
-        shell_state_args=None,
-        tube_state_args=None,
+        hot_side_state_args=None,
+        cold_side_state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
@@ -643,77 +591,98 @@ thickness of the tube""",
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
-        # Initialize shell block
-        flags_shell = self.shell.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=shell_state_args,
-        )
+        # Get length values
+        if self.length.fixed:
+            # Most likely case
+            self.cold_side.length.set_value(self.length)
+        elif self.cold_side.length.fixed:
+            # This would be unusual, but check
+            self.length.set_value(self.cold_side.length)
+        else:
+            # No fixed value for length - we will assume the user knows what they are doing
+            pass
 
-        flags_tube = self.tube.initialize(
+        # Initialize control volumes blocks
+        Lfix = self.hot_side.length.fixed
+        self.hot_side.length.fix()
+        flags_hot_side = self.hot_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=tube_state_args,
+            state_args=hot_side_state_args,
         )
+        if not Lfix:
+            self.hot_side.length.unfix()
+
+        Lfix = self.cold_side.length.fixed
+        self.cold_side.length.fix()
+        flags_cold_side = self.cold_side.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=cold_side_state_args,
+        )
+        if not Lfix:
+            self.cold_side.length.unfix()
 
         init_log.info_high("Initialization Step 1 Complete.")
 
         # ---------------------------------------------------------------------
-        # Solve unit
-        # Wall 0D
-        if self.config.has_wall_conduction == WallConductionType.zero_dimensional:
-            shell_units = (
-                self.config.shell_side.property_package.get_metadata().get_derived_units
+        # Solve unit with fixed heat duty
+        # Guess heat duty based on 1/4 of maximum driving force
+        hot_side_units = (
+            self.config.hot_side.property_package.get_metadata().get_derived_units
+        )
+        cold_side_units = (
+            self.config.cold_side.property_package.get_metadata().get_derived_units
+        )
+        Q = value(
+            0.25
+            * self.heat_transfer_coefficient[0, 0]
+            * self.area
+            / self.length
+            * (
+                self.hot_side.properties[0, 0].temperature
+                - pyunits.convert(
+                    self.cold_side.properties[0, 0].temperature,
+                    to_units=hot_side_units("temperature"),
+                )
             )
-            for t in self.flowsheet().time:
-                for z in self.shell.length_domain:
-                    self.temperature_wall[t, z].fix(
-                        value(
-                            0.5
-                            * (
-                                self.shell.properties[t, 0].temperature
-                                + pyunits.convert(
-                                    self.tube.properties[t, 0].temperature,
-                                    to_units=shell_units("temperature"),
-                                )
-                            )
-                        )
-                    )
+        )
 
-            self.tube.deactivate()
-            self.tube_heat_transfer_eq.deactivate()
-            self.wall_0D_model.deactivate()
-
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(self, tee=slc.tee)
-            init_log.info_high(
-                "Initialization Step 2 {}.".format(idaeslog.condition(res))
-            )
-
-            self.tube.activate()
-            self.tube_heat_transfer_eq.activate()
-
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(self, tee=slc.tee)
-            init_log.info_high(
-                "Initialization Step 3 {}.".format(idaeslog.condition(res))
+        # Fix heat duties
+        for v in self.hot_side.heat.values():
+            v.fix(-Q)
+        for v in self.cold_side.heat.values():
+            v.fix(
+                pyunits.convert_value(
+                    Q,
+                    to_units=cold_side_units("power") / cold_side_units("length"),
+                    from_units=hot_side_units("power") / hot_side_units("length"),
+                )
             )
 
-            self.wall_0D_model.activate()
-            self.temperature_wall.unfix()
+        # Deactivate heat duty constraints
+        self.heat_transfer_eq.deactivate()
+        self.heat_conservation.deactivate()
 
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(self, tee=slc.tee)
-            init_log.info_high(
-                "Initialization Step 4 {}.".format(idaeslog.condition(res))
-            )
-        else:
-            res = None
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
 
-        self.shell.release_state(flags_shell)
-        self.tube.release_state(flags_tube)
+        # Unfix heat duty and reactivate constraints
+        for v in self.hot_side.heat.values():
+            v.unfix()
+        for v in self.cold_side.heat.values():
+            v.unfix()
+        self.heat_transfer_eq.activate()
+        self.heat_conservation.activate()
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
+
+        self.hot_side.release_state(flags_hot_side)
+        self.cold_side.release_state(flags_cold_side)
 
         if res is not None and not check_optimal_termination(res):
             raise InitializationError(
@@ -725,24 +694,25 @@ thickness of the tube""",
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
-        var_dict["Shell Area"] = self.shell.area
-        var_dict["Shell Diameter"] = self.d_shell
-        var_dict["Shell Length"] = self.shell.length
-        var_dict["Tube Area"] = self.tube.area
-        var_dict["Tube Outer Diameter"] = self.d_tube_outer
-        var_dict["Tube Inner Diameter"] = self.d_tube_inner
-        var_dict["Tube Length"] = self.tube.length
-        var_dict["Number of Tubes"] = self.N_tubes
+        var_dict["Area"] = self.area
+        var_dict["Length"] = self.length
 
         return {"vars": var_dict}
 
     def _get_stream_table_contents(self, time_point=0):
+        # Get names for hot and cold sides
+        hot_name = self.config.hot_side_name
+        if hot_name is None:
+            hot_name = "Hot Side"
+        cold_name = self.config.cold_side_name
+        if cold_name is None:
+            cold_name = "Cold Side"
         return create_stream_table_dataframe(
             {
-                "Shell Inlet": self.shell_inlet,
-                "Shell Outlet": self.shell_outlet,
-                "Tube Inlet": self.tube_inlet,
-                "Tube Outlet": self.tube_outlet,
+                f"{hot_name} Inlet": self.hot_side_inlet,
+                f"{hot_name} Outlet": self.hot_side_outlet,
+                f"{cold_name} Inlet": self.cold_side_inlet,
+                f"{cold_name} Outlet": self.cold_side_outlet,
             },
             time_point=time_point,
         )
@@ -750,16 +720,20 @@ thickness of the tube""",
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        for i, c in self.shell_heat_transfer_eq.items():
+        for i, c in self.heat_transfer_eq.items():
             iscale.constraint_scaling_transform(
                 c,
-                iscale.get_scaling_factor(self.shell.heat[i], default=1, warning=True),
+                iscale.get_scaling_factor(
+                    self.hot_side.heat[i], default=1, warning=True
+                ),
                 overwrite=False,
             )
 
-        for i, c in self.tube_heat_transfer_eq.items():
+        for i, c in self.heat_conservation.items():
             iscale.constraint_scaling_transform(
                 c,
-                iscale.get_scaling_factor(self.tube.heat[i], default=1, warning=True),
+                iscale.get_scaling_factor(
+                    self.hot_side.heat[i], default=1, warning=True
+                ),
                 overwrite=False,
             )
