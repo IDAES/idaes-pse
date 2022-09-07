@@ -6,7 +6,7 @@
 
 The ControlVolume1DBlock block is used for systems with one spatial dimension where material flows parallel to the spatial domain. Examples of these types of unit operations include plug flow reactors and pipes. ControlVolume1DBlock blocks are discretized along the length domain and contain one StateBlock and one ReactionBlock (if applicable) at each point in the domain (including the inlet and outlet).
 
-.. module:: idaes.core.control_volume1d
+.. module:: idaes.core.base.control_volume1d
 
 .. autoclass:: ControlVolume1DBlock
     :members:
