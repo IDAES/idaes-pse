@@ -10,5 +10,20 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from .base.generic_property import GenericParameterBlock
-from .base.generic_reaction import GenericReactionParameterBlock
+"""This module provides a list of suppored component and Pyomo expressions for
+some properties not implimented as external functions.
+"""
+
+__author__ = "John Eslick"
+
+import idaes.models.properties.general_helmholtz.components.h2o as h2o
+import idaes.models.properties.general_helmholtz.components.co2 as co2
+import idaes.models.properties.general_helmholtz.components.r134a as r134a
+import idaes.models.properties.general_helmholtz.components.r1234ze as r1234ze
+
+components = {
+    "h2o": h2o,
+    "co2": co2,
+    "r134a": r134a,
+    "r1234ze": r1234ze,
+}

@@ -10,5 +10,14 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from .base.generic_property import GenericParameterBlock
-from .base.generic_reaction import GenericReactionParameterBlock
+from .helmholtz_functions import (
+    StateVars,
+    PhaseType,
+    AmountBasis,
+    HelmholtzThermoExpressions,
+    HelmholtzParameterBlock,
+    HelmholtzParameterBlockData,
+    add_helmholtz_external_functions,
+    helmholtz_available,
+)
+from .helmholtz_state import HelmholtzStateBlock, HelmholtzStateBlockData
