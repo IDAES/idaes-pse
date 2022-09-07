@@ -73,52 +73,40 @@ file "pid_steam_tank_pressure.pdf."
       """
       m = pyo.ConcreteModel(name="Dynamic Steam Tank with PID Control")
       # Add flowsheet
-      m.fs = FlowsheetBlock(default={
-          "dynamic": True,
-          "time_set": time_set,
-          "time_units": time_units
-      })
+      m.fs = FlowsheetBlock(dynamic=True, time_set=time_set, time_units=time_units)
       # Add water property parameter block
       m.fs.prop_water = iapws95.Iapws95ParameterBlock(
-          default={"phase_presentation": iapws95.PhaseType.LG}
+          phase_presentation=iapws95.PhaseType.LG
       )
       # Add valve 1
       m.fs.valve_1 = Valve(
-          default={
-              "dynamic": False,
-              "has_holdup": False,
-              "pressure_flow_callback": _valve_pressure_flow_cb,
-              "material_balance_type": MaterialBalanceType.componentTotal,
-              "property_package": m.fs.prop_water,
-          }
+          dynamic=False,
+          has_holdup=False,
+          pressure_flow_callback=_valve_pressure_flow_cb,
+          material_balance_type=MaterialBalanceType.componentTotal,
+          property_package=m.fs.prop_water,
       )
       # Add heater model to represent a tank (close to bare control volume model).
       m.fs.tank = Heater(
-          default={
-              "has_holdup": True,
-              "material_balance_type": MaterialBalanceType.componentTotal,
-              "property_package": m.fs.prop_water,
-          }
+          has_holdup=True,
+          material_balance_type=MaterialBalanceType.componentTotal,
+          property_package=m.fs.prop_water,
       )
       # Add valve 2
       m.fs.valve_2 = Valve(
-          default={
-              "dynamic": False,
-              "has_holdup": False,
-              "pressure_flow_callback": _valve_pressure_flow_cb,
-              "material_balance_type": MaterialBalanceType.componentTotal,
-              "property_package": m.fs.prop_water,
-          }
+          dynamic=False,
+          has_holdup=False,
+          pressure_flow_callback=_valve_pressure_flow_cb,
+          material_balance_type=MaterialBalanceType.componentTotal,
+          property_package=m.fs.prop_water,
       )
       # Add a controller
       m.fs.ctrl = PIDController(
-          default={
-              "process_var": m.fs.tank.control_volume.properties_out[:].pressure,
-              "manipulated_var": m.fs.valve_1.valve_opening,
-              "calculate_initial_integral": True,
-              "mv_bound_type": ControllerMVBoundType.SMOOTH_BOUND,
-              "type": ControllerType.PI,
-          }
+          process_var=m.fs.tank.control_volume.properties_out[:].pressure,
+          manipulated_var=m.fs.valve_1.valve_opening,
+          calculate_initial_integral=True,
+          mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
+          type=ControllerType.PI,
       )
       # The control volume block doesn't assume equilibrium, so I'll make that
       # assumption here. I don't actually expect liquid to form but who knows?

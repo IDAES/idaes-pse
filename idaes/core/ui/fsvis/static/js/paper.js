@@ -34,6 +34,14 @@ export class Paper {
             cursor: 'grab'
         });
 
+        this._selection = new joint.ui.Selection({
+            paper: this._paper
+        });
+
+        this._selection.removeHandle('remove');
+        this._selection.removeHandle('rotate');
+        this._selection.removeHandle('resize');
+
         // We need to save this to a variable so that we can access it later
         self = this;
 
@@ -64,6 +72,10 @@ export class Paper {
         return self._paperScroller
     }
 
+    get selection() {
+        return self._selection
+    }
+
     translate_for_angle(angle, width, height) {
        // TODO: replace with geometry that considers width and height
        const angle_translation = {0: [0, 5], 90: [38, -35], 180: [0, -72], 270: [-38, -34]};
@@ -74,8 +86,11 @@ export class Paper {
      * Register Events before the graph model is loaded
      */
     preSetupRegisterEvents() {
-        let model_id = $("#idaes-fs-name").data("flowsheetId");
-        let url = "/fs?id=".concat(model_id);
+
+        // Save model every time the graph changes
+        this._graph.on('change:position change:angle change:vertices', () => {
+            this._app.graphChanged();
+        });
 
         // Getting the main elements for the idaes canvas and the stream table
         // to be able to dispatch highlighting events to the streams existing
@@ -107,6 +122,23 @@ export class Paper {
             );
             if (relatedLinkElement) {
                 relatedLinkElement.dispatchEvent(new Event('RemoveHighlightStream'));
+            }
+        });
+
+        // Initiate selecting when the user grabs the blank area of the paper.
+        self._paper.on('blank:pointerdown', self._selection.startSelecting);
+
+        // Select an element if CTRL/Meta key is pressed while the element is clicked.
+        self._paper.on('element:pointerup', function(cellView, evt) {
+            if (evt.ctrlKey || evt.metaKey) {
+                self._selection.collection.add(cellView.model, { silent: true });
+            }
+        });
+
+        // Unselect an element if the Shift/Meta key is pressed while a selected element is clicked.
+        self._selection.on('selection-box:pointerdown', function(elementView, evt) {
+            if (evt.shiftKey || evt.metaKey) {
+                self._selection.collection.remove(elementView.model);
             }
         });
 
@@ -181,12 +213,6 @@ export class Paper {
             streamTable.dispatchEvent(removeHighlightStreamEvent);
             idaesCanvas.dispatchEvent(removeHighlightStreamEvent);
         });
-
-        // Send a post request to the server with the new this._graph 
-        // This is essentially the saving mechanism (for a server instance) for 
-        // right now
-        // See the comments above the save button for more saving TODOs
-        self._paper.on('paper:mouseleave', () => {this._app.saveModel(url, self._graph)});
 
         // Link labels will appear and disappear on right click. Replaces browser context menu
         self._paper.on("link:contextmenu", function(linkView, evt) {

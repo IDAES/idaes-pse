@@ -45,18 +45,18 @@ def test_convert_quantity_energy():
 
 @pytest.mark.unit
 def test_convert_quantity_energy_mass():
-    q = as_quantity(1 * units.BTU/units.pound)
+    q = as_quantity(1 * units.BTU / units.pound)
 
     q2 = convert_quantity_to_reporting_units(q)
 
-    assert q2.m == pytest.approx(1055.056/0.453592, rel=1e-6)
+    assert q2.m == pytest.approx(1055.056 / 0.453592, rel=1e-6)
     assert str(q2.u) == "joule / kilogram"
     assert q is not q2
 
 
 @pytest.mark.unit
 def test_convert_quantity_energy_mole():
-    q = as_quantity(1 * units.BTU/units.mol)
+    q = as_quantity(1 * units.BTU / units.mol)
 
     q2 = convert_quantity_to_reporting_units(q)
 
@@ -67,40 +67,40 @@ def test_convert_quantity_energy_mole():
 
 @pytest.mark.unit
 def test_convert_quantity_entropy():
-    q = as_quantity(1 * units.BTU/units.degR)
+    q = as_quantity(1 * units.BTU / units.degR)
 
     q2 = convert_quantity_to_reporting_units(q)
 
-    assert q2.m == pytest.approx(1055.056*1.8, rel=1e-6)
+    assert q2.m == pytest.approx(1055.056 * 1.8, rel=1e-6)
     assert str(q2.u) == "joule / kelvin"
     assert q is not q2
 
 
 @pytest.mark.unit
 def test_convert_quantity_entropy_mass():
-    q = as_quantity(1 * units.BTU/units.pound/units.degR)
+    q = as_quantity(1 * units.BTU / units.pound / units.degR)
 
     q2 = convert_quantity_to_reporting_units(q)
 
-    assert q2.m == pytest.approx(1055.056/0.453592*1.8, rel=1e-6)
+    assert q2.m == pytest.approx(1055.056 / 0.453592 * 1.8, rel=1e-6)
     assert str(q2.u) == "joule / kelvin / kilogram"
     assert q is not q2
 
 
 @pytest.mark.unit
 def test_convert_quantity_entropy_mole():
-    q = as_quantity(1 * units.BTU/units.mol/units.degR)
+    q = as_quantity(1 * units.BTU / units.mol / units.degR)
 
     q2 = convert_quantity_to_reporting_units(q)
 
-    assert q2.m == pytest.approx(1055.056*1.8, rel=1e-6)
+    assert q2.m == pytest.approx(1055.056 * 1.8, rel=1e-6)
     assert str(q2.u) == "joule / kelvin / mole"
     assert q is not q2
 
 
 @pytest.mark.unit
 def test_convert_quantity_power():
-    q = as_quantity(1 * units.BTU/units.hour)
+    q = as_quantity(1 * units.BTU / units.hour)
 
     q2 = convert_quantity_to_reporting_units(q)
 

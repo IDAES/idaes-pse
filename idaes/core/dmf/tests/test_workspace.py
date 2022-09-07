@@ -91,4 +91,3 @@ def test_ws_accessors(wsdir):
     assert os.path.normpath(ws.root) == os.path.normpath(wsdir)
     _ = ws.name
     _ = ws.description
-

@@ -20,7 +20,6 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     check_optimal_termination,
-    SolverStatus,
     value,
     units as pyunits,
 )
@@ -33,14 +32,12 @@ from idaes.models.properties import iapws95
 # import ideal flue gas prop pack
 from idaes.models_extra.power_generation.properties import (
     FlueGasParameterBlock,
-    FlueGasStateBlock,
 )
 
 # Import Power Plant HX Unit Model
 from idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger import (
     BoilerHeatExchanger,
     TubeArrangement,
-    DeltaTMethod,
     delta_temperature_lmtd_callback,
     delta_temperature_amtd_callback,
     delta_temperature_underwood_callback,
@@ -53,7 +50,6 @@ from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 
-from idaes.core.util.testing import PhysicalParameterTestBlock
 import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
@@ -65,23 +61,20 @@ solver = get_solver()
 @pytest.mark.unit
 def test_no_deprecated(caplog):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
     m.fs.prop_fluegas = FlueGasParameterBlock()
 
     caplog.clear()
     m.fs.unit = BoilerHeatExchanger(
-        default={
-            "delta_temperature_callback": delta_temperature_lmtd_callback,
-            "tube": {"property_package": m.fs.prop_steam},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
-            "has_holdup": True,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
-            "has_radiation": True,
-        }
+        delta_temperature_callback=delta_temperature_lmtd_callback,
+        cold_side={"property_package": m.fs.prop_steam, "has_pressure_change": True},
+        hot_side={"property_package": m.fs.prop_fluegas, "has_pressure_change": True},
+        has_holdup=True,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        tube_arrangement=TubeArrangement.inLine,
+        cold_side_water_phase="Liq",
+        has_radiation=True,
     )
     n_warn = 0
     n_depreacted = 0
@@ -91,144 +84,6 @@ def test_no_deprecated(caplog):
     # TODO: 1 warning due to overloading initialize, not sure what the rest
     # of this is about
     assert n_warn == 0  # 1 DeltaTMethod Enum and 1 for delta_T_method option
-
-
-@pytest.mark.unit
-def test_deprecated_delta_T_method(caplog):
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
-    m.fs.prop_fluegas = FlueGasParameterBlock()
-
-    caplog.clear()
-    m.fs.unit = BoilerHeatExchanger(
-        default={
-            "delta_temperature_callback": delta_temperature_lmtd_callback,
-            "tube": {"property_package": m.fs.prop_steam},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
-            "has_holdup": True,
-            "delta_T_method": HeatExchangerFlowPattern.countercurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
-            "has_radiation": True,
-        }
-    )
-    n_warn = 0
-    n_depreacted = 0
-    for record in caplog.records:
-        if record.levelno == idaeslog.WARNING:
-            n_warn += 1
-        if "deprecated" in record.msg:
-            n_depreacted += 1
-    assert n_warn == 1  # overload initialize and detalT method
-    assert n_depreacted == 1
-    assert m.fs.unit.config.flow_pattern == HeatExchangerFlowPattern.countercurrent
-
-
-@pytest.mark.unit
-def test_deprecated_delta_T_method_enum1(caplog):
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
-    m.fs.prop_fluegas = FlueGasParameterBlock()
-
-    caplog.clear()
-    m.fs.unit = BoilerHeatExchanger(
-        default={
-            "delta_temperature_callback": delta_temperature_lmtd_callback,
-            "tube": {"property_package": m.fs.prop_steam},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
-            "has_holdup": True,
-            "delta_T_method": DeltaTMethod.counterCurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
-            "has_radiation": True,
-        }
-    )
-    n_warn = 0
-    n_depreacted = 0
-    for record in caplog.records:
-        if record.levelno == idaeslog.WARNING:
-            n_warn += 1
-        if "deprecated" in record.msg:
-            n_depreacted += 1
-    assert n_warn == 3
-    assert n_depreacted == 3
-    assert m.fs.unit.config.flow_pattern == HeatExchangerFlowPattern.countercurrent
-
-
-@pytest.mark.unit
-def test_deprecated_delta_T_method_enum1(caplog):
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
-    m.fs.prop_fluegas = FlueGasParameterBlock()
-
-    caplog.clear()
-    m.fs.unit = BoilerHeatExchanger(
-        default={
-            "delta_temperature_callback": delta_temperature_lmtd_callback,
-            "tube": {"property_package": m.fs.prop_steam},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
-            "has_holdup": True,
-            "delta_T_method": DeltaTMethod.coCurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
-            "has_radiation": True,
-        }
-    )
-    n_warn = 0
-    n_depreacted = 0
-    for record in caplog.records:
-        if record.levelno == idaeslog.WARNING:
-            n_warn += 1
-        if "deprecated" in record.msg:
-            n_depreacted += 1
-    assert n_warn == 3
-    assert n_depreacted == 3
-    assert m.fs.unit.config.flow_pattern == HeatExchangerFlowPattern.cocurrent
-
-
-@pytest.mark.unit
-def test_deprecated_prop_pack(caplog):
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
-    m.fs.prop_fluegas = FlueGasParameterBlock()
-
-    caplog.clear()
-    m.fs.unit = BoilerHeatExchanger(
-        default={
-            "delta_temperature_callback": delta_temperature_lmtd_callback,
-            "side_1_property_package": m.fs.prop_steam,
-            "side_2_property_package": m.fs.prop_fluegas,
-            "has_pressure_change": True,
-            "has_holdup": True,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
-            "has_radiation": True,
-        }
-    )
-    n_warn = 0
-    n_depreacted = 0
-    for record in caplog.records:
-        if record.levelno == idaeslog.WARNING:
-            n_warn += 1
-        if "deprecated" in record.msg:
-            n_depreacted += 1
-    assert n_warn == 2
-    assert n_depreacted == 2
-    assert isinstance(
-        m.fs.unit.config.hot_side_config.property_package, FlueGasParameterBlock
-    )
-    assert isinstance(
-        m.fs.unit.config.cold_side_config.property_package,
-        iapws95.Iapws95ParameterBlock,
-    )
 
 
 def tc(delta_temperature_callback=delta_temperature_underwood_tune_callback):
@@ -241,13 +96,18 @@ def tc(delta_temperature_callback=delta_temperature_underwood_tune_callback):
     m.fs.unit = BoilerHeatExchanger(
         default={
             "delta_temperature_callback": delta_temperature_callback,
-            "tube": {"property_package": m.fs.prop_steam},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
+            "cold_side": {
+                "property_package": m.fs.prop_steam,
+                "has_pressure_change": True,
+            },
+            "hot_side": {
+                "property_package": m.fs.prop_fluegas,
+                "has_pressure_change": True,
+            },
             "has_holdup": True,
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
             "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
+            "cold_side_water_phase": "Liq",
             "has_radiation": True,
         }
     )
@@ -273,34 +133,39 @@ def th(
     m.fs.unit = BoilerHeatExchanger(
         default={
             "delta_temperature_callback": delta_temperature_callback,
-            "tube": {"property_package": m.fs.prop_steam},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
+            "cold_side": {
+                "property_package": m.fs.prop_steam,
+                "has_pressure_change": True,
+            },
+            "hot_side": {
+                "property_package": m.fs.prop_fluegas,
+                "has_pressure_change": True,
+            },
             "has_holdup": False,
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
             "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
+            "cold_side_water_phase": "Liq",
             "has_radiation": True,
         }
     )
 
     #   Set inputs
     h = value(iapws95.htpx(773.15 * pyunits.K, 2.5449e7 * pyunits.Pa))
-    m.fs.unit.side_1_inlet.flow_mol[0].fix(24678.26)  # mol/s
-    m.fs.unit.side_1_inlet.enth_mol[0].fix(h)  # J/mol
-    m.fs.unit.side_1_inlet.pressure[0].fix(2.5449e7)  # Pascals
+    m.fs.unit.cold_side_inlet.flow_mol[0].fix(24678.26)  # mol/s
+    m.fs.unit.cold_side_inlet.enth_mol[0].fix(h)  # J/mol
+    m.fs.unit.cold_side_inlet.pressure[0].fix(2.5449e7)  # Pascals
 
     # FLUE GAS Inlet from Primary Superheater
     FGrate = 28.3876e3 * 0.18  # mol/s equivalent of ~1930.08 klb/hr
     # Use FG molar composition to set component flow rates (baseline report)
-    m.fs.unit.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate * 8.69 / 100)
-    m.fs.unit.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate * 14.49 / 100)
-    m.fs.unit.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate * 74.34 / 100)
-    m.fs.unit.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate * 2.47 / 100)
-    m.fs.unit.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate * 0.0006)
-    m.fs.unit.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate * 0.002)
-    m.fs.unit.side_2_inlet.temperature[0].fix(1102.335)
-    m.fs.unit.side_2_inlet.pressure[0].fix(100145)
+    m.fs.unit.hot_side_inlet.flow_mol_comp[0, "H2O"].fix(FGrate * 8.69 / 100)
+    m.fs.unit.hot_side_inlet.flow_mol_comp[0, "CO2"].fix(FGrate * 14.49 / 100)
+    m.fs.unit.hot_side_inlet.flow_mol_comp[0, "N2"].fix(FGrate * 74.34 / 100)
+    m.fs.unit.hot_side_inlet.flow_mol_comp[0, "O2"].fix(FGrate * 2.47 / 100)
+    m.fs.unit.hot_side_inlet.flow_mol_comp[0, "NO"].fix(FGrate * 0.0006)
+    m.fs.unit.hot_side_inlet.flow_mol_comp[0, "SO2"].fix(FGrate * 0.002)
+    m.fs.unit.hot_side_inlet.temperature[0].fix(1102.335)
+    m.fs.unit.hot_side_inlet.pressure[0].fix(100145)
 
     # Primary Superheater
     ITM = 0.0254  # inch to meter conversion
@@ -332,10 +197,10 @@ def th(
     results = solver.solve(m)
     # Check for optimal solution
     assert check_optimal_termination(results)
-    assert value(m.fs.unit.side_1.properties_out[0].temperature) == pytest.approx(
+    assert value(m.fs.unit.cold_side.properties_out[0].temperature) == pytest.approx(
         tout_1, abs=0.5
     )
-    assert value(m.fs.unit.side_2.properties_out[0].temperature) == pytest.approx(
+    assert value(m.fs.unit.hot_side.properties_out[0].temperature) == pytest.approx(
         tout_2, abs=0.5
     )
 
@@ -351,13 +216,18 @@ def tu(delta_temperature_callback=delta_temperature_underwood_tune_callback):
     m.fs.unit = BoilerHeatExchanger(
         default={
             "delta_temperature_callback": delta_temperature_callback,
-            "tube": {"property_package": m.fs.prop_steam},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
+            "cold_side": {
+                "property_package": m.fs.prop_steam,
+                "has_pressure_change": True,
+            },
+            "hot_side": {
+                "property_package": m.fs.prop_fluegas,
+                "has_pressure_change": True,
+            },
             "has_holdup": False,
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
             "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
+            "cold_side_water_phase": "Liq",
             "has_radiation": True,
         }
     )

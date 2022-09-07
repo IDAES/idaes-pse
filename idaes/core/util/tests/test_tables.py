@@ -32,6 +32,7 @@ from idaes.core import (
 from idaes.core.util.tables import (
     arcs_to_stream_dict,
     create_stream_table_dataframe,
+    create_stream_table_ui,
     stream_table_dataframe_to_string,
     generate_table,
     tag_state_quantities,
@@ -86,6 +87,29 @@ def m():
     m.fs.stream_array = Arc(range(2), rule=stream_array_rule)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
+
+    return m
+
+
+@pytest.fixture()
+def m_with_variable_types():
+    """Flash unit model. Use '.fs' attribute to get the flowsheet."""
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    # Flash properties
+    m.fs.properties = BTXParameterBlock(
+        default={
+            "valid_phase": ("Liq", "Vap"),
+            "activity_coeff_model": "Ideal",
+            "state_vars": "FTPz",
+        }
+    )
+    # Flash unit
+    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    # Adding fixed and unfixed variables
+    m.fs.flash.inlet.pressure.fix(3.14)
+    m.fs.flash.inlet.pressure.unfix()
+    m.fs.flash.inlet.temperature.fix(368)
 
     return m
 
@@ -238,6 +262,18 @@ def test_create_stream_table_dataframe_from_Arc(m):
     assert df.loc["Molar Concentration EthylAcetate"]["state"] == 100.0
     assert df.loc["Molar Concentration SodiumAcetate"]["state"] == 100.0
     assert df.loc["Molar Concentration Ethanol"]["state"] == 100.0
+
+
+@pytest.mark.unit
+def test_create_stream_table_ui(m_with_variable_types):
+    m = m_with_variable_types
+
+    state_name = "state"
+    state_dict = {state_name: m.fs.flash.inlet}
+    df = create_stream_table_ui(state_dict)
+
+    assert df.loc["pressure"][state_name] == (3.14, "unfixed")
+    assert df.loc["temperature"][state_name] == (368, "fixed")
 
 
 @pytest.mark.unit
@@ -509,6 +545,8 @@ def HX1D_array_model():
     m.fs.unit_array = HX1D(
         unit_set,
         default={
+            "hot_side_name": "shell_side",
+            "cold_side_name": "tube_side",
             "shell_side": {"property_package": m.fs.properties},
             "tube_side": {"property_package": m.fs.properties},
         },
@@ -516,16 +554,16 @@ def HX1D_array_model():
 
     def tube_stream_array_rule(b, i):
         return {
-            "source": b.unit_array[i].tube_outlet,
-            "destination": b.unit_array[i + 1].tube_inlet,
+            "source": b.unit_array[i].tube_side_outlet,
+            "destination": b.unit_array[i + 1].tube_side_inlet,
         }
 
     m.fs.tube_stream_array = Arc(range(2), rule=tube_stream_array_rule)
 
     def shell_stream_array_rule(b, i):
         return {
-            "source": b.unit_array[i + 1].shell_outlet,
-            "destination": b.unit_array[i].shell_inlet,
+            "source": b.unit_array[i + 1].shell_side_outlet,
+            "destination": b.unit_array[i].shell_side_inlet,
         }
 
     m.fs.shell_stream_array = Arc(range(1, -1, -1), rule=shell_stream_array_rule)
@@ -537,7 +575,7 @@ def HX1D_array_model():
 @pytest.mark.unit
 def test_create_stream_table_dataframe_from_Port_HX1D(HX1D_array_model):
     m = HX1D_array_model
-    df = create_stream_table_dataframe({"state": m.fs.unit_array[0].tube_inlet})
+    df = create_stream_table_dataframe({"state": m.fs.unit_array[0].tube_side_inlet})
 
     assert df.loc["Pressure"]["state"] == pytest.approx(101325)
     assert df.loc["Temperature"]["state"] == pytest.approx(298.15)
@@ -548,7 +586,7 @@ def test_create_stream_table_dataframe_from_Port_HX1D(HX1D_array_model):
     assert df.loc["Molar Concentration SodiumAcetate"]["state"] == pytest.approx(100.0)
     assert df.loc["Molar Concentration Ethanol"]["state"] == pytest.approx(100.0)
 
-    df = create_stream_table_dataframe({"state": m.fs.unit_array[0].tube_outlet})
+    df = create_stream_table_dataframe({"state": m.fs.unit_array[0].tube_side_outlet})
 
     assert df.loc["Pressure"]["state"] == pytest.approx(101325)
     assert df.loc["Temperature"]["state"] == pytest.approx(298.15)

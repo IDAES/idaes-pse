@@ -43,6 +43,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
+from idaes.models.unit_models.heat_exchanger import hx_process_config, add_hx_references
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.math import smooth_min, smooth_max
@@ -62,7 +63,7 @@ _log = idaeslog.getLogger(__name__)
 class HeatExchangerNTUData(UnitModelBlockData):
     """Heat Exchanger Unit Model using NTU method."""
 
-    CONFIG = UnitModelBlockData.CONFIG()
+    CONFIG = UnitModelBlockData.CONFIG(implicit=True)
 
     # Configuration template for fluid specific  arguments
     _SideCONFIG = ConfigBlock()
@@ -162,10 +163,27 @@ constructed,
     # Create individual config blocks for hot and cold sides
     CONFIG.declare("hot_side", _SideCONFIG(doc="Hot fluid config arguments"))
     CONFIG.declare("cold_side", _SideCONFIG(doc="Cold fluid config arguments"))
+    CONFIG.declare(
+        "hot_side_name",
+        ConfigValue(
+            default=None,
+            domain=str,
+            doc="Hot side name, sets control volume and inlet and outlet names",
+        ),
+    )
+    CONFIG.declare(
+        "cold_side_name",
+        ConfigValue(
+            default=None,
+            domain=str,
+            doc="Cold side name, sets control volume and inlet and outlet names",
+        ),
+    )
 
     def build(self):
         # Call UnitModel.build to setup model
         super().build()
+        hx_process_config(self)
 
         # ---------------------------------------------------------------------
         # Build hot-side control volume
@@ -227,23 +245,26 @@ constructed,
         # ---------------------------------------------------------------------
         # Add Ports to control volumes
         self.add_inlet_port(
-            name="hot_inlet", block=self.hot_side, doc="Hot side inlet port"
+            name="hot_side_inlet", block=self.hot_side, doc="Hot side inlet port"
         )
         self.add_outlet_port(
-            name="hot_outlet", block=self.hot_side, doc="Hot side outlet port"
+            name="hot_side_outlet", block=self.hot_side, doc="Hot side outlet port"
         )
 
         self.add_inlet_port(
-            name="cold_inlet", block=self.cold_side, doc="Cold side inlet port"
+            name="cold_side_inlet", block=self.cold_side, doc="Cold side inlet port"
         )
         self.add_outlet_port(
-            name="cold_outlet", block=self.cold_side, doc="Cold side outlet port"
+            name="cold_side_outlet", block=self.cold_side, doc="Cold side outlet port"
         )
 
         # ---------------------------------------------------------------------
         # Add unit level References
         # Set references to balance terms at unit level
         self.heat_duty = Reference(self.cold_side.heat[:])
+
+        # Add references to the user provided aliases (if applicable).
+        add_hx_references(self)
 
         # ---------------------------------------------------------------------
         # Add performance equations
@@ -477,10 +498,10 @@ constructed,
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
             {
-                "Hot Inlet": self.hot_inlet,
-                "Hot Outlet": self.hot_outlet,
-                "Cold Inlet": self.cold_inlet,
-                "Cold Outlet": self.cold_outlet,
+                "Hot Inlet": self.hot_side_inlet,
+                "Hot Outlet": self.hot_side_outlet,
+                "Cold Inlet": self.cold_side_inlet,
+                "Cold Outlet": self.cold_side_outlet,
             },
             time_point=time_point,
         )

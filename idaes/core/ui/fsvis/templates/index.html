@@ -44,7 +44,9 @@
                   Export
                 </a>
                 <ul id="export-list" class="dropdown-menu checkbox-menu allow-focus">
-                  <a class="dropdown-item" id="export-flowsheet-btn">Flowsheet</a>
+                  <a class="dropdown-item" id="export-flowsheet-png-btn">Flowsheet as PNG</a>
+                  <a class="dropdown-item" id="export-flowsheet-jpg-btn">Flowsheet as JPEG</a>
+                  <a class="dropdown-item" id="export-flowsheet-svg-btn">Flowsheet as SVG</a>
                   <a class="dropdown-item" id="export-stream-table-btn">Stream Table</a>
                 </ul>
               </li>
@@ -140,6 +142,7 @@
           </div>
         </div>
         <div id="stream-table" class="idaes-container">
+          <div id="existing-variable-types" class="streamtable-vartype-panel"></div>
           <!-- Navbar for stream table -->
           <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <div class="collapse navbar-collapse p-0" id="navbar-stream-table">
@@ -154,7 +157,7 @@
                 </li>
               </ul>
             </div>
-          </nav> 
+          </nav>
           <div id="stream-table-container">
             <div id="stream-table-data"  style="height: 800px;width:100%;" class="ag-theme-alpine"></div>
           </div>

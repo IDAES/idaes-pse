@@ -24,22 +24,11 @@ from idaes.core.dmf import resource, DMF
 
 DATA_DIR = Path(__file__).parent / "data_files"
 
-SIMPLE_CSV_DATA = [
-    "C1 [m/s],C2[mol/L],C3 [(m^3)/kg]",
-    "1,1.0,2.0",
-    "2,2.0,4.0"
-]
+SIMPLE_CSV_DATA = ["C1 [m/s],C2[mol/L],C3 [(m^3)/kg]", "1,1.0,2.0", "2,2.0,4.0"]
 
-SIMPLE_CSV_DATA_NO_UNITS = [
-    "C1 ,C2, C3",
-    "1,1.0,2.0",
-    "2,2.0,4.0"
-]
+SIMPLE_CSV_DATA_NO_UNITS = ["C1 ,C2, C3", "1,1.0,2.0", "2,2.0,4.0"]
 
-BAD_CSV_DATA = [
-    "[,],,"
-    "1,2,3,4"
-]
+BAD_CSV_DATA = ["[,],," "1,2,3,4"]
 
 
 @pytest.fixture
@@ -78,6 +67,7 @@ def tmp_dmf(tmp_path):
     p.mkdir()
     dmf = DMF(p, create=True)
     return dmf
+
 
 # TESTS
 
@@ -170,19 +160,25 @@ def test_get_from_resource():
     tbls = r_no_table.tables
     assert tbls == {}
 
+
 # Helpers
 
+
 def validate_example_data(t, units=True):
-    """Shared by test_table_*() functions, since their input data is the same.
-    """
+    """Shared by test_table_*() functions, since their input data is the same."""
     input_data_columns = [f"C{num}" for num in range(1, 4)]
     assert list(t.data.columns) == input_data_columns
     if units:
         input_data_units = ["m/s", "mol/L", "(m^3)/kg"]
-        assert t.units_dict == {input_data_columns[i]: input_data_units[i]
-                                for i in range(len(input_data_columns))}
-        assert t.units_list == [input_data_units[i] for i in range(len(input_data_columns))]
+        assert t.units_dict == {
+            input_data_columns[i]: input_data_units[i]
+            for i in range(len(input_data_columns))
+        }
+        assert t.units_list == [
+            input_data_units[i] for i in range(len(input_data_columns))
+        ]
     else:
-        assert t.units_dict == {input_data_columns[i]: ""
-                                for i in range(len(input_data_columns))}
+        assert t.units_dict == {
+            input_data_columns[i]: "" for i in range(len(input_data_columns))
+        }
         assert t.units_list == [""] * len(input_data_columns)

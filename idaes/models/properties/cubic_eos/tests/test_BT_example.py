@@ -42,7 +42,6 @@ solver = get_solver()
 
 # -----------------------------------------------------------------------------
 # Run test harness
-@pytest.mark.unit
 class TestBasicLV(PropertyTestHarness):
     def configure(self):
         self.prop_pack = BT_PR.BTParameterBlock
@@ -51,7 +50,6 @@ class TestBasicLV(PropertyTestHarness):
         self.has_density_terms = True
 
 
-@pytest.mark.unit
 class TestBasicL(PropertyTestHarness):
     def configure(self):
         self.prop_pack = BT_PR.BTParameterBlock
@@ -60,7 +58,6 @@ class TestBasicL(PropertyTestHarness):
         self.has_density_terms = True
 
 
-@pytest.mark.unit
 class TestBasicV(PropertyTestHarness):
     def configure(self):
         self.prop_pack = BT_PR.BTParameterBlock
@@ -83,8 +80,7 @@ class TestBTExample(object):
 
         m.fs.props = BT_PR.BTParameterBlock(default={"valid_phase": ("Vap", "Liq")})
 
-        m.fs.state = m.fs.props.build_state_block(
-            [0], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([0], default={"defined_state": True})
 
         assert_units_consistent(m)
 
@@ -96,8 +92,7 @@ class TestBTExample(object):
 
         m.fs.props = BT_PR.BTParameterBlock(default={"valid_phase": ("Vap", "Liq")})
 
-        m.fs.state = m.fs.props.build_state_block(
-            [0], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([0], default={"defined_state": True})
 
         m.fs.state[0].flow_mol.fix(100)
         m.fs.state[0].mole_frac_comp["benzene"].fix(0.5)
@@ -123,8 +118,7 @@ class TestBTExample(object):
 
         m.fs.props = BT_PR.BTParameterBlock(default={"valid_phase": ("Vap", "Liq")})
 
-        m.fs.state = m.fs.props.build_state_block(
-            [0], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([0], default={"defined_state": True})
 
         m.fs.obj = Objective(expr=(m.fs.state[0].temperature - 510) ** 2)
 
@@ -155,8 +149,7 @@ class TestBTExample(object):
 
         m.fs.props = BT_PR.BTParameterBlock(default={"valid_phase": ("Vap", "Liq")})
 
-        m.fs.state = m.fs.props.build_state_block(
-            [0], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([0], default={"defined_state": True})
 
         for T in range(370, 500, 25):
             m.fs.state[0].flow_mol.fix(100)
@@ -185,8 +178,7 @@ class TestBTExample(object):
 
         m.fs.props = BT_PR.BTParameterBlock(default={"valid_phase": ("Vap", "Liq")})
 
-        m.fs.state = m.fs.props.build_state_block(
-            [0], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([0], default={"defined_state": True})
 
         m.fs.state[0].flow_mol.fix(100)
         m.fs.state[0].mole_frac_comp["benzene"].fix(0.5)
@@ -259,10 +251,18 @@ class TestBTExample(object):
             == 0.29416
         )
 
-        assert pytest.approx(value(m.fs.state[0].enth_mol_phase["Liq"]), 1e-5) == 38942.8
-        assert pytest.approx(value(m.fs.state[0].enth_mol_phase["Vap"]), 1e-5) == 78048.7
-        assert pytest.approx(value(m.fs.state[0].entr_mol_phase["Liq"]), 1e-5) == -367.558
-        assert pytest.approx(value(m.fs.state[0].entr_mol_phase["Vap"]), 1e-5) == -269.0553
+        assert (
+            pytest.approx(value(m.fs.state[0].enth_mol_phase["Liq"]), 1e-5) == 38942.8
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].enth_mol_phase["Vap"]), 1e-5) == 78048.7
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].entr_mol_phase["Liq"]), 1e-5) == -367.558
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].entr_mol_phase["Vap"]), 1e-5) == -269.0553
+        )
 
     @pytest.mark.component
     def test_T350_P5_x5(self):
@@ -272,8 +272,7 @@ class TestBTExample(object):
 
         m.fs.props = BT_PR.BTParameterBlock(default={"valid_phase": ("Vap", "Liq")})
 
-        m.fs.state = m.fs.props.build_state_block(
-            [0], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([0], default={"defined_state": True})
 
         m.fs.state[0].flow_mol.fix(100)
         m.fs.state[0].mole_frac_comp["benzene"].fix(0.5)
@@ -291,10 +290,12 @@ class TestBTExample(object):
 
         assert pytest.approx(value(m.fs.state[0]._teq), 1e-5) == 431.47
         assert (
-            pytest.approx(value(m.fs.state[0].compress_fact_phase["Liq"]), 1e-5) == 0.01766
+            pytest.approx(value(m.fs.state[0].compress_fact_phase["Liq"]), 1e-5)
+            == 0.01766
         )
         assert (
-            pytest.approx(value(m.fs.state[0].compress_fact_phase["Vap"]), 1e-5) == 0.80245
+            pytest.approx(value(m.fs.state[0].compress_fact_phase["Vap"]), 1e-5)
+            == 0.80245
         )
         assert (
             pytest.approx(
@@ -346,10 +347,18 @@ class TestBTExample(object):
             == 0.34585
         )
 
-        assert pytest.approx(value(m.fs.state[0].enth_mol_phase["Liq"]), 1e-5) == 38966.9
-        assert pytest.approx(value(m.fs.state[0].enth_mol_phase["Vap"]), 1e-5) == 75150.7
-        assert pytest.approx(value(m.fs.state[0].entr_mol_phase["Liq"]), 1e-5) == -367.6064
-        assert pytest.approx(value(m.fs.state[0].entr_mol_phase["Vap"]), 1e-5) == -287.3318
+        assert (
+            pytest.approx(value(m.fs.state[0].enth_mol_phase["Liq"]), 1e-5) == 38966.9
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].enth_mol_phase["Vap"]), 1e-5) == 75150.7
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].entr_mol_phase["Liq"]), 1e-5) == -367.6064
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].entr_mol_phase["Vap"]), 1e-5) == -287.3318
+        )
 
     @pytest.mark.component
     def test_T450_P1_x5(self):
@@ -359,8 +368,7 @@ class TestBTExample(object):
 
         m.fs.props = BT_PR.BTParameterBlock(default={"valid_phase": ("Vap", "Liq")})
 
-        m.fs.state = m.fs.props.build_state_block(
-            [0], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([0], default={"defined_state": True})
 
         m.fs.state[0].flow_mol.fix(100)
         m.fs.state[0].mole_frac_comp["benzene"].fix(0.5)
@@ -433,10 +441,18 @@ class TestBTExample(object):
             == 0.5
         )
 
-        assert pytest.approx(value(m.fs.state[0].enth_mol_phase["Liq"]), 1e-5) == 49441.2
-        assert pytest.approx(value(m.fs.state[0].enth_mol_phase["Vap"]), 1e-5) == 84175.1
-        assert pytest.approx(value(m.fs.state[0].entr_mol_phase["Liq"]), 1e-5) == -333.836
-        assert pytest.approx(value(m.fs.state[0].entr_mol_phase["Vap"]), 1e-5) == -247.385
+        assert (
+            pytest.approx(value(m.fs.state[0].enth_mol_phase["Liq"]), 1e-5) == 49441.2
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].enth_mol_phase["Vap"]), 1e-5) == 84175.1
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].entr_mol_phase["Liq"]), 1e-5) == -333.836
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].entr_mol_phase["Vap"]), 1e-5) == -247.385
+        )
 
     @pytest.mark.component
     def test_T450_P5_x5(self):
@@ -446,8 +462,7 @@ class TestBTExample(object):
 
         m.fs.props = BT_PR.BTParameterBlock(default={"valid_phase": ("Vap", "Liq")})
 
-        m.fs.state = m.fs.props.build_state_block(
-            [0], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([0], default={"defined_state": True})
 
         m.fs.state[0].flow_mol.fix(100)
         m.fs.state[0].mole_frac_comp["benzene"].fix(0.5)
@@ -520,10 +535,18 @@ class TestBTExample(object):
             == 0.5
         )
 
-        assert pytest.approx(value(m.fs.state[0].enth_mol_phase["Liq"]), 1e-5) == 51095.2
-        assert pytest.approx(value(m.fs.state[0].enth_mol_phase["Vap"]), 1e-5) == 83362.3
-        assert pytest.approx(value(m.fs.state[0].entr_mol_phase["Liq"]), 1e-5) == -331.676
-        assert pytest.approx(value(m.fs.state[0].entr_mol_phase["Vap"]), 1e-5) == -261.961
+        assert (
+            pytest.approx(value(m.fs.state[0].enth_mol_phase["Liq"]), 1e-5) == 51095.2
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].enth_mol_phase["Vap"]), 1e-5) == 83362.3
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].entr_mol_phase["Liq"]), 1e-5) == -331.676
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].entr_mol_phase["Vap"]), 1e-5) == -261.961
+        )
 
     @pytest.mark.component
     def test_T368_P1_x5(self):
@@ -533,8 +556,7 @@ class TestBTExample(object):
 
         m.fs.props = BT_PR.BTParameterBlock(default={"valid_phase": ("Vap", "Liq")})
 
-        m.fs.state = m.fs.props.build_state_block(
-            [0], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([0], default={"defined_state": True})
 
         m.fs.state[0].flow_mol.fix(100)
         m.fs.state[0].mole_frac_comp["benzene"].fix(0.5)
@@ -554,7 +576,9 @@ class TestBTExample(object):
         assert 0.003504 == pytest.approx(
             value(m.fs.state[0].compress_fact_phase["Liq"]), 1e-5
         )
-        assert 0.97 == pytest.approx(value(m.fs.state[0].compress_fact_phase["Vap"]), 1e-5)
+        assert 0.97 == pytest.approx(
+            value(m.fs.state[0].compress_fact_phase["Vap"]), 1e-5
+        )
         assert (
             pytest.approx(
                 value(m.fs.state[0].fug_coeff_phase_comp["Liq", "benzene"]), 1e-5
@@ -605,10 +629,18 @@ class TestBTExample(object):
             == 0.3858262
         )
 
-        assert pytest.approx(value(m.fs.state[0].enth_mol_phase["Liq"]), 1e-5) == 38235.1
-        assert pytest.approx(value(m.fs.state[0].enth_mol_phase["Vap"]), 1e-5) == 77155.4
-        assert pytest.approx(value(m.fs.state[0].entr_mol_phase["Liq"]), 1e-5) == -364.856
-        assert pytest.approx(value(m.fs.state[0].entr_mol_phase["Vap"]), 1e-5) == -267.892
+        assert (
+            pytest.approx(value(m.fs.state[0].enth_mol_phase["Liq"]), 1e-5) == 38235.1
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].enth_mol_phase["Vap"]), 1e-5) == 77155.4
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].entr_mol_phase["Liq"]), 1e-5) == -364.856
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].entr_mol_phase["Vap"]), 1e-5) == -267.892
+        )
 
     @pytest.mark.component
     def test_T376_P1_x2(self):
@@ -618,8 +650,7 @@ class TestBTExample(object):
 
         m.fs.props = BT_PR.BTParameterBlock(default={"valid_phase": ("Vap", "Liq")})
 
-        m.fs.state = m.fs.props.build_state_block(
-            [0], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([0], default={"defined_state": True})
 
         m.fs.state[0].flow_mol.fix(100)
         m.fs.state[0].mole_frac_comp["benzene"].fix(0.2)
@@ -692,7 +723,15 @@ class TestBTExample(object):
             == 0.6732845
         )
 
-        assert pytest.approx(value(m.fs.state[0].enth_mol_phase["Liq"]), 1e-5) == 31535.8
-        assert pytest.approx(value(m.fs.state[0].enth_mol_phase["Vap"]), 1e-5) == 69175.3
-        assert pytest.approx(value(m.fs.state[0].entr_mol_phase["Liq"]), 1e-5) == -372.869
-        assert pytest.approx(value(m.fs.state[0].entr_mol_phase["Vap"]), 1e-5) == -278.766
+        assert (
+            pytest.approx(value(m.fs.state[0].enth_mol_phase["Liq"]), 1e-5) == 31535.8
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].enth_mol_phase["Vap"]), 1e-5) == 69175.3
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].entr_mol_phase["Liq"]), 1e-5) == -372.869
+        )
+        assert (
+            pytest.approx(value(m.fs.state[0].entr_mol_phase["Vap"]), 1e-5) == -278.766
+        )

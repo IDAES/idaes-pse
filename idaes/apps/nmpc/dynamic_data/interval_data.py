@@ -11,6 +11,7 @@
 # license information.
 #################################################################################
 
+
 def assert_disjoint_intervals(intervals):
     """
     This function takes intervals in the form of tuples and makes sure
@@ -30,7 +31,7 @@ def assert_disjoint_intervals(intervals):
                 "Lower endpoint of interval is higher than upper endpoint"
             )
         if i != 0:
-            prev_lo, prev_hi = intervals[i-1]
+            prev_lo, prev_hi = intervals[i - 1]
             if not prev_hi <= lo:
                 raise RuntimeError(
                     "Intervals %s and %s are not disjoint"
@@ -114,22 +115,18 @@ def interval_data_from_time_series(data, use_left_endpoint=False):
         over that interval
 
     """
-    time, value_dict  = data
+    time, value_dict = data
     n_t = len(time)
     if n_t == 1:
         t0 = time[0]
-        return {
-            name: {(t0, t0): values[0]}
-            for name, values in value_dict.items()
-        }
+        return {name: {(t0, t0): values[0]} for name, values in value_dict.items()}
     else:
         # This covers the case of n_t > 1 and n_t == 0
         interval_data = {}
-        intervals = [(time[i-1], time[i]) for i in range(1, n_t)]
+        intervals = [(time[i - 1], time[i]) for i in range(1, n_t)]
         for name, values in value_dict.items():
             interval_values = [
-                values[i-1] if use_left_endpoint else values[i]
-                for i in range(1, n_t)
+                values[i - 1] if use_left_endpoint else values[i] for i in range(1, n_t)
             ]
             interval_data[name] = dict(zip(intervals, interval_values))
         return interval_data

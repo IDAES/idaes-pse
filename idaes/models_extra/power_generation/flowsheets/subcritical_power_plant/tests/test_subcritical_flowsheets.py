@@ -104,7 +104,9 @@ def test_steam_cycle():
         - m.fs_main.fs_stc.turb.hp_split[14].outlet_1.flow_mol[0]  # out to reheat
         + m.fs_main.fs_stc.turb.ip_stages[1].inlet.flow_mol[0]  # in from reheat
         - m.fs_main.fs_stc.spray_valve.outlet.flow_mol[0]  # out to attemperator
-        - m.fs_main.fs_stc.fwh6.desuperheat.outlet_2.flow_mol[0]  # out to economizer
+        - m.fs_main.fs_stc.fwh6.desuperheat.cold_side_outlet.flow_mol[
+            0
+        ]  # out to economizer
         + m.fs_main.fs_stc.makeup_valve.inlet.flow_mol[0]  # in from makeup
     )
 
@@ -125,7 +127,9 @@ def test_subc_power_plant():
         - m.fs_main.fs_stc.turb.hp_split[14].outlet_1.flow_mol[0]  # out to reheat
         + m.fs_main.fs_stc.turb.ip_stages[1].inlet.flow_mol[0]  # in from reheat
         - m.fs_main.fs_stc.spray_valve.outlet.flow_mol[0]  # out to attemperator
-        - m.fs_main.fs_stc.fwh6.desuperheat.outlet_2.flow_mol[0]  # out to economizer
+        - m.fs_main.fs_stc.fwh6.desuperheat.cold_side_outlet.flow_mol[
+            0
+        ]  # out to economizer
         + m.fs_main.fs_stc.makeup_valve.inlet.flow_mol[0]  # in from makeup
     )
 
@@ -156,7 +160,7 @@ def test_dynamic_steam_cycle():
     assert degrees_of_freedom(m) == 7
 
 
-@pytest.mark.unit
-def test_subcritical_recyrculation_system():
+@pytest.mark.component
+def test_subcritical_recirculation_system():
     m = recyrc.main()
     assert degrees_of_freedom(m) == 0

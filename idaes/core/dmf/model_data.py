@@ -298,6 +298,7 @@ def update_metadata_model_references(model, metadata):
                     UserWarning,
                 )
 
+
 # This prevents breakage, can remove after example updates.
 upadate_metadata_model_references = update_metadata_model_references
 
@@ -405,14 +406,7 @@ def _bin_number(x, bin_size):
     return np.array(x / bin_size, dtype=int)
 
 
-def bin_data(
-        df,
-        bin_by,
-        bin_no,
-        bin_nom,
-        bin_size,
-        min_value=None,
-        max_value=None):
+def bin_data(df, bin_by, bin_no, bin_nom, bin_size, min_value=None, max_value=None):
     """
     Sort data into bins by a column value.  If the min or max are given and
     the value in bin_by for a row is out of the range [min, max], the row is
@@ -476,15 +470,16 @@ def bin_stdev(df, bin_no, min_data=4):
 
 
 def data_rec_plot_book(
-        df_data,
-        df_rec,
-        bin_nom,
-        file="data_rec_plot_book.pdf",
-        tmp_dir="tmp_plots",
-        xlabel=None,
-        metadata=None,
-        cols=None,
-        skip_cols=[]):
+    df_data,
+    df_rec,
+    bin_nom,
+    file="data_rec_plot_book.pdf",
+    tmp_dir="tmp_plots",
+    xlabel=None,
+    metadata=None,
+    cols=None,
+    skip_cols=[],
+):
     """
     Make box and whisker plots from process data compared to data rec results
     based on bins from the bin_data() function.  The df_data and df_rec data
@@ -519,7 +514,7 @@ def data_rec_plot_book(
         os.mkdir(tmp_dir)
 
     pdfs = []
-    flierprops = dict(markerfacecolor='0.5', markersize=2, marker="o", linestyle='none')
+    flierprops = dict(markerfacecolor="0.5", markersize=2, marker="o", linestyle="none")
     f = plt.figure(figsize=(16, 9))
     if cols is None:
         cols = df_data.columns
@@ -530,7 +525,7 @@ def data_rec_plot_book(
     ax = sns.countplot(x=bin_nom, data=df_data)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
     fname = os.path.join(tmp_dir, "plot_hist.pdf")
-    f.savefig(fname, bbox_inches='tight')
+    f.savefig(fname, bbox_inches="tight")
     pdfs.append(fname)
     plt.close(f)
 
@@ -547,15 +542,13 @@ def data_rec_plot_book(
         if metadata is not None:
             md = metadata.get(col, {})
             yl = "{} {} [{}]".format(
-                col,
-                md.get("description", ""),
-                md.get("units", "none")
+                col, md.get("description", ""), md.get("units", "none")
             )
         else:
             yl = col
         fname = os.path.join(tmp_dir, f"plot_{i}.pdf")
         ax.set(xlabel=xlabel, ylabel=yl)
-        f.savefig(fname, bbox_inches='tight')
+        f.savefig(fname, bbox_inches="tight")
         pdfs.append(fname)
         plt.close(f)
 
@@ -568,14 +561,15 @@ def data_rec_plot_book(
 
 
 def data_plot_book(
-        df,
-        bin_nom,
-        file="data_plot_book.pdf",
-        tmp_dir="tmp_plots",
-        xlabel=None,
-        metadata=None,
-        cols=None,
-        skip_cols=[]):
+    df,
+    bin_nom,
+    file="data_plot_book.pdf",
+    tmp_dir="tmp_plots",
+    xlabel=None,
+    metadata=None,
+    cols=None,
+    skip_cols=[],
+):
     """
     Make box and whisker plots from process data based on bins from the
     bin_data() function.
@@ -604,7 +598,7 @@ def data_plot_book(
         os.mkdir(tmp_dir)
 
     pdfs = []
-    flierprops = dict(markerfacecolor='0.5', markersize=2, marker="o", linestyle='none')
+    flierprops = dict(markerfacecolor="0.5", markersize=2, marker="o", linestyle="none")
     f = plt.figure(figsize=(16, 9))
     if cols is None:
         cols = sorted(df.columns)
@@ -615,7 +609,7 @@ def data_plot_book(
     ax = sns.countplot(x=bin_nom, data=df)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
     fname = os.path.join(tmp_dir, "plot_hist.pdf")
-    f.savefig(fname, bbox_inches='tight')
+    f.savefig(fname, bbox_inches="tight")
     pdfs.append(fname)
     plt.close(f)
 
@@ -628,15 +622,13 @@ def data_plot_book(
         if metadata is not None:
             md = metadata.get(col, {})
             yl = "{} {} [{}]".format(
-                col,
-                md.get("description", ""),
-                md.get("units", "none")
+                col, md.get("description", ""), md.get("units", "none")
             )
         else:
             yl = col
         fname = os.path.join(tmp_dir, f"plot_{i}.pdf")
         ax.set(xlabel=xlabel, ylabel=yl)
-        f.savefig(fname, bbox_inches='tight')
+        f.savefig(fname, bbox_inches="tight")
         pdfs.append(fname)
         plt.close(f)
 

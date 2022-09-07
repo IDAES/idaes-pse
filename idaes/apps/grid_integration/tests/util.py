@@ -13,11 +13,10 @@
 from collections import deque
 import pyomo.environ as pyo
 import pandas as pd
-import os
 from idaes.apps.grid_integration import Tracker
 from idaes.apps.grid_integration import Bidder, SelfScheduler
-from idaes.apps.grid_integration import PlaceHolderForecaster
 from idaes.apps.grid_integration import DoubleLoopCoordinator
+from idaes.apps.grid_integration.forecaster import AbstractPriceForecaster
 from idaes.apps.grid_integration.model_data import GeneratorModelData
 
 
@@ -27,7 +26,7 @@ class TestingModel:
     Simple model object for testing.
     """
 
-    def __init__(self, model_data, horizon=48):
+    def __init__(self, model_data):
 
         """
         Initializes the class object by building the thermal generator model.
@@ -48,7 +47,6 @@ class TestingModel:
         self._model_data = model_data
 
         self.generator = self.model_data.gen_name
-        self.horizon = horizon
         self.result_list = []
         self.pmin = self.model_data.p_min
         self.pmax = self.model_data.p_max
@@ -58,7 +56,7 @@ class TestingModel:
     def model_data(self):
         return self._model_data
 
-    def populate_model(self, b):
+    def populate_model(self, b, horizon):
 
         """
         This function builds the model for a thermal generator.
@@ -73,7 +71,7 @@ class TestingModel:
         """
 
         ## define the sets
-        b.HOUR = pyo.Set(initialize=range(self.horizon))
+        b.HOUR = pyo.Set(initialize=range(horizon))
 
         ## define the parameters
         b.marginal_cost = pyo.Param(initialize=self.marginal_cost, mutable=False)
@@ -262,23 +260,40 @@ class TestingModel:
         return ("tot_cost", 1)
 
 
-class TestingForecaster:
+class TestingForecaster(AbstractPriceForecaster):
+
     """
     A fake forecaster class for testing.
     """
 
-    def __init__(self, horizon, n_sample):
-        self.horizon = horizon
-        self.n_sample = n_sample
+    def __init__(self, prediction):
+        self.prediction = prediction
 
-    def forecast(self, date, hour, prediction):
-        return {i: [prediction] * self.horizon for i in range(self.n_sample)}
+    def forecast_day_ahead_and_real_time_prices(
+        self, date, hour, bus, horizon, n_samples
+    ):
+        rt_forecast = self.forecast_real_time_prices(
+            date, hour, bus, horizon, n_samples
+        )
+        da_forecast = self.forecast_day_ahead_prices(
+            date, hour, bus, horizon, n_samples
+        )
 
+        return da_forecast, rt_forecast
 
-this_module_dir = os.path.dirname(__file__)
+    def forecast_real_time_prices(self, date, hour, bus, horizon, n_samples):
+        return self._forecast(horizon, n_samples, 0)
+
+    def forecast_day_ahead_prices(self, date, hour, bus, horizon, n_samples):
+        return self._forecast(horizon, n_samples, self.prediction)
+
+    def _forecast(self, horizon, n_samples, prediction):
+        return {i: [prediction] * horizon for i in range(n_samples)}
+
 
 testing_generator_params = {
     "gen_name": "10_STEAM",
+    "bus": "bus5",
     "generator_type": "thermal",
     "p_min": 30,
     "p_max": 76,
@@ -300,7 +315,8 @@ testing_generator_params = {
 
 testing_model_data = GeneratorModelData(**testing_generator_params)
 tracking_horizon = 4
-bidding_horizon = 48
+day_ahead_bidding_horizon = 48
+real_time_bidding_horizon = 4
 n_scenario = 10
 n_tracking_hour = 1
 solver = pyo.SolverFactory("cbc")
@@ -318,13 +334,7 @@ def make_testing_forecaster():
         forecaster: a forecaster object for testing.
     """
 
-    # create forecaster
-    price_forecasts_df = pd.read_csv(
-        os.path.join(this_module_dir, os.pardir, "examples", "lmp_forecasts_concat.csv")
-    )
-    forecaster = PlaceHolderForecaster(price_forecasts_df=price_forecasts_df)
-
-    return forecaster
+    return TestingForecaster(prediction=30)
 
 
 def make_testing_tracker():
@@ -338,11 +348,10 @@ def make_testing_tracker():
         thermal_tracker: a tracker object for testing.
     """
 
-    tracking_model_object = TestingModel(
-        model_data=testing_model_data, horizon=tracking_horizon
-    )
+    tracking_model_object = TestingModel(model_data=testing_model_data)
     thermal_tracker = Tracker(
         tracking_model_object=tracking_model_object,
+        tracking_horizon=tracking_horizon,
         n_tracking_hour=n_tracking_hour,
         solver=solver,
     )
@@ -364,11 +373,11 @@ def make_testing_bidder():
 
     forecaster = make_testing_forecaster()
 
-    bidding_model_object = TestingModel(
-        model_data=testing_model_data, horizon=bidding_horizon
-    )
+    bidding_model_object = TestingModel(model_data=testing_model_data)
     thermal_bidder = Bidder(
         bidding_model_object=bidding_model_object,
+        day_ahead_horizon=day_ahead_bidding_horizon,
+        real_time_horizon=real_time_bidding_horizon,
         n_scenario=n_scenario,
         solver=solver,
         forecaster=forecaster,
@@ -391,13 +400,12 @@ def make_testing_selfscheduler():
 
     forecaster = make_testing_forecaster()
 
-    bidding_model_object = TestingModel(
-        model_data=testing_model_data, horizon=bidding_horizon
-    )
+    bidding_model_object = TestingModel(model_data=testing_model_data)
     self_scheduler = SelfScheduler(
         bidding_model_object=bidding_model_object,
+        day_ahead_horizon=day_ahead_bidding_horizon,
+        real_time_horizon=real_time_bidding_horizon,
         n_scenario=n_scenario,
-        horizon=bidding_horizon,
         solver=solver,
         forecaster=forecaster,
         fixed_to_schedule=True,

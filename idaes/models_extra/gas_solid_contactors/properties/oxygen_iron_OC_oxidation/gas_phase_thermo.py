@@ -107,7 +107,12 @@ class PhysicalParameterData(PhysicalParameterBlock):
         )
 
         # Std. heat of formation of comp. - units = kJ/(mol comp) - ref: NIST
-        enth_mol_form_comp_dict = {"O2": 0, "N2": 0, "CO2": -393.5224e3, "H2O": -241.8264e3}
+        enth_mol_form_comp_dict = {
+            "O2": 0,
+            "N2": 0,
+            "CO2": -393.5224e3,
+            "H2O": -241.8264e3,
+        }
         self.enth_mol_form_comp = Param(
             self.component_list,
             mutable=False,
@@ -627,9 +632,7 @@ class GasPhaseStateBlockData(StateBlockData):
         if self.config.defined_state is False:
 
             def sum_component_eqn(b):
-                return 1 == sum(
-                    b.mole_frac_comp[j] for j in b._params.component_list
-                )
+                return 1 == sum(b.mole_frac_comp[j] for j in b._params.component_list)
 
             self.sum_component_eqn = Constraint(rule=sum_component_eqn)
 
@@ -862,9 +865,7 @@ class GasPhaseStateBlockData(StateBlockData):
     def _therm_cond(self):
         # Thermal conductivity of gas
         units_meta = self._params.get_metadata().derived_units
-        units_therm_cond = (
-            units_meta["thermal_conductivity"]
-        )
+        units_therm_cond = units_meta["thermal_conductivity"]
         self.therm_cond = Var(
             domain=Reals,
             initialize=1e-5,
