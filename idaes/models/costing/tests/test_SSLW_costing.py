@@ -848,8 +848,8 @@ class TestMapping:
         # Add examples of supported unit models and add costing
         model.fs.unit = HeatExchanger(
             default={
-                "shell": {"property_package": model.fs.pparams},
-                "tube": {"property_package": model.fs.pparams},
+                "hot_side": {"property_package": model.fs.pparams},
+                "cold_side": {"property_package": model.fs.pparams},
             }
         )
         model.fs.unit.costing = UnitModelCostingBlock(

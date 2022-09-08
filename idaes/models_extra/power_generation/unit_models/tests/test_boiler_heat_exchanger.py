@@ -20,7 +20,6 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     check_optimal_termination,
-    SolverStatus,
     value,
     units as pyunits,
 )
@@ -33,14 +32,12 @@ from idaes.models.properties import iapws95
 # import ideal flue gas prop pack
 from idaes.models_extra.power_generation.properties import (
     FlueGasParameterBlock,
-    FlueGasStateBlock,
 )
 
 # Import Power Plant HX Unit Model
 from idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger import (
     BoilerHeatExchanger,
     TubeArrangement,
-    DeltaTMethod,
     delta_temperature_lmtd_callback,
     delta_temperature_amtd_callback,
     delta_temperature_underwood_callback,
@@ -53,7 +50,6 @@ from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 
-from idaes.core.util.testing import PhysicalParameterTestBlock
 import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
@@ -72,13 +68,12 @@ def test_no_deprecated(caplog):
     caplog.clear()
     m.fs.unit = BoilerHeatExchanger(
         delta_temperature_callback=delta_temperature_lmtd_callback,
-        tube={"property_package": m.fs.prop_steam},
-        shell={"property_package": m.fs.prop_fluegas},
-        has_pressure_change=True,
+        cold_side={"property_package": m.fs.prop_steam, "has_pressure_change": True},
+        hot_side={"property_package": m.fs.prop_fluegas, "has_pressure_change": True},
         has_holdup=True,
         flow_pattern=HeatExchangerFlowPattern.countercurrent,
         tube_arrangement=TubeArrangement.inLine,
-        side_1_water_phase="Liq",
+        cold_side_water_phase="Liq",
         has_radiation=True,
     )
     n_warn = 0
@@ -101,13 +96,18 @@ def tc(delta_temperature_callback=delta_temperature_underwood_tune_callback):
     m.fs.unit = BoilerHeatExchanger(
         default={
             "delta_temperature_callback": delta_temperature_callback,
-            "tube": {"property_package": m.fs.prop_steam},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
+            "cold_side": {
+                "property_package": m.fs.prop_steam,
+                "has_pressure_change": True,
+            },
+            "hot_side": {
+                "property_package": m.fs.prop_fluegas,
+                "has_pressure_change": True,
+            },
             "has_holdup": True,
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
             "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
+            "cold_side_water_phase": "Liq",
             "has_radiation": True,
         }
     )
@@ -133,34 +133,39 @@ def th(
     m.fs.unit = BoilerHeatExchanger(
         default={
             "delta_temperature_callback": delta_temperature_callback,
-            "tube": {"property_package": m.fs.prop_steam},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
+            "cold_side": {
+                "property_package": m.fs.prop_steam,
+                "has_pressure_change": True,
+            },
+            "hot_side": {
+                "property_package": m.fs.prop_fluegas,
+                "has_pressure_change": True,
+            },
             "has_holdup": False,
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
             "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
+            "cold_side_water_phase": "Liq",
             "has_radiation": True,
         }
     )
 
     #   Set inputs
     h = value(iapws95.htpx(773.15 * pyunits.K, 2.5449e7 * pyunits.Pa))
-    m.fs.unit.side_1_inlet.flow_mol[0].fix(24678.26)  # mol/s
-    m.fs.unit.side_1_inlet.enth_mol[0].fix(h)  # J/mol
-    m.fs.unit.side_1_inlet.pressure[0].fix(2.5449e7)  # Pascals
+    m.fs.unit.cold_side_inlet.flow_mol[0].fix(24678.26)  # mol/s
+    m.fs.unit.cold_side_inlet.enth_mol[0].fix(h)  # J/mol
+    m.fs.unit.cold_side_inlet.pressure[0].fix(2.5449e7)  # Pascals
 
     # FLUE GAS Inlet from Primary Superheater
     FGrate = 28.3876e3 * 0.18  # mol/s equivalent of ~1930.08 klb/hr
     # Use FG molar composition to set component flow rates (baseline report)
-    m.fs.unit.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate * 8.69 / 100)
-    m.fs.unit.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate * 14.49 / 100)
-    m.fs.unit.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate * 74.34 / 100)
-    m.fs.unit.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate * 2.47 / 100)
-    m.fs.unit.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate * 0.0006)
-    m.fs.unit.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate * 0.002)
-    m.fs.unit.side_2_inlet.temperature[0].fix(1102.335)
-    m.fs.unit.side_2_inlet.pressure[0].fix(100145)
+    m.fs.unit.hot_side_inlet.flow_mol_comp[0, "H2O"].fix(FGrate * 8.69 / 100)
+    m.fs.unit.hot_side_inlet.flow_mol_comp[0, "CO2"].fix(FGrate * 14.49 / 100)
+    m.fs.unit.hot_side_inlet.flow_mol_comp[0, "N2"].fix(FGrate * 74.34 / 100)
+    m.fs.unit.hot_side_inlet.flow_mol_comp[0, "O2"].fix(FGrate * 2.47 / 100)
+    m.fs.unit.hot_side_inlet.flow_mol_comp[0, "NO"].fix(FGrate * 0.0006)
+    m.fs.unit.hot_side_inlet.flow_mol_comp[0, "SO2"].fix(FGrate * 0.002)
+    m.fs.unit.hot_side_inlet.temperature[0].fix(1102.335)
+    m.fs.unit.hot_side_inlet.pressure[0].fix(100145)
 
     # Primary Superheater
     ITM = 0.0254  # inch to meter conversion
@@ -192,10 +197,10 @@ def th(
     results = solver.solve(m)
     # Check for optimal solution
     assert check_optimal_termination(results)
-    assert value(m.fs.unit.side_1.properties_out[0].temperature) == pytest.approx(
+    assert value(m.fs.unit.cold_side.properties_out[0].temperature) == pytest.approx(
         tout_1, abs=0.5
     )
-    assert value(m.fs.unit.side_2.properties_out[0].temperature) == pytest.approx(
+    assert value(m.fs.unit.hot_side.properties_out[0].temperature) == pytest.approx(
         tout_2, abs=0.5
     )
 
@@ -211,13 +216,18 @@ def tu(delta_temperature_callback=delta_temperature_underwood_tune_callback):
     m.fs.unit = BoilerHeatExchanger(
         default={
             "delta_temperature_callback": delta_temperature_callback,
-            "tube": {"property_package": m.fs.prop_steam},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
+            "cold_side": {
+                "property_package": m.fs.prop_steam,
+                "has_pressure_change": True,
+            },
+            "hot_side": {
+                "property_package": m.fs.prop_fluegas,
+                "has_pressure_change": True,
+            },
             "has_holdup": False,
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
             "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
+            "cold_side_water_phase": "Liq",
             "has_radiation": True,
         }
     )
