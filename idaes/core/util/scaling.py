@@ -39,6 +39,7 @@ from pyomo.common.modeling import unique_component_name
 from pyomo.core.base.constraint import _ConstraintData
 from pyomo.common.collections import ComponentMap, ComponentSet
 from pyomo.dae import DerivativeVar
+from pyomo.dae.flatten import flatten_dae_components
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 import idaes.logger as idaeslog
 
@@ -236,6 +237,12 @@ def set_scaling_factor(c, v, data_objects=True, overwrite=True):
     suf[c] = v
     if data_objects and c.is_indexed():
         for cdat in c.values():
+            if not overwrite:
+                try:
+                    tmp = suf[cdat]
+                    continue
+                except KeyError:
+                    pass
             suf[cdat] = v
 
 
@@ -754,24 +761,27 @@ def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
         return spla.norm(jac, ord) * la.norm(jac_inv, ord)
 
 
-def scale_time_discretization_equations(fs, time_scaling_factor):
+def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
     """
     Get the condition number of the scaled or unscaled Jacobian matrix of a model.
 
     Args:
-        fs: Flowsheet whose time discretization equations are being scaled
-        time_scaling_factor: Scaling factor to use for time. For time-stepping discretization methods with a uniform
-        time step dt, a good scaling factor is 1/dt.
+        blk: Block whose time discretization equations are being scaled
+        time_set: Time set object. For an IDAES flowsheet objects fs, this is fs.time.
+        time_scaling_factor: Scaling factor to use for time
 
     Returns:
-        (float) Condition number
+        None
     """
-    tname = fs.time.local_name
+    tname = time_set.local_name
     # Copy and pasted from solvers.petsc.find_discretization_equations then modified
-    for var in fs.component_objects(pyo.Var):
+    no_t_var, has_t_var = flatten_dae_components(blk, time_set, pyo.Var)
+    no_t_con, has_t_con = flatten_dae_components(blk, time_set, pyo.Constraint)
+    # TODO This set may not include inactive components or members of inactive components. Is that a problem?
+    for var in has_t_var:
         if isinstance(var, DerivativeVar):
             cont_set_set = ComponentSet(var.get_continuousset_list())
-            if fs.time in cont_set_set:
+            if time_set in cont_set_set:
                 if len(cont_set_set) > 1:
                     _log.warning(
                         "IDAES presently does not support automatically scaling discretization equations for "
@@ -786,7 +796,7 @@ def scale_time_discretization_equations(fs, time_scaling_factor):
                 # Look for continuity equation, which exists only for collocation with certain sets of polynomials
                 try:
                     cont_eq = getattr(parent, var.local_name + "_" + tname + "_cont_eq")
-                except KeyError:
+                except AttributeError:
                     cont_eq = None
 
                 if cont_eq is not None:
@@ -802,7 +812,7 @@ def scale_time_discretization_equations(fs, time_scaling_factor):
                         t = i
                     else:
                         t = i[0]
-                    if t == fs.time.first() or t == fs.time.last():
+                    if t == time_set.first() or t == time_set.last():
                         try:
                             constraint_scaling_transform(disc_eq[i], s_var, overwrite=False)
                         except:

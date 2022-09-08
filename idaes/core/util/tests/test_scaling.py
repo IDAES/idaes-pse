@@ -213,7 +213,7 @@ def test_propagate_indexed_scaling():
     sc.set_scaling_factor(m.a, 104)
     sc.set_scaling_factor(m.b.c1, 14)
 
-    # Set sufix directly since set_scaling_factor also sets data objects
+    # Set suffix directly since set_scaling_factor also sets data objects
     m.scaling_factor[m.x] = 11
     m.scaling_factor[m.y] = 13
     m.b.scaling_factor[m.b.w] = 16
@@ -378,6 +378,76 @@ def test_set_get_unset(caplog):
     assert m.scaling_factor[m.c2[2]] == 4
     assert m.scaling_factor[m.c2[3]] == 4
     assert m.scaling_factor[m.c2[4]] == 4
+
+    # Test overwriting scaling factors
+    sc.set_scaling_factor(m.x, 13, overwrite=False)
+    sc.set_scaling_factor(m.ex, 17, overwrite=False)
+    # z doesn't have a scaling factor, make sure that 19 gets set as planned
+    # to everything besides z[1], whose factor is not overwritten
+    sc.set_scaling_factor(m.z[1], 29, overwrite=False)
+    sc.set_scaling_factor(m.z, 19, overwrite=False)
+    sc.set_scaling_factor(m.c1, 7, overwrite=False)
+    sc.set_scaling_factor(m.c2, 23, overwrite=False)
+
+    assert sc.get_scaling_factor(m.x) == 11
+    assert sc.get_scaling_factor(m.ex) == 2
+    assert sc.get_scaling_factor(m.z) == 19  # z was unset at the beginning of this
+    assert sc.get_scaling_factor(m.c1) == 3
+    assert sc.get_scaling_factor(m.c2) == 4
+
+    assert m.scaling_factor[m.x] == 11
+    assert m.scaling_factor[m.c1] == 3
+    assert m.scaling_factor[m.z] == 19
+    assert m.scaling_factor[m.c1] == 3
+    assert m.scaling_factor[m.c2] == 4
+
+    for i in range(1, 5):
+        if i == 1:
+            assert sc.get_scaling_factor(m.z[i]) == 29
+            assert m.scaling_factor[m.z[i]] == 29
+        else:
+            assert sc.get_scaling_factor(m.z[i]) == 19
+            assert m.scaling_factor[m.z[i]] == 19
+        assert sc.get_scaling_factor(m.c2[i]) == 4
+        assert m.scaling_factor[m.c2[i]] == 4
+
+    sc.set_scaling_factor(m.x, 13, overwrite=True)
+    sc.set_scaling_factor(m.ex, 17, overwrite=True)
+    sc.set_scaling_factor(m.c1, 7, overwrite=True)
+    # Make sure that overwrite properly overwrites subcomponents too
+    sc.set_scaling_factor(m.z, 31, overwrite=True)
+    sc.set_scaling_factor(m.c2, 23, overwrite=True)
+
+    assert sc.get_scaling_factor(m.x) == 13
+    assert sc.get_scaling_factor(m.ex) == 17
+    assert sc.get_scaling_factor(m.z) == 31
+    assert sc.get_scaling_factor(m.c1) == 7
+    assert sc.get_scaling_factor(m.c2) == 23
+
+    assert m.scaling_factor[m.x] == 13
+    assert m.scaling_factor[m.ex] == 17
+    assert m.scaling_factor[m.z] == 31
+    assert m.scaling_factor[m.c1] == 7
+    assert m.scaling_factor[m.c2] == 23
+
+    for i in range(1, 5):
+        assert sc.get_scaling_factor(m.z[i]) == 31
+        assert sc.get_scaling_factor(m.c2[i]) == 23
+
+        assert m.scaling_factor[m.z[i]] == 31
+        assert m.scaling_factor[m.c2[i]] == 23
+
+    # Test the ambiguous case where a parent component has a scaling factor, the subcomponents do not,
+    # and set_scaling_factor is called with data_objects=True and overwrite=False. In this case,
+    # avoid setting subcomponent scaling factors if the parent component has a scaling factor.
+    sc.unset_scaling_factor(m.z, data_objects=True)
+    sc.set_scaling_factor(m.z, 31, data_objects=False)
+    sc.set_scaling_factor(m.z, 37, data_objects=True, overwrite=False)
+
+    assert sc.get_scaling_factor(m.z) == 31
+    assert m.scaling_factor[m.z] == 31
+    for i in range(1, 5):
+        assert sc.get_scaling_factor(m.z[i]) is None
 
 
 @pytest.mark.unit
@@ -1141,14 +1211,14 @@ def test_extreme_jacobian_rows_and_columns():
 def test_scaling_discretization_equations():
     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint(nfe=3)
 
-    for t in m.time:
+    for t in m.t:
         sc.set_scaling_factor(m.y[t, 1], 1)
         sc.set_scaling_factor(m.y[t, 2], 10)
         sc.set_scaling_factor(m.y[t, 3], 0.1)
-        sc.set_scaling_factor(m.y[t, 4, 1000])
-        sc.set_scaling_factor(m.y[t, 5, 13])
+        sc.set_scaling_factor(m.y[t, 4], 1000)
+        sc.set_scaling_factor(m.y[t, 5], 13)
 
-    sc.scale_time_discretization_equations(m, 1)
+    sc.scale_time_discretization_equations(m, m.t, 1)
 
     # for
     # sc.get_constraint_transform_applied_scaling_factor
