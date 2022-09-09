@@ -47,10 +47,12 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 from idaes.models.properties.modular_properties.pure.Perrys import Perrys
 from idaes.models.properties.modular_properties.pure.NIST import NIST
-from idaes.generic_models.properties.core.phase_equil.forms import fugacity
-from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.phase_equil import SmoothVLE
-from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBubbleDew
+from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
+from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
+from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
+    IdealBubbleDew,
+)
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom, large_residuals_set

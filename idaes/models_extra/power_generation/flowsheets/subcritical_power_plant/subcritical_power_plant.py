@@ -142,11 +142,11 @@ def set_scaling_factors(m):
     # Set scale factors for steam cycle
     fs = m.fs_main.fs_stc
 
-    iscale.set_scaling_factor(fs.condenser.side_1.heat, 1e-9)
-    iscale.set_scaling_factor(fs.condenser.side_2.heat, 1e-9)
+    iscale.set_scaling_factor(fs.condenser.hot_side.heat, 1e-9)
+    iscale.set_scaling_factor(fs.condenser.cold_side.heat, 1e-9)
 
-    iscale.set_scaling_factor(fs.aux_condenser.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(fs.aux_condenser.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(fs.aux_condenser.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(fs.aux_condenser.cold_side.heat, 1e-7)
 
     iscale.set_scaling_factor(fs.hotwell_tank.control_volume.energy_holdup, 1e-10)
     iscale.set_scaling_factor(fs.hotwell_tank.control_volume.material_holdup, 1e-6)
@@ -154,26 +154,26 @@ def set_scaling_factors(m):
         for t, c in fs.hotwell_tank.control_volume.energy_accumulation_disc_eq.items():
             iscale.constraint_scaling_transform(c, 1e-6)
 
-    iscale.set_scaling_factor(fs.fwh1.condense.side_1.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh1.condense.side_1.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh1.condense.side_2.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh1.condense.side_2.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh1.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(fs.fwh1.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh1.condense.hot_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh1.condense.hot_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh1.condense.cold_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh1.condense.cold_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh1.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh1.condense.cold_side.heat, 1e-7)
 
-    iscale.set_scaling_factor(fs.fwh2.condense.side_1.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh2.condense.side_1.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh2.condense.side_2.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh2.condense.side_2.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh2.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(fs.fwh2.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh2.condense.hot_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh2.condense.hot_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh2.condense.cold_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh2.condense.cold_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh2.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh2.condense.cold_side.heat, 1e-7)
 
-    iscale.set_scaling_factor(fs.fwh3.condense.side_1.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh3.condense.side_1.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh3.condense.side_2.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh3.condense.side_2.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh3.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(fs.fwh3.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh3.condense.hot_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh3.condense.hot_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh3.condense.cold_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh3.condense.cold_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh3.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh3.condense.cold_side.heat, 1e-7)
 
     iscale.set_scaling_factor(fs.da_tank.control_volume.energy_holdup, 1e-11)
     iscale.set_scaling_factor(fs.da_tank.control_volume.material_holdup, 1e-6)
@@ -181,19 +181,19 @@ def set_scaling_factors(m):
         for t, c in fs.da_tank.control_volume.energy_accumulation_disc_eq.items():
             iscale.constraint_scaling_transform(c, 1e-7)
 
-    iscale.set_scaling_factor(fs.fwh5.condense.side_1.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh5.condense.side_1.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh5.condense.side_2.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh5.condense.side_2.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh5.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(fs.fwh5.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh5.condense.hot_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh5.condense.hot_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh5.condense.cold_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh5.condense.cold_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh5.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh5.condense.cold_side.heat, 1e-7)
 
-    iscale.set_scaling_factor(fs.fwh6.condense.side_1.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh6.condense.side_1.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh6.condense.side_2.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh6.condense.side_2.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh6.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(fs.fwh6.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh6.condense.hot_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh6.condense.hot_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh6.condense.cold_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh6.condense.cold_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh6.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh6.condense.cold_side.heat, 1e-7)
 
     # scaling factor for control valves
     for t in m.fs_main.time:
@@ -233,7 +233,7 @@ def add_overall_performance_expressions(m):
             )
             * (
                 b.fs_stc.turb.inlet_split.mixed_state[t].enth_mol
-                - b.fs_stc.fwh6.desuperheat.tube.properties_out[t].enth_mol
+                - b.fs_stc.fwh6.desuperheat.cold_side.properties_out[t].enth_mol
             )
             + b.fs_stc.spray_valve.outlet.flow_mol[t]
             * (
@@ -881,7 +881,7 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         destination=m.fs_main.fs_stc.turb.ip_stages[1].inlet,
     )
     m.fs_main.S042 = Arc(
-        source=m.fs_main.fs_stc.fwh6.desuperheat.outlet_2,
+        source=m.fs_main.fs_stc.fwh6.desuperheat.cold_side_outlet,
         destination=m.fs_main.fs_blr.aECON.tube_inlet,
     )
     m.fs_main.B006 = Arc(
@@ -944,7 +944,9 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         )
         _log.info(
             "feed water flow_mol={}".format(
-                pyo.value(m.fs_main.fs_stc.fwh6.desuperheat.outlet_2.flow_mol[0])
+                pyo.value(
+                    m.fs_main.fs_stc.fwh6.desuperheat.cold_side_outlet.flow_mol[0]
+                )
             )
         )
         _log.info(
@@ -1169,7 +1171,9 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         )
         _log.info(
             "feed water flow_mol={}".format(
-                pyo.value(m.fs_main.fs_stc.fwh6.desuperheat.outlet_2.flow_mol[0])
+                pyo.value(
+                    m.fs_main.fs_stc.fwh6.desuperheat.cold_side_outlet.flow_mol[0]
+                )
             )
         )
         _log.info(

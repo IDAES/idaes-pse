@@ -71,14 +71,17 @@ import pyomo.environ as pyo
 from pyomo.common.fileutils import this_file_dir
 
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.properties import iapws95
+from idaes.models.properties import iapws95
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from idaes.models.properties.modular_properties.base.generic_property import (
+from idaes.models.properties.modular_properties import (
     GenericParameterBlock,
 )
-from idaes.power_generation.properties.natural_gas_PR import get_prop, EosType
+from idaes.models_extra.power_generation.properties.natural_gas_PR import (
+    get_prop,
+    EosType,
+)
 from idaes.models_extra.power_generation.unit_models.soc_submodels import (
     SolidOxideCell,
     SolidOxideModuleSimple,

@@ -1,12 +1,12 @@
 Visualizing Surrogate Model Results
 ===================================
 
-The *idaes.surrogate.plotting.sm_plotter* module contains a number of methods to assess the accuracy
+The *idaes.core.surrogate.plotting.sm_plotter* module contains a number of methods to assess the accuracy
 and performance of a surrogate model fit. Once a surrogate model is trained by an external tool (e.g. ALAMO, PySMO, TensorFlow Keras), the present methods automatically visualize results from passed surrogates and process data. Note that these methods are intended for surrogate model visualization, and users must pass an IDAES Surrogate object and a *pandas* DataFrame as required inputs. The methods will handle residual calculation, surrogate evaluation and plot formatting for the user.
 
 For detailed examples on integrating IDAES surrogate visualization methods with the IDAES Surrogates API, see https://idaes.github.io/examples-pse/latest/Examples/SurrMod/FlowsheetOptimization.
 
-*idaes.surrogate.plotting.sm_plotter* contains four utility methods for plotting and formatting data:
+*idaes.core.surrogate.plotting.sm_plotter* contains four utility methods for plotting and formatting data:
 
 * *sm_plotter.surrogate_scatter2D* - generate 2D scatter plots for each predicted input/output combination overlayed with validation data
 * *sm_plotter.surrogate_scatter3D* - generate 3D scatter plots for each predicted (input1, input2)/output combination overlayed with validation data
@@ -27,7 +27,7 @@ In addition to built-in Python functions, the visualization methods depend on th
 
 Basic Usage
 -----------
-To use the packages, they must be imported from *idaes.surrogate.plotting.sm_plotter* and required arguments must be defined as in the example script below:
+To use the packages, they must be imported from *idaes.core.surrogate.plotting.sm_plotter* and required arguments must be defined as in the example script below:
 
 .. code:: python
 
@@ -76,7 +76,7 @@ An example of a plot that is produced:
 Available Methods
 ------------------
 
-.. automethod:: idaes.surrogate.plotting.sm_plotter.surrogate_scatter2D
-.. automethod:: idaes.surrogate.plotting.sm_plotter.surrogate_scatter3D
-.. automethod:: idaes.surrogate.plotting.sm_plotter.surrogate_parity
-.. automethod:: idaes.surrogate.plotting.sm_plotter.surrogate_residual
+.. automethod:: idaes.core.surrogate.plotting.sm_plotter.surrogate_scatter2D
+.. automethod:: idaes.core.surrogate.plotting.sm_plotter.surrogate_scatter3D
+.. automethod:: idaes.core.surrogate.plotting.sm_plotter.surrogate_parity
+.. automethod:: idaes.core.surrogate.plotting.sm_plotter.surrogate_residual

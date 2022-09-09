@@ -187,7 +187,8 @@ def test_full_auto_scaling():
     # Unscaled variables are:
     # rate_reaction_extent (2 reactions, 11 spatial points)
     # equilibrium_reaction_extent  (2 reactions, 11 spatial points)
-    assert len(unscaled_var_list) == 44
+    # cp  (11 spatial points)
+    assert len(unscaled_var_list) == 55
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
@@ -243,7 +244,8 @@ def test_full_auto_scaling_dynamic():
     # Unscaled variables are:
     # rate_reaction_extent (2 reactions, 44 time & space points)
     # equilibrium_reaction_extent  (2 reactions, 44 time & space points)
-    assert len(unscaled_var_list) == 176
+    # cp  (44 time & space points)
+    assert len(unscaled_var_list) == 220
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
@@ -298,7 +300,8 @@ def test_full_auto_scaling_mbtype_phase():
     # rate_reaction_extent (2 reactions, 11 spatial points)
     # equilibrium_reaction_extent  (2 reactions, 11 spatial points)
     # phase_equilibrium_generation  (2 reactions, 11 spatial points)
-    assert len(unscaled_var_list) == 66
+    # cp  (11 spatial points)
+    assert len(unscaled_var_list) == 77
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
@@ -333,7 +336,9 @@ def test_full_auto_scaling_mbtype_element():
 
     # check that all variables have scaling factors
     unscaled_var_list = list(iscale.unscaled_variables_generator(m))
-    assert len(unscaled_var_list) == 0
+    # Unscaled variables are:
+    # cp  (44 space and time points)
+    assert len(unscaled_var_list) == 44
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
