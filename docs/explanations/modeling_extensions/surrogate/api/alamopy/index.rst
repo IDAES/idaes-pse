@@ -1,8 +1,3 @@
-.. alamopy documentation master file, created by
-   sphinx-quickstart on Wed Mar 21 17:35:59 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 .. index::
     pair: alamo;alamopy
 
@@ -13,8 +8,7 @@ ALAMOPY: ALAMO Python
 .. toctree::
     :maxdepth: 1
 
-    alamopy-cli
-    alamopy-depr
+    alamopy-options
 
 The purpose of ALAMOPY (Automatic Learning of Algebraic MOdels PYthon wrapper) is to provide a wrapper for the software ALAMO which generates algebraic surrogate models of black-box systems for which a simulator or experimental setup is available. Consider a system for which the outputs **z** are an unknown function **f** of the system inputs **x**.  The software identifies a function **f**, i.e., a relationship between the inputs and outputs of the system, that best matches data (pairs of **x** and corresponding **z** values) that are collected via simulation or experimentation.
 
@@ -45,7 +39,7 @@ where [Alamo Option] is a valid keyword argument that can be passed to the ALAMO
 User may save their trained surrogate objects by serializing to JSON, and load into a different script, notebook or environment. For example,
 
 .. code-block:: python
-  
+
   # to save a model
   model = alm_surr.save_to_file('alamo_surrogate.json', overwrite=True)
 
@@ -57,7 +51,7 @@ Options for *alamopy.AlamoTrainer*
 
 .. rubric:: ALAMOPY.ALAMO Options
 
-Below are some common arguments users may pass to ALAMO through `alamopy.AlamoTrainer` that govern the behavior of the regression procedure, solver, file characteristics and other options. See :ref: `ALAMOPY.ALAMO Options<explanations.modeling_extensions/surrogate/alamopy/alamopy-cli:ALAMOPY.ALAMO Options>` for more details on valid options and values.
+Below are some common arguments users may pass to ALAMO through `alamopy.AlamoTrainer` that govern the behavior of the regression procedure, solver, file characteristics and other options. See :ref: `ALAMOPY.ALAMO Options<explanations.modeling_extensions/surrogate/alamopy/alamopy-options:ALAMOPY.ALAMO Options>` for more details on valid options and values.
 
 * input_labels - list of strings to label the input variables
 * output_labels - list of strings to label the output variables
@@ -85,7 +79,7 @@ Similar to ALAMO, there are advanced capabilities for customization and constrai
 Custom basis functions can be added to the built-in functions to expand the functional forms available. To use this advanced capability in ALAMOPY, the following function is called. Note it is necessary to use the xlabels assigned to the input parameters.
 
 .. code-block:: python
-
+  
   trainer.config.custom_basis_functions = ["x1^2 * x2^2", "...", "..." ...]
 
 .. rubric:: ALAMOPY: ALAMO Python

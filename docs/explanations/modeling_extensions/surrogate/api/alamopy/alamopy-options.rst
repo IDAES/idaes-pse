@@ -1,4 +1,3 @@
-
 ALAMOPY.ALAMO Options
 =====================
 
@@ -193,5 +192,5 @@ Custom basis functions can be added to the built-in functions to expand the func
 To use this advanced capability in ALAMOPY, the following function is called. Note it is necessary to use the xlabels assigned to the input parameters.
 
 .. code-block:: python
-
+  
   trainer.config.custom_basis_functions = ["x1^2 * x2^2", "...", "..." ...]
