@@ -19,7 +19,6 @@ the `domain` argument in ConfigBlocks.
 
 __author__ = "Andrew Lee"
 
-from pyomo.common.deprecation import deprecation_warning
 from pyomo.common.config import ListOf, Bool
 
 from pyomo.environ import Set
@@ -98,63 +97,6 @@ def is_state_block(val):
             """State block should be an instance of a StateBlock or
                 None"""
         )
-
-
-def list_of_floats(arg):
-    """Domain validator for lists of floats
-
-    Args:
-        arg : argument to be cast to list of floats and validated
-
-    Returns:
-        List of floats
-    """
-    deprecation_warning(
-        "The list_of_floats function is deprecated.  Use the ListOf(float) "
-        "validator from pyomo.common.config instead.",
-        version="1.11",
-        remove_in="1.13",
-    )
-
-    return ListOf(float)(arg)
-
-
-def list_of_strings(arg):
-    """Domain validator for lists of strings
-
-    Args:
-        arg : argument to be cast to list of strings and validated
-
-    Returns:
-        List of strings
-    """
-    deprecation_warning(
-        "The list_of_strings function is deprecated.  Use the ListOf(str) "
-        "validator from pyomo.common.config instead.",
-        version="1.11",
-        remove_in="1.13",
-    )
-
-    return ListOf(str)(arg)
-
-
-def list_of_phase_types(arg):
-    """Domain validator for lists of PhaseTypes
-
-    Args:
-        arg : argument to be cast to list of PhaseTypes and validated
-
-    Returns:
-        List of PhaseTypes
-    """
-    deprecation_warning(
-        "The list_of_phase_types function is deprecated.  Use the "
-        "ListOf(PhaseType) validator from pyomo.common.config instead.",
-        version="1.11",
-        remove_in="1.13",
-    )
-
-    return ListOf(PhaseType)(arg)
 
 
 def is_port(arg):

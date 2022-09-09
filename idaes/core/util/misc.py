@@ -27,17 +27,6 @@ from idaes.core.util.tags import svg_tag as svg_tag_new
 _log = idaeslog.getLogger(__name__)
 
 
-relocated_module_attribute(
-    "get_solver", "idaes.core.solvers.get_solver", version="2.0.0.alpha0"
-)
-
-relocated_module_attribute(
-    "VarLikeExpression",
-    "idaes.core.base.var_like_expression.VarLikeExpression",
-    version="2.0.0.alpha0",
-)
-
-
 # Author: Andrew Lee
 def add_object_reference(self, local_name, remote_object):
     """
