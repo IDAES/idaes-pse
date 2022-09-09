@@ -39,7 +39,6 @@ from pyomo.common.modeling import unique_component_name
 from pyomo.core.base.constraint import _ConstraintData
 from pyomo.common.collections import ComponentMap, ComponentSet
 from pyomo.dae import DerivativeVar
-from pyomo.dae.flatten import flatten_dae_components
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 import idaes.logger as idaeslog
 
@@ -767,18 +766,17 @@ def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
 
     Args:
         blk: Block whose time discretization equations are being scaled
-        time_set: Time set object. For an IDAES flowsheet objects fs, this is fs.time.
+        time_set: Time set object. For an IDAES flowsheet object fs, this is fs.time.
         time_scaling_factor: Scaling factor to use for time
 
     Returns:
         None
     """
+
     tname = time_set.local_name
+
     # Copy and pasted from solvers.petsc.find_discretization_equations then modified
-    no_t_var, has_t_var = flatten_dae_components(blk, time_set, pyo.Var)
-    no_t_con, has_t_con = flatten_dae_components(blk, time_set, pyo.Constraint)
-    # TODO This set may not include inactive components or members of inactive components. Is that a problem?
-    for var in has_t_var:
+    for var in blk.component_objects(pyo.Var):
         if isinstance(var, DerivativeVar):
             cont_set_set = ComponentSet(var.get_continuousset_list())
             if time_set in cont_set_set:
@@ -790,38 +788,72 @@ def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
                     )
                     continue
                 state_var = var.get_state_var()
-                parent = var.parent_block()
+                parent_block = var.parent_block()
 
-                disc_eq = getattr(parent, var.local_name + "_disc_eq")
+                disc_eq = getattr(parent_block, var.local_name + "_disc_eq")
                 # Look for continuity equation, which exists only for collocation with certain sets of polynomials
                 try:
-                    cont_eq = getattr(parent, var.local_name + "_" + tname + "_cont_eq")
+                    cont_eq = getattr(
+                        parent_block, state_var.local_name + "_" + tname + "_cont_eq"
+                    )
                 except AttributeError:
                     cont_eq = None
 
-                if cont_eq is not None:
-                    pass
+                idx_set_list = [idx_set for idx_set in state_var.index_set().subsets()]
+                idx_len = len(idx_set_list)
+                try:
+                    idx_time = idx_set_list.index(time_set)
+                except ValueError:
+                    _log.warning(
+                        f"Time is not an index on {state_var.name}, which is differentiated with respect to time. "
+                        "IDAES presently does not support automatically scaling discretization equations for "
+                        "DerivativeVars implicitly indexed by time (like those appearing on a Block indexed by time)."
+                        "Please scale the corresponding discretization equation yourself. "
+                    )
+                    continue
 
-                for i in state_var.index_set():
-                    if get_scaling_factor(var[i]) is None:
-                        s_state = get_scaling_factor(state_var[i], default=1, warning=True)
-                        set_scaling_factor(var[i], s_state/time_scaling_factor)
-                    s_var = get_scaling_factor(var[i])
-                    # FIXME are we sure that the first index will always be time?
-                    if type(i) == float or type(i) == int:
-                        t = i
+                for idx in state_var.index_set():
+                    if get_scaling_factor(var[idx]) is None:
+                        s_state = get_scaling_factor(
+                            state_var[idx], default=1, warning=True
+                        )
+                        set_scaling_factor(var[idx], s_state / time_scaling_factor)
+                    s_derivative = get_scaling_factor(var[idx])
+
+                    if idx_len > 1:
+                        t = idx[idx_time]
                     else:
-                        t = i[0]
-                    if t == time_set.first() or t == time_set.last():
+                        t = idx
+
+                    if cont_eq is None:
+                        if t == time_set.first() or t == time_set.last():
+                            try:
+                                constraint_scaling_transform(
+                                    disc_eq[idx], s_derivative, overwrite=False
+                                )
+                            except KeyError:
+                                # Discretization and continuity equations may or may not exist at the first or last time
+                                # points depending on the method. Backwards skips first, forwards skips last, central skips
+                                # both (which means the user needs to provide additional equations)
+                                pass
+                        else:
+                            constraint_scaling_transform(
+                                disc_eq[idx], s_derivative, overwrite=False
+                            )
+                    else:
+                        # Lagrange-Legendre is a pain, because it has continuity equations on the edges of finite
+                        # instead of discretization equations, but no intermediate continuity equations, so we have
+                        # to look for both at every timepoint
                         try:
-                            constraint_scaling_transform(disc_eq[i], s_var, overwrite=False)
-                        except:
-                            # Discretization equations may or may not exist at the first or last time points
-                            # depending on the method. Backwards skips first, forwards skips last, central skips
-                            # both (which means the user needs to provide additional equations)
-                            pass
-                    else:
-                        constraint_scaling_transform(disc_eq[i], s_var, overwrite=False)
+                            constraint_scaling_transform(
+                                disc_eq[idx], s_derivative, overwrite=False
+                            )
+                        except KeyError:
+                            if t != time_set.first():
+                                constraint_scaling_transform(
+                                    cont_eq[idx], s_state, overwrite=False
+                                )
+
 
 class CacheVars(object):
     """

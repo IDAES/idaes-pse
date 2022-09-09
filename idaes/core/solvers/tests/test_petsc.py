@@ -267,8 +267,10 @@ def car_example():
     return m
 
 
-def dae_with_non_time_indexed_constraint(nfe=1, transformation_method="dae.finite_difference", scheme="BACKWARD"):
-    """This provides a DAE model for solver testing. This model contains a non-
+def dae_with_non_time_indexed_constraint(
+    nfe=1, ncp=3, transformation_method="dae.finite_difference", scheme="BACKWARD"
+):
+    """This function provides a DAE model for solver testing. This model contains a non-
     time-indexed variable and constraint and a fixed derivative to test some
     edge cases.
 
@@ -277,6 +279,7 @@ def dae_with_non_time_indexed_constraint(nfe=1, transformation_method="dae.finit
 
     Args:
         nfe: Number of finite elements to use in discretization
+        ncp: Number of collocation points to use, if using collocation
         transformation_method: Discretization method. Presently,
             options are "dae.finite_difference" and "dae.collocation".
         scheme: Scheme to use in discretization method. Check Pyomo
@@ -364,14 +367,18 @@ def dae_with_non_time_indexed_constraint(nfe=1, transformation_method="dae.finit
     for i in y0:
         model.y[0, i].fix(y0[i])
 
-    model.eq_ydot1[0].deactivate()
-    model.eq_ydot2[0].deactivate()
-    model.eq_ydot3[0].deactivate()
-    model.eq_ydot4[0].deactivate()
-    model.eq_ydot5[0].deactivate()
+    if scheme == "BACKWARD":
+        model.eq_ydot1[0].deactivate()
+        model.eq_ydot2[0].deactivate()
+        model.eq_ydot3[0].deactivate()
+        model.eq_ydot4[0].deactivate()
+        model.eq_ydot5[0].deactivate()
 
     discretizer = pyo.TransformationFactory(transformation_method)
-    discretizer.apply_to(model, nfe=nfe, scheme=scheme)
+    if transformation_method == "dae.collocation":
+        discretizer.apply_to(model, nfe=nfe, ncp=ncp, scheme=scheme)
+    else:
+        discretizer.apply_to(model, nfe=nfe, scheme=scheme)
     model.ydot[:, 6].fix(0)
 
     return (
@@ -715,6 +722,48 @@ def test_rp_example5b():
             m,
             time=m.time,
             between=[0, 3.5, 5, 10],
+            ts_options={
+                "--ts_dt": 1,
+                "--ts_adapt_type": "none",
+                "--ts_save_trajectory": 1,
+            },
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_mixed_derivative_exception():
+    # Test exception when mixed space/time derivatives appear in problem
+    m = pyo.ConcreteModel()
+
+    m.R = pyo.Param(initialize=0.001)  #  Friction factor
+    m.L = pyo.Param(initialize=100.0)  #  Final position
+
+    m.t = pyodae.ContinuousSet(bounds=(0, 1))
+    m.x = pyodae.ContinuousSet(bounds=(0, 1))
+
+    m.temperature = pyo.Var(m.t, m.x)
+    m.d2T_dtdx = pyodae.DerivativeVar(m.temperature, wrt=(m.t, m.x))
+
+    # This problem isn't well-posed, but that shouldn't matter
+    @m.Constraint(m.t, m.x)
+    def constraint_eqn(b, t, x):
+        return b.d2T_dtdx[t, x] == b.temperature[t, x] + 1
+
+    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer.apply_to(m, nfe=3, scheme="BACKWARD", wrt=m.t)
+    discretizer.apply_to(m, nfe=3, scheme="BACKWARD", wrt=m.x)
+
+    with pytest.raises(
+        NotImplementedError,
+        match="IDAES presently does not support PETSc for second order or higher derivatives like d2T_dtdx "
+        "that are differentiated at least once with respect to time. Please reformulate your model so "
+        "it does not contain such a derivative \(such as by introducing intermediate variables\)\.",
+    ):
+        petsc.petsc_dae_by_time_element(
+            m,
+            time=m.t,
+            between=[0, 1],
             ts_options={
                 "--ts_dt": 1,
                 "--ts_adapt_type": "none",

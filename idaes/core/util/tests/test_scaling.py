@@ -235,11 +235,11 @@ def test_propagate_indexed_scaling():
 
     sc.propagate_indexed_component_scaling_factors(m)
     for i in [1, 2, 3]:
-        assert sc.get_scaling_factor(m.x[i]) is 11
-        assert sc.get_scaling_factor(m.y[i]) is 13
+        assert sc.get_scaling_factor(m.x[i]) == 11
+        assert sc.get_scaling_factor(m.y[i]) == 13
         assert sc.get_scaling_factor(m.z[i]) is None
-        assert sc.get_scaling_factor(m.b.w[i]) is 16
-        assert sc.get_scaling_factor(m.c1[i]) is 14
+        assert sc.get_scaling_factor(m.b.w[i]) == 16
+        assert sc.get_scaling_factor(m.c1[i]) == 14
         assert sc.get_scaling_factor(m.c2[i]) is None
 
 
@@ -566,14 +566,14 @@ class TestSingleConstraintScalingTransform:
         assert model.c2.lower.value == pytest.approx(1)
         assert model.c2.body() == pytest.approx(model.x.value / 1e3)
         assert model.c2.upper.value == pytest.approx(1)
-        assert sc.get_constraint_transform_applied_scaling_factor(model.c2) is 1e-3
+        assert sc.get_constraint_transform_applied_scaling_factor(model.c2) == 1e-3
 
         # Check overwrite protection
         sc.constraint_scaling_transform(model.c2, 5, overwrite=False)
         assert model.c2.lower.value == pytest.approx(1)
         assert model.c2.body() == pytest.approx(model.x.value / 1e3)
         assert model.c2.upper.value == pytest.approx(1)
-        assert sc.get_constraint_transform_applied_scaling_factor(model.c2) is 1e-3
+        assert sc.get_constraint_transform_applied_scaling_factor(model.c2) == 1e-3
 
         sc.constraint_scaling_transform_undo(model.c2)
         assert sc.get_constraint_transform_applied_scaling_factor(model.c2) is None
@@ -1207,9 +1207,27 @@ def test_extreme_jacobian_rows_and_columns():
     assert len(out) == 0
 
 
-@pytest.mark.unit
-def test_scaling_discretization_equations():
-    m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint(nfe=3)
+def discretization_tester(transformation_method, scheme, t_skip, continuity_eqns=False):
+    """Function to avoid repeated code in testing scaling different discretization methods.
+
+    Args:
+        transformation_method: Discretization method to use (presently "dae.finite_difference" or "dae.collocation")
+        scheme: Discretization scheme to use
+        t_skip: Times to skip in testing scaling of discretization and/or continuity equations
+        continuity_eqns: Whether to look for continuity equations while testing. Right now implementation is based on
+            the "LAGRANGE-LEGENDRE" scheme. If additional methods with continuity equations are added to Pyomo that
+            behave differently, this conditional might have to be updated
+
+    Returns:
+        None
+    """
+
+    def approx(expected):
+        return pytest.approx(expected, rel=1e-10)
+
+    m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint(
+        nfe=3, transformation_method=transformation_method, scheme=scheme
+    )
 
     for t in m.t:
         sc.set_scaling_factor(m.y[t, 1], 1)
@@ -1217,8 +1235,98 @@ def test_scaling_discretization_equations():
         sc.set_scaling_factor(m.y[t, 3], 0.1)
         sc.set_scaling_factor(m.y[t, 4], 1000)
         sc.set_scaling_factor(m.y[t, 5], 13)
+        # Default scaling factor for y[6] is 1
 
-    sc.scale_time_discretization_equations(m, m.t, 1)
+    sc.scale_time_discretization_equations(m, m.t, 1 / 7)
 
-    # for
-    # sc.get_constraint_transform_applied_scaling_factor
+    for t in m.t:
+        assert sc.get_scaling_factor(m.ydot[t, 1]) == approx(7)
+        assert sc.get_scaling_factor(m.ydot[t, 2]) == approx(70)
+        assert sc.get_scaling_factor(m.ydot[t, 3]) == approx(0.7)
+        assert sc.get_scaling_factor(m.ydot[t, 4]) == approx(7000)
+        assert sc.get_scaling_factor(m.ydot[t, 5]) == approx(7 * 13)
+        assert sc.get_scaling_factor(m.ydot[t, 6]) == approx(7)
+
+        # No discretization equations in t_skip
+        if t in t_skip:
+            continue
+        if not continuity_eqns:
+            assert sc.get_constraint_transform_applied_scaling_factor(
+                m.ydot_disc_eq[t, 1]
+            ) == approx(7)
+            assert sc.get_constraint_transform_applied_scaling_factor(
+                m.ydot_disc_eq[t, 2]
+            ) == approx(70)
+            assert sc.get_constraint_transform_applied_scaling_factor(
+                m.ydot_disc_eq[t, 3]
+            ) == approx(0.7)
+            assert sc.get_constraint_transform_applied_scaling_factor(
+                m.ydot_disc_eq[t, 4]
+            ) == approx(7000)
+            assert sc.get_constraint_transform_applied_scaling_factor(
+                m.ydot_disc_eq[t, 5]
+            ) == approx(7 * 13)
+            assert sc.get_constraint_transform_applied_scaling_factor(
+                m.ydot_disc_eq[t, 6]
+            ) == approx(7)
+        else:
+            # For Lagrange-Legendre, continuity equations exist only on boundaries of finite elements (except t=0)
+            # while discretization equations exist only in the interior of finite elements.
+            try:
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.ydot_disc_eq[t, 1]
+                ) == approx(7)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.ydot_disc_eq[t, 2]
+                ) == approx(70)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.ydot_disc_eq[t, 3]
+                ) == approx(0.7)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.ydot_disc_eq[t, 4]
+                ) == approx(7000)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.ydot_disc_eq[t, 5]
+                ) == approx(7 * 13)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.ydot_disc_eq[t, 6]
+                ) == approx(7)
+            except KeyError:
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.y_t_cont_eq[t, 1]
+                ) == approx(1)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.y_t_cont_eq[t, 2]
+                ) == approx(10)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.y_t_cont_eq[t, 3]
+                ) == approx(0.1)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.y_t_cont_eq[t, 4]
+                ) == approx(1000)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.y_t_cont_eq[t, 5]
+                ) == approx(13)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.y_t_cont_eq[t, 6]
+                ) == approx(1)
+
+
+@pytest.mark.unit
+def test_scaling_discretization_equations_backward():
+    discretization_tester("dae.finite_difference", "BACKWARD", [0], False)
+
+
+@pytest.mark.unit
+def test_scaling_discretization_equations_forward():
+    discretization_tester("dae.finite_difference", "FORWARD", [180], False)
+
+
+@pytest.mark.unit
+def test_scaling_discretization_equations_lagrange_radau():
+    discretization_tester("dae.collocation", "LAGRANGE-RADAU", [0], False)
+
+
+@pytest.mark.unit
+def test_scaling_discretization_equations_lagrange_legendre():
+    discretization_tester("dae.collocation", "LAGRANGE-LEGENDRE", [0], True)
