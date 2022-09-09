@@ -32,7 +32,7 @@ from pyomo.network import Arc, Port
 # IDAES Imports
 from idaes.core import FlowsheetBlock  # Flowsheet class
 from idaes.core.util import model_serializer as ms  # load/save model state
-from idaes.core.util.misc import svg_tag  # place numbers/text in an SVG
+from idaes.core.util.tags import svg_tag  # place numbers/text in an SVG
 from idaes.models.properties import iapws95  # steam properties
 from idaes.models_extra.power_generation.unit_models.helm import (
     HelmTurbineMultistage,

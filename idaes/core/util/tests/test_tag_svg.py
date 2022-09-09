@@ -22,7 +22,8 @@ import pytest
 from pyomo.environ import ConcreteModel, Set, Block, Var
 from pyomo.network import Port
 
-from idaes.core.util.misc import TagReference, svg_tag
+from idaes.core.util.misc import TagReference
+from idaes.core.util.tags import svg_tag
 
 # simple svg from drawn in incscape, with text ids:
 #   TAGME_4.x, TAGME_4.y, and TAGME_4.f
