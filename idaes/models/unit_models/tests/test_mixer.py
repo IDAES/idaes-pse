@@ -79,7 +79,9 @@ from idaes.core.util.testing import (
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
-from idaes.power_generation.properties.natural_gas_PR import get_prop
+
+# TODO: Should have a test for this that does not requrie models_extra
+from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 

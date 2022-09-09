@@ -18,7 +18,7 @@ import numpy as np
 
 import pyomo.environ as pyo
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.models.properties.modular_properties import (
     GenericParameterBlock,
     GenericStateBlock,
 )

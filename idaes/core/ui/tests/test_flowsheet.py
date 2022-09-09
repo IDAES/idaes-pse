@@ -426,12 +426,12 @@ def test_flowsheet_serializer_get_unit_model_type():
         m.set_fwh,
         default={
             "delta_temperature_callback": delta_temperature_underwood_callback,
-            "shell": {
+            "hot_side": {
                 "property_package": m.fs.prop_water,
                 "material_balance_type": MaterialBalanceType.componentTotal,
                 "has_pressure_change": True,
             },
-            "tube": {
+            "cold_side": {
                 "property_package": m.fs.prop_water,
                 "material_balance_type": MaterialBalanceType.componentTotal,
                 "has_pressure_change": True,

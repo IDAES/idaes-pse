@@ -10,5 +10,5 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from .base.generic_property import GenericParameterBlock
-from .base.generic_reaction import GenericReactionParameterBlock
+from .base.generic_property import GenericParameterBlock, GenericStateBlock
+from .base.generic_reaction import GenericReactionParameterBlock, GenericReactionBlock

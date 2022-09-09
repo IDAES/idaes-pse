@@ -215,6 +215,8 @@ def model():
 
     m.fs.HX02 = HeatExchanger1D(
         default={
+            "hot_side_name": "shell_side",
+            "cold_side_name": "tube_side",
             "shell_side": {"property_package": m.fs.params},
             "tube_side": {"property_package": m.fs.params},
         }
