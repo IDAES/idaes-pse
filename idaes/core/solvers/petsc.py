@@ -50,6 +50,7 @@ def petsc_binary_io():
     try:
         import PetscBinaryIOTrajectory
         import PetscBinaryIO
+
         petsc_binary_io.PetscBinaryIOTrajectory = PetscBinaryIOTrajectory
         return PetscBinaryIOTrajectory
     except ImportError:
@@ -59,18 +60,22 @@ def petsc_binary_io():
     # look in the IDAES bin dir.  Casting the Executable path to a
     # string will map None to '' in the case where there is no petsc
     # executable found.
-    for petsc_exe_dir in (os.path.dirname(str(Executable("petsc").path())),
-                          icfg.bin_directory):
+    for petsc_exe_dir in (
+        os.path.dirname(str(Executable("petsc").path())),
+        icfg.bin_directory,
+    ):
         if not petsc_exe_dir:
             continue
-        petscpy_dir = os.path.join(petsc_exe_dir, 'petscpy')
+        petscpy_dir = os.path.join(petsc_exe_dir, "petscpy")
         try:
             sys.path.insert(0, petscpy_dir)
             import PetscBinaryIOTrajectory
             import PetscBinaryIO
+
             # Import the petsc_conf so that it is cached in sys.modules
             # (because we will be removing petscpy from sys.path)
             import petsc_conf
+
             petsc_binary_io.PetscBinaryIOTrajectory = PetscBinaryIOTrajectory
             return PetscBinaryIOTrajectory
         except ImportError:
