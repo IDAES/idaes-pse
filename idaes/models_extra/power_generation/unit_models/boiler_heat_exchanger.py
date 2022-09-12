@@ -88,25 +88,6 @@ class TubeArrangement(Enum):
     staggered = 1
 
 
-class _DeprecateDeltaTMethod(EnumMeta):
-    # This is used to log a deprecation warning if someone uses DeltaTMethod
-    def __getattribute__(cls, name):
-        obj = super().__getattribute__(name)
-        if isinstance(obj, Enum):
-            _log.warning(
-                "'DeltaTMethod' is deprecated use 'HeatExchangerFlowPattern' "
-                "This will be removed in IDAES 3.0"
-            )
-        return obj
-
-
-class DeltaTMethod(Enum, metaclass=_DeprecateDeltaTMethod):
-    """DEPRECATED: use HeatExchangerFlowPattern instead"""
-
-    counterCurrent = HeatExchangerFlowPattern.countercurrent
-    coCurrent = HeatExchangerFlowPattern.cocurrent
-
-
 def delta_temperature_underwood_tune_callback(b):
     """
     This is a callback for a temperature difference expression to calculate
