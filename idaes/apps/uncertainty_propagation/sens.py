@@ -35,7 +35,6 @@ from pyomo.common.sorting import sorted_robust
 from pyomo.core.expr.current import ExpressionReplacementVisitor
 
 from pyomo.common.modeling import unique_component_name
-from pyomo.common.deprecation import deprecated
 from pyomo.opt import SolverFactory, SolverStatus
 import logging
 import os
@@ -44,67 +43,6 @@ from pyomo.common.dependencies import numpy as np, numpy_available
 from scipy import sparse
 
 logger = logging.getLogger("pyomo.contrib.sensitivity_toolbox")
-
-
-@deprecated(
-    """The sipopt function has been deprecated. Use the
-            sensitivity_calculation() function with method='sipopt'
-            to access this functionality.""",
-    logger="pyomo.contrib.sensitivity_toolbox",
-    version="TBD",
-)
-def sipopt(
-    instance,
-    paramSubList,
-    perturbList,
-    cloneModel=True,
-    tee=False,
-    keepfiles=False,
-    streamSoln=False,
-):
-    m = sensitivity_calculation(
-        "sipopt",
-        instance,
-        paramSubList,
-        perturbList,
-        cloneModel,
-        tee,
-        keepfiles,
-        solver_options=None,
-    )
-
-    return m
-
-
-@deprecated(
-    """The kaug function has been deprecated.
-            Use the sensitivity_calculation() function
-            with method='kaug' to access this functionality.""",
-    logger="pyomo.contrib.sensitivity_toolbox",
-    version="TBD",
-)
-def kaug(
-    instance,
-    paramSubList,
-    perturbList,
-    cloneModel=True,
-    tee=False,
-    keepfiles=False,
-    solver_options=None,
-    streamSoln=False,
-):
-    m = sensitivity_calculation(
-        "kaug",
-        instance,
-        paramSubList,
-        perturbList,
-        cloneModel,
-        tee,
-        keepfiles,
-        solver_options,
-    )
-
-    return m
 
 
 _SIPOPT_SUFFIXES = {
