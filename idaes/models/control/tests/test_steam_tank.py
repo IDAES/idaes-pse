@@ -33,7 +33,7 @@ from pyomo.network import Arc
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.models.unit_models import Heater, Valve
 from idaes.models.properties import iapws95
-from idaes.core.util import copy_port_values as _set_port
+from idaes.core.util.initialization import propagate_state as _set_port
 from idaes.core.util.plot import dynamic_value_list
 from idaes.models.control import PIDBlock, PIDForm
 import idaes.core.util.scaling as iscale
