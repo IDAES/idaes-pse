@@ -20,7 +20,7 @@ from pyomo.network import Arc
 
 # Import IDAES core
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util import copy_port_values as _set_port
+from idaes.core.util.initialization import propagate_state as _set_port
 from idaes.core.solvers import get_solver
 from idaes.core import FlowsheetBlock
 import idaes.logger as idaeslog

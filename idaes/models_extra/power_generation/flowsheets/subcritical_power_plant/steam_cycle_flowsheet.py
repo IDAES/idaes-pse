@@ -22,7 +22,7 @@ import pyomo.environ as pyo
 from pyomo.network import Arc
 
 # Import IDAES
-from idaes.core.util import copy_port_values as _set_port
+from idaes.core.util.initialization import propagate_state as _set_port
 from idaes.models_extra.power_generation.unit_models.helm import (
     HelmTurbineStage as TurbineStage,
     HelmTurbineOutletStage as TurbineOutletStage,

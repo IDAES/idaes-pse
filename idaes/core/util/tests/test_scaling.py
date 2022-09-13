@@ -548,53 +548,6 @@ class TestScaleSingleConstraint:
         assert model.c3.body is model.x
         assert model.c3.upper is None
 
-    @pytest.mark.unit
-    def test_not_constraint(self, model):
-        with pytest.raises(TypeError):
-            sc.scale_single_constraint(model.x)
-
-    @pytest.mark.unit
-    def test_less_than_constraint(self, model):
-        sc.scale_single_constraint(model.c1)
-        assert model.c1.lower is None
-        assert model.c1.body() == pytest.approx(model.x.value / 1e3)
-        assert model.c1.upper.value == pytest.approx(1)
-
-    @pytest.mark.unit
-    def test_equality_constraint(self, model):
-        sc.scale_single_constraint(model.c2)
-        assert model.c2.lower.value == pytest.approx(1)
-        assert model.c2.body() == pytest.approx(model.x.value / 1e3)
-        assert model.c2.upper.value == pytest.approx(1)
-
-    @pytest.mark.unit
-    def test_greater_than_constraint(self, model):
-        sc.scale_single_constraint(model.c3)
-        assert model.c3.lower.value == pytest.approx(1)
-        assert model.c3.body() == pytest.approx(model.x.value / 1e3)
-        assert model.c3.upper is None
-
-    @pytest.mark.unit
-    def test_scaling_factor_and_expression_replacement(self, model):
-        model.c4 = pyo.Constraint(expr=model.x <= 1e6)
-        model.scaling_factor[model.c4] = 1e-6
-        sc.scale_single_constraint(model.c4)
-        assert model.c4.upper.value == pytest.approx(1)
-        assert model.c4 not in model.scaling_factor
-
-    @pytest.fixture(scope="class")
-    def model2(self):
-        m = pyo.ConcreteModel()
-        m.y = pyo.Var()
-        m.c = pyo.Constraint(expr=m.y <= 1e3)
-        return m
-
-    @pytest.mark.unit
-    def test_no_scaling_factor(self, model2):
-        model2.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
-        sc.scale_single_constraint(model2.c)
-        assert model2.c.upper.value == pytest.approx(1e3)
-
 
 class TestScaleConstraintsPynumero:
     def model(self):
@@ -831,27 +784,6 @@ class TestScaleConstraints:
         m.b1.b2.scaling_factor[m.b1.b2.c1] = 1e-12
 
         return m
-
-    @pytest.mark.unit
-    def test_scale_one_block(self, model):
-        sc.scale_constraints(model, descend_into=False)
-        # scaled
-        assert model.c1.lower.value == pytest.approx(1)
-        assert model.c1.body() == pytest.approx(model.x.value / 1e3)
-        assert model.c1.upper.value == pytest.approx(1)
-        assert model.c2.lower.value == pytest.approx(1)
-        assert model.c2.body() == pytest.approx(model.y.value / 1e6)
-        assert model.c2.upper.value == pytest.approx(1)
-        # unscaled
-        assert model.b1.c1.upper.value == pytest.approx(1e9)
-        assert model.b1.b2.c1.upper.value == pytest.approx(1e12)
-
-    @pytest.mark.unit
-    def test_scale_model(self, model):
-        sc.scale_constraints(model)
-        assert model.c1.upper.value == pytest.approx(1)
-        assert model.b1.c1.upper.value == pytest.approx(1)
-        assert model.b1.b2.c1.upper.value == pytest.approx(1)
 
 
 class TestCacheVars:

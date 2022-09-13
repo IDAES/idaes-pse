@@ -33,11 +33,12 @@ from idaes.models_extra.carbon_capture.co2_compressor import (
     ImpellerType,
 )
 
-from idaes.core.util.testing import get_default_solver, initialization_tester
+from idaes.core.solvers import get_solver
+from idaes.core.util.testing import initialization_tester
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 @pytest.fixture(scope="module")

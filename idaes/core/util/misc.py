@@ -92,23 +92,6 @@ def TagReference(s, description=""):
     return r
 
 
-def copy_port_values(destination=None, source=None, arc=None, direction="forward"):
-    """
-    Moved to idaes.core.util.initialization.propagate_state.
-    Leaving redirection function here for deprecation warning.
-    """
-    _log.warning(
-        "DEPRECATED: copy_port_values has been deprecated. "
-        "The same functionality can be found in "
-        "idaes.core.util.initialization.propagate_state."
-    )
-    from idaes.core.util.initialization import propagate_state
-
-    propagate_state(
-        destination=destination, source=source, arc=arc, direction=direction
-    )
-
-
 @deprecated(
     "idaes.core.util.misc.svg_tag has moved to idaes.core.util.tags.svg_tag",
     version=1.12,
