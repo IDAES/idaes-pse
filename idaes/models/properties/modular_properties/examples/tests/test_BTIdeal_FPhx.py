@@ -79,6 +79,7 @@ config_dict = {
                 "pressure_crit": 48.9e5,  # [1]
                 "temperature_crit": 562.2,  # [1]
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": 1.0162,  # [2] pg. 2-98
                     "2": 0.2655,
                     "3": 562.16,
@@ -119,6 +120,7 @@ config_dict = {
                 "pressure_crit": 41e5,  # [1]
                 "temperature_crit": 591.8,  # [1]
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": 0.8488,  # [2] pg. 2-98
                     "2": 0.26655,
                     "3": 591.8,

@@ -1258,6 +1258,7 @@ thermo_config_no_rxn = {
                 "temperature_crit": (647, pyunits.K),
                 # Comes from Perry's Handbook:  p. 2-98
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
@@ -1332,6 +1333,7 @@ thermo_config_no_rxn = {
                 "pressure_crit": (73.825e5, pyunits.Pa),
                 "temperature_crit": (304.23, pyunits.K),
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (0.000789, pyunits.kmol * pyunits.m**-3),
                     "2": (0.000956, pyunits.dimensionless),
                     "3": (500.78, pyunits.K),
