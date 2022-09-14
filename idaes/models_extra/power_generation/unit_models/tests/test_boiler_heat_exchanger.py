@@ -41,7 +41,6 @@ from idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger impor
     delta_temperature_lmtd_callback,
     delta_temperature_amtd_callback,
     delta_temperature_underwood_callback,
-    delta_temperature_underwood_tune_callback,
     HeatExchangerFlowPattern,
 )
 
@@ -86,7 +85,7 @@ def test_no_deprecated(caplog):
     assert n_warn == 0  # 1 DeltaTMethod Enum and 1 for delta_T_method option
 
 
-def tc(delta_temperature_callback=delta_temperature_underwood_tune_callback):
+def tc(delta_temperature_callback=delta_temperature_underwood_callback):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
@@ -119,7 +118,7 @@ def tc(delta_temperature_callback=delta_temperature_underwood_tune_callback):
 
 
 def th(
-    delta_temperature_callback=delta_temperature_underwood_tune_callback,
+    delta_temperature_callback=delta_temperature_underwood_callback,
     tout_1=809.55,
     tout_2=788.53,
 ):
@@ -205,7 +204,7 @@ def th(
     )
 
 
-def tu(delta_temperature_callback=delta_temperature_underwood_tune_callback):
+def tu(delta_temperature_callback=delta_temperature_underwood_callback):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
@@ -250,11 +249,6 @@ def test_config_uw():
     tc(delta_temperature_underwood_callback)
 
 
-@pytest.mark.unit
-def test_config_uwt():
-    tc(delta_temperature_underwood_tune_callback)
-
-
 @pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
@@ -278,13 +272,6 @@ def test_boiler_hx_uw():
 
 
 @pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.component
-def test_boiler_hx_uwt():
-    th(delta_temperature_underwood_tune_callback)
-
-
-@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.integration
 def test_units_am():
     tu(delta_temperature_amtd_callback)
@@ -300,9 +287,3 @@ def test_units_lm():
 @pytest.mark.integration
 def test_units_uw():
     tu(delta_temperature_underwood_callback)
-
-
-@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
-@pytest.mark.integration
-def test_units_uwt():
-    tu(delta_temperature_underwood_tune_callback)
