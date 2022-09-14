@@ -18,10 +18,12 @@ import pyomo.environ as pyo
 from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock
-from idaes.power_generation.unit_models.watertank import WaterTank
+from idaes.models_extra.power_generation.unit_models.watertank import WaterTank
 from idaes.models.control.controller import PIDController, ControllerType
 import idaes.core.util.scaling as iscale
-from idaes.power_generation.unit_models.helm import (
+
+# TODO: Should have a test for this that does not depend on models_extra
+from idaes.models_extra.power_generation.unit_models.helm import (
     HelmValve as WaterValve,
     HelmIsentropicCompressor as WaterPump,
 )

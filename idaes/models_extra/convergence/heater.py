@@ -15,11 +15,11 @@ __author__ = "John Eslick"
 
 import pyomo.environ as pyo
 from pyomo.network import Arc
-from idaes.power_generation.unit_models.helm import HelmValve
+from idaes.models_extra.power_generation.unit_models.helm import HelmValve
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.models.unit_models import Heater
 from idaes.models.properties import iapws95
-from idaes.core.util import copy_port_values as _set_port
+from idaes.core.util.initialization import propagate_state as _set_port
 from idaes.core.solvers import get_solver
 
 

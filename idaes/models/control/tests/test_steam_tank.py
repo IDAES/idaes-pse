@@ -33,8 +33,8 @@ from pyomo.network import Arc
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.models.unit_models import Heater, Valve
 from idaes.models.properties import iapws95
-from idaes.core.util import copy_port_values as _set_port
-from idaes.core.util.plot import stitch_dynamic
+from idaes.core.util.initialization import propagate_state as _set_port
+from idaes.core.util.plot import dynamic_value_list
 from idaes.models.control import PIDBlock, PIDForm
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
@@ -323,8 +323,8 @@ def tpid(form, tee=False):
         pyo.value(m_dynamic2.fs.valve_1.valve_opening[t]), abs=5e-3
     )
 
-    stitch_time = stitch_dynamic(m_dynamic.fs.time, m_dynamic2.fs.time)
-    stitch_valve = stitch_dynamic(
+    stitch_time = dynamic_value_list(m_dynamic.fs.time, m_dynamic2.fs.time)
+    stitch_valve = dynamic_value_list(
         m_dynamic.fs.valve_1.valve_opening, m_dynamic2.fs.valve_1.valve_opening
     )
 

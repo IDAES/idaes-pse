@@ -49,6 +49,15 @@ class BaseValidator(ABC):
         pass
 
 
+class StrValidator(BaseValidator):
+    def _validate(self, instance, value):
+
+        if not isinstance(value, str):
+            raise TypeError(
+                f"Value for {self.prop_name} must be str, but {type(value)} is provided."
+            )
+
+
 class RealValueValidator(BaseValidator):
 
     """
@@ -130,6 +139,8 @@ class GeneratorModelData:
     A class that holds data for generator parameters.
     """
 
+    gen_name = StrValidator()
+    bus = StrValidator()
     p_min = RealValueValidator(min_val=0)
     p_min_agc = RealValueValidator(min_val=0)
     min_down_time = RealValueValidator(min_val=0)
@@ -145,6 +156,7 @@ class GeneratorModelData:
     def __init__(
         self,
         gen_name,
+        bus,
         generator_type,
         p_min,
         p_max,
@@ -160,6 +172,7 @@ class GeneratorModelData:
     ):
 
         self.gen_name = gen_name
+        self.bus = bus
         self.generator_type = generator_type
         self.p_min = p_min
         self.p_max = p_max
@@ -211,37 +224,6 @@ class GeneratorModelData:
         else:
             name = self._collection[self._index]
             return name, getattr(self, name)
-
-    @property
-    def gen_name(self):
-
-        """
-        Property getter for generator's name.
-
-        Returns:
-            str: generator's name
-        """
-
-        return self._gen_name
-
-    @gen_name.setter
-    def gen_name(self, value):
-
-        """
-        Property setter for generator's name.
-
-        Args:
-            value: generator's name in str
-
-        Returns:
-            None
-        """
-
-        if not isinstance(value, str):
-            raise TypeError(
-                f"Value for generator names must be str, but {type(value)} is provided."
-            )
-        self._gen_name = value
 
     @property
     def generator_type(self):
