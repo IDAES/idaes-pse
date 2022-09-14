@@ -40,7 +40,6 @@ from idaes.core import (
 from idaes.models.unit_models.heat_exchanger import (
     delta_temperature_lmtd_callback,
     delta_temperature_lmtd2_callback,
-    # delta_temperature_lmtd3_callback,
     delta_temperature_amtd_callback,
     delta_temperature_underwood_callback,
     HeatExchanger,
@@ -98,7 +97,9 @@ def test_bad_option():
 def test_bad_option2():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    with pytest.raises(ConfigurationError):
+    with pytest.raises(
+        ConfigurationError, match="cold_side_name cannot be 'hot_side'."
+    ):
         m.fs.unit = HeatExchanger(default={"cold_side_name": "hot_side"})
 
 
@@ -106,7 +107,9 @@ def test_bad_option2():
 def test_bad_option3():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    with pytest.raises(ConfigurationError):
+    with pytest.raises(
+        ConfigurationError, match="hot_side_name cannot be 'cold_side'."
+    ):
         m.fs.unit = HeatExchanger(default={"hot_side_name": "cold_side"})
 
 
@@ -114,98 +117,100 @@ def test_bad_option3():
 def test_bad_option4():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    with pytest.raises(ConfigurationError):
-        m.fs.unit = HeatExchanger(
-            default={"side_1_is_hot": False, "cold_side_name": "hot_side"}
-        )
+    with pytest.raises(
+        ConfigurationError, match="cold_side_name cannot be 'cold_side'."
+    ):
+        m.fs.unit = HeatExchanger(default={"cold_side_name": "cold_side"})
 
 
 @pytest.mark.unit
 def test_bad_option5():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    with pytest.raises(ConfigurationError):
+    with pytest.raises(ConfigurationError, match="hot_side_name cannot be 'hot_side'."):
+        m.fs.unit = HeatExchanger(default={"hot_side_name": "hot_side"})
+
+
+@pytest.mark.unit
+def test_hot_and_cold_names_same():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    with pytest.raises(
+        NameError,
+        match="HeatExchanger hot and cold side cannot have the same name 'shell'.",
+    ):
         m.fs.unit = HeatExchanger(
-            default={"side_1_is_hot": False, "hot_side_name": "cold_side"}
+            default={"hot_side_name": "shell", "cold_side_name": "shell"}
         )
 
 
 @pytest.mark.unit
-def test_bad_option6():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    with pytest.raises(ConfigurationError):
-        m.fs.unit = HeatExchanger(
-            default={"side_1_is_hot": False, "hot_side_name": "side_1"}
-        )
-
-
-@pytest.mark.unit
-def test_bad_option7():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    with pytest.raises(ConfigurationError):
-        m.fs.unit = HeatExchanger(
-            default={"side_1_is_hot": False, "cold_side_name": "side_2"}
-        )
-
-
-@pytest.mark.unit
-def test_bad_option8():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    with pytest.raises(ConfigurationError):
-        m.fs.unit = HeatExchanger(default={"hot_side_name": "side_2"})
-
-
-@pytest.mark.unit
-def test_bad_option9():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    with pytest.raises(ConfigurationError):
-        m.fs.unit = HeatExchanger(default={"cold_side_name": "side_1"})
-
-
-@pytest.mark.unit
-def test_hot_side_named_hot_side():
+def test_hot_side_name_clash():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = PhysicalParameterTestBlock()
-    m.fs.unit = HeatExchanger(
-        default={
-            "hot_side": {"property_package": m.fs.properties},
-            "tube": {"property_package": m.fs.properties},
-            "hot_side_name": "hot_side",
-        }
-    )
-    assert not hasattr(m.fs.unit, "shell")
-    assert hasattr(m.fs.unit, "hot_side")
+
+    with pytest.raises(
+        ValueError,
+        match="fs.unit could not assign hot side alias "
+        "build as an attribute of that name already "
+        "exists.",
+    ):
+        m.fs.unit = HeatExchanger(
+            default={
+                "hot_side": {"property_package": m.fs.properties},
+                "cold_side": {"property_package": m.fs.properties},
+                "hot_side_name": "build",
+            }
+        )
 
 
 @pytest.mark.unit
-def test_cold_side_named_cold_side():
+def test_cold_side_name_clash():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = PhysicalParameterTestBlock()
+
+    with pytest.raises(
+        ValueError,
+        match="fs.unit could not assign cold side alias "
+        "build as an attribute of that name already "
+        "exists.",
+    ):
+        m.fs.unit = HeatExchanger(
+            default={
+                "hot_side": {"property_package": m.fs.properties},
+                "cold_side": {"property_package": m.fs.properties},
+                "cold_side_name": "build",
+            }
+        )
+
+
+@pytest.mark.unit
+def test_user_names():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = PhysicalParameterTestBlock()
+
     m.fs.unit = HeatExchanger(
         default={
+            "hot_side_name": "shell",
+            "cold_side_name": "tube",
             "shell": {"property_package": m.fs.properties},
-            "cold_side": {"property_package": m.fs.properties},
-            "cold_side_name": "cold_side",
+            "tube": {"property_package": m.fs.properties},
         }
     )
-    assert not hasattr(m.fs.unit, "tube")
-    assert hasattr(m.fs.unit, "cold_side")
 
+    assert m.fs.unit.config.hot_side.property_package is m.fs.properties
+    assert m.fs.unit.config.cold_side.property_package is m.fs.properties
 
-@pytest.mark.unit
-def test_same_name():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    # by default shell is taken by hot side, so if you want to do this,
-    # you need to rename both
-    with pytest.raises(NameError):
-        m.fs.unit = HeatExchanger(default={"cold_side_name": "shell"})
+    assert m.fs.unit.shell is m.fs.unit.hot_side
+    assert m.fs.unit.tube is m.fs.unit.cold_side
+
+    assert m.fs.unit.shell_inlet is m.fs.unit.hot_side_inlet
+    assert m.fs.unit.tube_inlet is m.fs.unit.cold_side_inlet
+    assert m.fs.unit.shell_outlet is m.fs.unit.hot_side_outlet
+    assert m.fs.unit.tube_outlet is m.fs.unit.cold_side_outlet
 
 
 @pytest.mark.unit
@@ -217,49 +222,56 @@ def test_config():
 
     m.fs.unit = HeatExchanger(
         default={
-            "shell": {"property_package": m.fs.properties},
-            "tube": {"property_package": m.fs.properties},
+            "hot_side": {"property_package": m.fs.properties},
+            "cold_side": {"property_package": m.fs.properties},
         }
     )
 
     # Check unit config arguments
     # There are 8 to 10 arguments since you can add a side 1 and 2 config by
     # side_1, side_2, or whatever the user named them
-    assert len(m.fs.unit.config) >= 9 and len(m.fs.unit.config) <= 11
+    assert len(m.fs.unit.config) == 8
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
-    assert isinstance(m.fs.unit.config.shell, ConfigBlock)
-    assert isinstance(m.fs.unit.config.tube, ConfigBlock)
+    assert isinstance(m.fs.unit.config.hot_side, ConfigBlock)
+    assert isinstance(m.fs.unit.config.cold_side, ConfigBlock)
     assert (
         m.fs.unit.config.delta_temperature_callback is delta_temperature_lmtd_callback
     )
     assert m.fs.unit.config.flow_pattern == HeatExchangerFlowPattern.countercurrent
 
-    # Check shell config
-    assert len(m.fs.unit.config.shell) == 7
+    # Check hot_side config
+    assert len(m.fs.unit.config.hot_side) == 7
     assert (
-        m.fs.unit.config.shell.material_balance_type == MaterialBalanceType.useDefault
+        m.fs.unit.config.hot_side.material_balance_type
+        == MaterialBalanceType.useDefault
     )
-    assert m.fs.unit.config.shell.energy_balance_type == EnergyBalanceType.useDefault
+    assert m.fs.unit.config.hot_side.energy_balance_type == EnergyBalanceType.useDefault
     assert (
-        m.fs.unit.config.shell.momentum_balance_type
+        m.fs.unit.config.hot_side.momentum_balance_type
         == MomentumBalanceType.pressureTotal
     )
-    assert not m.fs.unit.config.shell.has_phase_equilibrium
-    assert not m.fs.unit.config.shell.has_pressure_change
-    assert m.fs.unit.config.shell.property_package is m.fs.properties
+    assert not m.fs.unit.config.hot_side.has_phase_equilibrium
+    assert not m.fs.unit.config.hot_side.has_pressure_change
+    assert m.fs.unit.config.hot_side.property_package is m.fs.properties
 
-    # Check tube config
-    assert len(m.fs.unit.config.tube) == 7
-    assert m.fs.unit.config.tube.material_balance_type == MaterialBalanceType.useDefault
-    assert m.fs.unit.config.tube.energy_balance_type == EnergyBalanceType.useDefault
+    # Check cold_side config
+    assert len(m.fs.unit.config.cold_side) == 7
     assert (
-        m.fs.unit.config.tube.momentum_balance_type == MomentumBalanceType.pressureTotal
+        m.fs.unit.config.cold_side.material_balance_type
+        == MaterialBalanceType.useDefault
     )
-    assert not m.fs.unit.config.tube.has_phase_equilibrium
-    assert not m.fs.unit.config.tube.has_pressure_change
-    assert m.fs.unit.config.tube.property_package is m.fs.properties
+    assert (
+        m.fs.unit.config.cold_side.energy_balance_type == EnergyBalanceType.useDefault
+    )
+    assert (
+        m.fs.unit.config.cold_side.momentum_balance_type
+        == MomentumBalanceType.pressureTotal
+    )
+    assert not m.fs.unit.config.cold_side.has_phase_equilibrium
+    assert not m.fs.unit.config.cold_side.has_pressure_change
+    assert m.fs.unit.config.cold_side.property_package is m.fs.properties
 
 
 def basic_model(cb=delta_temperature_lmtd_callback):
@@ -270,26 +282,25 @@ def basic_model(cb=delta_temperature_lmtd_callback):
 
     m.fs.unit = HeatExchanger(
         default={
-            "shell": {"property_package": m.fs.properties},
-            "tube": {"property_package": m.fs.properties},
+            "hot_side": {"property_package": m.fs.properties},
+            "cold_side": {"property_package": m.fs.properties},
             "delta_temperature_callback": cb,
             "flow_pattern": HeatExchangerFlowPattern.countercurrent,
         }
     )
     #   Set inputs
-    m.fs.unit.inlet_1.flow_mol[0].fix(100)
-    m.fs.unit.inlet_1.enth_mol[0].fix(4000)
-    m.fs.unit.inlet_1.pressure[0].fix(101325)
+    m.fs.unit.hot_side_inlet.flow_mol[0].fix(100)
+    m.fs.unit.hot_side_inlet.enth_mol[0].fix(4000)
+    m.fs.unit.hot_side_inlet.pressure[0].fix(101325)
 
-    m.fs.unit.inlet_2.flow_mol[0].fix(100)
-    m.fs.unit.inlet_2.enth_mol[0].fix(3500)
-    m.fs.unit.inlet_2.pressure[0].fix(101325)
+    m.fs.unit.cold_side_inlet.flow_mol[0].fix(100)
+    m.fs.unit.cold_side_inlet.enth_mol[0].fix(3500)
+    m.fs.unit.cold_side_inlet.pressure[0].fix(101325)
 
     m.fs.unit.area.fix(1000)
     m.fs.unit.overall_heat_transfer_coefficient.fix(100)
 
     assert degrees_of_freedom(m) == 0
-    m.fs.unit.get_costing()
     m.fs.unit.initialize()
     return m
 
@@ -302,20 +313,20 @@ def basic_model2(cb=delta_temperature_lmtd_callback):
 
     m.fs.unit = HeatExchanger(
         default={
-            "shell": {"property_package": m.fs.properties},
-            "tube": {"property_package": m.fs.properties},
+            "hot_side": {"property_package": m.fs.properties},
+            "cold_side": {"property_package": m.fs.properties},
             "delta_temperature_callback": cb,
             "flow_pattern": HeatExchangerFlowPattern.cocurrent,
         }
     )
     #   Set inputs
-    m.fs.unit.inlet_1.flow_mol[0].fix(100)
-    m.fs.unit.inlet_1.enth_mol[0].fix(4000)
-    m.fs.unit.inlet_1.pressure[0].fix(101325)
+    m.fs.unit.hot_side_inlet.flow_mol[0].fix(100)
+    m.fs.unit.hot_side_inlet.enth_mol[0].fix(4000)
+    m.fs.unit.hot_side_inlet.pressure[0].fix(101325)
 
-    m.fs.unit.inlet_2.flow_mol[0].fix(100)
-    m.fs.unit.inlet_2.enth_mol[0].fix(3500)
-    m.fs.unit.inlet_2.pressure[0].fix(101325)
+    m.fs.unit.cold_side_inlet.flow_mol[0].fix(100)
+    m.fs.unit.cold_side_inlet.enth_mol[0].fix(3500)
+    m.fs.unit.cold_side_inlet.pressure[0].fix(101325)
 
     m.fs.unit.area.fix(100)
     m.fs.unit.overall_heat_transfer_coefficient.fix(100)
@@ -333,20 +344,20 @@ def basic_model3(cb=delta_temperature_lmtd_callback):
 
     m.fs.unit = HeatExchanger(
         default={
-            "shell": {"property_package": m.fs.properties},
-            "tube": {"property_package": m.fs.properties},
+            "hot_side": {"property_package": m.fs.properties},
+            "cold_side": {"property_package": m.fs.properties},
             "delta_temperature_callback": cb,
             "flow_pattern": HeatExchangerFlowPattern.crossflow,
         }
     )
     #   Set inputs
-    m.fs.unit.inlet_1.flow_mol[0].fix(100)
-    m.fs.unit.inlet_1.enth_mol[0].fix(4000)
-    m.fs.unit.inlet_1.pressure[0].fix(101325)
+    m.fs.unit.hot_side_inlet.flow_mol[0].fix(100)
+    m.fs.unit.hot_side_inlet.enth_mol[0].fix(4000)
+    m.fs.unit.hot_side_inlet.pressure[0].fix(101325)
 
-    m.fs.unit.inlet_2.flow_mol[0].fix(100)
-    m.fs.unit.inlet_2.enth_mol[0].fix(3500)
-    m.fs.unit.inlet_2.pressure[0].fix(101325)
+    m.fs.unit.cold_side_inlet.flow_mol[0].fix(100)
+    m.fs.unit.cold_side_inlet.enth_mol[0].fix(3500)
+    m.fs.unit.cold_side_inlet.pressure[0].fix(101325)
 
     m.fs.unit.area.fix(1000)
     m.fs.unit.overall_heat_transfer_coefficient.fix(100)
@@ -358,40 +369,11 @@ def basic_model3(cb=delta_temperature_lmtd_callback):
 
 @pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.unit
-def test_costing():
-    m = basic_model(delta_temperature_lmtd_callback)
-
-    assert m.fs.unit.costing.purchase_cost.value == pytest.approx(529738.6793, 1e-5)
-
-    assert_units_consistent(m.fs.unit.costing)
-
-    results = solver.solve(m)
-
-    # Check for optimal solution
-    assert check_optimal_termination(results)
-
-    # Check Solution
-
-    # hot in end
-    assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(0.464879, rel=1e-3)
-    # hot out end
-    assert value(m.fs.unit.delta_temperature_out[0]) == pytest.approx(
-        0.465069, rel=1e-3
-    )
-    assert value(m.fs.unit.heat_duty[0]) == pytest.approx(46497.44)
-
-    # Costing
-    assert m.fs.unit.costing.purchase_cost.value == pytest.approx(529738.6793, 1e-5)
-
-
-@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.unit
+@pytest.mark.component
 def test_lmtd2_cb():
     m = basic_model(delta_temperature_lmtd2_callback)
-    assert_units_consistent(m.fs.unit.costing)
     results = solver.solve(m)
+    assert check_optimal_termination(results)
     # hot in end
     assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(0.464879, rel=1e-3)
     # hot out end
@@ -403,10 +385,11 @@ def test_lmtd2_cb():
 
 @pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.unit
+@pytest.mark.component
 def test_lmtd2_co_cb():
     m = basic_model2(delta_temperature_lmtd2_callback)
     results = solver.solve(m)
+    assert check_optimal_termination(results)
     # hot in end
     assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(6.63771, rel=1e-3)
     # hot out end
@@ -416,10 +399,11 @@ def test_lmtd2_co_cb():
 
 @pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.unit
+@pytest.mark.component
 def test_lmtd2_cross_cb():
     m = basic_model3(delta_temperature_lmtd2_callback)
     results = solver.solve(m)
+    assert check_optimal_termination(results)
     # hot in end
     assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(0.464879, rel=1e-3)
     # hot out end
@@ -431,11 +415,11 @@ def test_lmtd2_cross_cb():
 
 @pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.unit
+@pytest.mark.component
 def test_lmtd3_cb():
     m = basic_model(delta_temperature_lmtd2_callback)
-    assert_units_consistent(m.fs.unit.costing)
     results = solver.solve(m)
+    assert check_optimal_termination(results)
     # hot in end
     assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(0.464879, rel=1e-3)
     # hot out end
@@ -447,12 +431,12 @@ def test_lmtd3_cb():
 
 @pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.unit
+@pytest.mark.component
 def test_amtd_cb():
     # since the delta T at both ends, AMTD ends up about the same as LMTD
     m = basic_model(delta_temperature_amtd_callback)
-    assert_units_consistent(m.fs.unit.costing)
     results = solver.solve(m)
+    assert check_optimal_termination(results)
     # hot in end
     assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(0.464879, rel=1e-3)
     # hot out end
@@ -464,11 +448,11 @@ def test_amtd_cb():
 
 @pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.unit
+@pytest.mark.component
 def test_underwood_cb():
     m = basic_model(delta_temperature_underwood_callback)
-    assert_units_consistent(m.fs.unit.costing)
     results = solver.solve(m)
+    assert check_optimal_termination(results)
     # hot in end
     assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(0.464879, rel=1e-3)
     # hot out end
@@ -489,23 +473,23 @@ class TestBTX_cocurrent(object):
 
         m.fs.unit = HeatExchanger(
             default={
-                "shell": {"property_package": m.fs.properties},
-                "tube": {"property_package": m.fs.properties},
+                "hot_side": {"property_package": m.fs.properties},
+                "cold_side": {"property_package": m.fs.properties},
                 "flow_pattern": HeatExchangerFlowPattern.cocurrent,
             }
         )
 
-        m.fs.unit.inlet_1.flow_mol[0].fix(5)  # mol/s
-        m.fs.unit.inlet_1.temperature[0].fix(365)  # K
-        m.fs.unit.inlet_1.pressure[0].fix(101325)  # Pa
-        m.fs.unit.inlet_1.mole_frac_comp[0, "benzene"].fix(0.5)
-        m.fs.unit.inlet_1.mole_frac_comp[0, "toluene"].fix(0.5)
+        m.fs.unit.hot_side_inlet.flow_mol[0].fix(5)  # mol/s
+        m.fs.unit.hot_side_inlet.temperature[0].fix(365)  # K
+        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
-        m.fs.unit.inlet_2.flow_mol[0].fix(1)  # mol/s
-        m.fs.unit.inlet_2.temperature[0].fix(300)  # K
-        m.fs.unit.inlet_2.pressure[0].fix(101325)  # Pa
-        m.fs.unit.inlet_2.mole_frac_comp[0, "benzene"].fix(0.5)
-        m.fs.unit.inlet_2.mole_frac_comp[0, "toluene"].fix(0.5)
+        m.fs.unit.cold_side_inlet.flow_mol[0].fix(1)  # mol/s
+        m.fs.unit.cold_side_inlet.temperature[0].fix(300)  # K
+        m.fs.unit.cold_side_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
         m.fs.unit.area.fix(1)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
@@ -515,33 +499,33 @@ class TestBTX_cocurrent(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, btx):
-        assert hasattr(btx.fs.unit, "inlet_1")
-        assert len(btx.fs.unit.inlet_1.vars) == 4
-        assert hasattr(btx.fs.unit.inlet_1, "flow_mol")
-        assert hasattr(btx.fs.unit.inlet_1, "mole_frac_comp")
-        assert hasattr(btx.fs.unit.inlet_1, "temperature")
-        assert hasattr(btx.fs.unit.inlet_1, "pressure")
+        assert hasattr(btx.fs.unit, "hot_side_inlet")
+        assert len(btx.fs.unit.hot_side_inlet.vars) == 4
+        assert hasattr(btx.fs.unit.hot_side_inlet, "flow_mol")
+        assert hasattr(btx.fs.unit.hot_side_inlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.hot_side_inlet, "temperature")
+        assert hasattr(btx.fs.unit.hot_side_inlet, "pressure")
 
-        assert hasattr(btx.fs.unit, "inlet_2")
-        assert len(btx.fs.unit.inlet_2.vars) == 4
-        assert hasattr(btx.fs.unit.inlet_2, "flow_mol")
-        assert hasattr(btx.fs.unit.inlet_2, "mole_frac_comp")
-        assert hasattr(btx.fs.unit.inlet_2, "temperature")
-        assert hasattr(btx.fs.unit.inlet_2, "pressure")
+        assert hasattr(btx.fs.unit, "cold_side_inlet")
+        assert len(btx.fs.unit.cold_side_inlet.vars) == 4
+        assert hasattr(btx.fs.unit.cold_side_inlet, "flow_mol")
+        assert hasattr(btx.fs.unit.cold_side_inlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.cold_side_inlet, "temperature")
+        assert hasattr(btx.fs.unit.cold_side_inlet, "pressure")
 
-        assert hasattr(btx.fs.unit, "outlet_1")
-        assert len(btx.fs.unit.outlet_1.vars) == 4
-        assert hasattr(btx.fs.unit.outlet_1, "flow_mol")
-        assert hasattr(btx.fs.unit.outlet_1, "mole_frac_comp")
-        assert hasattr(btx.fs.unit.outlet_1, "temperature")
-        assert hasattr(btx.fs.unit.outlet_1, "pressure")
+        assert hasattr(btx.fs.unit, "hot_side_outlet")
+        assert len(btx.fs.unit.hot_side_outlet.vars) == 4
+        assert hasattr(btx.fs.unit.hot_side_outlet, "flow_mol")
+        assert hasattr(btx.fs.unit.hot_side_outlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.hot_side_outlet, "temperature")
+        assert hasattr(btx.fs.unit.hot_side_outlet, "pressure")
 
-        assert hasattr(btx.fs.unit, "outlet_2")
-        assert len(btx.fs.unit.outlet_2.vars) == 4
-        assert hasattr(btx.fs.unit.outlet_2, "flow_mol")
-        assert hasattr(btx.fs.unit.outlet_2, "mole_frac_comp")
-        assert hasattr(btx.fs.unit.outlet_2, "temperature")
-        assert hasattr(btx.fs.unit.outlet_2, "pressure")
+        assert hasattr(btx.fs.unit, "cold_side_outlet")
+        assert len(btx.fs.unit.cold_side_outlet.vars) == 4
+        assert hasattr(btx.fs.unit.cold_side_outlet, "flow_mol")
+        assert hasattr(btx.fs.unit.cold_side_outlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.cold_side_outlet, "temperature")
+        assert hasattr(btx.fs.unit.cold_side_outlet, "pressure")
 
         assert isinstance(btx.fs.unit.overall_heat_transfer_coefficient, Var)
         assert isinstance(btx.fs.unit.area, Var)
@@ -609,28 +593,28 @@ class TestBTX_cocurrent(object):
                     "temperature": getattr(pyunits.pint_registry, "kelvin"),
                     "pressure": getattr(pyunits.pint_registry, "Pa"),
                 },
-                "Hot Inlet": {
+                "Hot Side Inlet": {
                     "flow_mol": 5.0,
                     "mole_frac_comp benzene": 0.5,
                     "mole_frac_comp toluene": 0.5,
                     "temperature": 365,
                     "pressure": 101325.0,
                 },
-                "Hot Outlet": {
+                "Hot Side Outlet": {
                     "flow_mol": 1.0,
                     "mole_frac_comp benzene": 0.5,
                     "mole_frac_comp toluene": 0.5,
                     "temperature": 298.15,
                     "pressure": 101325.0,
                 },
-                "Cold Inlet": {
+                "Cold Side Inlet": {
                     "flow_mol": 1.0,
                     "mole_frac_comp benzene": 0.5,
                     "mole_frac_comp toluene": 0.5,
                     "temperature": 300,
                     "pressure": 101325.0,
                 },
-                "Cold Outlet": {
+                "Cold Side Outlet": {
                     "flow_mol": 1.0,
                     "mole_frac_comp benzene": 0.5,
                     "mole_frac_comp toluene": 0.5,
@@ -661,20 +645,24 @@ class TestBTX_cocurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx):
-        assert pytest.approx(5, abs=1e-3) == value(btx.fs.unit.outlet_1.flow_mol[0])
+        assert pytest.approx(5, abs=1e-3) == value(
+            btx.fs.unit.hot_side_outlet.flow_mol[0]
+        )
         assert pytest.approx(359.5, abs=1e-1) == value(
-            btx.fs.unit.outlet_1.temperature[0]
+            btx.fs.unit.hot_side_outlet.temperature[0]
         )
         assert pytest.approx(101325, abs=1e-3) == value(
-            btx.fs.unit.outlet_1.pressure[0]
+            btx.fs.unit.hot_side_outlet.pressure[0]
         )
 
-        assert pytest.approx(1, abs=1e-3) == value(btx.fs.unit.outlet_2.flow_mol[0])
+        assert pytest.approx(1, abs=1e-3) == value(
+            btx.fs.unit.cold_side_outlet.flow_mol[0]
+        )
         assert pytest.approx(329.9, abs=1e-1) == value(
-            btx.fs.unit.outlet_2.temperature[0]
+            btx.fs.unit.cold_side_outlet.temperature[0]
         )
         assert pytest.approx(101325, abs=1e-3) == value(
-            btx.fs.unit.outlet_2.pressure[0]
+            btx.fs.unit.cold_side_outlet.pressure[0]
         )
 
     @pytest.mark.solver
@@ -684,7 +672,8 @@ class TestBTX_cocurrent(object):
         assert (
             abs(
                 value(
-                    btx.fs.unit.inlet_1.flow_mol[0] - btx.fs.unit.outlet_1.flow_mol[0]
+                    btx.fs.unit.hot_side_inlet.flow_mol[0]
+                    - btx.fs.unit.hot_side_outlet.flow_mol[0]
                 )
             )
             <= 1e-6
@@ -692,27 +681,28 @@ class TestBTX_cocurrent(object):
         assert (
             abs(
                 value(
-                    btx.fs.unit.inlet_2.flow_mol[0] - btx.fs.unit.outlet_2.flow_mol[0]
+                    btx.fs.unit.cold_side_inlet.flow_mol[0]
+                    - btx.fs.unit.cold_side_outlet.flow_mol[0]
                 )
             )
             <= 1e-6
         )
 
-        shell = value(
-            btx.fs.unit.outlet_1.flow_mol[0]
+        hot_side = value(
+            btx.fs.unit.hot_side_outlet.flow_mol[0]
             * (
-                btx.fs.unit.shell.properties_in[0].enth_mol_phase["Liq"]
-                - btx.fs.unit.shell.properties_out[0].enth_mol_phase["Liq"]
+                btx.fs.unit.hot_side.properties_in[0].enth_mol_phase["Liq"]
+                - btx.fs.unit.hot_side.properties_out[0].enth_mol_phase["Liq"]
             )
         )
-        tube = value(
-            btx.fs.unit.outlet_2.flow_mol[0]
+        cold_side = value(
+            btx.fs.unit.cold_side_outlet.flow_mol[0]
             * (
-                btx.fs.unit.tube.properties_in[0].enth_mol_phase["Liq"]
-                - btx.fs.unit.tube.properties_out[0].enth_mol_phase["Liq"]
+                btx.fs.unit.cold_side.properties_in[0].enth_mol_phase["Liq"]
+                - btx.fs.unit.cold_side.properties_out[0].enth_mol_phase["Liq"]
             )
         )
-        assert abs(shell + tube) <= 1e-6
+        assert abs(hot_side + cold_side) <= 1e-6
 
 
 # -----------------------------------------------------------------------------
@@ -848,28 +838,28 @@ class TestBTX_cocurrent_alt_name(object):
                     "temperature": getattr(pyunits.pint_registry, "kelvin"),
                     "pressure": getattr(pyunits.pint_registry, "Pa"),
                 },
-                "Hot Inlet": {
+                "hot Inlet": {
                     "flow_mol": 5.0,
                     "mole_frac_comp benzene": 0.5,
                     "mole_frac_comp toluene": 0.5,
                     "temperature": 365,
                     "pressure": 101325.0,
                 },
-                "Hot Outlet": {
+                "hot Outlet": {
                     "flow_mol": 1.0,
                     "mole_frac_comp benzene": 0.5,
                     "mole_frac_comp toluene": 0.5,
                     "temperature": 298.15,
                     "pressure": 101325.0,
                 },
-                "Cold Inlet": {
+                "cold Inlet": {
                     "flow_mol": 1.0,
                     "mole_frac_comp benzene": 0.5,
                     "mole_frac_comp toluene": 0.5,
                     "temperature": 300,
                     "pressure": 101325.0,
                 },
-                "Cold Outlet": {
+                "cold Outlet": {
                     "flow_mol": 1.0,
                     "mole_frac_comp benzene": 0.5,
                     "mole_frac_comp toluene": 0.5,
@@ -939,21 +929,21 @@ class TestBTX_cocurrent_alt_name(object):
             <= 1e-6
         )
 
-        shell = value(
+        hot_side = value(
             btx.fs.unit.hot_outlet.flow_mol[0]
             * (
                 btx.fs.unit.hot.properties_in[0].enth_mol_phase["Liq"]
                 - btx.fs.unit.hot.properties_out[0].enth_mol_phase["Liq"]
             )
         )
-        tube = value(
+        cold_side = value(
             btx.fs.unit.cold_outlet.flow_mol[0]
             * (
                 btx.fs.unit.cold.properties_in[0].enth_mol_phase["Liq"]
                 - btx.fs.unit.cold.properties_out[0].enth_mol_phase["Liq"]
             )
         )
-        assert abs(shell + tube) <= 1e-6
+        assert abs(hot_side + cold_side) <= 1e-6
 
 
 # -----------------------------------------------------------------------------
@@ -969,19 +959,19 @@ class TestIAPWS_countercurrent(object):
 
         m.fs.unit = HeatExchanger(
             default={
-                "shell": {"property_package": m.fs.properties},
-                "tube": {"property_package": m.fs.properties},
+                "hot_side": {"property_package": m.fs.properties},
+                "cold_side": {"property_package": m.fs.properties},
                 "flow_pattern": HeatExchangerFlowPattern.countercurrent,
             }
         )
 
-        m.fs.unit.inlet_1.flow_mol[0].fix(100)
-        m.fs.unit.inlet_1.enth_mol[0].fix(6000)
-        m.fs.unit.inlet_1.pressure[0].fix(101325)
+        m.fs.unit.hot_side_inlet.flow_mol[0].fix(100)
+        m.fs.unit.hot_side_inlet.enth_mol[0].fix(6000)
+        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)
 
-        m.fs.unit.inlet_2.flow_mol[0].fix(100)
-        m.fs.unit.inlet_2.enth_mol[0].fix(5000)
-        m.fs.unit.inlet_2.pressure[0].fix(101325)
+        m.fs.unit.cold_side_inlet.flow_mol[0].fix(100)
+        m.fs.unit.cold_side_inlet.enth_mol[0].fix(5000)
+        m.fs.unit.cold_side_inlet.pressure[0].fix(101325)
 
         m.fs.unit.area.fix(1000)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
@@ -997,20 +987,20 @@ class TestIAPWS_countercurrent(object):
 
         m.fs.unit = HeatExchanger(
             default={
-                "shell": {"property_package": m.fs.properties},
-                "tube": {"property_package": m.fs.properties},
+                "hot_side": {"property_package": m.fs.properties},
+                "cold_side": {"property_package": m.fs.properties},
                 "delta_temperature_callback": delta_temperature_underwood_callback,
                 "flow_pattern": HeatExchangerFlowPattern.countercurrent,
             }
         )
 
-        m.fs.unit.inlet_1.flow_mol[0].fix(100)
-        m.fs.unit.inlet_1.enth_mol[0].fix(6000)
-        m.fs.unit.inlet_1.pressure[0].fix(101325)
+        m.fs.unit.hot_side_inlet.flow_mol[0].fix(100)
+        m.fs.unit.hot_side_inlet.enth_mol[0].fix(6000)
+        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)
 
-        m.fs.unit.inlet_2.flow_mol[0].fix(100)
-        m.fs.unit.inlet_2.enth_mol[0].fix(5000)
-        m.fs.unit.inlet_2.pressure[0].fix(101325)
+        m.fs.unit.cold_side_inlet.flow_mol[0].fix(100)
+        m.fs.unit.cold_side_inlet.enth_mol[0].fix(5000)
+        m.fs.unit.cold_side_inlet.pressure[0].fix(101325)
 
         m.fs.unit.area.fix(1000)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
@@ -1020,27 +1010,27 @@ class TestIAPWS_countercurrent(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, iapws):
-        assert len(iapws.fs.unit.inlet_1.vars) == 3
-        assert hasattr(iapws.fs.unit.inlet_1, "flow_mol")
-        assert hasattr(iapws.fs.unit.inlet_1, "enth_mol")
-        assert hasattr(iapws.fs.unit.inlet_1, "pressure")
+        assert len(iapws.fs.unit.hot_side_inlet.vars) == 3
+        assert hasattr(iapws.fs.unit.hot_side_inlet, "flow_mol")
+        assert hasattr(iapws.fs.unit.hot_side_inlet, "enth_mol")
+        assert hasattr(iapws.fs.unit.hot_side_inlet, "pressure")
 
-        assert hasattr(iapws.fs.unit, "outlet_1")
-        assert len(iapws.fs.unit.outlet_1.vars) == 3
-        assert hasattr(iapws.fs.unit.outlet_1, "flow_mol")
-        assert hasattr(iapws.fs.unit.outlet_1, "enth_mol")
-        assert hasattr(iapws.fs.unit.outlet_1, "pressure")
+        assert hasattr(iapws.fs.unit, "hot_side_outlet")
+        assert len(iapws.fs.unit.hot_side_outlet.vars) == 3
+        assert hasattr(iapws.fs.unit.hot_side_outlet, "flow_mol")
+        assert hasattr(iapws.fs.unit.hot_side_outlet, "enth_mol")
+        assert hasattr(iapws.fs.unit.hot_side_outlet, "pressure")
 
-        assert len(iapws.fs.unit.inlet_2.vars) == 3
-        assert hasattr(iapws.fs.unit.inlet_2, "flow_mol")
-        assert hasattr(iapws.fs.unit.inlet_2, "enth_mol")
-        assert hasattr(iapws.fs.unit.inlet_2, "pressure")
+        assert len(iapws.fs.unit.cold_side_inlet.vars) == 3
+        assert hasattr(iapws.fs.unit.cold_side_inlet, "flow_mol")
+        assert hasattr(iapws.fs.unit.cold_side_inlet, "enth_mol")
+        assert hasattr(iapws.fs.unit.cold_side_inlet, "pressure")
 
-        assert hasattr(iapws.fs.unit, "outlet_2")
-        assert len(iapws.fs.unit.outlet_2.vars) == 3
-        assert hasattr(iapws.fs.unit.outlet_2, "flow_mol")
-        assert hasattr(iapws.fs.unit.outlet_2, "enth_mol")
-        assert hasattr(iapws.fs.unit.outlet_2, "pressure")
+        assert hasattr(iapws.fs.unit, "cold_side_outlet")
+        assert len(iapws.fs.unit.cold_side_outlet.vars) == 3
+        assert hasattr(iapws.fs.unit.cold_side_outlet, "flow_mol")
+        assert hasattr(iapws.fs.unit.cold_side_outlet, "enth_mol")
+        assert hasattr(iapws.fs.unit.cold_side_outlet, "pressure")
 
         assert isinstance(iapws.fs.unit.overall_heat_transfer_coefficient, Var)
         assert isinstance(iapws.fs.unit.area, Var)
@@ -1074,13 +1064,13 @@ class TestIAPWS_countercurrent(object):
 
     @pytest.mark.unit
     def test_dof_alt_name1(self, iapws):
-        iapws.fs.unit.shell_inlet.flow_mol[0].fix(100)
-        iapws.fs.unit.shell_inlet.enth_mol[0].fix(6000)
-        iapws.fs.unit.shell_inlet.pressure[0].fix(101325)
+        iapws.fs.unit.hot_side_inlet.flow_mol[0].fix(100)
+        iapws.fs.unit.hot_side_inlet.enth_mol[0].fix(6000)
+        iapws.fs.unit.hot_side_inlet.pressure[0].fix(101325)
 
-        iapws.fs.unit.tube_inlet.flow_mol[0].fix(100)
-        iapws.fs.unit.tube_inlet.enth_mol[0].fix(5000)
-        iapws.fs.unit.tube_inlet.pressure[0].fix(101325)
+        iapws.fs.unit.cold_side_inlet.flow_mol[0].fix(100)
+        iapws.fs.unit.cold_side_inlet.enth_mol[0].fix(5000)
+        iapws.fs.unit.cold_side_inlet.pressure[0].fix(101325)
 
         iapws.fs.unit.area.fix(1000)
         iapws.fs.unit.overall_heat_transfer_coefficient.fix(100)
@@ -1125,7 +1115,7 @@ class TestIAPWS_countercurrent(object):
                         pyunits.pint_registry, "J/mole"
                     ),
                 },
-                "Hot Inlet": {
+                "Hot Side Inlet": {
                     "Molar Flow (mol/s)": 100,
                     "Mass Flow (kg/s)": 1.8015,
                     "T (K)": 352.67,
@@ -1134,7 +1124,7 @@ class TestIAPWS_countercurrent(object):
                     "Molar Enthalpy (J/mol) Vap": 47398,
                     "Molar Enthalpy (J/mol) Liq": 6000,
                 },
-                "Hot Outlet": {
+                "Hot Side Outlet": {
                     "Molar Flow (mol/s)": 1,
                     "Mass Flow (kg/s)": 1.8015e-2,
                     "T (K)": 286.34,
@@ -1143,7 +1133,7 @@ class TestIAPWS_countercurrent(object):
                     "Molar Enthalpy (J/mol) Vap": 2168.6,
                     "Molar Enthalpy (J/mol) Liq": 1000,
                 },
-                "Cold Inlet": {
+                "Cold Side Inlet": {
                     "Molar Flow (mol/s)": 100,
                     "Mass Flow (kg/s)": 1.8015,
                     "T (K)": 339.43,
@@ -1152,7 +1142,7 @@ class TestIAPWS_countercurrent(object):
                     "Molar Enthalpy (J/mol) Vap": 46685,
                     "Molar Enthalpy (J/mol) Liq": 5000,
                 },
-                "Cold Outlet": {
+                "Cold Side Outlet": {
                     "Molar Flow (mol/s)": 1,
                     "Mass Flow (kg/s)": 1.8015e-2,
                     "T (K)": 286.34,
@@ -1200,21 +1190,25 @@ class TestIAPWS_countercurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, iapws):
-        assert pytest.approx(100, abs=1e-5) == value(iapws.fs.unit.outlet_1.flow_mol[0])
-        assert pytest.approx(100, abs=1e-5) == value(iapws.fs.unit.outlet_2.flow_mol[0])
+        assert pytest.approx(100, abs=1e-5) == value(
+            iapws.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(100, abs=1e-5) == value(
+            iapws.fs.unit.cold_side_outlet.flow_mol[0]
+        )
 
         assert pytest.approx(5070.219, abs=1e0) == value(
-            iapws.fs.unit.outlet_1.enth_mol[0]
+            iapws.fs.unit.hot_side_outlet.enth_mol[0]
         )
         assert pytest.approx(5929.781, abs=1e0) == value(
-            iapws.fs.unit.outlet_2.enth_mol[0]
+            iapws.fs.unit.cold_side_outlet.enth_mol[0]
         )
 
         assert pytest.approx(101325, abs=1e2) == value(
-            iapws.fs.unit.outlet_1.pressure[0]
+            iapws.fs.unit.hot_side_outlet.pressure[0]
         )
         assert pytest.approx(101325, abs=1e2) == value(
-            iapws.fs.unit.outlet_2.pressure[0]
+            iapws.fs.unit.cold_side_outlet.pressure[0]
         )
 
     @pytest.mark.solver
@@ -1224,8 +1218,8 @@ class TestIAPWS_countercurrent(object):
         assert (
             abs(
                 value(
-                    iapws.fs.unit.inlet_1.flow_mol[0]
-                    - iapws.fs.unit.outlet_1.flow_mol[0]
+                    iapws.fs.unit.hot_side_inlet.flow_mol[0]
+                    - iapws.fs.unit.hot_side_outlet.flow_mol[0]
                 )
             )
             <= 1e-6
@@ -1233,22 +1227,28 @@ class TestIAPWS_countercurrent(object):
         assert (
             abs(
                 value(
-                    iapws.fs.unit.inlet_2.flow_mol[0]
-                    - iapws.fs.unit.outlet_2.flow_mol[0]
+                    iapws.fs.unit.cold_side_inlet.flow_mol[0]
+                    - iapws.fs.unit.cold_side_outlet.flow_mol[0]
                 )
             )
             <= 1e-6
         )
 
-        shell_side = value(
-            iapws.fs.unit.outlet_1.flow_mol[0]
-            * (iapws.fs.unit.inlet_1.enth_mol[0] - iapws.fs.unit.outlet_1.enth_mol[0])
+        hot_side = value(
+            iapws.fs.unit.hot_side_outlet.flow_mol[0]
+            * (
+                iapws.fs.unit.hot_side_inlet.enth_mol[0]
+                - iapws.fs.unit.hot_side_outlet.enth_mol[0]
+            )
         )
-        tube_side = value(
-            iapws.fs.unit.outlet_2.flow_mol[0]
-            * (iapws.fs.unit.inlet_2.enth_mol[0] - iapws.fs.unit.outlet_2.enth_mol[0])
+        cold_side = value(
+            iapws.fs.unit.cold_side_outlet.flow_mol[0]
+            * (
+                iapws.fs.unit.cold_side_inlet.enth_mol[0]
+                - iapws.fs.unit.cold_side_outlet.enth_mol[0]
+            )
         )
-        assert abs(shell_side + tube_side) <= 1e-6
+        assert abs(hot_side + cold_side) <= 1e-6
 
 
 # -----------------------------------------------------------------------------
@@ -1263,29 +1263,29 @@ class TestSaponification_crossflow(object):
 
         m.fs.unit = HeatExchanger(
             default={
-                "shell": {"property_package": m.fs.properties},
-                "tube": {"property_package": m.fs.properties},
+                "hot_side": {"property_package": m.fs.properties},
+                "cold_side": {"property_package": m.fs.properties},
                 "flow_pattern": HeatExchangerFlowPattern.crossflow,
             }
         )
 
-        m.fs.unit.inlet_1.flow_vol[0].fix(1e-3)
-        m.fs.unit.inlet_1.temperature[0].fix(320)
-        m.fs.unit.inlet_1.pressure[0].fix(101325)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "H2O"].fix(55388.0)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "NaOH"].fix(100.0)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.hot_side_inlet.flow_vol[0].fix(1e-3)
+        m.fs.unit.hot_side_inlet.temperature[0].fix(320)
+        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
 
-        m.fs.unit.inlet_2.flow_vol[0].fix(1e-3)
-        m.fs.unit.inlet_2.temperature[0].fix(300)
-        m.fs.unit.inlet_2.pressure[0].fix(101325)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "H2O"].fix(55388.0)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "NaOH"].fix(100.0)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.cold_side_inlet.flow_vol[0].fix(1e-3)
+        m.fs.unit.cold_side_inlet.temperature[0].fix(300)
+        m.fs.unit.cold_side_inlet.pressure[0].fix(101325)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
 
         m.fs.unit.area.fix(1000)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
@@ -1296,29 +1296,29 @@ class TestSaponification_crossflow(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, sapon):
-        assert len(sapon.fs.unit.inlet_1.vars) == 4
-        assert hasattr(sapon.fs.unit.inlet_1, "flow_vol")
-        assert hasattr(sapon.fs.unit.inlet_1, "conc_mol_comp")
-        assert hasattr(sapon.fs.unit.inlet_1, "temperature")
-        assert hasattr(sapon.fs.unit.inlet_1, "pressure")
+        assert len(sapon.fs.unit.hot_side_inlet.vars) == 4
+        assert hasattr(sapon.fs.unit.hot_side_inlet, "flow_vol")
+        assert hasattr(sapon.fs.unit.hot_side_inlet, "conc_mol_comp")
+        assert hasattr(sapon.fs.unit.hot_side_inlet, "temperature")
+        assert hasattr(sapon.fs.unit.hot_side_inlet, "pressure")
 
-        assert len(sapon.fs.unit.outlet_1.vars) == 4
-        assert hasattr(sapon.fs.unit.outlet_1, "flow_vol")
-        assert hasattr(sapon.fs.unit.outlet_1, "conc_mol_comp")
-        assert hasattr(sapon.fs.unit.outlet_1, "temperature")
-        assert hasattr(sapon.fs.unit.outlet_1, "pressure")
+        assert len(sapon.fs.unit.hot_side_outlet.vars) == 4
+        assert hasattr(sapon.fs.unit.hot_side_outlet, "flow_vol")
+        assert hasattr(sapon.fs.unit.hot_side_outlet, "conc_mol_comp")
+        assert hasattr(sapon.fs.unit.hot_side_outlet, "temperature")
+        assert hasattr(sapon.fs.unit.hot_side_outlet, "pressure")
 
-        assert len(sapon.fs.unit.inlet_2.vars) == 4
-        assert hasattr(sapon.fs.unit.inlet_2, "flow_vol")
-        assert hasattr(sapon.fs.unit.inlet_2, "conc_mol_comp")
-        assert hasattr(sapon.fs.unit.inlet_2, "temperature")
-        assert hasattr(sapon.fs.unit.inlet_2, "pressure")
+        assert len(sapon.fs.unit.cold_side_inlet.vars) == 4
+        assert hasattr(sapon.fs.unit.cold_side_inlet, "flow_vol")
+        assert hasattr(sapon.fs.unit.cold_side_inlet, "conc_mol_comp")
+        assert hasattr(sapon.fs.unit.cold_side_inlet, "temperature")
+        assert hasattr(sapon.fs.unit.cold_side_inlet, "pressure")
 
-        assert len(sapon.fs.unit.outlet_2.vars) == 4
-        assert hasattr(sapon.fs.unit.outlet_2, "flow_vol")
-        assert hasattr(sapon.fs.unit.outlet_2, "conc_mol_comp")
-        assert hasattr(sapon.fs.unit.outlet_2, "temperature")
-        assert hasattr(sapon.fs.unit.outlet_2, "pressure")
+        assert len(sapon.fs.unit.cold_side_outlet.vars) == 4
+        assert hasattr(sapon.fs.unit.cold_side_outlet, "flow_vol")
+        assert hasattr(sapon.fs.unit.cold_side_outlet, "conc_mol_comp")
+        assert hasattr(sapon.fs.unit.cold_side_outlet, "temperature")
+        assert hasattr(sapon.fs.unit.cold_side_outlet, "pressure")
 
         assert isinstance(sapon.fs.unit.overall_heat_transfer_coefficient, Var)
         assert isinstance(sapon.fs.unit.area, Var)
@@ -1398,7 +1398,7 @@ class TestSaponification_crossflow(object):
                     "Temperature": getattr(pyunits.pint_registry, "K"),
                     "Pressure": getattr(pyunits.pint_registry, "Pa"),
                 },
-                "Hot Inlet": {
+                "Hot Side Inlet": {
                     "Volumetric Flowrate": 1e-3,
                     "Molar Concentration H2O": 55388,
                     "Molar Concentration NaOH": 100.00,
@@ -1408,7 +1408,7 @@ class TestSaponification_crossflow(object):
                     "Temperature": 320,
                     "Pressure": 1.0132e05,
                 },
-                "Hot Outlet": {
+                "Hot Side Outlet": {
                     "Volumetric Flowrate": 1.00,
                     "Molar Concentration H2O": 100.00,
                     "Molar Concentration NaOH": 100.00,
@@ -1418,7 +1418,7 @@ class TestSaponification_crossflow(object):
                     "Temperature": 298.15,
                     "Pressure": 1.0132e05,
                 },
-                "Cold Inlet": {
+                "Cold Side Inlet": {
                     "Volumetric Flowrate": 1e-3,
                     "Molar Concentration H2O": 55388,
                     "Molar Concentration NaOH": 100.00,
@@ -1428,7 +1428,7 @@ class TestSaponification_crossflow(object):
                     "Temperature": 300,
                     "Pressure": 1.0132e05,
                 },
-                "Cold Outlet": {
+                "Cold Side Outlet": {
                     "Volumetric Flowrate": 1.00,
                     "Molar Concentration H2O": 100.00,
                     "Molar Concentration NaOH": 100.00,
@@ -1463,81 +1463,81 @@ class TestSaponification_crossflow(object):
     @pytest.mark.component
     def test_solution(self, sapon):
         assert pytest.approx(1e-3, abs=1e-6) == value(
-            sapon.fs.unit.outlet_1.flow_vol[0]
+            sapon.fs.unit.hot_side_outlet.flow_vol[0]
         )
         assert pytest.approx(1e-3, abs=1e-6) == value(
-            sapon.fs.unit.outlet_2.flow_vol[0]
+            sapon.fs.unit.cold_side_outlet.flow_vol[0]
         )
 
         assert pytest.approx(55388.0, rel=1e-3) == value(
-            sapon.fs.unit.outlet_1.conc_mol_comp[0, "H2O"]
+            sapon.fs.unit.hot_side_outlet.conc_mol_comp[0, "H2O"]
         )
         assert pytest.approx(100.0, rel=1e-3) == value(
-            sapon.fs.unit.outlet_1.conc_mol_comp[0, "NaOH"]
+            sapon.fs.unit.hot_side_outlet.conc_mol_comp[0, "NaOH"]
         )
         assert pytest.approx(100.0, rel=1e-3) == value(
-            sapon.fs.unit.outlet_1.conc_mol_comp[0, "EthylAcetate"]
+            sapon.fs.unit.hot_side_outlet.conc_mol_comp[0, "EthylAcetate"]
         )
         assert pytest.approx(0.0, abs=1e-3) == value(
-            sapon.fs.unit.outlet_1.conc_mol_comp[0, "SodiumAcetate"]
+            sapon.fs.unit.hot_side_outlet.conc_mol_comp[0, "SodiumAcetate"]
         )
         assert pytest.approx(0.0, abs=1e-3) == value(
-            sapon.fs.unit.outlet_1.conc_mol_comp[0, "Ethanol"]
+            sapon.fs.unit.hot_side_outlet.conc_mol_comp[0, "Ethanol"]
         )
 
         assert pytest.approx(55388.0, rel=1e-3) == value(
-            sapon.fs.unit.outlet_2.conc_mol_comp[0, "H2O"]
+            sapon.fs.unit.cold_side_outlet.conc_mol_comp[0, "H2O"]
         )
         assert pytest.approx(100.0, rel=1e-3) == value(
-            sapon.fs.unit.outlet_2.conc_mol_comp[0, "NaOH"]
+            sapon.fs.unit.cold_side_outlet.conc_mol_comp[0, "NaOH"]
         )
         assert pytest.approx(100.0, rel=1e-3) == value(
-            sapon.fs.unit.outlet_2.conc_mol_comp[0, "EthylAcetate"]
+            sapon.fs.unit.cold_side_outlet.conc_mol_comp[0, "EthylAcetate"]
         )
         assert pytest.approx(0.0, abs=1e-3) == value(
-            sapon.fs.unit.outlet_2.conc_mol_comp[0, "SodiumAcetate"]
+            sapon.fs.unit.cold_side_outlet.conc_mol_comp[0, "SodiumAcetate"]
         )
         assert pytest.approx(0.0, abs=1e-3) == value(
-            sapon.fs.unit.outlet_2.conc_mol_comp[0, "Ethanol"]
+            sapon.fs.unit.cold_side_outlet.conc_mol_comp[0, "Ethanol"]
         )
 
         assert pytest.approx(301.3, abs=1e-1) == value(
-            sapon.fs.unit.outlet_1.temperature[0]
+            sapon.fs.unit.hot_side_outlet.temperature[0]
         )
         assert pytest.approx(318.7, abs=1e-1) == value(
-            sapon.fs.unit.outlet_2.temperature[0]
+            sapon.fs.unit.cold_side_outlet.temperature[0]
         )
 
         assert pytest.approx(101325, abs=1e2) == value(
-            sapon.fs.unit.outlet_1.pressure[0]
+            sapon.fs.unit.hot_side_outlet.pressure[0]
         )
         assert pytest.approx(101325, abs=1e2) == value(
-            sapon.fs.unit.outlet_2.pressure[0]
+            sapon.fs.unit.cold_side_outlet.pressure[0]
         )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, sapon):
-        shell_side = value(
-            sapon.fs.unit.outlet_1.flow_vol[0]
+        hot_side = value(
+            sapon.fs.unit.hot_side_outlet.flow_vol[0]
             * sapon.fs.properties.dens_mol
             * sapon.fs.properties.cp_mol
             * (
-                sapon.fs.unit.inlet_1.temperature[0]
-                - sapon.fs.unit.outlet_1.temperature[0]
+                sapon.fs.unit.hot_side_inlet.temperature[0]
+                - sapon.fs.unit.hot_side_outlet.temperature[0]
             )
         )
-        tube_side = value(
-            sapon.fs.unit.outlet_2.flow_vol[0]
+        cold_side = value(
+            sapon.fs.unit.cold_side_outlet.flow_vol[0]
             * sapon.fs.properties.dens_mol
             * sapon.fs.properties.cp_mol
             * (
-                sapon.fs.unit.inlet_2.temperature[0]
-                - sapon.fs.unit.outlet_2.temperature[0]
+                sapon.fs.unit.cold_side_inlet.temperature[0]
+                - sapon.fs.unit.cold_side_outlet.temperature[0]
             )
         )
-        assert abs(shell_side + tube_side) <= 1e0
+        assert abs(hot_side + cold_side) <= 1e0
 
 
 # -----------------------------------------------------------------------------
@@ -1668,61 +1668,61 @@ class TestBT_Generic_cocurrent(object):
 
         m.fs.unit = HeatExchanger(
             default={
-                "shell": {"property_package": m.fs.properties},
-                "tube": {"property_package": m.fs.properties2},
+                "hot_side": {"property_package": m.fs.properties},
+                "cold_side": {"property_package": m.fs.properties2},
                 "flow_pattern": HeatExchangerFlowPattern.cocurrent,
             }
         )
 
-        m.fs.unit.inlet_1.flow_mol[0].fix(5)  # mol/s
-        m.fs.unit.inlet_1.temperature[0].fix(365)  # K
-        m.fs.unit.inlet_1.pressure[0].fix(101325)  # Pa
-        m.fs.unit.inlet_1.mole_frac_comp[0, "benzene"].fix(0.5)
-        m.fs.unit.inlet_1.mole_frac_comp[0, "toluene"].fix(0.5)
+        m.fs.unit.hot_side_inlet.flow_mol[0].fix(5)  # mol/s
+        m.fs.unit.hot_side_inlet.temperature[0].fix(365)  # K
+        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
-        m.fs.unit.inlet_2.flow_mol[0].fix(1)  # mol/s
-        m.fs.unit.inlet_2.temperature[0].fix(540)  # degR
-        m.fs.unit.inlet_2.pressure[0].fix(101.325)  # kPa
-        m.fs.unit.inlet_2.mole_frac_comp[0, "benzene"].fix(0.5)
-        m.fs.unit.inlet_2.mole_frac_comp[0, "toluene"].fix(0.5)
+        m.fs.unit.cold_side_inlet.flow_mol[0].fix(1)  # mol/s
+        m.fs.unit.cold_side_inlet.temperature[0].fix(540)  # degR
+        m.fs.unit.cold_side_inlet.pressure[0].fix(101.325)  # kPa
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
         m.fs.unit.area.fix(1)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
 
-        m.fs.unit.side_2.scaling_factor_pressure = 1
+        m.fs.unit.cold_side.scaling_factor_pressure = 1
 
         return m
 
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, btx):
-        assert hasattr(btx.fs.unit, "inlet_1")
-        assert len(btx.fs.unit.inlet_1.vars) == 4
-        assert hasattr(btx.fs.unit.inlet_1, "flow_mol")
-        assert hasattr(btx.fs.unit.inlet_1, "mole_frac_comp")
-        assert hasattr(btx.fs.unit.inlet_1, "temperature")
-        assert hasattr(btx.fs.unit.inlet_1, "pressure")
+        assert hasattr(btx.fs.unit, "hot_side_inlet")
+        assert len(btx.fs.unit.hot_side_inlet.vars) == 4
+        assert hasattr(btx.fs.unit.hot_side_inlet, "flow_mol")
+        assert hasattr(btx.fs.unit.hot_side_inlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.hot_side_inlet, "temperature")
+        assert hasattr(btx.fs.unit.hot_side_inlet, "pressure")
 
-        assert hasattr(btx.fs.unit, "inlet_2")
-        assert len(btx.fs.unit.inlet_2.vars) == 4
-        assert hasattr(btx.fs.unit.inlet_2, "flow_mol")
-        assert hasattr(btx.fs.unit.inlet_2, "mole_frac_comp")
-        assert hasattr(btx.fs.unit.inlet_2, "temperature")
-        assert hasattr(btx.fs.unit.inlet_2, "pressure")
+        assert hasattr(btx.fs.unit, "cold_side_inlet")
+        assert len(btx.fs.unit.cold_side_inlet.vars) == 4
+        assert hasattr(btx.fs.unit.cold_side_inlet, "flow_mol")
+        assert hasattr(btx.fs.unit.cold_side_inlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.cold_side_inlet, "temperature")
+        assert hasattr(btx.fs.unit.cold_side_inlet, "pressure")
 
-        assert hasattr(btx.fs.unit, "outlet_1")
-        assert len(btx.fs.unit.outlet_1.vars) == 4
-        assert hasattr(btx.fs.unit.outlet_1, "flow_mol")
-        assert hasattr(btx.fs.unit.outlet_1, "mole_frac_comp")
-        assert hasattr(btx.fs.unit.outlet_1, "temperature")
-        assert hasattr(btx.fs.unit.outlet_1, "pressure")
+        assert hasattr(btx.fs.unit, "hot_side_outlet")
+        assert len(btx.fs.unit.hot_side_outlet.vars) == 4
+        assert hasattr(btx.fs.unit.hot_side_outlet, "flow_mol")
+        assert hasattr(btx.fs.unit.hot_side_outlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.hot_side_outlet, "temperature")
+        assert hasattr(btx.fs.unit.hot_side_outlet, "pressure")
 
-        assert hasattr(btx.fs.unit, "outlet_2")
-        assert len(btx.fs.unit.outlet_2.vars) == 4
-        assert hasattr(btx.fs.unit.outlet_2, "flow_mol")
-        assert hasattr(btx.fs.unit.outlet_2, "mole_frac_comp")
-        assert hasattr(btx.fs.unit.outlet_2, "temperature")
-        assert hasattr(btx.fs.unit.outlet_2, "pressure")
+        assert hasattr(btx.fs.unit, "cold_side_outlet")
+        assert len(btx.fs.unit.cold_side_outlet.vars) == 4
+        assert hasattr(btx.fs.unit.cold_side_outlet, "flow_mol")
+        assert hasattr(btx.fs.unit.cold_side_outlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.cold_side_outlet, "temperature")
+        assert hasattr(btx.fs.unit.cold_side_outlet, "pressure")
 
         assert isinstance(btx.fs.unit.overall_heat_transfer_coefficient, Var)
         assert isinstance(btx.fs.unit.area, Var)
@@ -1792,28 +1792,28 @@ class TestBT_Generic_cocurrent(object):
                     "Temperature": getattr(pyunits.pint_registry, "kelvin"),
                     "Pressure": getattr(pyunits.pint_registry, "Pa"),
                 },
-                "Hot Inlet": {
+                "Hot Side Inlet": {
                     "Total Molar Flowrate": 5.0,
                     "Total Mole Fraction benzene": 0.5,
                     "Total Mole Fraction toluene": 0.5,
                     "Temperature": 365,
                     "Pressure": 101325.0,
                 },
-                "Hot Outlet": {
+                "Hot Side Outlet": {
                     "Total Molar Flowrate": 100.0,
                     "Total Mole Fraction benzene": 0.5,
                     "Total Mole Fraction toluene": 0.5,
                     "Temperature": 300,
                     "Pressure": 1e5,
                 },
-                "Cold Inlet": {
+                "Cold Side Inlet": {
                     "Total Molar Flowrate": 1.0,
                     "Total Mole Fraction benzene": 0.5,
                     "Total Mole Fraction toluene": 0.5,
                     "Temperature": 300,
                     "Pressure": 101325.0,
                 },
-                "Cold Outlet": {
+                "Cold Side Outlet": {
                     "Total Molar Flowrate": 100.0,
                     "Total Mole Fraction benzene": 0.5,
                     "Total Mole Fraction toluene": 0.5,
@@ -1844,20 +1844,24 @@ class TestBT_Generic_cocurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx):
-        assert pytest.approx(5, abs=1e-3) == value(btx.fs.unit.outlet_1.flow_mol[0])
+        assert pytest.approx(5, abs=1e-3) == value(
+            btx.fs.unit.hot_side_outlet.flow_mol[0]
+        )
         assert pytest.approx(359.4, abs=1e-1) == value(
-            btx.fs.unit.outlet_1.temperature[0]
+            btx.fs.unit.hot_side_outlet.temperature[0]
         )
         assert pytest.approx(101325, abs=1e-3) == value(
-            btx.fs.unit.outlet_1.pressure[0]
+            btx.fs.unit.hot_side_outlet.pressure[0]
         )
 
-        assert pytest.approx(1, abs=1e-3) == value(btx.fs.unit.outlet_2.flow_mol[0])
+        assert pytest.approx(1, abs=1e-3) == value(
+            btx.fs.unit.cold_side_outlet.flow_mol[0]
+        )
         assert pytest.approx(596.9, abs=1e-1) == value(
-            btx.fs.unit.outlet_2.temperature[0]
+            btx.fs.unit.cold_side_outlet.temperature[0]
         )
         assert pytest.approx(101.325, abs=1e-3) == value(
-            btx.fs.unit.outlet_2.pressure[0]
+            btx.fs.unit.cold_side_outlet.pressure[0]
         )
 
     @pytest.mark.solver
@@ -1867,7 +1871,8 @@ class TestBT_Generic_cocurrent(object):
         assert (
             abs(
                 value(
-                    btx.fs.unit.inlet_1.flow_mol[0] - btx.fs.unit.outlet_1.flow_mol[0]
+                    btx.fs.unit.hot_side_inlet.flow_mol[0]
+                    - btx.fs.unit.hot_side_outlet.flow_mol[0]
                 )
             )
             <= 1e-6
@@ -1875,35 +1880,36 @@ class TestBT_Generic_cocurrent(object):
         assert (
             abs(
                 value(
-                    btx.fs.unit.inlet_2.flow_mol[0] - btx.fs.unit.outlet_2.flow_mol[0]
+                    btx.fs.unit.cold_side_inlet.flow_mol[0]
+                    - btx.fs.unit.cold_side_outlet.flow_mol[0]
                 )
             )
             <= 1e-6
         )
 
-        shell = value(
-            btx.fs.unit.outlet_1.flow_mol[0]
+        hot_side = value(
+            btx.fs.unit.hot_side_outlet.flow_mol[0]
             * (
-                btx.fs.unit.shell.properties_in[0].enth_mol
-                - btx.fs.unit.shell.properties_out[0].enth_mol
+                btx.fs.unit.hot_side.properties_in[0].enth_mol
+                - btx.fs.unit.hot_side.properties_out[0].enth_mol
             )
         )
-        tube = pyunits.convert_value(
+        cold_side = pyunits.convert_value(
             value(
-                btx.fs.unit.outlet_2.flow_mol[0]
+                btx.fs.unit.cold_side_outlet.flow_mol[0]
                 * (
-                    btx.fs.unit.tube.properties_in[0].enth_mol
-                    - btx.fs.unit.tube.properties_out[0].enth_mol
+                    btx.fs.unit.cold_side.properties_in[0].enth_mol
+                    - btx.fs.unit.cold_side.properties_out[0].enth_mol
                 )
             ),
             from_units=pyunits.kJ / pyunits.s,
             to_units=pyunits.J / pyunits.s,
         )
-        assert abs(shell + tube) <= 1e-6
+        assert abs(hot_side + cold_side) <= 1e-6
 
     @pytest.mark.component
     def test_initialization_error(self, btx):
-        btx.fs.unit.outlet_1.flow_mol[0].fix(20)
+        btx.fs.unit.hot_side_outlet.flow_mol[0].fix(20)
 
         with pytest.raises(InitializationError):
             btx.fs.unit.initialize()

@@ -13,7 +13,9 @@
 
 import pyomo.environ as pyo
 import idaes.core as idaes_core
-from idaes.power_generation.unit_models.helm import HelmIsentropicCompressor
+from idaes.models_extra.power_generation.unit_models.helm import (
+    HelmIsentropicCompressor,
+)
 import idaes.core.util.convergence.convergence_base as cb
 from idaes.models.properties import iapws95
 from idaes.core.solvers import get_solver

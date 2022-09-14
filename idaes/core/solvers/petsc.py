@@ -396,7 +396,7 @@ def petsc_dae_by_time_element(
     between=None,
     interpolate=True,
     calculate_derivatives=True,
-    previous_trajectory=None
+    previous_trajectory=None,
 ):
     """Solve a DAE problem step by step using the PETSc DAE solver.  This
     integrates from one time point to the next.
@@ -484,7 +484,6 @@ def petsc_dae_by_time_element(
         ivset = ComponentSet(initial_variables)
         initial_variables = list(ivset | rvset)
 
-
     if not skip_initial:
         # Nonlinear equation solver for initial conditions
         solver_snes = pyo.SolverFactory("petsc_snes", options=snes_options)
@@ -530,7 +529,7 @@ def petsc_dae_by_time_element(
     ):
         # Solver time steps
         deriv_diff_map = _get_derivative_differential_data_map(m, time)
-        #tj = None  # trajectory data
+        # tj = None  # trajectory data
         for t in between:
             if t == between.first():
                 # t == between.first() was handled above
@@ -627,14 +626,14 @@ def petsc_dae_by_time_element(
                 if isinstance(var[t0].parent_component(), pyodae.DerivativeVar):
                     continue  # skip derivative vars
                 vec = tj.interpolate_vec(itime, var[tlast])
-                for i, (t, v) in enumerate(var.items()):
-                    if t < t0 or t > tlast or t in between:
-                        # Time is outside the range or already set
+                for i, t in enumerate(itime):
+                    if t in between:
+                        # Time is already set
                         continue
-                    if not v.fixed:
+                    if not var[t].fixed:
                         # May not have trajectory from fixed variables and they
                         # shouldn't change anyway, so only set not fixed vars
-                        v.value = vec[i]
+                        var[t].value = vec[i]
         if calculate_derivatives:
             # the petsc solver interface does not currently return time
             # derivatives, and if it did, they would be estimated based on a
@@ -833,7 +832,7 @@ class PetscTrajectory(object):
     def _unscale(self, m):
         """If variable scale factors are used, the solver will see scaled
         variables, and the scaled trajectory will be written. This function
-        uses variable scaling facors from the given model to unscale the
+        uses variable scaling factors from the given model to unscale the
         trajectory.
 
         Args:

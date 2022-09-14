@@ -236,6 +236,12 @@ def set_scaling_factor(c, v, data_objects=True, overwrite=True):
     suf[c] = v
     if data_objects and c.is_indexed():
         for cdat in c.values():
+            if not overwrite:
+                try:
+                    tmp = suf[cdat]
+                    continue
+                except KeyError:
+                    pass
             suf[cdat] = v
 
 
@@ -754,24 +760,26 @@ def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
         return spla.norm(jac, ord) * la.norm(jac_inv, ord)
 
 
-def scale_time_discretization_equations(fs, time_scaling_factor):
+def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
     """
     Get the condition number of the scaled or unscaled Jacobian matrix of a model.
 
     Args:
-        fs: Flowsheet whose time discretization equations are being scaled
-        time_scaling_factor: Scaling factor to use for time. For time-stepping discretization methods with a uniform
-        time step dt, a good scaling factor is 1/dt.
+        blk: Block whose time discretization equations are being scaled
+        time_set: Time set object. For an IDAES flowsheet object fs, this is fs.time.
+        time_scaling_factor: Scaling factor to use for time
 
     Returns:
-        (float) Condition number
+        None
     """
-    tname = fs.time.local_name
+
+    tname = time_set.local_name
+
     # Copy and pasted from solvers.petsc.find_discretization_equations then modified
-    for var in fs.component_objects(pyo.Var):
+    for var in blk.component_objects(pyo.Var):
         if isinstance(var, DerivativeVar):
             cont_set_set = ComponentSet(var.get_continuousset_list())
-            if fs.time in cont_set_set:
+            if time_set in cont_set_set:
                 if len(cont_set_set) > 1:
                     _log.warning(
                         "IDAES presently does not support automatically scaling discretization equations for "
@@ -780,38 +788,72 @@ def scale_time_discretization_equations(fs, time_scaling_factor):
                     )
                     continue
                 state_var = var.get_state_var()
-                parent = var.parent_block()
+                parent_block = var.parent_block()
 
-                disc_eq = getattr(parent, var.local_name + "_disc_eq")
+                disc_eq = getattr(parent_block, var.local_name + "_disc_eq")
                 # Look for continuity equation, which exists only for collocation with certain sets of polynomials
                 try:
-                    cont_eq = getattr(parent, var.local_name + "_" + tname + "_cont_eq")
-                except KeyError:
+                    cont_eq = getattr(
+                        parent_block, state_var.local_name + "_" + tname + "_cont_eq"
+                    )
+                except AttributeError:
                     cont_eq = None
 
-                if cont_eq is not None:
-                    pass
+                idx_set_list = [idx_set for idx_set in state_var.index_set().subsets()]
+                idx_len = len(idx_set_list)
+                try:
+                    idx_time = idx_set_list.index(time_set)
+                except ValueError:
+                    _log.warning(
+                        f"Time is not an index on {state_var.name}, which is differentiated with respect to time. "
+                        "IDAES presently does not support automatically scaling discretization equations for "
+                        "DerivativeVars implicitly indexed by time (like those appearing on a Block indexed by time)."
+                        "Please scale the corresponding discretization equation yourself. "
+                    )
+                    continue
 
-                for i in state_var.index_set():
-                    if get_scaling_factor(var[i]) is None:
-                        s_state = get_scaling_factor(state_var[i], default=1, warning=True)
-                        set_scaling_factor(var[i], s_state/time_scaling_factor)
-                    s_var = get_scaling_factor(var[i])
-                    # FIXME are we sure that the first index will always be time?
-                    if type(i) == float or type(i) == int:
-                        t = i
+                for idx in state_var.index_set():
+                    if get_scaling_factor(var[idx]) is None:
+                        s_state = get_scaling_factor(
+                            state_var[idx], default=1, warning=True
+                        )
+                        set_scaling_factor(var[idx], s_state / time_scaling_factor)
+                    s_derivative = get_scaling_factor(var[idx])
+
+                    if idx_len > 1:
+                        t = idx[idx_time]
                     else:
-                        t = i[0]
-                    if t == fs.time.first() or t == fs.time.last():
+                        t = idx
+
+                    if cont_eq is None:
+                        if t == time_set.first() or t == time_set.last():
+                            try:
+                                constraint_scaling_transform(
+                                    disc_eq[idx], s_derivative, overwrite=False
+                                )
+                            except KeyError:
+                                # Discretization and continuity equations may or may not exist at the first or last time
+                                # points depending on the method. Backwards skips first, forwards skips last, central skips
+                                # both (which means the user needs to provide additional equations)
+                                pass
+                        else:
+                            constraint_scaling_transform(
+                                disc_eq[idx], s_derivative, overwrite=False
+                            )
+                    else:
+                        # Lagrange-Legendre is a pain, because it has continuity equations on the edges of finite
+                        # instead of discretization equations, but no intermediate continuity equations, so we have
+                        # to look for both at every timepoint
                         try:
-                            constraint_scaling_transform(disc_eq[i], s_var, overwrite=False)
-                        except:
-                            # Discretization equations may or may not exist at the first or last time points
-                            # depending on the method. Backwards skips first, forwards skips last, central skips
-                            # both (which means the user needs to provide additional equations)
-                            pass
-                    else:
-                        constraint_scaling_transform(disc_eq[i], s_var, overwrite=False)
+                            constraint_scaling_transform(
+                                disc_eq[idx], s_derivative, overwrite=False
+                            )
+                        except KeyError:
+                            if t != time_set.first():
+                                constraint_scaling_transform(
+                                    cont_eq[idx], s_state, overwrite=False
+                                )
+
 
 class CacheVars(object):
     """
