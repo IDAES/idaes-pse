@@ -191,10 +191,6 @@ class UnitModelsPositioning:
                     # This is for just feeds
                     if node.id in self._levels:
                         self._levels[node.level] += 1
-        # After finishing this previous loop, all the nodes should be visited
-        assert (
-            len(visited_nodes) == self._N
-        ), "Some nodes aren't accessible through feeds"
 
         # Merge unused levels
         # .copy() because we are modifying the original self._levels
