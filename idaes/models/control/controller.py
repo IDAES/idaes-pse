@@ -126,7 +126,7 @@ logistic function to enforce bounds.
                 ]
             ),
             description="Control type",
-            doc="""Controller type. The **deafult** = ControllerType.PI and the
+            doc="""Controller type. The **default** = ControllerType.PI and the
 options are: **ControllerType.P** Proportional, **ControllerType.PI**
 proportional and integral, **ControllerType.PD** proportional and derivative, and
 **ControllerType.PID** proportional, integral, and derivative
