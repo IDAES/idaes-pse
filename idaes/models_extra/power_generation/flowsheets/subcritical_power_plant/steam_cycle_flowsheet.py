@@ -40,7 +40,11 @@ from idaes.models_extra.power_generation.unit_models import (
     WaterTank,
     FWH0DDynamic as FWH0D,
 )
-from idaes.models_extra.power_generation.control.pid_controller import PIDController
+from idaes.models.control.controller import (
+    PIDController,
+    ControllerType,
+    ControllerMVBoundType,
+)
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
@@ -387,65 +391,72 @@ def add_unit_models(m):
         # PI controller to control level of fwh2
         fs.fwh2_ctrl = PIDController(
             default={
-                "pv": fs.fwh2.condense.level,
-                "mv": fs.fwh2_valve.valve_opening,
-                "type": "PI",
+                "process_var": fs.fwh2.condense.level,
+                "manipulated_var": fs.fwh2_valve.valve_opening,
+                "type": ControllerType.PI,
+                "calculate_initial_integral": False,
             }
         )
 
         # PI controller to control level of fwh3
         fs.fwh3_ctrl = PIDController(
             default={
-                "pv": fs.fwh3.condense.level,
-                "mv": fs.fwh3_valve.valve_opening,
-                "type": "PI",
+                "process_var": fs.fwh3.condense.level,
+                "manipulated_var": fs.fwh3_valve.valve_opening,
+                "type": ControllerType.PI,
+                "calculate_initial_integral": False,
             }
         )
 
         # PI controller to control level of fwh5
         fs.fwh5_ctrl = PIDController(
             default={
-                "pv": fs.fwh5.condense.level,
-                "mv": fs.fwh5_valve.valve_opening,
-                "type": "PI",
+                "process_var": fs.fwh5.condense.level,
+                "manipulated_var": fs.fwh5_valve.valve_opening,
+                "type": ControllerType.PI,
+                "calculate_initial_integral": False,
             }
         )
 
         # PI controller to control level of fwh6
         fs.fwh6_ctrl = PIDController(
             default={
-                "pv": fs.fwh6.condense.level,
-                "mv": fs.fwh6_valve.valve_opening,
-                "type": "PI",
+                "process_var": fs.fwh6.condense.level,
+                "manipulated_var": fs.fwh6_valve.valve_opening,
+                "type": ControllerType.PI,
+                "calculate_initial_integral": False,
             }
         )
 
         # PI controller to control level of deaerator tank
         fs.da_ctrl = PIDController(
             default={
-                "pv": fs.da_tank.tank_level,
-                "mv": fs.cond_valve.valve_opening,
-                "type": "PI",
+                "process_var": fs.da_tank.tank_level,
+                "manipulated_var": fs.cond_valve.valve_opening,
+                "type": ControllerType.PI,
+                "calculate_initial_integral": False,
             }
         )
 
         # PI controller to control level of hotwell tank
         fs.makeup_ctrl = PIDController(
             default={
-                "pv": fs.hotwell_tank.tank_level,
-                "mv": fs.makeup_valve.valve_opening,
-                "type": "PI",
-                "bounded_output": True,
+                "process_var": fs.hotwell_tank.tank_level,
+                "manipulated_var": fs.makeup_valve.valve_opening,
+                "type": ControllerType.PI,
+                "mv_bound_type": ControllerMVBoundType.SMOOTH_BOUND,
+                "calculate_initial_integral": False,
             }
         )
 
         # PID controller to control main steam temperature
         fs.spray_ctrl = PIDController(
             default={
-                "pv": fs.temperature_main_steam,
-                "mv": fs.spray_valve.valve_opening,
-                "type": "PID",
-                "bounded_output": True,
+                "process_var": fs.temperature_main_steam,
+                "manipulated_var": fs.spray_valve.valve_opening,
+                "type": ControllerType.PID,
+                "mv_bound_type": ControllerMVBoundType.SMOOTH_BOUND,
+                "calculate_initial_integral": False,
             }
         )
 
@@ -988,7 +999,7 @@ def set_inputs(m):
         fs.spray_ctrl.gain_d.fix(-1e-4)
         fs.spray_ctrl.setpoint.fix(810)
         fs.spray_ctrl.mv_ref.fix(0.25)
-        # Currently we have to set this minimum opening to avoid conveging to
+        # Currently we have to set this minimum opening to avoid converging to
         # negative spray water flow rate
         fs.spray_ctrl.mv_lb = 0.05
 

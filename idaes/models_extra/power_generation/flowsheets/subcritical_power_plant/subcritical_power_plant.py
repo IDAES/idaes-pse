@@ -21,7 +21,11 @@ from idaes.models.properties import iapws95
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
-from idaes.models_extra.power_generation.control.pid_controller import PIDController
+from idaes.models.control.controller import (
+    PIDController,
+    ControllerType,
+    ControllerMVBoundType,
+)
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.subcritical_boiler_flowsheet as blr
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.steam_cycle_flowsheet as stc
 from idaes.core.util.dyn_utils import copy_values_at_time, copy_non_time_indexed_values
@@ -737,36 +741,41 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         # master of cascading level controller
         m.fs_main.drum_master_ctrl = PIDController(
             default={
-                "pv": m.fs_main.fs_blr.aDrum.level,
-                "mv": m.fs_main.flow_level_ctrl_output,
-                "type": "PI",
+                "process_var": m.fs_main.fs_blr.aDrum.level,
+                "manipulated_var": m.fs_main.flow_level_ctrl_output,
+                "type": ControllerType.PI,
+                "calculate_initial_integral": False,
             }
         )
         # slave of cascading level controller
         m.fs_main.drum_slave_ctrl = PIDController(
             default={
-                "pv": m.fs_main.fs_stc.bfp.outlet.flow_mol,
-                "mv": m.fs_main.fs_stc.bfp_turb_valve.valve_opening,
-                "type": "PI",
-                "bounded_output": False,
+                "process_var": m.fs_main.fs_stc.bfp.outlet.flow_mol,
+                "manipulated_var": m.fs_main.fs_stc.bfp_turb_valve.valve_opening,
+                "type": ControllerType.PI,
+                "calculate_initial_integral": False,
             }
         )
         # turbine master PID controller to control power output in MW
         # by manipulating throttling valve
         m.fs_main.turbine_master_ctrl = PIDController(
             default={
-                "pv": m.fs_main.fs_stc.power_output,
-                "mv": m.fs_main.fs_stc.turb.throttle_valve[1].valve_opening,
-                "type": "PI",
+                "process_var": m.fs_main.fs_stc.power_output,
+                "manipulated_var": m.fs_main.fs_stc.turb.throttle_valve[
+                    1
+                ].valve_opening,
+                "type": ControllerType.PI,
+                "calculate_initial_integral": False,
             }
         )
         # boiler master PID controller to control main steam pressure in MPa
         # by manipulating coal feed rate
         m.fs_main.boiler_master_ctrl = PIDController(
             default={
-                "pv": m.fs_main.main_steam_pressure,
-                "mv": m.fs_main.fs_blr.aBoiler.flowrate_coal_raw,
-                "type": "PI",
+                "process_var": m.fs_main.main_steam_pressure,
+                "manipulated_var": m.fs_main.fs_blr.aBoiler.flowrate_coal_raw,
+                "type": ControllerType.PI,
+                "calculate_initial_integral": False,
             }
         )
 
