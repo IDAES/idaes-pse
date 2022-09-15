@@ -240,16 +240,14 @@ and used when constructing these
             populate vapor control volume"""
 
         self.vapor_phase = ControlVolume1DBlock(
-            default={
-                "transformation_method": "dae.finite_difference",
-                "transformation_scheme": "BACKWARD",
-                "finite_elements": self.config.finite_elements,
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "area_definition": DistributedVars.variant,
-                "property_package": self.config.vapor_phase.property_package,
-                "property_package_args": self.config.vapor_phase.property_package_args,
-            }
+            transformation_method="dae.finite_difference",
+            transformation_scheme="BACKWARD",
+            finite_elements=self.config.finite_elements,
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            area_definition=DistributedVars.variant,
+            property_package=self.config.vapor_phase.property_package,
+            property_package_args=self.config.vapor_phase.property_package_args,
         )
 
         self.vapor_phase.add_geometry(
@@ -287,16 +285,14 @@ and used when constructing these
 
         """
         self.liquid_phase = ControlVolume1DBlock(
-            default={
-                "transformation_method": "dae.finite_difference",
-                "transformation_scheme": "FORWARD",
-                "finite_elements": self.config.finite_elements,
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "area_definition": DistributedVars.variant,
-                "property_package": self.config.liquid_phase.property_package,
-                "property_package_args": self.config.liquid_phase.property_package_args,
-            }
+            transformation_method="dae.finite_difference",
+            transformation_scheme="FORWARD",
+            finite_elements=self.config.finite_elements,
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            area_definition=DistributedVars.variant,
+            property_package=self.config.liquid_phase.property_package,
+            property_package_args=self.config.liquid_phase.property_package_args,
         )
 
         self.liquid_phase.add_geometry(

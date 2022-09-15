@@ -87,28 +87,20 @@ def test_no_deprecated(caplog):
 
 def tc(delta_temperature_callback=delta_temperature_underwood_callback):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
     m.fs.prop_fluegas = FlueGasParameterBlock()
 
     m.fs.unit = BoilerHeatExchanger(
-        default={
-            "delta_temperature_callback": delta_temperature_callback,
-            "cold_side": {
-                "property_package": m.fs.prop_steam,
-                "has_pressure_change": True,
-            },
-            "hot_side": {
-                "property_package": m.fs.prop_fluegas,
-                "has_pressure_change": True,
-            },
-            "has_holdup": True,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "cold_side_water_phase": "Liq",
-            "has_radiation": True,
-        }
+        delta_temperature_callback=delta_temperature_callback,
+        cold_side={"property_package": m.fs.prop_steam, "has_pressure_change": True},
+        hot_side={"property_package": m.fs.prop_fluegas, "has_pressure_change": True},
+        has_holdup=True,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        tube_arrangement=TubeArrangement.inLine,
+        cold_side_water_phase="Liq",
+        has_radiation=True,
     )
 
     # Check unit config arguments
@@ -123,29 +115,21 @@ def th(
     tout_2=788.53,
 ):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
     m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
     m.fs.prop_fluegas = FlueGasParameterBlock()
 
     m.fs.unit = BoilerHeatExchanger(
-        default={
-            "delta_temperature_callback": delta_temperature_callback,
-            "cold_side": {
-                "property_package": m.fs.prop_steam,
-                "has_pressure_change": True,
-            },
-            "hot_side": {
-                "property_package": m.fs.prop_fluegas,
-                "has_pressure_change": True,
-            },
-            "has_holdup": False,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "cold_side_water_phase": "Liq",
-            "has_radiation": True,
-        }
+        delta_temperature_callback=delta_temperature_callback,
+        cold_side={"property_package": m.fs.prop_steam, "has_pressure_change": True},
+        hot_side={"property_package": m.fs.prop_fluegas, "has_pressure_change": True},
+        has_holdup=False,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        tube_arrangement=TubeArrangement.inLine,
+        cold_side_water_phase="Liq",
+        has_radiation=True,
     )
 
     #   Set inputs
@@ -206,29 +190,21 @@ def th(
 
 def tu(delta_temperature_callback=delta_temperature_underwood_callback):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
     m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
     m.fs.prop_fluegas = FlueGasParameterBlock()
 
     m.fs.unit = BoilerHeatExchanger(
-        default={
-            "delta_temperature_callback": delta_temperature_callback,
-            "cold_side": {
-                "property_package": m.fs.prop_steam,
-                "has_pressure_change": True,
-            },
-            "hot_side": {
-                "property_package": m.fs.prop_fluegas,
-                "has_pressure_change": True,
-            },
-            "has_holdup": False,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "cold_side_water_phase": "Liq",
-            "has_radiation": True,
-        }
+        delta_temperature_callback=delta_temperature_callback,
+        cold_side={"property_package": m.fs.prop_steam, "has_pressure_change": True},
+        hot_side={"property_package": m.fs.prop_fluegas, "has_pressure_change": True},
+        has_holdup=False,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        tube_arrangement=TubeArrangement.inLine,
+        cold_side_water_phase="Liq",
+        has_radiation=True,
     )
 
     assert_units_consistent(m)

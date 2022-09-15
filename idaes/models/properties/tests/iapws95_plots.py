@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 def make_model():
     model = ConcreteModel()
     model.prop_param = iapws95.Iapws95ParameterBlock()
-    model.prop_in = iapws95.Iapws95StateBlock(default={"parameters": model.prop_param})
+    model.prop_in = iapws95.Iapws95StateBlock(parameters=model.prop_param)
     return model
 
 

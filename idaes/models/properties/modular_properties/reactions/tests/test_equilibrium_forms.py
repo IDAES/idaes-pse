@@ -45,28 +45,26 @@ def test_power_law_equil_no_order():
 
     # Create a dummy reaction parameter block
     m.rparams = GenericReactionParameterBlock(
-        default={
-            "property_package": m.pparams,
-            "base_units": {
-                "time": pyunits.s,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "length": pyunits.m,
-                "temperature": pyunits.K,
-            },
-            "equilibrium_reactions": {
-                "r1": {
-                    "stoichiometry": {
-                        ("p1", "c1"): -1,
-                        ("p1", "c2"): 2,
-                        ("sol", "c1"): -3,
-                        ("sol", "c2"): 4,
-                    },
-                    "equilibrium_form": power_law_equil,
-                    "concentration_form": ConcentrationForm.moleFraction,
-                }
-            },
-        }
+        property_package=m.pparams,
+        base_units={
+            "time": pyunits.s,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "length": pyunits.m,
+            "temperature": pyunits.K,
+        },
+        equilibrium_reactions={
+            "r1": {
+                "stoichiometry": {
+                    ("p1", "c1"): -1,
+                    ("p1", "c2"): 2,
+                    ("sol", "c1"): -3,
+                    ("sol", "c2"): 4,
+                },
+                "equilibrium_form": power_law_equil,
+                "concentration_form": ConcentrationForm.moleFraction,
+            }
+        },
     )
 
     # Create a dummy state block
@@ -125,38 +123,36 @@ def test_power_law_equil_with_order():
 
     # Create a dummy reaction parameter block
     m.rparams = GenericReactionParameterBlock(
-        default={
-            "property_package": m.pparams,
-            "base_units": {
-                "time": pyunits.s,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "length": pyunits.m,
-                "temperature": pyunits.K,
-            },
-            "equilibrium_reactions": {
-                "r1": {
-                    "stoichiometry": {
-                        ("p1", "c1"): -1,
+        property_package=m.pparams,
+        base_units={
+            "time": pyunits.s,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "length": pyunits.m,
+            "temperature": pyunits.K,
+        },
+        equilibrium_reactions={
+            "r1": {
+                "stoichiometry": {
+                    ("p1", "c1"): -1,
+                    ("p1", "c2"): 2,
+                    ("sol", "c1"): -3,
+                    ("sol", "c2"): 4,
+                },
+                "equilibrium_form": power_law_equil,
+                "concentration_form": ConcentrationForm.moleFraction,
+                "parameter_data": {
+                    "reaction_order": {
+                        ("p1", "c1"): 1,
                         ("p1", "c2"): 2,
-                        ("sol", "c1"): -3,
-                        ("sol", "c2"): 4,
-                    },
-                    "equilibrium_form": power_law_equil,
-                    "concentration_form": ConcentrationForm.moleFraction,
-                    "parameter_data": {
-                        "reaction_order": {
-                            ("p1", "c1"): 1,
-                            ("p1", "c2"): 2,
-                            ("p2", "c1"): 3,
-                            ("p2", "c2"): 4,
-                            ("sol", "c1"): 5,
-                            ("sol", "c2"): 6,
-                        }
-                    },
-                }
-            },
-        }
+                        ("p2", "c1"): 3,
+                        ("p2", "c2"): 4,
+                        ("sol", "c1"): 5,
+                        ("sol", "c2"): 6,
+                    }
+                },
+            }
+        },
     )
 
     # Create a dummy state block
@@ -222,28 +218,26 @@ def test_log_power_law_equil_no_order():
 
     # Create a dummy reaction parameter block
     m.rparams = GenericReactionParameterBlock(
-        default={
-            "property_package": m.pparams,
-            "base_units": {
-                "time": pyunits.s,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "length": pyunits.m,
-                "temperature": pyunits.K,
-            },
-            "equilibrium_reactions": {
-                "r1": {
-                    "stoichiometry": {
-                        ("p1", "c1"): -1,
-                        ("p1", "c2"): 2,
-                        ("sol", "c1"): -3,
-                        ("sol", "c2"): 4,
-                    },
-                    "equilibrium_form": log_power_law_equil,
-                    "concentration_form": ConcentrationForm.moleFraction,
-                }
-            },
-        }
+        property_package=m.pparams,
+        base_units={
+            "time": pyunits.s,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "length": pyunits.m,
+            "temperature": pyunits.K,
+        },
+        equilibrium_reactions={
+            "r1": {
+                "stoichiometry": {
+                    ("p1", "c1"): -1,
+                    ("p1", "c2"): 2,
+                    ("sol", "c1"): -3,
+                    ("sol", "c2"): 4,
+                },
+                "equilibrium_form": log_power_law_equil,
+                "concentration_form": ConcentrationForm.moleFraction,
+            }
+        },
     )
 
     # Create a dummy state block
@@ -297,38 +291,36 @@ def test_log_power_law_equil_with_order():
 
     # Create a dummy reaction parameter block
     m.rparams = GenericReactionParameterBlock(
-        default={
-            "property_package": m.pparams,
-            "base_units": {
-                "time": pyunits.s,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "length": pyunits.m,
-                "temperature": pyunits.K,
-            },
-            "equilibrium_reactions": {
-                "r1": {
-                    "stoichiometry": {
-                        ("p1", "c1"): -1,
+        property_package=m.pparams,
+        base_units={
+            "time": pyunits.s,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "length": pyunits.m,
+            "temperature": pyunits.K,
+        },
+        equilibrium_reactions={
+            "r1": {
+                "stoichiometry": {
+                    ("p1", "c1"): -1,
+                    ("p1", "c2"): 2,
+                    ("sol", "c1"): -3,
+                    ("sol", "c2"): 4,
+                },
+                "equilibrium_form": log_power_law_equil,
+                "concentration_form": ConcentrationForm.moleFraction,
+                "parameter_data": {
+                    "reaction_order": {
+                        ("p1", "c1"): 1,
                         ("p1", "c2"): 2,
-                        ("sol", "c1"): -3,
-                        ("sol", "c2"): 4,
-                    },
-                    "equilibrium_form": log_power_law_equil,
-                    "concentration_form": ConcentrationForm.moleFraction,
-                    "parameter_data": {
-                        "reaction_order": {
-                            ("p1", "c1"): 1,
-                            ("p1", "c2"): 2,
-                            ("p2", "c1"): 3,
-                            ("p2", "c2"): 4,
-                            ("sol", "c1"): 5,
-                            ("sol", "c2"): 6,
-                        }
-                    },
-                }
-            },
-        }
+                        ("p2", "c1"): 3,
+                        ("p2", "c2"): 4,
+                        ("sol", "c1"): 5,
+                        ("sol", "c2"): 6,
+                    }
+                },
+            }
+        },
     )
 
     # Create a dummy state block
@@ -387,28 +379,26 @@ def test_solubility_no_order():
 
     # Create a dummy reaction parameter block
     m.rparams = GenericReactionParameterBlock(
-        default={
-            "property_package": m.pparams,
-            "base_units": {
-                "time": pyunits.s,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "length": pyunits.m,
-                "temperature": pyunits.K,
-            },
-            "equilibrium_reactions": {
-                "r1": {
-                    "stoichiometry": {
-                        ("p1", "c1"): -1,
-                        ("p1", "c2"): 2,
-                        ("sol", "c1"): -3,
-                        ("sol", "c2"): 4,
-                    },
-                    "equilibrium_form": solubility_product,
-                    "concentration_form": ConcentrationForm.moleFraction,
-                }
-            },
-        }
+        property_package=m.pparams,
+        base_units={
+            "time": pyunits.s,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "length": pyunits.m,
+            "temperature": pyunits.K,
+        },
+        equilibrium_reactions={
+            "r1": {
+                "stoichiometry": {
+                    ("p1", "c1"): -1,
+                    ("p1", "c2"): 2,
+                    ("sol", "c1"): -3,
+                    ("sol", "c2"): 4,
+                },
+                "equilibrium_form": solubility_product,
+                "concentration_form": ConcentrationForm.moleFraction,
+            }
+        },
     )
 
     # Create a dummy state block
@@ -468,38 +458,36 @@ def test_solubility_product_with_order():
 
     # Create a dummy reaction parameter block
     m.rparams = GenericReactionParameterBlock(
-        default={
-            "property_package": m.pparams,
-            "base_units": {
-                "time": pyunits.s,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "length": pyunits.m,
-                "temperature": pyunits.K,
-            },
-            "equilibrium_reactions": {
-                "r1": {
-                    "stoichiometry": {
-                        ("p1", "c1"): -1,
+        property_package=m.pparams,
+        base_units={
+            "time": pyunits.s,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "length": pyunits.m,
+            "temperature": pyunits.K,
+        },
+        equilibrium_reactions={
+            "r1": {
+                "stoichiometry": {
+                    ("p1", "c1"): -1,
+                    ("p1", "c2"): 2,
+                    ("sol", "c1"): -3,
+                    ("sol", "c2"): 4,
+                },
+                "equilibrium_form": solubility_product,
+                "concentration_form": ConcentrationForm.moleFraction,
+                "parameter_data": {
+                    "reaction_order": {
+                        ("p1", "c1"): 1,
                         ("p1", "c2"): 2,
-                        ("sol", "c1"): -3,
-                        ("sol", "c2"): 4,
-                    },
-                    "equilibrium_form": solubility_product,
-                    "concentration_form": ConcentrationForm.moleFraction,
-                    "parameter_data": {
-                        "reaction_order": {
-                            ("p1", "c1"): 1,
-                            ("p1", "c2"): 2,
-                            ("p2", "c1"): 3,
-                            ("p2", "c2"): 4,
-                            ("sol", "c1"): 5,
-                            ("sol", "c2"): 6,
-                        }
-                    },
-                }
-            },
-        }
+                        ("p2", "c1"): 3,
+                        ("p2", "c2"): 4,
+                        ("sol", "c1"): 5,
+                        ("sol", "c2"): 6,
+                    }
+                },
+            }
+        },
     )
 
     # Create a dummy state block
@@ -562,23 +550,21 @@ def test_solubility_no_solids():
 
     # Create a dummy reaction parameter block
     m.rparams = GenericReactionParameterBlock(
-        default={
-            "property_package": m.pparams,
-            "base_units": {
-                "time": pyunits.s,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "length": pyunits.m,
-                "temperature": pyunits.K,
-            },
-            "equilibrium_reactions": {
-                "r1": {
-                    "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
-                    "equilibrium_form": solubility_product,
-                    "concentration_form": ConcentrationForm.moleFraction,
-                }
-            },
-        }
+        property_package=m.pparams,
+        base_units={
+            "time": pyunits.s,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "length": pyunits.m,
+            "temperature": pyunits.K,
+        },
+        equilibrium_reactions={
+            "r1": {
+                "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
+                "equilibrium_form": solubility_product,
+                "concentration_form": ConcentrationForm.moleFraction,
+            }
+        },
     )
 
     # Create a dummy state block
@@ -619,28 +605,26 @@ def test_log_solubility_no_order():
 
     # Create a dummy reaction parameter block
     m.rparams = GenericReactionParameterBlock(
-        default={
-            "property_package": m.pparams,
-            "base_units": {
-                "time": pyunits.s,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "length": pyunits.m,
-                "temperature": pyunits.K,
-            },
-            "equilibrium_reactions": {
-                "r1": {
-                    "stoichiometry": {
-                        ("p1", "c1"): -1,
-                        ("p1", "c2"): 2,
-                        ("sol", "c1"): -3,
-                        ("sol", "c2"): 4,
-                    },
-                    "equilibrium_form": log_solubility_product,
-                    "concentration_form": ConcentrationForm.moleFraction,
-                }
-            },
-        }
+        property_package=m.pparams,
+        base_units={
+            "time": pyunits.s,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "length": pyunits.m,
+            "temperature": pyunits.K,
+        },
+        equilibrium_reactions={
+            "r1": {
+                "stoichiometry": {
+                    ("p1", "c1"): -1,
+                    ("p1", "c2"): 2,
+                    ("sol", "c1"): -3,
+                    ("sol", "c2"): 4,
+                },
+                "equilibrium_form": log_solubility_product,
+                "concentration_form": ConcentrationForm.moleFraction,
+            }
+        },
     )
 
     # Create a dummy state block
@@ -703,38 +687,36 @@ def test_log_solubility_product_with_order():
 
     # Create a dummy reaction parameter block
     m.rparams = GenericReactionParameterBlock(
-        default={
-            "property_package": m.pparams,
-            "base_units": {
-                "time": pyunits.s,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "length": pyunits.m,
-                "temperature": pyunits.K,
-            },
-            "equilibrium_reactions": {
-                "r1": {
-                    "stoichiometry": {
-                        ("p1", "c1"): -1,
+        property_package=m.pparams,
+        base_units={
+            "time": pyunits.s,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "length": pyunits.m,
+            "temperature": pyunits.K,
+        },
+        equilibrium_reactions={
+            "r1": {
+                "stoichiometry": {
+                    ("p1", "c1"): -1,
+                    ("p1", "c2"): 2,
+                    ("sol", "c1"): -3,
+                    ("sol", "c2"): 4,
+                },
+                "equilibrium_form": log_solubility_product,
+                "concentration_form": ConcentrationForm.moleFraction,
+                "parameter_data": {
+                    "reaction_order": {
+                        ("p1", "c1"): 1,
                         ("p1", "c2"): 2,
-                        ("sol", "c1"): -3,
-                        ("sol", "c2"): 4,
-                    },
-                    "equilibrium_form": log_solubility_product,
-                    "concentration_form": ConcentrationForm.moleFraction,
-                    "parameter_data": {
-                        "reaction_order": {
-                            ("p1", "c1"): 1,
-                            ("p1", "c2"): 2,
-                            ("p2", "c1"): 3,
-                            ("p2", "c2"): 4,
-                            ("sol", "c1"): 5,
-                            ("sol", "c2"): 6,
-                        }
-                    },
-                }
-            },
-        }
+                        ("p2", "c1"): 3,
+                        ("p2", "c2"): 4,
+                        ("sol", "c1"): 5,
+                        ("sol", "c2"): 6,
+                    }
+                },
+            }
+        },
     )
 
     # Create a dummy state block
@@ -800,23 +782,21 @@ def test_log_solubility_no_solids():
 
     # Create a dummy reaction parameter block
     m.rparams = GenericReactionParameterBlock(
-        default={
-            "property_package": m.pparams,
-            "base_units": {
-                "time": pyunits.s,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "length": pyunits.m,
-                "temperature": pyunits.K,
-            },
-            "equilibrium_reactions": {
-                "r1": {
-                    "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
-                    "equilibrium_form": log_solubility_product,
-                    "concentration_form": ConcentrationForm.moleFraction,
-                }
-            },
-        }
+        property_package=m.pparams,
+        base_units={
+            "time": pyunits.s,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "length": pyunits.m,
+            "temperature": pyunits.K,
+        },
+        equilibrium_reactions={
+            "r1": {
+                "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
+                "equilibrium_form": log_solubility_product,
+                "concentration_form": ConcentrationForm.moleFraction,
+            }
+        },
     )
 
     # Create a dummy state block

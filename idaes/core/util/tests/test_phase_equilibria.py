@@ -152,7 +152,7 @@ def test_Txy_data():
 
     model = ConcreteModel()
 
-    model.params = GenericParameterBlock(default=configuration)
+    model.params = GenericParameterBlock(**configuration)
 
     TD = Txy_data(
         model,
@@ -267,7 +267,7 @@ def test_Txy_data_no_dew():
 
     model = ConcreteModel()
 
-    model.params = GenericParameterBlock(default=configuration)
+    model.params = GenericParameterBlock(**configuration)
 
     # Again, add more calculation points because the PR for single-phase
     # component VLE initialization hasn't been accepted
@@ -385,7 +385,7 @@ def test_Txy_data_no_bub():
 
     model = ConcreteModel()
 
-    model.params = GenericParameterBlock(default=configuration)
+    model.params = GenericParameterBlock(**configuration)
 
     # TODO: There probably should be a config option to run initialization at
     # each x or to use the initialization from the previous x. In the meantime,

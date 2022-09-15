@@ -46,7 +46,7 @@ solver = get_solver()
 @pytest.mark.unit
 def test_costing_FH_build():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.get_costing(year="2014", integer_n_units=True)
     m.fs.costing.CE_index = 550  # for testing only
     m.fs.unit = pyo.Block()
@@ -74,7 +74,7 @@ def test_costing_FH_build():
 @pytest.mark.component
 def test_costing_FH_solve():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.get_costing()
     m.fs.costing.CE_index = 550  # for testing only
     m.fs.unit = pyo.Block()
@@ -115,7 +115,7 @@ def test_costing_FH_solve():
 @pytest.mark.component
 def test_costing_distillation_solve():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.get_costing()
     m.fs.costing.CE_index = 550
     # create a unit model and variables
@@ -186,17 +186,15 @@ def test_costing_distillation_solve():
 @pytest.mark.component
 def test_blower_build_and_solve():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     # Add property packages to flowsheet library
     m.fs.prop_fluegas = FlueGasParameterBlock()
     m.fs.unit = PressureChanger(
-        default={
-            "property_package": m.fs.prop_fluegas,
-            "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
-            "compressor": True,
-        }
+        property_package=m.fs.prop_fluegas,
+        thermodynamic_assumption=ThermodynamicAssumption.isentropic,
+        compressor=True,
     )
 
     # # FLUE GAS Inlet from Primary Superheater
@@ -246,17 +244,15 @@ def test_blower_build_and_solve():
 @pytest.mark.component
 def test_compressor_fan():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     # Add property packages to flowsheet library
     m.fs.prop_fluegas = FlueGasParameterBlock()
     m.fs.unit = PressureChanger(
-        default={
-            "property_package": m.fs.prop_fluegas,
-            "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
-            "compressor": True,
-        }
+        property_package=m.fs.prop_fluegas,
+        thermodynamic_assumption=ThermodynamicAssumption.isentropic,
+        compressor=True,
     )
 
     # # FLUE GAS Inlet from Primary Superheater

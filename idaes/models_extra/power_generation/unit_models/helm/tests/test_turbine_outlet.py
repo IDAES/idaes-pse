@@ -35,20 +35,18 @@ solver = get_solver()
 @pytest.fixture()
 def build_turbine():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.turb = HelmTurbineOutletStage(default={"property_package": m.fs.properties})
+    m.fs.turb = HelmTurbineOutletStage(property_package=m.fs.properties)
     return m
 
 
 @pytest.fixture()
 def build_turbine_dyn():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyunits.s})
+    m.fs = FlowsheetBlock(dynamic=True, time_units=pyunits.s)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.turb = HelmTurbineOutletStage(
-        default={"dynamic": False, "property_package": m.fs.properties}
-    )
+    m.fs.turb = HelmTurbineOutletStage(dynamic=False, property_package=m.fs.properties)
     return m
 
 

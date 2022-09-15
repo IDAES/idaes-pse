@@ -21,13 +21,7 @@ def _cell_flowsheet_model(dynamic, time_set, zfaces):
     # function that creates a unit model with cell-level variables for testing
     # subcomponents that require them
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(
-        default={
-            "dynamic": False,
-            "time_set": time_set,
-            "time_units": pyo.units.s,
-        }
-    )
+    m.fs = FlowsheetBlock(dynamic=False, time_set=time_set, time_units=pyo.units.s)
     tset = m.fs.config.time
     znodes = m.fs.znodes = pyo.Set(
         initialize=[(zfaces[i] + zfaces[i + 1]) / 2.0 for i in range(len(zfaces) - 1)]

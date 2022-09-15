@@ -63,33 +63,29 @@ solver = get_solver()
 @pytest.fixture(scope="class")
 def rxn_prop():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # Set up thermo props and reaction props
     m.fs.solid_properties = SolidPhaseParameterBlock()
     m.fs.solid_state_block = m.fs.solid_properties.build_state_block(
-        [0], default={"parameters": m.fs.solid_properties, "defined_state": True}
+        [0], parameters=m.fs.solid_properties, defined_state=True
     )
 
     m.fs.gas_properties = GasPhaseParameterBlock()
     m.fs.gas_state_block = m.fs.gas_properties.build_state_block(
-        [0], default={"parameters": m.fs.gas_properties, "defined_state": True}
+        [0], parameters=m.fs.gas_properties, defined_state=True
     )
 
     m.fs.reactions = HeteroReactionParameterBlock(
-        default={
-            "solid_property_package": m.fs.solid_properties,
-            "gas_property_package": m.fs.gas_properties,
-        }
+        solid_property_package=m.fs.solid_properties,
+        gas_property_package=m.fs.gas_properties,
     )
     m.fs.unit = m.fs.reactions.reaction_block_class(
         [0],
-        default={
-            "parameters": m.fs.reactions,
-            "solid_state_block": m.fs.solid_state_block,
-            "gas_state_block": m.fs.gas_state_block,
-            "has_equilibrium": False,
-        },
+        parameters=m.fs.reactions,
+        solid_state_block=m.fs.solid_state_block,
+        gas_state_block=m.fs.gas_state_block,
+        has_equilibrium=False,
     )
 
     # Fix required variables to make reaction model square
@@ -175,40 +171,28 @@ def test_units_consistent(rxn_prop):
 @pytest.mark.unit
 def test_state_vars():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.solid_properties = SolidPhaseParameterBlock()
     m.fs.solid_state = m.fs.solid_properties.build_state_block(
-        [0],
-        default={
-            "parameters": m.fs.solid_properties,
-            "defined_state": True,
-        },
+        [0], parameters=m.fs.solid_properties, defined_state=True
     )
 
     m.fs.gas_properties = GasPhaseParameterBlock()
     m.fs.gas_state = m.fs.gas_properties.build_state_block(
-        [0],
-        default={
-            "parameters": m.fs.gas_properties,
-            "defined_state": True,
-        },
+        [0], parameters=m.fs.gas_properties, defined_state=True
     )
 
     m.fs.reaction_properties = HeteroReactionParameterBlock(
-        default={
-            "solid_property_package": m.fs.solid_properties,
-            "gas_property_package": m.fs.gas_properties,
-        }
+        solid_property_package=m.fs.solid_properties,
+        gas_property_package=m.fs.gas_properties,
     )
     m.fs.reaction_block = m.fs.reaction_properties.reaction_block_class(
         [0],
-        default={
-            "parameters": m.fs.reaction_properties,
-            "solid_state_block": m.fs.solid_state,
-            "gas_state_block": m.fs.gas_state,
-            "has_equilibrium": False,
-        },
+        parameters=m.fs.reaction_properties,
+        solid_state_block=m.fs.solid_state,
+        gas_state_block=m.fs.gas_state,
+        has_equilibrium=False,
     )
 
     for var in m.fs.gas_state[0].define_state_vars().values():
@@ -235,37 +219,27 @@ def test_state_vars():
 class TestProperties(unittest.TestCase):
     def _make_model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.solid_properties = SolidPhaseParameterBlock()
         m.fs.solid_state = m.fs.solid_properties.build_state_block(
-            default={
-                "parameters": m.fs.solid_properties,
-                "defined_state": True,
-            }
+            parameters=m.fs.solid_properties, defined_state=True
         )
 
         m.fs.gas_properties = GasPhaseParameterBlock()
         m.fs.gas_state = m.fs.gas_properties.build_state_block(
-            default={
-                "parameters": m.fs.gas_properties,
-                "defined_state": True,
-            }
+            parameters=m.fs.gas_properties, defined_state=True
         )
 
         m.fs.reaction_properties = HeteroReactionParameterBlock(
-            default={
-                "solid_property_package": m.fs.solid_properties,
-                "gas_property_package": m.fs.gas_properties,
-            }
+            solid_property_package=m.fs.solid_properties,
+            gas_property_package=m.fs.gas_properties,
         )
         m.fs.reaction_block = m.fs.reaction_properties.reaction_block_class(
-            default={
-                "parameters": m.fs.reaction_properties,
-                "solid_state_block": m.fs.solid_state,
-                "gas_state_block": m.fs.gas_state,
-                "has_equilibrium": False,
-            }
+            parameters=m.fs.reaction_properties,
+            solid_state_block=m.fs.solid_state,
+            gas_state_block=m.fs.gas_state,
+            has_equilibrium=False,
         )
 
         for var in m.fs.gas_state.define_state_vars().values():

@@ -188,12 +188,10 @@ constructed,
         # ---------------------------------------------------------------------
         # Build hot-side control volume
         self.hot_side = ControlVolume0DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.hot_side.property_package,
-                "property_package_args": self.config.hot_side.property_package_args,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            property_package=self.config.hot_side.property_package,
+            property_package_args=self.config.hot_side.property_package_args,
         )
 
         # TODO : Add support for phase equilibrium?
@@ -217,12 +215,10 @@ constructed,
         # ---------------------------------------------------------------------
         # Build cold-side control volume
         self.cold_side = ControlVolume0DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.cold_side.property_package,
-                "property_package_args": self.config.cold_side.property_package_args,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            property_package=self.config.cold_side.property_package,
+            property_package_args=self.config.cold_side.property_package_args,
         )
 
         self.cold_side.add_state_blocks(has_phase_equilibrium=False)

@@ -40,9 +40,9 @@ solver = get_solver()
 def test_heater_ph_mixed_byphase():
     """Test mixed phase form with P-H state vars and phase mass balances"""
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95.Iapws95ParameterBlock(default={})
-    m.fs.heater = Heater(default={"property_package": m.fs.properties})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
+    m.fs.heater = Heater(property_package=m.fs.properties)
     m.fs.heater.inlet.enth_mol.fix(4000)
     m.fs.heater.inlet.flow_mol.fix(100)
     m.fs.heater.inlet.pressure.fix(101325)
@@ -64,13 +64,11 @@ def test_heater_ph_mixed_byphase():
 def test_heater_phmixed_mixed_total():
     """Test mixed phase form with P-H state vars and total mass balances"""
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95.Iapws95ParameterBlock(default={})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.heater = Heater(
-        default={
-            "property_package": m.fs.properties,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-        }
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentTotal,
     )
     m.fs.heater.inlet.enth_mol.fix(4000)
     m.fs.heater.inlet.flow_mol.fix(100)
@@ -93,15 +91,13 @@ def test_heater_phmixed_mixed_total():
 def test_heater_ph_lg_total():
     """Test liquid/vapor form with P-H state vars and total mass balances"""
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.LG}
+        phase_presentation=iapws95.PhaseType.LG
     )
     m.fs.heater = Heater(
-        default={
-            "property_package": m.fs.properties,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-        }
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentTotal,
     )
     m.fs.heater.inlet.enth_mol.fix(4000)
     m.fs.heater.inlet.flow_mol.fix(100)
@@ -131,15 +127,13 @@ def test_heater_ph_lg_phase():
     fraction making one equation redundant.
     """
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.LG}
+        phase_presentation=iapws95.PhaseType.LG
     )
     m.fs.heater = Heater(
-        default={
-            "property_package": m.fs.properties,
-            "material_balance_type": MaterialBalanceType.componentPhase,
-        }
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentPhase,
     )
     m.fs.heater.inlet.enth_mol.fix(4000)
     m.fs.heater.inlet.flow_mol.fix(100)
@@ -157,15 +151,13 @@ def test_heater_ph_l_phase_two():
     if you are sure you do not have a vapor phase.
     """
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.L}
+        phase_presentation=iapws95.PhaseType.L
     )
     m.fs.heater = Heater(
-        default={
-            "property_package": m.fs.properties,
-            "material_balance_type": MaterialBalanceType.componentPhase,
-        }
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentPhase,
     )
     m.fs.heater.inlet.enth_mol.fix(3000)
     m.fs.heater.inlet.flow_mol.fix(100)
@@ -188,15 +180,13 @@ def test_heater_ph_l_phase_two():
 def test_heater_ph_l_phase():
     """Test liquid phase only form with P-H state vars and phase mass balances"""
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.L}
+        phase_presentation=iapws95.PhaseType.L
     )
     m.fs.heater = Heater(
-        default={
-            "property_package": m.fs.properties,
-            "material_balance_type": MaterialBalanceType.componentPhase,
-        }
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentPhase,
     )
     m.fs.heater.inlet.enth_mol.fix(3000)
     m.fs.heater.inlet.flow_mol.fix(100)
@@ -219,15 +209,13 @@ def test_heater_ph_l_phase():
 def test_heater_ph_g_phase():
     """Test vapor phase only form with P-H state vars and phase mass balances"""
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.G}
+        phase_presentation=iapws95.PhaseType.G
     )
     m.fs.heater = Heater(
-        default={
-            "property_package": m.fs.properties,
-            "material_balance_type": MaterialBalanceType.componentPhase,
-        }
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentPhase,
     )
     m.fs.heater.inlet.enth_mol.fix(50000)
     m.fs.heater.inlet.flow_mol.fix(100)
@@ -250,18 +238,13 @@ def test_heater_ph_g_phase():
 def test_heater_tpx_g_phase():
     """Test vapor phase only form with T-P-x state vars and phase mass balances"""
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={
-            "phase_presentation": iapws95.PhaseType.G,
-            "state_vars": iapws95.StateVars.TPX,
-        }
+        phase_presentation=iapws95.PhaseType.G, state_vars=iapws95.StateVars.TPX
     )
     m.fs.heater = Heater(
-        default={
-            "property_package": m.fs.properties,
-            "material_balance_type": MaterialBalanceType.componentPhase,
-        }
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentPhase,
     )
     m.fs.heater.inlet.flow_mol.fix(100)
     m.fs.heater.inlet.temperature.fix(422.60419933276177)
@@ -288,18 +271,13 @@ def test_heater_tpx_lg_total():
     this case you end up with two-phases at the end.
     """
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={
-            "phase_presentation": iapws95.PhaseType.LG,
-            "state_vars": iapws95.StateVars.TPX,
-        }
+        phase_presentation=iapws95.PhaseType.LG, state_vars=iapws95.StateVars.TPX
     )
     m.fs.heater = Heater(
-        default={
-            "property_package": m.fs.properties,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-        }
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentTotal,
     )
     m.fs.heater.inlet.temperature.fix(326.1667075078748)
     m.fs.heater.inlet.vapor_frac.fix(0.0)
@@ -327,18 +305,13 @@ def test_heater_tpx_lg_total_2():
     this case you end up with all vapor at the end.
     """
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={
-            "phase_presentation": iapws95.PhaseType.LG,
-            "state_vars": iapws95.StateVars.TPX,
-        }
+        phase_presentation=iapws95.PhaseType.LG, state_vars=iapws95.StateVars.TPX
     )
     m.fs.heater = Heater(
-        default={
-            "property_package": m.fs.properties,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-        }
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentTotal,
     )
     m.fs.heater.inlet.temperature.fix(326.1667075078748)
     m.fs.heater.inlet.vapor_frac.fix(0.0)
@@ -367,18 +340,13 @@ def test_heater_tpx_lg_phase():
     fraction, but you have a mass balance for each phase.
     """
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={
-            "phase_presentation": iapws95.PhaseType.LG,
-            "state_vars": iapws95.StateVars.TPX,
-        }
+        phase_presentation=iapws95.PhaseType.LG, state_vars=iapws95.StateVars.TPX
     )
     m.fs.heater = Heater(
-        default={
-            "property_package": m.fs.properties,
-            "material_balance_type": MaterialBalanceType.componentPhase,
-        }
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentPhase,
     )
     m.fs.heater.inlet.temperature.fix(326.1667075078748)
     m.fs.heater.inlet.vapor_frac.fix(0.0)

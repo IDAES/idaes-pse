@@ -229,30 +229,24 @@ exchanger (default = 'counter-current' - counter-current flow arrangement""",
 
         # Build Holdup Block
         self.side_1 = ControlVolume0DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.side_1_property_package,
-                "property_package_args": self.config.side_1_property_package_args,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            property_package=self.config.side_1_property_package,
+            property_package_args=self.config.side_1_property_package_args,
         )
 
         self.side_2 = ControlVolume0DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.side_2_property_package,
-                "property_package_args": self.config.side_2_property_package_args,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            property_package=self.config.side_2_property_package,
+            property_package_args=self.config.side_2_property_package_args,
         )
 
         self.side_3 = ControlVolume0DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.side_3_property_package,
-                "property_package_args": self.config.side_3_property_package_args,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            property_package=self.config.side_3_property_package,
+            property_package_args=self.config.side_3_property_package_args,
         )
 
         # Add Geometry

@@ -45,19 +45,17 @@ solver = get_solver()
 def test_config():
 
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
 
     m.fs.unit = TrayColumn(
-        default={
-            "number_of_trays": 10,
-            "feed_tray_location": 5,
-            "condenser_type": CondenserType.totalCondenser,
-            "condenser_temperature_spec": TemperatureSpec.customTemperature,
-            "property_package": m.fs.properties,
-            "has_heat_transfer": False,
-            "has_pressure_change": False,
-        }
+        number_of_trays=10,
+        feed_tray_location=5,
+        condenser_type=CondenserType.totalCondenser,
+        condenser_temperature_spec=TemperatureSpec.customTemperature,
+        property_package=m.fs.properties,
+        has_heat_transfer=False,
+        has_pressure_change=False,
     )
 
     assert len(m.fs.unit.config) == 12
@@ -75,21 +73,19 @@ class TestBTXIdeal:
     @pytest.fixture(scope="class")
     def btx_ftpz(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = BTXParameterBlock(
-            default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "Ideal"}
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
         )
 
         m.fs.unit = TrayColumn(
-            default={
-                "number_of_trays": 10,
-                "feed_tray_location": 5,
-                "condenser_type": CondenserType.totalCondenser,
-                "condenser_temperature_spec": TemperatureSpec.atBubblePoint,
-                "property_package": m.fs.properties,
-                "has_heat_transfer": False,
-                "has_pressure_change": False,
-            }
+            number_of_trays=10,
+            feed_tray_location=5,
+            condenser_type=CondenserType.totalCondenser,
+            condenser_temperature_spec=TemperatureSpec.atBubblePoint,
+            property_package=m.fs.properties,
+            has_heat_transfer=False,
+            has_pressure_change=False,
         )
 
         # Inlet feed conditions
@@ -110,25 +106,19 @@ class TestBTXIdeal:
     @pytest.fixture(scope="class")
     def btx_fctp(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = BTXParameterBlock(
-            default={
-                "valid_phase": ("Liq", "Vap"),
-                "activity_coeff_model": "Ideal",
-                "state_vars": "FcTP",
-            }
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal", state_vars="FcTP"
         )
 
         m.fs.unit = TrayColumn(
-            default={
-                "number_of_trays": 10,
-                "feed_tray_location": 5,
-                "condenser_type": CondenserType.totalCondenser,
-                "condenser_temperature_spec": TemperatureSpec.atBubblePoint,
-                "property_package": m.fs.properties,
-                "has_heat_transfer": False,
-                "has_pressure_change": False,
-            }
+            number_of_trays=10,
+            feed_tray_location=5,
+            condenser_type=CondenserType.totalCondenser,
+            condenser_temperature_spec=TemperatureSpec.atBubblePoint,
+            property_package=m.fs.properties,
+            has_heat_transfer=False,
+            has_pressure_change=False,
         )
 
         # Inlet feed conditions
@@ -268,19 +258,17 @@ class TestBTXIdealGeneric:
     @pytest.fixture(scope="class")
     def btx_ftpz_generic(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.properties = GenericParameterBlock(default=configuration)
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = GenericParameterBlock(**configuration)
 
         m.fs.unit = TrayColumn(
-            default={
-                "number_of_trays": 10,
-                "feed_tray_location": 5,
-                "condenser_type": CondenserType.totalCondenser,
-                "condenser_temperature_spec": TemperatureSpec.atBubblePoint,
-                "property_package": m.fs.properties,
-                "has_heat_transfer": False,
-                "has_pressure_change": False,
-            }
+            number_of_trays=10,
+            feed_tray_location=5,
+            condenser_type=CondenserType.totalCondenser,
+            condenser_temperature_spec=TemperatureSpec.atBubblePoint,
+            property_package=m.fs.properties,
+            has_heat_transfer=False,
+            has_pressure_change=False,
         )
 
         # Inlet feed conditions

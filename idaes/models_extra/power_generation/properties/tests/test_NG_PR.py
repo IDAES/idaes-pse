@@ -51,10 +51,10 @@ class TestNaturalGasProps(object):
     @pytest.fixture()
     def m(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.props = GenericParameterBlock(
-            default=get_prop(
+            **get_prop(
                 components=[
                     "H2",
                     "CO",
@@ -70,7 +70,7 @@ class TestNaturalGasProps(object):
                 ]
             )
         )
-        m.fs.state = m.fs.props.build_state_block([1], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([1], defined_state=True)
 
         return m
 
@@ -146,17 +146,13 @@ class TestNaturalGasProps(object):
     @pytest.mark.component
     def test_gibbs(self, m):
         m.fs.props = GenericParameterBlock(
-            default=get_prop(
-                components=["H2", "CO", "H2O", "CO2", "O2", "N2", "Ar", "CH4"]
-            )
+            **get_prop(components=["H2", "CO", "H2O", "CO2", "O2", "N2", "Ar", "CH4"])
         )
         m.fs.reactor = GibbsReactor(
-            default={
-                "dynamic": False,
-                "has_heat_transfer": True,
-                "has_pressure_change": False,
-                "property_package": m.fs.props,
-            }
+            dynamic=False,
+            has_heat_transfer=True,
+            has_pressure_change=False,
+            property_package=m.fs.props,
         )
 
         m.fs.reactor.inlet.flow_mol.fix(8000)  # mol/s
@@ -225,15 +221,10 @@ class Test_CO2_H2O_Properties:
         comp_props = get_prop(components=["CO2", "H2O"], phases=["Vap", "Liq"])
 
         # Parameters block
-        m.params = GenericParameterBlock(default=comp_props)
+        m.params = GenericParameterBlock(**comp_props)
 
         m.props = m.params.build_state_block(
-            [1],
-            default={
-                "defined_state": True,
-                "parameters": m.params,
-                "has_phase_equilibrium": True,
-            },
+            [1], defined_state=True, parameters=m.params, has_phase_equilibrium=True
         )
 
         m.props[1].flow_mol.fix(100)
