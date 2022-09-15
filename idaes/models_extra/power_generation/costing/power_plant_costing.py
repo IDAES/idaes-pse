@@ -31,7 +31,7 @@ Other methods:
 * check_sCO2_costing_bounds() to display a warnning if costing model have been
 used outside the range that where designed for
 """
-__author__ = "Costing Team (A. Noring and M. Zamarripa)"
+__author__ = "Costing Team (A. Noring, M. Zamarripa, B. Paul, D. Caballero)"
 __version__ = "1.0.0"
 
 from pyomo.environ import (
