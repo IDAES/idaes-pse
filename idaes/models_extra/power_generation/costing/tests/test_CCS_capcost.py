@@ -70,7 +70,7 @@ def test_ccs_units_costing():
         absorber_accounts,
         m.fs.b17.absorber_volume,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Absorber packing
@@ -88,7 +88,7 @@ def test_ccs_units_costing():
         absorber_packing_accounts,
         m.fs.b18.absorber_packing_volume,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Stripper
@@ -104,7 +104,7 @@ def test_ccs_units_costing():
         stripper_accounts,
         m.fs.b19.stripper_volume,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Stripper packing
@@ -122,7 +122,7 @@ def test_ccs_units_costing():
         stripper_packing_accounts,
         m.fs.b20.stripper_packing_volume,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Stripper condenser
@@ -140,7 +140,7 @@ def test_ccs_units_costing():
         stripper_condenser_accounts,
         m.fs.b21.stripper_condenser_area,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Stripper reboiler
@@ -158,7 +158,7 @@ def test_ccs_units_costing():
         stripper_reboiler_accounts,
         m.fs.b22.stripper_reboiler_area,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Lean rich heat exchanger
@@ -176,7 +176,7 @@ def test_ccs_units_costing():
         lean_rich_hex_accounts,
         m.fs.b23.lean_rich_hex_area,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Lean solvent cooler
@@ -194,7 +194,7 @@ def test_ccs_units_costing():
         lean_solvent_cooler_accounts,
         m.fs.b24.lean_solvent_cooler_area,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Flue gas blower
@@ -218,14 +218,14 @@ def test_ccs_units_costing():
         flue_gas_blower_account_1,
         m.fs.b25.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b26,
         flue_gas_blower_account_2,
         m.fs.b26.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Flue gas direct contact cooler
@@ -245,14 +245,14 @@ def test_ccs_units_costing():
         flue_gas_dcc_account_1,
         m.fs.b27.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b28,
         flue_gas_dcc_account_2,
         m.fs.b28.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Flue gas direct contact cooler packing
@@ -272,14 +272,14 @@ def test_ccs_units_costing():
         flue_gas_dcc_packing_account_1,
         m.fs.b29.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b30,
         flue_gas_dcc_packing_account_2,
         m.fs.b30.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Pretreatment pump
@@ -299,14 +299,14 @@ def test_ccs_units_costing():
         pretreatment_pump_account_1,
         m.fs.b31.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b32,
         pretreatment_pump_account_2,
         m.fs.b32.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Pretreatment cooler
@@ -326,14 +326,14 @@ def test_ccs_units_costing():
         pretreatment_cooler_account_1,
         m.fs.b33.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b34,
         pretreatment_cooler_account_2,
         m.fs.b34.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Pretreatment tank
@@ -353,14 +353,14 @@ def test_ccs_units_costing():
         pretreatment_tank_account_1,
         m.fs.b35.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b36,
         pretreatment_tank_account_2,
         m.fs.b36.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Washing column
@@ -380,14 +380,14 @@ def test_ccs_units_costing():
         washing_column_account_1,
         m.fs.b37.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b38,
         washing_column_account_2,
         m.fs.b38.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Washing column packing
@@ -407,14 +407,14 @@ def test_ccs_units_costing():
         washing_column_packing_account_1,
         m.fs.b39.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b40,
         washing_column_packing_account_2,
         m.fs.b40.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Washing solvent cooler
@@ -434,14 +434,14 @@ def test_ccs_units_costing():
         washing_solvent_cooler_account_1,
         m.fs.b41.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b42,
         washing_solvent_cooler_account_2,
         m.fs.b42.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Washing solvent pump
@@ -461,14 +461,14 @@ def test_ccs_units_costing():
         washing_solvent_pump_account_1,
         m.fs.b43.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b44,
         washing_solvent_pump_account_2,
         m.fs.b44.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Condenser pump
@@ -488,14 +488,14 @@ def test_ccs_units_costing():
         condenser_pump_account_1,
         m.fs.b45.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b46,
         condenser_pump_account_2,
         m.fs.b46.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Stripper reflux drum
@@ -515,14 +515,14 @@ def test_ccs_units_costing():
         stripper_reflux_drum_account_1,
         m.fs.b47.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b48,
         stripper_reflux_drum_account_2,
         m.fs.b48.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Lean solvent pump
@@ -542,14 +542,14 @@ def test_ccs_units_costing():
         lean_solvent_pump_account_1,
         m.fs.b49.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b50,
         lean_solvent_pump_account_2,
         m.fs.b50.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Solvent storage tank
@@ -569,14 +569,14 @@ def test_ccs_units_costing():
         solvent_storage_tank_account_1,
         m.fs.b51.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b52,
         solvent_storage_tank_account_2,
         m.fs.b52.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Washing solvent tank
@@ -596,14 +596,14 @@ def test_ccs_units_costing():
         washing_solvent_tank_account_1,
         m.fs.b53.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b54,
         washing_solvent_tank_account_2,
         m.fs.b54.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Solvent stripper reclaimer
@@ -623,14 +623,14 @@ def test_ccs_units_costing():
         solvent_stripper_reclaimer_account_1,
         m.fs.b55.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b56,
         solvent_stripper_reclaimer_account_2,
         m.fs.b56.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Solvent reclaimer cooler
@@ -650,14 +650,14 @@ def test_ccs_units_costing():
         solvent_reclaimer_cooler_account_1,
         m.fs.b57.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b58,
         solvent_reclaimer_cooler_account_2,
         m.fs.b58.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     # Solvent filtration
@@ -677,14 +677,14 @@ def test_ccs_units_costing():
         solvent_filtration_account_1,
         m.fs.b59.co2_product_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
     QGESSCostingData.get_PP_costing(
         m.fs.b60,
         solvent_filtration_account_2,
         m.fs.b60.fg_flow,
         6,
-        CE_index_base_year="2013",
+        CE_index_year="2013",
     )
 
     QGESSCostingData.get_total_TPC(m.fs)
@@ -699,204 +699,204 @@ def test_ccs_units_costing():
     assert results.solver.status == pyo.SolverStatus.ok
 
     # Absorber TPC
-    assert pytest.approx(22.968, rel=1e-3) == sum(
+    assert pytest.approx(25.571, rel=1e-3) == sum(
         pyo.value(m.fs.b17.total_plant_cost[ac]) for ac in absorber_accounts
     )
 
     # Absorber packing TPC
-    assert pytest.approx(22.9667, rel=1e-3) == sum(
+    assert pytest.approx(25.570, rel=1e-3) == sum(
         pyo.value(m.fs.b18.total_plant_cost[ac]) for ac in absorber_packing_accounts
     )
 
     # Stripper TPC
-    assert pytest.approx(2.814, rel=1e-3) == sum(
+    assert pytest.approx(3.133, rel=1e-3) == sum(
         pyo.value(m.fs.b19.total_plant_cost[ac]) for ac in stripper_accounts
     )
 
     # Stripper packing TPC
-    assert pytest.approx(2.0658, rel=1e-3) == sum(
+    assert pytest.approx(2.300, rel=1e-3) == sum(
         pyo.value(m.fs.b20.total_plant_cost[ac]) for ac in stripper_packing_accounts
     )
 
     # Stripper condenser TPC
-    assert pytest.approx(0.565, rel=1e-3) == sum(
+    assert pytest.approx(0.6289, rel=1e-3) == sum(
         pyo.value(m.fs.b21.total_plant_cost[ac]) for ac in stripper_condenser_accounts
     )
 
     # Stripper reboiler TPC
-    assert pytest.approx(2.469, rel=1e-3) == sum(
+    assert pytest.approx(2.748, rel=1e-3) == sum(
         pyo.value(m.fs.b22.total_plant_cost[ac]) for ac in stripper_reboiler_accounts
     )
 
     # Lean rich heat exchanger TPC
-    assert pytest.approx(4.213, rel=1e-3) == sum(
+    assert pytest.approx(4.690, rel=1e-3) == sum(
         pyo.value(m.fs.b23.total_plant_cost[ac]) for ac in lean_rich_hex_accounts
     )
 
     # Lean solvent cooler TPC
-    assert pytest.approx(0.457, rel=1e-3) == sum(
+    assert pytest.approx(0.5089, rel=1e-3) == sum(
         pyo.value(m.fs.b24.total_plant_cost[ac]) for ac in lean_solvent_cooler_accounts
     )
 
     # Flue gas blower TPC
-    assert pytest.approx(0.6272, rel=1e-3) == sum(
+    assert pytest.approx(0.6983, rel=1e-3) == sum(
         pyo.value(m.fs.b25.total_plant_cost[ac]) for ac in flue_gas_blower_account_1
     )
-    assert pytest.approx(0.8378, rel=1e-3) == sum(
+    assert pytest.approx(0.9328, rel=1e-3) == sum(
         pyo.value(m.fs.b26.total_plant_cost[ac]) for ac in flue_gas_blower_account_2
     )
 
     # Flue gas direct contact cooler TPC
-    assert pytest.approx(1.7864, rel=1e-3) == sum(
+    assert pytest.approx(1.989, rel=1e-3) == sum(
         pyo.value(m.fs.b27.total_plant_cost[ac]) for ac in flue_gas_dcc_account_1
     )
-    assert pytest.approx(2.3863, rel=1e-3) == sum(
+    assert pytest.approx(2.657, rel=1e-3) == sum(
         pyo.value(m.fs.b28.total_plant_cost[ac]) for ac in flue_gas_dcc_account_2
     )
 
     # Flue gas direct contact cooler packing TPC
-    assert pytest.approx(1.5916, rel=1e-3) == sum(
+    assert pytest.approx(1.772, rel=1e-3) == sum(
         pyo.value(m.fs.b29.total_plant_cost[ac])
         for ac in flue_gas_dcc_packing_account_1
     )
-    assert pytest.approx(2.1261, rel=1e-3) == sum(
+    assert pytest.approx(2.367, rel=1e-3) == sum(
         pyo.value(m.fs.b30.total_plant_cost[ac])
         for ac in flue_gas_dcc_packing_account_2
     )
 
     # Pretreatment pump TPC
-    assert pytest.approx(0.07636, rel=1e-3) == sum(
+    assert pytest.approx(0.08502, rel=1e-3) == sum(
         pyo.value(m.fs.b31.total_plant_cost[ac]) for ac in pretreatment_pump_account_1
     )
-    assert pytest.approx(0.1020, rel=1e-3) == sum(
+    assert pytest.approx(0.1136, rel=1e-3) == sum(
         pyo.value(m.fs.b32.total_plant_cost[ac]) for ac in pretreatment_pump_account_2
     )
 
     # Pretreatment cooler TPC
-    assert pytest.approx(0.1416, rel=1e-3) == sum(
+    assert pytest.approx(0.1576, rel=1e-3) == sum(
         pyo.value(m.fs.b33.total_plant_cost[ac]) for ac in pretreatment_cooler_account_1
     )
-    assert pytest.approx(0.1891, rel=1e-3) == sum(
+    assert pytest.approx(0.2105, rel=1e-3) == sum(
         pyo.value(m.fs.b34.total_plant_cost[ac]) for ac in pretreatment_cooler_account_2
     )
 
     # Pretreatment tank TPC
-    assert pytest.approx(0.0635, rel=1e-3) == sum(
+    assert pytest.approx(0.07069, rel=1e-3) == sum(
         pyo.value(m.fs.b35.total_plant_cost[ac]) for ac in pretreatment_tank_account_1
     )
-    assert pytest.approx(0.0848, rel=1e-3) == sum(
+    assert pytest.approx(0.09443, rel=1e-3) == sum(
         pyo.value(m.fs.b36.total_plant_cost[ac]) for ac in pretreatment_tank_account_2
     )
 
     # Washing column TPC
-    assert pytest.approx(1.7092, rel=1e-3) == sum(
+    assert pytest.approx(1.903, rel=1e-3) == sum(
         pyo.value(m.fs.b37.total_plant_cost[ac]) for ac in washing_column_account_1
     )
-    assert pytest.approx(2.2831, rel=1e-3) == sum(
+    assert pytest.approx(2.542, rel=1e-3) == sum(
         pyo.value(m.fs.b38.total_plant_cost[ac]) for ac in washing_column_account_2
     )
 
     # Washing column packing TPC
-    assert pytest.approx(1.7469, rel=1e-3) == sum(
+    assert pytest.approx(1.945, rel=1e-3) == sum(
         pyo.value(m.fs.b39.total_plant_cost[ac])
         for ac in washing_column_packing_account_1
     )
-    assert pytest.approx(2.3336, rel=1e-3) == sum(
+    assert pytest.approx(2.598, rel=1e-3) == sum(
         pyo.value(m.fs.b40.total_plant_cost[ac])
         for ac in washing_column_packing_account_2
     )
 
     # Washing solvent cooler TPC
-    assert pytest.approx(0.03947, rel=1e-3) == sum(
+    assert pytest.approx(0.04394, rel=1e-3) == sum(
         pyo.value(m.fs.b41.total_plant_cost[ac])
         for ac in washing_solvent_cooler_account_1
     )
-    assert pytest.approx(0.05272, rel=1e-3) == sum(
+    assert pytest.approx(0.05870, rel=1e-3) == sum(
         pyo.value(m.fs.b42.total_plant_cost[ac])
         for ac in washing_solvent_cooler_account_2
     )
 
     # Washing solvent pump TPC
-    assert pytest.approx(0.00772, rel=1e-3) == sum(
+    assert pytest.approx(0.008598, rel=1e-3) == sum(
         pyo.value(m.fs.b43.total_plant_cost[ac])
         for ac in washing_solvent_pump_account_1
     )
-    assert pytest.approx(0.01032, rel=1e-3) == sum(
+    assert pytest.approx(0.01148, rel=1e-3) == sum(
         pyo.value(m.fs.b44.total_plant_cost[ac])
         for ac in washing_solvent_pump_account_2
     )
 
     # Condenser pump TPC
-    assert pytest.approx(0.02145, rel=1e-3) == sum(
+    assert pytest.approx(0.02388, rel=1e-3) == sum(
         pyo.value(m.fs.b45.total_plant_cost[ac]) for ac in condenser_pump_account_1
     )
-    assert pytest.approx(0.02865, rel=1e-3) == sum(
+    assert pytest.approx(0.03190, rel=1e-3) == sum(
         pyo.value(m.fs.b46.total_plant_cost[ac]) for ac in condenser_pump_account_2
     )
 
     # Stripper reflux drum TPC
-    assert pytest.approx(0.0292, rel=1e-3) == sum(
+    assert pytest.approx(0.03248, rel=1e-3) == sum(
         pyo.value(m.fs.b47.total_plant_cost[ac])
         for ac in stripper_reflux_drum_account_1
     )
-    assert pytest.approx(0.0390, rel=1e-3) == sum(
+    assert pytest.approx(0.04339, rel=1e-3) == sum(
         pyo.value(m.fs.b48.total_plant_cost[ac])
         for ac in stripper_reflux_drum_account_2
     )
 
     # Lean solvent pump TPC
-    assert pytest.approx(0.2231, rel=1e-3) == sum(
+    assert pytest.approx(0.2484, rel=1e-3) == sum(
         pyo.value(m.fs.b49.total_plant_cost[ac]) for ac in lean_solvent_pump_account_1
     )
-    assert pytest.approx(0.2980, rel=1e-3) == sum(
+    assert pytest.approx(0.3318, rel=1e-3) == sum(
         pyo.value(m.fs.b50.total_plant_cost[ac]) for ac in lean_solvent_pump_account_2
     )
 
     # Solvent storage tank TPC
-    assert pytest.approx(0.2540, rel=1e-3) == sum(
+    assert pytest.approx(0.2828, rel=1e-3) == sum(
         pyo.value(m.fs.b51.total_plant_cost[ac])
         for ac in solvent_storage_tank_account_1
     )
-    assert pytest.approx(0.3393, rel=1e-3) == sum(
+    assert pytest.approx(0.3778, rel=1e-3) == sum(
         pyo.value(m.fs.b52.total_plant_cost[ac])
         for ac in solvent_storage_tank_account_2
     )
 
     # Washing solvent tank TPC
-    assert pytest.approx(0.02917, rel=1e-3) == sum(
+    assert pytest.approx(0.03248, rel=1e-3) == sum(
         pyo.value(m.fs.b53.total_plant_cost[ac])
         for ac in washing_solvent_tank_account_1
     )
-    assert pytest.approx(0.03897, rel=1e-3) == sum(
+    assert pytest.approx(0.04339, rel=1e-3) == sum(
         pyo.value(m.fs.b54.total_plant_cost[ac])
         for ac in washing_solvent_tank_account_2
     )
 
     # Solvent stripper reclaimer TPC
-    assert pytest.approx(0.1236, rel=1e-3) == sum(
+    assert pytest.approx(0.1376, rel=1e-3) == sum(
         pyo.value(m.fs.b55.total_plant_cost[ac])
         for ac in solvent_stripper_reclaimer_account_1
     )
-    assert pytest.approx(0.1650, rel=1e-3) == sum(
+    assert pytest.approx(0.1838, rel=1e-3) == sum(
         pyo.value(m.fs.b56.total_plant_cost[ac])
         for ac in solvent_stripper_reclaimer_account_2
     )
 
     # Solvent reclaimer cooler TPC
-    assert pytest.approx(0.1158, rel=1e-3) == sum(
+    assert pytest.approx(0.1290, rel=1e-3) == sum(
         pyo.value(m.fs.b57.total_plant_cost[ac])
         for ac in solvent_reclaimer_cooler_account_1
     )
-    assert pytest.approx(0.1547, rel=1e-3) == sum(
+    assert pytest.approx(0.1723, rel=1e-3) == sum(
         pyo.value(m.fs.b58.total_plant_cost[ac])
         for ac in solvent_reclaimer_cooler_account_2
     )
 
     # Solvent filtration TPC
-    assert pytest.approx(0.6787, rel=1e-3) == sum(
+    assert pytest.approx(0.7556, rel=1e-3) == sum(
         pyo.value(m.fs.b59.total_plant_cost[ac]) for ac in solvent_filtration_account_1
     )
-    assert pytest.approx(0.9066, rel=1e-3) == sum(
+    assert pytest.approx(1.009, rel=1e-3) == sum(
         pyo.value(m.fs.b60.total_plant_cost[ac]) for ac in solvent_filtration_account_2
     )
 
@@ -907,6 +907,6 @@ def test_ccs_units_costing():
         for ac in block.total_plant_cost.keys():
             TPC += pyo.value(block.total_plant_cost[ac])
 
-    assert pytest.approx(80.159, rel=1e-3) == TPC
+    assert pytest.approx(89.245, rel=1e-3) == TPC
 
     return m

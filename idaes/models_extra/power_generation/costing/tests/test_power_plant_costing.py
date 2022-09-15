@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 
-__author__ = "Costing Team (A. Noring and M. Zamarripa)"
+__author__ = "Costing Team (A. Noring, M. Zamarripa and B. Paul)"
 __version__ = "1.0.0"
 
 import pytest
