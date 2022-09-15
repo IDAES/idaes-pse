@@ -47,17 +47,15 @@ solver = get_solver()
 @pytest.fixture(scope="module")
 def build_unit():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.unit = SteamHeater(
-        default={
-            "dynamic": False,
-            "property_package": m.fs.properties,
-            "has_holdup": True,
-            "has_heat_transfer": True,
-            "has_pressure_change": True,
-            "single_side_only": True,
-        }
+        dynamic=False,
+        property_package=m.fs.properties,
+        has_holdup=True,
+        has_heat_transfer=True,
+        has_pressure_change=True,
+        single_side_only=True,
     )
     return m
 

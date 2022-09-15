@@ -155,11 +155,9 @@ class TestNoHenryComps(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=self.configuration)
+        model.params = GenericParameterBlock(**self.configuration)
 
-        model.props = model.params.build_state_block(
-            [1], default={"defined_state": True}
-        )
+        model.props = model.params.build_state_block([1], defined_state=True)
 
         model.props[1].flow_mol.fix(1)
         model.props[1].temperature.fix(368)
@@ -453,11 +451,9 @@ class TestHenryComps0(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration)
+        model.params = GenericParameterBlock(**configuration)
 
-        model.props = model.params.build_state_block(
-            [1], default={"defined_state": True}
-        )
+        model.props = model.params.build_state_block([1], defined_state=True)
 
         model.props[1].flow_mol.fix(1)
         model.props[1].temperature.fix(368)
@@ -634,11 +630,9 @@ class TestHenryComps(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration)
+        model.params = GenericParameterBlock(**configuration)
 
-        model.props = model.params.build_state_block(
-            [1], default={"defined_state": True}
-        )
+        model.props = model.params.build_state_block([1], defined_state=True)
 
         model.props[1].flow_mol.fix(1)
         model.props[1].temperature.fix(368)

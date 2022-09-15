@@ -88,66 +88,64 @@ solver = get_solver()
 @pytest.mark.unit
 def test_bad_option():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     with pytest.raises(KeyError):
-        m.fs.unit = HeatExchanger(default={"I'm a bad option": "hot"})
+        m.fs.unit = HeatExchanger(**{"I'm a bad option": "hot"})
 
 
 @pytest.mark.unit
 def test_bad_option2():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     with pytest.raises(
         ConfigurationError, match="cold_side_name cannot be 'hot_side'."
     ):
-        m.fs.unit = HeatExchanger(default={"cold_side_name": "hot_side"})
+        m.fs.unit = HeatExchanger(cold_side_name="hot_side")
 
 
 @pytest.mark.unit
 def test_bad_option3():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     with pytest.raises(
         ConfigurationError, match="hot_side_name cannot be 'cold_side'."
     ):
-        m.fs.unit = HeatExchanger(default={"hot_side_name": "cold_side"})
+        m.fs.unit = HeatExchanger(hot_side_name="cold_side")
 
 
 @pytest.mark.unit
 def test_bad_option4():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     with pytest.raises(
         ConfigurationError, match="cold_side_name cannot be 'cold_side'."
     ):
-        m.fs.unit = HeatExchanger(default={"cold_side_name": "cold_side"})
+        m.fs.unit = HeatExchanger(cold_side_name="cold_side")
 
 
 @pytest.mark.unit
 def test_bad_option5():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     with pytest.raises(ConfigurationError, match="hot_side_name cannot be 'hot_side'."):
-        m.fs.unit = HeatExchanger(default={"hot_side_name": "hot_side"})
+        m.fs.unit = HeatExchanger(hot_side_name="hot_side")
 
 
 @pytest.mark.unit
 def test_hot_and_cold_names_same():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     with pytest.raises(
         NameError,
         match="HeatExchanger hot and cold side cannot have the same name 'shell'.",
     ):
-        m.fs.unit = HeatExchanger(
-            default={"hot_side_name": "shell", "cold_side_name": "shell"}
-        )
+        m.fs.unit = HeatExchanger(hot_side_name="shell", cold_side_name="shell")
 
 
 @pytest.mark.unit
 def test_hot_side_name_clash():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
 
     with pytest.raises(
@@ -157,18 +155,16 @@ def test_hot_side_name_clash():
         "exists.",
     ):
         m.fs.unit = HeatExchanger(
-            default={
-                "hot_side": {"property_package": m.fs.properties},
-                "cold_side": {"property_package": m.fs.properties},
-                "hot_side_name": "build",
-            }
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            hot_side_name="build",
         )
 
 
 @pytest.mark.unit
 def test_cold_side_name_clash():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
 
     with pytest.raises(
@@ -178,27 +174,23 @@ def test_cold_side_name_clash():
         "exists.",
     ):
         m.fs.unit = HeatExchanger(
-            default={
-                "hot_side": {"property_package": m.fs.properties},
-                "cold_side": {"property_package": m.fs.properties},
-                "cold_side_name": "build",
-            }
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            cold_side_name="build",
         )
 
 
 @pytest.mark.unit
 def test_user_names():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
 
     m.fs.unit = HeatExchanger(
-        default={
-            "hot_side_name": "shell",
-            "cold_side_name": "tube",
-            "shell": {"property_package": m.fs.properties},
-            "tube": {"property_package": m.fs.properties},
-        }
+        hot_side_name="shell",
+        cold_side_name="tube",
+        shell={"property_package": m.fs.properties},
+        tube={"property_package": m.fs.properties},
     )
 
     assert m.fs.unit.config.hot_side.property_package is m.fs.properties
@@ -216,15 +208,13 @@ def test_user_names():
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
 
     m.fs.unit = HeatExchanger(
-        default={
-            "hot_side": {"property_package": m.fs.properties},
-            "cold_side": {"property_package": m.fs.properties},
-        }
+        hot_side={"property_package": m.fs.properties},
+        cold_side={"property_package": m.fs.properties},
     )
 
     # Check unit config arguments
@@ -276,17 +266,15 @@ def test_config():
 
 def basic_model(cb=delta_temperature_lmtd_callback):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = iapws95.Iapws95ParameterBlock()
 
     m.fs.unit = HeatExchanger(
-        default={
-            "hot_side": {"property_package": m.fs.properties},
-            "cold_side": {"property_package": m.fs.properties},
-            "delta_temperature_callback": cb,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-        }
+        hot_side={"property_package": m.fs.properties},
+        cold_side={"property_package": m.fs.properties},
+        delta_temperature_callback=cb,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
     )
     #   Set inputs
     m.fs.unit.hot_side_inlet.flow_mol[0].fix(100)
@@ -307,17 +295,15 @@ def basic_model(cb=delta_temperature_lmtd_callback):
 
 def basic_model2(cb=delta_temperature_lmtd_callback):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = iapws95.Iapws95ParameterBlock()
 
     m.fs.unit = HeatExchanger(
-        default={
-            "hot_side": {"property_package": m.fs.properties},
-            "cold_side": {"property_package": m.fs.properties},
-            "delta_temperature_callback": cb,
-            "flow_pattern": HeatExchangerFlowPattern.cocurrent,
-        }
+        hot_side={"property_package": m.fs.properties},
+        cold_side={"property_package": m.fs.properties},
+        delta_temperature_callback=cb,
+        flow_pattern=HeatExchangerFlowPattern.cocurrent,
     )
     #   Set inputs
     m.fs.unit.hot_side_inlet.flow_mol[0].fix(100)
@@ -338,17 +324,15 @@ def basic_model2(cb=delta_temperature_lmtd_callback):
 
 def basic_model3(cb=delta_temperature_lmtd_callback):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = iapws95.Iapws95ParameterBlock()
 
     m.fs.unit = HeatExchanger(
-        default={
-            "hot_side": {"property_package": m.fs.properties},
-            "cold_side": {"property_package": m.fs.properties},
-            "delta_temperature_callback": cb,
-            "flow_pattern": HeatExchangerFlowPattern.crossflow,
-        }
+        hot_side={"property_package": m.fs.properties},
+        cold_side={"property_package": m.fs.properties},
+        delta_temperature_callback=cb,
+        flow_pattern=HeatExchangerFlowPattern.crossflow,
     )
     #   Set inputs
     m.fs.unit.hot_side_inlet.flow_mol[0].fix(100)
@@ -467,16 +451,14 @@ class TestBTX_cocurrent(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = BTXParameterBlock(default={"valid_phase": "Liq"})
+        m.fs.properties = BTXParameterBlock(valid_phase="Liq")
 
         m.fs.unit = HeatExchanger(
-            default={
-                "hot_side": {"property_package": m.fs.properties},
-                "cold_side": {"property_package": m.fs.properties},
-                "flow_pattern": HeatExchangerFlowPattern.cocurrent,
-            }
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            flow_pattern=HeatExchangerFlowPattern.cocurrent,
         )
 
         m.fs.unit.hot_side_inlet.flow_mol[0].fix(5)  # mol/s
@@ -710,18 +692,16 @@ class TestBTX_cocurrent_alt_name(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = BTXParameterBlock(default={"valid_phase": "Liq"})
+        m.fs.properties = BTXParameterBlock(valid_phase="Liq")
 
         m.fs.unit = HeatExchanger(
-            default={
-                "hot_side_name": "hot",
-                "cold_side_name": "cold",
-                "hot": {"property_package": m.fs.properties},
-                "cold": {"property_package": m.fs.properties},
-                "flow_pattern": HeatExchangerFlowPattern.cocurrent,
-            }
+            hot_side_name="hot",
+            cold_side_name="cold",
+            hot={"property_package": m.fs.properties},
+            cold={"property_package": m.fs.properties},
+            flow_pattern=HeatExchangerFlowPattern.cocurrent,
         )
 
         m.fs.unit.hot_inlet.flow_mol[0].fix(5)  # mol/s
@@ -953,16 +933,14 @@ class TestIAPWS_countercurrent(object):
     @pytest.fixture(scope="class")
     def iapws(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = iapws95.Iapws95ParameterBlock()
 
         m.fs.unit = HeatExchanger(
-            default={
-                "hot_side": {"property_package": m.fs.properties},
-                "cold_side": {"property_package": m.fs.properties},
-                "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            }
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            flow_pattern=HeatExchangerFlowPattern.countercurrent,
         )
 
         m.fs.unit.hot_side_inlet.flow_mol[0].fix(100)
@@ -981,17 +959,15 @@ class TestIAPWS_countercurrent(object):
     @pytest.fixture(scope="class")
     def iapws_underwood(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = iapws95.Iapws95ParameterBlock()
 
         m.fs.unit = HeatExchanger(
-            default={
-                "hot_side": {"property_package": m.fs.properties},
-                "cold_side": {"property_package": m.fs.properties},
-                "delta_temperature_callback": delta_temperature_underwood_callback,
-                "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            }
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            delta_temperature_callback=delta_temperature_underwood_callback,
+            flow_pattern=HeatExchangerFlowPattern.countercurrent,
         )
 
         m.fs.unit.hot_side_inlet.flow_mol[0].fix(100)
@@ -1257,16 +1233,14 @@ class TestSaponification_crossflow(object):
     @pytest.fixture(scope="class")
     def sapon(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = SaponificationParameterBlock()
 
         m.fs.unit = HeatExchanger(
-            default={
-                "hot_side": {"property_package": m.fs.properties},
-                "cold_side": {"property_package": m.fs.properties},
-                "flow_pattern": HeatExchangerFlowPattern.crossflow,
-            }
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            flow_pattern=HeatExchangerFlowPattern.crossflow,
         )
 
         m.fs.unit.hot_side_inlet.flow_vol[0].fix(1e-3)
@@ -1545,7 +1519,7 @@ class TestBT_Generic_cocurrent(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         # As we lack other example prop packs with units, take the generic
         # BT-PR package and change the base units
@@ -1663,15 +1637,13 @@ class TestBT_Generic_cocurrent(object):
             },
         }
 
-        m.fs.properties = GenericParameterBlock(default=configuration)
-        m.fs.properties2 = GenericParameterBlock(default=configuration2)
+        m.fs.properties = GenericParameterBlock(**configuration)
+        m.fs.properties2 = GenericParameterBlock(**configuration2)
 
         m.fs.unit = HeatExchanger(
-            default={
-                "hot_side": {"property_package": m.fs.properties},
-                "cold_side": {"property_package": m.fs.properties2},
-                "flow_pattern": HeatExchangerFlowPattern.cocurrent,
-            }
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties2},
+            flow_pattern=HeatExchangerFlowPattern.cocurrent,
         )
 
         m.fs.unit.hot_side_inlet.flow_mol[0].fix(5)  # mol/s

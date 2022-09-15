@@ -365,7 +365,7 @@ class TestFlowsheetCostingBlock:
     @pytest.mark.unit
     def test_cost_unit_first(self, costing):
         costing.unit_a.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": costing.costing}
+            flowsheet_costing_block=costing.costing
         )
 
         assert costing.unit_a.costing.cost_method == 1
@@ -384,16 +384,14 @@ class TestFlowsheetCostingBlock:
     @pytest.mark.unit
     def test_cost_unit_duplicate(self, costing):
         costing.unit_a.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": costing.costing}
+            flowsheet_costing_block=costing.costing
         )
 
         # First, check implicit replacement
         # This should work
         costing.unit_a.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": costing.costing,
-                "costing_method": TestCostingPackageData.method_2,
-            }
+            flowsheet_costing_block=costing.costing,
+            costing_method=TestCostingPackageData.method_2,
         )
 
         assert costing.unit_a.costing.cost_method == 2
@@ -409,7 +407,7 @@ class TestFlowsheetCostingBlock:
             "UnitModelCostingBlock associated with it.",
         ):
             costing.unit_a.costing2 = UnitModelCostingBlock(
-                default={"flowsheet_costing_block": costing.costing}
+                flowsheet_costing_block=costing.costing
             )
 
         # Clean everything up at the end
@@ -447,10 +445,7 @@ class TestFlowsheetCostingBlock:
             blk._checkvar = True
 
         costing.unit_a.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": costing.costing,
-                "costing_method": custom_method,
-            }
+            flowsheet_costing_block=costing.costing, costing_method=custom_method
         )
 
         assert isinstance(costing.unit_a.costing, UnitModelCostingBlock)
@@ -475,10 +470,7 @@ class TestFlowsheetCostingBlock:
             "declared as variables.",
         ):
             costing.unit_b.costing = UnitModelCostingBlock(
-                default={
-                    "flowsheet_costing_block": costing.costing,
-                    "costing_method": dummy_method,
-                }
+                flowsheet_costing_block=costing.costing, costing_method=dummy_method
             )
 
         # Clean up for next test
@@ -490,10 +482,7 @@ class TestFlowsheetCostingBlock:
             blk.capital_cost = Var()
 
         costing.unit_b.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": costing.costing,
-                "costing_method": dummy_method,
-            }
+            flowsheet_costing_block=costing.costing, costing_method=dummy_method
         )
 
         assert (
@@ -518,10 +507,7 @@ class TestFlowsheetCostingBlock:
             "are declared as variables.",
         ):
             costing.unit_b.costing = UnitModelCostingBlock(
-                default={
-                    "flowsheet_costing_block": costing.costing,
-                    "costing_method": dummy_method,
-                }
+                flowsheet_costing_block=costing.costing, costing_method=dummy_method
             )
 
         # Clean up for next test
@@ -533,10 +519,7 @@ class TestFlowsheetCostingBlock:
             blk.fixed_operating_cost = Var()
 
         costing.unit_b.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": costing.costing,
-                "costing_method": dummy_method,
-            }
+            flowsheet_costing_block=costing.costing, costing_method=dummy_method
         )
 
         assert (
@@ -561,10 +544,7 @@ class TestFlowsheetCostingBlock:
             "components are declared as variables.",
         ):
             costing.unit_b.costing = UnitModelCostingBlock(
-                default={
-                    "flowsheet_costing_block": costing.costing,
-                    "costing_method": dummy_method,
-                }
+                flowsheet_costing_block=costing.costing, costing_method=dummy_method
             )
 
         # Clean up for next test
@@ -576,10 +556,7 @@ class TestFlowsheetCostingBlock:
             blk.variable_operating_cost = Var()
 
         costing.unit_b.costing = UnitModelCostingBlock(
-            default={
-                "flowsheet_costing_block": costing.costing,
-                "costing_method": dummy_method,
-            }
+            flowsheet_costing_block=costing.costing, costing_method=dummy_method
         )
 
         assert (

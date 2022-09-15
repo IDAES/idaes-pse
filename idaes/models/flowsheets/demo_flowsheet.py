@@ -34,15 +34,15 @@ import idaes.logger as idaeslog
 def build_flowsheet():
     m = ConcreteModel()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.BT_props = BTXParameterBlock()
 
-    m.fs.M01 = Mixer(default={"property_package": m.fs.BT_props})
+    m.fs.M01 = Mixer(property_package=m.fs.BT_props)
 
-    m.fs.H02 = Heater(default={"property_package": m.fs.BT_props})
+    m.fs.H02 = Heater(property_package=m.fs.BT_props)
 
-    m.fs.F03 = Flash(default={"property_package": m.fs.BT_props})
+    m.fs.F03 = Flash(property_package=m.fs.BT_props)
 
     m.fs.s01 = Arc(source=m.fs.M01.outlet, destination=m.fs.H02.inlet)
     m.fs.s02 = Arc(source=m.fs.H02.outlet, destination=m.fs.F03.inlet)

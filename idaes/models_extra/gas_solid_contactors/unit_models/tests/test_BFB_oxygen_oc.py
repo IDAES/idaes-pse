@@ -70,29 +70,25 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # Set up thermo props and reaction props
     m.fs.gas_properties = GasPhaseParameterBlock()
     m.fs.solid_properties = SolidPhaseParameterBlock()
     m.fs.hetero_reactions = HeteroReactionParameterBlock(
-        default={
-            "solid_property_package": m.fs.solid_properties,
-            "gas_property_package": m.fs.gas_properties,
-        }
+        solid_property_package=m.fs.solid_properties,
+        gas_property_package=m.fs.gas_properties,
     )
 
     m.fs.unit = BubblingFluidizedBed(
-        default={
-            "flow_type": "co_current",
-            "finite_elements": 5,
-            "transformation_method": "dae.finite_difference",
-            "gas_phase_config": {"property_package": m.fs.gas_properties},
-            "solid_phase_config": {
-                "property_package": m.fs.solid_properties,
-                "reaction_package": m.fs.hetero_reactions,
-            },
-        }
+        flow_type="co_current",
+        finite_elements=5,
+        transformation_method="dae.finite_difference",
+        gas_phase_config={"property_package": m.fs.gas_properties},
+        solid_phase_config={
+            "property_package": m.fs.solid_properties,
+            "reaction_package": m.fs.hetero_reactions,
+        },
     )
 
     # Check unit config arguments
@@ -129,29 +125,25 @@ class TestIronOC(object):
     @pytest.fixture(scope="class")
     def iron_oc(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         # Set up thermo props and reaction props
         m.fs.gas_properties = GasPhaseParameterBlock()
         m.fs.solid_properties = SolidPhaseParameterBlock()
         m.fs.hetero_reactions = HeteroReactionParameterBlock(
-            default={
-                "solid_property_package": m.fs.solid_properties,
-                "gas_property_package": m.fs.gas_properties,
-            }
+            solid_property_package=m.fs.solid_properties,
+            gas_property_package=m.fs.gas_properties,
         )
 
         m.fs.unit = BubblingFluidizedBed(
-            default={
-                "flow_type": "co_current",
-                "finite_elements": 5,
-                "transformation_method": "dae.finite_difference",
-                "gas_phase_config": {"property_package": m.fs.gas_properties},
-                "solid_phase_config": {
-                    "property_package": m.fs.solid_properties,
-                    "reaction_package": m.fs.hetero_reactions,
-                },
-            }
+            flow_type="co_current",
+            finite_elements=5,
+            transformation_method="dae.finite_difference",
+            gas_phase_config={"property_package": m.fs.gas_properties},
+            solid_phase_config={
+                "property_package": m.fs.solid_properties,
+                "reaction_package": m.fs.hetero_reactions,
+            },
         )
 
         # Fix geometry variables
@@ -234,29 +226,25 @@ class TestIronOC(object):
     @pytest.fixture(scope="class")
     def iron_oc_unscaled(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         # Set up thermo props and reaction props
         m.fs.gas_properties = GasPhaseParameterBlock()
         m.fs.solid_properties = SolidPhaseParameterBlock()
         m.fs.hetero_reactions = HeteroReactionParameterBlock(
-            default={
-                "solid_property_package": m.fs.solid_properties,
-                "gas_property_package": m.fs.gas_properties,
-            }
+            solid_property_package=m.fs.solid_properties,
+            gas_property_package=m.fs.gas_properties,
         )
 
         m.fs.unit = BubblingFluidizedBed(
-            default={
-                "flow_type": "co_current",
-                "finite_elements": 5,
-                "transformation_method": "dae.finite_difference",
-                "gas_phase_config": {"property_package": m.fs.gas_properties},
-                "solid_phase_config": {
-                    "property_package": m.fs.solid_properties,
-                    "reaction_package": m.fs.hetero_reactions,
-                },
-            }
+            flow_type="co_current",
+            finite_elements=5,
+            transformation_method="dae.finite_difference",
+            gas_phase_config={"property_package": m.fs.gas_properties},
+            solid_phase_config={
+                "property_package": m.fs.solid_properties,
+                "reaction_package": m.fs.hetero_reactions,
+            },
         )
 
         # Fix geometry variables
@@ -754,30 +742,26 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.fixture(scope="class")
     def iron_oc(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         # Set up thermo props and reaction props
         m.fs.gas_properties = GasPhaseParameterBlock()
         m.fs.solid_properties = SolidPhaseParameterBlock()
         m.fs.hetero_reactions = HeteroReactionParameterBlock(
-            default={
-                "solid_property_package": m.fs.solid_properties,
-                "gas_property_package": m.fs.gas_properties,
-            }
+            solid_property_package=m.fs.solid_properties,
+            gas_property_package=m.fs.gas_properties,
         )
 
         m.fs.unit = BubblingFluidizedBed(
-            default={
-                "energy_balance_type": EnergyBalanceType.none,
-                "flow_type": "co_current",
-                "finite_elements": 5,
-                "transformation_method": "dae.finite_difference",
-                "gas_phase_config": {"property_package": m.fs.gas_properties},
-                "solid_phase_config": {
-                    "property_package": m.fs.solid_properties,
-                    "reaction_package": m.fs.hetero_reactions,
-                },
-            }
+            energy_balance_type=EnergyBalanceType.none,
+            flow_type="co_current",
+            finite_elements=5,
+            transformation_method="dae.finite_difference",
+            gas_phase_config={"property_package": m.fs.gas_properties},
+            solid_phase_config={
+                "property_package": m.fs.solid_properties,
+                "reaction_package": m.fs.hetero_reactions,
+            },
         )
 
         # Fix geometry variables
@@ -852,30 +836,26 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.fixture(scope="class")
     def iron_oc_unscaled(self, iron_oc):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         # Set up thermo props and reaction props
         m.fs.gas_properties = GasPhaseParameterBlock()
         m.fs.solid_properties = SolidPhaseParameterBlock()
         m.fs.hetero_reactions = HeteroReactionParameterBlock(
-            default={
-                "solid_property_package": m.fs.solid_properties,
-                "gas_property_package": m.fs.gas_properties,
-            }
+            solid_property_package=m.fs.solid_properties,
+            gas_property_package=m.fs.gas_properties,
         )
 
         m.fs.unit = BubblingFluidizedBed(
-            default={
-                "energy_balance_type": EnergyBalanceType.none,
-                "flow_type": "co_current",
-                "finite_elements": 5,
-                "transformation_method": "dae.finite_difference",
-                "gas_phase_config": {"property_package": m.fs.gas_properties},
-                "solid_phase_config": {
-                    "property_package": m.fs.solid_properties,
-                    "reaction_package": m.fs.hetero_reactions,
-                },
-            }
+            energy_balance_type=EnergyBalanceType.none,
+            flow_type="co_current",
+            finite_elements=5,
+            transformation_method="dae.finite_difference",
+            gas_phase_config={"property_package": m.fs.gas_properties},
+            solid_phase_config={
+                "property_package": m.fs.solid_properties,
+                "reaction_package": m.fs.hetero_reactions,
+            },
         )
 
         # Fix geometry variables
@@ -1286,27 +1266,23 @@ class TestIronOC_TransformationMethod(object):
     @pytest.fixture(scope="class")
     def iron_oc(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         # Set up thermo props and reaction props
         m.fs.gas_properties = GasPhaseParameterBlock()
         m.fs.solid_properties = SolidPhaseParameterBlock()
         m.fs.hetero_reactions = HeteroReactionParameterBlock(
-            default={
-                "solid_property_package": m.fs.solid_properties,
-                "gas_property_package": m.fs.gas_properties,
-            }
+            solid_property_package=m.fs.solid_properties,
+            gas_property_package=m.fs.gas_properties,
         )
 
         m.fs.unit = BubblingFluidizedBed(
-            default={
-                "transformation_method": "dae.collocation",
-                "gas_phase_config": {"property_package": m.fs.gas_properties},
-                "solid_phase_config": {
-                    "property_package": m.fs.solid_properties,
-                    "reaction_package": m.fs.hetero_reactions,
-                },
-            }
+            transformation_method="dae.collocation",
+            gas_phase_config={"property_package": m.fs.gas_properties},
+            solid_phase_config={
+                "property_package": m.fs.solid_properties,
+                "reaction_package": m.fs.hetero_reactions,
+            },
         )
 
         # Fix geometry variables

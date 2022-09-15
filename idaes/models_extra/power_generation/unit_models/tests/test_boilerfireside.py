@@ -55,20 +55,18 @@ def build_unit():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     # Add property packages to flowsheet library
     m.fs.prop_fluegas = FlueGasParameterBlock()
     # boiler based on surrogate
     m.fs.unit = BoilerFireside(
-        default={
-            "dynamic": False,
-            "property_package": m.fs.prop_fluegas,
-            "calculate_PA_SA_flows": False,
-            "number_of_zones": 12,
-            "has_platen_superheater": True,
-            "has_roof_superheater": True,
-            "surrogate_dictionary": data_dic,
-        }
+        dynamic=False,
+        property_package=m.fs.prop_fluegas,
+        calculate_PA_SA_flows=False,
+        number_of_zones=12,
+        has_platen_superheater=True,
+        has_roof_superheater=True,
+        surrogate_dictionary=data_dic,
     )
     return m
 
@@ -237,20 +235,18 @@ def build_unit_option2():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     # Add property packages to flowsheet library
     m.fs.prop_fluegas = FlueGasParameterBlock()
     # boiler based on surrogate
     m.fs.unit = BoilerFireside(
-        default={
-            "dynamic": False,
-            "property_package": m.fs.prop_fluegas,
-            "calculate_PA_SA_flows": True,
-            "number_of_zones": 12,
-            "has_platen_superheater": True,
-            "has_roof_superheater": True,
-            "surrogate_dictionary": data_dic,
-        }
+        dynamic=False,
+        property_package=m.fs.prop_fluegas,
+        calculate_PA_SA_flows=True,
+        number_of_zones=12,
+        has_platen_superheater=True,
+        has_roof_superheater=True,
+        surrogate_dictionary=data_dic,
     )
     return m
 

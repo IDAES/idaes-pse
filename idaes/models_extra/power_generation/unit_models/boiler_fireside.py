@@ -223,16 +223,16 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
             )
 
         self.primary_air = self.config.property_package.build_state_block(
-            self.flowsheet().time, default=self.config.property_package_args
+            self.flowsheet().time, **self.config.property_package_args
         )
         self.primary_air_moist = self.config.property_package.build_state_block(
-            self.flowsheet().time, default=self.config.property_package_args
+            self.flowsheet().time, **self.config.property_package_args
         )
         self.secondary_air = self.config.property_package.build_state_block(
-            self.flowsheet().time, default=self.config.property_package_args
+            self.flowsheet().time, **self.config.property_package_args
         )
         self.flue_gas = self.config.property_package.build_state_block(
-            self.flowsheet().time, default=self.config.property_package_args
+            self.flowsheet().time, **self.config.property_package_args
         )
 
         self.add_port("primary_air_inlet", self.primary_air)

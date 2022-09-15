@@ -42,12 +42,12 @@ solver = get_solver()
 @pytest.fixture(scope="class")
 def solid_prop():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # solid properties and state inlet block
     m.fs.properties = SolidPhaseParameterBlock()
     m.fs.unit = m.fs.properties.build_state_block(
-        [0], default={"parameters": m.fs.properties, "defined_state": True}
+        [0], parameters=m.fs.properties, defined_state=True
     )
 
     m.fs.unit[0].flow_mass.fix(1)
@@ -77,12 +77,12 @@ def test_setInputs_state_block(solid_prop):
 @pytest.fixture(scope="class")
 def solid_prop_unscaled():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # solid properties and state inlet block
     m.fs.properties = SolidPhaseParameterBlock()
     m.fs.unit = m.fs.properties.build_state_block(
-        [0], default={"parameters": m.fs.properties, "defined_state": True}
+        [0], parameters=m.fs.properties, defined_state=True
     )
 
     m.fs.unit[0].flow_mass.fix(1)

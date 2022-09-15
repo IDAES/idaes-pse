@@ -700,17 +700,17 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         nstep = 2
     if m.dynamic:
         m.fs_main = FlowsheetBlock(
-            default={"dynamic": True, "time_set": time_set, "time_units": pyo.units.s}
+            dynamic=True, time_set=time_set, time_units=pyo.units.s
         )
     else:
-        m.fs_main = FlowsheetBlock(default={"dynamic": False})
+        m.fs_main = FlowsheetBlock(dynamic=False)
 
     # Add property packages to flowsheet library
     m.fs_main.prop_water = iapws95.Iapws95ParameterBlock()
     m.fs_main.prop_gas = FlueGasParameterBlock()
     # Declare two sub-flowsheets, one for boiler and the other for steam cycle
-    m.fs_main.fs_blr = FlowsheetBlock(default={"time_units": pyo.units.s})
-    m.fs_main.fs_stc = FlowsheetBlock(default={"time_units": pyo.units.s})
+    m.fs_main.fs_blr = FlowsheetBlock(time_units=pyo.units.s)
+    m.fs_main.fs_stc = FlowsheetBlock(time_units=pyo.units.s)
     # Parameter for sliding pressure slope versus gross power output
     m.fs_main.slope_pslide = pyo.Param(initialize=0.02, doc="slope of sliding pressure")
     m = blr.add_unit_models(m)
@@ -740,43 +740,33 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         # PID controllers
         # master of cascading level controller
         m.fs_main.drum_master_ctrl = PIDController(
-            default={
-                "process_var": m.fs_main.fs_blr.aDrum.level,
-                "manipulated_var": m.fs_main.flow_level_ctrl_output,
-                "type": ControllerType.PI,
-                "calculate_initial_integral": False,
-            }
+            process_var=m.fs_main.fs_blr.aDrum.level,
+            manipulated_var=m.fs_main.flow_level_ctrl_output,
+            type=ControllerType.PI,
+            calculate_initial_integral=False,
         )
         # slave of cascading level controller
         m.fs_main.drum_slave_ctrl = PIDController(
-            default={
-                "process_var": m.fs_main.fs_stc.bfp.outlet.flow_mol,
-                "manipulated_var": m.fs_main.fs_stc.bfp_turb_valve.valve_opening,
-                "type": ControllerType.PI,
-                "calculate_initial_integral": False,
-            }
+            process_var=m.fs_main.fs_stc.bfp.outlet.flow_mol,
+            manipulated_var=m.fs_main.fs_stc.bfp_turb_valve.valve_opening,
+            type=ControllerType.PI,
+            calculate_initial_integral=False,
         )
         # turbine master PID controller to control power output in MW
         # by manipulating throttling valve
         m.fs_main.turbine_master_ctrl = PIDController(
-            default={
-                "process_var": m.fs_main.fs_stc.power_output,
-                "manipulated_var": m.fs_main.fs_stc.turb.throttle_valve[
-                    1
-                ].valve_opening,
-                "type": ControllerType.PI,
-                "calculate_initial_integral": False,
-            }
+            process_var=m.fs_main.fs_stc.power_output,
+            manipulated_var=m.fs_main.fs_stc.turb.throttle_valve[1].valve_opening,
+            type=ControllerType.PI,
+            calculate_initial_integral=False,
         )
         # boiler master PID controller to control main steam pressure in MPa
         # by manipulating coal feed rate
         m.fs_main.boiler_master_ctrl = PIDController(
-            default={
-                "process_var": m.fs_main.main_steam_pressure,
-                "manipulated_var": m.fs_main.fs_blr.aBoiler.flowrate_coal_raw,
-                "type": ControllerType.PI,
-                "calculate_initial_integral": False,
-            }
+            process_var=m.fs_main.main_steam_pressure,
+            manipulated_var=m.fs_main.fs_blr.aBoiler.flowrate_coal_raw,
+            type=ControllerType.PI,
+            calculate_initial_integral=False,
         )
 
         # Call Pyomo DAE discretizer

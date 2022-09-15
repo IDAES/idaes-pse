@@ -48,19 +48,17 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.hotside_properties = GenericParameterBlock(default=aqueous_mea)
-    m.fs.coldside_properties = GenericParameterBlock(default=aqueous_mea)
+    m.fs.hotside_properties = GenericParameterBlock(**aqueous_mea)
+    m.fs.coldside_properties = GenericParameterBlock(**aqueous_mea)
 
     m.fs.unit = PHE(
-        default={
-            "passes": 4,
-            "channels_per_pass": 12,
-            "number_of_divider_plates": 2,
-            "hot_side": {"property_package": m.fs.hotside_properties},
-            "cold_side": {"property_package": m.fs.coldside_properties},
-        }
+        passes=4,
+        channels_per_pass=12,
+        number_of_divider_plates=2,
+        hot_side={"property_package": m.fs.hotside_properties},
+        cold_side={"property_package": m.fs.coldside_properties},
     )
 
     # Check unit config arguments
@@ -72,19 +70,17 @@ class TestPHE(object):
     @pytest.fixture(scope="class")
     def phe(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.hotside_properties = GenericParameterBlock(default=aqueous_mea)
-        m.fs.coldside_properties = GenericParameterBlock(default=aqueous_mea)
+        m.fs.hotside_properties = GenericParameterBlock(**aqueous_mea)
+        m.fs.coldside_properties = GenericParameterBlock(**aqueous_mea)
 
         m.fs.unit = PHE(
-            default={
-                "passes": 4,
-                "channels_per_pass": 12,
-                "number_of_divider_plates": 2,
-                "hot_side": {"property_package": m.fs.hotside_properties},
-                "cold_side": {"property_package": m.fs.coldside_properties},
-            }
+            passes=4,
+            channels_per_pass=12,
+            number_of_divider_plates=2,
+            hot_side={"property_package": m.fs.hotside_properties},
+            cold_side={"property_package": m.fs.coldside_properties},
         )
 
         # hot fluid

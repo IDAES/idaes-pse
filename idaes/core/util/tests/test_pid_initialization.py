@@ -61,38 +61,28 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
     time_set = [0, horizon]
 
     m = ConcreteModel(name="CSTR with level control")
-    m.fs = FlowsheetBlock(
-        default={"dynamic": True, "time_set": time_set, "time_units": pyunits.s}
-    )
+    m.fs = FlowsheetBlock(dynamic=True, time_set=time_set, time_units=pyunits.s)
 
     m.fs.properties = AqueousEnzymeParameterBlock()
-    m.fs.reactions = EnzymeReactionParameterBlock(
-        default={"property_package": m.fs.properties}
-    )
+    m.fs.reactions = EnzymeReactionParameterBlock(property_package=m.fs.properties)
     m.fs.cstr = CSTR(
-        default={
-            "has_holdup": True,
-            "property_package": m.fs.properties,
-            "reaction_package": m.fs.reactions,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "energy_balance_type": EnergyBalanceType.enthalpyTotal,
-            "momentum_balance_type": MomentumBalanceType.none,
-            "has_heat_of_reaction": True,
-        }
+        has_holdup=True,
+        property_package=m.fs.properties,
+        reaction_package=m.fs.reactions,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        energy_balance_type=EnergyBalanceType.enthalpyTotal,
+        momentum_balance_type=MomentumBalanceType.none,
+        has_heat_of_reaction=True,
     )
     # MomentumBalanceType.none used because the property package doesn't
     # include pressure.
 
     m.fs.mixer = Mixer(
-        default={
-            "property_package": m.fs.properties,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "momentum_mixing_type": MomentumMixingType.none,
-            # MomentumMixingType.none used because the property package doesn't
-            # include pressure.
-            "num_inlets": 2,
-            "inlet_list": ["S_inlet", "E_inlet"],
-        }
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        momentum_mixing_type=MomentumMixingType.none,
+        num_inlets=2,
+        inlet_list=["S_inlet", "E_inlet"],
     )
     # Allegedly the proper energy balance is being used...
 
