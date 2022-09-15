@@ -33,7 +33,7 @@ from idaes.core import LiquidPhase, VaporPhase, Component, PhaseType as PT
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
-from idaes.models.properties.modular_properties.phase_equil import smooth_VLE
+from idaes.models.properties.modular_properties.phase_equil.smooth_VLE import SmoothVLE
 from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
     IdealBubbleDew,
     LogBubbleDew,
@@ -146,7 +146,7 @@ def test_Txy_data():
         "temperature_ref": (300, pyunits.K),
         # Defining phase equilibria
         "phases_in_equilibrium": [("Vap", "Liq")],
-        "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+        "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
         "bubble_dew_method": IdealBubbleDew,
     }
 
@@ -253,7 +253,7 @@ def test_Txy_data_no_dew():
         "temperature_ref": (298.15, pyunits.K),
         # Defining phase equilibria
         "phases_in_equilibrium": [("Vap", "Liq")],
-        "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+        "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
         "bubble_dew_method": LogBubbleDew,
         "parameter_data": {
             "PR_kappa": {
@@ -371,7 +371,7 @@ def test_Txy_data_no_bub():
         "temperature_ref": (298.15, pyunits.K),
         # Defining phase equilibria
         "phases_in_equilibrium": [("Vap", "Liq")],
-        "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+        "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
         "bubble_dew_method": LogBubbleDew,
         "parameter_data": {
             "PR_kappa": {

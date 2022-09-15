@@ -76,6 +76,7 @@ configuration = {
                 "pressure_crit": 48.9e5,
                 "temperature_crit": 562.2,
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": 1.0162 * 1e3,
                     "2": 0.2655,
                     "3": 562.16,
@@ -117,6 +118,7 @@ configuration = {
                 "pressure_crit": 41e5,
                 "temperature_crit": 591.8,
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": 0.8488 * 1e3,
                     "2": 0.26655,
                     "3": 591.8,

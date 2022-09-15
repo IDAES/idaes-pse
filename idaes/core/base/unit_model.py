@@ -108,19 +108,6 @@ Must be True if dynamic = True,
         # Add a placeholder for initialization order
         self._initialization_order = []
 
-        # Check for overloading of initialize method
-        # TODO: Remove in IDAES v2.0
-        if type(self).initialize is not UnitModelBlockData.initialize:
-            _log.warn(
-                f"DEPRECATION: {str(self.__class__)} has overloaded the "
-                "initialize method. In v2.0, IDAES Will be moving to "
-                "having a centralized initialize method which calls "
-                "unit-specific initialize_build methods instead. "
-                "Model developers should update their models to "
-                "implement the initialize_build method instead of "
-                "overloading initialize."
-            )
-
         # Set up dynamic flag and time domain
         self._setup_dynamics()
 
