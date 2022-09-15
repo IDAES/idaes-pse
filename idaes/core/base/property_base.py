@@ -115,7 +115,7 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         # set_default_scaling, get_default_scaling, and unset_default_scaling
         self.default_scaling_factor = {}
 
-    def set_default_scaling(self, attrbute, value, index=None):
+    def set_default_scaling(self, attribute, value, index=None):
         """Set a default scaling factor for a property.
 
         Args:
@@ -128,9 +128,9 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         Returns:
             None
         """
-        self.default_scaling_factor[(attrbute, index)] = value
+        self.default_scaling_factor[(attribute, index)] = value
 
-    def unset_default_scaling(self, attrbute, index=None):
+    def unset_default_scaling(self, attribute, index=None):
         """Remove a previously set default value
 
         Args:
@@ -141,11 +141,11 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
             None
         """
         try:
-            del self.default_scaling_factor[(attrbute, index)]
+            del self.default_scaling_factor[(attribute, index)]
         except KeyError:
             pass
 
-    def get_default_scaling(self, attrbute, index=None):
+    def get_default_scaling(self, attribute, index=None):
         """Returns a default scale factor for a property
 
         Args:
@@ -157,11 +157,11 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         """
         try:
             # If a specific component data index exists
-            return self.default_scaling_factor[(attrbute, index)]
+            return self.default_scaling_factor[(attribute, index)]
         except KeyError:
             try:
                 # indexed, but no specifc index?
-                return self.default_scaling_factor[(attrbute, None)]
+                return self.default_scaling_factor[(attribute, None)]
             except KeyError:
                 # Can't find a default scale factor for what you asked for
                 return None
@@ -183,7 +183,7 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
 
     def build_state_block(self, *args, **kwargs):
         """
-        Methods to construct a StateBlock assoicated with this
+        Methods to construct a StateBlock associated with this
         PhysicalParameterBlock. This will automatically set the parameters
         construction argument for the StateBlock.
 
@@ -191,17 +191,22 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
             StateBlock
 
         """
-        default = kwargs.pop("default", {})
+        # default = kwargs.pop("default", {})
         initialize = kwargs.pop("initialize", {})
 
+        # TODO: Should find a better way to do this
+        # For now, trigger get_phase_component_set to make sure
+        # it has been constructed before building the state block
+        self.get_phase_component_set()
+
         if initialize == {}:
-            default["parameters"] = self
+            kwargs["parameters"] = self
         else:
             for i in initialize.keys():
                 initialize[i]["parameters"] = self
 
         return self.state_block_class(  # pylint: disable=not-callable
-            *args, **kwargs, **default, initialize=initialize
+            *args, **kwargs, initialize=initialize
         )
 
     def get_phase_component_set(self):
@@ -272,46 +277,6 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
                 "appear to be an instance of a Phase object.".format(self.name, phase)
             )
         return obj
-
-    def _validate_parameter_block(self):
-        """
-        Tries to catch some possible mistakes and provide the user with
-        useful error messages.
-        """
-        try:
-            # Check names in component list have matching Component objects
-            for c in self.component_list:
-                obj = getattr(self, str(c))
-                if not isinstance(obj, ComponentData):
-                    raise TypeError(
-                        "Property package {} has an object {} whose "
-                        "name appears in component_list but is not an "
-                        "instance of Component".format(self.name, c)
-                    )
-        except AttributeError:
-            # No component list
-            raise PropertyPackageError(
-                f"Property package {self.name} has not defined any " f"Components."
-            )
-
-        try:
-            # Valdiate that names in phase list have matching Phase objects
-            for p in self.phase_list:
-                obj = getattr(self, str(p))
-                if not isinstance(obj, PhaseData):
-                    raise TypeError(
-                        "Property package {} has an object {} whose "
-                        "name appears in phase_list but is not an "
-                        "instance of Phase".format(self.name, p)
-                    )
-        except AttributeError:
-            # No phase list
-            raise PropertyPackageError(
-                f"Property package {self.name} has not defined any Phases."
-            )
-
-        # Also check that the phase-component set has been created.
-        self.get_phase_component_set()
 
 
 class StateBlock(ProcessBlock):
@@ -670,10 +635,6 @@ should be constructed in this state block,
         super(StateBlockData, self).build()
         add_object_reference(self, "_params", self.config.parameters)
 
-        # TODO: Deprecate this at some point
-        # Backwards compatability check for old-style property packages
-        self._params._validate_parameter_block()
-
     @property
     def params(self):
         return self._params
@@ -836,7 +797,7 @@ should be constructed in this state block,
         a method to create the required property, and any associated
         components.
 
-        Create a property calculation if needed. Return an attrbute error if
+        Create a property calculation if needed. Return an attribute error if
         attr == 'domain' or starts with a _ . The error for _ prevents a
         recursion error if trying to get a function to create a property and
         that function doesn't exist.  Pyomo also ocasionally looks for things

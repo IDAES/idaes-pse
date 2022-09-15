@@ -163,17 +163,15 @@ class TestInherentReactions(object):
     @pytest.fixture()
     def frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.params = GenericParameterBlock(default=configuration)
+        m.fs.params = GenericParameterBlock(**configuration)
 
         return m
 
     @pytest.mark.unit
     def test_build(self, frame):
-        frame.fs.props = frame.fs.params.build_state_block(
-            [1], default={"defined_state": False}
-        )
+        frame.fs.props = frame.fs.params.build_state_block([1], defined_state=False)
 
         assert isinstance(frame.fs.props[1].inherent_equilibrium_constraint, Constraint)
         assert len(frame.fs.props[1].inherent_equilibrium_constraint) == 1
@@ -184,10 +182,8 @@ class TestInherentReactions(object):
     @pytest.mark.component
     def test_heater_w_inherent_rxns_comp_phase(self, frame):
         frame.fs.H101 = Heater(
-            default={
-                "property_package": frame.fs.params,
-                "material_balance_type": MaterialBalanceType.componentPhase,
-            }
+            property_package=frame.fs.params,
+            material_balance_type=MaterialBalanceType.componentPhase,
         )
 
         frame.fs.H101.inlet.flow_mol.fix(100)
@@ -243,10 +239,8 @@ class TestInherentReactions(object):
     @pytest.mark.component
     def test_heater_w_inherent_rxns_comp_total(self, frame):
         frame.fs.H101 = Heater(
-            default={
-                "property_package": frame.fs.params,
-                "material_balance_type": MaterialBalanceType.componentTotal,
-            }
+            property_package=frame.fs.params,
+            material_balance_type=MaterialBalanceType.componentTotal,
         )
 
         frame.fs.H101.inlet.flow_mol.fix(100)
@@ -302,12 +296,10 @@ class TestInherentReactions(object):
     @pytest.mark.component
     def test_CV1D_w_inherent_rxns_comp_phase(self, frame):
         frame.fs.cv = ControlVolume1DBlock(
-            default={
-                "property_package": frame.fs.params,
-                "transformation_method": "dae.finite_difference",
-                "transformation_scheme": "BACKWARD",
-                "finite_elements": 2,
-            }
+            property_package=frame.fs.params,
+            transformation_method="dae.finite_difference",
+            transformation_scheme="BACKWARD",
+            finite_elements=2,
         )
 
         frame.fs.cv.add_geometry()
@@ -378,12 +370,10 @@ class TestInherentReactions(object):
     @pytest.mark.component
     def test_CV1D_w_inherent_rxns_comp_total(self, frame):
         frame.fs.cv = ControlVolume1DBlock(
-            default={
-                "property_package": frame.fs.params,
-                "transformation_method": "dae.finite_difference",
-                "transformation_scheme": "BACKWARD",
-                "finite_elements": 2,
-            }
+            property_package=frame.fs.params,
+            transformation_method="dae.finite_difference",
+            transformation_scheme="BACKWARD",
+            finite_elements=2,
         )
 
         frame.fs.cv.add_geometry()

@@ -137,8 +137,8 @@ def test_get_phase_component_set_subset():
     m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
     m.p.p1 = Phase()
-    m.p.p2 = Phase(default={"component_list": ["a", "b"]})
-    m.p.p3 = Phase(default={"component_list": ["c"]})
+    m.p.p2 = Phase(component_list=["a", "b"])
+    m.p.p3 = Phase(component_list=["c"])
     m.p.a = Component()
     m.p.b = Component()
     m.p.c = Component()
@@ -214,97 +214,6 @@ def test_get_phase():
         "appear to be an instance of a Phase object.",
     ):
         m.p.get_phase("a")
-
-
-@pytest.mark.unit
-def test_validate_parameter_block_no_component_list():
-    m = ConcreteModel()
-    m.p = ParameterBlock()
-
-    with pytest.raises(
-        PropertyPackageError, match="Property package p has not defined any Components."
-    ):
-        m.p._validate_parameter_block()
-
-
-@pytest.mark.unit
-def test_validate_parameter_block_no_phase_list():
-    m = ConcreteModel()
-    m.p = ParameterBlock()
-
-    m.meta_object = PropertyClassMetadata()
-    m.meta_object.add_default_units(
-        {
-            "time": pyunits.s,
-            "length": pyunits.m,
-            "mass": pyunits.kg,
-            "amount": pyunits.mol,
-            "temperature": pyunits.K,
-        }
-    )
-
-    def get_metadata(self):
-        return m.meta_object
-
-    m.p.get_metadata = types.MethodType(get_metadata, m.p)
-
-    m.p.c1 = Component()
-    m.p.c2 = Component()
-
-    with pytest.raises(
-        PropertyPackageError, match="Property package p has not defined any Phases."
-    ):
-        m.p._validate_parameter_block()
-
-
-@pytest.mark.unit
-def test_validate_parameter_block_invalid_component_object():
-    m = ConcreteModel()
-    m.p = ParameterBlock()
-
-    m.p.component_list = Set(initialize=["foo"])
-
-    m.p.phase_list = Set(initialize=["p1", "p2"])
-    m.p.foo = object()
-
-    with pytest.raises(TypeError):
-        m.p._validate_parameter_block()
-
-
-@pytest.mark.unit
-def test_validate_parameter_block_invalid_phase_object():
-    m = ConcreteModel()
-    m.p = ParameterBlock()
-
-    m.meta_object = PropertyClassMetadata()
-    m.meta_object.add_default_units(
-        {
-            "time": pyunits.s,
-            "length": pyunits.m,
-            "mass": pyunits.kg,
-            "amount": pyunits.mol,
-            "temperature": pyunits.K,
-        }
-    )
-
-    def get_metadata(self):
-        return m.meta_object
-
-    m.p.get_metadata = types.MethodType(get_metadata, m.p)
-
-    m.p.c1 = Component()
-    m.p.c2 = Component()
-
-    m.p.phase_list = Set(initialize=["foo"])
-    m.p.foo = object()
-
-    with pytest.raises(
-        TypeError,
-        match="Property package p has an object foo whose "
-        "name appears in phase_list but is not an "
-        "instance of Phase",
-    ):
-        m.p._validate_parameter_block()
 
 
 @pytest.mark.unit
@@ -638,7 +547,7 @@ class _StateTest(StateBlockData):
 def test_param_ref():
     m = ConcreteModel()
     m.pb = Parameters()
-    m.p = StateTest(default={"parameters": m.pb})
+    m.p = StateTest(parameters=m.pb)
 
     assert m.p.params == m.p.config.parameters
 
@@ -648,7 +557,7 @@ def test_validate_params():
     # Test that validate params has been triggered
     m = ConcreteModel()
     m.pb = Parameters()
-    m.p = StateTest(default={"parameters": m.pb})
+    m.p = StateTest(parameters=m.pb)
 
     # If validation has been triggered, Phase & Component objects should exist
     assert isinstance(m.pb.p1, Phase)
@@ -659,7 +568,7 @@ def test_validate_params():
 def test_has_inherent_reactions_state_block():
     m = ConcreteModel()
     m.pb = Parameters()
-    m.p = StateTest(default={"parameters": m.pb})
+    m.p = StateTest(parameters=m.pb)
 
     assert not m.p.has_inherent_reactions
 
@@ -697,7 +606,7 @@ class _State(StateBlockData):
 def m():
     m = ConcreteModel()
     m.pb = Parameters()
-    m.p = State(default={"parameters": m.pb})
+    m.p = State(parameters=m.pb)
 
     return m
 

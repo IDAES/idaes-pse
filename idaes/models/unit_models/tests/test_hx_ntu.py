@@ -53,64 +53,64 @@ solver = get_solver()
 @pytest.mark.unit
 def test_bad_option():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     with pytest.raises(KeyError):
-        m.fs.unit = HXNTU(default={"I'm a bad option": "hot"})
+        m.fs.unit = HXNTU(**{"I'm a bad option": "hot"})
 
 
 @pytest.mark.unit
 def test_bad_option2():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     with pytest.raises(
         ConfigurationError, match="cold_side_name cannot be 'hot_side'."
     ):
-        m.fs.unit = HXNTU(default={"cold_side_name": "hot_side"})
+        m.fs.unit = HXNTU(cold_side_name="hot_side")
 
 
 @pytest.mark.unit
 def test_bad_option3():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     with pytest.raises(
         ConfigurationError, match="hot_side_name cannot be 'cold_side'."
     ):
-        m.fs.unit = HXNTU(default={"hot_side_name": "cold_side"})
+        m.fs.unit = HXNTU(hot_side_name="cold_side")
 
 
 @pytest.mark.unit
 def test_bad_option4():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     with pytest.raises(
         ConfigurationError, match="cold_side_name cannot be 'cold_side'."
     ):
-        m.fs.unit = HXNTU(default={"cold_side_name": "cold_side"})
+        m.fs.unit = HXNTU(cold_side_name="cold_side")
 
 
 @pytest.mark.unit
 def test_bad_option5():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     with pytest.raises(ConfigurationError, match="hot_side_name cannot be 'hot_side'."):
-        m.fs.unit = HXNTU(default={"hot_side_name": "hot_side"})
+        m.fs.unit = HXNTU(hot_side_name="hot_side")
 
 
 @pytest.mark.unit
 def test_hot_and_cold_names_same():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     with pytest.raises(
         NameError,
         match="HeatExchanger hot and cold side cannot have the same name 'shell'.",
     ):
-        m.fs.unit = HXNTU(default={"hot_side_name": "shell", "cold_side_name": "shell"})
+        m.fs.unit = HXNTU(hot_side_name="shell", cold_side_name="shell")
 
 
 @pytest.mark.unit
 def test_hot_side_name_clash():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
 
     with pytest.raises(
@@ -120,18 +120,16 @@ def test_hot_side_name_clash():
         "exists.",
     ):
         m.fs.unit = HXNTU(
-            default={
-                "hot_side": {"property_package": m.fs.properties},
-                "cold_side": {"property_package": m.fs.properties},
-                "hot_side_name": "build",
-            }
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            hot_side_name="build",
         )
 
 
 @pytest.mark.unit
 def test_cold_side_name_clash():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
 
     with pytest.raises(
@@ -141,27 +139,23 @@ def test_cold_side_name_clash():
         "exists.",
     ):
         m.fs.unit = HXNTU(
-            default={
-                "hot_side": {"property_package": m.fs.properties},
-                "cold_side": {"property_package": m.fs.properties},
-                "cold_side_name": "build",
-            }
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            cold_side_name="build",
         )
 
 
 @pytest.mark.unit
 def test_user_names():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
 
     m.fs.unit = HXNTU(
-        default={
-            "hot_side_name": "shell",
-            "cold_side_name": "tube",
-            "shell": {"property_package": m.fs.properties},
-            "tube": {"property_package": m.fs.properties},
-        }
+        hot_side_name="shell",
+        cold_side_name="tube",
+        shell={"property_package": m.fs.properties},
+        tube={"property_package": m.fs.properties},
     )
 
     assert m.fs.unit.config.hot_side.property_package is m.fs.properties
@@ -181,22 +175,20 @@ class TestHXNTU(object):
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.hotside_properties = GenericParameterBlock(default=aqueous_mea)
-        m.fs.coldside_properties = GenericParameterBlock(default=aqueous_mea)
+        m.fs.hotside_properties = GenericParameterBlock(**aqueous_mea)
+        m.fs.coldside_properties = GenericParameterBlock(**aqueous_mea)
 
         m.fs.unit = HXNTU(
-            default={
-                "hot_side": {
-                    "property_package": m.fs.hotside_properties,
-                    "has_pressure_change": True,
-                },
-                "cold_side": {
-                    "property_package": m.fs.coldside_properties,
-                    "has_pressure_change": True,
-                },
-            }
+            hot_side={
+                "property_package": m.fs.hotside_properties,
+                "has_pressure_change": True,
+            },
+            cold_side={
+                "property_package": m.fs.coldside_properties,
+                "has_pressure_change": True,
+            },
         )
 
         # Hot fluid

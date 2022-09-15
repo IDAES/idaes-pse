@@ -105,80 +105,73 @@ def m():
 
     # Dummy params block
     m.params = DummyParameterBlock(
-        default={
-            "components": {
-                "a": {
-                    "phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
-                    "parameter_data": {
-                        "omega": 0.1,
-                        "pressure_crit": 1e5,
-                        "temperature_crit": 100,
-                    },
-                },
-                "b": {
-                    "phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
-                    "parameter_data": {
-                        "omega": 0.2,
-                        "pressure_crit": 2e5,
-                        "temperature_crit": 200,
-                    },
-                },
-                "c": {
-                    "phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
-                    "parameter_data": {
-                        "omega": 0.3,
-                        "pressure_crit": 3e5,
-                        "temperature_crit": 300,
-                    },
+        components={
+            "a": {
+                "phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
+                "parameter_data": {
+                    "omega": 0.1,
+                    "pressure_crit": 100000.0,
+                    "temperature_crit": 100,
                 },
             },
-            "phases": {
-                "Vap": {
-                    "type": VaporPhase,
-                    "equation_of_state": Cubic,
-                    "equation_of_state_options": {"type": CubicType.PR},
-                },
-                "Liq": {
-                    "type": LiquidPhase,
-                    "equation_of_state": Cubic,
-                    "equation_of_state_options": {"type": CubicType.PR},
+            "b": {
+                "phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
+                "parameter_data": {
+                    "omega": 0.2,
+                    "pressure_crit": 200000.0,
+                    "temperature_crit": 200,
                 },
             },
-            "base_units": {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
+            "c": {
+                "phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
+                "parameter_data": {
+                    "omega": 0.3,
+                    "pressure_crit": 300000.0,
+                    "temperature_crit": 300,
+                },
             },
-            "state_definition": modules[__name__],
-            "pressure_ref": 1e5,
-            "temperature_ref": 300,
-            "phases_in_equilibrium": [("Vap", "Liq")],
-            "phase_equilibrium_state": {("Vap", "Liq"): modules[__name__]},
-            "parameter_data": {
-                "PR_kappa": {
-                    ("a", "a"): 0.000,
-                    ("a", "b"): 0.000,
-                    ("a", "c"): 0.000,
-                    ("b", "a"): 0.000,
-                    ("b", "b"): 0.000,
-                    ("b", "c"): 0.000,
-                    ("c", "a"): 0.000,
-                    ("c", "b"): 0.000,
-                    ("c", "c"): 0.000,
-                }
+        },
+        phases={
+            "Vap": {
+                "type": VaporPhase,
+                "equation_of_state": Cubic,
+                "equation_of_state_options": {"type": CubicType.PR},
             },
-        }
+            "Liq": {
+                "type": LiquidPhase,
+                "equation_of_state": Cubic,
+                "equation_of_state_options": {"type": CubicType.PR},
+            },
+        },
+        base_units={
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        },
+        state_definition=modules[__name__],
+        pressure_ref=100000.0,
+        temperature_ref=300,
+        phases_in_equilibrium=[("Vap", "Liq")],
+        phase_equilibrium_state={("Vap", "Liq"): modules[__name__]},
+        parameter_data={
+            "PR_kappa": {
+                ("a", "a"): 0.0,
+                ("a", "b"): 0.0,
+                ("a", "c"): 0.0,
+                ("b", "a"): 0.0,
+                ("b", "b"): 0.0,
+                ("b", "c"): 0.0,
+                ("c", "a"): 0.0,
+                ("c", "b"): 0.0,
+                ("c", "c"): 0.0,
+            }
+        },
     )
 
     m.props = m.params.state_block_class(
-        [1],
-        default={
-            "defined_state": False,
-            "parameters": m.params,
-            "has_phase_equilibrium": True,
-        },
+        [1], defined_state=False, parameters=m.params, has_phase_equilibrium=True
     )
 
     # Set a distinct value for _teq so it can be distinguished from temperature
@@ -234,38 +227,36 @@ def test_wrong_phase():
     m = ConcreteModel()
     with pytest.raises(PropertyNotSupportedError):
         m.params = DummyParameterBlock(
-            default={
-                "components": {
-                    "a": {
-                        "phase_equilibrium_form": {("Sol", "Liq"): dummy_pe},
-                        "parameter_data": {
-                            "omega": 0.1,
-                            "pressure_crit": 1e5,
-                            "temperature_crit": 100,
-                        },
-                    }
-                },
-                "phases": {
-                    "Sol": {
-                        "type": SolidPhase,
-                        "equation_of_state": Cubic,
-                        "equation_of_state_options": {"type": CubicType.PR},
-                    }
-                },
-                "base_units": {
-                    "time": pyunits.s,
-                    "length": pyunits.m,
-                    "mass": pyunits.kg,
-                    "amount": pyunits.mol,
-                    "temperature": pyunits.K,
-                },
-                "state_definition": modules[__name__],
-                "pressure_ref": 1e5,
-                "temperature_ref": 300,
-                "phases_in_equilibrium": [("Vap", "Liq")],
-                "phase_equilibrium_state": {("Vap", "Liq"): modules[__name__]},
-                "parameter_data": {"PR_kappa": {("a", "a"): 0.000}},
-            }
+            components={
+                "a": {
+                    "phase_equilibrium_form": {("Sol", "Liq"): dummy_pe},
+                    "parameter_data": {
+                        "omega": 0.1,
+                        "pressure_crit": 100000.0,
+                        "temperature_crit": 100,
+                    },
+                }
+            },
+            phases={
+                "Sol": {
+                    "type": SolidPhase,
+                    "equation_of_state": Cubic,
+                    "equation_of_state_options": {"type": CubicType.PR},
+                }
+            },
+            base_units={
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            phases_in_equilibrium=[("Vap", "Liq")],
+            phase_equilibrium_state={("Vap", "Liq"): modules[__name__]},
+            parameter_data={"PR_kappa": {("a", "a"): 0.0}},
         )
 
 
@@ -274,38 +265,36 @@ def test_unknown_eos_option():
     m = ConcreteModel()
     with pytest.raises(ConfigurationError):
         m.params = DummyParameterBlock(
-            default={
-                "components": {
-                    "a": {
-                        "phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
-                        "parameter_data": {
-                            "omega": 0.1,
-                            "pressure_crit": 1e5,
-                            "temperature_crit": 100,
-                        },
-                    }
-                },
-                "phases": {
-                    "Vap": {
-                        "type": VaporPhase,
-                        "equation_of_state": Cubic,
-                        "equation_of_state_options": {"type": "PR"},
-                    }
-                },
-                "base_units": {
-                    "time": pyunits.s,
-                    "length": pyunits.m,
-                    "mass": pyunits.kg,
-                    "amount": pyunits.mol,
-                    "temperature": pyunits.K,
-                },
-                "state_definition": modules[__name__],
-                "pressure_ref": 1e5,
-                "temperature_ref": 300,
-                "phases_in_equilibrium": [("Vap", "Liq")],
-                "phase_equilibrium_state": {("Vap", "Liq"): modules[__name__]},
-                "parameter_data": {"PR_kappa": {("a", "a"): 0.000}},
-            }
+            components={
+                "a": {
+                    "phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
+                    "parameter_data": {
+                        "omega": 0.1,
+                        "pressure_crit": 100000.0,
+                        "temperature_crit": 100,
+                    },
+                }
+            },
+            phases={
+                "Vap": {
+                    "type": VaporPhase,
+                    "equation_of_state": Cubic,
+                    "equation_of_state_options": {"type": "PR"},
+                }
+            },
+            base_units={
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            phases_in_equilibrium=[("Vap", "Liq")],
+            phase_equilibrium_state={("Vap", "Liq"): modules[__name__]},
+            parameter_data={"PR_kappa": {("a", "a"): 0.0}},
         )
 
 
@@ -316,61 +305,59 @@ def test_mixing_rule_fail():
     # Dummy params block
     with pytest.raises(ValueError):
         m.params = DummyParameterBlock(
-            default={
-                "components": {
-                    "a": {
-                        "phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
-                        "parameter_data": {
-                            "omega": 0.1,
-                            "pressure_crit": 1e5,
-                            "temperature_crit": 100,
-                        },
-                    },
-                    "b": {
-                        "phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
-                        "parameter_data": {
-                            "omega": 0.2,
-                            "pressure_crit": 2e5,
-                            "temperature_crit": 200,
-                        },
+            components={
+                "a": {
+                    "phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
+                    "parameter_data": {
+                        "omega": 0.1,
+                        "pressure_crit": 100000.0,
+                        "temperature_crit": 100,
                     },
                 },
-                "phases": {
-                    "Vap": {
-                        "type": VaporPhase,
-                        "equation_of_state": Cubic,
-                        "equation_of_state_options": {
-                            "type": CubicType.PR,
-                            "mixing_rule_a": "wong_sandler",
-                        },
-                    },
-                    "Liq": {
-                        "type": LiquidPhase,
-                        "equation_of_state": Cubic,
-                        "equation_of_state_options": {"type": CubicType.PR},
+                "b": {
+                    "phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
+                    "parameter_data": {
+                        "omega": 0.2,
+                        "pressure_crit": 200000.0,
+                        "temperature_crit": 200,
                     },
                 },
-                "base_units": {
-                    "time": pyunits.s,
-                    "length": pyunits.m,
-                    "mass": pyunits.kg,
-                    "amount": pyunits.mol,
-                    "temperature": pyunits.K,
+            },
+            phases={
+                "Vap": {
+                    "type": VaporPhase,
+                    "equation_of_state": Cubic,
+                    "equation_of_state_options": {
+                        "type": CubicType.PR,
+                        "mixing_rule_a": "wong_sandler",
+                    },
                 },
-                "state_definition": modules[__name__],
-                "pressure_ref": 1e5,
-                "temperature_ref": 300,
-                "phases_in_equilibrium": [("Vap", "Liq")],
-                "phase_equilibrium_state": {("Vap", "Liq"): modules[__name__]},
-                "parameter_data": {
-                    "PR_kappa": {
-                        ("a", "a"): 0.000,
-                        ("a", "b"): 0.000,
-                        ("b", "a"): 0.000,
-                        ("b", "b"): 0.000,
-                    }
+                "Liq": {
+                    "type": LiquidPhase,
+                    "equation_of_state": Cubic,
+                    "equation_of_state_options": {"type": CubicType.PR},
                 },
-            }
+            },
+            base_units={
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            phases_in_equilibrium=[("Vap", "Liq")],
+            phase_equilibrium_state={("Vap", "Liq"): modules[__name__]},
+            parameter_data={
+                "PR_kappa": {
+                    ("a", "a"): 0.0,
+                    ("a", "b"): 0.0,
+                    ("b", "a"): 0.0,
+                    ("b", "b"): 0.0,
+                }
+            },
         )
 
 
@@ -427,61 +414,59 @@ def test_config_fail():
     # Dummy params block
     with pytest.raises(ValueError):
         m.params = DummyParameterBlock(
-            default={
-                "components": {
-                    "a": {
-                        "phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
-                        "parameter_data": {
-                            "omega": 0.1,
-                            "pressure_crit": 1e5,
-                            "temperature_crit": 100,
-                        },
-                    },
-                    "b": {
-                        "phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
-                        "parameter_data": {
-                            "omega": 0.2,
-                            "pressure_crit": 2e5,
-                            "temperature_crit": 200,
-                        },
+            components={
+                "a": {
+                    "phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
+                    "parameter_data": {
+                        "omega": 0.1,
+                        "pressure_crit": 100000.0,
+                        "temperature_crit": 100,
                     },
                 },
-                "phases": {
-                    "Vap": {
-                        "type": VaporPhase,
-                        "equation_of_state": Cubic,
-                        "equation_of_state_options": {
-                            "type": CubicType.PR,
-                            "mixing_rule_a": "wong_sandler",
-                        },
-                    },
-                    "Liq": {
-                        "type": LiquidPhase,
-                        "equation_of_state": Cubic,
-                        "equation_of_state_options": {"type": CubicType.PR},
+                "b": {
+                    "phase_equilibrium_form": {("Vap", "Liq"): dummy_pe},
+                    "parameter_data": {
+                        "omega": 0.2,
+                        "pressure_crit": 200000.0,
+                        "temperature_crit": 200,
                     },
                 },
-                "base_units": {
-                    "time": pyunits.s,
-                    "length": pyunits.m,
-                    "mass": pyunits.kg,
-                    "amount": pyunits.mol,
-                    "temperature": pyunits.K,
+            },
+            phases={
+                "Vap": {
+                    "type": VaporPhase,
+                    "equation_of_state": Cubic,
+                    "equation_of_state_options": {
+                        "type": CubicType.PR,
+                        "mixing_rule_a": "wong_sandler",
+                    },
                 },
-                "state_definition": modules[__name__],
-                "pressure_ref": 1e5,
-                "temperature_ref": 300,
-                "phases_in_equilibrium": [("Vap", "Liq")],
-                "phase_equilibrium_state": {("Vap", "Liq"): modules[__name__]},
-                "parameter_data": {
-                    "PR_kappa": {
-                        ("a", "a"): 0.000,
-                        ("a", "b"): 0.000,
-                        ("b", "a"): 0.000,
-                        ("b", "b"): 0.000,
-                    }
+                "Liq": {
+                    "type": LiquidPhase,
+                    "equation_of_state": Cubic,
+                    "equation_of_state_options": {"type": CubicType.PR},
                 },
-            }
+            },
+            base_units={
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            phases_in_equilibrium=[("Vap", "Liq")],
+            phase_equilibrium_state={("Vap", "Liq"): modules[__name__]},
+            parameter_data={
+                "PR_kappa": {
+                    ("a", "a"): 0.0,
+                    ("a", "b"): 0.0,
+                    ("b", "a"): 0.0,
+                    ("b", "b"): 0.0,
+                }
+            },
         )
 
 

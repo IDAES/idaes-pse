@@ -78,6 +78,7 @@ configuration = {
                 "pressure_crit": (220.64e5, pyunits.Pa),  # [1]
                 "temperature_crit": (647, pyunits.K),  # [1]
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (
                         5.459,
                         pyunits.kmol * pyunits.m**-3,

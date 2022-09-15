@@ -95,7 +95,7 @@ def main():
     m = ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
 
@@ -116,108 +116,70 @@ def build_boiler(fs):
     # Create unit models
     # Boiler Economizer
     fs.ECON = BoilerHeatExchanger(
-        default={
-            "cold_side": {
-                "property_package": fs.prop_water,
-                "has_pressure_change": True,
-            },
-            "hot_side": {
-                "property_package": fs.prop_fluegas,
-                "has_pressure_change": True,
-            },
-            "has_holdup": False,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "cold_side_water_phase": "Liq",
-            "has_radiation": False,
-        }
+        cold_side={"property_package": fs.prop_water, "has_pressure_change": True},
+        hot_side={"property_package": fs.prop_fluegas, "has_pressure_change": True},
+        has_holdup=False,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        tube_arrangement=TubeArrangement.inLine,
+        cold_side_water_phase="Liq",
+        has_radiation=False,
     )
     # Primary Superheater
     fs.PrSH = BoilerHeatExchanger(
-        default={
-            "cold_side": {
-                "property_package": fs.prop_water,
-                "has_pressure_change": True,
-            },
-            "hot_side": {
-                "property_package": fs.prop_fluegas,
-                "has_pressure_change": True,
-            },
-            "has_holdup": False,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "cold_side_water_phase": "Vap",
-            "has_radiation": True,
-        }
+        cold_side={"property_package": fs.prop_water, "has_pressure_change": True},
+        hot_side={"property_package": fs.prop_fluegas, "has_pressure_change": True},
+        has_holdup=False,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        tube_arrangement=TubeArrangement.inLine,
+        cold_side_water_phase="Vap",
+        has_radiation=True,
     )
 
     # Finishing Superheater
     fs.FSH = BoilerHeatExchanger(
-        default={
-            "cold_side": {
-                "property_package": fs.prop_water,
-                "has_pressure_change": True,
-            },
-            "hot_side": {
-                "property_package": fs.prop_fluegas,
-                "has_pressure_change": True,
-            },
-            "has_holdup": False,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "cold_side_water_phase": "Vap",
-            "has_radiation": True,
-        }
+        cold_side={"property_package": fs.prop_water, "has_pressure_change": True},
+        hot_side={"property_package": fs.prop_fluegas, "has_pressure_change": True},
+        has_holdup=False,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        tube_arrangement=TubeArrangement.inLine,
+        cold_side_water_phase="Vap",
+        has_radiation=True,
     )
 
     # Reheater
     fs.RH = BoilerHeatExchanger(
-        default={
-            "cold_side": {
-                "property_package": fs.prop_water,
-                "has_pressure_change": True,
-            },
-            "hot_side": {
-                "property_package": fs.prop_fluegas,
-                "has_pressure_change": True,
-            },
-            "has_holdup": False,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "cold_side_water_phase": "Vap",
-            "has_radiation": True,
-        }
+        cold_side={"property_package": fs.prop_water, "has_pressure_change": True},
+        hot_side={"property_package": fs.prop_fluegas, "has_pressure_change": True},
+        has_holdup=False,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        tube_arrangement=TubeArrangement.inLine,
+        cold_side_water_phase="Vap",
+        has_radiation=True,
     )
     # Platen Superheater
-    fs.PlSH = Heater(default={"property_package": fs.prop_water})
+    fs.PlSH = Heater(property_package=fs.prop_water)
 
     # Boiler Water Wall
-    fs.Water_wall = Heater(default={"property_package": fs.prop_water})
+    fs.Water_wall = Heater(property_package=fs.prop_water)
 
     # Boiler Splitter (splits FSH flue gas outlet to Reheater and PrSH)
     fs.Spl1 = Separator(
-        default={
-            "property_package": fs.prop_fluegas,
-            "split_basis": SplittingType.totalFlow,
-            "energy_split_basis": EnergySplittingType.equal_temperature,
-        }
+        property_package=fs.prop_fluegas,
+        split_basis=SplittingType.totalFlow,
+        energy_split_basis=EnergySplittingType.equal_temperature,
     )
     # Flue gas mixer (mixing FG from Reheater and Primary SH, inlet to ECON)
     fs.mix1 = Mixer(
-        default={
-            "property_package": fs.prop_fluegas,
-            "inlet_list": ["Reheat_out", "PrSH_out"],
-            "dynamic": False,
-        }
+        property_package=fs.prop_fluegas,
+        inlet_list=["Reheat_out", "PrSH_out"],
+        dynamic=False,
     )
 
     # Mixer for Attemperator #1 (between PrSH and PlSH)
     fs.ATMP1 = Mixer(
-        default={
-            "property_package": fs.prop_water,
-            "inlet_list": ["Steam", "SprayWater"],
-            "dynamic": False,
-        }
+        property_package=fs.prop_water,
+        inlet_list=["Steam", "SprayWater"],
+        dynamic=False,
     )
 
     # Build connections (streams)

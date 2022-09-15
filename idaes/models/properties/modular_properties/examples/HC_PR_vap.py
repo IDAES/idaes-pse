@@ -115,6 +115,7 @@ configuration_vap = {
                 "temperature_crit": (305.4, pyunits.K),  # [1]
                 "omega": 0.099,
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (1.9122, pyunits.kmol * pyunits.m**-3),  # [2] pg. 2-98
                     "2": (0.27937, None),
                     "3": (305.32, pyunits.K),
@@ -161,6 +162,7 @@ configuration_vap = {
                 "temperature_crit": (369.8, pyunits.K),  # [1]
                 "omega": 0.144,
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (1.3757, pyunits.kmol * pyunits.m**-3),  # [2] pg. 2-98
                     "2": (0.274253, None),
                     "3": (369.83, pyunits.K),
@@ -207,6 +209,7 @@ configuration_vap = {
                 "temperature_crit": (425.2, pyunits.K),  # [1]
                 "omega": 0.199,
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (1.0677, pyunits.kmol * pyunits.m**-3),  # [2] pg. 2-98
                     "2": (0.27188, None),
                     "3": (425.12, pyunits.K),
@@ -254,6 +257,7 @@ configuration_vap = {
                 "temperature_crit": (408.2, pyunits.K),  # [1]
                 "omega": 0.183,
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (1.0463, pyunits.kmol * pyunits.m**-3),  # [2] pg. 2-98
                     "2": (0.27294, None),
                     "3": (408.14, pyunits.K),
@@ -305,6 +309,7 @@ configuration_vap = {
                 "temperature_crit": (282.4, pyunits.K),  # [1]
                 "omega": 0.089,
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (2.0961, pyunits.kmol * pyunits.m**-3),  # [2] pg. 2-98
                     "2": (0.27657, None),
                     "3": (282.34, pyunits.K),
@@ -359,6 +364,7 @@ configuration_vap = {
                 "temperature_crit": (365.0, pyunits.K),  # [1]
                 "omega": 0.144,
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (1.4094, pyunits.kmol * pyunits.m**-3),  # [2] pg. 2-98
                     "2": (0.26465, None),
                     "3": (365.57, pyunits.K),
@@ -413,6 +419,7 @@ configuration_vap = {
                 "temperature_crit": (419.3, pyunits.K),  # [1]
                 "omega": 0.191,
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (1.0972, pyunits.kmol * pyunits.m**-3),  # [2] pg. 2-98
                     "2": (0.2649, None),
                     "3": (419.95, pyunits.K),
@@ -464,6 +471,7 @@ configuration_vap = {
                 "temperature_crit": (464.7, pyunits.K),  # [1]
                 "omega": 0.233,  # [1]
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (0.9038, pyunits.kmol * pyunits.m**-3),  # [2] pg. 2-98
                     "2": (0.26648, None),
                     "3": (464.78, pyunits.K),
@@ -518,6 +526,7 @@ configuration_vap = {
                 "temperature_crit": (504.0, pyunits.K),  # [1]
                 "omega": 0.285,  # [1]
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (0.7389, pyunits.kmol * pyunits.m**-3),  # [2] pg. 2-98
                     "2": (0.26147, None),
                     "3": (504.03, pyunits.K),
@@ -572,6 +581,7 @@ configuration_vap = {
                 "temperature_crit": (537.2, pyunits.K),  # [1]
                 "omega": 0.358,  # [1]
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (0.63734, pyunits.kmol * pyunits.m**-3),  # [2] pg. 2-98
                     "2": (0.26319, None),
                     "3": (537.29, pyunits.K),
@@ -626,6 +636,7 @@ configuration_vap = {
                 "temperature_crit": (566.6, pyunits.K),  # [1]
                 "omega": 0.386,  # [1]
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (0.5871, pyunits.kmol * pyunits.m**-3),  # [2] pg. 2-98
                     "2": (0.27005, None),
                     "3": (566.65, pyunits.K),

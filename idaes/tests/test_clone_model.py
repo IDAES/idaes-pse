@@ -32,18 +32,10 @@ def model():
     m.fs = idaes.core.FlowsheetBlock()
     m.fs.properties = idaes.models.properties.swco2.SWCO2ParameterBlock()
     m.fs.heater = idaes.models.unit_models.Heater(
-        default={
-            "dynamic": False,
-            "property_package": m.fs.properties,
-            "has_pressure_change": True,
-        }
+        dynamic=False, property_package=m.fs.properties, has_pressure_change=True
     )
     m.fs.heater2 = idaes.models.unit_models.Heater(
-        default={
-            "dynamic": False,
-            "property_package": m.fs.properties,
-            "has_pressure_change": True,
-        }
+        dynamic=False, property_package=m.fs.properties, has_pressure_change=True
     )
     m.fs.stream = Arc(source=m.fs.heater.outlet, destination=m.fs.heater2.inlet)
 

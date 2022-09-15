@@ -121,8 +121,8 @@ def test_is_phase_old_style_vapor():
 def test_phase_list_exists():
     m = ConcreteModel()
 
-    m.phase = Phase(default={"_phase_list_exists": True})
-    m.phase2 = Phase(default={"_phase_list_exists": True})
+    m.phase = Phase(_phase_list_exists=True)
+    m.phase2 = Phase(_phase_list_exists=True)
 
     assert not hasattr(m, "phase_list")
 

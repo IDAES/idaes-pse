@@ -41,29 +41,51 @@ import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 import idaes.config as icfg
 
-PetscBinaryIOTrajectory = None
-PetscBinaryIO = None
 
+def petsc_binary_io():
+    if petsc_binary_io.PetscBinaryIOTrajectory is not None:
+        return petsc_binary_io.PetscBinaryIOTrajectory
 
-def _import_petsc_binary_io():
-    global PetscBinaryIOTrajectory
-    global PetscBinaryIO
+    # First see if the python IO helpers are directly importable
     try:
         import PetscBinaryIOTrajectory
         import PetscBinaryIO
+
+        petsc_binary_io.PetscBinaryIOTrajectory = PetscBinaryIOTrajectory
+        return PetscBinaryIOTrajectory
     except ImportError:
-        petsc_dir = os.path.join(icfg.bin_directory, "petscpy")
-        if not os.path.isdir(petsc_dir):
-            return
-        sys.path.append(petsc_dir)
+        pass
+    # Next, look for a 'petscpy' directory alongside the 'petsc'
+    # executable: first look at the petsc we found on the path, then
+    # look in the IDAES bin dir.  Casting the Executable path to a
+    # string will map None to '' in the case where there is no petsc
+    # executable found.
+    for petsc_exe_dir in (
+        os.path.dirname(str(Executable("petsc").path())),
+        icfg.bin_directory,
+    ):
+        if not petsc_exe_dir:
+            continue
+        petscpy_dir = os.path.join(petsc_exe_dir, "petscpy")
         try:
+            sys.path.insert(0, petscpy_dir)
             import PetscBinaryIOTrajectory
             import PetscBinaryIO
+
+            # Import the petsc_conf so that it is cached in sys.modules
+            # (because we will be removing petscpy from sys.path)
+            import petsc_conf
+
+            petsc_binary_io.PetscBinaryIOTrajectory = PetscBinaryIOTrajectory
+            return PetscBinaryIOTrajectory
         except ImportError:
             pass
+        finally:
+            sys.path.remove(petscpy_dir)
+    return None
 
 
-_import_petsc_binary_io()
+petsc_binary_io.PetscBinaryIOTrajectory = None
 
 
 class DaeVarTypes(enum.IntEnum):
@@ -701,7 +723,7 @@ class PetscTrajectory(object):
         """
         if no_read:
             return
-        if PetscBinaryIOTrajectory is None and stub is not None:
+        if petsc_binary_io() is None and stub is not None:
             raise RuntimeError("PetscBinaryIOTrajectory could not be imported")
         # if unscale is True, use model as scale factor source
         if model is not None and unscale is True:
@@ -735,7 +757,7 @@ class PetscTrajectory(object):
         with open(f"{self.stub}.typ") as f:
             typ = list(map(int, f.readlines()))
         vars = [name for i, name in enumerate(names) if typ[i] in [0, 1]]
-        (t, v, names) = PetscBinaryIOTrajectory.ReadTrajectory("Visualization-data")
+        (t, v, names) = petsc_binary_io().ReadTrajectory("Visualization-data")
         self.time = t
         self.vecs_by_time = v
         self.vecs = dict.fromkeys(vars, None)

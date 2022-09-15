@@ -46,6 +46,6 @@ The homotopy meta-solver has the following possible termination conditions (usin
 Available Methods
 ^^^^^^^^^^^^^^^^^
 
-.. automodule:: idaes.core.util.homotopy
+.. automodule:: idaes.core.solvers.homotopy
     :members:
 

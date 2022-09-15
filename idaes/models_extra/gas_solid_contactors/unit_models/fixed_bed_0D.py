@@ -187,10 +187,8 @@ see reaction package for documentation.}""",
         # the gas state block is deactivated.
         self.gas = self.config.gas_property_package.state_block_class(
             self.flowsheet().time,
-            default={
-                "parameters": self.config.gas_property_package,
-                "defined_state": True,
-            },
+            parameters=self.config.gas_property_package,
+            defined_state=True,
         )
 
         # Build Solid Phase StateBlock
@@ -203,10 +201,8 @@ see reaction package for documentation.}""",
         # unit model instead
         self.solids = self.config.solid_property_package.state_block_class(
             self.flowsheet().time,
-            default={
-                "parameters": self.config.solid_property_package,
-                "defined_state": True,
-            },
+            parameters=self.config.solid_property_package,
+            defined_state=True,
         )
 
         tmp_dict = dict(**self.config.reaction_package_args)
@@ -216,7 +212,7 @@ see reaction package for documentation.}""",
         self.reactions = self.config.reaction_package.reaction_block_class(
             self.flowsheet().time,
             doc="Reaction properties in control volume",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
         # Volume of reactor

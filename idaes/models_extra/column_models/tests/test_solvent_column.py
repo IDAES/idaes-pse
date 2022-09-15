@@ -52,20 +52,18 @@ class TestAbsorberColumn:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         # Set up property package
-        m.fs.vapor_properties = GenericParameterBlock(default=flue_gas)
-        m.fs.liquid_properties = GenericParameterBlock(default=liquid_config)
+        m.fs.vapor_properties = GenericParameterBlock(**flue_gas)
+        m.fs.liquid_properties = GenericParameterBlock(**liquid_config)
 
         # Create an instance of the column in the flowsheet
         m.fs.unit = PackedColumn(
-            default={
-                "finite_elements": 10,
-                "has_pressure_change": False,
-                "vapor_phase": {"property_package": m.fs.vapor_properties},
-                "liquid_phase": {"property_package": m.fs.liquid_properties},
-            }
+            finite_elements=10,
+            has_pressure_change=False,
+            vapor_phase={"property_package": m.fs.vapor_properties},
+            liquid_phase={"property_package": m.fs.liquid_properties},
         )
 
         # Fix column design variables
@@ -236,11 +234,11 @@ class TestStripperColumn:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         # Set up property package
-        m.fs.vapor_properties = GenericParameterBlock(default=wet_co2)
-        m.fs.liquid_properties_stripper = GenericParameterBlock(default=liquid_config)
+        m.fs.vapor_properties = GenericParameterBlock(**wet_co2)
+        m.fs.liquid_properties_stripper = GenericParameterBlock(**liquid_config)
 
         # Set the heat of absorption value in stripper
         m.fs.liquid_properties_stripper.CO2.dh_abs_co2.unfix()
@@ -248,12 +246,10 @@ class TestStripperColumn:
 
         # Create an instance of the column in the flowsheet
         m.fs.unit = PackedColumn(
-            default={
-                "finite_elements": 10,
-                "has_pressure_change": False,
-                "vapor_phase": {"property_package": m.fs.vapor_properties},
-                "liquid_phase": {"property_package": m.fs.liquid_properties_stripper},
-            }
+            finite_elements=10,
+            has_pressure_change=False,
+            vapor_phase={"property_package": m.fs.vapor_properties},
+            liquid_phase={"property_package": m.fs.liquid_properties_stripper},
         )
 
         # Fix column design variables

@@ -63,10 +63,7 @@ class IsothermalCompressorData(UnitModelBlockData):
             )
 
         inlet_config = {"defined_state": True}
-        self.inlet_state = property_package.build_state_block(
-            time,
-            default=inlet_config,
-        )
+        self.inlet_state = property_package.build_state_block(time, **inlet_config)
         self.outlet_state = property_package.build_state_block(time)
 
         # A little annoying that add_port assumes the state block is indexed

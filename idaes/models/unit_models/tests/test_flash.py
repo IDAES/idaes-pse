@@ -57,11 +57,11 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = Flash(default={"property_package": m.fs.properties})
+    m.fs.unit = Flash(property_package=m.fs.properties)
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 11
@@ -82,9 +82,9 @@ def test_config():
 @pytest.mark.unit
 def test_calc_scale():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
-    m.fs.unit = Flash(default={"property_package": m.fs.properties})
+    m.fs.unit = Flash(property_package=m.fs.properties)
     iscale.calculate_scaling_factors(m)
 
 
@@ -93,13 +93,13 @@ class TestBTXIdeal(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = BTXParameterBlock(
-            default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "Ideal"}
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
         )
 
-        m.fs.unit = Flash(default={"property_package": m.fs.properties})
+        m.fs.unit = Flash(property_package=m.fs.properties)
 
         m.fs.unit.inlet.flow_mol.fix(1)
         m.fs.unit.inlet.temperature.fix(368)
@@ -276,18 +276,16 @@ class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = iapws95.Iapws95ParameterBlock(
-            default={"phase_presentation": iapws95.PhaseType.LG}
+            phase_presentation=iapws95.PhaseType.LG
         )
 
         m.fs.unit = Flash(
-            default={
-                "property_package": m.fs.properties,
-                "ideal_separation": False,
-                "energy_split_basis": EnergySplittingType.enthalpy_split,
-            }
+            property_package=m.fs.properties,
+            ideal_separation=False,
+            energy_split_basis=EnergySplittingType.enthalpy_split,
         )
 
         m.fs.unit.inlet.flow_mol.fix(100)

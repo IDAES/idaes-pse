@@ -90,46 +90,38 @@ def create_model(
         time_set = [0, 3]
 
     m = pyo.ConcreteModel(name=model_name)
-    m.fs = FlowsheetBlock(default=fs_cfg)
+    m.fs = FlowsheetBlock(**fs_cfg)
     # Create a property parameter block
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.LG}
+        phase_presentation=iapws95.PhaseType.LG
     )
     # Create the valve and tank models
     m.fs.valve_1 = Valve(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "pressure_flow_callback": _valve_pressure_flow_cb,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "property_package": m.fs.prop_water,
-        }
+        dynamic=False,
+        has_holdup=False,
+        pressure_flow_callback=_valve_pressure_flow_cb,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        property_package=m.fs.prop_water,
     )
     m.fs.tank = Heater(
-        default={
-            "has_holdup": True,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "property_package": m.fs.prop_water,
-        }
+        has_holdup=True,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        property_package=m.fs.prop_water,
     )
     m.fs.valve_2 = Valve(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "pressure_flow_callback": _valve_pressure_flow_cb,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "property_package": m.fs.prop_water,
-        }
+        dynamic=False,
+        has_holdup=False,
+        pressure_flow_callback=_valve_pressure_flow_cb,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        property_package=m.fs.prop_water,
     )
     # Add a controller
     m.fs.ctrl = PIDController(
-        default={
-            "process_var": m.fs.tank.control_volume.properties_out[:].pressure,
-            "manipulated_var": m.fs.valve_1.valve_opening,
-            "calculate_initial_integral": calc_integ,
-            "mv_bound_type": ControllerMVBoundType.SMOOTH_BOUND,
-            "type": ControllerType.PI,  # rather use PI, but testing all terms
-        }
+        process_var=m.fs.tank.control_volume.properties_out[:].pressure,
+        manipulated_var=m.fs.valve_1.valve_opening,
+        calculate_initial_integral=calc_integ,
+        mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
+        type=ControllerType.PI,
     )
     # The control volume block doesn't assume the two phases are in equilibrium
     # by default, so I'll make that assumption here, I don't actually expect

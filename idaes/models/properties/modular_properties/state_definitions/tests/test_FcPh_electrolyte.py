@@ -128,13 +128,11 @@ class TestApparentSpeciesBasisNoInherent:
     def frame(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = GenericParameterBlock(
-            default=TestApparentSpeciesBasisNoInherent.config
-        )
+        m.fs.props = GenericParameterBlock(**TestApparentSpeciesBasisNoInherent.config)
 
-        m.fs.state = m.fs.props.build_state_block([1], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([1], defined_state=True)
 
         return m
 
@@ -403,13 +401,11 @@ class TestApparentSpeciesBasisInherent:
     def frame(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = GenericParameterBlock(
-            default=TestApparentSpeciesBasisInherent.config
-        )
+        m.fs.props = GenericParameterBlock(**TestApparentSpeciesBasisInherent.config)
 
-        m.fs.state = m.fs.props.build_state_block([1], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([1], defined_state=True)
 
         m.fs.state[1].calculate_scaling_factors()
 
@@ -677,13 +673,11 @@ class TestTrueSpeciesBasisNoInherent:
     def frame(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = GenericParameterBlock(
-            default=TestTrueSpeciesBasisNoInherent.config
-        )
+        m.fs.props = GenericParameterBlock(**TestTrueSpeciesBasisNoInherent.config)
 
-        m.fs.state = m.fs.props.build_state_block([1], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([1], defined_state=True)
 
         return m
 
@@ -901,11 +895,11 @@ class TestTrueSpeciesBasisInherent:
     def frame(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = GenericParameterBlock(default=TestTrueSpeciesBasisInherent.config)
+        m.fs.props = GenericParameterBlock(**TestTrueSpeciesBasisInherent.config)
 
-        m.fs.state = m.fs.props.build_state_block([1], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([1], defined_state=True)
 
         m.fs.state[1].calculate_scaling_factors()
 

@@ -73,7 +73,7 @@ def main(m=None):
         # Create a Concrete Model as the top level object
         m = pyo.ConcreteModel()
         # Add a flowsheet object to the model
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         # Add property packages to flowsheet library
         m.fs.prop_water = iapws95.Iapws95ParameterBlock()
         m.fs.prop_gas = FlueGasParameterBlock()
@@ -90,29 +90,21 @@ def create_model(m):
     m.fs.ww_zones = pyo.RangeSet(10)
 
     m.fs.drum = Drum(
-        default={
-            "property_package": m.fs.prop_water,
-            "has_holdup": False,
-            "has_heat_transfer": True,
-            "has_pressure_change": True,
-        }
+        property_package=m.fs.prop_water,
+        has_holdup=False,
+        has_heat_transfer=True,
+        has_pressure_change=True,
     )
     m.fs.downcomer = Downcomer(
-        default={
-            "property_package": m.fs.prop_water,
-            "has_holdup": False,
-            "has_heat_transfer": True,
-        }
+        property_package=m.fs.prop_water, has_holdup=False, has_heat_transfer=True
     )
     m.fs.Waterwalls = WaterwallSection(
         m.fs.ww_zones,
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "property_package": m.fs.prop_water,
-            "has_heat_transfer": True,
-            "has_pressure_change": True,
-        },
+        dynamic=False,
+        has_holdup=False,
+        property_package=m.fs.prop_water,
+        has_heat_transfer=True,
+        has_pressure_change=True,
     )
 
     m.fs.stream_drum_out = Arc(

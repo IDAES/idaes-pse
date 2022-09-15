@@ -46,7 +46,9 @@ from idaes.models.unit_models import (  # basic IDAES unit models, and enum
     HeatExchanger,
     MomentumMixingType,  # Enum type for mixer pressure calculation selection
 )
-from idaes.core.util import copy_port_values as _set_port  # for model intialization
+from idaes.core.util.initialization import (
+    propagate_state as _set_port,
+)  # for model intialization
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe  # as Pandas DataFrame
@@ -79,13 +81,13 @@ def create_model():
     #  Flowsheet and Properties                                                #
     ############################################################################
     m = pyo.ConcreteModel(name="Steam Cycle Model")
-    m.fs = FlowsheetBlock(default={"dynamic": False})  # Add steady state flowsheet
+    m.fs = FlowsheetBlock(dynamic=False)  # Add steady state flowsheet
 
     # A physical property parameter block for IAPWS-95 with pressure and enthalpy
     # (PH) state variables.  Usually pressure and enthalpy state variables are
     # more robust especially when the phases are unknown.
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.MIX}
+        phase_presentation=iapws95.PhaseType.MIX
     )
 
     # A physical property parameter block with temperature, pressure and vapor
@@ -93,10 +95,7 @@ def create_model():
     # fraction is known and the temperature and pressure state variables are
     # preferable.
     m.fs.prop_water_tpx = iapws95.Iapws95ParameterBlock(
-        default={
-            "phase_presentation": iapws95.PhaseType.LG,
-            "state_vars": iapws95.StateVars.TPX,
-        }
+        phase_presentation=iapws95.PhaseType.LG, state_vars=iapws95.StateVars.TPX
     )
     ############################################################################
     #  Turbine with fill-in reheat constraints                                 #
@@ -106,18 +105,16 @@ def create_model():
     # high-, intermediate-, and low-pressure sections; steam extractions; and
     # pressure driven flow.  See the IDAES documentation for details.
     m.fs.turb = HelmTurbineMultistage(
-        default={
-            "property_package": m.fs.prop_water,
-            "num_parallel_inlet_stages": 4,  # number of admission arcs
-            "num_hp": 7,  # number of high-pressure stages
-            "num_ip": 10,  # number of intermediate-pressure stages
-            "num_lp": 11,  # number of low-pressure stages
-            "hp_split_locations": [4, 7],  # hp steam extraction locations
-            "ip_split_locations": [5, 10],  # ip steam extraction locations
-            "lp_split_locations": [4, 8, 10, 11],  # lp steam extraction locations
-            "hp_disconnect": [7],  # disconnect hp from ip to insert reheater
-            "ip_split_num_outlets": {10: 3},  # number of split streams (default is 2)
-        }
+        property_package=m.fs.prop_water,
+        num_parallel_inlet_stages=4,
+        num_hp=7,
+        num_ip=10,
+        num_lp=11,
+        hp_split_locations=[4, 7],
+        ip_split_locations=[5, 10],
+        lp_split_locations=[4, 8, 10, 11],
+        hp_disconnect=[7],
+        ip_split_num_outlets={10: 3},
     )
     # This model is only the steam cycle, and the reheater is part of the boiler.
     # To fill in the reheater gap, a few constraints for the flow, pressure drop,
@@ -165,11 +162,9 @@ def create_model():
     # Add a mixer for all the streams coming into the condenser.  In this case the
     # main steam, and the boiler feed pump turbine outlet go to the condenser
     m.fs.condenser_mix = HelmMixer(
-        default={
-            "momentum_mixing_type": MomentumMixingType.none,
-            "inlet_list": ["main", "bfpt"],
-            "property_package": m.fs.prop_water,
-        }
+        momentum_mixing_type=MomentumMixingType.none,
+        inlet_list=["main", "bfpt"],
+        property_package=m.fs.prop_water,
     )
     # The pressure in the mixer comes from the connection to the condenser.  All
     # the streams coming in and going out of the mixer are equal, but we created
@@ -219,24 +214,17 @@ def create_model():
 
     # Add NTU condenser model
     m.fs.condenser = Condenser(
-        default={
-            "dynamic": False,
-            "shell": {
-                "has_pressure_change": False,
-                "property_package": m.fs.prop_water,
-            },
-            "tube": {"has_pressure_change": False, "property_package": m.fs.prop_water},
-        }
+        dynamic=False,
+        shell={"has_pressure_change": False, "property_package": m.fs.prop_water},
+        tube={"has_pressure_change": False, "property_package": m.fs.prop_water},
     )
 
     # Add the condenser hotwell.  In steady state a mixer will work.  This is
     # where makeup water is added if needed.
     m.fs.hotwell = HelmMixer(
-        default={
-            "momentum_mixing_type": MomentumMixingType.none,
-            "inlet_list": ["condensate", "makeup"],
-            "property_package": m.fs.prop_water,
-        }
+        momentum_mixing_type=MomentumMixingType.none,
+        inlet_list=["condensate", "makeup"],
+        property_package=m.fs.prop_water,
     )
 
     # The hotwell is assumed to be at the same pressure as the condenser.
@@ -245,9 +233,7 @@ def create_model():
         return b.condensate_state[t].pressure == b.mixed_state[t].pressure
 
     # Condensate pump (Use compressor model, since it is more robust if vapor form)
-    m.fs.cond_pump = HelmIsentropicCompressor(
-        default={"property_package": m.fs.prop_water}
-    )
+    m.fs.cond_pump = HelmIsentropicCompressor(property_package=m.fs.prop_water)
     ############################################################################
     #  Add low pressure feedwater heaters                                      #
     ############################################################################
@@ -261,25 +247,19 @@ def create_model():
     # See the IDAES documentation for more information of configuring feedwater
     # heaters
     m.fs.fwh1 = FWH0D(
-        default={
-            "has_desuperheat": False,
-            "has_drain_cooling": False,
-            "has_drain_mixer": True,
-            "property_package": m.fs.prop_water,
-            "condense": fwh_config,
-        }
+        has_desuperheat=False,
+        has_drain_cooling=False,
+        has_drain_mixer=True,
+        property_package=m.fs.prop_water,
+        condense=fwh_config,
     )
     # pump for fwh1 condensate, to pump it ahead and mix with feedwater
-    m.fs.fwh1_pump = HelmIsentropicCompressor(
-        default={"property_package": m.fs.prop_water}
-    )
+    m.fs.fwh1_pump = HelmIsentropicCompressor(property_package=m.fs.prop_water)
     # Mix the FWH1 drain back into the feedwater
     m.fs.fwh1_return = HelmMixer(
-        default={
-            "momentum_mixing_type": MomentumMixingType.none,
-            "inlet_list": ["feedwater", "fwh1_drain"],
-            "property_package": m.fs.prop_water,
-        }
+        momentum_mixing_type=MomentumMixingType.none,
+        inlet_list=["feedwater", "fwh1_drain"],
+        property_package=m.fs.prop_water,
     )
 
     # Set the mixer pressure to the feedwater pressure
@@ -289,37 +269,31 @@ def create_model():
 
     # Add the rest of the low pressure feedwater heaters
     m.fs.fwh2 = FWH0D(
-        default={
-            "has_desuperheat": True,
-            "has_drain_cooling": True,
-            "has_drain_mixer": True,
-            "property_package": m.fs.prop_water,
-            "desuperheat": fwh_config,
-            "cooling": fwh_config,
-            "condense": fwh_config,
-        }
+        has_desuperheat=True,
+        has_drain_cooling=True,
+        has_drain_mixer=True,
+        property_package=m.fs.prop_water,
+        desuperheat=fwh_config,
+        cooling=fwh_config,
+        condense=fwh_config,
     )
     m.fs.fwh3 = FWH0D(
-        default={
-            "has_desuperheat": True,
-            "has_drain_cooling": True,
-            "has_drain_mixer": True,
-            "property_package": m.fs.prop_water,
-            "desuperheat": fwh_config,
-            "cooling": fwh_config,
-            "condense": fwh_config,
-        }
+        has_desuperheat=True,
+        has_drain_cooling=True,
+        has_drain_mixer=True,
+        property_package=m.fs.prop_water,
+        desuperheat=fwh_config,
+        cooling=fwh_config,
+        condense=fwh_config,
     )
     m.fs.fwh4 = FWH0D(
-        default={
-            "has_desuperheat": True,
-            "has_drain_cooling": True,
-            "has_drain_mixer": False,
-            "property_package": m.fs.prop_water,
-            "desuperheat": fwh_config,
-            "cooling": fwh_config,
-            "condense": fwh_config,
-        }
+        has_desuperheat=True,
+        has_drain_cooling=True,
+        has_drain_mixer=False,
+        property_package=m.fs.prop_water,
+        desuperheat=fwh_config,
+        cooling=fwh_config,
+        condense=fwh_config,
     )
     ############################################################################
     #  Add deaerator and boiler feed pump (BFP)                                #
@@ -327,11 +301,9 @@ def create_model():
     # The deaerator is basically an open tank with multiple inlets.  For steady-
     # state, a mixer model is sufficient.
     m.fs.fwh5_da = HelmMixer(
-        default={
-            "momentum_mixing_type": MomentumMixingType.none,
-            "inlet_list": ["steam", "drain", "feedwater"],
-            "property_package": m.fs.prop_water,
-        }
+        momentum_mixing_type=MomentumMixingType.none,
+        inlet_list=["steam", "drain", "feedwater"],
+        property_package=m.fs.prop_water,
     )
 
     @m.fs.fwh5_da.Constraint(m.fs.time)
@@ -340,9 +312,9 @@ def create_model():
         return b.feedwater_state[t].pressure == b.mixed_state[t].pressure
 
     # Add the boiler feed pump and boiler feed pump turbine
-    m.fs.bfp = HelmIsentropicCompressor(default={"property_package": m.fs.prop_water})
+    m.fs.bfp = HelmIsentropicCompressor(property_package=m.fs.prop_water)
 
-    m.fs.bfpt = HelmTurbineStage(default={"property_package": m.fs.prop_water})
+    m.fs.bfpt = HelmTurbineStage(property_package=m.fs.prop_water)
 
     # The boiler feed pump outlet pressure is the same as the condenser
     @m.fs.Constraint(m.fs.time)
@@ -377,37 +349,31 @@ def create_model():
     #  Add high pressure feedwater heaters                                     #
     ############################################################################
     m.fs.fwh6 = FWH0D(
-        default={
-            "has_desuperheat": True,
-            "has_drain_cooling": True,
-            "has_drain_mixer": True,
-            "property_package": m.fs.prop_water,
-            "desuperheat": fwh_config,
-            "cooling": fwh_config,
-            "condense": fwh_config,
-        }
+        has_desuperheat=True,
+        has_drain_cooling=True,
+        has_drain_mixer=True,
+        property_package=m.fs.prop_water,
+        desuperheat=fwh_config,
+        cooling=fwh_config,
+        condense=fwh_config,
     )
     m.fs.fwh7 = FWH0D(
-        default={
-            "has_desuperheat": True,
-            "has_drain_cooling": True,
-            "has_drain_mixer": True,
-            "property_package": m.fs.prop_water,
-            "desuperheat": fwh_config,
-            "cooling": fwh_config,
-            "condense": fwh_config,
-        }
+        has_desuperheat=True,
+        has_drain_cooling=True,
+        has_drain_mixer=True,
+        property_package=m.fs.prop_water,
+        desuperheat=fwh_config,
+        cooling=fwh_config,
+        condense=fwh_config,
     )
     m.fs.fwh8 = FWH0D(
-        default={
-            "has_desuperheat": True,
-            "has_drain_cooling": True,
-            "has_drain_mixer": False,
-            "property_package": m.fs.prop_water,
-            "desuperheat": fwh_config,
-            "cooling": fwh_config,
-            "condense": fwh_config,
-        }
+        has_desuperheat=True,
+        has_drain_cooling=True,
+        has_drain_mixer=False,
+        property_package=m.fs.prop_water,
+        desuperheat=fwh_config,
+        cooling=fwh_config,
+        condense=fwh_config,
     )
     ############################################################################
     #  Additional Constraints/Expressions                                      #

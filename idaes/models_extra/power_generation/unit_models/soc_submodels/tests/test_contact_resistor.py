@@ -42,15 +42,13 @@ def model():
     )
 
     m.fs.contact = soc.SocContactResistor(
-        default={
-            "control_volume_zfaces": zfaces,
-            "length_z": m.fs.length_z,
-            "length_y": m.fs.length_y,
-            "current_density": m.fs.current_density,
-            "temperature_z": m.fs.temperature_z,
-            "temperature_deviation_x": m.fs.temperature_deviation_x,
-            "heat_flux_x0": m.fs.heat_flux_x0,
-        }
+        control_volume_zfaces=zfaces,
+        length_z=m.fs.length_z,
+        length_y=m.fs.length_y,
+        current_density=m.fs.current_density,
+        temperature_z=m.fs.temperature_z,
+        temperature_deviation_x=m.fs.temperature_deviation_x,
+        heat_flux_x0=m.fs.heat_flux_x0,
     )
     m.fs.temperature_deviation_x.fix(0)
     m.fs.heat_flux_x0.fix(0)
@@ -67,18 +65,8 @@ def model2():
     time_set = [0, 1]
     zfaces = np.linspace(0, 1, 8).tolist()
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(
-        default={
-            "dynamic": False,
-            "time_set": time_set,
-            "time_units": pyo.units.s,
-        }
-    )
-    m.fs.contact = soc.SocContactResistor(
-        default={
-            "control_volume_zfaces": zfaces,
-        }
-    )
+    m.fs = FlowsheetBlock(dynamic=False, time_set=time_set, time_units=pyo.units.s)
+    m.fs.contact = soc.SocContactResistor(control_volume_zfaces=zfaces)
     m.fs.contact.current_density.fix(0)
     m.fs.contact.temperature_z.fix(0)
     m.fs.contact.temperature_deviation_x.fix(0)

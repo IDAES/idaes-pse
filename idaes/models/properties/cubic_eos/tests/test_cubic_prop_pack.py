@@ -50,7 +50,7 @@ class TestParameterBlock(object):
     def test_build_default(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.params = CubicParameterBlock()
 
@@ -66,9 +66,9 @@ class TestParameterBlock(object):
     def test_build_VL(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.params = CubicParameterBlock(default={"valid_phase": ("Vap", "Liq")})
+        m.fs.params = CubicParameterBlock(valid_phase=("Vap", "Liq"))
 
         assert m.fs.params.state_block_class is CubicStateBlock
         assert m.fs.params.config.valid_phase == ("Vap", "Liq")
@@ -82,9 +82,9 @@ class TestParameterBlock(object):
     def test_build_LV(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.params = CubicParameterBlock(default={"valid_phase": ("Liq", "Vap")})
+        m.fs.params = CubicParameterBlock(valid_phase=("Liq", "Vap"))
 
         assert m.fs.params.state_block_class is CubicStateBlock
         assert m.fs.params.config.valid_phase == ("Liq", "Vap")
@@ -98,9 +98,9 @@ class TestParameterBlock(object):
     def test_build_L(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.params = CubicParameterBlock(default={"valid_phase": ("Liq")})
+        m.fs.params = CubicParameterBlock(valid_phase="Liq")
 
         assert m.fs.params.state_block_class is CubicStateBlock
         assert m.fs.params.config.valid_phase == ("Liq")
@@ -114,9 +114,9 @@ class TestParameterBlock(object):
     def test_build_V(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.params = CubicParameterBlock(default={"valid_phase": ("Vap")})
+        m.fs.params = CubicParameterBlock(valid_phase="Vap")
 
         assert m.fs.params.state_block_class is CubicStateBlock
         assert m.fs.params.config.valid_phase == ("Vap")
@@ -132,7 +132,7 @@ class TestStateBlock_LV_PR(object):
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.params = CubicParameterBlock()
 
@@ -326,9 +326,9 @@ class TestStateBlock_L_PR(object):
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.params = CubicParameterBlock(default={"valid_phase": "Liq"})
+        m.fs.params = CubicParameterBlock(valid_phase="Liq")
 
         m.fs.params.a = Component()
         m.fs.params.b = Component()
@@ -441,9 +441,9 @@ class TestStateBlock_V_PR(object):
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.params = CubicParameterBlock(default={"valid_phase": "Vap"})
+        m.fs.params = CubicParameterBlock(valid_phase="Vap")
 
         m.fs.params.a = Component()
         m.fs.params.b = Component()
@@ -556,7 +556,7 @@ class TestStateBlock_LV_SRK(object):
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.params = CubicParameterBlock()
 
@@ -750,9 +750,9 @@ class TestStateBlock_L_SRK(object):
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.params = CubicParameterBlock(default={"valid_phase": "Liq"})
+        m.fs.params = CubicParameterBlock(valid_phase="Liq")
 
         m.fs.params.a = Component()
         m.fs.params.b = Component()
@@ -865,9 +865,9 @@ class TestStateBlock_V_SRK(object):
     def model(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.params = CubicParameterBlock(default={"valid_phase": "Vap"})
+        m.fs.params = CubicParameterBlock(valid_phase="Vap")
 
         m.fs.params.a = Component()
         m.fs.params.b = Component()

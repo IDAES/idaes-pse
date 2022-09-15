@@ -109,7 +109,7 @@ def test_validate_state_block_invalid_units():
     # Test validation of associated PropertyParameterBlock
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
-    m.r = ReactionParameterBlock2(default={"property_package": m.p})
+    m.r = ReactionParameterBlock2(property_package=m.p)
 
     with pytest.raises(PropertyPackageError):
         m.r._validate_property_parameter_units()
@@ -140,7 +140,7 @@ def test_validate_state_block_unsupported_prop():
     # Test validation of associated PropertyParameterBlock
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
-    m.r = ReactionParameterBlock3(default={"property_package": m.p})
+    m.r = ReactionParameterBlock3(property_package=m.p)
 
     with pytest.raises(PropertyPackageError):
         m.r._validate_property_parameter_properties()
@@ -171,7 +171,7 @@ def test_validate_state_block_unsupported_prop_False():
     # Test validation of associated PropertyParameterBlock
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
-    m.r = ReactionParameterBlock4(default={"property_package": m.p})
+    m.r = ReactionParameterBlock4(property_package=m.p)
 
     with pytest.raises(PropertyPackageError):
         m.r._validate_property_parameter_properties()
@@ -202,7 +202,7 @@ def test_validate_state_block_req_prop_wrong_units():
     # Test validation of associated PropertyParameterBlock
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
-    m.r = ReactionParameterBlock5(default={"property_package": m.p})
+    m.r = ReactionParameterBlock5(property_package=m.p)
 
     with pytest.raises(PropertyPackageError):
         m.r._validate_property_parameter_properties()
@@ -233,7 +233,7 @@ def test_ReactionParameterBase_build():
     # Test that ReactionParameterBlock builds correctly
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
-    m.r = ReactionParameterBlock6(default={"property_package": m.p})
+    m.r = ReactionParameterBlock6(property_package=m.p)
     super(_ReactionParameterBlock6, m.r).build()
 
 
@@ -303,12 +303,12 @@ def test_validate_state_block_fail():
     m.p = PropertyParameterBlock()
     m.p2 = PropertyParameterBlock()
 
-    m.pb = TestStateBlock(default={"parameters": m.p2})
+    m.pb = TestStateBlock(parameters=m.p2)
 
-    m.r = ReactionParameterBlock6(default={"property_package": m.p})
+    m.r = ReactionParameterBlock6(property_package=m.p)
     super(_ReactionParameterBlock6, m.r).build()
 
-    m.rb = ReactionBlock(default={"parameters": m.r, "state_block": m.pb})
+    m.rb = ReactionBlock(parameters=m.r, state_block=m.pb)
 
     with pytest.raises(PropertyPackageError):
         m.rb._validate_state_block()
@@ -326,12 +326,12 @@ def test_build():
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
 
-    m.pb = TestStateBlock(default={"parameters": m.p})
+    m.pb = TestStateBlock(parameters=m.p)
 
-    m.r = ReactionParameterBlock6(default={"property_package": m.p})
+    m.r = ReactionParameterBlock6(property_package=m.p)
     super(_ReactionParameterBlock6, m.r).build()
 
-    m.rb = ReactionBlock2(default={"parameters": m.r, "state_block": m.pb})
+    m.rb = ReactionBlock2(parameters=m.r, state_block=m.pb)
 
     assert hasattr(m.rb, "state_ref")
     assert m.rb.params == m.rb.config.parameters
@@ -388,7 +388,7 @@ class _Reaction(ReactionBlockDataBase):
 def m():
     m = ConcreteModel()
     m.pb = Parameters()
-    m.p = Reaction(default={"parameters": m.pb})
+    m.p = Reaction(parameters=m.pb)
 
     return m
 
