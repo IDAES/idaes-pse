@@ -625,3 +625,52 @@ custom_costing_params = {
         }
     }
 }
+
+
+# this is a way to "zip together" two custom_costing dictionaries in the formats above
+# the BEC_units happen to be in thousands of 2016 USD for these accounts
+# for the power plant methods to work, BEC_units must be "$year", "K$year" or
+# "$Myear" for USD, thousands USD and millions USD, respectively
+import os
+import json
+from pyomo.common.fileutils import this_file_dir
+
+directory = this_file_dir()
+
+if not os.path.exists(
+    os.path.join(directory, "custom_costing_data.json")
+):  # make the dictionary
+
+    custom_costing_data = custom_costing_params
+
+    for tech in custom_costing_data.keys():  # do one technology at a time
+        for ccs in ["A", "B"]:
+            if ccs in custom_costing_data[tech]:  # check if CCS = A, for indexing
+                accounts_dict = custom_costing_data[tech][ccs]  # shorter alias
+                for account in accounts_dict.keys():  # do one account at a time
+                    accounts_dict[account][
+                        "BEC_units"
+                    ] = "K$2016"  # add BEC units as thousands of 2016 USD
+                    for accountkey in custom_costing_exponents[tech][
+                        account
+                    ].keys():  # get one " exponents"account property at a time
+                        accounts_dict[account][accountkey] = custom_costing_exponents[
+                            tech
+                        ][account][accountkey]
+                    sorted_accountkeys = sorted(
+                        accounts_dict[account]
+                    )  # now, sort the accountkeys alphabetically within each account
+                    accounts_dict[account] = {
+                        key: accounts_dict[account][key] for key in sorted_accountkeys
+                    }  # re-add the keys in alphabetical order
+                custom_costing_data[tech][
+                    ccs
+                ] = accounts_dict  # use the alias to update the original dictionary
+
+    with open(os.path.join(directory, "custom_costing_data.json"), "w") as outfile:
+        json.dump(custom_costing_data, outfile)
+    print("Success! New costing dictionary generated.")
+
+# assuming the dictionary exists, load it so it is importable when called
+with open(os.path.join(directory, "custom_costing_data.json"), "r") as file:
+    custom_costing_params = json.load(file)
