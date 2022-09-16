@@ -102,11 +102,9 @@ see property package for documentation.}""",
         self.properties = self.config.property_package.build_state_block(
             self.flowsheet().time,
             doc="Material properties in product",
-            default={
-                "defined_state": True,
-                "has_phase_equilibrium": False,
-                **self.config.property_package_args,
-            },
+            defined_state=True,
+            has_phase_equilibrium=False,
+            **self.config.property_package_args
         )
 
         # Add references to all state vars

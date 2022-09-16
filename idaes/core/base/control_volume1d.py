@@ -382,7 +382,7 @@ argument).""",
             self.flowsheet().time,
             self.length_domain,
             doc="Reaction properties in control volume",
-            default=tmp_dict,
+            **tmp_dict,
         )  # TODO: Do we need something similar to above to skip equilibrium at bounds?
 
     def _add_material_balance_common(

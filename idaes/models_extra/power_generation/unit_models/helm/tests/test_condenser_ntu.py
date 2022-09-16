@@ -27,20 +27,12 @@ solver = get_solver()
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_condenser_steady():
     m = pyo.ConcreteModel()
-    m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
+    m.fs = idaes.core.FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.unit = HelmNtuCondenser(
-        default={
-            "dynamic": False,
-            "shell": {
-                "has_pressure_change": False,
-                "property_package": m.fs.properties,
-            },
-            "tube": {
-                "has_pressure_change": False,
-                "property_package": m.fs.properties,
-            },
-        }
+        dynamic=False,
+        shell={"has_pressure_change": False, "property_package": m.fs.properties},
+        tube={"has_pressure_change": False, "property_package": m.fs.properties},
     )
 
     m.fs.unit.shell_inlet.flow_mol.fix(100)
@@ -67,21 +59,13 @@ def test_condenser_steady():
 def test_condenser_dynamic():
     m = pyo.ConcreteModel()
     m.fs = idaes.core.FlowsheetBlock(
-        default={"dynamic": True, "time_set": [0, 3], "time_units": pyo.units.s}
+        dynamic=True, time_set=[0, 3], time_units=pyo.units.s
     )
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.unit = HelmNtuCondenser(
-        default={
-            "dynamic": False,
-            "shell": {
-                "has_pressure_change": False,
-                "property_package": m.fs.properties,
-            },
-            "tube": {
-                "has_pressure_change": False,
-                "property_package": m.fs.properties,
-            },
-        }
+        dynamic=False,
+        shell={"has_pressure_change": False, "property_package": m.fs.properties},
+        tube={"has_pressure_change": False, "property_package": m.fs.properties},
     )
 
     pyo.TransformationFactory("dae.finite_difference").apply_to(

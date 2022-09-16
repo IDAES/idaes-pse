@@ -66,16 +66,14 @@ def build_drum():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     # Add property packages to flowsheet library
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
     m.fs.unit = Drum(
-        default={
-            "property_package": m.fs.prop_water,
-            "has_holdup": False,
-            "has_heat_transfer": True,
-            "has_pressure_change": True,
-        }
+        property_package=m.fs.prop_water,
+        has_holdup=False,
+        has_heat_transfer=True,
+        has_pressure_change=True,
     )
 
     # fix inputs

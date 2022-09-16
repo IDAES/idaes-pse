@@ -137,8 +137,8 @@ def test_get_phase_component_set_subset():
     m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
     m.p.p1 = Phase()
-    m.p.p2 = Phase(default={"component_list": ["a", "b"]})
-    m.p.p3 = Phase(default={"component_list": ["c"]})
+    m.p.p2 = Phase(component_list=["a", "b"])
+    m.p.p3 = Phase(component_list=["c"])
     m.p.a = Component()
     m.p.b = Component()
     m.p.c = Component()
@@ -547,7 +547,7 @@ class _StateTest(StateBlockData):
 def test_param_ref():
     m = ConcreteModel()
     m.pb = Parameters()
-    m.p = StateTest(default={"parameters": m.pb})
+    m.p = StateTest(parameters=m.pb)
 
     assert m.p.params == m.p.config.parameters
 
@@ -557,7 +557,7 @@ def test_validate_params():
     # Test that validate params has been triggered
     m = ConcreteModel()
     m.pb = Parameters()
-    m.p = StateTest(default={"parameters": m.pb})
+    m.p = StateTest(parameters=m.pb)
 
     # If validation has been triggered, Phase & Component objects should exist
     assert isinstance(m.pb.p1, Phase)
@@ -568,7 +568,7 @@ def test_validate_params():
 def test_has_inherent_reactions_state_block():
     m = ConcreteModel()
     m.pb = Parameters()
-    m.p = StateTest(default={"parameters": m.pb})
+    m.p = StateTest(parameters=m.pb)
 
     assert not m.p.has_inherent_reactions
 
@@ -606,7 +606,7 @@ class _State(StateBlockData):
 def m():
     m = ConcreteModel()
     m.pb = Parameters()
-    m.p = State(default={"parameters": m.pb})
+    m.p = State(parameters=m.pb)
 
     return m
 

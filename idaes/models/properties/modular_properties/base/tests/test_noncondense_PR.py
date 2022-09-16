@@ -188,7 +188,7 @@ class TestParamBlock(object):
     @pytest.mark.unit
     def test_build(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration)
+        model.params = GenericParameterBlock(**configuration)
 
         assert isinstance(model.params.phase_list, Set)
         assert len(model.params.phase_list) == 2
@@ -244,11 +244,9 @@ class TestNonCondensable_Liquid(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration)
+        model.params = GenericParameterBlock(**configuration)
 
-        model.props = model.params.build_state_block(
-            [1], default={"defined_state": True}
-        )
+        model.props = model.params.build_state_block([1], defined_state=True)
 
         # Fix state
         model.props[1].flow_mol.fix(1)
@@ -364,11 +362,9 @@ class TestNonCondensable_Vapour(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration)
+        model.params = GenericParameterBlock(**configuration)
 
-        model.props = model.params.build_state_block(
-            [1], default={"defined_state": True}
-        )
+        model.props = model.params.build_state_block([1], defined_state=True)
 
         # Fix state
         model.props[1].flow_mol.fix(1)

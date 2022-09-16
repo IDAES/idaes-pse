@@ -46,14 +46,10 @@ solver = get_solver()
 @pytest.fixture(scope="module")
 def build_downcomer():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.unit = Downcomer(
-        default={
-            "property_package": m.fs.properties,
-            "has_holdup": False,
-            "has_heat_transfer": True,
-        }
+        property_package=m.fs.properties, has_holdup=False, has_heat_transfer=True
     )
     return m
 

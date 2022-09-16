@@ -70,14 +70,12 @@ class PressureChangerConvergenceEvaluation(cb.ConvergenceEvaluation):
            Pyomo model : returns a pyomo model of the PressureChanger unit
         """
         m = pe.ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.props = pp.Iapws95ParameterBlock()
 
         m.fs.pc = PressureChanger(
-            default={
-                "property_package": m.fs.props,
-                "thermodynamic_assumption": ThermodynamicAssumption.isothermal,
-            }
+            property_package=m.fs.props,
+            thermodynamic_assumption=ThermodynamicAssumption.isothermal,
         )
 
         m.fs.pc.deltaP.fix(-1e3)

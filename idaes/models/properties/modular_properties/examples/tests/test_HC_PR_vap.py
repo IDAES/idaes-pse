@@ -69,7 +69,7 @@ class TestParamBlock(object):
     @pytest.mark.unit
     def test_build(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration_vap)
+        model.params = GenericParameterBlock(**configuration_vap)
 
         assert isinstance(model.params.phase_list, Set)
         assert len(model.params.phase_list) == 1
@@ -190,11 +190,9 @@ class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration_vap)
+        model.params = GenericParameterBlock(**configuration_vap)
 
-        model.props = model.params.build_state_block(
-            [1], default={"defined_state": True}
-        )
+        model.props = model.params.build_state_block([1], defined_state=True)
 
         # Fix state
         model.props[1].flow_mol.fix(1)

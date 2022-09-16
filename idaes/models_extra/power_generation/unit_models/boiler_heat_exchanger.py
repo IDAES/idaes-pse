@@ -88,37 +88,6 @@ class TubeArrangement(Enum):
     staggered = 1
 
 
-def delta_temperature_underwood_tune_callback(b):
-    """
-    This is a callback for a temperature difference expression to calculate
-    :math:`\Delta T` in the heat exchanger model using log-mean temperature
-    difference (LMTD) approximation given by Underwood (1970).  It can be
-    supplied to "delta_temperature_callback" HeatExchanger configuration option.
-    This uses a cube root function that works with negative numbers returning
-    the real negative root. This should always evaluate successfully.
-    """
-    _log.warning(
-        "DEPRECATED: delta_temperature_underwood_tune_callback will be "
-        "removed. Use another standard delta_temperature callback or "
-        "provide a custom callback.  This will be removed in IDAES 3.0."
-    )
-    dT1 = b.delta_temperature_in
-    dT2 = b.delta_temperature_out
-    temp_units = pyunits.get_units(dT1[dT1.index_set().first()])
-    b.lmtd_param_c1 = Var(initialize=0.3241)
-    b.lmtd_param_c2 = Var(initialize=1.99996)
-    b.lmtd_param_c1.fix()
-    b.lmtd_param_c2.fix()
-    c1 = b.lmtd_param_c1
-    c2 = b.lmtd_param_c2
-
-    @b.Expression(b.flowsheet().time)
-    def delta_temperature(b, t):
-        return (((dT1[t] / temp_units) ** c1 + (dT2[t] / temp_units) ** c1) / c2) ** (
-            1 / c1
-        ) * temp_units
-
-
 @declare_process_block_class("BoilerHeatExchanger")
 class BoilerHeatExchangerData(HeatExchangerData):
     CONFIG = HeatExchangerData.CONFIG(implicit=True)

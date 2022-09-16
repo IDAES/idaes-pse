@@ -113,20 +113,12 @@ def fix_boundary_conditions(electrode):
 @pytest.fixture
 def modelNoHoldup():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(
-        default={
-            "dynamic": False,
-            "time_set": [0, 1],
-            "time_units": pyo.units.s,
-        }
-    )
+    m.fs = FlowsheetBlock(dynamic=False, time_set=[0, 1], time_units=pyo.units.s)
     m.fs.oxygen_electrode = soc.PorousConductiveSlab(
-        default={
-            "has_holdup": False,
-            "control_volume_zfaces": np.linspace(0, 1, 4).tolist(),
-            "control_volume_xfaces": np.linspace(0, 1, 5).tolist(),
-            "component_list": ["O2", "N2"],
-        }
+        has_holdup=False,
+        control_volume_zfaces=np.linspace(0, 1, 4).tolist(),
+        control_volume_xfaces=np.linspace(0, 1, 5).tolist(),
+        component_list=["O2", "N2"],
     )
     electrode = m.fs.oxygen_electrode
     electrode.length_x.fix(1e-3)
@@ -185,22 +177,20 @@ def modelHoldupNotDynamic():
         tset, iznodes, initialize=0, units=pyo.units.W / pyo.units.m**2
     )
     m.fs.fuel_electrode = soc.PorousConductiveSlab(
-        default={
-            "has_holdup": True,
-            "control_volume_zfaces": zfaces,
-            "control_volume_xfaces": xfaces_electrode,
-            "component_list": ["H2", "H2O", "N2"],
-            "length_z": m.fs.length_z,
-            "length_y": m.fs.length_y,
-            "conc_mol_comp_ref": m.fs.conc_mol_comp_ref,
-            "dconc_mol_comp_refdt": m.fs.dconc_mol_comp_refdt,
-            "conc_mol_comp_deviation_x0": m.fs.conc_mol_comp_deviation_x0,
-            "material_flux_x0": m.fs.material_flux_x0,
-            "heat_flux_x0": m.fs.heat_flux_x0,
-            "temperature_z": m.fs.temperature_z,
-            "temperature_deviation_x0": m.fs.temperature_deviation_x0,
-            "current_density": m.fs.current_density,
-        }
+        has_holdup=True,
+        control_volume_zfaces=zfaces,
+        control_volume_xfaces=xfaces_electrode,
+        component_list=["H2", "H2O", "N2"],
+        length_z=m.fs.length_z,
+        length_y=m.fs.length_y,
+        conc_mol_comp_ref=m.fs.conc_mol_comp_ref,
+        dconc_mol_comp_refdt=m.fs.dconc_mol_comp_refdt,
+        conc_mol_comp_deviation_x0=m.fs.conc_mol_comp_deviation_x0,
+        material_flux_x0=m.fs.material_flux_x0,
+        heat_flux_x0=m.fs.heat_flux_x0,
+        temperature_z=m.fs.temperature_z,
+        temperature_deviation_x0=m.fs.temperature_deviation_x0,
+        current_density=m.fs.current_density,
     )
     electrode = m.fs.fuel_electrode
     electrode.length_x.fix(1e-3)

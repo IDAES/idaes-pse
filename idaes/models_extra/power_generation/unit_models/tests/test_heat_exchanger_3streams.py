@@ -41,20 +41,18 @@ solver = get_solver()
 @pytest.fixture(scope="module")
 def build_unit():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
     m.fs.prop_fluegas = FlueGasParameterBlock()
     m.fs.unit = HeatExchangerWith3Streams(
-        default={
-            "side_1_property_package": m.fs.prop_fluegas,
-            "side_2_property_package": m.fs.prop_fluegas,
-            "side_3_property_package": m.fs.prop_fluegas,
-            "has_heat_transfer": True,
-            "has_pressure_change": True,
-            "flow_type_side_2": "counter-current",
-            "flow_type_side_3": "counter-current",
-        }
+        side_1_property_package=m.fs.prop_fluegas,
+        side_2_property_package=m.fs.prop_fluegas,
+        side_3_property_package=m.fs.prop_fluegas,
+        has_heat_transfer=True,
+        has_pressure_change=True,
+        flow_type_side_2="counter-current",
+        flow_type_side_3="counter-current",
     )
     return m
 

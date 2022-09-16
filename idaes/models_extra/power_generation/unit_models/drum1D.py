@@ -259,12 +259,10 @@ discretizing length domain (default=3)""",
 
         # Build Control Volume
         self.control_volume = ControlVolume0DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         self.control_volume.add_geometry()
@@ -285,19 +283,14 @@ discretizing length domain (default=3)""",
         )
 
         self.flash = HelmPhaseSeparator(
-            default={
-                "dynamic": False,
-                "property_package": self.config.property_package,
-            }
+            dynamic=False, property_package=self.config.property_package
         )
 
         self.mixer = HelmMixer(
-            default={
-                "dynamic": False,
-                "property_package": self.config.property_package,
-                "momentum_mixing_type": MomentumMixingType.equality,
-                "inlet_list": ["FeedWater", "SaturatedWater"],
-            }
+            dynamic=False,
+            property_package=self.config.property_package,
+            momentum_mixing_type=MomentumMixingType.equality,
+            inlet_list=["FeedWater", "SaturatedWater"],
         )
 
         # Inlet Ports

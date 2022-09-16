@@ -52,19 +52,17 @@ solver = get_solver()
 @pytest.fixture(scope="module")
 def model():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
     n_waterwalls = 10
     m.fs.ww_zones = pyo.RangeSet(n_waterwalls)
     m.fs.Waterwalls = WaterwallSection(
         m.fs.ww_zones,
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "property_package": m.fs.prop_water,
-            "has_heat_transfer": True,
-            "has_pressure_change": True,
-        },
+        dynamic=False,
+        has_holdup=False,
+        property_package=m.fs.prop_water,
+        has_heat_transfer=True,
+        has_pressure_change=True,
     )
 
     def arc_rule(b, i):

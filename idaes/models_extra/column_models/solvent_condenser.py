@@ -243,12 +243,10 @@ see property package for documentation.}""",
         # ---------------------------------------------------------------------
         # Add Control Volume for the Vapor Phase
         self.vapor_phase = ControlVolume0DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.vapor_property_package,
-                "property_package_args": self.config.vapor_property_package_args,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            property_package=self.config.vapor_property_package,
+            property_package_args=self.config.vapor_property_package_args,
         )
 
         self.vapor_phase.add_state_blocks(has_phase_equilibrium=True)
@@ -280,7 +278,7 @@ see property package for documentation.}""",
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["defined_state"] = False
         self.liquid_phase = self.config.liquid_property_package.build_state_block(
-            self.flowsheet().time, doc="Liquid phase properties", default=tmp_dict
+            self.flowsheet().time, doc="Liquid phase properties", **tmp_dict
         )
 
         # ---------------------------------------------------------------------
