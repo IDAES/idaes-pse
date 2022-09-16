@@ -321,7 +321,7 @@ class PIDControllerData(UnitModelBlockData):
 
                 @self.Constraint(time_set, doc="Negative process variable equation")
                 def negative_pv_eqn(b, t):
-                    return b.negative_pv[t] == - b.process_var[t]
+                    return b.negative_pv[t] == -b.process_var[t]
 
                 self.derivative_term = pyodae.DerivativeVar(
                     self.negative_pv,

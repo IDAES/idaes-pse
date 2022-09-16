@@ -42,7 +42,7 @@ from idaes.models.control.controller import (
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util.math import safe_sqrt
-from idaes.core.solvers import get_solver
+from idaes.core.solvers import get_solver, petsc
 import idaes.logger as idaeslog
 from idaes.core.util.plot import plot_grid_dynamic
 import idaes.core.util.scaling as iscale
@@ -258,11 +258,8 @@ def create_model(
     # Add the stream constraints and do the DAE transformation
     pyo.TransformationFactory("network.expand_arcs").apply_to(m.fs)
     if not steady_state:
-        # pyo.TransformationFactory("dae.finite_difference").apply_to(
-        #     m.fs, nfe=nfe, wrt=m.fs.time, scheme="BACKWARD"
-        # )
-        pyo.TransformationFactory("dae.collocation").apply_to(
-            m.fs, nfe=nfe, wrt=m.fs.time, scheme="LAGRANGE-RADAU", ncp=3
+        pyo.TransformationFactory("dae.finite_difference").apply_to(
+            m.fs, nfe=nfe, wrt=m.fs.time, scheme="BACKWARD"
         )
 
     # Fix the derivative variables to zero at time 0 (steady state assumption)
@@ -283,8 +280,8 @@ def create_model(
     m.fs.tank_2.heat_duty.fix(0)
     m.fs.tank_2.control_volume.volume.fix(15.0)
     if not steady_state:
-        m.fs.ctrl.gain_p.fix(1e-6)
-        m.fs.ctrl.gain_i.fix(1e-5)
+        m.fs.ctrl.gain_p.fix(5e-6)
+        m.fs.ctrl.gain_i.fix(2e-6)
         m.fs.ctrl.gain_d.fix(1e-6)
         m.fs.ctrl.derivative_term[m.fs.time.first()].fix(0)
         m.fs.ctrl.setpoint.fix(1.5e5)
@@ -301,7 +298,7 @@ def create_model(
             iscale.set_scaling_factor(tank.control_volume.heat[t], 1e-6)
             iscale.set_scaling_factor(tank.control_volume.volume[t], 1)
     iscale.calculate_scaling_factors(m)
-    iscale.scale_time_discretization_equations(m.fs, 1)
+    iscale.scale_time_discretization_equations(m.fs, m.fs.time, 1)
 
     # Initialize the model
 
@@ -341,7 +338,8 @@ def create_model(
     # Return the model and solver
     return m, solver
 
-@pytest.mark.integration
+#@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+#@pytest.mark.integration
 def test_setpoint_change_windup():
     """Controller performance with derivative on error should be unchanged for an inlet disturbance"""
 
@@ -362,21 +360,38 @@ def test_setpoint_change_windup():
 
     # Next create a model for the 0 to 5 sec time period
     m_dynamic, solver = create_model(
-        steady_state=False, time_set=[0, 20], nfe=10, calc_integ=True, tee=True, derivative_on_error=False,
+        steady_state=False, time_set=[0, 40], nfe=80, calc_integ=True, tee=True, derivative_on_error=False,
         initial_valve1_opening=s1_valve, antiwindup=ControllerAntiwindupType.NONE
     )
     #return m_dynamic, solver
     # Retune controller to result in windup
-    # m_dynamic.fs.ctrl.gain_p.fix(1e-8)
-    # m_dynamic.fs.ctrl.gain_i.fix(1e-4)
+    m_dynamic.fs.ctrl.gain_p.fix(5e-6)
+    m_dynamic.fs.ctrl.gain_i.fix(1e-5)
     m_dynamic.fs.ctrl.gain_d.fix(0)
     # Add a step change in outlet setpoint
-    _add_setpoint_step(m_dynamic, time=m_dynamic.fs.time.at(5), value=3.0e5)
-    solver.solve(m_dynamic, tee=True)
+    _add_setpoint_step(m_dynamic, time=m_dynamic.fs.time.at(10), value=3.0e5)
+
+    res = petsc.petsc_dae_by_time_element(
+        m_dynamic,
+        time=m_dynamic.fs.time,
+        between=[m_dynamic.fs.time.first(), m_dynamic.fs.time.at(9), m_dynamic.fs.time.last()],
+        ts_options={
+            "--ts_type": "beuler",  # Backwards Euler
+            "--ts_adapt_type": "basic",
+            "--ts_dt": 1,
+            "--ts_save_trajectory": 1,
+            # "--snes_monitor": "",
+            # "--ksp_monitor": "",
+            # "--ts_monitor": "",
+            "--ts_max_snes_failures": 1000,
+        },
+    )
+
+    #solver.solve(m_dynamic, tee=True)
 
     # Check that we reach the expected steady state (almost) by t = 5.6 and t=12
     # assert pyo.value(
-    #     m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.at(30)]
+    #     m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.at(4)]
     # ) == pytest.approx(s1_valve, abs=0.001)
     # assert pyo.value(
     #     m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.last()]
