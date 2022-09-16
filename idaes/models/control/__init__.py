@@ -10,7 +10,6 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from idaes.models.control.pid_controller import PIDBlock, PIDForm
 from idaes.models.control.controller import (
     PIDController,
     ControllerType,

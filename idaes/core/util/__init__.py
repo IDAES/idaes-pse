@@ -11,5 +11,5 @@
 # license information.
 #################################################################################
 from .model_serializer import to_json, from_json, StoreSpec
-from .misc import copy_port_values, TagReference
+from .misc import TagReference
 from .tags import svg_tag, ModelTag, ModelTagGroup

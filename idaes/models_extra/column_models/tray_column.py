@@ -235,58 +235,48 @@ see property package for documentation.}""",
         # 2. Add support for specifying which trays have side draws
         self.rectification_section = Tray(
             self._rectification_index,
-            default={
-                "has_liquid_side_draw": self.config.has_liquid_side_draw,
-                "has_vapor_side_draw": self.config.has_vapor_side_draw,
-                "has_heat_transfer": self.config.has_heat_transfer,
-                "has_pressure_change": self.config.has_pressure_change,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            },
+            has_liquid_side_draw=self.config.has_liquid_side_draw,
+            has_vapor_side_draw=self.config.has_vapor_side_draw,
+            has_heat_transfer=self.config.has_heat_transfer,
+            has_pressure_change=self.config.has_pressure_change,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         self.feed_tray = Tray(
-            default={
-                "is_feed_tray": True,
-                "has_liquid_side_draw": self.config.has_liquid_side_draw,
-                "has_vapor_side_draw": self.config.has_vapor_side_draw,
-                "has_heat_transfer": self.config.has_heat_transfer,
-                "has_pressure_change": self.config.has_pressure_change,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            is_feed_tray=True,
+            has_liquid_side_draw=self.config.has_liquid_side_draw,
+            has_vapor_side_draw=self.config.has_vapor_side_draw,
+            has_heat_transfer=self.config.has_heat_transfer,
+            has_pressure_change=self.config.has_pressure_change,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         self.stripping_section = Tray(
             self._stripping_index,
-            default={
-                "has_liquid_side_draw": self.config.has_liquid_side_draw,
-                "has_vapor_side_draw": self.config.has_vapor_side_draw,
-                "has_heat_transfer": self.config.has_heat_transfer,
-                "has_pressure_change": self.config.has_pressure_change,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            },
+            has_liquid_side_draw=self.config.has_liquid_side_draw,
+            has_vapor_side_draw=self.config.has_vapor_side_draw,
+            has_heat_transfer=self.config.has_heat_transfer,
+            has_pressure_change=self.config.has_pressure_change,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         # Add condenser
         self.condenser = Condenser(
-            default={
-                "condenser_type": self.config.condenser_type,
-                "temperature_spec": self.config.condenser_temperature_spec,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            condenser_type=self.config.condenser_type,
+            temperature_spec=self.config.condenser_temperature_spec,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         # Add reboiler
         self.reboiler = Reboiler(
-            default={
-                "has_boilup_ratio": True,
-                "has_pressure_change": self.config.has_pressure_change,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            has_boilup_ratio=True,
+            has_pressure_change=self.config.has_pressure_change,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         # Add extension to the feed port

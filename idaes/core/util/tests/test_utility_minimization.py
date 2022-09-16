@@ -138,43 +138,35 @@ class TestStateBlock(object):
         # flowsheet block to it.
         model = ConcreteModel()
 
-        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs = FlowsheetBlock(dynamic=False)
 
         # Add properties parameter blocks to the flowsheet with specifications
-        model.fs.props = GenericParameterBlock(default=configuration)
+        model.fs.props = GenericParameterBlock(**configuration)
 
         # Create an instance of the units, attaching them to the flowsheet
         # Specify that the property package to be used with with eash unit.
         model.fs.H101 = Heater(
-            default={
-                "property_package": model.fs.props,
-                "has_pressure_change": False,
-                "has_phase_equilibrium": False,
-            }
+            property_package=model.fs.props,
+            has_pressure_change=False,
+            has_phase_equilibrium=False,
         )
 
         model.fs.H102 = Heater(
-            default={
-                "property_package": model.fs.props,
-                "has_pressure_change": False,
-                "has_phase_equilibrium": False,
-            }
+            property_package=model.fs.props,
+            has_pressure_change=False,
+            has_phase_equilibrium=False,
         )
 
         model.fs.H103 = Heater(
-            default={
-                "property_package": model.fs.props,
-                "has_pressure_change": False,
-                "has_phase_equilibrium": False,
-            }
+            property_package=model.fs.props,
+            has_pressure_change=False,
+            has_phase_equilibrium=False,
         )
 
         model.fs.H104 = Heater(
-            default={
-                "property_package": model.fs.props,
-                "has_pressure_change": False,
-                "has_phase_equilibrium": False,
-            }
+            property_package=model.fs.props,
+            has_pressure_change=False,
+            has_phase_equilibrium=False,
         )
 
         model.fs.H101.inlet.mole_frac_comp[0, "A"].fix(1)

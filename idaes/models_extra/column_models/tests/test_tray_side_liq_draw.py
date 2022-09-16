@@ -42,16 +42,14 @@ solver = get_solver()
 def test_config():
 
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
 
     m.fs.unit = Tray(
-        default={
-            "property_package": m.fs.properties,
-            "has_liquid_side_draw": True,
-            "has_heat_transfer": True,
-            "has_pressure_change": True,
-        }
+        property_package=m.fs.properties,
+        has_liquid_side_draw=True,
+        has_heat_transfer=True,
+        has_pressure_change=True,
     )
 
     assert len(m.fs.unit.config) == 9
@@ -65,18 +63,16 @@ class TestBTXIdeal:
     @pytest.fixture(scope="class")
     def btx_ftpz(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = BTXParameterBlock(
-            default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "Ideal"}
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
         )
         m.fs.unit = Tray(
-            default={
-                "property_package": m.fs.properties,
-                "has_liquid_side_draw": True,
-                "has_heat_transfer": True,
-                "has_pressure_change": True,
-            }
+            property_package=m.fs.properties,
+            has_liquid_side_draw=True,
+            has_heat_transfer=True,
+            has_pressure_change=True,
         )
 
         # Set inputs
@@ -102,22 +98,16 @@ class TestBTXIdeal:
     @pytest.fixture(scope="class")
     def btx_fctp(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = BTXParameterBlock(
-            default={
-                "valid_phase": ("Liq", "Vap"),
-                "activity_coeff_model": "Ideal",
-                "state_vars": "FcTP",
-            }
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal", state_vars="FcTP"
         )
         m.fs.unit = Tray(
-            default={
-                "property_package": m.fs.properties,
-                "has_liquid_side_draw": True,
-                "has_heat_transfer": True,
-                "has_pressure_change": True,
-            }
+            property_package=m.fs.properties,
+            has_liquid_side_draw=True,
+            has_heat_transfer=True,
+            has_pressure_change=True,
         )
 
         # Set inputs

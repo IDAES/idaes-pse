@@ -429,17 +429,15 @@ see reaction package for documentation.}""",
             populate its control volume"""
 
         self.bubble = ControlVolume1DBlock(
-            default={
-                "transformation_method": self.config.transformation_method,
-                "transformation_scheme": self.config.transformation_scheme,
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "area_definition": DistributedVars.variant,
-                "property_package": self.config.gas_phase_config.property_package,
-                "property_package_args": self.config.gas_phase_config.property_package_args,
-                "reaction_package": self.config.gas_phase_config.reaction_package,
-                "reaction_package_args": self.config.gas_phase_config.reaction_package_args,
-            }
+            transformation_method=self.config.transformation_method,
+            transformation_scheme=self.config.transformation_scheme,
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            area_definition=DistributedVars.variant,
+            property_package=self.config.gas_phase_config.property_package,
+            property_package_args=self.config.gas_phase_config.property_package_args,
+            reaction_package=self.config.gas_phase_config.reaction_package,
+            reaction_package_args=self.config.gas_phase_config.reaction_package_args,
         )
 
         self.bubble.add_geometry(
@@ -480,17 +478,15 @@ see reaction package for documentation.}""",
             populate its control volume"""
 
         self.gas_emulsion = ControlVolume1DBlock(
-            default={
-                "transformation_method": self.config.transformation_method,
-                "transformation_scheme": self.config.transformation_scheme,
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "area_definition": DistributedVars.variant,
-                "property_package": self.config.gas_phase_config.property_package,
-                "property_package_args": self.config.gas_phase_config.property_package_args,
-                "reaction_package": self.config.gas_phase_config.reaction_package,
-                "reaction_package_args": self.config.gas_phase_config.reaction_package_args,
-            }
+            transformation_method=self.config.transformation_method,
+            transformation_scheme=self.config.transformation_scheme,
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            area_definition=DistributedVars.variant,
+            property_package=self.config.gas_phase_config.property_package,
+            property_package_args=self.config.gas_phase_config.property_package_args,
+            reaction_package=self.config.gas_phase_config.reaction_package,
+            reaction_package_args=self.config.gas_phase_config.reaction_package_args,
         )
 
         self.gas_emulsion.add_geometry(
@@ -532,17 +528,15 @@ see reaction package for documentation.}""",
             populate solid control volume"""
 
         self.solid_emulsion = ControlVolume1DBlock(
-            default={
-                "transformation_method": self.config.transformation_method,
-                "transformation_scheme": self.config.transformation_scheme,
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "area_definition": DistributedVars.variant,
-                "property_package": self.config.solid_phase_config.property_package,
-                "property_package_args": self.config.solid_phase_config.property_package_args,
-                "reaction_package": self.config.solid_phase_config.reaction_package,
-                "reaction_package_args": self.config.solid_phase_config.reaction_package_args,
-            }
+            transformation_method=self.config.transformation_method,
+            transformation_scheme=self.config.transformation_scheme,
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            area_definition=DistributedVars.variant,
+            property_package=self.config.solid_phase_config.property_package,
+            property_package_args=self.config.solid_phase_config.property_package_args,
+            reaction_package=self.config.solid_phase_config.reaction_package,
+            reaction_package_args=self.config.solid_phase_config.reaction_package_args,
         )
 
         self.solid_emulsion.add_geometry(
@@ -576,7 +570,7 @@ see reaction package for documentation.}""",
                     self.flowsheet().time,
                     self.length_domain,
                     doc="Reaction properties in control volume",
-                    default=tmp_dict,
+                    **tmp_dict,
                 )
             )
 
@@ -608,25 +602,25 @@ see reaction package for documentation.}""",
         # varying solid flow directions (co_current and counter_current)
         self.gas_inlet_block = (
             self.config.gas_phase_config.property_package.build_state_block(
-                self.flowsheet().time, default={"defined_state": True}
+                self.flowsheet().time, defined_state=True
             )
         )
 
         self.gas_outlet_block = (
             self.config.gas_phase_config.property_package.build_state_block(
-                self.flowsheet().time, default={"defined_state": False}
+                self.flowsheet().time, defined_state=False
             )
         )
 
         self.solid_inlet_block = (
             self.config.solid_phase_config.property_package.build_state_block(
-                self.flowsheet().time, default={"defined_state": True}
+                self.flowsheet().time, defined_state=True
             )
         )
 
         self.solid_outlet_block = (
             self.config.solid_phase_config.property_package.build_state_block(
-                self.flowsheet().time, default={"defined_state": False}
+                self.flowsheet().time, defined_state=False
             )
         )
 

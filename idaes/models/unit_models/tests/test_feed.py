@@ -46,11 +46,11 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = Feed(default={"property_package": m.fs.properties})
+    m.fs.unit = Feed(property_package=m.fs.properties)
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 4
@@ -65,11 +65,11 @@ class TestSaponification(object):
     @pytest.fixture(scope="class")
     def sapon(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = SaponificationParameterBlock()
 
-        m.fs.unit = Feed(default={"property_package": m.fs.properties})
+        m.fs.unit = Feed(property_package=m.fs.properties)
 
         m.fs.unit.flow_vol.fix(1.0e-03)
         m.fs.unit.conc_mol_comp[0, "H2O"].fix(55388.0)
@@ -197,13 +197,13 @@ class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = iapws95.Iapws95ParameterBlock(
-            default={"phase_presentation": iapws95.PhaseType.LG}
+            phase_presentation=iapws95.PhaseType.LG
         )
 
-        m.fs.unit = Feed(default={"property_package": m.fs.properties})
+        m.fs.unit = Feed(property_package=m.fs.properties)
 
         m.fs.unit.flow_mol.fix(100)
         m.fs.unit.enth_mol.fix(24000)

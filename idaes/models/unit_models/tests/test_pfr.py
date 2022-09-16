@@ -58,19 +58,12 @@ solver = get_solver()
 @pytest.mark.component
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
-    m.fs.reactions = ReactionParameterTestBlock(
-        default={"property_package": m.fs.properties}
-    )
+    m.fs.reactions = ReactionParameterTestBlock(property_package=m.fs.properties)
 
-    m.fs.unit = PFR(
-        default={
-            "property_package": m.fs.properties,
-            "reaction_package": m.fs.reactions,
-        }
-    )
+    m.fs.unit = PFR(property_package=m.fs.properties, reaction_package=m.fs.reactions)
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 19
@@ -98,22 +91,20 @@ class TestSaponification(object):
     @pytest.fixture(scope="class")
     def sapon(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = SaponificationParameterBlock()
         m.fs.reactions = SaponificationReactionParameterBlock(
-            default={"property_package": m.fs.properties}
+            property_package=m.fs.properties
         )
 
         m.fs.unit = PFR(
-            default={
-                "property_package": m.fs.properties,
-                "reaction_package": m.fs.reactions,
-                "has_equilibrium_reactions": False,
-                "has_heat_transfer": True,
-                "has_heat_of_reaction": True,
-                "has_pressure_change": True,
-            }
+            property_package=m.fs.properties,
+            reaction_package=m.fs.reactions,
+            has_equilibrium_reactions=False,
+            has_heat_transfer=True,
+            has_heat_of_reaction=True,
+            has_pressure_change=True,
         )
 
         m.fs.unit.inlet.flow_vol.fix(1.0)

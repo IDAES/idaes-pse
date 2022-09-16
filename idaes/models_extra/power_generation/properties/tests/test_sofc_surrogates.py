@@ -50,7 +50,7 @@ solver = get_solver()
 @pytest.fixture(scope="module")
 def build_rom():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.sofc = SofcSurrogate()
 
     return m

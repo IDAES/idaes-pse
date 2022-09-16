@@ -47,18 +47,6 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
-def get_default_solver():
-    """
-    Move to idaes.core.util.misc - leaving redirection method here for
-    deprecation warning
-    """
-    _log.warn(
-        "Deprecated: get_default_solver has been moved and renamed. It "
-        "can now be imported from idaes.core.util as get_solver"
-    )
-    return default_solver()
-
-
 def initialization_tester(m, dof=0, unit=None, **init_kwargs):
     """
     A method to test initialization methods on IDAES models. This method is

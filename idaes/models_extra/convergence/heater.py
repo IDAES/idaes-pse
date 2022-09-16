@@ -19,25 +19,23 @@ from idaes.models_extra.power_generation.unit_models.helm import HelmValve
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.models.unit_models import Heater
 from idaes.models.properties import iapws95
-from idaes.core.util import copy_port_values as _set_port
+from idaes.core.util.initialization import propagate_state as _set_port
 from idaes.core.solvers import get_solver
 
 
 def create_model_steady_state(f=100, p=5e5, h=5e4):
     """Create a steady state heater model."""
     m = pyo.ConcreteModel(name="Dynamic Heater Test")
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     # Create a property parameter block
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.MIX}
+        phase_presentation=iapws95.PhaseType.MIX
     )
     m.fs.heater = Heater(
-        default={
-            "has_holdup": False,
-            "has_pressure_change": True,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "property_package": m.fs.prop_water,
-        }
+        has_holdup=False,
+        has_pressure_change=True,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        property_package=m.fs.prop_water,
     )
 
     m.fs.heater.inlet.enth_mol.fix(50000)
@@ -74,34 +72,28 @@ def create_model_dynamic(
         time_set = [0, 5]
 
     m = pyo.ConcreteModel(name="Dynamic Heater Test")
-    m.fs = FlowsheetBlock(default={"dynamic": True, "time_set": time_set})
+    m.fs = FlowsheetBlock(dynamic=True, time_set=time_set)
     # Create a property parameter block
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.MIX}
+        phase_presentation=iapws95.PhaseType.MIX
     )
     # Create the valve and heater models
     m.fs.pipe = HelmValve(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "property_package": m.fs.prop_water,
-        }
+        dynamic=False,
+        has_holdup=False,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        property_package=m.fs.prop_water,
     )
     m.fs.heater = Heater(
-        default={
-            "has_holdup": True,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "property_package": m.fs.prop_water,
-        }
+        has_holdup=True,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        property_package=m.fs.prop_water,
     )
     m.fs.valve = HelmValve(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "property_package": m.fs.prop_water,
-        }
+        dynamic=False,
+        has_holdup=False,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        property_package=m.fs.prop_water,
     )
 
     # Connect the models

@@ -23,10 +23,10 @@ from idaes.models.properties import iapws95
 @pytest.mark.component
 def test_mixer():
     m = pyo.ConcreteModel()
-    m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
+    m.fs = idaes.core.FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.unit = HelmMixer(
-        default={"property_package": m.fs.properties, "inlet_list": ["i1", "i2", "i3"]}
+        property_package=m.fs.properties, inlet_list=["i1", "i2", "i3"]
     )
 
     Fin1 = 1.1e4  # mol/s
@@ -62,14 +62,12 @@ def test_mixer():
 @pytest.mark.component
 def test_mixer2():
     m = pyo.ConcreteModel()
-    m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
+    m.fs = idaes.core.FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.unit = HelmMixer(
-        default={
-            "momentum_mixing_type": MomentumMixingType.equality,
-            "property_package": m.fs.properties,
-            "inlet_list": ["i1", "i2", "i3"],
-        }
+        momentum_mixing_type=MomentumMixingType.equality,
+        property_package=m.fs.properties,
+        inlet_list=["i1", "i2", "i3"],
     )
 
     Fin1 = 1.1e4  # mol/s

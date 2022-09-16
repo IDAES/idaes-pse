@@ -329,31 +329,25 @@ tube side flows from 1 to 0""",
         # Control volume 1D for shell and tube, set to steady-state
         # for fluid on both sides
         self.shell = ControlVolume1DBlock(
-            default={
-                # currently always set dynamic to False for fluid control volume
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.shell_side.property_package,
-                "property_package_args": self.config.shell_side.property_package_args,
-                "transformation_method": self.config.transformation_method,
-                "transformation_scheme": self.config.transformation_scheme,
-                "finite_elements": self.config.finite_elements,
-                "collocation_points": self.config.collocation_points,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.shell_side.property_package,
+            property_package_args=self.config.shell_side.property_package_args,
+            transformation_method=self.config.transformation_method,
+            transformation_scheme=self.config.transformation_scheme,
+            finite_elements=self.config.finite_elements,
+            collocation_points=self.config.collocation_points,
         )
 
         self.tube = ControlVolume1DBlock(
-            default={
-                # currently alway set dynamic to False for fluid control volume
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.tube_side.property_package,
-                "property_package_args": self.config.tube_side.property_package_args,
-                "transformation_method": self.config.transformation_method,
-                "transformation_scheme": self.config.transformation_scheme,
-                "finite_elements": self.config.finite_elements,
-                "collocation_points": self.config.collocation_points,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.tube_side.property_package,
+            property_package_args=self.config.tube_side.property_package_args,
+            transformation_method=self.config.transformation_method,
+            transformation_scheme=self.config.transformation_scheme,
+            finite_elements=self.config.finite_elements,
+            collocation_points=self.config.collocation_points,
         )
 
         self.shell.add_geometry(flow_direction=set_direction_shell)

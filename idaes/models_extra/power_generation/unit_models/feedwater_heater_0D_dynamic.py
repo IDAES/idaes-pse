@@ -257,7 +257,7 @@ class FWH0DDynamicData(UnitModelBlockData):
 
         # All feedwater heaters have a condensing section
         _set_prop_pack(config.condense, config)
-        self.condense = FWHCondensing0D(default=config.condense)
+        self.condense = FWHCondensing0D(**config.condense)
 
         # Add a mixer to add the drain stream from another feedwater heater
         if config.has_drain_mixer:
@@ -267,7 +267,7 @@ class FWH0DDynamicData(UnitModelBlockData):
                 "property_package": config.property_package,
                 "momentum_mixing_type": MomentumMixingType.none,
             }
-            self.drain_mix = Mixer(default=mix_cfg)
+            self.drain_mix = Mixer(**mix_cfg)
 
             @self.drain_mix.Constraint(self.drain_mix.flowsheet().time)
             def mixer_pressure_constraint(b, t):
@@ -286,7 +286,7 @@ class FWH0DDynamicData(UnitModelBlockData):
         # Add a desuperheat section before the condensing section
         if config.has_desuperheat:
             _set_prop_pack(config.desuperheat, config)
-            self.desuperheat = HeatExchanger(default=config.desuperheat)
+            self.desuperheat = HeatExchanger(**config.desuperheat)
             # set default area less than condensing section area, this will
             # almost always be overridden by the user fixing an area later
             self.desuperheat.area.value = 10
@@ -308,7 +308,7 @@ class FWH0DDynamicData(UnitModelBlockData):
         # Add a drain cooling section after the condensing section
         if config.has_drain_cooling:
             _set_prop_pack(config.cooling, config)
-            self.cooling = HeatExchanger(default=config.cooling)
+            self.cooling = HeatExchanger(**config.cooling)
             # set default area less than condensing section area, this will
             # almost always be overridden by the user fixing an area later
             self.cooling.area.value = 10

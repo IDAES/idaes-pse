@@ -78,10 +78,10 @@ def test_DistributedVars():
 @pytest.mark.unit
 def test_base_build():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = CVFrame(default={"property_package": m.fs.pp})
+    m.fs.cv = CVFrame(property_package=m.fs.pp)
 
     assert len(m.fs.cv.config) == 12
     assert m.fs.cv.config.dynamic is False
@@ -103,89 +103,78 @@ def test_base_build():
 @pytest.mark.unit
 def test_validate_config_args_transformation_method_none():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     with pytest.raises(ConfigurationError):
-        m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+        m.fs.cv = ControlVolume1DBlock(property_package=m.fs.pp)
 
 
 @pytest.mark.unit
 def test_validate_config_args_transformation_scheme_none():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     with pytest.raises(ConfigurationError):
         m.fs.cv = ControlVolume1DBlock(
-            default={
-                "property_package": m.fs.pp,
-                "transformation_method": "dae.finite_difference",
-            }
+            property_package=m.fs.pp, transformation_method="dae.finite_difference"
         )
 
 
 @pytest.mark.unit
 def test_validate_config_args_transformation_scheme_invalid_1():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     with pytest.raises(ConfigurationError):
         m.fs.cv = ControlVolume1DBlock(
-            default={
-                "property_package": m.fs.pp,
-                "transformation_method": "dae.finite_difference",
-                "transformation_scheme": "LAGRANGE-RADAU",
-            }
+            property_package=m.fs.pp,
+            transformation_method="dae.finite_difference",
+            transformation_scheme="LAGRANGE-RADAU",
         )
 
 
 @pytest.mark.unit
 def test_validate_config_args_transformation_scheme_invalid_2():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     with pytest.raises(ConfigurationError):
         m.fs.cv = ControlVolume1DBlock(
-            default={
-                "property_package": m.fs.pp,
-                "transformation_method": "dae.finite_difference",
-                "transformation_scheme": "LAGRANGE-LEGENDRE",
-            }
+            property_package=m.fs.pp,
+            transformation_method="dae.finite_difference",
+            transformation_scheme="LAGRANGE-LEGENDRE",
         )
 
 
 @pytest.mark.unit
 def test_validate_config_args_transformation_scheme_invalid_3():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     with pytest.raises(ConfigurationError):
         m.fs.cv = ControlVolume1DBlock(
-            default={
-                "property_package": m.fs.pp,
-                "transformation_method": "dae.collocation",
-                "transformation_scheme": "BACKWARD",
-            }
+            property_package=m.fs.pp,
+            transformation_method="dae.collocation",
+            transformation_scheme="BACKWARD",
         )
 
 
 @pytest.mark.unit
 def test_validate_config_args_transformation_scheme_invalid_4():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     with pytest.raises(ConfigurationError):
         m.fs.cv = ControlVolume1DBlock(
-            default={
-                "property_package": m.fs.pp,
-                "transformation_method": "dae.collocation",
-                "transformation_scheme": "FORWARD",
-            }
+            property_package=m.fs.pp,
+            transformation_method="dae.collocation",
+            transformation_scheme="FORWARD",
         )
 
 
@@ -194,16 +183,14 @@ def test_validate_config_args_transformation_scheme_invalid_4():
 @pytest.mark.unit
 def test_add_geometry_default():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -222,16 +209,14 @@ def test_add_geometry_default():
 @pytest.mark.unit
 def test_add_geometry_inherited_domain():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.domain = ContinuousSet(bounds=(0, 1))
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
     )
 
     m.fs.cv.add_geometry(length_domain=m.fs.domain)
@@ -242,15 +227,13 @@ def test_add_geometry_inherited_domain():
 @pytest.mark.unit
 def test_add_geometry_length_domain_set():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
     )
 
     m.fs.cv.add_geometry(length_domain_set=[0.0, 0.2, 0.7, 1.0])
@@ -263,15 +246,13 @@ def test_add_geometry_length_domain_set():
 @pytest.mark.unit
 def test_add_geometry_flow_direction():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
     )
 
     m.fs.cv.add_geometry(flow_direction=FlowDirection.backward)
@@ -282,15 +263,13 @@ def test_add_geometry_flow_direction():
 @pytest.mark.unit
 def test_add_geometry_flow_direction_invalid():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
     )
 
     with pytest.raises(ConfigurationError):
@@ -300,16 +279,14 @@ def test_add_geometry_flow_direction_invalid():
 @pytest.mark.unit
 def test_add_geometry_discretized_area():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "area_definition": DistributedVars.variant,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        area_definition=DistributedVars.variant,
     )
 
     m.fs.cv.add_geometry()
@@ -320,16 +297,14 @@ def test_add_geometry_discretized_area():
 @pytest.mark.unit
 def test_add_geometry_length_var_Var():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.length = Var(initialize=4)
@@ -351,16 +326,14 @@ def test_add_geometry_length_var_Var():
 @pytest.mark.unit
 def test_add_geometry_length_var_Param():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.length = Param(initialize=4)
@@ -382,16 +355,14 @@ def test_add_geometry_length_var_Param():
 @pytest.mark.unit
 def test_add_geometry_length_var_Expression():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.length = Expression(expr=4)
@@ -413,16 +384,14 @@ def test_add_geometry_length_var_Expression():
 @pytest.mark.unit
 def test_add_geometry_length_var_invalid_type():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     with pytest.raises(
@@ -435,16 +404,14 @@ def test_add_geometry_length_var_invalid_type():
 @pytest.mark.unit
 def test_add_geometry_length_var_indexed():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.length = Var([1, 2, 3, 4])
@@ -461,15 +428,13 @@ def test_add_geometry_length_var_indexed():
 @pytest.mark.unit
 def test_apply_transformation_finite_elements_none():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
     )
 
     m.fs.cv.add_geometry()
@@ -480,16 +445,14 @@ def test_apply_transformation_finite_elements_none():
 @pytest.mark.unit
 def test_apply_transformation_collocation_points_none():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.collocation",
-            "transformation_scheme": "LAGRANGE-RADAU",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.collocation",
+        transformation_scheme="LAGRANGE-RADAU",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -500,16 +463,14 @@ def test_apply_transformation_collocation_points_none():
 @pytest.mark.unit
 def test_apply_transformation_BFD_10():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -521,16 +482,14 @@ def test_apply_transformation_BFD_10():
 @pytest.mark.unit
 def test_apply_transformation_FFD_12():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "FORWARD",
-            "finite_elements": 12,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="FORWARD",
+        finite_elements=12,
     )
 
     m.fs.cv.add_geometry()
@@ -542,17 +501,15 @@ def test_apply_transformation_FFD_12():
 @pytest.mark.unit
 def test_apply_transformation_Lagrange_Radau_8_3():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.collocation",
-            "transformation_scheme": "LAGRANGE-RADAU",
-            "finite_elements": 8,
-            "collocation_points": 3,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.collocation",
+        transformation_scheme="LAGRANGE-RADAU",
+        finite_elements=8,
+        collocation_points=3,
     )
 
     m.fs.cv.add_geometry()
@@ -564,17 +521,15 @@ def test_apply_transformation_Lagrange_Radau_8_3():
 @pytest.mark.unit
 def test_apply_transformation_Lagrange_Legendre_3_7():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.collocation",
-            "transformation_scheme": "LAGRANGE-LEGENDRE",
-            "finite_elements": 9,
-            "collocation_points": 4,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.collocation",
+        transformation_scheme="LAGRANGE-LEGENDRE",
+        finite_elements=9,
+        collocation_points=4,
     )
 
     m.fs.cv.add_geometry()
@@ -586,19 +541,17 @@ def test_apply_transformation_Lagrange_Legendre_3_7():
 @pytest.mark.unit
 def test_apply_transformation_external_domain():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
 
     m.fs.cset = ContinuousSet(bounds=(0, 1))
 
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry(length_domain=m.fs.cset)
@@ -611,16 +564,14 @@ def test_apply_transformation_external_domain():
 @pytest.mark.unit
 def test_add_state_blocks():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -642,16 +593,14 @@ def test_add_state_blocks():
 @pytest.mark.unit
 def test_add_state_block_forward_flow():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -666,16 +615,14 @@ def test_add_state_block_forward_flow():
 @pytest.mark.unit
 def test_add_state_block_backward_flow():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -690,16 +637,14 @@ def test_add_state_block_backward_flow():
 @pytest.mark.unit
 def test_add_state_blocks_has_phase_equilibrium():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -712,16 +657,14 @@ def test_add_state_blocks_has_phase_equilibrium():
 @pytest.mark.unit
 def test_add_state_blocks_no_has_phase_equilibrium():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -733,17 +676,15 @@ def test_add_state_blocks_no_has_phase_equilibrium():
 @pytest.mark.unit
 def test_add_state_blocks_custom_args():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-            "property_package_args": {"test": "test"},
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+        property_package_args={"test": "test"},
     )
 
     m.fs.cv.add_geometry()
@@ -759,18 +700,16 @@ def test_add_state_blocks_custom_args():
 @pytest.mark.unit
 def test_add_reaction_blocks():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -789,18 +728,16 @@ def test_add_reaction_blocks():
 @pytest.mark.unit
 def test_add_reaction_blocks_has_equilibrium():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -813,18 +750,16 @@ def test_add_reaction_blocks_has_equilibrium():
 @pytest.mark.unit
 def test_add_reaction_blocks_no_has_equilibrium():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -837,19 +772,17 @@ def test_add_reaction_blocks_no_has_equilibrium():
 @pytest.mark.unit
 def test_add_reaction_blocks_custom_args():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-            "reaction_package_args": {"test1": 1},
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+        reaction_package_args={"test1": 1},
     )
 
     m.fs.cv.add_geometry()
@@ -864,18 +797,16 @@ def test_add_reaction_blocks_custom_args():
 @pytest.mark.unit
 def test_add_phase_fractions():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -890,21 +821,19 @@ def test_add_phase_fractions():
 @pytest.mark.unit
 def test_add_phase_fractions_single_phase():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.del_component(m.fs.pp.phase_list)
     m.fs.pp.phase_list = Set(initialize=["p1"])
 
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -921,19 +850,17 @@ def test_add_phase_fractions_single_phase():
 @pytest.mark.unit
 def test_rxn_rate_conv_no_rxns():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 3
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -949,19 +876,17 @@ def test_rxn_rate_conv_no_rxns():
 @pytest.mark.unit
 def test_rxn_rate_conv_property_basis_other():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 3
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -978,19 +903,17 @@ def test_rxn_rate_conv_property_basis_other():
 @pytest.mark.unit
 def test_rxn_rate_conv_reaction_basis_other():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.rp.basis_switch = 3
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1007,18 +930,16 @@ def test_rxn_rate_conv_reaction_basis_other():
 @pytest.mark.unit
 def test_rxn_rate_conv_both_molar():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1034,20 +955,18 @@ def test_rxn_rate_conv_both_molar():
 @pytest.mark.unit
 def test_rxn_rate_conv_both_mass():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.basis_switch = 2
     m.fs.rp.basis_switch = 2
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1063,20 +982,18 @@ def test_rxn_rate_conv_both_mass():
 @pytest.mark.unit
 def test_rxn_rate_conv_mole_mass_no_mw():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.basis_switch = 1
     m.fs.rp.basis_switch = 2
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1093,20 +1010,18 @@ def test_rxn_rate_conv_mole_mass_no_mw():
 @pytest.mark.unit
 def test_rxn_rate_conv_mass_mole_no_mw():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.basis_switch = 2
     m.fs.rp.basis_switch = 1
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1123,20 +1038,18 @@ def test_rxn_rate_conv_mass_mole_no_mw():
 @pytest.mark.unit
 def test_rxn_rate_conv_mole_mass():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.basis_switch = 1
     m.fs.rp.basis_switch = 2
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1156,20 +1069,18 @@ def test_rxn_rate_conv_mole_mass():
 @pytest.mark.unit
 def test_rxn_rate_conv_mass_mole():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.basis_switch = 2
     m.fs.rp.basis_switch = 1
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1191,18 +1102,16 @@ def test_rxn_rate_conv_mass_mole():
 @pytest.mark.unit
 def test_add_material_balances_default_fail():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1218,18 +1127,16 @@ def test_add_material_balances_default_fail():
 @pytest.mark.unit
 def test_add_material_balances_default():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1254,25 +1161,23 @@ def test_add_material_balances_rxn_molar():
     # use property package with mass basis to confirm correct rxn term units
     # add options so that all generation/extent terms exist
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     # Set property package to contain inherent reactions
     m.fs.pp._has_inherent_reactions = True
 
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.rp.basis_switch = 1
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     units = m.fs.cv.config.property_package.get_metadata().get_derived_units
@@ -1313,25 +1218,23 @@ def test_add_material_balances_rxn_mass():
     # use property package with mass basis to confirm correct rxn term units
     # add options so that all generation/extent terms exist
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     # Set property package to contain inherent reactions
     m.fs.pp._has_inherent_reactions = True
 
     m.fs.pp.basis_switch = 1
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.rp.basis_switch = 2
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     units = m.fs.cv.config.property_package.get_metadata().get_derived_units
@@ -1372,18 +1275,16 @@ def test_add_material_balances_rxn_mass():
 @pytest.mark.unit
 def test_add_phase_component_balances_default():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1406,18 +1307,16 @@ def test_add_phase_component_balances_default():
 @pytest.mark.unit
 def test_add_phase_component_balances_default_FFD():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "FORWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="FORWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1440,19 +1339,17 @@ def test_add_phase_component_balances_default_FFD():
 @pytest.mark.unit
 def test_add_phase_component_balances_distrubuted_area():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-            "area_definition": DistributedVars.variant,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+        area_definition=DistributedVars.variant,
     )
 
     m.fs.cv.add_geometry()
@@ -1470,19 +1367,17 @@ def test_add_phase_component_balances_distrubuted_area():
 @pytest.mark.unit
 def test_add_phase_component_balances_dynamic():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
+    m.fs = Flowsheet(dynamic=True, time_units=units.s)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-            "dynamic": True,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+        dynamic=True,
     )
 
     m.fs.cv.add_geometry()
@@ -1503,18 +1398,16 @@ def test_add_phase_component_balances_dynamic():
 @pytest.mark.unit
 def test_add_phase_component_balances_rate_rxns():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1535,17 +1428,15 @@ def test_add_phase_component_balances_rate_rxns():
 @pytest.mark.unit
 def test_add_phase_component_balances_rate_rxns_no_ReactionBlock():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1558,19 +1449,17 @@ def test_add_phase_component_balances_rate_rxns_no_ReactionBlock():
 @pytest.mark.unit
 def test_add_phase_component_balances_rate_rxns_no_rxn_idx():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.rp.del_component(m.fs.rp.rate_reaction_idx)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1584,18 +1473,16 @@ def test_add_phase_component_balances_rate_rxns_no_rxn_idx():
 @pytest.mark.unit
 def test_add_phase_component_balances_eq_rxns():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1616,18 +1503,16 @@ def test_add_phase_component_balances_eq_rxns():
 @pytest.mark.unit
 def test_add_phase_component_balances_eq_rxns_not_active():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1641,19 +1526,17 @@ def test_add_phase_component_balances_eq_rxns_not_active():
 @pytest.mark.unit
 def test_add_phase_component_balances_eq_rxns_no_idx():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.rp.del_component(m.fs.rp.equilibrium_reaction_idx)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1667,17 +1550,15 @@ def test_add_phase_component_balances_eq_rxns_no_idx():
 @pytest.mark.unit
 def test_add_phase_component_balances_eq_rxns_no_ReactionBlock():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1690,18 +1571,16 @@ def test_add_phase_component_balances_eq_rxns_no_ReactionBlock():
 @pytest.mark.unit
 def test_add_phase_component_balances_phase_eq():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1720,18 +1599,16 @@ def test_add_phase_component_balances_phase_eq():
 @pytest.mark.unit
 def test_add_phase_component_balances_phase_eq_not_active():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1745,19 +1622,17 @@ def test_add_phase_component_balances_phase_eq_not_active():
 @pytest.mark.unit
 def test_add_phase_component_balances_phase_eq_no_idx():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1771,18 +1646,16 @@ def test_add_phase_component_balances_phase_eq_no_idx():
 @pytest.mark.unit
 def test_add_phase_component_balances_mass_transfer():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1801,18 +1674,16 @@ def test_add_phase_component_balances_mass_transfer():
 @pytest.mark.unit
 def test_add_phase_component_balances_custom_molar_term():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1837,19 +1708,17 @@ def test_add_phase_component_balances_custom_molar_term():
 @pytest.mark.unit
 def test_add_phase_component_balances_custom_molar_term_no_mw():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1870,19 +1739,17 @@ def test_add_phase_component_balances_custom_molar_term_no_mw():
 @pytest.mark.unit
 def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1914,19 +1781,17 @@ def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
 @pytest.mark.unit
 def test_add_phase_component_balances_custom_molar_term_undefined_basis():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 3
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1947,19 +1812,17 @@ def test_add_phase_component_balances_custom_molar_term_undefined_basis():
 @pytest.mark.unit
 def test_add_phase_component_balances_custom_mass_term():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -1984,19 +1847,17 @@ def test_add_phase_component_balances_custom_mass_term():
 @pytest.mark.unit
 def test_add_phase_component_balances_custom_mass_term_no_mw_comp():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 1
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2017,19 +1878,17 @@ def test_add_phase_component_balances_custom_mass_term_no_mw_comp():
 @pytest.mark.unit
 def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2061,19 +1920,17 @@ def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
 @pytest.mark.unit
 def test_add_phase_component_balances_custom_mass_term_undefined_basis():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 3
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2096,18 +1953,16 @@ def test_add_phase_component_balances_custom_mass_term_undefined_basis():
 @pytest.mark.unit
 def test_add_total_component_balances_default():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2130,18 +1985,16 @@ def test_add_total_component_balances_default():
 @pytest.mark.unit
 def test_add_total_component_balances_default_FFD():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "FORWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="FORWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2164,19 +2017,17 @@ def test_add_total_component_balances_default_FFD():
 @pytest.mark.unit
 def test_add_total_component_balances_distrubuted_area():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-            "area_definition": DistributedVars.variant,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+        area_definition=DistributedVars.variant,
     )
 
     m.fs.cv.add_geometry()
@@ -2194,19 +2045,17 @@ def test_add_total_component_balances_distrubuted_area():
 @pytest.mark.unit
 def test_add_total_component_balances_dynamic():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
+    m.fs = Flowsheet(dynamic=True, time_units=units.s)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-            "dynamic": True,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+        dynamic=True,
     )
 
     m.fs.cv.add_geometry()
@@ -2227,18 +2076,16 @@ def test_add_total_component_balances_dynamic():
 @pytest.mark.unit
 def test_add_total_component_balances_rate_rxns():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2259,17 +2106,15 @@ def test_add_total_component_balances_rate_rxns():
 @pytest.mark.unit
 def test_add_total_component_balances_rate_rxns_no_ReactionBlock():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2282,19 +2127,17 @@ def test_add_total_component_balances_rate_rxns_no_ReactionBlock():
 @pytest.mark.unit
 def test_add_total_component_balances_rate_rxns_no_rxn_idx():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.rp.del_component(m.fs.rp.rate_reaction_idx)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2308,18 +2151,16 @@ def test_add_total_component_balances_rate_rxns_no_rxn_idx():
 @pytest.mark.unit
 def test_add_total_component_balances_eq_rxns():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2340,18 +2181,16 @@ def test_add_total_component_balances_eq_rxns():
 @pytest.mark.unit
 def test_add_total_component_balances_eq_rxns_not_active():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2365,19 +2204,17 @@ def test_add_total_component_balances_eq_rxns_not_active():
 @pytest.mark.unit
 def test_add_total_component_balances_eq_rxns_no_idx():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.rp.del_component(m.fs.rp.equilibrium_reaction_idx)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2391,17 +2228,15 @@ def test_add_total_component_balances_eq_rxns_no_idx():
 @pytest.mark.unit
 def test_add_total_component_balances_eq_rxns_no_ReactionBlock():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2414,19 +2249,17 @@ def test_add_total_component_balances_eq_rxns_no_ReactionBlock():
 @pytest.mark.unit
 def test_add_total_component_balances_in_rxns():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     # Set property package to contain inherent reactions
     m.fs.pp._has_inherent_reactions = True
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2446,7 +2279,7 @@ def test_add_total_component_balances_in_rxns():
 @pytest.mark.unit
 def test_add_total_component_balances_in_rxns_no_idx():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
     # Set property package to contain inherent reactions
@@ -2455,12 +2288,10 @@ def test_add_total_component_balances_in_rxns_no_idx():
     m.fs.pp.del_component(m.fs.pp.inherent_reaction_idx)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2478,18 +2309,16 @@ def test_add_total_component_balances_in_rxns_no_idx():
 @pytest.mark.unit
 def test_add_total_component_balances_phase_eq_not_active():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2503,18 +2332,16 @@ def test_add_total_component_balances_phase_eq_not_active():
 @pytest.mark.unit
 def test_add_total_component_balances_mass_transfer():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2533,18 +2360,16 @@ def test_add_total_component_balances_mass_transfer():
 @pytest.mark.unit
 def test_add_total_component_balances_custom_molar_term():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2567,19 +2392,17 @@ def test_add_total_component_balances_custom_molar_term():
 @pytest.mark.unit
 def test_add_total_component_balances_custom_molar_term_no_mw():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2598,19 +2421,17 @@ def test_add_total_component_balances_custom_molar_term_no_mw():
 @pytest.mark.unit
 def test_add_total_component_balances_custom_molar_term_mass_flow_basis():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2640,19 +2461,17 @@ def test_add_total_component_balances_custom_molar_term_mass_flow_basis():
 @pytest.mark.unit
 def test_add_total_component_balances_custom_molar_term_undefined_basis():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 3
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2671,19 +2490,17 @@ def test_add_total_component_balances_custom_molar_term_undefined_basis():
 @pytest.mark.unit
 def test_add_total_component_balances_custom_mass_term():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2706,19 +2523,17 @@ def test_add_total_component_balances_custom_mass_term():
 @pytest.mark.unit
 def test_add_total_component_balances_custom_mass_term_no_mw():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 1
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2737,19 +2552,17 @@ def test_add_total_component_balances_custom_mass_term_no_mw():
 @pytest.mark.unit
 def test_add_total_component_balances_custom_mass_term_mole_flow_basis():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2779,19 +2592,17 @@ def test_add_total_component_balances_custom_mass_term_mole_flow_basis():
 @pytest.mark.unit
 def test_add_total_component_balances_custom_mass_term_undefined_basis():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 3
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2812,18 +2623,16 @@ def test_add_total_component_balances_custom_mass_term_undefined_basis():
 @pytest.mark.unit
 def test_add_total_element_balances_default():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2846,18 +2655,16 @@ def test_add_total_element_balances_default():
 @pytest.mark.unit
 def test_add_total_element_balances_default_FFD():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "FORWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="FORWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2880,19 +2687,17 @@ def test_add_total_element_balances_default_FFD():
 @pytest.mark.unit
 def test_add_total_element_balances_distrubuted_area():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-            "area_definition": DistributedVars.variant,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+        area_definition=DistributedVars.variant,
     )
 
     m.fs.cv.add_geometry()
@@ -2910,19 +2715,17 @@ def test_add_total_element_balances_distrubuted_area():
 @pytest.mark.unit
 def test_add_total_element_balances_properties_not_supported():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.del_component(m.fs.pp.element_list)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2936,19 +2739,17 @@ def test_add_total_element_balances_properties_not_supported():
 @pytest.mark.unit
 def test_add_total_element_balances_dynamic():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
+    m.fs = Flowsheet(dynamic=True, time_units=units.s)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-            "dynamic": True,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+        dynamic=True,
     )
 
     m.fs.cv.add_geometry()
@@ -2969,18 +2770,16 @@ def test_add_total_element_balances_dynamic():
 @pytest.mark.unit
 def test_add_total_element_balances_rate_rxns():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -2994,18 +2793,16 @@ def test_add_total_element_balances_rate_rxns():
 @pytest.mark.unit
 def test_add_total_element_balances_eq_rxns():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3019,18 +2816,16 @@ def test_add_total_element_balances_eq_rxns():
 @pytest.mark.unit
 def test_add_total_element_balances_phase_eq():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3044,18 +2839,16 @@ def test_add_total_element_balances_phase_eq():
 @pytest.mark.unit
 def test_add_total_element_balances_mass_transfer():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3074,18 +2867,16 @@ def test_add_total_element_balances_mass_transfer():
 @pytest.mark.unit
 def test_add_total_element_balances_custom_term():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3156,19 +2947,17 @@ def test_add_total_element_balances_lineraly_dependent(caplog):
 @pytest.mark.unit
 def test_add_total_material_balances():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3184,18 +2973,16 @@ def test_add_total_material_balances():
 @pytest.mark.unit
 def test_add_energy_balances_default_fail():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3211,18 +2998,16 @@ def test_add_energy_balances_default_fail():
 @pytest.mark.unit
 def test_add_energy_balances_default():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3249,18 +3034,16 @@ def test_add_energy_balances_default():
 @pytest.mark.unit
 def test_add_total_enthalpy_balances_default():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3285,18 +3068,16 @@ def test_add_total_enthalpy_balances_default():
 @pytest.mark.unit
 def test_add_total_enthalpy_balances_default_FFD():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "FORWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="FORWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3321,19 +3102,17 @@ def test_add_total_enthalpy_balances_default_FFD():
 @pytest.mark.unit
 def test_add_total_enthalpy_balances_distributed_area():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-            "area_definition": DistributedVars.variant,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+        area_definition=DistributedVars.variant,
     )
 
     m.fs.cv.add_geometry()
@@ -3354,19 +3133,17 @@ def test_add_total_enthalpy_balances_distributed_area():
 @pytest.mark.unit
 def test_add_total_enthalpy_balances_dynamic():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
+    m.fs = Flowsheet(dynamic=True, time_units=units.s)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-            "dynamic": True,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+        dynamic=True,
     )
 
     m.fs.cv.add_geometry()
@@ -3387,18 +3164,16 @@ def test_add_total_enthalpy_balances_dynamic():
 @pytest.mark.unit
 def test_add_total_enthalpy_balances_heat_transfer():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3417,18 +3192,16 @@ def test_add_total_enthalpy_balances_heat_transfer():
 @pytest.mark.unit
 def test_add_total_enthalpy_balances_work_transfer():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3447,18 +3220,16 @@ def test_add_total_enthalpy_balances_work_transfer():
 @pytest.mark.unit
 def test_add_total_enthalpy_balances_enthalpy_transfer():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3477,18 +3248,16 @@ def test_add_total_enthalpy_balances_enthalpy_transfer():
 @pytest.mark.unit
 def test_add_total_enthalpy_balances_custom_term():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3511,18 +3280,16 @@ def test_add_total_enthalpy_balances_custom_term():
 @pytest.mark.unit
 def test_add_total_enthalpy_balances_dh_rxn_no_extents():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3536,18 +3303,16 @@ def test_add_total_enthalpy_balances_dh_rxn_no_extents():
 @pytest.mark.unit
 def test_add_total_enthalpy_balances_dh_rxn_rate_rxns():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3564,18 +3329,16 @@ def test_add_total_enthalpy_balances_dh_rxn_rate_rxns():
 @pytest.mark.unit
 def test_add_total_enthalpy_balances_dh_rxn_equil_rxns():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3594,19 +3357,17 @@ def test_add_total_enthalpy_balances_dh_rxn_equil_rxns():
 @pytest.mark.unit
 def test_add_phase_enthalpy_balances():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3620,19 +3381,17 @@ def test_add_phase_enthalpy_balances():
 @pytest.mark.unit
 def test_add_phase_energy_balances():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3646,19 +3405,17 @@ def test_add_phase_energy_balances():
 @pytest.mark.unit
 def test_add_total_energy_balances():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3674,18 +3431,16 @@ def test_add_total_energy_balances():
 @pytest.mark.unit
 def test_add_total_pressure_balances_default():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3709,18 +3464,16 @@ def test_add_total_pressure_balances_default():
 @pytest.mark.unit
 def test_add_total_pressure_balances_default_FFD():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "FORWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="FORWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3744,18 +3497,16 @@ def test_add_total_pressure_balances_default_FFD():
 @pytest.mark.unit
 def test_add_total_pressure_balances_deltaP():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3774,18 +3525,16 @@ def test_add_total_pressure_balances_deltaP():
 @pytest.mark.unit
 def test_add_total_pressure_balances_custom_term():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3810,19 +3559,17 @@ def test_add_total_pressure_balances_custom_term():
 @pytest.mark.unit
 def test_add_phase_pressure_balances():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3836,19 +3583,17 @@ def test_add_phase_pressure_balances():
 @pytest.mark.unit
 def test_add_phase_momentum_balances():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3862,19 +3607,17 @@ def test_add_phase_momentum_balances():
 @pytest.mark.unit
 def test_add_total_momentum_balances():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3890,19 +3633,17 @@ def test_add_total_momentum_balances():
 @pytest.mark.unit
 def test_model_checks():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3920,19 +3661,17 @@ def test_model_checks():
 @pytest.mark.unit
 def test_initialize():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -3954,19 +3693,17 @@ def test_report():
     # on 1D models yet. This is because it is difficult to concisely report
     # distributed data.
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     with pytest.raises(NotImplementedError):
