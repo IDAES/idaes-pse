@@ -239,19 +239,14 @@ def fix_cell_parameters(cell):
 def model_func():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(
-        default={
-            "dynamic": False,
-            "time_set": [0],
-            "time_units": pyo.units.s,
-        }
+        dynamic=False,
+        time_set=[0],
+        time_units=pyo.units.s,
     )
-
     m.fs.propertiesIapws95 = iapws95.Iapws95ParameterBlock()
-    m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(
-        default={"parameters": m.fs.propertiesIapws95}
-    )
+    m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(parameters=m.fs.propertiesIapws95)
 
-    m.fs.cell = SolidOxideCell(default=cell_config)
+    m.fs.cell = SolidOxideCell(**cell_config)
 
     fix_cell_parameters(m.fs.cell)
 
@@ -275,33 +270,21 @@ def model():
 def model_stack():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(
-        default={
-            "dynamic": False,
-            "time_set": [0],
-            "time_units": pyo.units.s,
-        }
+            dynamic=False,
+            time_set=[0],
+            time_units=pyo.units.s,
     )
 
     m.fs.propertiesIapws95 = iapws95.Iapws95ParameterBlock()
-    m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(
-        default={"parameters": m.fs.propertiesIapws95}
-    )
+    m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(parameters=m.fs.propertiesIapws95)
 
-    m.fs.oxygen_params = GenericParameterBlock(
-        default=get_prop(oxygen_comps, {"Vap"}, eos=EosType.IDEAL),
-        doc="Air-side parameters",
-    )
-    m.fs.fuel_params = GenericParameterBlock(
-        default=get_prop(fuel_comps, {"Vap"}, eos=EosType.IDEAL),
-        doc="Fuel-side parameters",
-    )
+    m.fs.oxygen_params = GenericParameterBlock(**get_prop(oxygen_comps, {"Vap"}, eos=EosType.IDEAL))
+    m.fs.fuel_params = GenericParameterBlock(**get_prop(fuel_comps, {"Vap"}, eos=EosType.IDEAL))
 
     m.fs.stack = SolidOxideModuleSimple(
-        default={
-            "solid_oxide_cell_config": cell_config,
-            "fuel_property_package": m.fs.fuel_params,
-            "oxygen_property_package": m.fs.oxygen_params,
-        }
+        solid_oxide_cell_config=cell_config,
+        fuel_property_package=m.fs.fuel_params,
+        oxygen_property_package=m.fs.oxygen_params,
     )
 
     fix_cell_parameters(m.fs.stack.solid_oxide_cell)

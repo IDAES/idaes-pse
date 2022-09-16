@@ -517,30 +517,26 @@ def model_contact_resistance_and_interconnect():
 
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(
-        default={
-            "dynamic": False,
-            "time_set": time_set,
-            "time_units": pyo.units.s,
-        }
+        dynamic=False,
+        time_set=time_set,
+        time_units=pyo.units.s,
     )
     m.fs.cell = soc.SolidOxideCell(
-        default={
-            "has_holdup": True,
-            "control_volume_zfaces": zfaces,
-            "control_volume_xfaces_fuel_electrode": xfaces_electrode,
-            "control_volume_xfaces_oxygen_electrode": xfaces_electrode,
-            "control_volume_xfaces_electrolyte": xfaces_electrolyte,
-            "fuel_component_list": fuel_comps,
-            "fuel_triple_phase_boundary_stoich_dict": fuel_triple_phase_boundary_stoich_dict,
-            "inert_fuel_species_triple_phase_boundary": ["N2"],
-            "oxygen_component_list": oxygen_comps,
-            "oxygen_triple_phase_boundary_stoich_dict": oxygen_triple_phase_boundary_stoich_dict,
-            "inert_oxygen_species_triple_phase_boundary": ["N2"],
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            "include_contact_resistance": True,
-            "flux_through_interconnect": True,
-            "control_volume_xfaces_interconnect": [0, 0.5, 1],
-        }
+            has_holdup=True,
+            control_volume_zfaces=zfaces,
+            control_volume_xfaces_fuel_electrode=xfaces_electrode,
+            control_volume_xfaces_oxygen_electrode=xfaces_electrode,
+            control_volume_xfaces_electrolyte=xfaces_electrolyte,
+            fuel_component_list=fuel_comps,
+            fuel_triple_phase_boundary_stoich_dict=fuel_triple_phase_boundary_stoich_dict,
+            inert_fuel_species_triple_phase_boundary=["N2"],
+            oxygen_component_list=oxygen_comps,
+            oxygen_triple_phase_boundary_stoich_dict=oxygen_triple_phase_boundary_stoich_dict,
+            inert_oxygen_species_triple_phase_boundary=["N2"],
+            flow_pattern=HeatExchangerFlowPattern.countercurrent,
+            include_contact_resistance=True,
+            flux_through_interconnect=True,
+            control_volume_xfaces_interconnect=[0, 0.5, 1]
     )
     return m
 
@@ -782,29 +778,25 @@ def model_no_contact_resistance_but_interconnect():
 
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(
-        default={
-            "dynamic": False,
-            "time_set": time_set,
-            "time_units": pyo.units.s,
-        }
+        dynamic=False,
+        time_set=time_set,
+        time_units=pyo.units.s,
     )
     m.fs.cell = soc.SolidOxideCell(
-        default={
-            "has_holdup": False,
-            "control_volume_zfaces": zfaces,
-            "control_volume_xfaces_fuel_electrode": xfaces_electrode,
-            "control_volume_xfaces_oxygen_electrode": xfaces_electrode,
-            "control_volume_xfaces_electrolyte": xfaces_electrolyte,
-            "fuel_component_list": fuel_comps,
-            "fuel_triple_phase_boundary_stoich_dict": fuel_triple_phase_boundary_stoich_dict,
-            # "inert_fuel_species_triple_phase_boundary": [], Test default
-            "oxygen_component_list": oxygen_comps,
-            "oxygen_triple_phase_boundary_stoich_dict": oxygen_triple_phase_boundary_stoich_dict,
-            "inert_oxygen_species_triple_phase_boundary": ["N2", "H2O"],
-            "flow_pattern": HeatExchangerFlowPattern.cocurrent,
-            "flux_through_interconnect": True,
-            "control_volume_xfaces_interconnect": xfaces_interconnect,
-        }
+        has_holdup=False,
+        control_volume_zfaces=zfaces,
+        control_volume_xfaces_fuel_electrode=xfaces_electrode,
+        control_volume_xfaces_oxygen_electrode=xfaces_electrode,
+        control_volume_xfaces_electrolyte=xfaces_electrolyte,
+        fuel_component_list=fuel_comps,
+        fuel_triple_phase_boundary_stoich_dict=fuel_triple_phase_boundary_stoich_dict,
+        # inert_fuel_species_triple_phase_boundary=[], Test default
+        oxygen_component_list=oxygen_comps,
+        oxygen_triple_phase_boundary_stoich_dict=oxygen_triple_phase_boundary_stoich_dict,
+        inert_oxygen_species_triple_phase_boundary=["N2", "H2O"],
+        flow_pattern=HeatExchangerFlowPattern.cocurrent,
+        flux_through_interconnect=True,
+        control_volume_xfaces_interconnect=xfaces_interconnect,
     )
     return m
 
