@@ -110,10 +110,15 @@ class SocContactResistorData(UnitModelBlockData):
             )
 
     def initialize_build(
-        self, outlvl=idaeslog.NOTSET, solver=None, optarg=None, fix_heat_flux_x0=True
+        self, outlvl=idaeslog.NOTSET, solver=None, optarg=None, fix_heat_flux_x0=True, temperature_guess=None
     ):
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
+        if temperature_guess is not None:
+            for t in self.flowsheet().time:
+                for iz in self.iznodes:
+                    common._set_if_unfixed(self.temperature_z[t, iz], temperature_guess)
 
         self.temperature_deviation_x.fix()
         if fix_heat_flux_x0:
