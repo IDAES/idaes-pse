@@ -477,6 +477,7 @@ def test_tag_slice(model):
     tw.set(1 * pyo.units.kg)
     assert str(tw["b"]) == "1,000 g"
 
+
 """
 DEPRECATED this module provides tests for functions that have been deprecated,
 and will be removed.
