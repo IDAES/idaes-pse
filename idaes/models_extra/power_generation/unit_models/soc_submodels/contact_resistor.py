@@ -110,7 +110,12 @@ class SocContactResistorData(UnitModelBlockData):
             )
 
     def initialize_build(
-        self, outlvl=idaeslog.NOTSET, solver=None, optarg=None, fix_heat_flux_x0=True, temperature_guess=None
+        self,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
+        fix_heat_flux_x0=True,
+        temperature_guess=None,
     ):
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
