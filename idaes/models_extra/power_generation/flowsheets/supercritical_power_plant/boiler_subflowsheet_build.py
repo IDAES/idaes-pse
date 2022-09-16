@@ -56,7 +56,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.network import Arc
-from idaes.core.util.misc import svg_tag
+from idaes.core.util.tags import svg_tag
 
 # Import IDAES core
 from idaes.core import FlowsheetBlock
