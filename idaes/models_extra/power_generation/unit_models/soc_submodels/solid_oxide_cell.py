@@ -646,8 +646,8 @@ class SolidOxideCellData(UnitModelBlockData):
                 include_temperature_x_thermo=include_temp_x_thermo,
             )
 
-            @self.electrolyte.Constraint(tset, iznodes)
-            def temperature_continuity_eqn(b, t, iz):
+            @self.Constraint(tset, iznodes)
+            def electrolyte_temperature_continuity_eqn(b, t, iz):
                 return (
                     fuel_electrode_temperature_deviation_x1[t, iz]
                     == oxygen_electrode_temperature_deviation_x0[t, iz]
@@ -713,8 +713,8 @@ class SolidOxideCellData(UnitModelBlockData):
                     include_temperature_x_thermo=include_temp_x_thermo,
                 )
 
-                @self.interconnect.Constraint(tset, iznodes)
-                def temperature_continuity_eqn(b, t, iz):
+                @self.Constraint(tset, iznodes)
+                def interconnect_temperature_continuity_eqn(b, t, iz):
                     return (
                         self.oxygen_channel.temperature_deviation_x1[t, iz]
                         == self.fuel_channel.temperature_deviation_x0[t, iz]
@@ -1333,7 +1333,7 @@ class SolidOxideCellData(UnitModelBlockData):
                         self.electrolyte.temperature_deviation_x.referent[t, iz],
                         default=1,
                     )
-                    cst(self.electrolyte.temperature_continuity_eqn[t, iz], sT)
+                    cst(self.electrolyte_temperature_continuity_eqn[t, iz], sT)
                 if (
                     self.config.flux_through_interconnect
                     and self.config.thin_interconnect
@@ -1345,4 +1345,4 @@ class SolidOxideCellData(UnitModelBlockData):
                         self.oxygen_channel.temperature_deviation_x1[t, iz], default=1
                     )
                     sT = min(sT1, sT2)
-                    cst(self.interconnect.temperature_continuity_eqn[t, iz], sT)
+                    cst(self.interconnect_temperature_continuity_eqn[t, iz], sT)
