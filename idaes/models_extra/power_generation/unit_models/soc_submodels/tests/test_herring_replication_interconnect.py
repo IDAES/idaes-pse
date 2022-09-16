@@ -78,7 +78,10 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
-from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop, EosType
+from idaes.models_extra.power_generation.properties.natural_gas_PR import (
+    get_prop,
+    EosType,
+)
 from idaes.models_extra.power_generation.unit_models.soc_submodels import (
     SolidOxideCell,
     SolidOxideModuleSimple,
@@ -240,15 +243,13 @@ def fix_cell_parameters(cell):
 def model_func():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(
-            dynamic=False,
-            time_set=[0],
-            time_units=pyo.units.s,
+        dynamic=False,
+        time_set=[0],
+        time_units=pyo.units.s,
     )
 
     m.fs.propertiesIapws95 = iapws95.Iapws95ParameterBlock()
-    m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(
-        parameters=m.fs.propertiesIapws95
-    )
+    m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(parameters=m.fs.propertiesIapws95)
 
     m.fs.cell = SolidOxideCell(**cell_config)
 
@@ -274,15 +275,13 @@ def model():
 def model_stack():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(
-            dynamic=False,
-            time_set=[0],
-            time_units=pyo.units.s,
+        dynamic=False,
+        time_set=[0],
+        time_units=pyo.units.s,
     )
 
     m.fs.propertiesIapws95 = iapws95.Iapws95ParameterBlock()
-    m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(
-        parameters=m.fs.propertiesIapws95
-    )
+    m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(parameters=m.fs.propertiesIapws95)
 
     m.fs.oxygen_params = GenericParameterBlock(
         **get_prop(oxygen_comps, {"Vap"}, eos=EosType.IDEAL),

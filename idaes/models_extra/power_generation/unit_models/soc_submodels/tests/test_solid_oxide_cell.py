@@ -522,21 +522,21 @@ def model_contact_resistance_and_interconnect():
         time_units=pyo.units.s,
     )
     m.fs.cell = soc.SolidOxideCell(
-            has_holdup=True,
-            control_volume_zfaces=zfaces,
-            control_volume_xfaces_fuel_electrode=xfaces_electrode,
-            control_volume_xfaces_oxygen_electrode=xfaces_electrode,
-            control_volume_xfaces_electrolyte=xfaces_electrolyte,
-            fuel_component_list=fuel_comps,
-            fuel_triple_phase_boundary_stoich_dict=fuel_triple_phase_boundary_stoich_dict,
-            inert_fuel_species_triple_phase_boundary=["N2"],
-            oxygen_component_list=oxygen_comps,
-            oxygen_triple_phase_boundary_stoich_dict=oxygen_triple_phase_boundary_stoich_dict,
-            inert_oxygen_species_triple_phase_boundary=["N2"],
-            flow_pattern=HeatExchangerFlowPattern.countercurrent,
-            include_contact_resistance=True,
-            flux_through_interconnect=True,
-            control_volume_xfaces_interconnect=[0, 0.5, 1]
+        has_holdup=True,
+        control_volume_zfaces=zfaces,
+        control_volume_xfaces_fuel_electrode=xfaces_electrode,
+        control_volume_xfaces_oxygen_electrode=xfaces_electrode,
+        control_volume_xfaces_electrolyte=xfaces_electrolyte,
+        fuel_component_list=fuel_comps,
+        fuel_triple_phase_boundary_stoich_dict=fuel_triple_phase_boundary_stoich_dict,
+        inert_fuel_species_triple_phase_boundary=["N2"],
+        oxygen_component_list=oxygen_comps,
+        oxygen_triple_phase_boundary_stoich_dict=oxygen_triple_phase_boundary_stoich_dict,
+        inert_oxygen_species_triple_phase_boundary=["N2"],
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        include_contact_resistance=True,
+        flux_through_interconnect=True,
+        control_volume_xfaces_interconnect=[0, 0.5, 1],
     )
     return m
 
