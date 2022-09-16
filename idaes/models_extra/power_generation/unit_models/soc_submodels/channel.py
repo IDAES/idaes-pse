@@ -176,13 +176,23 @@ class SocChannelData(UnitModelBlockData):
                 units=pyo.units.mol / pyo.units.m**2 / pyo.units.s,
             )
 
-            @self.Expression(tset, iznodes, comps)
-            def conc_mol_comp_deviation_x1(b, t, iz, j):
-                return 0
-
-            @self.Expression(tset, iznodes, comps)
-            def material_flux_x1(b, t, iz, j):
-                return 0
+            self.conc_mol_comp_deviation_x1 = pyo.Param(
+                tset,
+                iznodes,
+                comps,
+                doc="Dummy parameter for zero concentration deviation at interconnect wall.",
+                initialize=0,
+                units=pyo.units.mol / pyo.units.m**3,
+            )
+            self.material_flux_x1 = pyo.Param(
+                tset,
+                iznodes,
+                comps,
+                doc="Dummy parameter for zero material flux from channel "
+                "to interconnect.",
+                initialize=0,
+                units=pyo.units.mol / pyo.units.m**2 / pyo.units.s,
+            )
 
         else:
             self.conc_mol_comp_deviation_x1 = pyo.Var(
@@ -203,14 +213,23 @@ class SocChannelData(UnitModelBlockData):
                 initialize=0,
                 units=pyo.units.mol / pyo.units.m**2 / pyo.units.s,
             )
-
-            @self.Expression(tset, iznodes, comps)
-            def conc_mol_comp_deviation_x0(b, t, iz, j):
-                return 0
-
-            @self.Expression(tset, iznodes, comps)
-            def material_flux_x0(b, t, iz, j):
-                return 0
+            self.conc_mol_comp_deviation_x0 = pyo.Param(
+                tset,
+                iznodes,
+                comps,
+                doc="Dummy parameter for zero concentration deviation at interconnect wall.",
+                initialize=0,
+                units=pyo.units.mol / pyo.units.m**3,
+            )
+            self.material_flux_x0 = pyo.Param(
+                tset,
+                iznodes,
+                comps,
+                doc="Dummy parameter for zero material flux from channel "
+                "to interconnect.",
+                initialize=0,
+                units=pyo.units.mol / pyo.units.m**2 / pyo.units.s,
+            )
 
         # Channel thickness AKA length in the x direction is specific to the
         # channel so local variable here is the only option
@@ -286,6 +305,15 @@ class SocChannelData(UnitModelBlockData):
             doc="Component mole fraction at node centers",
             bounds=(0, None),
             units=pyo.units.dimensionless,
+        )
+        self.diff_eff_coeff = pyo.Var(
+            tset,
+            iznodes,
+            comps,
+            doc="Effective Fick's law diffusion coefficient at node centers",
+            initialize=2e-5,
+            bounds=(0, None),
+            units=pyo.units.m**2 / pyo.units.s,
         )
         self.flow_mol_inlet = pyo.Var(
             tset,
@@ -383,14 +411,13 @@ class SocChannelData(UnitModelBlockData):
                 for i in comps
             )
 
-        # TODO maybe replace with variable-constraint pair?
-        @self.Expression(tset, iznodes, comps)
-        def diff_eff_coeff(b, t, iz, i):
+        @self.Constraint(tset, iznodes, comps)
+        def diff_eff_coeff_eqn(b, t, iz, i):
             T = b.temperature[t, iz]
             P = b.pressure[t, iz]
             x = b.mole_frac_comp
             bfun = common._binary_diffusion_coefficient_expr
-            return (1.0 - x[t, iz, i]) / sum(
+            return b.diff_eff_coeff[t, iz, i] == (1.0 - x[t, iz, i]) / sum(
                 x[t, iz, j] / bfun(T, P, i, j) for j in comps if i != j
             )
 
@@ -406,9 +433,8 @@ class SocChannelData(UnitModelBlockData):
             @self.Constraint(tset, iznodes, comps)
             def material_flux_x0_eqn(b, t, iz, i):
                 return (
-                    b.material_flux_x0[t, iz, i]
-                    == b.mass_transfer_coeff[t, iz, i]
-                    * b.conc_mol_comp_deviation_x0[t, iz, i]
+                    -b.material_flux_x0[t, iz, i] / b.mass_transfer_coeff[t, iz, i]
+                    == b.conc_mol_comp_deviation_x0[t, iz, i]
                 )
 
         else:
@@ -416,9 +442,8 @@ class SocChannelData(UnitModelBlockData):
             @self.Constraint(tset, iznodes, comps)
             def material_flux_x1_eqn(b, t, iz, i):
                 return (
-                    b.material_flux_x1[t, iz, i]
-                    == -b.mass_transfer_coeff[t, iz, i]
-                    * b.conc_mol_comp_deviation_x1[t, iz, i]
+                    -b.material_flux_x1[t, iz, i] / b.mass_transfer_coeff[t, iz, i]
+                    == b.conc_mol_comp_deviation_x1[t, iz, i]
                 )
 
         @self.Constraint(tset, iznodes)
@@ -869,12 +894,15 @@ class SocChannelData(UnitModelBlockData):
 
                     ssf(self.conc_mol_comp[t, iz, j], sy * sP / (sR * sT))
                     cst(self.conc_mol_comp_eqn[t, iz, j], sy * sP)
+                    # FIXME come back later to clean up
+                    ssf(self.diff_eff_coeff[t, iz, j], 1e5)
+                    cst(self.diff_eff_coeff_eqn[t, iz, j], 1e5)
 
                     if hasattr(self, "material_flux_x0_eqn"):
                         sXflux = gsf(
                             self.material_flux_x0[t, iz, j], default=1e-1, warning=True
                         )
-                        cst(self.material_flux_x0_eqn[t, iz, j], sXflux)
+                        cst(self.material_flux_x0_eqn[t, iz, j], sLx * sXflux / sD)
                         ssf(
                             self.conc_mol_comp_deviation_x0[t, iz, j], sLx * sXflux / sD
                         )
@@ -882,7 +910,7 @@ class SocChannelData(UnitModelBlockData):
                         sXflux = gsf(
                             self.material_flux_x1[t, iz, j], default=1e-1, warning=True
                         )
-                        cst(self.material_flux_x1_eqn[t, iz, j], sXflux)
+                        cst(self.material_flux_x1_eqn[t, iz, j], sLx * sXflux / sD)
                         ssf(
                             self.conc_mol_comp_deviation_x1[t, iz, j], sLx * sXflux / sD
                         )

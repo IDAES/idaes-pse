@@ -75,13 +75,10 @@ from idaes.models.properties import iapws95
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from idaes.models.properties.modular_properties import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
-from idaes.models_extra.power_generation.properties.natural_gas_PR import (
-    get_prop,
-    EosType,
-)
+from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop, EosType
 from idaes.models_extra.power_generation.unit_models.soc_submodels import (
     SolidOxideCell,
     SolidOxideModuleSimple,
@@ -121,6 +118,7 @@ zfaces = np.linspace(0, 1, 11).tolist()
 
 xfaces_electrode = [0.0, 1.0]
 xfaces_electrolyte = [0.0, 1.0]
+xfaces_interconnect = [0.0, 1.0]
 
 fuel_comps = ["H2", "H2O", "N2"]
 fuel_stoich_dict = {
@@ -135,11 +133,12 @@ oxygen_comps = ["O2", "N2"]
 oxygen_stoich_dict = {"O2": -0.25, "Vac": -0.5, "O^2-": 0.5, "e^-": -1.0}
 
 cell_config = {
-    "has_holdup": True,
+    "has_holdup": False,
     "control_volume_zfaces": zfaces,
     "control_volume_xfaces_fuel_electrode": xfaces_electrode,
     "control_volume_xfaces_oxygen_electrode": xfaces_electrode,
     "control_volume_xfaces_electrolyte": xfaces_electrolyte,
+    "control_volume_xfaces_interconnect": xfaces_interconnect,
     "fuel_component_list": fuel_comps,
     "fuel_triple_phase_boundary_stoich_dict": fuel_stoich_dict,
     "inert_fuel_species_triple_phase_boundary": ["N2"],
@@ -149,6 +148,7 @@ cell_config = {
     "flow_pattern": HeatExchangerFlowPattern.cocurrent,
     "include_temperature_x_thermo": True,
     "include_contact_resistance": True,
+    "flux_through_interconnect": True,
 }
 
 
@@ -211,6 +211,13 @@ def fix_cell_parameters(cell):
     cell.electrolyte.resistivity_log_preexponential_factor.fix(pyo.log(1.07e-4))
     cell.electrolyte.resistivity_thermal_exponent_dividend.fix(7237)
 
+    cell.interconnect.length_x.fix(4.6e-4)
+    cell.interconnect.heat_capacity.fix(630)
+    cell.interconnect.density.fix(7700)
+    cell.interconnect.thermal_conductivity.fix(25)
+    cell.interconnect.resistivity_log_preexponential_factor.fix(pyo.log(1.2e-6))
+    cell.interconnect.resistivity_thermal_exponent_dividend.fix(0)
+
     # Values from Kazempoor and Braun
     cell.fuel_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(
         pyo.log(5.5e8)
@@ -232,12 +239,20 @@ def fix_cell_parameters(cell):
 
 def model_func():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False, time_set=[0], time_units=pyo.units.s)
+    m.fs = FlowsheetBlock(
+        default={
+            "dynamic": False,
+            "time_set": [0],
+            "time_units": pyo.units.s,
+        }
+    )
 
     m.fs.propertiesIapws95 = iapws95.Iapws95ParameterBlock()
-    m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(parameters=m.fs.propertiesIapws95)
+    m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(
+        default={"parameters": m.fs.propertiesIapws95}
+    )
 
-    m.fs.cell = SolidOxideCell(**cell_config)
+    m.fs.cell = SolidOxideCell(default=cell_config)
 
     fix_cell_parameters(m.fs.cell)
 
@@ -260,22 +275,34 @@ def model():
 @pytest.fixture
 def model_stack():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False, time_set=[0], time_units=pyo.units.s)
+    m.fs = FlowsheetBlock(
+        default={
+            "dynamic": False,
+            "time_set": [0],
+            "time_units": pyo.units.s,
+        }
+    )
 
     m.fs.propertiesIapws95 = iapws95.Iapws95ParameterBlock()
-    m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(parameters=m.fs.propertiesIapws95)
+    m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(
+        default={"parameters": m.fs.propertiesIapws95}
+    )
 
     m.fs.oxygen_params = GenericParameterBlock(
-        **get_prop(oxygen_comps, {"Vap"}, eos=EosType.IDEAL), doc="Air-side parameters"
+        default=get_prop(oxygen_comps, {"Vap"}, eos=EosType.IDEAL),
+        doc="Air-side parameters",
     )
     m.fs.fuel_params = GenericParameterBlock(
-        **get_prop(fuel_comps, {"Vap"}, eos=EosType.IDEAL), doc="Fuel-side parameters"
+        default=get_prop(fuel_comps, {"Vap"}, eos=EosType.IDEAL),
+        doc="Fuel-side parameters",
     )
 
     m.fs.stack = SolidOxideModuleSimple(
-        solid_oxide_cell_config=cell_config,
-        fuel_property_package=m.fs.fuel_params,
-        oxygen_property_package=m.fs.oxygen_params,
+        default={
+            "solid_oxide_cell_config": cell_config,
+            "fuel_property_package": m.fs.fuel_params,
+            "oxygen_property_package": m.fs.oxygen_params,
+        }
     )
 
     fix_cell_parameters(m.fs.stack.solid_oxide_cell)
@@ -596,7 +623,9 @@ def test_model_replication(model):
     cached_results = []
     for i in range(len(out)):
         cached_results.append(
-            pd.read_csv(os.sep.join([data_cache, f"case_{i+1}.csv"]), index_col=0)
+            pd.read_csv(
+                os.sep.join([data_cache, f"case_{i+1}_interconnect.csv"]), index_col=0
+            )
         )
 
     for df, cached_df in zip(out, cached_results):
@@ -620,9 +649,7 @@ def test_model_replication(model):
 
 if __name__ == "__main__":
     m = model_func()
-    # out = kazempoor_braun_replication(m)
-    out = test_initialization_cell(m)
-
+    out = kazempoor_braun_replication(m)
     # Uncomment to recreate cached data
     # for i, df in enumerate(out):
-    #     df.to_csv(os.sep.join([data_cache, f"case_{i+1}.csv"]))
+    #     df.to_csv(os.sep.join([data_cache, f"case_{i+1}_interconnect.csv"]))

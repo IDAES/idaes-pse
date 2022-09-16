@@ -95,12 +95,12 @@ class SocContactResistorData(UnitModelBlockData):
             )
 
         @self.Expression(tset, iznodes)
-        def voltage_drop(b, t, iz):
+        def voltage_drop_total(b, t, iz):
             return b.contact_resistance[t, iz] * b.current_density[t, iz]
 
         @self.Expression(tset, iznodes)
         def joule_heating_flux(b, t, iz):
-            return b.voltage_drop[t, iz] * b.current_density[t, iz]
+            return b.voltage_drop_total[t, iz] * b.current_density[t, iz]
 
         @self.Constraint(tset, iznodes)
         def heat_flux_x_eqn(b, t, iz):
