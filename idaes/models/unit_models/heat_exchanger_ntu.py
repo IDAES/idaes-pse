@@ -31,7 +31,6 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
-from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
@@ -501,15 +500,3 @@ constructed,
             },
             time_point=time_point,
         )
-
-    @deprecated(
-        "The get_costing method is being deprecated in favor of the new "
-        "FlowsheetCostingBlock tools.",
-        version="TBD",
-    )
-    def get_costing(self, module=costing, year=None, **kwargs):
-        if not hasattr(self.flowsheet(), "costing"):
-            self.flowsheet().get_costing(year=year)
-
-        self.costing = Block()
-        module.hx_costing(self.costing, **kwargs)
