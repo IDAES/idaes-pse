@@ -35,7 +35,6 @@ from pyomo.common.sorting import sorted_robust
 from pyomo.core.expr.current import ExpressionReplacementVisitor
 
 from pyomo.common.modeling import unique_component_name
-from pyomo.common.deprecation import deprecated
 from pyomo.opt import SolverFactory, SolverStatus
 import logging
 import os
@@ -44,67 +43,6 @@ from pyomo.common.dependencies import numpy as np, numpy_available
 from scipy import sparse
 
 logger = logging.getLogger("pyomo.contrib.sensitivity_toolbox")
-
-
-@deprecated(
-    """The sipopt function has been deprecated. Use the
-            sensitivity_calculation() function with method='sipopt'
-            to access this functionality.""",
-    logger="pyomo.contrib.sensitivity_toolbox",
-    version="TBD",
-)
-def sipopt(
-    instance,
-    paramSubList,
-    perturbList,
-    cloneModel=True,
-    tee=False,
-    keepfiles=False,
-    streamSoln=False,
-):
-    m = sensitivity_calculation(
-        "sipopt",
-        instance,
-        paramSubList,
-        perturbList,
-        cloneModel,
-        tee,
-        keepfiles,
-        solver_options=None,
-    )
-
-    return m
-
-
-@deprecated(
-    """The kaug function has been deprecated.
-            Use the sensitivity_calculation() function
-            with method='kaug' to access this functionality.""",
-    logger="pyomo.contrib.sensitivity_toolbox",
-    version="TBD",
-)
-def kaug(
-    instance,
-    paramSubList,
-    perturbList,
-    cloneModel=True,
-    tee=False,
-    keepfiles=False,
-    solver_options=None,
-    streamSoln=False,
-):
-    m = sensitivity_calculation(
-        "kaug",
-        instance,
-        paramSubList,
-        perturbList,
-        cloneModel,
-        tee,
-        keepfiles,
-        solver_options,
-    )
-
-    return m
 
 
 _SIPOPT_SUFFIXES = {
@@ -714,7 +652,7 @@ class SensitivityInterface(object):
             instance.component_data_objects(Objective, active=True, descend_into=True)
         ):
             tempName = unique_component_name(block, obj.local_name)
-            new_expr = param_replacer.dfs_postorder_stack(obj.expr)
+            new_expr = param_replacer.walk_expression(obj.expr)
             block.add_component(tempName, Objective(expr=new_expr))
             new_old_comp_map[block.component(tempName)] = obj
             obj.deactivate()
@@ -730,7 +668,7 @@ class SensitivityInterface(object):
         last_idx = 0
         for con in old_con_list:
             if con.equality or con.lower is None or con.upper is None:
-                new_expr = param_replacer.dfs_postorder_stack(con.expr)
+                new_expr = param_replacer.walk_expression(con.expr)
                 block.constList.add(expr=new_expr)
                 last_idx += 1
                 new_old_comp_map[block.constList[last_idx]] = con

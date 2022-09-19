@@ -49,11 +49,11 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = FeedFlash(default={"property_package": m.fs.properties})
+    m.fs.unit = FeedFlash(property_package=m.fs.properties)
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 6
@@ -70,13 +70,13 @@ class TestBTXIdeal(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = BTXParameterBlock(
-            default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "Ideal"}
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
         )
 
-        m.fs.unit = FeedFlash(default={"property_package": m.fs.properties})
+        m.fs.unit = FeedFlash(property_package=m.fs.properties)
 
         m.fs.unit.flow_mol.fix(1)
         m.fs.unit.temperature.fix(368)
@@ -186,17 +186,14 @@ class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = iapws95.Iapws95ParameterBlock(
-            default={"phase_presentation": iapws95.PhaseType.LG}
+            phase_presentation=iapws95.PhaseType.LG
         )
 
         m.fs.unit = FeedFlash(
-            default={
-                "property_package": m.fs.properties,
-                "flash_type": FlashType.isenthalpic,
-            }
+            property_package=m.fs.properties, flash_type=FlashType.isenthalpic
         )
 
         m.fs.unit.flow_mol.fix(100)

@@ -42,7 +42,7 @@ def test_PP_costing():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.get_costing(year="2018")
 
     # check that the model solved properly and has 0 degrees of freedom
@@ -296,7 +296,7 @@ def test_power_plant_costing():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.get_costing(year="2018")
 
     ###########################################################################
@@ -456,7 +456,7 @@ def test_sCO2_costing():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.get_costing(year="2017")
 
     # ######################################################
@@ -676,7 +676,7 @@ def test_ASU_costing():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.get_costing(year="2017")
 
     m.fs.ASU = pyo.Block()
@@ -707,7 +707,7 @@ def test_OM_costing():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.get_costing(year="2018")
 
     # build fixed costs

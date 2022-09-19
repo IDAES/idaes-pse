@@ -29,19 +29,14 @@ solver = get_solver()
 def test_fwh_model():
     model = pyo.ConcreteModel()
     model.fs = FlowsheetBlock(
-        default={
-            "dynamic": False,
-            "default_property_package": iapws95.Iapws95ParameterBlock(),
-        }
+        dynamic=False, default_property_package=iapws95.Iapws95ParameterBlock()
     )
     model.fs.properties = model.fs.config.default_property_package
     model.fs.fwh = FWH0D(
-        default={
-            "has_desuperheat": True,
-            "has_drain_cooling": True,
-            "has_drain_mixer": True,
-            "property_package": model.fs.properties,
-        }
+        has_desuperheat=True,
+        has_drain_cooling=True,
+        has_drain_mixer=True,
+        property_package=model.fs.properties,
     )
 
     model.fs.fwh.desuperheat.hot_side_inlet.flow_mol[:].set_value(100)
@@ -72,19 +67,14 @@ def test_fwh_model():
 def test_fwh_units():
     model = pyo.ConcreteModel()
     model.fs = FlowsheetBlock(
-        default={
-            "dynamic": False,
-            "default_property_package": iapws95.Iapws95ParameterBlock(),
-        }
+        dynamic=False, default_property_package=iapws95.Iapws95ParameterBlock()
     )
     model.fs.properties = model.fs.config.default_property_package
     model.fs.fwh = FWH0D(
-        default={
-            "has_desuperheat": True,
-            "has_drain_cooling": True,
-            "has_drain_mixer": True,
-            "property_package": model.fs.properties,
-        }
+        has_desuperheat=True,
+        has_drain_cooling=True,
+        has_drain_mixer=True,
+        property_package=model.fs.properties,
     )
 
     assert_units_consistent(model)

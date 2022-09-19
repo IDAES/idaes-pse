@@ -226,22 +226,14 @@ def model():
 
     configuration = _get_prop(["H2", "N2", "NH3"], ["Vap"])
 
-    m.params = GenericParameterBlock(default=configuration)
+    m.params = GenericParameterBlock(**configuration)
     m.props = m.params.state_block_class(
-        default={
-            "defined_state": True,
-            "parameters": m.params,
-            "has_phase_equilibrium": False,
-        }
+        defined_state=True, parameters=m.params, has_phase_equilibrium=False
     )
     configuration["phases"]["Vap"]["equation_of_state"] = Ideal
-    m.params_IG = GenericParameterBlock(default=configuration)
+    m.params_IG = GenericParameterBlock(**configuration)
     m.props_IG = m.params.state_block_class(
-        default={
-            "defined_state": True,
-            "parameters": m.params_IG,
-            "has_phase_equilibrium": False,
-        }
+        defined_state=True, parameters=m.params_IG, has_phase_equilibrium=False
     )
 
     Ntot = 18 + 53 + 385
@@ -282,13 +274,9 @@ def dataframe():
 # current issues it has with its implementation---either use it or delete it
 def get_reference_entropy(comp):
     m = ConcreteModel()
-    m.params = GenericParameterBlock(default=_get_prop([comp]))
+    m.params = GenericParameterBlock(**_get_prop([comp]))
     m.props = m.params.state_block_class(
-        default={
-            "defined_state": True,
-            "parameters": m.params,
-            "has_phase_equilibrium": False,
-        }
+        defined_state=True, parameters=m.params, has_phase_equilibrium=False
     )
 
     # Want to make sure intermediate quantities are constructed before we

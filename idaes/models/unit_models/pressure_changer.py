@@ -495,9 +495,7 @@ see property package for documentation.}""",
         tmp_dict["defined_state"] = False
 
         self.properties_isentropic = self.config.property_package.build_state_block(
-            self.flowsheet().time,
-            doc="isentropic properties at outlet",
-            default=tmp_dict,
+            self.flowsheet().time, doc="isentropic properties at outlet", **tmp_dict
         )
 
         # Connect isentropic state block properties

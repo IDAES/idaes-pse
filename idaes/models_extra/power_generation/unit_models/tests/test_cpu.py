@@ -39,7 +39,7 @@ solver = get_solver()
 @pytest.fixture(scope="module")
 def model():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.cpu = CarbonProcessingUnit()
 
     return m

@@ -137,7 +137,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         )
 
         self.solid_oxide_cell = soc.SolidOxideCell(
-            default=self.config.solid_oxide_cell_config
+            **self.config.solid_oxide_cell_config
         )
 
         def rule_absent_comp(blk, t, j, props):
@@ -167,11 +167,9 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                 param_block.build_state_block(
                     self.flowsheet().time,
                     doc=f"Material properties in {side}-side inlet stream",
-                    default={
-                        "defined_state": True,
-                        "has_phase_equilibrium": False,
-                        **package_args,
-                    },
+                    defined_state=True,
+                    has_phase_equilibrium=False,
+                    **package_args,
                 ),
             )
             setattr(
@@ -180,11 +178,9 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                 param_block.build_state_block(
                     self.flowsheet().time,
                     doc=f"Material properties in {side}-side outlet stream",
-                    default={
-                        "defined_state": False,
-                        "has_phase_equilibrium": False,
-                        **package_args,
-                    },
+                    defined_state=False,
+                    has_phase_equilibrium=False,
+                    **package_args,
                 ),
             )
             side_comps = getattr(self.solid_oxide_cell, f"{side}_component_list")

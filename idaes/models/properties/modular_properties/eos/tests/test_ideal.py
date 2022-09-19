@@ -71,28 +71,24 @@ def m():
 
     # Dummy params block
     m.params = DummyParameterBlock(
-        default={
-            "components": {"a": {}, "b": {}, "c": {}},
-            "phases": {
-                "Vap": {"type": VaporPhase, "equation_of_state": Ideal},
-                "Liq": {"type": LiquidPhase, "equation_of_state": Ideal},
-            },
-            "base_units": {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            },
-            "state_definition": modules[__name__],
-            "pressure_ref": 1e5,
-            "temperature_ref": 300,
-        }
+        components={"a": {}, "b": {}, "c": {}},
+        phases={
+            "Vap": {"type": VaporPhase, "equation_of_state": Ideal},
+            "Liq": {"type": LiquidPhase, "equation_of_state": Ideal},
+        },
+        base_units={
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        },
+        state_definition=modules[__name__],
+        pressure_ref=100000.0,
+        temperature_ref=300,
     )
 
-    m.props = m.params.state_block_class(
-        [1], default={"defined_state": False, "parameters": m.params}
-    )
+    m.props = m.params.state_block_class([1], defined_state=False, parameters=m.params)
 
     # Add common variables
     m.props[1].pressure = Var(initialize=101325)
@@ -111,26 +107,24 @@ def m_sol():
 
     # Dummy params block with a Solid Phase to check phase typing
     m.params = DummyParameterBlock(
-        default={
-            "components": {"a": {}, "b": {}, "c": {}},
-            "phases": {
-                "Sol": {"type": SolidPhase, "equation_of_state": Ideal},
-                "Liq": {"type": LiquidPhase, "equation_of_state": Ideal},
-            },
-            "base_units": {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            },
-            "state_definition": modules[__name__],
-            "pressure_ref": 1e5,
-            "temperature_ref": 300,
-        }
+        components={"a": {}, "b": {}, "c": {}},
+        phases={
+            "Sol": {"type": SolidPhase, "equation_of_state": Ideal},
+            "Liq": {"type": LiquidPhase, "equation_of_state": Ideal},
+        },
+        base_units={
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        },
+        state_definition=modules[__name__],
+        pressure_ref=100000.0,
+        temperature_ref=300,
     )
 
-    m.props = m.params.build_state_block([1], default={"defined_state": False})
+    m.props = m.params.build_state_block([1], defined_state=False)
 
     # Add common variables
     m.props[1].pressure = Var(initialize=101325)
@@ -588,32 +582,28 @@ def test_pressure_osm_phase_w_apparent_component():
 
     # Dummy params block
     m.params = DummyParameterBlock(
-        default={
-            "components": {
-                "a": {"type": Solvent},
-                "b": {"type": Solute},
-                "c": {"type": Apparent, "dissociation_species": {"foo": 2}},
-            },
-            "phases": {
-                "Vap": {"type": VaporPhase, "equation_of_state": Ideal},
-                "Liq": {"type": LiquidPhase, "equation_of_state": Ideal},
-            },
-            "base_units": {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            },
-            "state_definition": modules[__name__],
-            "pressure_ref": 1e5,
-            "temperature_ref": 300,
-        }
+        components={
+            "a": {"type": Solvent},
+            "b": {"type": Solute},
+            "c": {"type": Apparent, "dissociation_species": {"foo": 2}},
+        },
+        phases={
+            "Vap": {"type": VaporPhase, "equation_of_state": Ideal},
+            "Liq": {"type": LiquidPhase, "equation_of_state": Ideal},
+        },
+        base_units={
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        },
+        state_definition=modules[__name__],
+        pressure_ref=100000.0,
+        temperature_ref=300,
     )
 
-    m.props = m.params.state_block_class(
-        [1], default={"defined_state": False, "parameters": m.params}
-    )
+    m.props = m.params.state_block_class([1], defined_state=False, parameters=m.params)
 
     # Add common variables
     m.props[1].pressure = Var(initialize=101325)
@@ -664,32 +654,28 @@ def test_vol_mol_phase():
 
     # Dummy params block
     m.params = DummyParameterBlock(
-        default={
-            "components": {
-                "a": {"dens_mol_liq_comp": dummy_call},
-                "b": {"dens_mol_liq_comp": dummy_call},
-                "c": {"vol_mol_liq_comp": dummy_call},
-            },
-            "phases": {
-                "Vap": {"type": VaporPhase, "equation_of_state": Ideal},
-                "Liq": {"type": LiquidPhase, "equation_of_state": Ideal},
-            },
-            "base_units": {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            },
-            "state_definition": modules[__name__],
-            "pressure_ref": 1e5,
-            "temperature_ref": 300,
-        }
+        components={
+            "a": {"dens_mol_liq_comp": dummy_call},
+            "b": {"dens_mol_liq_comp": dummy_call},
+            "c": {"vol_mol_liq_comp": dummy_call},
+        },
+        phases={
+            "Vap": {"type": VaporPhase, "equation_of_state": Ideal},
+            "Liq": {"type": LiquidPhase, "equation_of_state": Ideal},
+        },
+        base_units={
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        },
+        state_definition=modules[__name__],
+        pressure_ref=100000.0,
+        temperature_ref=300,
     )
 
-    m.props = m.params.state_block_class(
-        [1], default={"defined_state": False, "parameters": m.params}
-    )
+    m.props = m.params.state_block_class([1], defined_state=False, parameters=m.params)
 
     # Add common variables
     m.props[1].pressure = Var(initialize=101325)

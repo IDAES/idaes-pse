@@ -41,7 +41,7 @@ class TestParamBlock(object):
         model = ConcreteModel()
         model.pparams = SaponificationParameterBlock()
         model.rparams = SaponificationReactionParameterBlock(
-            default={"property_package": model.pparams}
+            property_package=model.pparams
         )
 
         return model
@@ -86,14 +86,12 @@ class TestReactionBlock(object):
         model = ConcreteModel()
         model.pparams = SaponificationParameterBlock()
         model.rparams = SaponificationReactionParameterBlock(
-            default={"property_package": model.pparams}
+            property_package=model.pparams
         )
 
         model.props = model.pparams.build_state_block([1])
 
-        model.rxns = model.rparams.build_reaction_block(
-            [1], default={"state_block": model.props}
-        )
+        model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
 
         return model
 

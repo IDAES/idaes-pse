@@ -69,19 +69,19 @@ class TestConstructNode(unittest.TestCase):
         default = {
             "dynamic": False,
         }
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         pipeline_config = {
             "property_package": m.fs.properties,
             "finite_elements": 2,
         }
-        m.fs.pipeline1 = GasPipeline(default=pipeline_config)
+        m.fs.pipeline1 = GasPipeline(**pipeline_config)
         pipeline1 = m.fs.pipeline1
-        m.fs.pipeline2 = GasPipeline(default=pipeline_config)
+        m.fs.pipeline2 = GasPipeline(**pipeline_config)
         pipeline2 = m.fs.pipeline2
 
         node_config = {"property_package": m.fs.properties}
-        m.fs.node = PipelineNode(default=node_config)
+        m.fs.node = PipelineNode(**node_config)
         node = m.fs.node
 
         var_set = ComponentSet(node.component_data_objects(pyo.Var))
@@ -179,13 +179,13 @@ class TestConstructNode(unittest.TestCase):
         default = {
             "dynamic": False,
         }
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         pipeline_config = {
             "property_package": m.fs.properties,
             "finite_elements": 2,
         }
-        m.fs.pipeline = GasPipeline(default=pipeline_config)
+        m.fs.pipeline = GasPipeline(**pipeline_config)
         pipeline = m.fs.pipeline
 
         node_configs = [
@@ -254,14 +254,14 @@ class TestConstructNode(unittest.TestCase):
         default = {
             "dynamic": False,
         }
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         pipeline_config = {
             "property_package": m.fs.properties,
             "finite_elements": 2,
         }
         m.fs.pipeline_set = pyo.Set(initialize=list(range(7)))
-        m.fs.pipeline = GasPipeline(m.fs.pipeline_set, default=pipeline_config)
+        m.fs.pipeline = GasPipeline(m.fs.pipeline_set, **pipeline_config)
 
         node_config = {
             "property_package": m.fs.properties,
@@ -270,7 +270,7 @@ class TestConstructNode(unittest.TestCase):
             "n_inlet_pipelines": 3,
             "n_outlet_pipelines": 4,
         }
-        m.fs.node = PipelineNode(default=node_config)
+        m.fs.node = PipelineNode(**node_config)
 
         m.fs.node.add_pipeline_to_inlet(m.fs.pipeline[0])
         m.fs.node.add_pipeline_to_inlet(m.fs.pipeline[1])
@@ -332,13 +332,13 @@ class TestConstructNode(unittest.TestCase):
             "time_set": [0.0, 20.0],
             "time_units": pyo.units.hr,
         }
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         pipeline_config = {
             "property_package": m.fs.properties,
             "finite_elements": 2,
         }
-        m.fs.pipeline = GasPipeline(default=pipeline_config)
+        m.fs.pipeline = GasPipeline(**pipeline_config)
         pipeline = m.fs.pipeline
 
         node_configs = [
@@ -422,14 +422,14 @@ class TestConstructNode(unittest.TestCase):
             "time_set": [0.0, 20.0],
             "time_units": pyo.units.hr,
         }
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         pipeline_config = {
             "property_package": m.fs.properties,
             "finite_elements": 2,
         }
         m.fs.pipeline_set = pyo.Set(initialize=list(range(7)))
-        m.fs.pipeline = GasPipeline(m.fs.pipeline_set, default=pipeline_config)
+        m.fs.pipeline = GasPipeline(m.fs.pipeline_set, **pipeline_config)
 
         node_config = {
             "property_package": m.fs.properties,
@@ -438,7 +438,7 @@ class TestConstructNode(unittest.TestCase):
             "n_inlet_pipelines": 3,
             "n_outlet_pipelines": 4,
         }
-        m.fs.node = PipelineNode(default=node_config)
+        m.fs.node = PipelineNode(**node_config)
 
         m.fs.node.add_pipeline_to_inlet(m.fs.pipeline[0])
         m.fs.node.add_pipeline_to_inlet(m.fs.pipeline[1])

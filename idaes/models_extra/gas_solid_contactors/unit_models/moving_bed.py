@@ -452,19 +452,17 @@ see reaction package for documentation.}""",
             populate gas control volume"""
 
         self.gas_phase = ControlVolume1DBlock(
-            default={
-                "transformation_method": self.config.transformation_method,
-                "transformation_scheme": self.config.transformation_scheme,
-                "finite_elements": self.config.finite_elements,
-                "collocation_points": self.config.collocation_points,
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "area_definition": DistributedVars.variant,
-                "property_package": self.config.gas_phase_config.property_package,
-                "property_package_args": self.config.gas_phase_config.property_package_args,
-                "reaction_package": self.config.gas_phase_config.reaction_package,
-                "reaction_package_args": self.config.gas_phase_config.reaction_package_args,
-            }
+            transformation_method=self.config.transformation_method,
+            transformation_scheme=self.config.transformation_scheme,
+            finite_elements=self.config.finite_elements,
+            collocation_points=self.config.collocation_points,
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            area_definition=DistributedVars.variant,
+            property_package=self.config.gas_phase_config.property_package,
+            property_package_args=self.config.gas_phase_config.property_package_args,
+            reaction_package=self.config.gas_phase_config.reaction_package,
+            reaction_package_args=self.config.gas_phase_config.reaction_package_args,
         )
 
         self.gas_phase.add_geometry(
@@ -507,19 +505,17 @@ see reaction package for documentation.}""",
 
         # Set argument for heterogeneous reaction block
         self.solid_phase = ControlVolume1DBlock(
-            default={
-                "transformation_method": self.config.transformation_method,
-                "transformation_scheme": self.config.transformation_scheme,
-                "finite_elements": self.config.finite_elements,
-                "collocation_points": self.config.collocation_points,
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "area_definition": DistributedVars.variant,
-                "property_package": self.config.solid_phase_config.property_package,
-                "property_package_args": self.config.solid_phase_config.property_package_args,
-                "reaction_package": self.config.solid_phase_config.reaction_package,
-                "reaction_package_args": self.config.solid_phase_config.reaction_package_args,
-            }
+            transformation_method=self.config.transformation_method,
+            transformation_scheme=self.config.transformation_scheme,
+            finite_elements=self.config.finite_elements,
+            collocation_points=self.config.collocation_points,
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            area_definition=DistributedVars.variant,
+            property_package=self.config.solid_phase_config.property_package,
+            property_package_args=self.config.solid_phase_config.property_package_args,
+            reaction_package=self.config.solid_phase_config.reaction_package,
+            reaction_package_args=self.config.solid_phase_config.reaction_package_args,
         )
 
         self.solid_phase.add_geometry(
@@ -553,7 +549,7 @@ see reaction package for documentation.}""",
                     self.flowsheet().time,
                     self.length_domain,
                     doc="Reaction properties in control volume",
-                    default=tmp_dict,
+                    **tmp_dict,
                 )
             )
 

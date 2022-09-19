@@ -35,12 +35,12 @@ from idaes.core.util import scaling as iscale
 @pytest.mark.unit
 def test_basic_scaling():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     # Set flag to include inherent reactions
     m.fs.pp._has_inherent_reactions = True
 
-    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume0DBlock(property_package=m.fs.pp)
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -79,9 +79,9 @@ def test_basic_scaling():
 @pytest.mark.unit
 def test_user_set_scaling():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume0DBlock(property_package=m.fs.pp)
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_material_balances(
@@ -111,12 +111,10 @@ def test_user_set_scaling():
 @pytest.mark.unit
 def test_full_auto_scaling():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-    m.fs.cv = ControlVolume0DBlock(
-        default={"property_package": m.fs.pp, "reaction_package": m.fs.rp}
-    )
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
+    m.fs.cv = ControlVolume0DBlock(property_package=m.fs.pp, reaction_package=m.fs.rp)
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
@@ -158,15 +156,11 @@ def test_full_auto_scaling():
 @pytest.mark.unit
 def test_full_auto_scaling_dynamic():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyo.units.s})
+    m.fs = FlowsheetBlock(dynamic=True, time_units=pyo.units.s)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.cv = ControlVolume0DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "dynamic": True,
-        }
+        property_package=m.fs.pp, reaction_package=m.fs.rp, dynamic=True
     )
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -212,15 +206,11 @@ def test_full_auto_scaling_dynamic():
 @pytest.mark.unit
 def test_full_auto_scaling_mbtype_phase():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyo.units.s})
+    m.fs = FlowsheetBlock(dynamic=True, time_units=pyo.units.s)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.cv = ControlVolume0DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "dynamic": True,
-        }
+        property_package=m.fs.pp, reaction_package=m.fs.rp, dynamic=True
     )
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -267,15 +257,11 @@ def test_full_auto_scaling_mbtype_phase():
 @pytest.mark.unit
 def test_full_auto_scaling_mbtype_element():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyo.units.s})
+    m.fs = FlowsheetBlock(dynamic=True, time_units=pyo.units.s)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.cv = ControlVolume0DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "dynamic": True,
-        }
+        property_package=m.fs.pp, reaction_package=m.fs.rp, dynamic=True
     )
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)

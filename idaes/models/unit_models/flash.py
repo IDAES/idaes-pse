@@ -233,12 +233,10 @@ see property package for documentation.}""",
 
         # Build Control Volume
         self.control_volume = ControlVolume0DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         self.control_volume.add_state_blocks(has_phase_equilibrium=True)
@@ -271,17 +269,15 @@ see property package for documentation.}""",
                 split_map[p] = "Liq"
 
         self.split = Separator(
-            default={
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-                "outlet_list": ["Vap", "Liq"],
-                "split_basis": SplittingType.phaseFlow,
-                "ideal_separation": self.config.ideal_separation,
-                "ideal_split_map": split_map,
-                "mixed_state_block": self.control_volume.properties_out,
-                "has_phase_equilibrium": not self.config.ideal_separation,
-                "energy_split_basis": self.config.energy_split_basis,
-            }
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
+            outlet_list=["Vap", "Liq"],
+            split_basis=SplittingType.phaseFlow,
+            ideal_separation=self.config.ideal_separation,
+            ideal_split_map=split_map,
+            mixed_state_block=self.control_volume.properties_out,
+            has_phase_equilibrium=not self.config.ideal_separation,
+            energy_split_basis=self.config.energy_split_basis,
         )
         if not self.config.ideal_separation:
 

@@ -74,18 +74,16 @@ class TestHXRegression(object):
     @pytest.mark.unit
     def test_config(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = PhysicalParameterTestBlock()
 
         m.fs.unit = HeatExchangerLumpedCapacitance(
-            default={
-                "hot_side_name": "shell",
-                "cold_side_name": "tube",
-                "shell": {"property_package": m.fs.properties},
-                "tube": {"property_package": m.fs.properties},
-                "dynamic_heat_balance": False,
-            }
+            hot_side_name="shell",
+            cold_side_name="tube",
+            shell={"property_package": m.fs.properties},
+            tube={"property_package": m.fs.properties},
+            dynamic_heat_balance=False,
         )
 
         # Check unit config arguments
@@ -139,17 +137,15 @@ class TestHXRegression(object):
     @pytest.fixture(scope="class")
     def sapon(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = SaponificationParameterBlock()
 
         m.fs.unit = HeatExchangerLumpedCapacitance(
-            default={
-                "hot_side": {"property_package": m.fs.properties},
-                "cold_side": {"property_package": m.fs.properties},
-                "flow_pattern": HeatExchangerFlowPattern.crossflow,
-                "dynamic_heat_balance": False,
-            }
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            flow_pattern=HeatExchangerFlowPattern.crossflow,
+            dynamic_heat_balance=False,
         )
 
         m.fs.unit.hot_side_inlet.flow_vol[0].fix(1e-3)
@@ -247,35 +243,29 @@ class TestHXLCGeneric(object):
     @pytest.fixture()
     def static_flowsheet_model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = iapws95.Iapws95ParameterBlock()
         return m
 
     @pytest.fixture()
     def dynamic_flowsheet_model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(
-            default={"dynamic": True, "time_set": [0, 1], "time_units": pyunits.s}
-        )
+        m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1], time_units=pyunits.s)
         m.fs.properties = iapws95.Iapws95ParameterBlock()
         return m
 
     @pytest.fixture()
     def unconstrained_model(self, dynamic_flowsheet_model):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(
-            default={"dynamic": True, "time_set": [0, 1], "time_units": pyunits.s}
-        )
+        m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1], time_units=pyunits.s)
         m.fs.properties = iapws95.Iapws95ParameterBlock()
 
         m.fs.unit = HeatExchangerLumpedCapacitance(
-            default={
-                "hot_side_name": "shell",
-                "cold_side_name": "tube",
-                "hot_side": {"property_package": m.fs.properties},
-                "cold_side": {"property_package": m.fs.properties},
-                "dynamic": False,
-            }
+            hot_side_name="shell",
+            cold_side_name="tube",
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            dynamic=False,
         )
 
         return m
@@ -383,28 +373,24 @@ class TestHXLCGeneric(object):
             "steady-state flowsheet",
         ):
             m.fs.unit = HeatExchangerLumpedCapacitance(
-                default={
-                    "hot_side_name": "shell",
-                    "cold_side_name": "tube",
-                    "shell": {"property_package": m.fs.properties},
-                    "tube": {"property_package": m.fs.properties},
-                    "dynamic": False,
-                    "dynamic_heat_balance": True,
-                }
+                hot_side_name="shell",
+                cold_side_name="tube",
+                shell={"property_package": m.fs.properties},
+                tube={"property_package": m.fs.properties},
+                dynamic=False,
+                dynamic_heat_balance=True,
             )
 
     @pytest.mark.unit
     def test_static_heat_balance(self, static_flowsheet_model):
         m = static_flowsheet_model
         m.fs.unit = HeatExchangerLumpedCapacitance(
-            default={
-                "hot_side_name": "shell",
-                "cold_side_name": "tube",
-                "shell": {"property_package": m.fs.properties},
-                "tube": {"property_package": m.fs.properties},
-                "dynamic": False,
-                "dynamic_heat_balance": False,
-            }
+            hot_side_name="shell",
+            cold_side_name="tube",
+            shell={"property_package": m.fs.properties},
+            tube={"property_package": m.fs.properties},
+            dynamic=False,
+            dynamic_heat_balance=False,
         )
 
         with pytest.raises(
