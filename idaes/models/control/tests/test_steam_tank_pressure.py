@@ -156,7 +156,7 @@ def create_model(
         time_set = [0, 3]
 
     m = pyo.ConcreteModel(name=model_name)
-    m.fs = FlowsheetBlock(default=fs_cfg)
+    m.fs = FlowsheetBlock(**fs_cfg)
     # Create a property parameter block
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
         phase_presentation=iapws95.PhaseType.LG

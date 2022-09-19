@@ -58,12 +58,15 @@ class ControllerAntiwindupType(enum.Enum):
     because it does not distinguish between the "correct" bound and "incorrect" bound being active for a particular
     value of integrated error. Note that switching between integrating and not integrating can cause the DAE solver to
     slow down.
-    BACK_CALCULATION: This space currently under construction
+    BACK_CALCULATION: Takes the difference between the actual MV output and the unbounded MV output, multiplies it by
+    a gain, then subtracts that product from the error integral term. Benefits from having only one non-smooth term (the
+    MV bounding equation) and supposedly can give better control performance if tuned well. The downside is an additional
+    tuning parameter is needed.
     """
 
     NONE = 1
     CONDITIONAL_INTEGRATION = 2
-    #BACK_CALCULATION = 3
+    BACK_CALCULATION = 3
 
 def smooth_heaviside(x, eps):
     eps_adjusted = eps
@@ -160,8 +163,8 @@ class PIDControllerData(UnitModelBlockData):
             domain=In(
                 [
                     ControllerAntiwindupType.NONE,
-                    ControllerAntiwindupType.CONDITIONAL_INTEGRATION
-                    #ControllerMVBoundType.BACK_CALCULATION,
+                    ControllerAntiwindupType.CONDITIONAL_INTEGRATION,
+                    ControllerAntiwindupType.BACK_CALCULATION,
                 ]
             ),
             description="Type of antiwindup technique to use.",
@@ -285,6 +288,15 @@ class PIDControllerData(UnitModelBlockData):
                 doc="Gain for derivative part",
                 units=gain_p_units * time_units,
             )
+
+        if self.config.antiwindup_type == ControllerAntiwindupType.BACK_CALCULATION:
+            self.gain_b = pyo.Var(
+                time_set,
+                initialize=0.1,
+                doc="Gain for back calculation antiwindup",
+                units= 1 / time_units,
+            )
+
         self.mv_ref = pyo.Var(
             time_set,
             initialize=0.5,
@@ -335,18 +347,18 @@ class PIDControllerData(UnitModelBlockData):
 
         # integral term written de_i(t)/dt = e(t)
         if self.config.type in [ControllerType.PI, ControllerType.PID]:
-            self.integral_of_error = pyo.Var(
+            self.mv_integral_component = pyo.Var(
                 time_set,
                 initialize=0,
-                doc="Integral term calculated from de_i(t)/dt = e(t)",
-                units=pv_units * time_units,
+                doc="Integral contribution to control action",
+                units=mv_units,
             )
-            self.integral_of_error_dot = pyodae.DerivativeVar(
-                self.integral_of_error,
+            self.mv_integral_component_dot = pyodae.DerivativeVar(
+                self.mv_integral_component,
                 wrt=time_set,
                 initialize=0,
                 units=pv_units,
-                doc="de_i(t)/dt",
+                doc="Rate of change of integral contribution to control action",
             )
 
             if self.config.calculate_initial_integral:
@@ -356,7 +368,7 @@ class PIDControllerData(UnitModelBlockData):
                 def initial_integral_error_eqn(b):
                     if self.config.type == ControllerType.PI:
                         return (
-                            b.gain_i[t0] * self.integral_of_error[t0]
+                            b.mv_integral_component[t0]
                             == (
                                 b.manipulated_var[t0]
                                 - b.mv_ref[t0]
@@ -364,7 +376,7 @@ class PIDControllerData(UnitModelBlockData):
                             )
                         )
                     return (
-                        b.gain_i[t0] * self.integral_of_error[t0]
+                        b.mv_integral_component[t0]
                         == (
                             b.manipulated_var[t0]
                             - b.mv_ref[t0]
@@ -379,14 +391,14 @@ class PIDControllerData(UnitModelBlockData):
                 return (
                     b.mv_ref[t]
                     + b.gain_p[t] * b.error[t]
-                    + b.gain_i[t] * b.integral_of_error[t]
+                    + b.mv_integral_component[t]
                     + b.gain_d[t] * b.derivative_term[t]
                 )
             elif self.config.type == ControllerType.PI:
                 return (
                     b.mv_ref[t]
                     + b.gain_p[t] * b.error[t]
-                    + b.gain_i[t] * b.integral_of_error[t]
+                    + b.mv_integral_component[t]
                 )
             elif self.config.type == ControllerType.PD:
                 return (
@@ -427,13 +439,11 @@ class PIDControllerData(UnitModelBlockData):
             self.mv_eqn[time_set.first()].deactivate()
 
         if self.config.type in [ControllerType.PI, ControllerType.PID]:
-
             @self.Constraint(time_set, doc="de_i(t)/dt = e(t)")
-            # FIXME rename?
-            def error_from_integral_eqn(b, t):
-                if self.config.antiwindup_type ==ControllerAntiwindupType.CONDITIONAL_INTEGRATION:
+            def mv_integration_eqn(b, t):
+                if self.config.antiwindup_type == ControllerAntiwindupType.CONDITIONAL_INTEGRATION:
                     # It fails when the "wrong" bound is active for a given expression of error
-                    return b.integral_of_error_dot[t] == b.error[t] * (
+                    return b.mv_integral_component_dot[t] == b.gain_i[t] * b.error[t] * (
                         smooth_heaviside(
                             (b.mv_unbounded[t] - b.mv_lb) / (b.mv_ub - b.mv_lb), 0.005
                         )
@@ -442,10 +452,14 @@ class PIDControllerData(UnitModelBlockData):
                             (b.mv_unbounded[t] - b.mv_ub) / (b.mv_ub - b.mv_lb), 0.005
                         )
                     )
+                elif self.config.antiwindup_type == ControllerAntiwindupType.BACK_CALCULATION:
+                    return b.mv_integral_component_dot[t] == b.gain_i[t] * b.error[t] + b.gain_b[t] * (
+                        b.manipulated_var[t] - b.mv_unbounded[t]
+                    )
                 else:
-                    return b.integral_of_error_dot[t] == b.error[t]
+                    return b.mv_integral_component_dot[t] == b.gain_i[t] * b.error[t]
 
-            self.error_from_integral_eqn[time_set.first()].deactivate()
+            self.mv_integration_eqn[time_set.first()].deactivate()
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -458,8 +472,8 @@ class PIDControllerData(UnitModelBlockData):
         time_set = self.flowsheet().time
         t0 = time_set.first()
 
-        sf_pv = iscale.get_scaling_factor(self.process_var[t0])
-        sf_mv = iscale.get_scaling_factor(self.manipulated_var[t0])
+        sf_pv = iscale.get_scaling_factor(self.config.process_var[t0])
+        sf_mv = iscale.get_scaling_factor(self.config.manipulated_var[t0])
         # Don't like calling scaling laterally like this, but we need scaling factors for the pv and mv
         if sf_pv is None:
             try:
@@ -501,12 +515,6 @@ class PIDControllerData(UnitModelBlockData):
                     cst(self.negative_pv_eqn[t], sf_pv)
 
             if self.config.type in [ControllerType.PI, ControllerType.PID]:
-                try:
-                    tau_I = pyo.value(self.gain_p[t] / self.gain_i[t])
-                except ZeroDivisionError:
-                    # Integral mode turned off. If first time period, use one. Otherwise, use previous value
-                    if t == t0:
-                        tau_I = 1
-                ssf(self.integral_of_error[t], sf_pv / tau_I)
+                ssf(self.mv_integral_component[t], sf_mv)
 
-                cst(self.error_from_integral_eqn[t], sf_pv)
+                cst(self.mv_integration_eqn[t], sf_pv)

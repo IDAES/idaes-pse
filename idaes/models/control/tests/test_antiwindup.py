@@ -28,6 +28,8 @@ windup issues in an (approximately) first order system. What to do? Use an
 __author__ = "Douglas Allan, John Eslick"
 
 import pytest
+import numpy as np
+import matplotlib.pyplot as plt
 import pyomo.environ as pyo
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock, MaterialBalanceType
@@ -165,89 +167,53 @@ def create_model(
         time_set = [0, 3]
 
     m = pyo.ConcreteModel(name=model_name)
-    m.fs = FlowsheetBlock(default=fs_cfg)
+    m.fs = FlowsheetBlock(**fs_cfg)
     # Create a property parameter block
-    m.fs.prop_water = iapws95.Iapws95ParameterBlock(
-        default={
-            "phase_presentation": iapws95.PhaseType.G
-        }
-    )
+    m.fs.prop_water = iapws95.Iapws95ParameterBlock(phase_presentation=iapws95.PhaseType.G)
     m.fs.prop_water.set_default_scaling("flow_mol", 1E-2)
     # Create the valve and tank models
     m.fs.valve_1 = Valve(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "pressure_flow_callback": _valve_pressure_flow_cb,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "property_package": m.fs.prop_water,
-        }
+        dynamic=False,
+        has_holdup=False,
+        pressure_flow_callback=_valve_pressure_flow_cb,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        property_package=m.fs.prop_water,
     )
     m.fs.tank_1 = Heater(
-        default={
-            "has_holdup": True,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "property_package": m.fs.prop_water,
-        }
+        has_holdup=True,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        property_package=m.fs.prop_water,
     )
     m.fs.valve_2 = Valve(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "pressure_flow_callback": _valve_pressure_flow_cb,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "property_package": m.fs.prop_water,
-        }
+        dynamic=False,
+        has_holdup=False,
+        pressure_flow_callback=_valve_pressure_flow_cb,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        property_package=m.fs.prop_water,
     )
     m.fs.tank_2 = Heater(
-        default={
-            "has_holdup": True,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "property_package": m.fs.prop_water,
-        }
+        has_holdup=True,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        property_package=m.fs.prop_water,
     )
     m.fs.valve_3 = Valve(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "pressure_flow_callback": _valve_pressure_flow_cb,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "property_package": m.fs.prop_water,
-        }
+        dynamic=False,
+        has_holdup=False,
+        pressure_flow_callback=_valve_pressure_flow_cb,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        property_package=m.fs.prop_water,
     )
     if not steady_state:
         # Add a controller
         m.fs.ctrl = PIDController(
-            default={
-                "process_var": m.fs.tank_2.control_volume.properties_out[:].pressure,
-                "manipulated_var": m.fs.valve_1.valve_opening,
-                "calculate_initial_integral": calc_integ,
-                "mv_bound_type": ControllerMVBoundType.SMOOTH_BOUND,
-                "type": ControllerType.PID,  # rather use PI, but testing all terms
-                "derivative_on_error": derivative_on_error,
-                "antiwindup_type": antiwindup,
-            }
+            process_var=m.fs.tank_2.control_volume.properties_out[:].pressure,
+            manipulated_var=m.fs.valve_1.valve_opening,
+            calculate_initial_integral=calc_integ,
+            mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
+            type=ControllerType.PID,  # rather use PI, but testing all terms
+            derivative_on_error=derivative_on_error,
+            antiwindup_type=antiwindup,
         )
-
-    # The control volume block doesn't assume the two phases are in equilibrium
-    # by default, so I'll make that assumption here, I don't actually expect
-    # liquid to form but who knows. The phase_fraction in the control volume is
-    # volumetric phase fraction hence the densities.
-    # @m.fs.tank_1.Constraint(m.fs.time)
-    # def vol_frac_vap(b, t):
-    #     return (
-    #         b.control_volume.properties_out[t].phase_frac["Vap"]
-    #         * b.control_volume.properties_out[t].dens_mol
-    #         / b.control_volume.properties_out[t].dens_mol_phase["Vap"]
-    #     ) == (b.control_volume.phase_fraction[t, "Vap"])
-    #
-    # @m.fs.tank_2.Constraint(m.fs.time)
-    # def vol_frac_vap(b, t):
-    #     return (
-    #         b.control_volume.properties_out[t].phase_frac["Vap"]
-    #         * b.control_volume.properties_out[t].dens_mol
-    #         / b.control_volume.properties_out[t].dens_mol_phase["Vap"]
-    #     ) == (b.control_volume.phase_fraction[t, "Vap"])
 
     # Connect the models
     m.fs.v1_to_tank_1 = Arc(source=m.fs.valve_1.outlet, destination=m.fs.tank_1.inlet)
@@ -288,6 +254,8 @@ def create_model(
         m.fs.ctrl.mv_ref.fix(0)
         m.fs.ctrl.mv_lb = 0.0
         m.fs.ctrl.mv_ub = 1.0
+        if antiwindup == ControllerAntiwindupType.BACK_CALCULATION:
+            m.fs.ctrl.gain_b.fix(1)
 
     for t in m.fs.time:
         # For debugging purposes.
@@ -338,11 +306,9 @@ def create_model(
     # Return the model and solver
     return m, solver
 
-#@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
-#@pytest.mark.integration
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+@pytest.mark.component
 def test_setpoint_change_windup():
-    """Controller performance with derivative on error should be unchanged for an inlet disturbance"""
-
     # First calculate the two steady states that should be achieved in the test
     # don't worry these steady state problems solve super fast
     m_steady, solver = create_model(tee=False)
@@ -358,9 +324,11 @@ def test_setpoint_change_windup():
     s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
     print(f"Steady state 2 valve opening: {s2_valve}")
 
+    tsim = 40
+
     # Next create a model for the 0 to 5 sec time period
     m_dynamic, solver = create_model(
-        steady_state=False, time_set=[0, 40], nfe=80, calc_integ=True, tee=True, derivative_on_error=False,
+        steady_state=False, time_set=[0, 2, tsim], nfe=2, calc_integ=True, tee=True, derivative_on_error=False,
         initial_valve1_opening=s1_valve, antiwindup=ControllerAntiwindupType.NONE
     )
     #return m_dynamic, solver
@@ -369,12 +337,12 @@ def test_setpoint_change_windup():
     m_dynamic.fs.ctrl.gain_i.fix(1e-5)
     m_dynamic.fs.ctrl.gain_d.fix(0)
     # Add a step change in outlet setpoint
-    _add_setpoint_step(m_dynamic, time=m_dynamic.fs.time.at(10), value=3.0e5)
+    _add_setpoint_step(m_dynamic, time=m_dynamic.fs.time.at(3), value=3.0e5)
 
     res = petsc.petsc_dae_by_time_element(
         m_dynamic,
         time=m_dynamic.fs.time,
-        between=[m_dynamic.fs.time.first(), m_dynamic.fs.time.at(9), m_dynamic.fs.time.last()],
+        between=[m_dynamic.fs.time.first(), m_dynamic.fs.time.at(2), m_dynamic.fs.time.last()],
         ts_options={
             "--ts_type": "beuler",  # Backwards Euler
             "--ts_adapt_type": "basic",
@@ -386,52 +354,161 @@ def test_setpoint_change_windup():
             "--ts_max_snes_failures": 1000,
         },
     )
+    # read the trajectory data, and make it easy by interpolating a time point
+    # every second
+    tj = res.trajectory
+    tj2 = tj.interpolate(np.linspace(0, tsim, tsim + 1))
+    tf = m_dynamic.fs.time.last()
 
-    #solver.solve(m_dynamic, tee=True)
+    # Test for huge value  of integral term and oscillatory control trajectory
+    assert tj2.get_vec(m_dynamic.fs.ctrl.mv_integral_component[tf])[8] >= 2.95
+    assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[13] == pytest.approx(1, abs=1e-4)
+    assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[16] <= 0.32
+    assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[19] >= 0.82
+    assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[23] <= 0.56
 
-    # Check that we reach the expected steady state (almost) by t = 5.6 and t=12
-    # assert pyo.value(
-    #     m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.at(4)]
-    # ) == pytest.approx(s1_valve, abs=0.001)
-    # assert pyo.value(
-    #     m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.last()]
-    # ) == pytest.approx(s2_valve, abs=0.001)
-    #
-    # # Check that derivative kick is present
-    # assert pyo.value(
-    #     m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.at(31)]
-    # ) == pytest.approx(0.93196, abs=0.001)
+    return m_dynamic, solver, tj2
 
-    return m_dynamic, solver
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+@pytest.mark.component
+def test_setpoint_change_conditional_integration():
+    # First calculate the two steady states that should be achieved in the test
+    # don't worry these steady state problems solve super fast
+    m_steady, solver = create_model(tee=False)
+    m_steady.fs.valve_1.inlet.pressure.fix(6.0e5)
+    m_steady.fs.tank_2.control_volume.properties_out[0].pressure.fix(1.5e5)
+    m_steady.fs.valve_1.valve_opening[0].unfix()
+    solver.solve(m_steady, tee=False)
+    s1_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
+    print(f"Steady state 1 valve opening: {s1_valve}")
+
+    m_steady.fs.tank_2.control_volume.properties_out[0].pressure.fix(3.0e5)
+    solver.solve(m_steady, tee=False)
+    s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
+    print(f"Steady state 2 valve opening: {s2_valve}")
+
+    tsim = 40
+
+    # Next create a model for the 0 to 5 sec time period
+    m_dynamic, solver = create_model(
+        steady_state=False, time_set=[0, 2, tsim], nfe=2, calc_integ=True, tee=True, derivative_on_error=False,
+        initial_valve1_opening=s1_valve, antiwindup=ControllerAntiwindupType.CONDITIONAL_INTEGRATION
+    )
+    #return m_dynamic, solver
+    # Retune controller to result in windup
+    m_dynamic.fs.ctrl.gain_p.fix(5e-6)
+    m_dynamic.fs.ctrl.gain_i.fix(1e-5)
+    m_dynamic.fs.ctrl.gain_d.fix(0)
+    # Add a step change in outlet setpoint
+    _add_setpoint_step(m_dynamic, time=m_dynamic.fs.time.at(3), value=3.0e5)
+
+    res = petsc.petsc_dae_by_time_element(
+        m_dynamic,
+        time=m_dynamic.fs.time,
+        between=[m_dynamic.fs.time.first(), m_dynamic.fs.time.at(2), m_dynamic.fs.time.last()],
+        ts_options={
+            "--ts_type": "beuler",  # Backwards Euler
+            "--ts_adapt_type": "basic",
+            "--ts_dt": 1,
+            "--ts_save_trajectory": 1,
+            "--ts_max_snes_failures": 1000,
+        },
+    )
+    # read the trajectory data, and make it easy by interpolating a time point
+    # every second
+    tj = res.trajectory
+    tj2 = tj.interpolate(np.linspace(0, tsim, tsim + 1))
+    tf = m_dynamic.fs.time.last()
+
+    # Test that integral component of MV doesn't exceed MV bound
+    assert np.all(tj2.get_vec(m_dynamic.fs.ctrl.mv_integral_component[tf]) <= 1)
+    assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[10] >= 0.585
+    assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[14] <= 0.72
+    assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[18] >= 0.63
+    assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[28] == pytest.approx(s2_valve, abs=1e-3)
+
+    return m_dynamic, solver, tj2
+
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+@pytest.mark.component
+def test_setpoint_change_back_calculation():
+    # First calculate the two steady states that should be achieved in the test
+    # don't worry these steady state problems solve super fast
+    m_steady, solver = create_model(tee=False)
+    m_steady.fs.valve_1.inlet.pressure.fix(6.0e5)
+    m_steady.fs.tank_2.control_volume.properties_out[0].pressure.fix(1.5e5)
+    m_steady.fs.valve_1.valve_opening[0].unfix()
+    solver.solve(m_steady, tee=False)
+    s1_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
+    print(f"Steady state 1 valve opening: {s1_valve}")
+
+    m_steady.fs.tank_2.control_volume.properties_out[0].pressure.fix(3.0e5)
+    solver.solve(m_steady, tee=False)
+    s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
+    print(f"Steady state 2 valve opening: {s2_valve}")
+
+    tsim = 40
+
+    # Next create a model for the 0 to 5 sec time period
+    m_dynamic, solver = create_model(
+        steady_state=False, time_set=[0, 2, tsim], nfe=2, calc_integ=True, tee=True, derivative_on_error=False,
+        initial_valve1_opening=s1_valve, antiwindup=ControllerAntiwindupType.BACK_CALCULATION
+    )
+    #return m_dynamic, solver
+    # Retune controller to result in windup
+    m_dynamic.fs.ctrl.gain_p.fix(5e-6)
+    m_dynamic.fs.ctrl.gain_i.fix(1e-5)
+    m_dynamic.fs.ctrl.gain_d.fix(0)
+    m_dynamic.fs.ctrl.gain_b.fix(1.5)
+    # Add a step change in outlet setpoint
+    _add_setpoint_step(m_dynamic, time=m_dynamic.fs.time.at(3), value=3.0e5)
+
+    res = petsc.petsc_dae_by_time_element(
+        m_dynamic,
+        time=m_dynamic.fs.time,
+        between=[m_dynamic.fs.time.first(), m_dynamic.fs.time.at(2), m_dynamic.fs.time.last()],
+        ts_options={
+            "--ts_type": "beuler",  # Backwards Euler
+            "--ts_adapt_type": "basic",
+            "--ts_dt": 1,
+            "--ts_save_trajectory": 1,
+            "--ts_max_snes_failures": 1000,
+        },
+    )
+    # read the trajectory data, and make it easy by interpolating a time point
+    # every second
+    tj = res.trajectory
+    tj2 = tj.interpolate(np.linspace(0, tsim, tsim + 1))
+    tf = m_dynamic.fs.time.last()
+
+    assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[5] == pytest.approx(1, abs=1e-3)
+    # Test that integral component of MV doesn't far exceed MV bound
+    assert np.all(tj2.get_vec(m_dynamic.fs.ctrl.mv_integral_component[tf]) <= 1.2)
+    assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[10] >= 0.565
+    assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[14] <= 0.73
+    assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[18] >= 0.62
+    assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[40] == pytest.approx(s2_valve, abs=1e-3)
+
+    return m_dynamic, solver, tj2
 
 if __name__ == "__main__":
-    import idaes
-    from idaes.core.solvers import use_idaes_solver_configuration_defaults
-    use_idaes_solver_configuration_defaults()
-    idaes.cfg.ipopt.options.nlp_scaling_method = "user-scaling"
-    idaes.cfg.ipopt.options.OF_ma57_automatic_scaling = "yes"
-    m, solver = test_setpoint_change_windup()
-    #m, solver = test_setpoint_change_derivative_on_pv()
+    m, solver, tj2 = test_setpoint_change_windup()
 
-    plot_grid_dynamic(
-        x=m.fs.time,
-        xlabel="time (s)",
-        y=[
-            m.fs.valve_1.valve_opening,
-            m.fs.tank_2.control_volume.properties_out[:].pressure,
-            m.fs.valve_1.control_volume.properties_in[:].pressure,
-        ],
-        ylabel=[
-            "opening (fraction open)",
-            "tank pressure (kPa)",
-            "inlet pressure (kPa)",
-        ],
-        yunits=[
-            None,
-            pyo.units.kPa,
-            pyo.units.kPa,
-        ],
-        cols=3,
-        rows=1,
-        #to_file="pid_steam_tank_pressure.pdf",
-    )
+    fig = plt.figure(figsize=(4, 5.5))
+    axes = fig.subplots(nrows=3, ncols=1)
+    time = tj2.get_vec("_time")
+    tf = m.fs.time.last()
+
+    axes[0].plot(time, tj2.get_vec(m.fs.valve_1.valve_opening[tf]))
+    axes[0].set_xlabel("time (s)")
+    axes[0].set_ylabel("opening (fraction open)")
+
+    axes[1].plot(time, tj2.get_vec(m.fs.tank_2.control_volume.properties_out[tf].pressure) / 1000)
+    axes[1].set_xlabel("time (s)")
+    axes[1].set_ylabel("tank pressure (kPa)")
+
+    axes[2].plot(time, tj2.get_vec(m.fs.ctrl.mv_integral_component[tf]))
+    axes[2].set_xlabel("time (s)")
+    axes[2].set_ylabel("integral component (fraction open)")
+
+    fig.tight_layout()

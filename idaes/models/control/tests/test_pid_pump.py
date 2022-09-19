@@ -70,8 +70,8 @@ def m():
     for t in m_dyn.fs.time:
         copy_values_at_time(m_dyn.fs, m_ss.fs, t, 0.0, copy_fixed=True)
     m_dyn.fs.controller.mv_ref.value = m_dyn.fs.valve.valve_opening[0].value
-    # calculate integral error assuming error is zero
-    m_dyn.fs.controller.integral_of_error[:].value = 0
+    # calculate mv integral component assuming error is zero
+    m_dyn.fs.controller.mv_integral_component[:].value = 0
 
     dof = degrees_of_freedom(m_dyn)
     assert dof == 0
