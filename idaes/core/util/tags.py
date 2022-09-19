@@ -690,7 +690,6 @@ class ModelTagGroup(dict):
 
 
 def svg_tag(
-    tags=None,
     svg=None,
     tag_group=None,
     outfile=None,
@@ -698,15 +697,13 @@ def svg_tag(
     tag_map=None,
     show_tags=False,
     byte_encoding="utf-8",
-    tag_format=None,
-    tag_format_default="{:.4e}",
 ):
     """
     Replace text in a SVG with tag values for the model. This works by looking
     for text elements in the SVG with IDs that match the tags or are in tag_map.
 
     Args:
-        svg: a file pointer or a string continaing svg contents
+        svg: a file pointer or a string containing svg contents
         tag_group: a ModelTagGroup with tags to display in the SVG
         outfile: a file name to save the results, if None don't save
         idx: if None not indexed, otherwise an index in the indexing set of the
@@ -723,24 +720,6 @@ def svg_tag(
     """
     if svg is None:
         raise RuntimeError("svg string or file-like object required.")
-
-    # Deal with soon to be depricated input by converting it to new style
-    if tags is not None:
-        deprecation_warning(
-            "svg_tag, the tags, tag_format and "
-            "tag_format_default arguments are deprecated use tag_group instead.",
-            version=1.12,
-        )
-        # As a temporary measure, allow a tag and tag format dict.  To simplfy
-        # and make it easier to remove this option in the future, use the old
-        # style input to make a ModelTagGroup object.
-        tag_group = ModelTagGroup()
-        for key, tag in tags.items():
-            if tag_format is None:
-                tag_format = {}
-            format_string = tag_format.get(key, tag_format_default)
-            tag_group[key] = ModelTag(expr=tag, format_string=format_string)
-            tag_group.str_include_units = False
 
     # get SVG content string
     if isinstance(svg, str):  # already a string
