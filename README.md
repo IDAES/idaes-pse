@@ -59,7 +59,7 @@ From there you can explore the examples and tutorials.
 
 For more information on how to use Jupyter Lab, use the built-in *Help* menu and the extensive documentation on the [Jupyter website](https://jupyter.org).
 
-Finally, refer to the [complete idaes-pse documentation](https://idaes-pse.readthedocs.io/en/stable) for detailed [installation instructions](https://idaes-pse.readthedocs.io/en/stable/tutorials/getting_started/index.html) examples, guides, and reference.
+Finally, refer to the [complete idaes-pse documentation](https://idaes-pse.readthedocs.io/en/stable) for detailed [installation instructions](https://idaes-pse.readthedocs.io/en/stable/tutorials/getting_started/index.html), examples, guides, and reference.
 
 ## System requirements
 
