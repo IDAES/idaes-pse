@@ -30,7 +30,7 @@ __Author__ = "John Eslick"
 class ModelTag:
     """The purpose of this class is to facilitate a simpler method of accessing,
     displaying, and reporting model quantities. The structure of IDAES models is
-    a complex hiarachy. This class allows quantities to be accessed more directly
+    a complex hierarchy. This class allows quantities to be accessed more directly
     and provides more control over how they are reported."""
 
     __slots__ = [
@@ -53,7 +53,7 @@ class ModelTag:
         Args:
             expr: A Pyomo Var, Expression, Param, Reference, or unnamed
                 expression to tag. This can be a scalar or indexed.
-            format_string: A formating string used to print an elememnt of the
+            format_string: A formatting string used to print an element of the
                 tagged expression (e.g. '{:.3f}').
             doc: A description of the tagged quantity.
             display_units: Pyomo units to display the quantity in. If a string
@@ -71,14 +71,14 @@ class ModelTag:
         self._display_units = display_units  # unit to display value in
         self._cache_validation_value = {}  # value when converted value stored
         self._cache_display_value = {}  # value to display after unit conversions
-        self._name = None  # tag name (just used to claify error messages)
+        self._name = None  # tag name (just used to clarify error messages)
         self._root = None  # use this to cache scalar tags in indexed parent
         self._index = None  # index to get cached converted value from parent
         self._group = None  # Group object if this is a member of a group
         self._str_units = True  # include units to stringify the tag
         # if _set_in_display_units is True and no units are provided for for
         # set, fix, setub, and setlb, the units will be assumed to be the
-        # display units.  If it is false and no units are proided, the units are
+        # display units.  If it is false and no units are provided, the units are
         # assumed to be the native units of the quantity
         self._set_in_display_units = False
 
@@ -136,7 +136,7 @@ class ModelTag:
         return self.display(units=self.str_include_units)
 
     def __call__(self, *args, **kwargs):
-        """Calling an instance of a tagged quantitiy gets the display string see
+        """Calling an instance of a tagged quantity gets the display string see
         display()"""
         return self.display(*args, **kwargs)
 
@@ -234,7 +234,7 @@ class ModelTag:
     def get_display_value(self, index=None, convert=True):
         """Get the value of the expression to display.  Do unit conversion if
         needed.  This caches the unit conversion, to save time if this is called
-        repeatededly.  The unconverted value is used to ensure the cached
+        repeatedly.  The unconverted value is used to ensure the cached
         converted value is still valid.
 
         Args:
