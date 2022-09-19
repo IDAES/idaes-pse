@@ -227,9 +227,7 @@ class TestHelm(object):
         # This model is used to test transport properties
         model = ConcreteModel()
         model.prop_param = iapws95.Iapws95ParameterBlock()
-        model.prop_in = iapws95.Iapws95StateBlock(
-            default={"parameters": model.prop_param}
-        )
+        model.prop_in = iapws95.Iapws95StateBlock(parameters=model.prop_param)
         return model
 
     @pytest.fixture(scope="class")

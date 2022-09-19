@@ -308,7 +308,9 @@ class PIDControllerData(UnitModelBlockData):
                 initialize=0,
                 units=pv_units / time_units,
             )
+
         else:
+
             @self.Expression(time_set, doc="Error expression")
             def error(b, t):
                 return b.setpoint[t] - b.process_var[t]

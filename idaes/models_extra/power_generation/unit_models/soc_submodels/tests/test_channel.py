@@ -108,21 +108,13 @@ def modelNoHoldup():
     time_set = [0, 1]
     zfaces = np.linspace(0, 1, 4).tolist()
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(
-        default={
-            "dynamic": False,
-            "time_set": time_set,
-            "time_units": pyo.units.s,
-        }
-    )
+    m.fs = FlowsheetBlock(dynamic=False, time_set=time_set, time_units=pyo.units.s)
     m.fs.oxygen_channel = soc.SocChannel(
-        default={
-            "has_holdup": False,
-            "control_volume_zfaces": zfaces,
-            "opposite_flow": True,
-            "below_electrode": False,
-            "component_list": ["O2", "H2O"],
-        }
+        has_holdup=False,
+        control_volume_zfaces=zfaces,
+        opposite_flow=True,
+        below_electrode=False,
+        component_list=["O2", "H2O"],
     )
     m.fs.oxygen_channel.length_x.fix(0.002)
     m.fs.oxygen_channel.heat_transfer_coefficient.fix(100)
@@ -142,16 +134,14 @@ def modelHoldupNotDynamic():
     )
 
     m.fs.fuel_channel = soc.SocChannel(
-        default={
-            "has_holdup": True,
-            "control_volume_zfaces": zfaces,
-            "length_z": m.fs.length_z,
-            "length_y": m.fs.length_y,
-            "temperature_z": m.fs.temperature_z,
-            "opposite_flow": False,
-            "below_electrode": True,
-            "component_list": ["H2", "H2O", "N2"],
-        }
+        has_holdup=True,
+        control_volume_zfaces=zfaces,
+        length_z=m.fs.length_z,
+        length_y=m.fs.length_y,
+        temperature_z=m.fs.temperature_z,
+        opposite_flow=False,
+        below_electrode=True,
+        component_list=["H2", "H2O", "N2"],
     )
     m.fs.fuel_channel.length_x.fix(0.002)
     m.fs.fuel_channel.heat_transfer_coefficient.fix(100)

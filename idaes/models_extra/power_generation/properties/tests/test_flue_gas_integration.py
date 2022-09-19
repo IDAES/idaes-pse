@@ -54,29 +54,20 @@ class TestHXLCTransientSCO2(object):
     def model(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(
-            default={
-                "dynamic": True,
-                "time_set": [0, 300, 600, 900, 1200, 1500],
-                "time_units": pyunits.s,
-            }
+            dynamic=True, time_set=[0, 300, 600, 900, 1200, 1500], time_units=pyunits.s
         )
 
         m.fs.sco2 = swco2.SWCO2ParameterBlock()
         m.fs.fluegas = FlueGasParameterBlock()
 
         m.fs.unit = HeatExchangerLumpedCapacitance(
-            default={
-                "delta_temperature_callback": delta_temperature_lmtd_callback,
-                "hot_side_name": "tube",
-                "cold_side_name": "shell",
-                "tube": {"property_package": m.fs.sco2, "has_pressure_change": True},
-                "shell": {
-                    "property_package": m.fs.fluegas,
-                    "has_pressure_change": False,
-                },
-                "flow_pattern": HeatExchangerFlowPattern.crossflow,
-                "dynamic": False,
-            }
+            delta_temperature_callback=delta_temperature_lmtd_callback,
+            hot_side_name="tube",
+            cold_side_name="shell",
+            tube={"property_package": m.fs.sco2, "has_pressure_change": True},
+            shell={"property_package": m.fs.fluegas, "has_pressure_change": False},
+            flow_pattern=HeatExchangerFlowPattern.crossflow,
+            dynamic=False,
         )
 
         m.discretizer = TransformationFactory("dae.finite_difference")

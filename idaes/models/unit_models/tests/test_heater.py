@@ -65,11 +65,11 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = Heater(default={"property_package": m.fs.properties})
+    m.fs.unit = Heater(property_package=m.fs.properties)
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 9
@@ -88,13 +88,11 @@ class TestBTX(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = BTXParameterBlock(default={"valid_phase": "Liq"})
+        m.fs.properties = BTXParameterBlock(valid_phase="Liq")
 
-        m.fs.unit = Heater(
-            default={"property_package": m.fs.properties, "has_pressure_change": True}
-        )
+        m.fs.unit = Heater(property_package=m.fs.properties, has_pressure_change=True)
 
         m.fs.unit.inlet.flow_mol[0].fix(5)  # mol/s
         m.fs.unit.inlet.temperature[0].fix(365)  # K
@@ -204,13 +202,11 @@ class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = iapws95.Iapws95ParameterBlock()
 
-        m.fs.unit = Heater(
-            default={"property_package": m.fs.properties, "has_pressure_change": True}
-        )
+        m.fs.unit = Heater(property_package=m.fs.properties, has_pressure_change=True)
         m.fs.unit.deltaP.fix(0)
         m.fs.unit.inlet.flow_mol[0].fix(5)
         m.fs.unit.inlet.enth_mol[0].fix(50000)
@@ -359,11 +355,11 @@ class TestSaponification(object):
     @pytest.fixture(scope="class")
     def sapon(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = SaponificationParameterBlock()
 
-        m.fs.unit = Heater(default={"property_package": m.fs.properties})
+        m.fs.unit = Heater(property_package=m.fs.properties)
 
         m.fs.unit.inlet.flow_vol[0].fix(1e-3)
         m.fs.unit.inlet.temperature[0].fix(320)
@@ -486,13 +482,11 @@ class TestBT_Generic(object):
     @pytest.fixture(scope="class")
     def btg(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = GenericParameterBlock(default=configuration)
+        m.fs.properties = GenericParameterBlock(**configuration)
 
-        m.fs.unit = Heater(
-            default={"property_package": m.fs.properties, "has_pressure_change": True}
-        )
+        m.fs.unit = Heater(property_package=m.fs.properties, has_pressure_change=True)
 
         m.fs.unit.inlet.flow_mol[0].fix(5)  # mol/s
         m.fs.unit.inlet.temperature[0].fix(365)  # K

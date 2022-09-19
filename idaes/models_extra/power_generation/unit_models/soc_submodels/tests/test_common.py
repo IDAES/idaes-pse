@@ -41,24 +41,15 @@ def approx(x):
 @pytest.fixture
 def model_ideal():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(
-        default={
-            "dynamic": False,
-            "time_set": [0],
-            "time_units": pyo.units.s,
-        }
-    )
+    m.fs = FlowsheetBlock(dynamic=False, time_set=[0], time_units=pyo.units.s)
     comps = list(common.h_params.keys())
     comps.remove("Vac")
     comps.remove("O^2-")
     comps.remove("e^-")
     m.fs.paramsIdeal = GenericParameterBlock(
-        default=get_prop(comps, {"Vap"}, eos=EosType.IDEAL),
-        doc="Air property parameters",
+        **get_prop(comps, {"Vap"}, eos=EosType.IDEAL), doc="Air property parameters"
     )
-    m.fs.propsIdeal = GenericStateBlock(
-        default={"parameters": m.fs.paramsIdeal, "defined_state": True}
-    )
+    m.fs.propsIdeal = GenericStateBlock(parameters=m.fs.paramsIdeal, defined_state=True)
     m.fs.propsIdeal.flow_mol.fix(1000)
     # Technically the NIST standard state is 1 bar, but this is what Andrew has at the moment
     m.fs.propsIdeal.pressure.fix(1.01325e5)

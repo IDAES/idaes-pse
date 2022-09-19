@@ -100,76 +100,50 @@ def models():
 def demo_flowsheet():
     """Semi-complicated demonstration flowsheet."""
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.BT_props = BTXParameterBlock()
-    m.fs.M01 = Mixer(default={"property_package": m.fs.BT_props})
-    m.fs.H02 = Heater(default={"property_package": m.fs.BT_props})
-    m.fs.F03 = Flash(default={"property_package": m.fs.BT_props})
+    m.fs.M01 = Mixer(property_package=m.fs.BT_props)
+    m.fs.H02 = Heater(property_package=m.fs.BT_props)
+    m.fs.F03 = Flash(property_package=m.fs.BT_props)
     m.fs.s01 = Arc(source=m.fs.M01.outlet, destination=m.fs.H02.inlet)
     m.fs.s02 = Arc(source=m.fs.H02.outlet, destination=m.fs.F03.inlet)
     TransformationFactory("network.expand_arcs").apply_to(m.fs)
 
     m.fs.properties = SWCO2ParameterBlock()
     m.fs.main_compressor = PressureChanger(
-        default={
-            "dynamic": False,
-            "property_package": m.fs.properties,
-            "compressor": True,
-            "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
-        }
+        dynamic=False,
+        property_package=m.fs.properties,
+        compressor=True,
+        thermodynamic_assumption=ThermodynamicAssumption.isentropic,
     )
 
     m.fs.bypass_compressor = PressureChanger(
-        default={
-            "dynamic": False,
-            "property_package": m.fs.properties,
-            "compressor": True,
-            "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
-        }
+        dynamic=False,
+        property_package=m.fs.properties,
+        compressor=True,
+        thermodynamic_assumption=ThermodynamicAssumption.isentropic,
     )
 
     m.fs.turbine = PressureChanger(
-        default={
-            "dynamic": False,
-            "property_package": m.fs.properties,
-            "compressor": False,
-            "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
-        }
+        dynamic=False,
+        property_package=m.fs.properties,
+        compressor=False,
+        thermodynamic_assumption=ThermodynamicAssumption.isentropic,
     )
     m.fs.boiler = Heater(
-        default={
-            "dynamic": False,
-            "property_package": m.fs.properties,
-            "has_pressure_change": True,
-        }
+        dynamic=False, property_package=m.fs.properties, has_pressure_change=True
     )
     m.fs.FG_cooler = Heater(
-        default={
-            "dynamic": False,
-            "property_package": m.fs.properties,
-            "has_pressure_change": True,
-        }
+        dynamic=False, property_package=m.fs.properties, has_pressure_change=True
     )
     m.fs.pre_boiler = Heater(
-        default={
-            "dynamic": False,
-            "property_package": m.fs.properties,
-            "has_pressure_change": False,
-        }
+        dynamic=False, property_package=m.fs.properties, has_pressure_change=False
     )
     m.fs.HTR_pseudo_tube = Heater(
-        default={
-            "dynamic": False,
-            "property_package": m.fs.properties,
-            "has_pressure_change": True,
-        }
+        dynamic=False, property_package=m.fs.properties, has_pressure_change=True
     )
     m.fs.LTR_pseudo_tube = Heater(
-        default={
-            "dynamic": False,
-            "property_package": m.fs.properties,
-            "has_pressure_change": True,
-        }
+        dynamic=False, property_package=m.fs.properties, has_pressure_change=True
     )
     return m.fs
 
@@ -178,17 +152,13 @@ def demo_flowsheet():
 def flash_flowsheet():
     # Model and flowsheet
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     # Flash properties
     m.fs.properties = BTXParameterBlock(
-        default={
-            "valid_phase": ("Liq", "Vap"),
-            "activity_coeff_model": "Ideal",
-            "state_vars": "FTPz",
-        }
+        valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal", state_vars="FTPz"
     )
     # Flash unit
-    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    m.fs.flash = Flash(property_package=m.fs.properties)
     # TODO: move this to fix(np.NINF, skip_validation=True) once
     # Pyomo#2180 is merged
     m.fs.flash.inlet.flow_mol[:].set_value(np.NINF, True)
@@ -404,18 +374,16 @@ def test_flowsheet_serializer_get_unit_model_type():
 
     # flowsheet
     m = ConcreteModel(name="My Model")
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.LG}
+        phase_presentation=iapws95.PhaseType.LG
     )
 
     # add & test scalar unit model
     m.fs.cond_pump = PressureChanger(
-        default={
-            "property_package": m.fs.prop_water,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "thermodynamic_assumption": ThermodynamicAssumption.pump,
-        }
+        property_package=m.fs.prop_water,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        thermodynamic_assumption=ThermodynamicAssumption.pump,
     )
     unit_type = FlowsheetSerializer.get_unit_model_type(m.fs.cond_pump)
     assert unit_type == "pressure_changer"
@@ -424,18 +392,16 @@ def test_flowsheet_serializer_get_unit_model_type():
     m.set_fwh = Set(initialize=[1, 2, 3, 4, 6, 7, 8])
     m.fs.fwh = HeatExchanger(
         m.set_fwh,
-        default={
-            "delta_temperature_callback": delta_temperature_underwood_callback,
-            "hot_side": {
-                "property_package": m.fs.prop_water,
-                "material_balance_type": MaterialBalanceType.componentTotal,
-                "has_pressure_change": True,
-            },
-            "cold_side": {
-                "property_package": m.fs.prop_water,
-                "material_balance_type": MaterialBalanceType.componentTotal,
-                "has_pressure_change": True,
-            },
+        delta_temperature_callback=delta_temperature_underwood_callback,
+        hot_side={
+            "property_package": m.fs.prop_water,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+            "has_pressure_change": True,
+        },
+        cold_side={
+            "property_package": m.fs.prop_water,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+            "has_pressure_change": True,
         },
     )
     unit_type = FlowsheetSerializer.get_unit_model_type(m.fs.fwh)

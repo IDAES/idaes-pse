@@ -16,7 +16,7 @@ This module contains miscellaneous utility functions for use in IDAES models.
 """
 from enum import Enum
 
-from pyomo.common.deprecation import deprecated, relocated_module_attribute
+from pyomo.common.deprecation import deprecated
 
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock
@@ -25,17 +25,6 @@ import idaes.logger as idaeslog
 from idaes.core.util.tags import svg_tag as svg_tag_new
 
 _log = idaeslog.getLogger(__name__)
-
-
-relocated_module_attribute(
-    "get_solver", "idaes.core.solvers.get_solver", version="2.0.0.alpha0"
-)
-
-relocated_module_attribute(
-    "VarLikeExpression",
-    "idaes.core.base.var_like_expression.VarLikeExpression",
-    version="2.0.0.alpha0",
-)
 
 
 # Author: Andrew Lee
@@ -101,23 +90,6 @@ def TagReference(s, description=""):
     r = pyo.Reference(s)
     r.description = description
     return r
-
-
-def copy_port_values(destination=None, source=None, arc=None, direction="forward"):
-    """
-    Moved to idaes.core.util.initialization.propagate_state.
-    Leaving redirection function here for deprecation warning.
-    """
-    _log.warning(
-        "DEPRECATED: copy_port_values has been deprecated. "
-        "The same functionality can be found in "
-        "idaes.core.util.initialization.propagate_state."
-    )
-    from idaes.core.util.initialization import propagate_state
-
-    propagate_state(
-        destination=destination, source=source, arc=arc, direction=direction
-    )
 
 
 @deprecated(

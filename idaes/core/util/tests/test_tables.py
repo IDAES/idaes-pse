@@ -53,30 +53,22 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 @pytest.fixture()
 def m():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.thermo_params = thermo_props.SaponificationParameterBlock()
     m.fs.reaction_params = rxn_props.SaponificationReactionParameterBlock(
-        default={"property_package": m.fs.thermo_params}
+        property_package=m.fs.thermo_params
     )
 
     m.fs.tank1 = CSTR(
-        default={
-            "property_package": m.fs.thermo_params,
-            "reaction_package": m.fs.reaction_params,
-        }
+        property_package=m.fs.thermo_params, reaction_package=m.fs.reaction_params
     )
     m.fs.tank2 = CSTR(
-        default={
-            "property_package": m.fs.thermo_params,
-            "reaction_package": m.fs.reaction_params,
-        }
+        property_package=m.fs.thermo_params, reaction_package=m.fs.reaction_params
     )
     m.fs.tank_array = CSTR(
         range(3),
-        default={
-            "property_package": m.fs.thermo_params,
-            "reaction_package": m.fs.reaction_params,
-        },
+        property_package=m.fs.thermo_params,
+        reaction_package=m.fs.reaction_params,
     )
 
     m.fs.stream = Arc(source=m.fs.tank1.outlet, destination=m.fs.tank2.inlet)
@@ -95,17 +87,13 @@ def m():
 def m_with_variable_types():
     """Flash unit model. Use '.fs' attribute to get the flowsheet."""
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     # Flash properties
     m.fs.properties = BTXParameterBlock(
-        default={
-            "valid_phase": ("Liq", "Vap"),
-            "activity_coeff_model": "Ideal",
-            "state_vars": "FTPz",
-        }
+        valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal", state_vars="FTPz"
     )
     # Flash unit
-    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    m.fs.flash = Flash(property_package=m.fs.properties)
     # Adding fixed and unfixed variables
     m.fs.flash.inlet.pressure.fix(3.14)
     m.fs.flash.inlet.pressure.unfix()
@@ -200,23 +188,17 @@ def test_create_stream_table_dataframe_from_StateBlock_orient(m):
 @pytest.mark.unit
 def test_create_stream_table_dataframe_from_StateBlock_time():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False, "time_set": [3]})
+    m.fs = FlowsheetBlock(dynamic=False, time_set=[3])
     m.fs.thermo_params = thermo_props.SaponificationParameterBlock()
     m.fs.reaction_params = rxn_props.SaponificationReactionParameterBlock(
-        default={"property_package": m.fs.thermo_params}
+        property_package=m.fs.thermo_params
     )
 
     m.fs.tank1 = CSTR(
-        default={
-            "property_package": m.fs.thermo_params,
-            "reaction_package": m.fs.reaction_params,
-        }
+        property_package=m.fs.thermo_params, reaction_package=m.fs.reaction_params
     )
     m.fs.tank2 = CSTR(
-        default={
-            "property_package": m.fs.thermo_params,
-            "reaction_package": m.fs.reaction_params,
-        }
+        property_package=m.fs.thermo_params, reaction_package=m.fs.reaction_params
     )
 
     m.fs.stream = Arc(source=m.fs.tank1.outlet, destination=m.fs.tank2.inlet)
@@ -538,18 +520,16 @@ def HX1D_array_model():
     fs_cfg = {"dynamic": True, "time_set": time_set, "time_units": time_units}
 
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default=fs_cfg)
+    m.fs = FlowsheetBlock(**fs_cfg)
 
     m.fs.properties = thermo_props.SaponificationParameterBlock()
 
     m.fs.unit_array = HX1D(
         unit_set,
-        default={
-            "hot_side_name": "shell_side",
-            "cold_side_name": "tube_side",
-            "shell_side": {"property_package": m.fs.properties},
-            "tube_side": {"property_package": m.fs.properties},
-        },
+        hot_side_name="shell_side",
+        cold_side_name="tube_side",
+        shell_side={"property_package": m.fs.properties},
+        tube_side={"property_package": m.fs.properties},
     )
 
     def tube_stream_array_rule(b, i):
@@ -618,10 +598,10 @@ def test_create_stream_table_dataframe_from_Arc_HX1D(HX1D_array_model):
 @pytest.fixture()
 def flash_model():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()  # default={"valid_phase":
     # ('Liq', 'Vap')})
-    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    m.fs.flash = Flash(property_package=m.fs.properties)
 
     return m
 
@@ -655,22 +635,16 @@ def test_state_block_retrieval_empty_port():
 @pytest.fixture()
 def distillation_model():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = BTXParameterBlock(
-        default={
-            "valid_phase": ("Liq", "Vap"),
-            "activity_coeff_model": "Ideal",
-            "state_vars": "FTPz",
-        }
+        valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal", state_vars="FTPz"
     )
     m.fs.unit = TrayColumn(
-        default={
-            "number_of_trays": 3,
-            "feed_tray_location": 2,
-            "condenser_type": CondenserType.totalCondenser,
-            "condenser_temperature_spec": TemperatureSpec.atBubblePoint,
-            "property_package": m.fs.properties,
-        }
+        number_of_trays=3,
+        feed_tray_location=2,
+        condenser_type=CondenserType.totalCondenser,
+        condenser_temperature_spec=TemperatureSpec.atBubblePoint,
+        property_package=m.fs.properties,
     )
     return m
 

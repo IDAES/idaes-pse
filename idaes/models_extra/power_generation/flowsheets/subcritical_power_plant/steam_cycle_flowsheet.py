@@ -22,7 +22,7 @@ import pyomo.environ as pyo
 from pyomo.network import Arc
 
 # Import IDAES
-from idaes.core.util import copy_port_values as _set_port
+from idaes.core.util.initialization import propagate_state as _set_port
 from idaes.models_extra.power_generation.unit_models.helm import (
     HelmTurbineStage as TurbineStage,
     HelmTurbineOutletStage as TurbineOutletStage,
@@ -40,7 +40,11 @@ from idaes.models_extra.power_generation.unit_models import (
     WaterTank,
     FWH0DDynamic as FWH0D,
 )
-from idaes.models_extra.power_generation.control.pid_controller import PIDController
+from idaes.models.control.controller import (
+    PIDController,
+    ControllerType,
+    ControllerMVBoundType,
+)
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
@@ -77,55 +81,43 @@ def add_unit_models(m):
 
     # Unit model for multistage turbine including throttle valve
     fs.turb = TurbineMultistage(
-        default={
-            "dynamic": False,
-            "property_package": prop_water,
-            "num_parallel_inlet_stages": 1,
-            "throttle_valve_function": ValveFunctionType.custom,
-            "throttle_valve_function_callback": throttle_valve_function,
-            "num_hp": 14,
-            "num_ip": 9,
-            "num_lp": 5,
-            "hp_split_locations": [14],
-            "ip_split_locations": [6, 9],
-            "lp_split_locations": [2, 4, 5],
-            "hp_disconnect": [14],  # 14 is last hp stage
-            "hp_split_num_outlets": {14: 2},
-            "ip_split_num_outlets": {9: 3},
-        }
+        dynamic=False,
+        property_package=prop_water,
+        num_parallel_inlet_stages=1,
+        throttle_valve_function=ValveFunctionType.custom,
+        throttle_valve_function_callback=throttle_valve_function,
+        num_hp=14,
+        num_ip=9,
+        num_lp=5,
+        hp_split_locations=[14],
+        ip_split_locations=[6, 9],
+        lp_split_locations=[2, 4, 5],
+        hp_disconnect=[14],
+        hp_split_num_outlets={14: 2},
+        ip_split_num_outlets={9: 3},
     )
 
     # Unit model for regulating valve of BFPT (boiler feed pump turbine)
-    fs.bfp_turb_valve = SteamValve(
-        default={"dynamic": False, "property_package": prop_water}
-    )
+    fs.bfp_turb_valve = SteamValve(dynamic=False, property_package=prop_water)
 
     # Unit model for main stage of BFPT
-    fs.bfp_turb = TurbineStage(
-        default={"dynamic": False, "property_package": prop_water}
-    )
+    fs.bfp_turb = TurbineStage(dynamic=False, property_package=prop_water)
 
     # Unit model for outlet stage of BFPT
-    fs.bfp_turb_os = TurbineOutletStage(
-        default={"dynamic": False, "property_package": prop_water}
-    )
+    fs.bfp_turb_os = TurbineOutletStage(dynamic=False, property_package=prop_water)
 
     # Unit model for main condenser
     fs.condenser = Condenser(
-        default={
-            "dynamic": False,
-            "shell": {"has_pressure_change": False, "property_package": prop_water},
-            "tube": {"has_pressure_change": False, "property_package": prop_water},
-        }
+        dynamic=False,
+        shell={"has_pressure_change": False, "property_package": prop_water},
+        tube={"has_pressure_change": False, "property_package": prop_water},
     )
 
     # Unit model for auxiliary condenser
     fs.aux_condenser = Condenser(
-        default={
-            "dynamic": False,
-            "shell": {"has_pressure_change": False, "property_package": prop_water},
-            "tube": {"has_pressure_change": False, "property_package": prop_water},
-        }
+        dynamic=False,
+        shell={"has_pressure_change": False, "property_package": prop_water},
+        tube={"has_pressure_change": False, "property_package": prop_water},
     )
 
     # Unit model for condenser hotwell (hotwell tank modeled separately)
@@ -135,128 +127,92 @@ def add_unit_models(m):
     # We impose the constraints to let the mixed pressure equal to
     # the main condenser pressure and makeup water pressure
     fs.condenser_hotwell = Mixer(
-        default={
-            "dynamic": False,
-            "momentum_mixing_type": MomentumMixingType.none,
-            "inlet_list": ["main_condensate", "makeup", "aux_condensate"],
-            "property_package": prop_water,
-        }
+        dynamic=False,
+        momentum_mixing_type=MomentumMixingType.none,
+        inlet_list=["main_condensate", "makeup", "aux_condensate"],
+        property_package=prop_water,
     )
 
     # Unit model for water control valve between makeup tank and hotwell
     fs.makeup_valve = WaterValve(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "phase": "Liq",
-            "property_package": prop_water,
-        }
+        dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
     # Unit model for hotwell tank with holdup for dynamic model
     # Modeled as a simple tank with constant cross section area and tank level
     fs.hotwell_tank = WaterTank(
-        default={
-            "tank_type": "simple_tank",
-            "has_holdup": True,
-            "property_package": prop_water,
-        }
+        tank_type="simple_tank", has_holdup=True, property_package=prop_water
     )
 
     # Unit model for condensate pump
-    fs.cond_pump = WaterPump(default={"dynamic": False, "property_package": prop_water})
+    fs.cond_pump = WaterPump(dynamic=False, property_package=prop_water)
 
     # Unit model for water control valve after hotwell tank
     # Used to control deaerator level
     fs.cond_valve = WaterValve(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "phase": "Liq",
-            "property_package": prop_water,
-        }
+        dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
     # Unit model for feed water heater 1
     fs.fwh1 = FWH0D(
-        default={
-            "has_desuperheat": False,
-            "has_drain_cooling": False,
-            "has_drain_mixer": True,
-            "condense": {
-                "tube": {"has_pressure_change": True},
-                "shell": {"has_pressure_change": True},
-                "has_holdup": True,
-            },
-            "property_package": prop_water,
-        }
+        has_desuperheat=False,
+        has_drain_cooling=False,
+        has_drain_mixer=True,
+        condense={
+            "tube": {"has_pressure_change": True},
+            "shell": {"has_pressure_change": True},
+            "has_holdup": True,
+        },
+        property_package=prop_water,
     )
 
     # Unit model for drain pump of FWH1
-    fs.fwh1_drain_pump = WaterPump(
-        default={"dynamic": False, "property_package": prop_water}
-    )
+    fs.fwh1_drain_pump = WaterPump(dynamic=False, property_package=prop_water)
 
     # Unit model for mixer of FWH1 drain and condensate
     fs.fwh1_drain_return = Mixer(
-        default={
-            "dynamic": False,
-            "inlet_list": ["feedwater", "fwh1_drain"],
-            "property_package": prop_water,
-            "momentum_mixing_type": MomentumMixingType.equality,
-        }
+        dynamic=False,
+        inlet_list=["feedwater", "fwh1_drain"],
+        property_package=prop_water,
+        momentum_mixing_type=MomentumMixingType.equality,
     )
 
     # Unit model for feed water heater 2
     fs.fwh2 = FWH0D(
-        default={
-            "has_desuperheat": False,
-            "has_drain_cooling": True,
-            "has_drain_mixer": True,
-            "condense": {
-                "tube": {"has_pressure_change": True},
-                "shell": {"has_pressure_change": True},
-                "has_holdup": True,
-            },
-            "cooling": {"dynamic": False, "has_holdup": False},
-            "property_package": prop_water,
-        }
+        has_desuperheat=False,
+        has_drain_cooling=True,
+        has_drain_mixer=True,
+        condense={
+            "tube": {"has_pressure_change": True},
+            "shell": {"has_pressure_change": True},
+            "has_holdup": True,
+        },
+        cooling={"dynamic": False, "has_holdup": False},
+        property_package=prop_water,
     )
 
     # Unit model for water control valve between drain of fwh2 and fwh1
     fs.fwh2_valve = WaterValve(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "phase": "Liq",
-            "property_package": prop_water,
-        }
+        dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
     # Unit model for feed water heater 3
     fs.fwh3 = FWH0D(
-        default={
-            "has_desuperheat": False,
-            "has_drain_cooling": True,
-            "has_drain_mixer": False,
-            "condense": {
-                "tube": {"has_pressure_change": True},
-                "shell": {"has_pressure_change": True},
-                "has_holdup": True,
-            },
-            "cooling": {"dynamic": False, "has_holdup": False},
-            "property_package": prop_water,
-        }
+        has_desuperheat=False,
+        has_drain_cooling=True,
+        has_drain_mixer=False,
+        condense={
+            "tube": {"has_pressure_change": True},
+            "shell": {"has_pressure_change": True},
+            "has_holdup": True,
+        },
+        cooling={"dynamic": False, "has_holdup": False},
+        property_package=prop_water,
     )
 
     # Unit model for control valve between drain of fwh3 and fwh2
     fs.fwh3_valve = WaterValve(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "phase": "Liq",
-            "property_package": prop_water,
-        }
+        dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
     # Unit model for deaerator also known as fwh4
@@ -265,101 +221,74 @@ def add_unit_models(m):
     # Using MomentumMixingType.equality for momentum_mixing_type
     # deaerator tank modeled separately for holdup in dyyamic model
     fs.fwh4_deair = Mixer(
-        default={
-            "dynamic": False,
-            "momentum_mixing_type": MomentumMixingType.equality,
-            "inlet_list": ["steam", "drain", "feedwater"],
-            "property_package": prop_water,
-        }
+        dynamic=False,
+        momentum_mixing_type=MomentumMixingType.equality,
+        inlet_list=["steam", "drain", "feedwater"],
+        property_package=prop_water,
     )
 
     # Unit model for deaerator water tank
     # Modeled as a horizontal cylindrical tank
     fs.da_tank = WaterTank(
-        default={
-            "tank_type": "horizontal_cylindrical_tank",
-            "has_holdup": True,
-            "property_package": prop_water,
-        }
+        tank_type="horizontal_cylindrical_tank",
+        has_holdup=True,
+        property_package=prop_water,
     )
 
     # Unit model for electrical feedwater booster pump
-    fs.booster = WaterPump(default={"dynamic": False, "property_package": prop_water})
+    fs.booster = WaterPump(dynamic=False, property_package=prop_water)
 
     # Unit model for main boiler feed water pump driven by steam turbine
-    fs.bfp = WaterPump(default={"dynamic": False, "property_package": prop_water})
+    fs.bfp = WaterPump(dynamic=False, property_package=prop_water)
 
     # Unit model for splitter for spray water stream for main attemperator
     fs.split_attemp = Separator(
-        default={
-            "dynamic": False,
-            "property_package": prop_water,
-            "outlet_list": ["FeedWater", "Spray"],
-        }
+        dynamic=False, property_package=prop_water, outlet_list=["FeedWater", "Spray"]
     )
 
     # Unit model for attemperator spray control valve
     fs.spray_valve = WaterValve(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "phase": "Liq",
-            "property_package": prop_water,
-        }
+        dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
     # Unit model for feed water heater 5
     fs.fwh5 = FWH0D(
-        default={
-            "has_desuperheat": True,
-            "has_drain_cooling": True,
-            "has_drain_mixer": True,
-            "condense": {
-                "tube": {"has_pressure_change": True},
-                "shell": {"has_pressure_change": True},
-                "has_holdup": True,
-            },
-            "desuperheat": {"dynamic": False},
-            "cooling": {"dynamic": False, "has_holdup": False},
-            "property_package": prop_water,
-        }
+        has_desuperheat=True,
+        has_drain_cooling=True,
+        has_drain_mixer=True,
+        condense={
+            "tube": {"has_pressure_change": True},
+            "shell": {"has_pressure_change": True},
+            "has_holdup": True,
+        },
+        desuperheat={"dynamic": False},
+        cooling={"dynamic": False, "has_holdup": False},
+        property_package=prop_water,
     )
 
     # Unit model for water control valve drain of fwh5 and deaerator
     fs.fwh5_valve = WaterValve(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "phase": "Liq",
-            "property_package": prop_water,
-        }
+        dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
     # Unit model for feed water heater 6
     fs.fwh6 = FWH0D(
-        default={
-            "has_desuperheat": True,
-            "has_drain_cooling": True,
-            "has_drain_mixer": False,
-            "condense": {
-                "tube": {"has_pressure_change": True},
-                "shell": {"has_pressure_change": True},
-                "has_holdup": True,
-            },
-            "desuperheat": {"dynamic": False},
-            "cooling": {"dynamic": False, "has_holdup": False},
-            "property_package": prop_water,
-        }
+        has_desuperheat=True,
+        has_drain_cooling=True,
+        has_drain_mixer=False,
+        condense={
+            "tube": {"has_pressure_change": True},
+            "shell": {"has_pressure_change": True},
+            "has_holdup": True,
+        },
+        desuperheat={"dynamic": False},
+        cooling={"dynamic": False, "has_holdup": False},
+        property_package=prop_water,
     )
 
     # Unit model for water control valve between drain of fwh6 and fwh5
     fs.fwh6_valve = WaterValve(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "phase": "Liq",
-            "property_package": prop_water,
-        }
+        dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
     # Important process variables, declared and used in PID controllers
@@ -386,67 +315,60 @@ def add_unit_models(m):
         # Add PID controllers if the flowsheet model is a dynamic model
         # PI controller to control level of fwh2
         fs.fwh2_ctrl = PIDController(
-            default={
-                "pv": fs.fwh2.condense.level,
-                "mv": fs.fwh2_valve.valve_opening,
-                "type": "PI",
-            }
+            process_var=fs.fwh2.condense.level,
+            manipulated_var=fs.fwh2_valve.valve_opening,
+            type=ControllerType.PI,
+            calculate_initial_integral=False,
         )
 
         # PI controller to control level of fwh3
         fs.fwh3_ctrl = PIDController(
-            default={
-                "pv": fs.fwh3.condense.level,
-                "mv": fs.fwh3_valve.valve_opening,
-                "type": "PI",
-            }
+            process_var=fs.fwh3.condense.level,
+            manipulated_var=fs.fwh3_valve.valve_opening,
+            type=ControllerType.PI,
+            calculate_initial_integral=False,
         )
 
         # PI controller to control level of fwh5
         fs.fwh5_ctrl = PIDController(
-            default={
-                "pv": fs.fwh5.condense.level,
-                "mv": fs.fwh5_valve.valve_opening,
-                "type": "PI",
-            }
+            process_var=fs.fwh5.condense.level,
+            manipulated_var=fs.fwh5_valve.valve_opening,
+            type=ControllerType.PI,
+            calculate_initial_integral=False,
         )
 
         # PI controller to control level of fwh6
         fs.fwh6_ctrl = PIDController(
-            default={
-                "pv": fs.fwh6.condense.level,
-                "mv": fs.fwh6_valve.valve_opening,
-                "type": "PI",
-            }
+            process_var=fs.fwh6.condense.level,
+            manipulated_var=fs.fwh6_valve.valve_opening,
+            type=ControllerType.PI,
+            calculate_initial_integral=False,
         )
 
         # PI controller to control level of deaerator tank
         fs.da_ctrl = PIDController(
-            default={
-                "pv": fs.da_tank.tank_level,
-                "mv": fs.cond_valve.valve_opening,
-                "type": "PI",
-            }
+            process_var=fs.da_tank.tank_level,
+            manipulated_var=fs.cond_valve.valve_opening,
+            type=ControllerType.PI,
+            calculate_initial_integral=False,
         )
 
         # PI controller to control level of hotwell tank
         fs.makeup_ctrl = PIDController(
-            default={
-                "pv": fs.hotwell_tank.tank_level,
-                "mv": fs.makeup_valve.valve_opening,
-                "type": "PI",
-                "bounded_output": True,
-            }
+            process_var=fs.hotwell_tank.tank_level,
+            manipulated_var=fs.makeup_valve.valve_opening,
+            type=ControllerType.PI,
+            mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
+            calculate_initial_integral=False,
         )
 
         # PID controller to control main steam temperature
         fs.spray_ctrl = PIDController(
-            default={
-                "pv": fs.temperature_main_steam,
-                "mv": fs.spray_valve.valve_opening,
-                "type": "PID",
-                "bounded_output": True,
-            }
+            process_var=fs.temperature_main_steam,
+            manipulated_var=fs.spray_valve.valve_opening,
+            type=ControllerType.PID,
+            mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
+            calculate_initial_integral=False,
         )
 
     return m
@@ -988,7 +910,7 @@ def set_inputs(m):
         fs.spray_ctrl.gain_d.fix(-1e-4)
         fs.spray_ctrl.setpoint.fix(810)
         fs.spray_ctrl.mv_ref.fix(0.25)
-        # Currently we have to set this minimum opening to avoid conveging to
+        # Currently we have to set this minimum opening to avoid converging to
         # negative spray water flow rate
         fs.spray_ctrl.mv_lb = 0.05
 
@@ -2259,13 +2181,13 @@ def get_model(dynamic=True):
     m.dynamic = dynamic
     if m.dynamic:
         m.fs_main = FlowsheetBlock(
-            default={"dynamic": True, "time_set": [0, 60], "time_units": pyo.units.s}
+            dynamic=True, time_set=[0, 60], time_units=pyo.units.s
         )
     else:
-        m.fs_main = FlowsheetBlock(default={"dynamic": False})
+        m.fs_main = FlowsheetBlock(dynamic=False)
     # Add property packages to flowsheet library
     m.fs_main.prop_water = iapws95.Iapws95ParameterBlock()
-    m.fs_main.fs_stc = FlowsheetBlock(default={"time_units": pyo.units.s})
+    m.fs_main.fs_stc = FlowsheetBlock(time_units=pyo.units.s)
     m = add_unit_models(m)
     if m.dynamic:
         m.discretizer = pyo.TransformationFactory("dae.finite_difference")

@@ -14,7 +14,7 @@
 """ Classes used for rolling-horizon simulation.
 """
 
-from pyomo.core.base.component import ComponentUID
+from pyomo.core.base.componentuid import ComponentUID
 from collections import OrderedDict
 import bisect
 

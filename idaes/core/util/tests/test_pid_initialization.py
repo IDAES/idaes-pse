@@ -36,7 +36,11 @@ from idaes.core import (
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import CSTR, Mixer, MomentumMixingType
-from idaes.models.control import PIDBlock, PIDForm
+from idaes.models.control.controller import (
+    PIDController,
+    ControllerType,
+    ControllerMVBoundType,
+)
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.core.util.tests.test_initialization import (
     AqueousEnzymeParameterBlock,
@@ -57,62 +61,53 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
     time_set = [0, horizon]
 
     m = ConcreteModel(name="CSTR with level control")
-    m.fs = FlowsheetBlock(
-        default={"dynamic": True, "time_set": time_set, "time_units": pyunits.s}
-    )
+    m.fs = FlowsheetBlock(dynamic=True, time_set=time_set, time_units=pyunits.s)
 
     m.fs.properties = AqueousEnzymeParameterBlock()
-    m.fs.reactions = EnzymeReactionParameterBlock(
-        default={"property_package": m.fs.properties}
-    )
+    m.fs.reactions = EnzymeReactionParameterBlock(property_package=m.fs.properties)
     m.fs.cstr = CSTR(
-        default={
-            "has_holdup": True,
-            "property_package": m.fs.properties,
-            "reaction_package": m.fs.reactions,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "energy_balance_type": EnergyBalanceType.enthalpyTotal,
-            "momentum_balance_type": MomentumBalanceType.none,
-            "has_heat_of_reaction": True,
-        }
+        has_holdup=True,
+        property_package=m.fs.properties,
+        reaction_package=m.fs.reactions,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        energy_balance_type=EnergyBalanceType.enthalpyTotal,
+        momentum_balance_type=MomentumBalanceType.none,
+        has_heat_of_reaction=True,
     )
     # MomentumBalanceType.none used because the property package doesn't
     # include pressure.
 
     m.fs.mixer = Mixer(
-        default={
-            "property_package": m.fs.properties,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "momentum_mixing_type": MomentumMixingType.none,
-            # MomentumMixingType.none used because the property package doesn't
-            # include pressure.
-            "num_inlets": 2,
-            "inlet_list": ["S_inlet", "E_inlet"],
-        }
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        momentum_mixing_type=MomentumMixingType.none,
+        num_inlets=2,
+        inlet_list=["S_inlet", "E_inlet"],
     )
     # Allegedly the proper energy balance is being used...
+
+    m.fs.pid = PIDController(
+        process_var=m.fs.cstr.volume,
+        manipulated_var=m.fs.cstr.outlet.flow_vol,
+        mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
+        calculate_initial_integral=True,
+        # ^ Why would initial integral be calculated
+        # to be nonzero?
+        type=ControllerType.PID,
+    )
 
     # Time discretization
     disc = TransformationFactory("dae.collocation")
     disc.apply_to(m, wrt=m.fs.time, nfe=ntfe, ncp=ntcp, scheme="LAGRANGE-RADAU")
 
-    m.fs.pid = PIDBlock(
-        default={
-            "pv": m.fs.cstr.volume,
-            "output": m.fs.cstr.outlet.flow_vol,
-            "upper": 5.0,
-            "lower": 0.5,
-            "calculate_initial_integral": True,
-            # ^ Why would initial integral be calculated
-            # to be nonzero?
-            "pid_form": PIDForm.velocity,
-        }
-    )
-
-    m.fs.pid.gain.fix(-1.0)
-    m.fs.pid.time_i.fix(0.1)
-    m.fs.pid.time_d.fix(0.0)
+    m.fs.pid.gain_p.fix(-1.0)
+    m.fs.pid.gain_i.fix(10)
+    m.fs.pid.gain_d.fix(0.0)
     m.fs.pid.setpoint.fix(1.0)
+    m.fs.pid.mv_lb.set_value(0.5)
+    m.fs.pid.mv_ub.set_value(5.0)
+    m.fs.pid.mv_ref.fix(0.0)
+    m.fs.pid.derivative_of_error[m.fs.time.first()].fix(0)
 
     # Fix initial condition for volume:
     m.fs.cstr.volume.unfix()

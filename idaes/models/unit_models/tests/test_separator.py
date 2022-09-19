@@ -98,10 +98,10 @@ class TestBaseConstruction(object):
     @pytest.fixture(scope="function")
     def build(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp})
+        m.fs.sep = SeparatorFrame(property_package=m.fs.pp)
 
         return m
 
@@ -266,7 +266,7 @@ class TestBaseConstruction(object):
 
     @pytest.mark.unit
     def test_get_mixed_state_block(self, build):
-        build.fs.sb = TestStateBlock(build.fs.time, default={"parameters": build.fs.pp})
+        build.fs.sb = TestStateBlock(build.fs.time, parameters=build.fs.pp)
 
         build.fs.sep.config.mixed_state_block = build.fs.sb
 
@@ -287,7 +287,7 @@ class TestBaseConstruction(object):
 
     @pytest.mark.unit
     def test_get_mixed_state_block_mismatch(self, build):
-        build.fs.sb = TestStateBlock(build.fs.time, default={"parameters": build.fs.pp})
+        build.fs.sb = TestStateBlock(build.fs.time, parameters=build.fs.pp)
 
         # Change parameters arg to create mismatch
         build.fs.sb[0].config.parameters = None
@@ -312,19 +312,17 @@ class TestBaseScaling(object):
     @pytest.fixture(scope="function")
     def m(self):
         b = ConcreteModel()
-        b.fs = FlowsheetBlock(default={"dynamic": False})
+        b.fs = FlowsheetBlock(dynamic=False)
         b.fs.pp = PhysicalParameterTestBlock()
         return b
 
     def test_no_exception_scaling_calc_external_mixed_state(self, m):
-        m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
-        m.fs.sep1 = Separator(
-            default={"property_package": m.fs.pp, "mixed_state_block": m.fs.sb}
-        )
+        m.fs.sb = TestStateBlock(m.fs.time, parameters=m.fs.pp)
+        m.fs.sep1 = Separator(property_package=m.fs.pp, mixed_state_block=m.fs.sb)
         iscale.calculate_scaling_factors(m)
 
     def test_no_exception_scaling_calc_internal_mixed_state(self, m):
-        m.fs.sep1 = Separator(default={"property_package": m.fs.pp})
+        m.fs.sep1 = Separator(property_package=m.fs.pp)
         iscale.calculate_scaling_factors(m)
 
 
@@ -335,10 +333,10 @@ class TestSplitConstruction(object):
     @pytest.fixture(scope="function")
     def build(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp})
+        m.fs.sep = SeparatorFrame(property_package=m.fs.pp)
 
         m.fs.sep._get_property_package()
         m.fs.sep._get_indexing_sets()
@@ -740,19 +738,17 @@ class TestSaponification(object):
     @pytest.fixture(scope="class")
     def sapon(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = SaponificationParameterBlock()
 
         m.fs.unit = Separator(
-            default={
-                "property_package": m.fs.properties,
-                "material_balance_type": MaterialBalanceType.componentPhase,
-                "split_basis": SplittingType.totalFlow,
-                "outlet_list": ["a", "B", "c"],
-                "ideal_separation": False,
-                "has_phase_equilibrium": False,
-            }
+            property_package=m.fs.properties,
+            material_balance_type=MaterialBalanceType.componentPhase,
+            split_basis=SplittingType.totalFlow,
+            outlet_list=["a", "B", "c"],
+            ideal_separation=False,
+            has_phase_equilibrium=False,
         )
 
         m.fs.unit.inlet.flow_vol.fix(1)
@@ -1073,20 +1069,18 @@ class TestBTXIdeal(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = BTXParameterBlock(
-            default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "Ideal"}
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
         )
 
         m.fs.unit = Separator(
-            default={
-                "property_package": m.fs.properties,
-                "material_balance_type": MaterialBalanceType.componentPhase,
-                "split_basis": SplittingType.phaseFlow,
-                "ideal_separation": False,
-                "has_phase_equilibrium": True,
-            }
+            property_package=m.fs.properties,
+            material_balance_type=MaterialBalanceType.componentPhase,
+            split_basis=SplittingType.phaseFlow,
+            ideal_separation=False,
+            has_phase_equilibrium=True,
         )
 
         m.fs.unit.inlet.flow_mol[0].fix(1)  # mol/s
@@ -1349,19 +1343,17 @@ class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = iapws95.Iapws95ParameterBlock()
 
         m.fs.unit = Separator(
-            default={
-                "property_package": m.fs.properties,
-                "material_balance_type": MaterialBalanceType.componentPhase,
-                "split_basis": SplittingType.componentFlow,
-                "num_outlets": 3,
-                "ideal_separation": False,
-                "has_phase_equilibrium": False,
-            }
+            property_package=m.fs.properties,
+            material_balance_type=MaterialBalanceType.componentPhase,
+            split_basis=SplittingType.componentFlow,
+            num_outlets=3,
+            ideal_separation=False,
+            has_phase_equilibrium=False,
         )
 
         m.fs.unit.inlet.flow_mol[0].fix(100)
@@ -1679,22 +1671,20 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_phase_component(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 4,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {
-                    ("p1", "c1"): "outlet_1",
-                    ("p1", "c2"): "outlet_2",
-                    ("p2", "c1"): "outlet_3",
-                    ("p2", "c2"): "outlet_4",
-                },
-            }
+            property_package=m.fs.pp,
+            num_outlets=4,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseComponentFlow,
+            ideal_split_map={
+                ("p1", "c1"): "outlet_1",
+                ("p1", "c2"): "outlet_2",
+                ("p2", "c1"): "outlet_3",
+                ("p2", "c2"): "outlet_4",
+            },
         )
 
         m.fs.sep._get_property_package()
@@ -1741,17 +1731,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_phase(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1"): "outlet_1", ("p2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseFlow,
+            ideal_split_map={"p1": "outlet_1", "p2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -1782,17 +1770,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_component(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.componentFlow,
+            ideal_split_map={"c1": "outlet_1", "c2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -1823,18 +1809,16 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_ideal_w_no_ports(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
-                "construct_ports": False,
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.componentFlow,
+            ideal_split_map={"c1": "outlet_1", "c2": "outlet_2"},
+            construct_ports=False,
         )
 
         m.fs.sep._get_property_package()
@@ -1849,17 +1833,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_ideal_w_total_flow(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.totalFlow,
-                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.totalFlow,
+            ideal_split_map={"c1": "outlet_1", "c2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -1874,16 +1856,14 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_ideal_w_no_split_map(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.totalFlow,
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.totalFlow,
         )
 
         m.fs.sep._get_property_package()
@@ -1898,17 +1878,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_phase_component_mismatch(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 4,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {("p1", "c1"): "outlet_1", ("p1", "c2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=4,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseComponentFlow,
+            ideal_split_map={("p1", "c1"): "outlet_1", ("p1", "c2"): "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -1923,22 +1901,20 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_component_mismatch(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {
-                    ("p1", "c1"): "outlet_1",
-                    ("p1", "c2"): "outlet_2",
-                    ("p2", "c1"): "outlet_3",
-                    ("p2", "c2"): "outlet_4",
-                },
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.componentFlow,
+            ideal_split_map={
+                ("p1", "c1"): "outlet_1",
+                ("p1", "c2"): "outlet_2",
+                ("p2", "c1"): "outlet_3",
+                ("p2", "c2"): "outlet_4",
+            },
         )
 
         m.fs.sep._get_property_package()
@@ -1953,22 +1929,20 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_phase_mismatch(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {
-                    ("p1", "c1"): "outlet_1",
-                    ("p1", "c2"): "outlet_2",
-                    ("p2", "c1"): "outlet_3",
-                    ("p2", "c2"): "outlet_4",
-                },
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseFlow,
+            ideal_split_map={
+                ("p1", "c1"): "outlet_1",
+                ("p1", "c2"): "outlet_2",
+                ("p2", "c1"): "outlet_3",
+                ("p2", "c2"): "outlet_4",
+            },
         )
 
         m.fs.sep._get_property_package()
@@ -1983,22 +1957,20 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_split_map_mismatch(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 1,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {
-                    ("p1", "c1"): "outlet_1",
-                    ("p1", "c2"): "outlet_2",
-                    ("p2", "c1"): "outlet_3",
-                    ("p2", "c2"): "outlet_4",
-                },
-            }
+            property_package=m.fs.pp,
+            num_outlets=1,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseComponentFlow,
+            ideal_split_map={
+                ("p1", "c1"): "outlet_1",
+                ("p1", "c2"): "outlet_2",
+                ("p2", "c1"): "outlet_3",
+                ("p2", "c2"): "outlet_4",
+            },
         )
 
         m.fs.sep._get_property_package()
@@ -2013,17 +1985,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_mole_frac_w_component_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {"c1": "outlet_1", "c2": "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.componentFlow,
+            ideal_split_map={"c1": "outlet_1", "c2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2042,17 +2012,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_mole_frac_w_phase_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {"p1": "outlet_1", "p2": "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseFlow,
+            ideal_split_map={"p1": "outlet_1", "p2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2071,22 +2039,20 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_mole_frac_w_phase_comp_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 4,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {
-                    ("p1", "c1"): "outlet_1",
-                    ("p1", "c2"): "outlet_2",
-                    ("p2", "c1"): "outlet_3",
-                    ("p2", "c2"): "outlet_4",
-                },
-            }
+            property_package=m.fs.pp,
+            num_outlets=4,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseComponentFlow,
+            ideal_split_map={
+                ("p1", "c1"): "outlet_1",
+                ("p1", "c2"): "outlet_2",
+                ("p2", "c1"): "outlet_3",
+                ("p2", "c2"): "outlet_4",
+            },
         )
 
         m.fs.sep._get_property_package()
@@ -2109,17 +2075,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_mole_frac_w_phase_split_no_fallback(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {"p1": "outlet_1", "p2": "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseFlow,
+            ideal_split_map={"p1": "outlet_1", "p2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2139,17 +2103,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_mole_frac_phase_w_component_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {"c1": "outlet_1", "c2": "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.componentFlow,
+            ideal_split_map={"c1": "outlet_1", "c2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2175,17 +2137,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_mole_frac_phase_w_phase_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {"p1": "outlet_1", "p2": "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseFlow,
+            ideal_split_map={"p1": "outlet_1", "p2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2211,22 +2171,20 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_mole_frac_phase_w_phase_comp_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 4,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {
-                    ("p1", "c1"): "outlet_1",
-                    ("p1", "c2"): "outlet_2",
-                    ("p2", "c1"): "outlet_3",
-                    ("p2", "c2"): "outlet_4",
-                },
-            }
+            property_package=m.fs.pp,
+            num_outlets=4,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseComponentFlow,
+            ideal_split_map={
+                ("p1", "c1"): "outlet_1",
+                ("p1", "c2"): "outlet_2",
+                ("p2", "c1"): "outlet_3",
+                ("p2", "c2"): "outlet_4",
+            },
         )
 
         m.fs.sep._get_property_package()
@@ -2262,22 +2220,20 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_flow_phase_comp_w_phase_comp_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 4,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {
-                    ("p1", "c1"): "outlet_1",
-                    ("p1", "c2"): "outlet_2",
-                    ("p2", "c1"): "outlet_3",
-                    ("p2", "c2"): "outlet_4",
-                },
-            }
+            property_package=m.fs.pp,
+            num_outlets=4,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseComponentFlow,
+            ideal_split_map={
+                ("p1", "c1"): "outlet_1",
+                ("p1", "c2"): "outlet_2",
+                ("p2", "c1"): "outlet_3",
+                ("p2", "c2"): "outlet_4",
+            },
         )
 
         m.fs.sep._get_property_package()
@@ -2313,17 +2269,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_flow_phase_comp_w_phase_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1"): "outlet_1", ("p2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseFlow,
+            ideal_split_map={"p1": "outlet_1", "p2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2349,17 +2303,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_flow_phase_comp_w_comp_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.componentFlow,
+            ideal_split_map={"c1": "outlet_1", "c2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2385,22 +2337,20 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_flow_phase_w_phase_comp_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 4,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {
-                    ("p1", "c1"): "outlet_1",
-                    ("p1", "c2"): "outlet_2",
-                    ("p2", "c1"): "outlet_3",
-                    ("p2", "c2"): "outlet_4",
-                },
-            }
+            property_package=m.fs.pp,
+            num_outlets=4,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseComponentFlow,
+            ideal_split_map={
+                ("p1", "c1"): "outlet_1",
+                ("p1", "c2"): "outlet_2",
+                ("p2", "c1"): "outlet_3",
+                ("p2", "c2"): "outlet_4",
+            },
         )
 
         m.fs.sep._get_property_package()
@@ -2428,22 +2378,20 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_flow_phase_w_phase_comp_split_no_fallback(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 4,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {
-                    ("p1", "c1"): "outlet_1",
-                    ("p1", "c2"): "outlet_2",
-                    ("p2", "c1"): "outlet_3",
-                    ("p2", "c2"): "outlet_4",
-                },
-            }
+            property_package=m.fs.pp,
+            num_outlets=4,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseComponentFlow,
+            ideal_split_map={
+                ("p1", "c1"): "outlet_1",
+                ("p1", "c2"): "outlet_2",
+                ("p2", "c1"): "outlet_3",
+                ("p2", "c2"): "outlet_4",
+            },
         )
 
         m.fs.sep._get_property_package()
@@ -2463,17 +2411,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_flow_phase_w_phase_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1"): "outlet_1", ("p2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseFlow,
+            ideal_split_map={"p1": "outlet_1", "p2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2495,17 +2441,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_flow_phase_w_comp_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.componentFlow,
+            ideal_split_map={"c1": "outlet_1", "c2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2527,17 +2471,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_flow_phase_w_comp_split_no_fallback(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.componentFlow,
+            ideal_split_map={"c1": "outlet_1", "c2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2557,22 +2499,20 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_flow_comp_w_phase_comp_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 4,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {
-                    ("p1", "c1"): "outlet_1",
-                    ("p1", "c2"): "outlet_2",
-                    ("p2", "c1"): "outlet_3",
-                    ("p2", "c2"): "outlet_4",
-                },
-            }
+            property_package=m.fs.pp,
+            num_outlets=4,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseComponentFlow,
+            ideal_split_map={
+                ("p1", "c1"): "outlet_1",
+                ("p1", "c2"): "outlet_2",
+                ("p2", "c1"): "outlet_3",
+                ("p2", "c2"): "outlet_4",
+            },
         )
 
         m.fs.sep._get_property_package()
@@ -2600,22 +2540,20 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_flow_comp_w_phase_comp_split_no_fallback(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 4,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {
-                    ("p1", "c1"): "outlet_1",
-                    ("p1", "c2"): "outlet_2",
-                    ("p2", "c1"): "outlet_3",
-                    ("p2", "c2"): "outlet_4",
-                },
-            }
+            property_package=m.fs.pp,
+            num_outlets=4,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseComponentFlow,
+            ideal_split_map={
+                ("p1", "c1"): "outlet_1",
+                ("p1", "c2"): "outlet_2",
+                ("p2", "c1"): "outlet_3",
+                ("p2", "c2"): "outlet_4",
+            },
         )
 
         m.fs.sep._get_property_package()
@@ -2635,17 +2573,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_flow_comp_w_phase_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1"): "outlet_1", ("p2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseFlow,
+            ideal_split_map={"p1": "outlet_1", "p2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2667,17 +2603,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_flow_comp_w_phase_split_no_fallback(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1"): "outlet_1", ("p2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseFlow,
+            ideal_split_map={"p1": "outlet_1", "p2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2697,17 +2631,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_flow_comp_w_comp_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.componentFlow,
+            ideal_split_map={"c1": "outlet_1", "c2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2729,17 +2661,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_t_p(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.componentFlow,
+            ideal_split_map={"c1": "outlet_1", "c2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2761,17 +2691,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_general_comp_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.componentFlow,
+            ideal_split_map={"c1": "outlet_1", "c2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2791,17 +2719,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_general_comp_split_fallback(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.componentFlow,
+            ideal_split_map={"c1": "outlet_1", "c2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2822,17 +2748,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_general_comp_split_fallback_fail(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.componentFlow,
-                "ideal_split_map": {("c1"): "outlet_1", ("c2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.componentFlow,
+            ideal_split_map={"c1": "outlet_1", "c2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2853,17 +2777,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_general_phase_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1"): "outlet_1", ("p2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseFlow,
+            ideal_split_map={"p1": "outlet_1", "p2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2883,17 +2805,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_general_phase_split_fallback(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1"): "outlet_1", ("p2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseFlow,
+            ideal_split_map={"p1": "outlet_1", "p2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2914,17 +2834,15 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_general_phase_split_fallback_fail(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 2,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseFlow,
-                "ideal_split_map": {("p1"): "outlet_1", ("p2"): "outlet_2"},
-            }
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseFlow,
+            ideal_split_map={"p1": "outlet_1", "p2": "outlet_2"},
         )
 
         m.fs.sep._get_property_package()
@@ -2945,22 +2863,20 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_general_phase_comp_split(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 4,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {
-                    ("p1", "c1"): "outlet_1",
-                    ("p1", "c2"): "outlet_2",
-                    ("p2", "c1"): "outlet_3",
-                    ("p2", "c2"): "outlet_4",
-                },
-            }
+            property_package=m.fs.pp,
+            num_outlets=4,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseComponentFlow,
+            ideal_split_map={
+                ("p1", "c1"): "outlet_1",
+                ("p1", "c2"): "outlet_2",
+                ("p2", "c1"): "outlet_3",
+                ("p2", "c2"): "outlet_4",
+            },
         )
 
         m.fs.sep._get_property_package()
@@ -2981,22 +2897,20 @@ class TestIdealConstruction(object):
     @pytest.mark.unit
     def test_general_phase_comp_split_fallback_fail(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = IdealTestBlock()
 
         m.fs.sep = SeparatorFrame(
-            default={
-                "property_package": m.fs.pp,
-                "num_outlets": 4,
-                "ideal_separation": True,
-                "split_basis": SplittingType.phaseComponentFlow,
-                "ideal_split_map": {
-                    ("p1", "c1"): "outlet_1",
-                    ("p1", "c2"): "outlet_2",
-                    ("p2", "c1"): "outlet_3",
-                    ("p2", "c2"): "outlet_4",
-                },
-            }
+            property_package=m.fs.pp,
+            num_outlets=4,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseComponentFlow,
+            ideal_split_map={
+                ("p1", "c1"): "outlet_1",
+                ("p1", "c2"): "outlet_2",
+                ("p2", "c1"): "outlet_3",
+                ("p2", "c2"): "outlet_4",
+            },
         )
 
         m.fs.sep._get_property_package()
@@ -3019,19 +2933,17 @@ class TestBTX_Ideal(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = BTXParameterBlock()
 
         m.fs.unit = Separator(
-            default={
-                "property_package": m.fs.properties,
-                "material_balance_type": MaterialBalanceType.componentPhase,
-                "split_basis": SplittingType.phaseFlow,
-                "ideal_separation": True,
-                "ideal_split_map": {"Vap": "outlet_1", "Liq": "outlet_2"},
-                "has_phase_equilibrium": False,
-            }
+            property_package=m.fs.properties,
+            material_balance_type=MaterialBalanceType.componentPhase,
+            split_basis=SplittingType.phaseFlow,
+            ideal_separation=True,
+            ideal_split_map={"Vap": "outlet_1", "Liq": "outlet_2"},
+            has_phase_equilibrium=False,
         )
 
         m.fs.unit.inlet.flow_mol[0].fix(1)  # mol/s
@@ -3250,10 +3162,10 @@ class TestBTX_Ideal(object):
 @pytest.mark.unit
 def test_initialization_error():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.sep = Separator(default={"property_package": m.fs.pp})
+    m.fs.sep = Separator(property_package=m.fs.pp)
 
     m.fs.sep.outlet_1_state[0].material_flow_mol.fix(10)
     m.fs.sep.outlet_2_state[0].material_flow_mol.fix(10)

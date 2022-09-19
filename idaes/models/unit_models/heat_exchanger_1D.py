@@ -388,29 +388,25 @@ cold side flows from 1 to 0""",
 
         # Control volume 1D for hot
         self.hot_side = ControlVolume1DBlock(
-            default={
-                "dynamic": self.config.hot_side.dynamic,
-                "has_holdup": self.config.hot_side.has_holdup,
-                "property_package": self.config.hot_side.property_package,
-                "property_package_args": self.config.hot_side.property_package_args,
-                "transformation_method": self.config.hot_side.transformation_method,
-                "transformation_scheme": self.config.hot_side.transformation_scheme,
-                "finite_elements": self.config.finite_elements,
-                "collocation_points": self.config.collocation_points,
-            }
+            dynamic=self.config.hot_side.dynamic,
+            has_holdup=self.config.hot_side.has_holdup,
+            property_package=self.config.hot_side.property_package,
+            property_package_args=self.config.hot_side.property_package_args,
+            transformation_method=self.config.hot_side.transformation_method,
+            transformation_scheme=self.config.hot_side.transformation_scheme,
+            finite_elements=self.config.finite_elements,
+            collocation_points=self.config.collocation_points,
         )
 
         self.cold_side = ControlVolume1DBlock(
-            default={
-                "dynamic": self.config.cold_side.dynamic,
-                "has_holdup": self.config.cold_side.has_holdup,
-                "property_package": self.config.cold_side.property_package,
-                "property_package_args": self.config.cold_side.property_package_args,
-                "transformation_method": self.config.cold_side.transformation_method,
-                "transformation_scheme": self.config.cold_side.transformation_scheme,
-                "finite_elements": self.config.finite_elements,
-                "collocation_points": self.config.collocation_points,
-            }
+            dynamic=self.config.cold_side.dynamic,
+            has_holdup=self.config.cold_side.has_holdup,
+            property_package=self.config.cold_side.property_package,
+            property_package_args=self.config.cold_side.property_package_args,
+            transformation_method=self.config.cold_side.transformation_method,
+            transformation_scheme=self.config.cold_side.transformation_scheme,
+            finite_elements=self.config.finite_elements,
+            collocation_points=self.config.collocation_points,
         )
 
         self.hot_side.add_geometry(flow_direction=set_direction_hot)

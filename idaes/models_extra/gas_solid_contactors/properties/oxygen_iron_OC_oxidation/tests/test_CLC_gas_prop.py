@@ -58,12 +58,12 @@ solver = get_solver()
 @pytest.fixture(scope="class")
 def gas_prop():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # gas properties and state inlet block
     m.fs.properties = GasPhaseParameterBlock()
     m.fs.unit = m.fs.properties.build_state_block(
-        [0], default={"parameters": m.fs.properties, "defined_state": True}
+        [0], parameters=m.fs.properties, defined_state=True
     )
 
     m.fs.unit[0].flow_mol.fix(1)
@@ -97,12 +97,12 @@ def test_setInputs_state_block(gas_prop):
 @pytest.fixture(scope="class")
 def gas_prop_unscaled():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # gas properties and state inlet block
     m.fs.properties = GasPhaseParameterBlock()
     m.fs.unit = m.fs.properties.build_state_block(
-        [0], default={"parameters": m.fs.properties, "defined_state": True}
+        [0], parameters=m.fs.properties, defined_state=True
     )
 
     m.fs.unit[0].flow_mol.fix(1)
@@ -350,7 +350,7 @@ def test_units_consistent(gas_prop):
 @pytest.mark.unit
 def test_state_vars():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = GasPhaseParameterBlock()
     m.fs.state = m.fs.properties.build_state_block()
@@ -374,7 +374,7 @@ def test_state_vars():
 @pytest.mark.unit
 def test_indexed_state_block():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = GasPhaseParameterBlock()
     m.fs.state = m.fs.properties.build_state_block([1, 2, 3])
 
@@ -405,7 +405,7 @@ def test_property_construction_ordered():
     matching defined in the parameter block is in topological order.
     """
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = GasPhaseParameterBlock()
     m.fs.state = m.fs.properties.build_state_block()
 
@@ -461,7 +461,7 @@ def test_property_construction_unordered():
     requires several other properties, these are added as well.
     """
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = GasPhaseParameterBlock()
     m.fs.state = m.fs.properties.build_state_block()
 
@@ -506,15 +506,9 @@ class TestProperties(TestCase):
 
     def _make_model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = GasPhaseParameterBlock()
-        m.fs.state = m.fs.properties.build_state_block(
-            default={
-                # defined_state True because we want to ensure the state
-                # block is square.
-                "defined_state": True,
-            }
-        )
+        m.fs.state = m.fs.properties.build_state_block(defined_state=True)
         for var in m.fs.state.define_state_vars().values():
             var.fix()
         return m

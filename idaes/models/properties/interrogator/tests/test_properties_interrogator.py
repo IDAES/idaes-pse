@@ -36,7 +36,7 @@ from idaes.core.util.exceptions import ConfigurationError
 @pytest.mark.unit
 def test_interrogator_parameter_block():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
 
@@ -48,7 +48,7 @@ def test_interrogator_parameter_block():
 @pytest.mark.unit
 def test_units_metadata():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
 
@@ -61,7 +61,7 @@ def test_units_metadata():
 @pytest.mark.unit
 def test_interrogator_state_block_methods():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
 
@@ -87,7 +87,7 @@ def test_interrogator_state_block_methods():
 @pytest.mark.unit
 def test_interrogator_state_block_unindexed_call():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
 
@@ -106,7 +106,7 @@ def test_interrogator_state_block_unindexed_call():
 @pytest.mark.unit
 def test_interrogator_state_block_phase_call():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
 
@@ -123,7 +123,7 @@ def test_interrogator_state_block_phase_call():
 @pytest.mark.unit
 def test_interrogator_state_block_comp_call():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
 
@@ -140,7 +140,7 @@ def test_interrogator_state_block_comp_call():
 @pytest.mark.unit
 def test_interrogator_state_block_phase_comp_call():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
 
@@ -164,7 +164,7 @@ def test_interrogator_state_block_phase_comp_call():
 def test_interrogator_report_method():
     # Display method should return an TypeError
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
 
@@ -183,7 +183,7 @@ def test_interrogator_report_method():
 def test_interrogator_initialize_method():
     # Initialize method should return an TypeError
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
 
@@ -202,27 +202,23 @@ def test_interrogator_initialize_method():
 @pytest.fixture(scope="module")
 def model():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyunits.s})
+    m.fs = FlowsheetBlock(dynamic=True, time_units=pyunits.s)
 
     m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.P01 = PressureChanger(
-        default={
-            "property_package": m.fs.params,
-            "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
-        }
+        property_package=m.fs.params,
+        thermodynamic_assumption=ThermodynamicAssumption.isentropic,
     )
 
     m.fs.HX02 = HeatExchanger1D(
-        default={
-            "hot_side_name": "shell_side",
-            "cold_side_name": "tube_side",
-            "shell_side": {"property_package": m.fs.params},
-            "tube_side": {"property_package": m.fs.params},
-        }
+        hot_side_name="shell_side",
+        cold_side_name="tube_side",
+        shell_side={"property_package": m.fs.params},
+        tube_side={"property_package": m.fs.params},
     )
 
-    m.fs.F03 = Flash(default={"property_package": m.fs.params})
+    m.fs.F03 = Flash(property_package=m.fs.params)
 
     return m
 
@@ -370,19 +366,17 @@ The following properties are required by model fs.P01:
 @pytest.mark.unit
 def test_Separator_1():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.S01 = Separator(
-        default={
-            "property_package": m.fs.params,
-            "material_balance_type": MaterialBalanceType.componentPhase,
-            "split_basis": SplittingType.totalFlow,
-            "outlet_list": ["a", "B", "c"],
-            "ideal_separation": False,
-            "has_phase_equilibrium": False,
-        }
+        property_package=m.fs.params,
+        material_balance_type=MaterialBalanceType.componentPhase,
+        split_basis=SplittingType.totalFlow,
+        outlet_list=["a", "B", "c"],
+        ideal_separation=False,
+        has_phase_equilibrium=False,
     )
 
     assert len(m.fs.params.required_properties) == 3
@@ -393,19 +387,17 @@ def test_Separator_1():
 @pytest.mark.unit
 def test_Separator_2():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.S01 = Separator(
-        default={
-            "property_package": m.fs.params,
-            "material_balance_type": MaterialBalanceType.componentPhase,
-            "split_basis": SplittingType.phaseFlow,
-            "outlet_list": ["a", "B", "c"],
-            "ideal_separation": False,
-            "has_phase_equilibrium": False,
-        }
+        property_package=m.fs.params,
+        material_balance_type=MaterialBalanceType.componentPhase,
+        split_basis=SplittingType.phaseFlow,
+        outlet_list=["a", "B", "c"],
+        ideal_separation=False,
+        has_phase_equilibrium=False,
     )
 
     assert len(m.fs.params.required_properties) == 3
@@ -416,19 +408,17 @@ def test_Separator_2():
 @pytest.mark.unit
 def test_Separator_3():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.S01 = Separator(
-        default={
-            "property_package": m.fs.params,
-            "material_balance_type": MaterialBalanceType.componentPhase,
-            "split_basis": SplittingType.componentFlow,
-            "outlet_list": ["a", "B", "c"],
-            "ideal_separation": False,
-            "has_phase_equilibrium": False,
-        }
+        property_package=m.fs.params,
+        material_balance_type=MaterialBalanceType.componentPhase,
+        split_basis=SplittingType.componentFlow,
+        outlet_list=["a", "B", "c"],
+        ideal_separation=False,
+        has_phase_equilibrium=False,
     )
 
     assert len(m.fs.params.required_properties) == 3
@@ -439,23 +429,21 @@ def test_Separator_3():
 @pytest.mark.unit
 def test_ideal_Separator_1():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.S01 = Separator(
-        default={
-            "property_package": m.fs.params,
-            "num_outlets": 4,
-            "ideal_separation": True,
-            "split_basis": SplittingType.phaseComponentFlow,
-            "ideal_split_map": {
-                ("Vap", "A"): "outlet_1",
-                ("Vap", "B"): "outlet_2",
-                ("Liq", "A"): "outlet_3",
-                ("Liq", "B"): "outlet_4",
-            },
-        }
+        property_package=m.fs.params,
+        num_outlets=4,
+        ideal_separation=True,
+        split_basis=SplittingType.phaseComponentFlow,
+        ideal_split_map={
+            ("Vap", "A"): "outlet_1",
+            ("Vap", "B"): "outlet_2",
+            ("Liq", "A"): "outlet_3",
+            ("Liq", "B"): "outlet_4",
+        },
     )
 
     # Ideal Separator should require no property calls
@@ -466,18 +454,16 @@ def test_ideal_Separator_1():
 @pytest.mark.unit
 def test_ideal_Separator_2():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.S01 = Separator(
-        default={
-            "property_package": m.fs.params,
-            "num_outlets": 2,
-            "ideal_separation": True,
-            "split_basis": SplittingType.phaseFlow,
-            "ideal_split_map": {("Vap"): "outlet_1", ("Liq"): "outlet_2"},
-        }
+        property_package=m.fs.params,
+        num_outlets=2,
+        ideal_separation=True,
+        split_basis=SplittingType.phaseFlow,
+        ideal_split_map={"Vap": "outlet_1", "Liq": "outlet_2"},
     )
 
     # Ideal Separator should require no property calls
@@ -488,18 +474,16 @@ def test_ideal_Separator_2():
 @pytest.mark.unit
 def test_ideal_Separator_3():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.S01 = Separator(
-        default={
-            "property_package": m.fs.params,
-            "num_outlets": 2,
-            "ideal_separation": True,
-            "split_basis": SplittingType.componentFlow,
-            "ideal_split_map": {("A"): "outlet_1", ("B"): "outlet_2"},
-        }
+        property_package=m.fs.params,
+        num_outlets=2,
+        ideal_separation=True,
+        split_basis=SplittingType.componentFlow,
+        ideal_split_map={"A": "outlet_1", "B": "outlet_2"},
     )
 
     # Ideal Separator should require no property calls
@@ -510,13 +494,11 @@ def test_ideal_Separator_3():
 @pytest.mark.unit
 def test_interrogator_parameter_block_custom_phase_comps():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock(
-        default={
-            "phase_list": {"P1": LiquidPhase, "P2": None},
-            "component_list": {"c1": Solute, "c2": None},
-        }
+        phase_list={"P1": LiquidPhase, "P2": None},
+        component_list={"c1": Solute, "c2": None},
     )
 
     # Check that parameter block has expected attributes
@@ -529,13 +511,11 @@ def test_interrogator_parameter_block_custom_phase_comps():
 @pytest.mark.unit
 def test_interrogator_state_block_methods_custom_phase_comps():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock(
-        default={
-            "phase_list": {"P1": LiquidPhase, "P2": None},
-            "component_list": {"c1": Solute, "c2": None},
-        }
+        phase_list={"P1": LiquidPhase, "P2": None},
+        component_list={"c1": Solute, "c2": None},
     )
 
     m.fs.props = m.fs.params.build_state_block([0])
@@ -560,22 +540,20 @@ def test_interrogator_state_block_methods_custom_phase_comps():
 @pytest.mark.unit
 def test_interrogator_parameter_block_custom_phase_error():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     with pytest.raises(
         ConfigurationError,
         match="fs.params invalid phase type foo \(for phase "
         "P1\). Type must be a subclass of Phase.",
     ):
-        m.fs.params = PropertyInterrogatorBlock(
-            default={"phase_list": {"P1": "foo", "P2": None}}
-        )
+        m.fs.params = PropertyInterrogatorBlock(phase_list={"P1": "foo", "P2": None})
 
 
 @pytest.mark.unit
 def test_interrogator_parameter_block_custom_comp_error():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     with pytest.raises(
         ConfigurationError,
@@ -584,5 +562,5 @@ def test_interrogator_parameter_block_custom_comp_error():
         "Component.",
     ):
         m.fs.params = PropertyInterrogatorBlock(
-            default={"component_list": {"c1": "foo", "c2": None}}
+            component_list={"c1": "foo", "c2": None}
         )
