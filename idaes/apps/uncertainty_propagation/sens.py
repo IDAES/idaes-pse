@@ -652,7 +652,7 @@ class SensitivityInterface(object):
             instance.component_data_objects(Objective, active=True, descend_into=True)
         ):
             tempName = unique_component_name(block, obj.local_name)
-            new_expr = param_replacer.dfs_postorder_stack(obj.expr)
+            new_expr = param_replacer.walk_expression(obj.expr)
             block.add_component(tempName, Objective(expr=new_expr))
             new_old_comp_map[block.component(tempName)] = obj
             obj.deactivate()
@@ -668,7 +668,7 @@ class SensitivityInterface(object):
         last_idx = 0
         for con in old_con_list:
             if con.equality or con.lower is None or con.upper is None:
-                new_expr = param_replacer.dfs_postorder_stack(con.expr)
+                new_expr = param_replacer.walk_expression(con.expr)
                 block.constList.add(expr=new_expr)
                 last_idx += 1
                 new_old_comp_map[block.constList[last_idx]] = con
