@@ -1561,7 +1561,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             unit_tag = "$MM/MWh"
         except InconsistentUnitsError:
             raise Exception(
-                "units not compatable, make sure production rate"
+                "units not compatible, make sure production rate exists and "
                 "has dimensions of power"
             )
 
