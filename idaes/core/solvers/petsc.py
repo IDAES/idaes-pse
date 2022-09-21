@@ -551,7 +551,6 @@ def petsc_dae_by_time_element(
     ):
         # Solver time steps
         deriv_diff_map = _get_derivative_differential_data_map(m, time)
-        # tj = None  # trajectory data
         for t in between:
             if t == between.first():
                 # t == between.first() was handled above
