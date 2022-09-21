@@ -480,26 +480,32 @@ class PIDControllerData(UnitModelBlockData):
         t0 = time_set.first()
 
         sf_pv = iscale.get_scaling_factor(self.config.process_var[t0])
-        sf_mv = iscale.get_scaling_factor(self.config.manipulated_var[t0])
-        # Don't like calling scaling laterally like this, but we need scaling factors for the pv and mv
         if sf_pv is None:
-            try:
-                iscale.calculate_scaling_factors(self.config.process_var.parent_block())
-            except RecursionError:
-                raise ConfigurationError(
-                    f"Circular scaling dependency detected in Controller {self.name}. The only way this should be "
-                    "able to happen is if a loop of controllers exists manipulating each others setpoints without "
-                    "terminating in an actual process variable."
-                )
+            sf_pv = iscale.get_scaling_factor(self.process_var[t0], default=1)
+        sf_mv = iscale.get_scaling_factor(self.config.manipulated_var[t0])
         if sf_mv is None:
-            try:
-                iscale.calculate_scaling_factors(self.config.manipulated_var.parent_block())
-            except RecursionError:
-                raise ConfigurationError(
-                    f"Circular scaling dependency detected in Controller {self.name}. The only way this should be "
-                    "able to happen is if a loop of controllers exists manipulating each others setpoints without "
-                    "terminating in an actual process variable."
-                )
+            sf_mv = iscale.get_scaling_factor(self.manipulated_var[t0], default=1)
+
+        # Don't like calling scaling laterally like this, but we need scaling factors for the pv and mv
+        # Except this causes a StackOverflow with flowsheet-level PVs or MVs---put this on ice for now
+        # if sf_pv is None:
+        #     try:
+        #         iscale.calculate_scaling_factors(self.config.process_var.parent_block())
+        #     except RecursionError:
+        #         raise ConfigurationError(
+        #             f"Circular scaling dependency detected in Controller {self.name}. The only way this should be "
+        #             "able to happen is if a loop of controllers exists manipulating each others setpoints without "
+        #             "terminating in an actual process variable."
+        #         )
+        # if sf_mv is None:
+        #     try:
+        #         iscale.calculate_scaling_factors(self.config.manipulated_var.parent_block())
+        #     except RecursionError:
+        #         raise ConfigurationError(
+        #             f"Circular scaling dependency detected in Controller {self.name}. The only way this should be "
+        #             "able to happen is if a loop of controllers exists manipulating each others setpoints without "
+        #             "terminating in an actual process variable."
+        #         )
 
         if self.config.calculate_initial_integral:
             sf_mv = gsf(self.manipulated_var[t0], default=1, warning=True)
