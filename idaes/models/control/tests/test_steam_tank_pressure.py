@@ -39,7 +39,7 @@ from idaes.models.control.controller import (
     PIDController,
     ControllerType,
     ControllerMVBoundType,
-    ControllerAntiwindupType
+    ControllerAntiwindupType,
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
@@ -295,6 +295,7 @@ def test_inlet_disturbance():
 
     return m_dynamic, solver
 
+
 @pytest.mark.integration
 def test_inlet_disturbance_derivative_on_error():
     """Controller performance with derivative on error should be unchanged for an inlet disturbance"""
@@ -314,7 +315,12 @@ def test_inlet_disturbance_derivative_on_error():
 
     # Next create a model for the 0 to 5 sec time period
     m_dynamic, solver = create_model(
-        steady_state=False, time_set=[0, 12], nfe=30, calc_integ=True, tee=False, derivative_on_error=True
+        steady_state=False,
+        time_set=[0, 12],
+        nfe=30,
+        calc_integ=True,
+        tee=False,
+        derivative_on_error=True,
     )
 
     # Add a step change right in inlet pressure
@@ -331,6 +337,7 @@ def test_inlet_disturbance_derivative_on_error():
     ) == pytest.approx(s2_valve, abs=0.001)
 
     return m_dynamic, solver
+
 
 @pytest.mark.integration
 def test_setpoint_change_derivative_on_pv():
@@ -351,7 +358,12 @@ def test_setpoint_change_derivative_on_pv():
 
     # Next create a model for the 0 to 5 sec time period
     m_dynamic, solver = create_model(
-        steady_state=False, time_set=[0, 12], nfe=60, calc_integ=True, tee=False, derivative_on_error=False
+        steady_state=False,
+        time_set=[0, 12],
+        nfe=60,
+        calc_integ=True,
+        tee=False,
+        derivative_on_error=False,
     )
 
     # Add a step change in outlet setpoint
@@ -371,8 +383,8 @@ def test_setpoint_change_derivative_on_pv():
         m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.at(31)]
     ) == pytest.approx(0.78949, abs=0.001)
 
-
     return m_dynamic, solver
+
 
 @pytest.mark.integration
 def test_setpoint_change_derivative_on_error():
@@ -393,7 +405,12 @@ def test_setpoint_change_derivative_on_error():
 
     # Next create a model for the 0 to 5 sec time period
     m_dynamic, solver = create_model(
-        steady_state=False, time_set=[0, 12], nfe=60, calc_integ=True, tee=False, derivative_on_error=True
+        steady_state=False,
+        time_set=[0, 12],
+        nfe=60,
+        calc_integ=True,
+        tee=False,
+        derivative_on_error=True,
     )
 
     # Add a step change in outlet setpoint
@@ -414,6 +431,7 @@ def test_setpoint_change_derivative_on_error():
     ) == pytest.approx(0.93196, abs=0.001)
 
     return m_dynamic, solver
+
 
 if __name__ == "__main__":
     m, solver = test_setpoint_change_derivative_on_pv()
@@ -438,5 +456,5 @@ if __name__ == "__main__":
         ],
         cols=3,
         rows=1,
-        #to_file="pid_steam_tank_pressure.pdf",
+        # to_file="pid_steam_tank_pressure.pdf",
     )

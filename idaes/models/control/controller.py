@@ -50,6 +50,7 @@ class ControllerMVBoundType(enum.Enum):
     SMOOTH_BOUND = 2
     LOGISTIC = 3
 
+
 class ControllerAntiwindupType(enum.Enum):
     """Antiwindup type.
 
@@ -67,6 +68,7 @@ class ControllerAntiwindupType(enum.Enum):
     NONE = 1
     CONDITIONAL_INTEGRATION = 2
     BACK_CALCULATION = 3
+
 
 def smooth_heaviside(x, eps):
     eps_adjusted = eps
@@ -229,9 +231,13 @@ class PIDControllerData(UnitModelBlockData):
 
         if not self.config.antiwindup_type == ControllerAntiwindupType.NONE:
             if not self.config.type in [ControllerType.PI, ControllerType.PID]:
-                raise ConfigurationError("User specified antiwindup method for controller without integral action.")
+                raise ConfigurationError(
+                    "User specified antiwindup method for controller without integral action."
+                )
             if self.config.mv_bound_type == ControllerMVBoundType.NONE:
-                raise ConfigurationError("User specified antiwindup method for unbounded MV.")
+                raise ConfigurationError(
+                    "User specified antiwindup method for unbounded MV."
+                )
 
         # Get the appropriate units for various contoller varaibles
         mv_units = pyo.units.get_units(self.manipulated_var[time_0])
@@ -301,7 +307,7 @@ class PIDControllerData(UnitModelBlockData):
                 time_set,
                 initialize=0.1,
                 doc="Gain for back calculation antiwindup",
-                units= 1 / time_units,
+                units=1 / time_units,
             )
 
         self.mv_ref = pyo.Var(
@@ -312,7 +318,10 @@ class PIDControllerData(UnitModelBlockData):
         )
 
         # Error expression or variable (variable required for derivative term)
-        if self.config.type in [ControllerType.PD, ControllerType.PID] and self.config.derivative_on_error:
+        if (
+            self.config.type in [ControllerType.PD, ControllerType.PID]
+            and self.config.derivative_on_error
+        ):
             self.error = pyo.Var(
                 time_set, initialize=0, doc="Error variable", units=pv_units
             )
@@ -334,10 +343,16 @@ class PIDControllerData(UnitModelBlockData):
             def error(b, t):
                 return b.setpoint[t] - b.process_var[t]
 
-            if self.config.type in [ControllerType.PD, ControllerType.PID] and not self.config.derivative_on_error:
+            if (
+                self.config.type in [ControllerType.PD, ControllerType.PID]
+                and not self.config.derivative_on_error
+            ):
                 # Need to create a Var because process_var might be an Expression
                 self.negative_pv = pyo.Var(
-                    time_set, initialize=0, doc="Negative of process variable", units=pv_units
+                    time_set,
+                    initialize=0,
+                    doc="Negative of process variable",
+                    units=pv_units,
                 )
 
                 @self.Constraint(time_set, doc="Negative process variable equation")
@@ -350,7 +365,6 @@ class PIDControllerData(UnitModelBlockData):
                     initialize=0,
                     units=pv_units / time_units,
                 )
-
 
         # integral term written de_i(t)/dt = e(t)
         if self.config.type in [ControllerType.PI, ControllerType.PID]:
@@ -374,22 +388,16 @@ class PIDControllerData(UnitModelBlockData):
                 @self.Constraint(doc="Calculate initial e_i based on output")
                 def initial_integral_error_eqn(b):
                     if self.config.type == ControllerType.PI:
-                        return (
-                            b.mv_integral_component[t0]
-                            == (
-                                b.manipulated_var[t0]
-                                - b.mv_ref[t0]
-                                - b.gain_p[t0] * b.error[t0]
-                            )
-                        )
-                    return (
-                        b.mv_integral_component[t0]
-                        == (
+                        return b.mv_integral_component[t0] == (
                             b.manipulated_var[t0]
                             - b.mv_ref[t0]
                             - b.gain_p[t0] * b.error[t0]
-                            - b.gain_d[t0] * b.derivative_term[t0]
                         )
+                    return b.mv_integral_component[t0] == (
+                        b.manipulated_var[t0]
+                        - b.mv_ref[t0]
+                        - b.gain_p[t0] * b.error[t0]
+                        - b.gain_d[t0] * b.derivative_term[t0]
                     )
 
         @self.Expression(time_set, doc="Unbounded output for manipulated variable")
@@ -403,9 +411,7 @@ class PIDControllerData(UnitModelBlockData):
                 )
             elif self.config.type == ControllerType.PI:
                 return (
-                    b.mv_ref[t]
-                    + b.gain_p[t] * b.error[t]
-                    + b.mv_integral_component[t]
+                    b.mv_ref[t] + b.gain_p[t] * b.error[t] + b.mv_integral_component[t]
                 )
             elif self.config.type == ControllerType.PD:
                 return (
@@ -446,11 +452,17 @@ class PIDControllerData(UnitModelBlockData):
             self.mv_eqn[time_set.first()].deactivate()
 
         if self.config.type in [ControllerType.PI, ControllerType.PID]:
+
             @self.Constraint(time_set, doc="de_i(t)/dt = e(t)")
             def mv_integration_eqn(b, t):
-                if self.config.antiwindup_type == ControllerAntiwindupType.CONDITIONAL_INTEGRATION:
+                if (
+                    self.config.antiwindup_type
+                    == ControllerAntiwindupType.CONDITIONAL_INTEGRATION
+                ):
                     # It fails when the "wrong" bound is active for a given expression of error
-                    return b.mv_integral_component_dot[t] == b.gain_i[t] * b.error[t] * (
+                    return b.mv_integral_component_dot[t] == b.gain_i[t] * b.error[
+                        t
+                    ] * (
                         smooth_heaviside(
                             (b.mv_unbounded[t] - b.mv_lb) / (b.mv_ub - b.mv_lb), 0.005
                         )
@@ -459,10 +471,13 @@ class PIDControllerData(UnitModelBlockData):
                             (b.mv_unbounded[t] - b.mv_ub) / (b.mv_ub - b.mv_lb), 0.005
                         )
                     )
-                elif self.config.antiwindup_type == ControllerAntiwindupType.BACK_CALCULATION:
-                    return b.mv_integral_component_dot[t] == b.gain_i[t] * b.error[t] + b.gain_b[t] * (
-                        b.manipulated_var[t] - b.mv_unbounded[t]
-                    )
+                elif (
+                    self.config.antiwindup_type
+                    == ControllerAntiwindupType.BACK_CALCULATION
+                ):
+                    return b.mv_integral_component_dot[t] == b.gain_i[t] * b.error[
+                        t
+                    ] + b.gain_b[t] * (b.manipulated_var[t] - b.mv_unbounded[t])
                 else:
                     return b.mv_integral_component_dot[t] == b.gain_i[t] * b.error[t]
 
