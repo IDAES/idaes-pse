@@ -925,41 +925,6 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     return solver
 
 
-def pfd_result(m, df, svg):
-    """Insert model results into the PFD and return a new SVG string, which
-    can be displayed, further edited, or saved to a file.
-
-    Args:
-        m (ConcreteModel): A steam cycle model
-        df (Pandas DataFrame): Stream table
-        svg (FILE*, str, bytes): Origianl svg svg as either a file-like object,
-            a string, or a byte array.
-
-    Returns:
-        (str): SVG content.
-    """
-    tags = {}  # dict of tags and data to insert into SVG
-    for i in df.index:  # Create entires for streams
-        tags[i + "_F"] = df.loc[i, "Molar Flow (mol/s)"]
-        tags[i + "_T"] = df.loc[i, "T (K)"]
-        tags[i + "_P"] = df.loc[i, "P (Pa)"]
-        tags[i + "_X"] = df.loc[i, "Vapor Fraction"]
-    # Add some additional quntities from the model to report
-    tags["gross_power"] = -pyo.value(m.fs.turb.power[0])
-    tags["gross_power_mw"] = -pyo.value(m.fs.turb.power[0]) * 1e-6
-    tags["steam_mass_flow"] = df.loc["STEAM_MAIN", "Mass Flow (kg/s)"]
-    tags["sc_eff"] = pyo.value(m.fs.steam_cycle_eff[0])
-    tags["boiler_heat"] = pyo.value(m.fs.boiler_heat[0]) * 1e-6
-    tags["steam_pressure"] = df.loc["STEAM_MAIN", "P (Pa)"] / 1000.0
-    tags["cond_pressure"] = df.loc["EXHST_MAIN", "P (Pa)"] / 1000.0
-    tags["bfp_power"] = pyo.value(m.fs.bfp.work_mechanical[0])
-    tags["bfp_eff"] = pyo.value(m.fs.bfp.efficiency_isentropic[0]) * 100
-    tags["bfpt_power"] = pyo.value(m.fs.bfpt.work_mechanical[0])
-    tags["bfpt_eff"] = pyo.value(m.fs.bfpt.efficiency_isentropic[0]) * 100
-
-    return svg_tag(tags, svg=svg)
-
-
 def main(initialize_from_file=None, store_initialization=None):
     """Create and initalize a model and solver
 
