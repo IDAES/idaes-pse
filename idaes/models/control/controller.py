@@ -197,6 +197,11 @@ class PIDControllerData(UnitModelBlockData):
         """
         super().build()
 
+        if self.config.dynamic == False:
+            raise ConfigurationError(
+                "PIDControllers work only with dynamic flowsheets."
+            )
+
         # Check for required config
         if self.config.process_var is None or self.config.manipulated_var is None:
             raise ConfigurationError(
@@ -208,6 +213,8 @@ class PIDControllerData(UnitModelBlockData):
         # Shorter pointers to time set information
         time_set = self.flowsheet().time
         time_units = self.flowsheet().time_units
+        if time_units is None:
+            time_units = pyo.units.dimensionless
         time_0 = time_set.first()
 
         # Type Check
@@ -261,7 +268,7 @@ class PIDControllerData(UnitModelBlockData):
                 initialize=4,
                 doc="Smoothing parameter for controller output limits when the bound"
                 " type is LOGISTIC",
-                units=mv_units,
+                units=pyo.units.dimensionless,
             )
 
         # Variable for basic controller settings may change with time.
@@ -357,7 +364,7 @@ class PIDControllerData(UnitModelBlockData):
                 self.mv_integral_component,
                 wrt=time_set,
                 initialize=0,
-                units=pv_units,
+                units=mv_units / time_units,
                 doc="Rate of change of integral contribution to control action",
             )
 
@@ -426,8 +433,8 @@ class PIDControllerData(UnitModelBlockData):
                         1
                         + pyo.exp(
                             -b.logistic_bound_k
-                            / (b.mv_ub - b.mv_lb)
                             * (b.mv_unbounded[t] - (b.mv_lb + b.mv_ub) / 2)
+                            / (b.mv_ub - b.mv_lb)
                         )
                     )
                 ) == b.mv_ub - b.mv_lb
