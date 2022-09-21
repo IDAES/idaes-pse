@@ -257,23 +257,3 @@ class TestSaponification(object):
                 "Pressure Change": sapon.fs.unit.deltaP[0],
             }
         }
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_costing(self, sapon):
-        sapon.fs.unit.get_costing()
-        assert isinstance(sapon.fs.unit.costing.purchase_cost, Var)
-        sapon.fs.unit.diameter.fix(2)
-        sapon.fs.unit.length.fix(3)
-        results = solver.solve(sapon)
-        # Check for optimal solution
-        assert check_optimal_termination(results)
-        assert pytest.approx(56327.5803, abs=1e3) == value(
-            sapon.fs.unit.costing.base_cost
-        )
-        assert pytest.approx(85432.06008, abs=1e3) == value(
-            sapon.fs.unit.costing.purchase_cost
-        )
-
-        assert_units_consistent(sapon.fs.unit.costing)

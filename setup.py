@@ -83,7 +83,7 @@ kwargs = dict(
         "numpy",
         "networkx",
         "omlt==0.3.1",  # fix the version for now as package evolves
-        "pandas",
+        "pandas<1.5",
         "pint",
         "psutil",
         "pyomo @ https://github.com/IDAES/pyomo/archive/6.4.2.zip",
