@@ -417,16 +417,6 @@ class TestSubFlowsheetBuild(object):
 
 class TestOther(object):
     @pytest.mark.unit
-    def test_costing(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.get_costing()
-
-        assert isinstance(m.fs.costing, Block)
-        assert isinstance(m.fs.costing.CE_index, Param)
-        assert m.fs.costing.CE_index.value == 671.1
-
-    @pytest.mark.unit
     def test_model_checks(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)

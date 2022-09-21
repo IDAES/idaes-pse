@@ -474,30 +474,3 @@ class TestIAPWS(object):
             )
             <= 1e-6
         )
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_costing(self, iapws):
-        iapws.fs.unit.get_costing()
-        assert isinstance(iapws.fs.unit.costing.purchase_cost, Var)
-        iapws.fs.unit.diameter.fix(2)
-        iapws.fs.unit.length.fix(4)
-        # initialize unit with costing block
-        iapws.fs.unit.initialize()
-        # check costing initialized correct
-        assert pytest.approx(86957.195, abs=1e-3) == value(
-            iapws.fs.unit.costing.purchase_cost
-        )
-
-        results = solver.solve(iapws)
-        # Check for optimal solution
-        assert check_optimal_termination(results)
-        assert pytest.approx(63787.06525, abs=1e3) == value(
-            iapws.fs.unit.costing.base_cost
-        )
-        assert pytest.approx(97660.6169, abs=1e3) == value(
-            iapws.fs.unit.costing.purchase_cost
-        )
-
-        assert_units_consistent(iapws.fs.unit.costing)
