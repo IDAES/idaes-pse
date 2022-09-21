@@ -655,10 +655,10 @@ def main_dynamic():
                     )
                     > 3
                 ):
-                    m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[t].value = 3
+                    m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[t].value = 0.3
                     _log.info(
                         "Reached upper bound of manipulated variable and"
-                        " maximum windup of 3. Reset windup to 3."
+                        " maximum windup of 0.3. Reset windup to 0.3."
                     )
             if mv_unbounded > pyo.value(m_dyn.fs_main.fs_stc.spray_ctrl.mv_ub):
                 # Reset spray control windup
