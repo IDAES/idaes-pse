@@ -2179,4 +2179,5 @@ if __name__ == "__main__":
     # This method builds and runs a steady state subcritical coal-fired power
     # plant, the simulation consists of a typical base load case.
     m_ss = main_steady_state()
-    print_pfd_results(m_ss)
+
+    return m_ss
