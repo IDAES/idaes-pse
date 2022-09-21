@@ -16,7 +16,6 @@ Standard IDAES PFR model.
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Var, Reference, Block
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
-from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
@@ -376,22 +375,3 @@ domain,
         var_dict = {"Area": self.area}
 
         return {"vars": var_dict}
-
-    @deprecated(
-        "The get_costing method is being deprecated in favor of the new "
-        "FlowsheetCostingBlock tools.",
-        version="TBD",
-    )
-    def get_costing(self, year=None, module=costing, **kwargs):
-        if not hasattr(self.flowsheet(), "costing"):
-            self.flowsheet().get_costing(year=year, module=module)
-
-        self.costing = Block()
-        units_meta = self.config.property_package.get_metadata().get_derived_units
-        self.diameter = Var(
-            initialize=1, units=units_meta("length"), doc="vessel diameter"
-        )
-        self.diameter_eq = Constraint(
-            expr=self.volume == (self.length * const.pi * self.diameter**2) / 4
-        )
-        module.pfr_costing(self.costing, **kwargs)
