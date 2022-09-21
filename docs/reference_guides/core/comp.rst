@@ -5,7 +5,7 @@ This is a general purpose Component object, and is suitable for general cases wh
 not concerned about distinguishing solutes from solvents (`is_solute()` and `is_solvent()` will 
 both raise `TypeErrors`). This also forms the base class for all other Component types.
 
-.. module:: idaes.core.components
+.. module:: idaes.core.base.components
 
 .. autoclass:: Component
     :members:

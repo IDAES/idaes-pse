@@ -286,18 +286,16 @@ domain,
 
         # Build Control Volume
         self.control_volume = ControlVolume1DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-                "reaction_package": self.config.reaction_package,
-                "reaction_package_args": self.config.reaction_package_args,
-                "transformation_method": self.config.transformation_method,
-                "transformation_scheme": self.config.transformation_scheme,
-                "finite_elements": self.config.finite_elements,
-                "collocation_points": self.config.collocation_points,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
+            reaction_package=self.config.reaction_package,
+            reaction_package_args=self.config.reaction_package_args,
+            transformation_method=self.config.transformation_method,
+            transformation_scheme=self.config.transformation_scheme,
+            finite_elements=self.config.finite_elements,
+            collocation_points=self.config.collocation_points,
         )
 
         self.control_volume.add_geometry(

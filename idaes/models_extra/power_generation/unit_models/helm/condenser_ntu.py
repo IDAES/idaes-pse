@@ -28,14 +28,13 @@ from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.models.unit_models.heater import (
     _make_heater_config_block,
     _make_heater_control_volume,
 )
+from idaes.models.unit_models.heat_exchanger import hx_process_config, add_hx_references
 import idaes.core.util.unit_costing as costing
 import idaes.core.util.scaling as iscale
-from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 
@@ -60,25 +59,25 @@ def _make_heat_exchanger_config(config):
         ),
     )
     config.declare(
-        "hot_side_config",
+        "hot_side",
         ConfigBlock(
             implicit=True,
             description="Config block for hot side",
             doc="""A config block used to construct the hot side control volume.
-This config can be given by the hot side name instead of hot_side_config.""",
+This config can be given by the hot side name instead of hot_side.""",
         ),
     )
     config.declare(
-        "cold_side_config",
+        "cold_side",
         ConfigBlock(
             implicit=True,
             description="Config block for cold side",
             doc="""A config block used to construct the cold side control volume.
-This config can be given by the cold side name instead of cold_side_config.""",
+This config can be given by the cold side name instead of cold_side.""",
         ),
     )
-    _make_heater_config_block(config.hot_side_config)
-    _make_heater_config_block(config.cold_side_config)
+    _make_heater_config_block(config.hot_side)
+    _make_heater_config_block(config.cold_side)
 
 
 @declare_process_block_class("HelmNtuCondenser", doc="Simple 0D condenser model.")
@@ -90,41 +89,6 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
     CONFIG = UnitModelBlockData.CONFIG(implicit=True)
     _make_heat_exchanger_config(CONFIG)
-
-    def _process_config(self):
-        """Check for configuration errors and alternate config option names."""
-        config = self.config
-
-        if config.hot_side_name == config.cold_side_name:
-            raise NameError(
-                "Condenser hot and cold side cannot have the same name '{}'."
-                " Be sure to set both the hot_side_name and cold_side_name.".format(
-                    config.hot_side_name
-                )
-            )
-        for o in config:
-            if not (
-                o in self.CONFIG or o in [config.hot_side_name, config.cold_side_name]
-            ):
-                raise KeyError("Condenser config option {} not defined".format(o))
-
-        if config.hot_side_name in config:
-            config.hot_side_config.set_value(config[config.hot_side_name])
-            # Allow access to hot_side_config under the hot_side_name
-            setattr(config, config.hot_side_name, config.hot_side_config)
-        if config.cold_side_name in config:
-            config.cold_side_config.set_value(config[config.cold_side_name])
-            # Allow access to hot_side_config under the cold_side_name
-            setattr(config, config.cold_side_name, config.cold_side_config)
-
-        if config.cold_side_name in ["hot_side", "side_1"]:
-            raise ConfigurationError(
-                "Cold side name cannot be in ['hot_side', 'side_1']."
-            )
-        if config.hot_side_name in ["cold_side", "side_2"]:
-            raise ConfigurationError(
-                "Hot side name cannot be in ['cold_side', 'side_2']."
-            )
 
     def build(self):
         """
@@ -139,7 +103,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
         #  Call UnitModel.build to setup dynamics and configure                #
         ########################################################################
         super().build()
-        self._process_config()
+        hx_process_config(self)
         config = self.config
         time = self.flowsheet().time
 
@@ -148,37 +112,23 @@ class HelmNtuCondenserData(UnitModelBlockData):
         ########################################################################
         hot_side = _make_heater_control_volume(
             self,
-            config.hot_side_name,
-            config.hot_side_config,
+            "hot_side",
+            config.hot_side,
             dynamic=config.dynamic,
             has_holdup=config.has_holdup,
         )
         cold_side = _make_heater_control_volume(
             self,
-            config.cold_side_name,
-            config.cold_side_config,
+            "cold_side",
+            config.cold_side,
             dynamic=config.dynamic,
             has_holdup=config.has_holdup,
         )
-        # Add refernces to the hot side and cold side, so that we have solid
-        # names to refere to internally.  side_1 and side_2 also maintain
-        # compatability with older models.  Using add_object_reference keeps
-        # these from showing up when you iterate through pyomo compoents in a
-        # model, so only the user specified control volume names are "seen"
-        if not hasattr(self, "side_1"):
-            add_object_reference(self, "side_1", hot_side)
-        if not hasattr(self, "side_2"):
-            add_object_reference(self, "side_2", cold_side)
-        if not hasattr(self, "hot_side"):
-            add_object_reference(self, "hot_side", hot_side)
-        if not hasattr(self, "cold_side"):
-            add_object_reference(self, "cold_side", cold_side)
-
         ########################################################################
         # Add variables                                                        #
         ########################################################################
         # Use hot side units as basis
-        s1_metadata = config.hot_side_config.property_package.get_metadata()
+        s1_metadata = config.hot_side.property_package.get_metadata()
 
         f_units = s1_metadata.get_derived_units("flow_mole")
         cp_units = s1_metadata.get_derived_units("heat_capacity_mole")
@@ -204,43 +154,24 @@ class HelmNtuCondenserData(UnitModelBlockData):
         ########################################################################
         # Add ports                                                            #
         ########################################################################
-        i1 = self.add_inlet_port(
-            name=f"{config.hot_side_name}_inlet", block=hot_side, doc="Hot side inlet"
-        )
-        i2 = self.add_inlet_port(
-            name=f"{config.cold_side_name}_inlet",
+        self.add_inlet_port(name="hot_side_inlet", block=hot_side, doc="Hot side inlet")
+        self.add_inlet_port(
+            name="cold_side_inlet",
             block=cold_side,
             doc="Cold side inlet",
         )
-        o1 = self.add_outlet_port(
-            name=f"{config.hot_side_name}_outlet", block=hot_side, doc="Hot side outlet"
+        self.add_outlet_port(
+            name="hot_side_outlet", block=hot_side, doc="Hot side outlet"
         )
-        o2 = self.add_outlet_port(
-            name=f"{config.cold_side_name}_outlet",
+        self.add_outlet_port(
+            name="cold_side_outlet",
             block=cold_side,
             doc="Cold side outlet",
         )
-
-        # Using Andrew's function for now.  I want these port names for backward
-        # compatablity, but I don't want them to appear if you iterate throught
-        # components and add_object_reference hides them from Pyomo.
-        if not hasattr(self, "inlet_1"):
-            add_object_reference(self, "inlet_1", i1)
-        if not hasattr(self, "inlet_2"):
-            add_object_reference(self, "inlet_2", i2)
-        if not hasattr(self, "outlet_1"):
-            add_object_reference(self, "outlet_1", o1)
-        if not hasattr(self, "outlet_2"):
-            add_object_reference(self, "outlet_2", o2)
-
-        if not hasattr(self, "hot_inlet"):
-            add_object_reference(self, "hot_inlet", i1)
-        if not hasattr(self, "cold_inlet"):
-            add_object_reference(self, "cold_inlet", i2)
-        if not hasattr(self, "hot_outlet"):
-            add_object_reference(self, "hot_outlet", o1)
-        if not hasattr(self, "cold_outlet"):
-            add_object_reference(self, "cold_outlet", o2)
+        ########################################################################
+        # Add aliases                                                          #
+        ########################################################################
+        add_hx_references(self)
 
         ########################################################################
         # Add a unit level energy balance                                      #

@@ -96,7 +96,7 @@ class TestParameters(object):
     def test_parameters_no_assignment(self):
         m = ConcreteModel()
 
-        m.params = GenericParameterBlock(default=configuration)
+        m.params = GenericParameterBlock(**configuration)
 
         assert isinstance(m.params.Liq.ion_pair_set, Set)
         assert len(m.params.Liq.ion_pair_set) == 4
@@ -137,7 +137,7 @@ class TestParameters(object):
 
         m = ConcreteModel()
 
-        m.params = GenericParameterBlock(default=test_config)
+        m.params = GenericParameterBlock(**test_config)
 
         assert isinstance(m.params.Liq.alpha, Var)
         assert len(m.params.Liq.alpha) == 17
@@ -183,7 +183,7 @@ class TestParameters(object):
             "non-symmetric value for pair (.+?). Please assign "
             "only one value for component pair.",
         ):
-            m.params = GenericParameterBlock(default=test_config)
+            m.params = GenericParameterBlock(**test_config)
 
     @pytest.mark.unit
     def test_parameters_alpha_symmetry_duplicate(self, caplog):
@@ -202,7 +202,7 @@ class TestParameters(object):
 
         m = ConcreteModel()
 
-        m.params = GenericParameterBlock(default=test_config)
+        m.params = GenericParameterBlock(**test_config)
 
         assert (
             "eNRTL alpha value provided for both ('H2O', 'Na+, Cl-') and "
@@ -228,7 +228,7 @@ class TestParameters(object):
             "typing and only provide parameters for valid "
             "species pairs.",
         ):
-            m.params = GenericParameterBlock(default=test_config)
+            m.params = GenericParameterBlock(**test_config)
 
     @pytest.mark.unit
     def test_parameters_tau_asymmetric(self):
@@ -240,7 +240,7 @@ class TestParameters(object):
 
         m = ConcreteModel()
 
-        m.params = GenericParameterBlock(default=test_config)
+        m.params = GenericParameterBlock(**test_config)
 
         assert isinstance(m.params.Liq.tau, Var)
         assert len(m.params.Liq.tau) == 32
@@ -274,14 +274,14 @@ class TestParameters(object):
             "and only provide parameters for valid species "
             "pairs.",
         ):
-            m.params = GenericParameterBlock(default=test_config)
+            m.params = GenericParameterBlock(**test_config)
 
 
 class TestStateBlockSymmetric(object):
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
-        m.params = GenericParameterBlock(default=configuration)
+        m.params = GenericParameterBlock(**configuration)
 
         m.state = m.params.build_state_block([1])
 
@@ -1110,7 +1110,7 @@ class TestProperties(object):
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
-        m.params = GenericParameterBlock(default=configuration)
+        m.params = GenericParameterBlock(**configuration)
 
         m.state = m.params.build_state_block([1])
 

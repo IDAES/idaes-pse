@@ -33,7 +33,7 @@ def test_SimpleVarLikeExpression():
 
     m.e = VarLikeExpression(expr=m.v)
 
-    assert m.e.type() is Expression
+    assert m.e.ctype is Expression
     assert not m.e.is_indexed()
 
     with pytest.raises(
@@ -90,7 +90,7 @@ def test_IndexedVarLikeExpression():
 
     m.e = VarLikeExpression([1, 2, 3, 4], expr=m.v)
 
-    assert m.e.type() is Expression
+    assert m.e.ctype is Expression
     assert m.e.is_indexed()
 
     with pytest.raises(

@@ -18,10 +18,12 @@ import pyomo.environ as pyo
 from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock
-from idaes.power_generation.unit_models.watertank import WaterTank
+from idaes.models_extra.power_generation.unit_models.watertank import WaterTank
 from idaes.models.control.controller import PIDController, ControllerType
 import idaes.core.util.scaling as iscale
-from idaes.power_generation.unit_models.helm import (
+
+# TODO: Should have a test for this that does not depend on models_extra
+from idaes.models_extra.power_generation.unit_models.helm import (
     HelmValve as WaterValve,
     HelmIsentropicCompressor as WaterPump,
 )
@@ -82,50 +84,30 @@ def get_model(dynamic=False):
     if dynamic:
         m.dynamic = True
         m.fs = FlowsheetBlock(
-            default={
-                "dynamic": True,
-                "time_set": [0, 50, 1000],
-                "time_units": pyo.units.s,
-            }
+            dynamic=True, time_set=[0, 50, 1000], time_units=pyo.units.s
         )
     else:
         m.dynamic = False
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
 
     # water pump
-    m.fs.pump = WaterPump(
-        default={
-            "dynamic": False,
-            "property_package": m.fs.prop_water,
-        }
-    )
+    m.fs.pump = WaterPump(dynamic=False, property_package=m.fs.prop_water)
 
     # water tank
     m.fs.tank = WaterTank(
-        default={
-            "tank_type": "simple_tank",
-            "has_holdup": True,
-            "property_package": m.fs.prop_water,
-        }
+        tank_type="simple_tank", has_holdup=True, property_package=m.fs.prop_water
     )
 
     m.fs.valve = WaterValve(
-        default={
-            "dynamic": False,
-            "has_holdup": False,
-            "phase": "Liq",
-            "property_package": m.fs.prop_water,
-        }
+        dynamic=False, has_holdup=False, phase="Liq", property_package=m.fs.prop_water
     )
 
     if dynamic:
         m.fs.controller = PIDController(
-            default={
-                "process_var": m.fs.tank.tank_level,
-                "manipulated_var": m.fs.valve.valve_opening,
-                "type": ControllerType.PI,
-            }
+            process_var=m.fs.tank.tank_level,
+            manipulated_var=m.fs.valve.valve_opening,
+            type=ControllerType.PI,
         )
 
         m.discretizer = pyo.TransformationFactory("dae.finite_difference")

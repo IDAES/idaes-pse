@@ -301,10 +301,10 @@ class EnzymeReactionBlockData(ReactionBlockDataBase):
 @pytest.fixture
 def model():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.sb = m.fs.pp.state_block_class(default={"parameters": m.fs.pp})
+    m.fs.sb = m.fs.pp.state_block_class(parameters=m.fs.pp)
 
     for i in m.fs.sb.flow_mol_phase_comp:
         assert not m.fs.sb.flow_mol_phase_comp[i].fixed
@@ -994,23 +994,17 @@ def test_initialize_by_time_element():
     ntfe = 60  # For a finite element every six seconds
     ntcp = 2
     m = ConcreteModel(name="CSTR model for testing")
-    m.fs = FlowsheetBlock(
-        default={"dynamic": True, "time_set": time_set, "time_units": pyunits.minute}
-    )
+    m.fs = FlowsheetBlock(dynamic=True, time_set=time_set, time_units=pyunits.minute)
 
     m.fs.properties = AqueousEnzymeParameterBlock()
-    m.fs.reactions = EnzymeReactionParameterBlock(
-        default={"property_package": m.fs.properties}
-    )
+    m.fs.reactions = EnzymeReactionParameterBlock(property_package=m.fs.properties)
     m.fs.cstr = CSTR(
-        default={
-            "property_package": m.fs.properties,
-            "reaction_package": m.fs.reactions,
-            "material_balance_type": MaterialBalanceType.componentTotal,
-            "energy_balance_type": EnergyBalanceType.enthalpyTotal,
-            "momentum_balance_type": MomentumBalanceType.none,
-            "has_heat_of_reaction": True,
-        }
+        property_package=m.fs.properties,
+        reaction_package=m.fs.reactions,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        energy_balance_type=EnergyBalanceType.enthalpyTotal,
+        momentum_balance_type=MomentumBalanceType.none,
+        has_heat_of_reaction=True,
     )
 
     # Time discretization

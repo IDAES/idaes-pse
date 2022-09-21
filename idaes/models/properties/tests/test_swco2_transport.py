@@ -24,7 +24,7 @@ class TestSWCO2(object):
     def model2(self):
         model = ConcreteModel()
         model.prop_param = swco2.SWCO2ParameterBlock()
-        model.prop_in = swco2.SWCO2StateBlock(default={"parameters": model.prop_param})
+        model.prop_in = swco2.SWCO2StateBlock(parameters=model.prop_param)
         return model
 
     @pytest.mark.unit

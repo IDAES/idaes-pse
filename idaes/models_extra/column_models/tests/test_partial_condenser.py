@@ -44,15 +44,13 @@ solver = get_solver()
 def test_config():
 
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
 
     m.fs.unit = Condenser(
-        default={
-            "property_package": m.fs.properties,
-            "condenser_type": CondenserType.partialCondenser,
-            "temperature_spec": TemperatureSpec.customTemperature,
-        }
+        property_package=m.fs.properties,
+        condenser_type=CondenserType.partialCondenser,
+        temperature_spec=TemperatureSpec.customTemperature,
     )
 
     assert len(m.fs.unit.config) == 8
@@ -67,18 +65,16 @@ class TestBTXIdeal:
     @pytest.fixture(scope="class")
     def btx_ftpz(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = BTXParameterBlock(
-            default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "Ideal"}
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
         )
 
         m.fs.unit = Condenser(
-            default={
-                "property_package": m.fs.properties,
-                "condenser_type": CondenserType.partialCondenser,
-                "temperature_spec": TemperatureSpec.customTemperature,
-            }
+            property_package=m.fs.properties,
+            condenser_type=CondenserType.partialCondenser,
+            temperature_spec=TemperatureSpec.customTemperature,
         )
 
         # Fix the partial condenser variables (FTPz)
@@ -98,22 +94,16 @@ class TestBTXIdeal:
     @pytest.fixture(scope="class")
     def btx_fctp(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = BTXParameterBlock(
-            default={
-                "valid_phase": ("Liq", "Vap"),
-                "activity_coeff_model": "Ideal",
-                "state_vars": "FcTP",
-            }
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal", state_vars="FcTP"
         )
 
         m.fs.unit = Condenser(
-            default={
-                "property_package": m.fs.properties,
-                "condenser_type": CondenserType.partialCondenser,
-                "temperature_spec": TemperatureSpec.customTemperature,
-            }
+            property_package=m.fs.properties,
+            condenser_type=CondenserType.partialCondenser,
+            temperature_spec=TemperatureSpec.customTemperature,
         )
 
         # Fix the partial condenser variables (FcTP)

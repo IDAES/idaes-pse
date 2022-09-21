@@ -43,7 +43,7 @@ from idaes.models_extra.column_models.properties.MEA_solvent import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver
+from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
 
@@ -58,7 +58,7 @@ class TestAbsorber:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         # Set up molar flow bounds
         vaporconfig_copy = copy.deepcopy(vaporconfig)
@@ -77,19 +77,17 @@ class TestAbsorber:
         )
 
         # Set up property package
-        m.fs.vapor_properties = GenericParameterBlock(default=vaporconfig_copy)
-        m.fs.liquid_properties = GenericParameterBlock(default=liquidconfig_copy)
+        m.fs.vapor_properties = GenericParameterBlock(**vaporconfig_copy)
+        m.fs.liquid_properties = GenericParameterBlock(**liquidconfig_copy)
 
         # Number of finite elements and finite element list in the spatial domain
         x_nfe = 40
 
         # Create an instance of the column in the flowsheet
         m.fs.unit = MEAColumn(
-            default={
-                "finite_elements": x_nfe,
-                "vapor_phase": {"property_package": m.fs.vapor_properties},
-                "liquid_phase": {"property_package": m.fs.liquid_properties},
-            }
+            finite_elements=x_nfe,
+            vapor_phase={"property_package": m.fs.vapor_properties},
+            liquid_phase={"property_package": m.fs.liquid_properties},
         )
 
         # Fix column design variables

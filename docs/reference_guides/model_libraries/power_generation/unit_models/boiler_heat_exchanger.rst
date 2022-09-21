@@ -143,10 +143,9 @@ If pressure drop calculation is enabled, additional degrees of freedom are requi
 Model Structure
 ---------------
 
-The ``BoilerHeatExchanger`` model contains two ``ControlVolume0DBlock`` blocks. By default the
-gas side is named ``shell`` and the water/steam side is named ``tube``. These names are configurable.
-The sign convention is that duty is positive for heat flowing from the hot side to the cold
-side.
+The ``BoilerHeatExchanger`` model contains two ``ControlVolume0DBlock`` blocks named ``hot_side`` and ``cold_side``.
+These names are configurable using the ``hot_side_name`` and ``cold_side_name`` configuration arguments.
+The sign convention is that duty is positive for heat flowing from the hot side to the cold side.
 
 The control volumes are configured the same as the ``ControlVolume0DBlock`` in the
 :ref:`Heater model <reference_guides/model_libraries/generic/unit_models/heater:Heater>`.
@@ -154,7 +153,7 @@ The ``BoilerHeatExchanger`` model contains additional constraints that calculate
 of heat transferred from the hot side to the cold side.
 
 The ``BoilerHeatExchanger`` has two inlet ports and two outlet ports. By default these are
-``shell_inlet``, ``tube_inlet``, ``shell_outlet``, and ``tube_outlet``. If the user
+``hot_side_inlet``, ``cold_side_inlet``, ``hot_side_outlet``, and ``cold_side_outlet``. If the user
 supplies different hot and cold side names the inlet and outlets are named accordingly.
 
 Variables
@@ -242,7 +241,7 @@ by default fcorrection_htc is set to 1, however, this variable can be used to ma
 Tube arrangement factor is a config argument with two different type of arrangements supported at the moment:
 1.- In-line tube arrangement factor (f_arrangement = 0.788), and 2.- Staggered tube arrangement factor (f_arrangement = 1). f_arrangement is a parameter that can be adjusted by the user.
 
-The ``BoilerHeatExchanger`` includes an argument to compute heat tranfer due to radiation of the flue gases. If has_radiation = True the model builds additional heat transfer calculations that will be added to the hconv_shell resistances.
+The ``BoilerHeatExchanger`` includes an argument to compute heat transfer due to radiation of the flue gases. If has_radiation = True the model builds additional heat transfer calculations that will be added to the hconv_shell resistances.
 Radiation effects are calculated based on the gas gray fraction and gas-surface radiation (between gas and shell).
 
 .. math::
@@ -299,7 +298,7 @@ Class Documentation
 
 .. Note::
   The ``hot_side_config`` and ``cold_side_config`` can also be supplied using the name of
-  the hot and cold sides (``shell`` and ``tube`` by default) as in
+  the hot and cold sides as in
   :ref:`the example <reference_guides/model_libraries/power_generation/unit_models/boiler_heat_exchanger:Example>`.
 
 .. autoclass:: BoilerHeatExchanger

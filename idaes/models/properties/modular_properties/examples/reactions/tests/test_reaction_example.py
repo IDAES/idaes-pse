@@ -46,10 +46,10 @@ class TestParamBlock(object):
     @pytest.mark.unit
     def test_build(self):
         model = ConcreteModel()
-        model.thermo_params = GenericParameterBlock(default=thermo_configuration)
+        model.thermo_params = GenericParameterBlock(**thermo_configuration)
 
         model.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.thermo_params, **rxn_configuration}
+            property_package=model.thermo_params, **rxn_configuration
         )
 
         rate_config = model.rxn_params.config.rate_reactions
@@ -89,18 +89,16 @@ class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.thermo_params = GenericParameterBlock(default=thermo_configuration)
+        model.thermo_params = GenericParameterBlock(**thermo_configuration)
 
         model.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.thermo_params, **rxn_configuration}
+            property_package=model.thermo_params, **rxn_configuration
         )
 
-        model.props = model.thermo_params.build_state_block(
-            [1], default={"defined_state": True}
-        )
+        model.props = model.thermo_params.build_state_block([1], defined_state=True)
 
         model.rxns = model.rxn_params.build_reaction_block(
-            [1], default={"state_block": model.props, "has_equilibrium": True}
+            [1], state_block=model.props, has_equilibrium=True
         )
 
         assert_units_consistent(model)
