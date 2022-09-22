@@ -31,6 +31,13 @@ jobs:
           - windows-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Apply code snippet to enable nl_v2
+        if: ${{ matrix.enabled == 'true' }}
+        env:
+          dest: idaes/__init__.py
+        run: |
+          echo "from pyomo.opt import WriterFactory as WF; WF.register('nl')(WF.get_class('nl_v2'))" >> "$dest"
+          cat "$dest"
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v2.1.1
@@ -46,15 +53,6 @@ jobs:
           pyomo_pip_target: pyomo @ https://github.com/pyomo/Pyomo/archive/main.zip
         run: |
           pip uninstall --yes pyomo && pip install "$pyomo_pip_target"
-      - name: Apply code snippet to enable nl_v2
-        if: ${{ matrix.enabled == 'true' }}
-        env:
-          dest: idaes/__init__.py
-        run: |
-          echo "\n" >> "$dest"
-          echo "from pyomo.opt import WriterFactory as WF; WF.register('nl')(WF.get_class('nl_v2'))" >> "$dest"
-          echo "\n" >> "$dest"
-          cat "$dest"
       - name: Run pytest
         run: |
           pytest -m "not integration"
