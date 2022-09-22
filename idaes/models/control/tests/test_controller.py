@@ -370,7 +370,7 @@ def test_logistic_mv_bound():
     comp_dict[Constraint]["initial_integral_error_eqn"] = 1
     comp_dict[Var]["negative_pv"] = nt
     comp_dict[Constraint]["negative_pv_eqn"] = nt
-    comp_dict[Param] = {"mv_lb": 1, "mv_ub": 1, "smooth_eps": 1, "logistic_bound_k": 1}
+    comp_dict[Param] = {"mv_lb": 1, "mv_ub": 1, "logistic_bound_k": 1}
 
     _build_test_utility(
         block=m.fs.unit,
@@ -429,7 +429,7 @@ def test_smooth_mv_bound():
     comp_dict[Expression]["error"] = nt
     comp_dict[Var]["negative_pv"] = nt
     comp_dict[Constraint]["negative_pv_eqn"] = nt
-    comp_dict[Param] = {"mv_lb": 1, "mv_ub": 1, "smooth_eps": 1, "logistic_bound_k": 1}
+    comp_dict[Param] = {"mv_lb": 1, "mv_ub": 1, "smooth_eps": 1}
 
     _build_test_utility(
         block=m.fs.unit,
@@ -488,7 +488,7 @@ def test_conditional_integration():
     add_integral_components(comp_dict, nt)
     comp_dict[Expression]["error"] = nt
     comp_dict[Constraint]["initial_integral_error_eqn"] = 1
-    comp_dict[Param] = {"mv_lb": 1, "mv_ub": 1, "smooth_eps": 1, "logistic_bound_k": 1}
+    comp_dict[Param] = {"mv_lb": 1, "mv_ub": 1, "smooth_eps": 1, "conditional_integration_k": 1}
 
     _build_test_utility(
         block=m.fs.unit,
@@ -552,7 +552,7 @@ def test_back_calculation():
     comp_dict[Var]["negative_pv"] = nt
     comp_dict[Constraint]["negative_pv_eqn"] = nt
     comp_dict[Var]["gain_b"] = nt
-    comp_dict[Param] = {"mv_lb": 1, "mv_ub": 1, "smooth_eps": 1, "logistic_bound_k": 1}
+    comp_dict[Param] = {"mv_lb": 1, "mv_ub": 1, "logistic_bound_k": 1}
 
     _build_test_utility(
         block=m.fs.unit,

@@ -70,9 +70,8 @@ class ControllerAntiwindupType(enum.Enum):
     BACK_CALCULATION = 3
 
 
-def smooth_heaviside(x, eps):
-    eps_adjusted = eps
-    return 1 / (1 + pyo.exp(-2 * x / eps_adjusted))
+def smooth_heaviside(x, k):
+    return 1 / (1 + pyo.exp(-2 * k * x))
 
 
 @declare_process_block_class(
@@ -217,16 +216,16 @@ class PIDControllerData(UnitModelBlockData):
         time_units = self.flowsheet().time_units
         if time_units is None:
             time_units = pyo.units.dimensionless
-        time_0 = time_set.first()
+        t0 = time_set.first()
 
         # Type Check
-        if not issubclass(self.process_var[time_0].ctype, (pyo.Var, pyo.Expression)):
+        if not issubclass(self.process_var[t0].ctype, (pyo.Var, pyo.Expression)):
             raise TypeError(
-                f"process_var must reference a Var or Expression not {self.process_var[time_0].ctype}"
+                f"process_var must reference a Var or Expression not {self.process_var[t0].ctype}"
             )
-        if not issubclass(self.manipulated_var[time_0].ctype, pyo.Var):
+        if not issubclass(self.manipulated_var[t0].ctype, pyo.Var):
             raise TypeError(
-                f"manipulated_var must reference a Var not {self.manipulated_var[time_0].ctype}"
+                f"manipulated_var must reference a Var not {self.manipulated_var[t0].ctype}"
             )
 
         if not self.config.antiwindup_type == ControllerAntiwindupType.NONE:
@@ -240,8 +239,8 @@ class PIDControllerData(UnitModelBlockData):
                 )
 
         # Get the appropriate units for various contoller varaibles
-        mv_units = pyo.units.get_units(self.manipulated_var[time_0])
-        pv_units = pyo.units.get_units(self.process_var[time_0])
+        mv_units = pyo.units.get_units(self.manipulated_var[t0])
+        pv_units = pyo.units.get_units(self.process_var[t0])
         if mv_units is None:
             mv_units = pyo.units.dimensionless
         if pv_units is None:
@@ -262,6 +261,7 @@ class PIDControllerData(UnitModelBlockData):
                 doc="Controller output upper bound",
                 units=mv_units,
             )
+        if self.config.mv_bound_type == ControllerMVBoundType.SMOOTH_BOUND:
             self.smooth_eps = pyo.Param(
                 mutable=True,
                 initialize=1e-4,
@@ -269,11 +269,20 @@ class PIDControllerData(UnitModelBlockData):
                 " type is SMOOTH_BOUND",
                 units=mv_units,
             )
+        elif self.config.mv_bound_type == ControllerMVBoundType.LOGISTIC:
             self.logistic_bound_k = pyo.Param(
                 mutable=True,
                 initialize=4,
                 doc="Smoothing parameter for controller output limits when the bound"
                 " type is LOGISTIC",
+                units=pyo.units.dimensionless,
+            )
+        if self.config.antiwindup_type == ControllerAntiwindupType.CONDITIONAL_INTEGRATION:
+            self.conditional_integration_k = pyo.Param(
+                mutable=True,
+                initialize=200,
+                doc="Parameter governing steepness of transition between integrating and not integrating."
+                    "A larger value means a steeper transition.",
                 units=pyo.units.dimensionless,
             )
 
@@ -383,8 +392,6 @@ class PIDControllerData(UnitModelBlockData):
             )
 
             if self.config.calculate_initial_integral:
-                t0 = time_set.first()
-
                 @self.Constraint(doc="Calculate initial e_i based on output")
                 def initial_integral_error_eqn(b):
                     if self.config.type == ControllerType.PI:
@@ -449,7 +456,7 @@ class PIDControllerData(UnitModelBlockData):
         # deactivate the time 0 mv_eqn instead of skip, should be fine since
         # first time step always exists.
         if self.config.calculate_initial_integral:
-            self.mv_eqn[time_set.first()].deactivate()
+            self.mv_eqn[t0].deactivate()
 
         if self.config.type in [ControllerType.PI, ControllerType.PID]:
 
@@ -464,11 +471,13 @@ class PIDControllerData(UnitModelBlockData):
                         t
                     ] * (
                         smooth_heaviside(
-                            (b.mv_unbounded[t] - b.mv_lb) / (b.mv_ub - b.mv_lb), 0.005
+                            (b.mv_unbounded[t] - b.mv_lb) / (b.mv_ub - b.mv_lb),
+                            b.conditional_integration_k
                         )
                         # 1
                         - smooth_heaviside(
-                            (b.mv_unbounded[t] - b.mv_ub) / (b.mv_ub - b.mv_lb), 0.005
+                            (b.mv_unbounded[t] - b.mv_ub) / (b.mv_ub - b.mv_lb),
+                            b.conditional_integration_k
                         )
                     )
                 elif (
@@ -481,7 +490,7 @@ class PIDControllerData(UnitModelBlockData):
                 else:
                     return b.mv_integral_component_dot[t] == b.gain_i[t] * b.error[t]
 
-            self.mv_integration_eqn[time_set.first()].deactivate()
+            self.mv_integration_eqn[t0].deactivate()
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
