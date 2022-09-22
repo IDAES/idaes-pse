@@ -52,7 +52,7 @@ jobs:
         env:
           dest: idaes/config.py
         run: |
-          sed -i "1ifrom pyomo.opt import WriterFactory as WF\nimport pyomo.repn.plugins.nl_writer\nWF.register('nl')(WF.get_class('nl_v2'))" "$dest"
+          sed -i "13ifrom pyomo.opt import WriterFactory as WF\nimport pyomo.repn.plugins.nl_writer\nWF.register('nl')(WF.get_class('nl_v2'))\n" "$dest"
           cat "$dest"
       - name: Run pytest
         run: |
