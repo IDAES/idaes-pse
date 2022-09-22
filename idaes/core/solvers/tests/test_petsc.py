@@ -811,64 +811,6 @@ def test_petsc_skip_initial_solve():
     assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
     assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
 
-
-# @pytest.mark.unit
-# @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
-# def test_petsc_read_trajectory():
-#     """
-#     Check that the PETSc DAE solver works.
-#     """
-#     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
-#     m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
-#     m.scaling_factor[m.y[180, 1]] = 10  # make sure unscale works
-#
-#     m.y_ref = pyo.Reference(m.y)  # make sure references don't get unscaled twice
-#     res = petsc.petsc_dae_by_time_element(
-#         m,
-#         time=m.t,
-#         ts_options={
-#             "--ts_type": "cn",  # Crank–Nicolson
-#             "--ts_adapt_type": "basic",
-#             "--ts_dt": 0.01,
-#             "--ts_save_trajectory": 1,
-#             "--ts_trajectory_type": "visualization",
-#         },
-#     )
-#     assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
-#     assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])
-#     assert pytest.approx(y3, rel=1e-3) == pyo.value(m.y[m.t.last(), 3])
-#     assert pytest.approx(y4, rel=1e-3) == pyo.value(m.y[m.t.last(), 4])
-#     assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
-#     assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
-#
-#     tj = res.trajectory
-#     assert tj.get_dt()[0] == pytest.approx(0.01)  # if small enough shouldn't be cut
-#     assert tj.get_vec(m.y[180, 1])[-1] == pytest.approx(y1, rel=1e-3)
-#     assert tj.get_vec("_time")[-1] == pytest.approx(180)
-#
-#     times = np.linspace(0, 180, 181)
-#     tj2 = tj.interpolate(times)
-#     assert tj2.get_vec(m.y[180, 1])[180] == pytest.approx(y1, rel=1e-3)
-#     assert tj2.time[180] == pytest.approx(180)
-#
-#     tj.to_json("some_testy_json.json")
-#     with open("some_testy_json.json", "r") as fp:
-#         vecs = json.load(fp)
-#     assert vecs[str(m.y[180, 1])][-1] == pytest.approx(y1, rel=1e-3)
-#     assert vecs["_time"][-1] == pytest.approx(180)
-#     os.remove("some_testy_json.json")
-#
-#     tj.to_json("some_testy_json.json.gz")
-#     tj2 = petsc.PetscTrajectory(json="some_testy_json.json.gz")
-#     assert tj2.vecs[str(m.y[180, 1])][-1] == pytest.approx(y1, rel=1e-3)
-#     assert tj2.vecs["_time"][-1] == pytest.approx(180)
-#     os.remove("some_testy_json.json.gz")
-#
-#     tj2 = petsc.PetscTrajectory(vecs=vecs)
-#     assert tj2.vecs[str(m.y[180, 1])][-1] == pytest.approx(y1, rel=1e-3)
-#     assert tj2.vecs["_time"][-1] == pytest.approx(180)
-
-
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 def test_petsc_traj_previous():

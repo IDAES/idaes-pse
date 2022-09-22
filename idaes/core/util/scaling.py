@@ -622,7 +622,7 @@ def get_jacobian(m, scaled=True, equality_constraints_only=False):
     """
     Get the Jacobian matrix at the current model values. This function also
     returns the Pynumero NLP which can be used to identify the constraints and
-    variables corresponding to the rows and comlumns.
+    variables corresponding to the rows and columns.
 
     Args:
         m: model to get Jacobian from
@@ -651,8 +651,8 @@ def extreme_jacobian_entries(
     Args:
         m: model
         scaled: if true use scaled Jacobian
-        large: >= to this value is consdered large
-        small: <= to this and >= zero is consdered small
+        large: >= to this value is considered large
+        small: <= to this and >= zero is considered small
 
     Returns:
         (list of tuples), Jacobian entry, Constraint, Variable
@@ -679,8 +679,8 @@ def extreme_jacobian_rows(
     Args:
         m: model
         scaled: if true use scaled Jacobian
-        large: >= to this value is consdered large
-        small: <= to this is consdered small
+        large: >= to this value is considered large
+        small: <= to this is considered small
 
     Returns:
         (list of tuples), Row norm, Constraint
@@ -710,8 +710,8 @@ def extreme_jacobian_columns(
     Args:
         m: model
         scaled: if true use scaled Jacobian
-        large: >= to this value is consdered large
-        small: <= to this is consdered small
+        large: >= to this value is considered large
+        small: <= to this is considered small
 
     Returns:
         (list of tuples), Column norm, Variable
@@ -740,8 +740,8 @@ def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
         m: calculate the condition number of the Jacobian from this model.
         scaled: if True use scaled Jacobian, else use unscaled
         ord: norm order, None = Frobenius, see scipy.sparse.linalg.norm for more
-        pinv: Use pseudoinverse, works for non-square matrixes
-        jac: (optional) perviously calculated jacobian
+        pinv: Use pseudoinverse, works for non-square matrices
+        jac: (optional) previously calculated Jacobian
 
     Returns:
         (float) Condition number
@@ -762,7 +762,9 @@ def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
 
 def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
     """
-    Get the condition number of the scaled or unscaled Jacobian matrix of a model.
+    Scales time discretization equations generated via a Pyomo discretization
+    transformation. Also scales continuity equations for collocation methods
+    of discretization that require them.
 
     Args:
         blk: Block whose time discretization equations are being scaled
