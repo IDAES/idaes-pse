@@ -49,7 +49,7 @@ jobs:
       - name: Apply code snippet to enable nl_v2
         if: ${{ matrix.enabled == 'true' }}
         env:
-          dest: idaes/__init__.py
+          dest: idaes/config.py
         run: |
           sed -i "1ifrom pyomo.opt import WriterFactory as WF\nimport pyomo.repn.plugins.nl_writer\nWF.register('nl')(WF.get_class('nl_v2'))" "$dest"
           cat "$dest"
