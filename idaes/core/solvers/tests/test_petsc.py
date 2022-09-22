@@ -811,6 +811,7 @@ def test_petsc_skip_initial_solve():
     assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
     assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
 
+
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 def test_petsc_traj_previous():
