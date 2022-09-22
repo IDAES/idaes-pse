@@ -1,0 +1,58 @@
+name: Pyomo performance
+
+on:
+  push:
+
+env:
+  DEFAULT_PYTHON_VERSION: '3.10'
+  IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
+  PYTEST_ADDOPTS: "--color=yes"
+  PIP_PROGRESS_BAR: "off"
+
+defaults:
+  run:
+    # -l: login shell, needed when using Conda run:
+    shell: bash -l {0}
+
+jobs:
+  nl_v2:
+    name: nl_v2 A/B comparison (enabled=${{ matrix.enabled }}/${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        enabled:
+          - 'true'
+          - 'false'
+        os:
+          - ubuntu-20.04
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/display-debug-info
+      - name: Set up Conda environment
+        uses: conda-incubator/setup-miniconda@v2.1.1
+        with:
+          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
+          python-version: ${{ matrix.python-version }}
+      - name: Set up idaes
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
+      - name: Re-install Pyomo separately
+        env:
+          pyomo_pip_target: pyomo @ https://github.com/pyomo/Pyomo/archive/main.zip
+        run: |
+          pip uninstall --yes pyomo && pip install "$pyomo_pip_target"
+      - name: Apply code snippet to enable nl_v2
+        if: ${{ matrix.enabled == 'true' }}
+        env:
+          dest: idaes/__init__.py
+        run: |
+          echo "\n" >> "$dest"
+          echo "from pyomo.opt import WriterFactory as WF; WF.register('nl')(WF.get_class('nl_v2'))" >> "$dest"
+          echo "\n" >> "$dest"
+          cat "$dest"
+      - name: Run pytest
+        run: |
+          pytest -m "not integration"
