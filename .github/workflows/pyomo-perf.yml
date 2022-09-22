@@ -2,6 +2,8 @@ name: Pyomo performance
 
 on:
   push:
+  pull_request:
+    
 
 env:
   DEFAULT_PYTHON_VERSION: '3.10'
