@@ -42,12 +42,13 @@ jobs:
         with:
           install-target: -r requirements-dev.txt
       - name: Re-install Pyomo separately
+        if: matrix.enabled == 'true'
         env:
           pyomo_pip_target: pyomo @ https://github.com/pyomo/Pyomo/archive/main.zip
         run: |
           pip uninstall --yes pyomo && pip install "$pyomo_pip_target"
       - name: Apply code snippet to enable nl_v2
-        if: ${{ matrix.enabled == 'true' }}
+        if: matrix.enabled == 'true'
         env:
           dest: idaes/config.py
         run: |
