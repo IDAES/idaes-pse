@@ -51,7 +51,7 @@ jobs:
         env:
           dest: idaes/__init__.py
         run: |
-          echo "from pyomo.opt import WriterFactory as WF; WF.register('nl')(WF.get_class('nl_v2'))" >> "$dest"
+          echo "from pyomo.opt import WriterFactory as WF; import pyomo.repn.plugins.nl_writer; WF.register('nl')(WF.get_class('nl_v2'))" >> "$dest"
           cat "$dest"
       - name: Run pytest
         run: |
