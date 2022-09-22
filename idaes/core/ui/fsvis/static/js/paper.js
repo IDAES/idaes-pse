@@ -130,8 +130,8 @@ export class Paper {
 
         // Select an element if CTRL/Meta key is pressed while the element is clicked.
         self._paper.on('element:pointerup', function(cellView, evt) {
-            if (evt.ctrlKey || evt.metaKey) {
-                self._selection.collection.add(cellView.model, { silent: true });
+            if (evt.shiftKey || evt.metaKey) {
+                self._selection.collection.add(cellView.model);
             }
         });
 
