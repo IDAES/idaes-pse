@@ -28,7 +28,7 @@ jobs:
           - 'false'
         os:
           - ubuntu-20.04
-          - windows-latest
+          # - windows-latest
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/display-debug-info
