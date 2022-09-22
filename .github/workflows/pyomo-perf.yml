@@ -18,7 +18,7 @@ defaults:
 
 jobs:
   nl_v2:
-    name: nl_v2 A/B comparison (enabled=${{ matrix.enabled }}/${{ matrix.os }})
+    name: nl_v2 (enabled=${{ matrix.enabled }}/${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
