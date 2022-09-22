@@ -57,34 +57,6 @@ solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
-@pytest.mark.unit
-def test_no_deprecated(caplog):
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
-    m.fs.prop_fluegas = FlueGasParameterBlock()
-
-    caplog.clear()
-    m.fs.unit = BoilerHeatExchanger(
-        delta_temperature_callback=delta_temperature_lmtd_callback,
-        cold_side={"property_package": m.fs.prop_steam, "has_pressure_change": True},
-        hot_side={"property_package": m.fs.prop_fluegas, "has_pressure_change": True},
-        has_holdup=True,
-        flow_pattern=HeatExchangerFlowPattern.countercurrent,
-        tube_arrangement=TubeArrangement.inLine,
-        cold_side_water_phase="Liq",
-        has_radiation=True,
-    )
-    n_warn = 0
-    n_depreacted = 0
-    for record in caplog.records:
-        if record.levelno == idaeslog.WARNING:
-            n_warn += 1
-    # TODO: 1 warning due to overloading initialize, not sure what the rest
-    # of this is about
-    assert n_warn == 0  # 1 DeltaTMethod Enum and 1 for delta_T_method option
-
-
 def tc(delta_temperature_callback=delta_temperature_underwood_callback):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
