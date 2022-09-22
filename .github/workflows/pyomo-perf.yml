@@ -56,4 +56,4 @@ jobs:
           cat "$dest"
       - name: Run pytest
         run: |
-          pytest -m "not integration"
+          pytest -m "not unit"
