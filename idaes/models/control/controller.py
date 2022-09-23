@@ -170,8 +170,9 @@ class PIDControllerData(UnitModelBlockData):
             ),
             description="Type of antiwindup technique to use.",
             doc=(
-                """Type of antiwindup technique to use. See the controller documentation
-                for details on the mathematical formulation. 
+                """Type of antiwindup technique to use. Options are **ControllerAntiwindupType.NONE**,
+                **ControllerAntiwindupType.CONDITIONAL_INTEGRATION**, and **ControllerAntiwindupType.BACK_CALCULATION**.
+                See the controller documentation for details on the mathematical formulation. 
                 """
             ),
         ),
@@ -466,7 +467,8 @@ class PIDControllerData(UnitModelBlockData):
                     self.config.antiwindup_type
                     == ControllerAntiwindupType.CONDITIONAL_INTEGRATION
                 ):
-                    # It fails when the "wrong" bound is active for a given expression of error
+                    # This expression is not sensitive to whether the "right" or "wrong" bound is active for a given
+                    # expression of error.
                     return b.mv_integral_component_dot[t] == b.gain_i[t] * b.error[
                         t
                     ] * (

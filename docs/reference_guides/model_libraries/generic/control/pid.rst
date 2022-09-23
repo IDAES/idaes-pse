@@ -14,7 +14,7 @@ Example
 
 The following code provides a full example for using the PIDController model.
 The flowsheet model is a tank with a valve on the inlet and outlet. The dynamics
-of the valves is assumed to be very fast and is not considered. The system has
+of the valves are assumed to be very fast and is not considered. The system has
 steam flowing through it and the inlet valve is used to maintain the tank
 pressure at a given setpoint. The final model solved demonstrates the
 controller with a step change in the inlet pressure. Results are saved to a
@@ -240,39 +240,46 @@ Class Documentation
 Variables, Parameters, and Expressions
 --------------------------------------
 
-+---------------------------+-----------------------------+---------------------------------------------+
-| Symbol                    | Name in Model               | Description                                 |
-+===========================+=============================+=============================================+
-| :math:`y_{sp}(t)`         | ``setpoint[t]``             | Setpoint variable                           |
-+---------------------------+-----------------------------+---------------------------------------------+
-| :math:`y(t)`              | ``process_var[t]``          | Measured process variable (Reference)       |
-+---------------------------+-----------------------------+---------------------------------------------+
-| :math:`u(t)`              | ``manipulated_var[t]``      | Manipulated variable (Reference)            |
-+---------------------------+-----------------------------+---------------------------------------------+
-| :math:`K_p(t)`            | ``gain_p[t]``               | Controller gain  (usually fixed)            |
-+---------------------------+-----------------------------+---------------------------------------------+
-| :math:`K_i(t)`            | ``gain_i[t]``               | Integral gain (usually fixed)               |
-+---------------------------+-----------------------------+---------------------------------------------+
-| :math:`K_d(t)`            | ``gain_d[t]``               | Derivative gain (usually fixed)             |
-+---------------------------+-----------------------------+---------------------------------------------+
-| :math:`u_{ref}`           | ``mv_ref[t]``               | Reference value of manipulated variable     |
-+---------------------------+-----------------------------+---------------------------------------------+
-| :math:`e(t)`              | ``error[t]``                | Error expression or variable (setpoint - pv)|
-+---------------------------+-----------------------------+---------------------------------------------+
-| :math:`e_d(t)`            | ``derivative_of_error[t]``  | Derivative error variable                   |
-+---------------------------+-----------------------------+---------------------------------------------+
-| :math:`e_i(t)`            | ``integral_of_error[t]``    | Integral error variable                     |
-+---------------------------+-----------------------------+---------------------------------------------+
-| :math:`\frac{de_i(t)}{dt}`| ``integral_of_error_dot[t]``| Derivative of integral error w.r.t. time    |
-+---------------------------+-----------------------------+---------------------------------------------+
-| :math:`u_{ub}`            | ``mv_ub``                   | Upper limit of output parameter             |
-+---------------------------+-----------------------------+---------------------------------------------+
-| :math:`u_{lb}`            | ``mv_lb``                   | Lower limit of output parameter             |
-+---------------------------+-----------------------------+---------------------------------------------+
-| :math:`\epsilon`          | ``smooth_eps``              | Smooth min/max smoothing parameter          |
-+---------------------------+-----------------------------+---------------------------------------------+
-| :math:`k`                 | ``logistic_bound_k``        | Logistic bound steepness parameter          |
-+---------------------------+-----------------------------+---------------------------------------------+
+.. table::
+    :widths: 20 25 40
+
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | Symbol                                              | Name in Model                   | Description                                 |
+    +=====================================================+=================================+=============================================+
+    | :math:`y_{sp}(t)`                                   | ``setpoint[t]``                 | Setpoint variable                           |
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | :math:`y(t)`                                        | ``process_var[t]``              | Measured process variable (Reference)       |
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | :math:`u(t)`                                        | ``manipulated_var[t]``          | Manipulated variable (Reference)            |
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | :math:`K_p(t)`                                      | ``gain_p[t]``                   | Controller gain  (usually fixed)            |
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | :math:`K_i(t)`                                      | ``gain_i[t]``                   | Integral gain (usually fixed)               |
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | :math:`K_d(t)`                                      | ``gain_d[t]``                   | Derivative gain (usually fixed)             |
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | :math:`K_b(t)`                                      | ``gain_b[t]``                   | Back-calculation gain (usually fixed)       |
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | :math:`u_{ref}`                                     | ``mv_ref[t]``                   | Reference value of manipulated variable     |
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | :math:`e(t)`                                        | ``error[t]``                    | Error expression or variable (setpoint - pv)|
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | :math:`e_d(t) \quad\text{or}\; -\frac{dy(t)}{dt}`   | ``derivative_term[t]``          | Derivative of either error or negative pv   |
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | :math:`u_i(t)`                                      | ``mv_integral_component[t]``    | Portion of control from integral action     |
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | :math:`\frac{de_i(t)}{dt}`                          | ``mv_integral_component_dot[t]``| Derivative of integral term w.r.t. time     |
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | :math:`u_{ub}`                                      | ``mv_ub``                       | Upper limit of output parameter             |
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | :math:`u_{lb}`                                      | ``mv_lb``                       | Lower limit of output parameter             |
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | :math:`\epsilon`                                    | ``smooth_eps``                  | Smooth min/max smoothing parameter          |
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | :math:`k_\text{log}`                                | ``logistic_bound_k``            | Logistic bound steepness parameter          |
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
+    | :math:`k_\text{cond}`                               | ``conditional_integration_k``   | Conditional integration steepness parameter |
+    +-----------------------------------------------------+---------------------------------+---------------------------------------------+
 
 Formulation
 -----------
@@ -310,18 +317,18 @@ The derivative of error is given below.
 
 .. math::
 
-  e_d(t) = \frac{\text{d}e(t)}{\text{d}t}
+  e_d(t) = \frac{de(t)}{dt}
 
 Actual Implementation
 ~~~~~~~~~~~~~~~~~~~~~
 
 There is often reason to change the integral gain :math:`K_i` (for example, using different values at different
 operating points). However, if :math:`K_i` changes while :math:`e_i` remains unchanged, a large "bump" in :math:`u(t)`
-results. Therefore, the product :math:`K_i e_i = u_i` is integrated instead.
+results. Therefore, the product :math:`K_i e_i` is integrated instead.
 
 .. math::
 
-  u_i(t) = u_i(t_0) + \int_{t_0}^t K_i(s) e(s) \text{d}s
+  u_i(t) = u_i(t_0) + \int_{t_0}^t K_i(s) e(s) ds
 
 The integral error is formulated as a differential equation in the model.
 
@@ -390,18 +397,65 @@ Anti-integral-windup
 When the controller output is clipped to a bound the integral term will continue
 to grow.  This can cause a delay in the controller output moving away from its bound.
 In order to mitigate this phenomenon, two methods of anti-windup have been implemented:
-conditional integration and back propagation.
+conditional integration and back calculation.
 
-Conditional integration (enabled by setting 
-`antiwindup=ControllerAntiwindupType.CONDITIONAL_INTEGRATION` in the controller config)
-operates on simple logic
+Conditional Integration
+"""""""""""""""""""""""
+
+Conditional integration, enabled by setting
+
+.. code-block::
+
+    antiwindup=ControllerAntiwindupType.CONDITIONAL_INTEGRATION
+
+in the controller config, operates on simple logic:
 
 .. math::
 
-  \frac{du_i(t)}{dt} = K_i(t) e(t) if 
+  \frac{du_i(t)}{dt} =
+  \begin{cases}
+        K_i(t) e(t) & \text{if} \quad u_{lb}\le u_\text{unbound}\le u_{ub} \\
+        0 & \text{otherwise}
+  \end{cases}
 
-Windup can also occur when resetting the setpoint, this can be mitigated by decreasing
-:math:`K_i` at the time of the setpoint change and calculating a different value for integral error.
+This logic is implemented by first writing this differential equation in terms of
+Heaviside step functions :math:`H(x)`.
+
+.. math::
+
+    \frac{du_i(t)}{dt} = K_i(t) e(t) \left(H\left(\frac{u_\text{unbound} -u_{lb}}{u_{ub} - u_{lb}}\right)
+    - H\left(\frac{u_\text{unbound} -u_{ub}}{u_{ub} - u_{lb}}\right) \right)
+
+and then approximating the (discontinuous) step function using a steep logistic function
+
+.. math::
+
+    H(x) \approx \frac{1}{1+\exp(-2k_\text{cond}x)}
+
+in which :math:`k_\text{cond}` is a parameter governing the steepness of the approximation---the larger it is, the
+steeper the transitions between 0 and 1 are.
+
+Back Calculation
+""""""""""""""""
+
+Conditional integration is simple to use, but the additional nonlinearity can cause problems for integrators. Back
+calculation, enabled by setting
+
+.. code-block::
+
+    antiwindup=ControllerAntiwindupType.BACK_CALCULATION
+
+in the `PIDController` configuration, does not add any additional nonlinearity, but utilizes the nonlinearity
+inherent in enforcing controller bounds. The differential equation describing error accumulation is modified:
+
+.. math::
+
+      \frac{du_i(t)}{dt} = K_i(t) e(t) + K_b(t)(u_\text{bound}(t) - u_\text{unbound}(t))
+
+in which :math:`K_b(t) \ge 0` is  a new gain term that must be chosen by the user. The more the unbounded control
+input exceeds the bounded one, the more the integral term unwinds as a result.
+
+
 
 To do
 -----
