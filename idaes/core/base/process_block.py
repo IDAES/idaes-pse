@@ -47,7 +47,7 @@ _process_block_docstring = """
         rule (function): A rule function or None. Default rule calls build().
         concrete (bool): If True, make this a toplevel model. **Default** - False.
         ctype (class): Pyomo ctype of the block.  **Default** - pyomo.environ.Block
-        default (dict): Default ProcessBlockData config{}
+        {}
         initialize (dict): ProcessBlockData config for individual elements. Keys
             are BlockData indexes and values are dictionaries described under the
             "default" argument above.
@@ -63,7 +63,7 @@ _config_block_keys_docstring = """
 
             ..
 
-            Keys
+            Config args
 {}
             ..
 """
