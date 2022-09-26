@@ -802,15 +802,23 @@ def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
                 except AttributeError:
                     cont_eq = None
 
-                deriv_dict = dict((key, pyo.Reference(slc)) for key, slc in
-                                  slice_component_along_sets(var, (time_set,)))
-                state_dict = dict((key, pyo.Reference(slc)) for key, slc in
-                                  slice_component_along_sets(state_var, (time_set,)))
-                disc_dict = dict((key, pyo.Reference(slc)) for key, slc in
-                                 slice_component_along_sets(disc_eq, (time_set,)))
+                deriv_dict = dict(
+                    (key, pyo.Reference(slc))
+                    for key, slc in slice_component_along_sets(var, (time_set,))
+                )
+                state_dict = dict(
+                    (key, pyo.Reference(slc))
+                    for key, slc in slice_component_along_sets(state_var, (time_set,))
+                )
+                disc_dict = dict(
+                    (key, pyo.Reference(slc))
+                    for key, slc in slice_component_along_sets(disc_eq, (time_set,))
+                )
                 if cont_eq is not None:
-                    cont_dict = dict((key, pyo.Reference(slc)) for key, slc in
-                                     slice_component_along_sets(cont_eq, (time_set,)))
+                    cont_dict = dict(
+                        (key, pyo.Reference(slc))
+                        for key, slc in slice_component_along_sets(cont_eq, (time_set,))
+                    )
                 for key, deriv in deriv_dict.items():
                     state = state_dict[key]
                     disc = disc_dict[key]
@@ -818,7 +826,9 @@ def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
                         cont = cont_dict[key]
                     for t in time_set:
                         s_state = get_scaling_factor(state[t], default=1, warning=True)
-                        set_scaling_factor(deriv[t], s_state/time_scaling_factor, overwrite=False)
+                        set_scaling_factor(
+                            deriv[t], s_state / time_scaling_factor, overwrite=False
+                        )
                         s_deriv = get_scaling_factor(deriv[t])
                         # Check time index to decide what constraints to scale
                         if cont_eq is None:
@@ -849,8 +859,6 @@ def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
                                     constraint_scaling_transform(
                                         cont[t], s_state, overwrite=False
                                     )
-
-
 
 
 class CacheVars(object):

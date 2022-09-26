@@ -1263,6 +1263,7 @@ def test_scaling_discretization_equations_lagrange_radau():
 def test_scaling_discretization_equations_lagrange_legendre():
     discretization_tester("dae.collocation", "LAGRANGE-LEGENDRE", [0], True)
 
+
 @pytest.mark.unit
 def test_correct_set_identification():
     # Suggested by Robby Parker. The original implementation of scale_time_discretization_equations
@@ -1271,8 +1272,9 @@ def test_correct_set_identification():
     # than that other indexing set.
     def approx(x):
         return pytest.approx(x, 1e-12)
+
     m = pyo.ConcreteModel()
-    m.time = dae.ContinuousSet(initialize=[0, 1 ,2])
+    m.time = dae.ContinuousSet(initialize=[0, 1, 2])
     m.space = dae.ContinuousSet(initialize=[0, 1, 2])
 
     m.x = pyo.Var(m.space, m.time, initialize=0)
@@ -1282,7 +1284,9 @@ def test_correct_set_identification():
     def diff_eqn(b, z, t):
         return b.xdot[z, t] == -b.x[z, t]
 
-    pyo.TransformationFactory("dae.finite_difference").apply_to(m, nfe=2, wrt=m.time, scheme="BACKWARD")
+    pyo.TransformationFactory("dae.finite_difference").apply_to(
+        m, nfe=2, wrt=m.time, scheme="BACKWARD"
+    )
     for i in range(3):
         sc.set_scaling_factor(m.x[0, i], 2)
         sc.set_scaling_factor(m.x[1, i], 3)
@@ -1296,9 +1300,15 @@ def test_correct_set_identification():
         assert sc.get_scaling_factor(m.xdot[2, i]) == approx(0.5)
 
     for i in range(1, 3):
-        assert sc.get_constraint_transform_applied_scaling_factor(m.xdot_disc_eq[0, i]) == approx(0.2)
-        assert sc.get_constraint_transform_applied_scaling_factor(m.xdot_disc_eq[1, i]) == approx(0.3)
-        assert sc.get_constraint_transform_applied_scaling_factor(m.xdot_disc_eq[2, i]) == approx(0.5)
+        assert sc.get_constraint_transform_applied_scaling_factor(
+            m.xdot_disc_eq[0, i]
+        ) == approx(0.2)
+        assert sc.get_constraint_transform_applied_scaling_factor(
+            m.xdot_disc_eq[1, i]
+        ) == approx(0.3)
+        assert sc.get_constraint_transform_applied_scaling_factor(
+            m.xdot_disc_eq[2, i]
+        ) == approx(0.5)
 
 
 @pytest.mark.unit
