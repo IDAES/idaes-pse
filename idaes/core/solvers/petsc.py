@@ -217,7 +217,7 @@ def petsc_available():
 def _copy_time(time_vars, t_from, t_to):
     """PRIVATE FUNCTION:
 
-    This is used on the flattened (only indexed by time) variable
+    This is used on the flattened (indexed only by time) variable
     representations to copy variable values that are unfixed at the "to" time
     from the value at the "from" time. The PETSc DAE solver uses the initial
     variable values as the initial condition, so this is used to copy the
@@ -253,7 +253,14 @@ def find_discretization_equations(m, time):
     disc_eqns = []
     for var in m.component_objects(pyo.Var):
         if isinstance(var, pyodae.DerivativeVar):
-            if time in ComponentSet(var.get_continuousset_list()):
+            cont_set_set = ComponentSet(var.get_continuousset_list())
+            if time in ComponentSet(cont_set_set):
+                if len(cont_set_set) > 1:
+                    raise NotImplementedError(
+                        f"IDAES presently does not support PETSc for second order or higher derivatives like {var.name} "
+                        "that are differentiated at least once with respect to time. Please reformulate your model so "
+                        "it does not contain such a derivative (such as by introducing intermediate variables)."
+                    )
                 parent = var.parent_block()
                 name = var.local_name + "_disc_eq"
                 disc_eq = getattr(parent, name)
@@ -411,6 +418,7 @@ def petsc_dae_by_time_element(
     between=None,
     interpolate=True,
     calculate_derivatives=True,
+    previous_trajectory=None,
 ):
     """Solve a DAE problem step by step using the PETSc DAE solver.  This
     integrates from one time point to the next.
@@ -455,11 +463,12 @@ def petsc_dae_by_time_element(
         calculate_derivatives: (bool) if True, calculate the derivative values
             based on the values of the differential variables in the discretized
             Pyomo model.
+        previous_trajectory: (PetscTrajectory) Trajectory from previous integration
+            of this model. New results will be appended to this trajectory object.
 
     Returns (PetscDAEResults):
         See PetscDAEResults documentation for more informations.
     """
-    tj = None
     if interpolate:
         if ts_options is None:
             ts_options = {}
@@ -489,13 +498,17 @@ def petsc_dae_by_time_element(
     # First calculate the inital conditions and non-time-indexed constraints
     res_list = []
     t0 = between.first()
+    # list of variables to add to initial condition problem
+    if initial_variables is None:
+        initial_variables = []
+    if detect_initial:
+        rvset = ComponentSet(regular_vars)
+        ivset = ComponentSet(initial_variables)
+        initial_variables = list(ivset | rvset)
 
     if not skip_initial:
         # Nonlinear equation solver for initial conditions
         solver_snes = pyo.SolverFactory("petsc_snes", options=snes_options)
-        # list of variables to add to initial condition problem
-        if initial_variables is None:
-            initial_variables = []
         # list of constraints to add to the initial condition problem
         if initial_constraints is None:
             initial_constraints = []
@@ -503,11 +516,8 @@ def petsc_dae_by_time_element(
         if detect_initial:
             # If detect_initial, solve the non-time-indexed variables and
             # constraints with the initial conditions
-            rvset = ComponentSet(regular_vars)
             rcset = ComponentSet(regular_cons)
             icset = ComponentSet(initial_constraints)
-            ivset = ComponentSet(initial_variables)
-            initial_variables = list(ivset | rvset)
             initial_constraints = list(icset | rcset)
 
         with TemporarySubsystemManager(to_deactivate=tdisc):
@@ -531,13 +541,16 @@ def petsc_dae_by_time_element(
     tprev = t0
     count = 1
     fix_derivs = []
+    tj = previous_trajectory
+    if tj is not None:
+        variables_prev = [var[t0] for var in time_vars]
+
     with TemporarySubsystemManager(
         to_deactivate=tdisc,
         to_fix=initial_variables + fix_derivs,
     ):
         # Solver time steps
         deriv_diff_map = _get_derivative_differential_data_map(m, time)
-        tj = None  # trajectory data
         for t in between:
             if t == between.first():
                 # t == between.first() was handled above
@@ -634,14 +647,14 @@ def petsc_dae_by_time_element(
                 if isinstance(var[t0].parent_component(), pyodae.DerivativeVar):
                     continue  # skip derivative vars
                 vec = tj.interpolate_vec(itime, var[tlast])
-                for i, (t, v) in enumerate(var.items()):
-                    if t < t0 or t > tlast or t in between:
-                        # Time is outside the range or already set
+                for i, t in enumerate(itime):
+                    if t in between:
+                        # Time is already set
                         continue
-                    if not v.fixed:
+                    if not var[t].fixed:
                         # May not have trajectory from fixed variables and they
                         # shouldn't change anyway, so only set not fixed vars
-                        v.value = vec[i]
+                        var[t].value = vec[i]
         if calculate_derivatives:
             # the petsc solver interface does not currently return time
             # derivatives, and if it did, they would be estimated based on a
@@ -840,7 +853,7 @@ class PetscTrajectory(object):
     def _unscale(self, m):
         """If variable scale factors are used, the solver will see scaled
         variables, and the scaled trajectory will be written. This function
-        uses variable scaling facors from the given model to unscale the
+        uses variable scaling factors from the given model to unscale the
         trajectory.
 
         Args:
