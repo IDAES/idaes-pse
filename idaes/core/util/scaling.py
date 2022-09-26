@@ -39,6 +39,7 @@ from pyomo.common.modeling import unique_component_name
 from pyomo.core.base.constraint import _ConstraintData
 from pyomo.common.collections import ComponentMap, ComponentSet
 from pyomo.dae import DerivativeVar
+from pyomo.dae.flatten import slice_component_along_sets
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 import idaes.logger as idaeslog
 
@@ -622,7 +623,7 @@ def get_jacobian(m, scaled=True, equality_constraints_only=False):
     """
     Get the Jacobian matrix at the current model values. This function also
     returns the Pynumero NLP which can be used to identify the constraints and
-    variables corresponding to the rows and comlumns.
+    variables corresponding to the rows and columns.
 
     Args:
         m: model to get Jacobian from
@@ -651,8 +652,8 @@ def extreme_jacobian_entries(
     Args:
         m: model
         scaled: if true use scaled Jacobian
-        large: >= to this value is consdered large
-        small: <= to this and >= zero is consdered small
+        large: >= to this value is considered large
+        small: <= to this and >= zero is considered small
 
     Returns:
         (list of tuples), Jacobian entry, Constraint, Variable
@@ -679,8 +680,8 @@ def extreme_jacobian_rows(
     Args:
         m: model
         scaled: if true use scaled Jacobian
-        large: >= to this value is consdered large
-        small: <= to this is consdered small
+        large: >= to this value is considered large
+        small: <= to this is considered small
 
     Returns:
         (list of tuples), Row norm, Constraint
@@ -710,8 +711,8 @@ def extreme_jacobian_columns(
     Args:
         m: model
         scaled: if true use scaled Jacobian
-        large: >= to this value is consdered large
-        small: <= to this is consdered small
+        large: >= to this value is considered large
+        small: <= to this is considered small
 
     Returns:
         (list of tuples), Column norm, Variable
@@ -740,8 +741,8 @@ def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
         m: calculate the condition number of the Jacobian from this model.
         scaled: if True use scaled Jacobian, else use unscaled
         ord: norm order, None = Frobenius, see scipy.sparse.linalg.norm for more
-        pinv: Use pseudoinverse, works for non-square matrixes
-        jac: (optional) perviously calculated jacobian
+        pinv: Use pseudoinverse, works for non-square matrices
+        jac: (optional) previously calculated Jacobian
 
     Returns:
         (float) Condition number
@@ -762,7 +763,9 @@ def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
 
 def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
     """
-    Get the condition number of the scaled or unscaled Jacobian matrix of a model.
+    Scales time discretization equations generated via a Pyomo discretization
+    transformation. Also scales continuity equations for collocation methods
+    of discretization that require them.
 
     Args:
         blk: Block whose time discretization equations are being scaled
@@ -799,60 +802,63 @@ def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
                 except AttributeError:
                     cont_eq = None
 
-                idx_set_list = [idx_set for idx_set in state_var.index_set().subsets()]
-                idx_len = len(idx_set_list)
-                try:
-                    idx_time = idx_set_list.index(time_set)
-                except ValueError:
-                    _log.warning(
-                        f"Time is not an index on {state_var.name}, which is differentiated with respect to time. "
-                        "IDAES presently does not support automatically scaling discretization equations for "
-                        "DerivativeVars implicitly indexed by time (like those appearing on a Block indexed by time)."
-                        "Please scale the corresponding discretization equation yourself. "
+                deriv_dict = dict(
+                    (key, pyo.Reference(slc))
+                    for key, slc in slice_component_along_sets(var, (time_set,))
+                )
+                state_dict = dict(
+                    (key, pyo.Reference(slc))
+                    for key, slc in slice_component_along_sets(state_var, (time_set,))
+                )
+                disc_dict = dict(
+                    (key, pyo.Reference(slc))
+                    for key, slc in slice_component_along_sets(disc_eq, (time_set,))
+                )
+                if cont_eq is not None:
+                    cont_dict = dict(
+                        (key, pyo.Reference(slc))
+                        for key, slc in slice_component_along_sets(cont_eq, (time_set,))
                     )
-                    continue
-
-                for idx in state_var.index_set():
-                    if get_scaling_factor(var[idx]) is None:
-                        s_state = get_scaling_factor(
-                            state_var[idx], default=1, warning=True
+                for key, deriv in deriv_dict.items():
+                    state = state_dict[key]
+                    disc = disc_dict[key]
+                    if cont_eq is not None:
+                        cont = cont_dict[key]
+                    for t in time_set:
+                        s_state = get_scaling_factor(state[t], default=1, warning=True)
+                        set_scaling_factor(
+                            deriv[t], s_state / time_scaling_factor, overwrite=False
                         )
-                        set_scaling_factor(var[idx], s_state / time_scaling_factor)
-                    s_derivative = get_scaling_factor(var[idx])
-
-                    if idx_len > 1:
-                        t = idx[idx_time]
-                    else:
-                        t = idx
-
-                    if cont_eq is None:
-                        if t == time_set.first() or t == time_set.last():
+                        s_deriv = get_scaling_factor(deriv[t])
+                        # Check time index to decide what constraints to scale
+                        if cont_eq is None:
+                            if t == time_set.first() or t == time_set.last():
+                                try:
+                                    constraint_scaling_transform(
+                                        disc[t], s_deriv, overwrite=False
+                                    )
+                                except KeyError:
+                                    # Discretization and continuity equations may or may not exist at the first or last time
+                                    # points depending on the method. Backwards skips first, forwards skips last, central skips
+                                    # both (which means the user needs to provide additional equations)
+                                    pass
+                            else:
+                                constraint_scaling_transform(
+                                    disc[t], s_deriv, overwrite=False
+                                )
+                        else:
+                            # Lagrange-Legendre is a pain, because it has continuity equations on the edges of finite
+                            # instead of discretization equations, but no intermediate continuity equations, so we have
+                            # to look for both at every timepoint
                             try:
                                 constraint_scaling_transform(
-                                    disc_eq[idx], s_derivative, overwrite=False
+                                    disc[t], s_deriv, overwrite=False
                                 )
                             except KeyError:
-                                # Discretization and continuity equations may or may not exist at the first or last time
-                                # points depending on the method. Backwards skips first, forwards skips last, central skips
-                                # both (which means the user needs to provide additional equations)
-                                pass
-                        else:
-                            constraint_scaling_transform(
-                                disc_eq[idx], s_derivative, overwrite=False
-                            )
-                    else:
-                        # Lagrange-Legendre is a pain, because it has continuity equations on the edges of finite
-                        # instead of discretization equations, but no intermediate continuity equations, so we have
-                        # to look for both at every timepoint
-                        try:
-                            constraint_scaling_transform(
-                                disc_eq[idx], s_derivative, overwrite=False
-                            )
-                        except KeyError:
-                            if t != time_set.first():
-                                constraint_scaling_transform(
-                                    cont_eq[idx], s_state, overwrite=False
-                                )
+                                if t != time_set.first():
+                                    constraint_scaling_transform(
+                                        cont[t], s_state, overwrite=False
+                                    )
 
 
 class CacheVars(object):

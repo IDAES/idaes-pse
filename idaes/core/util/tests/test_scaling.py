@@ -1262,3 +1262,56 @@ def test_scaling_discretization_equations_lagrange_radau():
 @pytest.mark.unit
 def test_scaling_discretization_equations_lagrange_legendre():
     discretization_tester("dae.collocation", "LAGRANGE-LEGENDRE", [0], True)
+
+
+@pytest.mark.unit
+def test_correct_set_identification():
+    # Suggested by Robby Parker. The original implementation of scale_time_discretization_equations
+    # used a Python function that tested for set equality instead of identity. As a result, trouble
+    # could happen if time and some other indexing set had the same members and time appeared later
+    # than that other indexing set.
+    def approx(x):
+        return pytest.approx(x, 1e-12)
+
+    m = pyo.ConcreteModel()
+    m.time = dae.ContinuousSet(initialize=[0, 1, 2])
+    m.space = dae.ContinuousSet(initialize=[0, 1, 2])
+
+    m.x = pyo.Var(m.space, m.time, initialize=0)
+    m.xdot = dae.DerivativeVar(m.x, wrt=m.time)
+
+    @m.Constraint(m.space, m.time)
+    def diff_eqn(b, z, t):
+        return b.xdot[z, t] == -b.x[z, t]
+
+    pyo.TransformationFactory("dae.finite_difference").apply_to(
+        m, nfe=2, wrt=m.time, scheme="BACKWARD"
+    )
+    for i in range(3):
+        sc.set_scaling_factor(m.x[0, i], 2)
+        sc.set_scaling_factor(m.x[1, i], 3)
+        sc.set_scaling_factor(m.x[2, i], 5)
+
+    sc.scale_time_discretization_equations(m, m.time, 10)
+
+    for i in range(3):
+        assert sc.get_scaling_factor(m.xdot[0, i]) == approx(0.2)
+        assert sc.get_scaling_factor(m.xdot[1, i]) == approx(0.3)
+        assert sc.get_scaling_factor(m.xdot[2, i]) == approx(0.5)
+
+    for i in range(1, 3):
+        assert sc.get_constraint_transform_applied_scaling_factor(
+            m.xdot_disc_eq[0, i]
+        ) == approx(0.2)
+        assert sc.get_constraint_transform_applied_scaling_factor(
+            m.xdot_disc_eq[1, i]
+        ) == approx(0.3)
+        assert sc.get_constraint_transform_applied_scaling_factor(
+            m.xdot_disc_eq[2, i]
+        ) == approx(0.5)
+
+
+@pytest.mark.unit
+def test_indexed_blocks():
+    m = pyo.ConcreteModel()
+    m.time = dae.ContinuousSet(initialize=[0, 1, 2])
