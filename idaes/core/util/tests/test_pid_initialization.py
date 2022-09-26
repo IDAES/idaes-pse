@@ -93,7 +93,7 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
         calculate_initial_integral=True,
         # ^ Why would initial integral be calculated
         # to be nonzero?
-        type=ControllerType.PID,
+        controller_type=ControllerType.PID,
     )
 
     # Time discretization

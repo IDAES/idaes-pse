@@ -106,7 +106,7 @@ file "pid_steam_tank_pressure.pdf."
           manipulated_var=m.fs.valve_1.valve_opening,
           calculate_initial_integral=True,
           mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
-          type=ControllerType.PI,
+          controller_type=ControllerType.PI,
       )
       # The control volume block doesn't assume equilibrium, so I'll make that
       # assumption here. I don't actually expect liquid to form but who knows?
@@ -311,7 +311,7 @@ the manipulated variable value.
 
 .. math::
 
-  e_i(t) = e_i(t_0) + \int_{t_0}^t e(s) \text{d}s
+  e_i(t) = e_i(t_0) + \int_{t_0}^t e(\tau) \text{d}\tau
 
 The derivative of error is given below.
 
@@ -328,7 +328,7 @@ results. Therefore, the product :math:`K_i e_i` is integrated instead.
 
 .. math::
 
-  u_i(t) = u_i(t_0) + \int_{t_0}^t K_i(s) e(s) ds
+  u_i(t) = u_i(t_0) + \int_{t_0}^t K_i(\tau) e(\tau) d\tau
 
 The integral error is formulated as a differential equation in the model.
 
@@ -384,11 +384,11 @@ Logistic Function
 
 The logistic bounding function is more smooth and possibly more tractable, but is
 less faithful to the unbound manipulated variable values and slower to arrive
-at the bounds for reasonable values of :math:`k`.
+at the bounds for reasonable values of :math:`k_\text{log}`.
 
 .. math::
 
-  u_{bound}(t) = u_{lb} + \frac{(u_{ub} - u_{lb})}{1 + \exp \left( -k\frac{u_{unbound}(t) - (u_{ub} + u_{lb})/2}{(u_{ub} - u_{lb})}\right)}
+  u_{bound}(t) = u_{lb} + \frac{(u_{ub} - u_{lb})}{1 + \exp \left( -k_\text{log}\frac{u_{unbound}(t) - (u_{ub} + u_{lb})/2}{(u_{ub} - u_{lb})}\right)}
 
 
 Anti-integral-windup

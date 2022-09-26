@@ -161,7 +161,7 @@ def test_p_control():
     unit = m.fs.unit = PIDController(
         process_var=m.fs.process_var,
         manipulated_var=m.fs.manipulated_var,
-        type=ControllerType.P,
+        controller_type=ControllerType.P,
     )
 
     # Check unit config arguments
@@ -195,7 +195,7 @@ def test_pd_control():
     unit = m.fs.unit = PIDController(
         process_var=m.fs.process_var,
         manipulated_var=m.fs.manipulated_var,
-        type=ControllerType.PD,
+        controller_type=ControllerType.PD,
     )
 
     # Check unit config arguments
@@ -232,7 +232,7 @@ def test_pid_control():
     unit = m.fs.unit = PIDController(
         process_var=m.fs.process_var,
         manipulated_var=m.fs.manipulated_var,
-        type=ControllerType.PID,
+        controller_type=ControllerType.PID,
     )
 
     # Check unit config arguments
@@ -271,7 +271,7 @@ def test_pid_units_consistent():
     unit = m.fs.unit = PIDController(
         process_var=m.fs.process_var,
         manipulated_var=m.fs.manipulated_var,
-        type=ControllerType.PID,
+        controller_type=ControllerType.PID,
     )
     assert_units_consistent(m)
     assert_units_equivalent(m.fs.unit.setpoint, pyunits.m)
@@ -290,7 +290,7 @@ def test_derivative_on_error():
     unit = m.fs.unit = PIDController(
         process_var=m.fs.process_var,
         manipulated_var=m.fs.manipulated_var,
-        type=ControllerType.PID,
+        controller_type=ControllerType.PID,
         derivative_on_error=True,
     )
 
@@ -329,7 +329,7 @@ def test_derivative_on_error_units_consistent():
     unit = m.fs.unit = PIDController(
         process_var=m.fs.process_var,
         manipulated_var=m.fs.manipulated_var,
-        type=ControllerType.PID,
+        controller_type=ControllerType.PID,
         derivative_on_error=True,
     )
 
@@ -350,7 +350,7 @@ def test_logistic_mv_bound():
     unit = m.fs.unit = PIDController(
         process_var=m.fs.process_var,
         manipulated_var=m.fs.manipulated_var,
-        type=ControllerType.PID,
+        controller_type=ControllerType.PID,
         mv_bound_type=ControllerMVBoundType.LOGISTIC,
     )
 
@@ -391,7 +391,7 @@ def test_logistic_mv_bound_units_consistent():
     unit = m.fs.unit = PIDController(
         process_var=m.fs.process_var,
         manipulated_var=m.fs.manipulated_var,
-        type=ControllerType.PID,
+        controller_type=ControllerType.PID,
         mv_bound_type=ControllerMVBoundType.LOGISTIC,
     )
     assert_units_equivalent(m.fs.unit.setpoint, pyunits.m)
@@ -411,7 +411,7 @@ def test_smooth_mv_bound():
     unit = m.fs.unit = PIDController(
         process_var=m.fs.process_var,
         manipulated_var=m.fs.manipulated_var,
-        type=ControllerType.PD,
+        controller_type=ControllerType.PD,
         mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
     )
 
@@ -450,7 +450,7 @@ def test_smooth_mv_bound_units_consistent():
     unit = m.fs.unit = PIDController(
         process_var=m.fs.process_var,
         manipulated_var=m.fs.manipulated_var,
-        type=ControllerType.PD,
+        controller_type=ControllerType.PD,
         mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
     )
     assert_units_equivalent(m.fs.unit.setpoint, pyunits.m)
@@ -470,7 +470,7 @@ def test_conditional_integration():
     unit = m.fs.unit = PIDController(
         process_var=m.fs.process_var,
         manipulated_var=m.fs.manipulated_var,
-        type=ControllerType.PI,
+        controller_type=ControllerType.PI,
         mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
         antiwindup_type=ControllerAntiwindupType.CONDITIONAL_INTEGRATION,
     )
@@ -488,7 +488,12 @@ def test_conditional_integration():
     add_integral_components(comp_dict, nt)
     comp_dict[Expression]["error"] = nt
     comp_dict[Constraint]["initial_integral_error_eqn"] = 1
-    comp_dict[Param] = {"mv_lb": 1, "mv_ub": 1, "smooth_eps": 1, "conditional_integration_k": 1}
+    comp_dict[Param] = {
+        "mv_lb": 1,
+        "mv_ub": 1,
+        "smooth_eps": 1,
+        "conditional_integration_k": 1,
+    }
 
     _build_test_utility(
         block=m.fs.unit,
@@ -509,7 +514,7 @@ def test_conditional_integration_units_consistent():
     unit = m.fs.unit = PIDController(
         process_var=m.fs.process_var,
         manipulated_var=m.fs.manipulated_var,
-        type=ControllerType.PI,
+        controller_type=ControllerType.PI,
         mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
         antiwindup_type=ControllerAntiwindupType.CONDITIONAL_INTEGRATION,
     )
@@ -530,7 +535,7 @@ def test_back_calculation():
     unit = m.fs.unit = PIDController(
         process_var=m.fs.process_var,
         manipulated_var=m.fs.manipulated_var,
-        type=ControllerType.PID,
+        controller_type=ControllerType.PID,
         mv_bound_type=ControllerMVBoundType.LOGISTIC,
         antiwindup_type=ControllerAntiwindupType.BACK_CALCULATION,
     )
@@ -573,7 +578,7 @@ def test_back_calculation_units_consistent():
     unit = m.fs.unit = PIDController(
         process_var=m.fs.process_var,
         manipulated_var=m.fs.manipulated_var,
-        type=ControllerType.PID,
+        controller_type=ControllerType.PID,
         mv_bound_type=ControllerMVBoundType.LOGISTIC,
         antiwindup_type=ControllerAntiwindupType.BACK_CALCULATION,
     )
@@ -597,7 +602,7 @@ def test_antiwindup_no_bounds():
         unit = m.fs.unit = PIDController(
             process_var=m.fs.process_var,
             manipulated_var=m.fs.manipulated_var,
-            type=ControllerType.PID,
+            controller_type=ControllerType.PID,
             mv_bound_type=ControllerMVBoundType.NONE,
             antiwindup_type=ControllerAntiwindupType.BACK_CALCULATION,
         )
@@ -619,7 +624,7 @@ def test_antiwindup_no_integration():
         unit = m.fs.unit = PIDController(
             process_var=m.fs.process_var,
             manipulated_var=m.fs.manipulated_var,
-            type=ControllerType.PD,
+            controller_type=ControllerType.PD,
             mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
             antiwindup_type=ControllerAntiwindupType.BACK_CALCULATION,
         )

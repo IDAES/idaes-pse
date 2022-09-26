@@ -121,7 +121,7 @@ def create_model(
         manipulated_var=m.fs.valve_1.valve_opening,
         calculate_initial_integral=calc_integ,
         mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
-        type=ControllerType.PI,
+        controller_type=ControllerType.PI,
     )
     # The control volume block doesn't assume the two phases are in equilibrium
     # by default, so I'll make that assumption here, I don't actually expect

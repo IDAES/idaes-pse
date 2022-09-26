@@ -138,7 +138,7 @@ class PIDControllerData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
-        "type",
+        "controller_type",
         ConfigValue(
             default=ControllerType.PI,
             domain=In(
@@ -230,7 +230,10 @@ class PIDControllerData(UnitModelBlockData):
             )
 
         if not self.config.antiwindup_type == ControllerAntiwindupType.NONE:
-            if not self.config.type in [ControllerType.PI, ControllerType.PID]:
+            if not self.config.controller_type in [
+                ControllerType.PI,
+                ControllerType.PID,
+            ]:
                 raise ConfigurationError(
                     "User specified antiwindup method for controller without integral action."
                 )
@@ -278,12 +281,15 @@ class PIDControllerData(UnitModelBlockData):
                 " type is LOGISTIC",
                 units=pyo.units.dimensionless,
             )
-        if self.config.antiwindup_type == ControllerAntiwindupType.CONDITIONAL_INTEGRATION:
+        if (
+            self.config.antiwindup_type
+            == ControllerAntiwindupType.CONDITIONAL_INTEGRATION
+        ):
             self.conditional_integration_k = pyo.Param(
                 mutable=True,
                 initialize=200,
                 doc="Parameter governing steepness of transition between integrating and not integrating."
-                    "A larger value means a steeper transition.",
+                "A larger value means a steeper transition.",
                 units=pyo.units.dimensionless,
             )
 
@@ -297,14 +303,14 @@ class PIDControllerData(UnitModelBlockData):
             doc="Gain for proportional part",
             units=gain_p_units,
         )
-        if self.config.type in [ControllerType.PI, ControllerType.PID]:
+        if self.config.controller_type in [ControllerType.PI, ControllerType.PID]:
             self.gain_i = pyo.Var(
                 time_set,
                 initialize=0.1,
                 doc="Gain for integral part",
                 units=gain_p_units / time_units,
             )
-        if self.config.type in [ControllerType.PD, ControllerType.PID]:
+        if self.config.controller_type in [ControllerType.PD, ControllerType.PID]:
             self.gain_d = pyo.Var(
                 time_set,
                 initialize=0.01,
@@ -329,7 +335,7 @@ class PIDControllerData(UnitModelBlockData):
 
         # Error expression or variable (variable required for derivative term)
         if (
-            self.config.type in [ControllerType.PD, ControllerType.PID]
+            self.config.controller_type in [ControllerType.PD, ControllerType.PID]
             and self.config.derivative_on_error
         ):
             self.error = pyo.Var(
@@ -354,7 +360,7 @@ class PIDControllerData(UnitModelBlockData):
                 return b.setpoint[t] - b.process_var[t]
 
             if (
-                self.config.type in [ControllerType.PD, ControllerType.PID]
+                self.config.controller_type in [ControllerType.PD, ControllerType.PID]
                 and not self.config.derivative_on_error
             ):
                 # Need to create a Var because process_var might be an Expression
@@ -377,7 +383,7 @@ class PIDControllerData(UnitModelBlockData):
                 )
 
         # integral term written de_i(t)/dt = e(t)
-        if self.config.type in [ControllerType.PI, ControllerType.PID]:
+        if self.config.controller_type in [ControllerType.PI, ControllerType.PID]:
             self.mv_integral_component = pyo.Var(
                 time_set,
                 initialize=0,
@@ -393,9 +399,10 @@ class PIDControllerData(UnitModelBlockData):
             )
 
             if self.config.calculate_initial_integral:
+
                 @self.Constraint(doc="Calculate initial e_i based on output")
                 def initial_integral_error_eqn(b):
-                    if self.config.type == ControllerType.PI:
+                    if self.config.controller_type == ControllerType.PI:
                         return b.mv_integral_component[t0] == (
                             b.manipulated_var[t0]
                             - b.mv_ref[t0]
@@ -410,28 +417,28 @@ class PIDControllerData(UnitModelBlockData):
 
         @self.Expression(time_set, doc="Unbounded output for manipulated variable")
         def mv_unbounded(b, t):
-            if self.config.type == ControllerType.PID:
+            if self.config.controller_type == ControllerType.PID:
                 return (
                     b.mv_ref[t]
                     + b.gain_p[t] * b.error[t]
                     + b.mv_integral_component[t]
                     + b.gain_d[t] * b.derivative_term[t]
                 )
-            elif self.config.type == ControllerType.PI:
+            elif self.config.controller_type == ControllerType.PI:
                 return (
                     b.mv_ref[t] + b.gain_p[t] * b.error[t] + b.mv_integral_component[t]
                 )
-            elif self.config.type == ControllerType.PD:
+            elif self.config.controller_type == ControllerType.PD:
                 return (
                     b.mv_ref[t]
                     + b.gain_p[t] * b.error[t]
                     + b.gain_d[t] * b.derivative_term[t]
                 )
-            elif self.config.type == ControllerType.P:
+            elif self.config.controller_type == ControllerType.P:
                 return b.mv_ref[t] + b.gain_p[t] * b.error[t]
             else:
                 raise ConfigurationError(
-                    f"{self.config.type} is not a valid PID controller type"
+                    f"{self.config.controller_type} is not a valid PID controller type"
                 )
 
         @self.Constraint(time_set, doc="Bounded output of manipulated variable")
@@ -459,7 +466,7 @@ class PIDControllerData(UnitModelBlockData):
         if self.config.calculate_initial_integral:
             self.mv_eqn[t0].deactivate()
 
-        if self.config.type in [ControllerType.PI, ControllerType.PID]:
+        if self.config.controller_type in [ControllerType.PI, ControllerType.PID]:
 
             @self.Constraint(time_set, doc="de_i(t)/dt = e(t)")
             def mv_integration_eqn(b, t):
@@ -474,12 +481,12 @@ class PIDControllerData(UnitModelBlockData):
                     ] * (
                         smooth_heaviside(
                             (b.mv_unbounded[t] - b.mv_lb) / (b.mv_ub - b.mv_lb),
-                            b.conditional_integration_k
+                            b.conditional_integration_k,
                         )
                         # 1
                         - smooth_heaviside(
                             (b.mv_unbounded[t] - b.mv_ub) / (b.mv_ub - b.mv_lb),
-                            b.conditional_integration_k
+                            b.conditional_integration_k,
                         )
                     )
                 elif (
@@ -545,7 +552,7 @@ class PIDControllerData(UnitModelBlockData):
             ssf(self.mv_ref[t], sf_mv)
             cst(self.mv_eqn[t], sf_mv)
 
-            if self.config.type in [ControllerType.PD, ControllerType.PID]:
+            if self.config.controller_type in [ControllerType.PD, ControllerType.PID]:
                 if self.config.derivative_on_error:
                     ssf(self.error[t], sf_pv)
                     cst(self.error_eqn[t], sf_pv)
@@ -553,7 +560,7 @@ class PIDControllerData(UnitModelBlockData):
                     ssf(self.negative_pv[t], sf_pv)
                     cst(self.negative_pv_eqn[t], sf_pv)
 
-            if self.config.type in [ControllerType.PI, ControllerType.PID]:
+            if self.config.controller_type in [ControllerType.PI, ControllerType.PID]:
                 ssf(self.mv_integral_component[t], sf_mv)
 
                 cst(self.mv_integration_eqn[t], sf_pv)

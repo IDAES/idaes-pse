@@ -317,7 +317,7 @@ def add_unit_models(m):
         fs.fwh2_ctrl = PIDController(
             process_var=fs.fwh2.condense.level,
             manipulated_var=fs.fwh2_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -325,7 +325,7 @@ def add_unit_models(m):
         fs.fwh3_ctrl = PIDController(
             process_var=fs.fwh3.condense.level,
             manipulated_var=fs.fwh3_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -333,7 +333,7 @@ def add_unit_models(m):
         fs.fwh5_ctrl = PIDController(
             process_var=fs.fwh5.condense.level,
             manipulated_var=fs.fwh5_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -341,7 +341,7 @@ def add_unit_models(m):
         fs.fwh6_ctrl = PIDController(
             process_var=fs.fwh6.condense.level,
             manipulated_var=fs.fwh6_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -349,7 +349,7 @@ def add_unit_models(m):
         fs.da_ctrl = PIDController(
             process_var=fs.da_tank.tank_level,
             manipulated_var=fs.cond_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -357,7 +357,7 @@ def add_unit_models(m):
         fs.makeup_ctrl = PIDController(
             process_var=fs.hotwell_tank.tank_level,
             manipulated_var=fs.makeup_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
             calculate_initial_integral=False,
         )
@@ -366,7 +366,7 @@ def add_unit_models(m):
         fs.spray_ctrl = PIDController(
             process_var=fs.temperature_main_steam,
             manipulated_var=fs.spray_valve.valve_opening,
-            type=ControllerType.PID,
+            controller_type=ControllerType.PID,
             mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
             calculate_initial_integral=False,
         )

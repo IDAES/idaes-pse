@@ -217,7 +217,7 @@ def create_model(
             manipulated_var=m.fs.valve_1.valve_opening,
             calculate_initial_integral=calc_integ,
             mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
-            type=ControllerType.PID,  # rather use PI, but testing all terms
+            controller_type=ControllerType.PID,  # rather use PI, but testing all terms
             derivative_on_error=derivative_on_error,
             antiwindup_type=antiwindup,
         )

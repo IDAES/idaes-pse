@@ -107,7 +107,7 @@ def get_model(dynamic=False):
         m.fs.controller = PIDController(
             process_var=m.fs.tank.tank_level,
             manipulated_var=m.fs.valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
         )
 
         m.discretizer = pyo.TransformationFactory("dae.finite_difference")

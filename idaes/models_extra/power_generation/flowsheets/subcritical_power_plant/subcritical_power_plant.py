@@ -742,14 +742,14 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         m.fs_main.drum_master_ctrl = PIDController(
             process_var=m.fs_main.fs_blr.aDrum.level,
             manipulated_var=m.fs_main.flow_level_ctrl_output,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
         # slave of cascading level controller
         m.fs_main.drum_slave_ctrl = PIDController(
             process_var=m.fs_main.fs_stc.bfp.outlet.flow_mol,
             manipulated_var=m.fs_main.fs_stc.bfp_turb_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
         # turbine master PID controller to control power output in MW
@@ -757,7 +757,7 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         m.fs_main.turbine_master_ctrl = PIDController(
             process_var=m.fs_main.fs_stc.power_output,
             manipulated_var=m.fs_main.fs_stc.turb.throttle_valve[1].valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
         # boiler master PID controller to control main steam pressure in MPa
@@ -765,7 +765,7 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         m.fs_main.boiler_master_ctrl = PIDController(
             process_var=m.fs_main.main_steam_pressure,
             manipulated_var=m.fs_main.fs_blr.aBoiler.flowrate_coal_raw,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
