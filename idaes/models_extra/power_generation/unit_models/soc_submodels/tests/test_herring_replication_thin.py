@@ -75,7 +75,7 @@ from idaes.models.properties import iapws95
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from idaes.models.properties.modular_properties import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from idaes.models_extra.power_generation.properties.natural_gas_PR import (
@@ -137,8 +137,10 @@ oxygen_stoich_dict = {"O2": -0.25, "Vac": -0.5, "O^2-": 0.5, "e^-": -1.0}
 cell_config = {
     "has_holdup": True,
     "control_volume_zfaces": zfaces,
-    "control_volume_xfaces_fuel_electrode": xfaces_electrode,
-    "control_volume_xfaces_oxygen_electrode": xfaces_electrode,
+    # "control_volume_xfaces_fuel_electrode": xfaces_electrode,
+    # "control_volume_xfaces_oxygen_electrode": xfaces_electrode,
+    "thin_fuel_electrode": True,
+    "thin_oxygen_electrode": True,
     "control_volume_xfaces_electrolyte": xfaces_electrolyte,
     "fuel_component_list": fuel_comps,
     "fuel_triple_phase_boundary_stoich_dict": fuel_stoich_dict,
@@ -186,23 +188,30 @@ def fix_cell_parameters(cell):
 
     cell.oxygen_channel.heat_transfer_coefficient.fix(100)
 
-    cell.fuel_electrode.length_x.fix(23e-6)
-    cell.fuel_electrode.porosity.fix(0.37)
-    cell.fuel_electrode.tortuosity.fix(3)
-    cell.fuel_electrode.solid_heat_capacity.fix(450)
-    cell.fuel_electrode.solid_density.fix(3210.0)
-    cell.fuel_electrode.solid_thermal_conductivity.fix(2.16)
-    cell.fuel_electrode.resistivity_log_preexponential_factor.fix(pyo.log(8.856e-6))
-    cell.fuel_electrode.resistivity_thermal_exponent_dividend.fix(0)
+    # cell.fuel_electrode.length_x.fix(23e-6)
+    # cell.fuel_electrode.porosity.fix(0.37)
+    # cell.fuel_electrode.tortuosity.fix(3)
+    # cell.fuel_electrode.solid_heat_capacity.fix(450)
+    # cell.fuel_electrode.solid_density.fix(3210.0)
+    # cell.fuel_electrode.solid_thermal_conductivity.fix(2.16)
+    # cell.fuel_electrode.resistivity_log_preexponential_factor.fix(pyo.log(8.856e-6))
+    # cell.fuel_electrode.resistivity_thermal_exponent_dividend.fix(0)
+    # ASR = resistivity times layer thickness
+    cell.fuel_electrode.log_preexponential_factor.fix(pyo.log(8.856e-6 * 23e-6))
+    cell.fuel_electrode.thermal_exponent_dividend.fix(0)
+    cell.fuel_electrode.contact_fraction.fix(1)
 
-    cell.oxygen_electrode.length_x.fix(21e-6)
-    cell.oxygen_electrode.porosity.fix(0.37)
-    cell.oxygen_electrode.tortuosity.fix(3.0)
-    cell.oxygen_electrode.solid_heat_capacity.fix(430)
-    cell.oxygen_electrode.solid_density.fix(3030)
-    cell.oxygen_electrode.solid_thermal_conductivity.fix(2.16)
-    cell.oxygen_electrode.resistivity_log_preexponential_factor.fix(pyo.log(1.425e-4))
-    cell.oxygen_electrode.resistivity_thermal_exponent_dividend.fix(0)
+    # cell.oxygen_electrode.length_x.fix(21e-6)
+    # cell.oxygen_electrode.porosity.fix(0.37)
+    # cell.oxygen_electrode.tortuosity.fix(3.0)
+    # cell.oxygen_electrode.solid_heat_capacity.fix(430)
+    # cell.oxygen_electrode.solid_density.fix(3030)
+    # cell.oxygen_electrode.solid_thermal_conductivity.fix(2.16)
+    # cell.oxygen_electrode.resistivity_log_preexponential_factor.fix(pyo.log(1.425e-4))
+    # cell.oxygen_electrode.resistivity_thermal_exponent_dividend.fix(0)
+    cell.oxygen_electrode.log_preexponential_factor.fix(pyo.log(1.425e-4 * 21e-6))
+    cell.oxygen_electrode.thermal_exponent_dividend.fix(0)
+    cell.oxygen_electrode.contact_fraction.fix(1)
 
     cell.electrolyte.length_x.fix(1.4e-4)
     cell.electrolyte.heat_capacity.fix(470)
@@ -232,8 +241,11 @@ def fix_cell_parameters(cell):
 
 def model_func():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False, time_set=[0], time_units=pyo.units.s)
-
+    m.fs = FlowsheetBlock(
+        dynamic=False,
+        time_set=[0],
+        time_units=pyo.units.s,
+    )
     m.fs.propertiesIapws95 = iapws95.Iapws95ParameterBlock()
     m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(parameters=m.fs.propertiesIapws95)
 
@@ -260,16 +272,20 @@ def model():
 @pytest.fixture
 def model_stack():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False, time_set=[0], time_units=pyo.units.s)
+    m.fs = FlowsheetBlock(
+        dynamic=False,
+        time_set=[0],
+        time_units=pyo.units.s,
+    )
 
     m.fs.propertiesIapws95 = iapws95.Iapws95ParameterBlock()
     m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(parameters=m.fs.propertiesIapws95)
 
     m.fs.oxygen_params = GenericParameterBlock(
-        **get_prop(oxygen_comps, {"Vap"}, eos=EosType.IDEAL), doc="Air-side parameters"
+        **get_prop(oxygen_comps, {"Vap"}, eos=EosType.IDEAL)
     )
     m.fs.fuel_params = GenericParameterBlock(
-        **get_prop(fuel_comps, {"Vap"}, eos=EosType.IDEAL), doc="Fuel-side parameters"
+        **get_prop(fuel_comps, {"Vap"}, eos=EosType.IDEAL)
     )
 
     m.fs.stack = SolidOxideModuleSimple(
@@ -596,7 +612,7 @@ def test_model_replication(model):
     cached_results = []
     for i in range(len(out)):
         cached_results.append(
-            pd.read_csv(os.sep.join([data_cache, f"case_{i+1}.csv"]), index_col=0)
+            pd.read_csv(os.sep.join([data_cache, f"case_{i+1}_thin.csv"]), index_col=0)
         )
 
     for df, cached_df in zip(out, cached_results):
@@ -620,9 +636,8 @@ def test_model_replication(model):
 
 if __name__ == "__main__":
     m = model_func()
-    # out = kazempoor_braun_replication(m)
-    out = test_initialization_cell(m)
+    out = kazempoor_braun_replication(m)
 
     # Uncomment to recreate cached data
     # for i, df in enumerate(out):
-    #     df.to_csv(os.sep.join([data_cache, f"case_{i+1}.csv"]))
+    #     df.to_csv(os.sep.join([data_cache, f"case_{i+1}_thin.csv"]))
