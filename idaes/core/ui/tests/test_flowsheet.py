@@ -285,6 +285,8 @@ def _canonicalize(d):
         if "ports" in cell:
             items = cell["ports"]["items"]
             cell["ports"]["items"] = sorted(items, key=lambda x: x["id"])
+        if "position" in cell:
+            cell.pop("position")
 
 
 @pytest.mark.component
