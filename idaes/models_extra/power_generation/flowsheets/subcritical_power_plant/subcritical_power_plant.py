@@ -11,6 +11,7 @@
 # license information.
 #################################################################################
 
+import os
 import time as wall_clock
 import matplotlib.pyplot as plt
 
@@ -32,7 +33,7 @@ from idaes.core.util.dyn_utils import copy_values_at_time, copy_non_time_indexed
 import idaes.logger as idaeslog
 import os
 import idaes.core.util.tables as tables
-from idaes.core.util.tags import svg_tag
+from idaes.core.util.tags import svg_tag, ModelTagGroup
 from idaes.core.solvers import get_solver
 
 _log = idaeslog.getLogger(__name__)
@@ -2241,9 +2242,22 @@ def print_pfd_results(m):
             tags[i + "_ySO2"] = s.mole_frac_comp["SO2"]
         except AttributeError:
             pass
-    with open("plant_pfd.svg", "r") as f:
+
+    tag_group = ModelTagGroup()
+    for t, v in tags.items():
+        try:
+            formatter = tag_formats[t]
+        except KeyError:
+            formatter = "{:.3f}"
+        tag_group.add(t, v, format_string=formatter)
+
+    dirpath = os.path.dirname(__file__)
+    svgpath = os.path.join(dirpath, "plant_pfd.svg")
+    with open(svgpath, "r") as f:
         svg_tag(
-            svg=f, tags=tags, outfile=f"plant_pfd_result.svg", tag_format=tag_formats
+            svg=f,
+            tag_group=tag_group,
+            outfile="plant_pfd_result.svg",
         )
     os.remove("streams.csv")
 
