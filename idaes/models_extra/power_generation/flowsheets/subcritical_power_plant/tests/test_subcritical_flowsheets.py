@@ -168,7 +168,3 @@ def test_dynamic_steam_cycle():
 def test_subcritical_recirculation_system():
     m = recyrc.main()
     assert degrees_of_freedom(m) == 0
-
-
-if __name__ == "__main__":
-    m = subcrit_plant.get_model(dynamic=True)

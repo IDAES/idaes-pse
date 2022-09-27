@@ -654,7 +654,7 @@ def main_dynamic():
                     pyo.value(
                         m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[t].value
                     )
-                    > 3
+                    > 0.3
                 ):
                     m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[t].value = 0.3
                     _log.info(
