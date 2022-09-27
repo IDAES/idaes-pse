@@ -429,9 +429,9 @@ def initialize_by_time_element(fs, time, **kwargs):
         "Flowsheet has been deactivated. Beginning element-wise initialization"
     )
     for i in range(1, nfe + 1):
-        t_prev = time[(i - 1) * ncp + 1]
+        t_prev = time.at((i - 1) * ncp + 1)
         # Non-initial time points in the finite element:
-        fe = [time[k] for k in range((i - 1) * ncp + 2, i * ncp + 2)]
+        fe = [time.at(k) for k in range((i - 1) * ncp + 2, i * ncp + 2)]
 
         init_log.info(f"Entering step {i}/{nfe} of initialization")
 
