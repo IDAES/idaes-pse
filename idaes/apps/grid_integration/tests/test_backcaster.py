@@ -15,7 +15,7 @@ import pytest
 from pyomo.common import unittest as pyo_unittest
 from idaes.apps.grid_integration.forecaster import ForecastError, Backcaster
 import warnings
-
+pytestmark = pytest.mark.filterwarnings("error")
 
 @pytest.fixture
 def historical_da_prices():
@@ -125,14 +125,14 @@ def test_create_backcaster_with_non_24_entries(
         Backcaster(historical_da_prices, {"test_bus": [1] * 46})
 
 
-@pytest.mark.unit
-def test_create_backcaster_with_histroical_days_geq_max_historical_days(
-    historical_da_prices, historical_rt_prices
-):
-    max_h_days = 1.0
-    with pytest.warns(Warning, match=r".*Drooping the data for the first.*"):
-        Backcaster({"test_bus": [1] * 72}, historical_rt_prices, max_historical_days = max_h_days)
-        Backcaster(historical_da_prices, {"test_bus": [1] * 72}, max_historical_days = max_h_days)
+# @pytest.mark.unit
+# def test_create_backcaster_with_histroical_days_geq_max_historical_days(
+#     historical_da_prices, historical_rt_prices
+# ):
+#     max_h_days = 1.0
+#     with pytest.raises(TypeError, match=r".*Drooping the data for the first.*"):
+#         Backcaster({"test_bus": [1] * 72}, historical_rt_prices, max_historical_days = max_h_days)
+#         Backcaster(historical_da_prices, {"test_bus": [1] * 72}, max_historical_days = max_h_days)
 
 
 @pytest.mark.unit
