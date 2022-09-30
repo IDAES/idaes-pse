@@ -56,6 +56,10 @@ def frame():
         "cp_mol_sol_comp_coeff": (100000, pyunits.J / pyunits.kmol / pyunits.K),
         "enth_mol_form_sol_comp_ref": (-300, pyunits.kJ / pyunits.mol),
         "entr_mol_form_sol_comp_ref": (50, pyunits.J / pyunits.K / pyunits.mol),
+        "visc_d_Vap_comp_coeff": (8.9e-4, pyunits.Pa * pyunits.s),
+        #"visc_d_vap_comp_coeff": (1.82e-5, pyunits.Pa * pyunits.s),
+        "therm_cond_liq_comp_coeff": (0.598, pyunits.W / pyunits.m / pyunits.K),
+        "therm_cond_vap_comp_coeff": (0.0259, pyunits.W / pyunits.m / pyunits.K),
     }
     m.params.config.include_enthalpy_of_formation = True
 
@@ -69,6 +73,7 @@ def frame():
     m.meta_object.default_units["length"] = pyunits.m
     m.meta_object.default_units["time"] = pyunits.s
     m.meta_object.default_units["amount"] = pyunits.mol
+    m.meta_object.default_units["current"] = pyunits.ampere
 
     def get_metadata(self):
         return m.meta_object
@@ -365,3 +370,79 @@ def test_dens_mol_sol_comp(frame):
     assert value(expr) == pytest.approx(100e3, rel=1e-4)
 
     assert_units_equivalent(expr, pyunits.mol / pyunits.m**3)
+
+
+@pytest.mark.unit
+def test_visc_d_phase_comp(frame):
+    Constant.visc_d_phase_comp.build_parameters(frame.params, "Vap")
+
+    assert isinstance(frame.params.visc_d_Vap_comp_coeff, Var)
+    assert value(frame.params.visc_d_Vap_comp_coeff) == pytest.approx(8.9e-4, rel=1e-5)
+
+    expr = Constant.visc_d_phase_comp.return_expression(
+        frame.props[1], frame.params, "Vap", frame.props[1].temperature
+    )
+    assert value(expr) == pytest.approx(8.9e-4, rel=1e-5)
+
+    frame.props[1].temperature.value = 400
+    assert value(expr) == pytest.approx(8.9e-4, rel=1e-5)
+
+    assert_units_equivalent(expr, pyunits.Pa * pyunits.s)
+
+
+# @pytest.mark.unit
+# def test_visc_d_vap_comp(frame):
+#     Constant.visc_d_vap_comp.build_parameters(frame.params)
+#
+#     assert isinstance(frame.params.visc_d_vap_comp_coeff, Var)
+#     assert value(frame.params.visc_d_vap_comp_coeff) == pytest.approx(1.82e-5, rel=1e-5)
+#
+#     expr = Constant.visc_d_vap_comp.return_expression(
+#         frame.props[1], frame.params, frame.props[1].temperature
+#     )
+#     assert value(expr) == pytest.approx(1.82e-5, rel=1e-5)
+#
+#     frame.props[1].temperature.value = 400
+#     assert value(expr) == pytest.approx(1.82e-5, rel=1e-5)
+#
+#     assert_units_equivalent(expr, pyunits.Pa * pyunits.s)
+
+
+@pytest.mark.unit
+def test_therm_cond_liq_comp(frame):
+    Constant.therm_cond_liq_comp.build_parameters(frame.params)
+
+    assert isinstance(frame.params.therm_cond_liq_comp_coeff, Var)
+    assert value(frame.params.therm_cond_liq_comp_coeff) == pytest.approx(
+        0.598, rel=1e-5
+    )
+
+    expr = Constant.therm_cond_liq_comp.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
+    assert value(expr) == pytest.approx(0.598, rel=1e-5)
+
+    frame.props[1].temperature.value = 400
+    assert value(expr) == pytest.approx(0.598, rel=1e-5)
+
+    assert_units_equivalent(expr, pyunits.W / pyunits.m / pyunits.K)
+
+
+@pytest.mark.unit
+def test_therm_cond_vap_comp(frame):
+    Constant.therm_cond_vap_comp.build_parameters(frame.params)
+
+    assert isinstance(frame.params.therm_cond_vap_comp_coeff, Var)
+    assert value(frame.params.therm_cond_vap_comp_coeff) == pytest.approx(
+        0.0259, rel=1e-5
+    )
+
+    expr = Constant.therm_cond_vap_comp.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
+    assert value(expr) == pytest.approx(0.0259, rel=1e-5)
+
+    frame.props[1].temperature.value = 400
+    assert value(expr) == pytest.approx(0.0259, rel=1e-5)
+
+    assert_units_equivalent(expr, pyunits.W / pyunits.m / pyunits.K)
