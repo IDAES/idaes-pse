@@ -11,14 +11,7 @@
 # license information.
 #################################################################################
 """
-Tests for methods from Perry's
-
-All methods and parameters from:
-
-Perry's Chemical Engineers' Handbook, 7th Edition
-Perry, Green, Maloney, 1997, McGraw-Hill
-
-All parameter indicies based on conventions used by the source
+FIXME
 
 Authors: Andrew Lee
 """
@@ -76,14 +69,12 @@ def construct_dummy_model(component_dict):
                 "visc_d_phase_comp": {"Vap": ConstantProperties},
                 "parameter_data": {
                     "mw": (component_dict[comp1]["mw"], pyunits.g / pyunits.mol),
-                    #"visc_d_Vap_comp_coeff": (component_dict[comp1]["visc_d_Vap"], pyunits.micropoise)
                 }
             },
             comp2: {
                 "visc_d_phase_comp": {"Vap": ConstantProperties},
                 "parameter_data": {
                     "mw": (component_dict[comp2]["mw"], pyunits.g / pyunits.mol),
-                    #"visc_d_Vap_comp_coeff": (component_dict[comp2]["visc_d_Vap"], pyunits.micropoise)
                 }
             },
         },
@@ -107,7 +98,7 @@ def construct_dummy_model(component_dict):
     )
 
     m.props = m.params.state_block_class([1], defined_state=False, parameters=m.params)
-    ViscosityWilkePhase.visc_d.build_parameters(m.params.Vap)
+    ViscosityWilkePhase.visc_d_phase.build_parameters(m.params.Vap)
 
     # Add common variables
     m.props[1].mole_frac_phase_comp = Var(
@@ -136,7 +127,7 @@ def test_wilke_visc_d_phase_N2_CO2():
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d.return_expression(
+    expr = ViscosityWilkePhase.visc_d_phase.return_expression(
         m.props[1], m.params.Vap
     )
 
@@ -183,7 +174,7 @@ def test_wilke_visc_d_phase_ammonia_hydrogen():
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d.return_expression(
+    expr = ViscosityWilkePhase.visc_d_phase.return_expression(
         m.props[1], m.params.Vap
     )
 
@@ -208,7 +199,7 @@ def test_wilke_visc_d_phase_N2O_SO2():
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d.return_expression(
+    expr = ViscosityWilkePhase.visc_d_phase.return_expression(
         m.props[1], m.params.Vap
     )
 
@@ -232,7 +223,7 @@ def test_herning_zipperer_visc_d_phase_N2_CO2():
 
     m.params.Vap.viscosity_phi_ij_callback = herring_zimmer_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d.return_expression(
+    expr = ViscosityWilkePhase.visc_d_phase.return_expression(
         m.props[1], m.params.Vap
     )
 
@@ -279,7 +270,7 @@ def test_herning_zipperer_visc_d_phase_ammonia_hydrogen():
 
     m.params.Vap.viscosity_phi_ij_callback = herring_zimmer_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d.return_expression(
+    expr = ViscosityWilkePhase.visc_d_phase.return_expression(
         m.props[1], m.params.Vap
     )
 
@@ -304,7 +295,7 @@ def test_herning_zipperer_visc_d_phase_N2O_SO2():
 
     m.params.Vap.viscosity_phi_ij_callback = herring_zimmer_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d.return_expression(
+    expr = ViscosityWilkePhase.visc_d_phase.return_expression(
         m.props[1], m.params.Vap
     )
 

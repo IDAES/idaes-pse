@@ -24,12 +24,8 @@ from idaes.models.properties.modular_properties.base.utility import get_componen
 
 
 
-# ------------------------------------------------------------------------------------
-# Gas viscosity at low pressures from Lennard Jones paramters. Note that LJ parameters
-# are underdetermined when estimated from viscosity data (see The Indeterminacy of
-# the Values of Potential Parameters as Derived from Transport and Virial Coefficient
-# by Reichenberg D., 1973 for more information) so it's important to use LJ parameters
-# from the same source.
+# ---------------------------------------------------------------------------------------
+# Rule to obtain mixture viscosity of a low pressure gas from pure component viscosities.
 class ViscosityWilkePhase(object):
     @staticmethod
     def build_parameters(pobj):
@@ -51,7 +47,7 @@ class ViscosityWilkePhase(object):
                 doc="Intermediate quantity for calculating gas mixture viscosity and thermal conductivity"
             )
 
-    class visc_d(object):
+    class visc_d_phase(object):
         @staticmethod
         def build_parameters(pobj):
             ViscosityWilkePhase.build_parameters(pobj)

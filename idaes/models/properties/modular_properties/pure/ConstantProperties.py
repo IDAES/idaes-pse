@@ -278,44 +278,19 @@ class Constant(object):
         def return_expression(b, cobj, p,  T):
             return getattr(cobj, f"visc_d_{p}_comp_coeff")
 
-    # class visc_d_vap_comp(object):
-    #     @staticmethod
-    #     def build_parameters(cobj):
-    #         units = cobj.parent_block().get_metadata().derived_units
-    #         cobj.visc_d_vap_comp_coeff = Var(
-    #             doc="Parameter for vapor phase dynamic viscosity",
-    #             units=units["dynamic_viscosity"],
-    #         )
-    #         set_param_from_config(cobj, param="visc_d_vap_comp_coeff")
-    #
-    #     @staticmethod
-    #     def return_expression(b, cobj, T):
-    #         return cobj.visc_d_vap_comp_coeff
-
-    class therm_cond_liq_comp(object):
+    class therm_cond_phase_comp(object):
         @staticmethod
-        def build_parameters(cobj):
+        def build_parameters(cobj, p):
             units = cobj.parent_block().get_metadata().derived_units
-            cobj.therm_cond_liq_comp_coeff = Var(
-                doc="Parameter for liquid phase thermal conductivity",
-                units=units["thermal_conductivity"],
+            cobj.add_component(
+                f"therm_cond_{p}_comp_coeff",
+                Var(
+                    doc=f"Parameter for {p} phase thermal conductivity",
+                    units=units["thermal_conductivity"],
+                )
             )
-            set_param_from_config(cobj, param="therm_cond_liq_comp_coeff")
+            set_param_from_config(cobj, param=f"therm_cond_{p}_comp_coeff")
 
         @staticmethod
-        def return_expression(b, cobj, T):
-            return cobj.therm_cond_liq_comp_coeff
-
-    class therm_cond_vap_comp(object):
-        @staticmethod
-        def build_parameters(cobj):
-            units = cobj.parent_block().get_metadata().derived_units
-            cobj.therm_cond_vap_comp_coeff = Var(
-                doc="Parameter for vapor phase thermal conductivity",
-                units=units["thermal_conductivity"],
-            )
-            set_param_from_config(cobj, param="therm_cond_vap_comp_coeff")
-
-        @staticmethod
-        def return_expression(b, cobj, T):
-            return cobj.therm_cond_vap_comp_coeff
+        def return_expression(b, cobj, p, T):
+            return getattr(cobj, f"therm_cond_{p}_comp_coeff")
