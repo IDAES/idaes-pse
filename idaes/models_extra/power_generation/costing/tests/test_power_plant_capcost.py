@@ -39,7 +39,7 @@ def test_PP_costing():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = QGESSCosting()
 
     # check that the model solved properly and has 0 degrees of freedom
@@ -59,16 +59,14 @@ def test_PP_costing():
     )
     m.fs.boiler.coal_mass_flow.fix()
     m.fs.boiler.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": coal_accounts,
-                "scaled_param": m.fs.boiler.coal_mass_flow,
-                "tech": 2,
-                "ccs": "A",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": coal_accounts,
+            "scaled_param": m.fs.boiler.coal_mass_flow,
+            "tech": 2,
+            "ccs": "A",
+        },
     )
 
     # total fuel feed
@@ -81,16 +79,14 @@ def test_PP_costing():
     )
     m.fs.fuel_feed.total_fuel_feed.fix()
     m.fs.fuel_feed.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": fuel_accounts,
-                "scaled_param": m.fs.fuel_feed.total_fuel_feed,
-                "tech": 2,
-                "ccs": "A",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": fuel_accounts,
+            "scaled_param": m.fs.fuel_feed.total_fuel_feed,
+            "tech": 2,
+            "ccs": "A",
+        },
     )
 
     # HP BFW flow rate
@@ -102,16 +98,14 @@ def test_PP_costing():
     m.fs.bfp.BFW_mass_flow = pyo.Var(initialize=5316158, units=pyunits.lb / pyunits.hr)
     m.fs.bfp.BFW_mass_flow.fix()
     m.fs.bfp.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": BFW_accounts,
-                "scaled_param": m.fs.bfp.BFW_mass_flow,
-                "tech": 2,
-                "ccs": "A",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": BFW_accounts,
+            "scaled_param": m.fs.bfp.BFW_mass_flow,
+            "tech": 2,
+            "ccs": "A",
+        },
     )
 
     # Steam turbine power
@@ -121,16 +115,14 @@ def test_PP_costing():
     m.fs.turb.power = pyo.Var(initialize=769600, units=pyunits.kW)
     m.fs.turb.power.fix()
     m.fs.turb.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": power_accounts,
-                "scaled_param": m.fs.turb.power,
-                "tech": 2,
-                "ccs": "A",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": power_accounts,
+            "scaled_param": m.fs.turb.power,
+            "tech": 2,
+            "ccs": "A",
+        },
     )
 
     # Condernser duty
@@ -141,16 +133,14 @@ def test_PP_costing():
     )
     m.fs.condenser.duty_MMBtu.fix()
     m.fs.condenser.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": cond_accounts,
-                "scaled_param": m.fs.condenser.duty_MMBtu,
-                "tech": 2,
-                "ccs": "A",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": cond_accounts,
+            "scaled_param": m.fs.condenser.duty_MMBtu,
+            "tech": 2,
+            "ccs": "A",
+        },
     )
 
     # Circulating water flow rate
@@ -163,16 +153,14 @@ def test_PP_costing():
     )
     m.fs.circulating_water.vol_flow.fix()
     m.fs.circulating_water.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": circ_accounts,
-                "scaled_param": m.fs.circulating_water.vol_flow,
-                "tech": 2,
-                "ccs": "A",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": circ_accounts,
+            "scaled_param": m.fs.circulating_water.vol_flow,
+            "tech": 2,
+            "ccs": "A",
+        },
     )
 
     # Ash flow rate
@@ -184,16 +172,14 @@ def test_PP_costing():
     )
     m.fs.ash_handling.ash_mass_flow.fix()
     m.fs.ash_handling.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": ash_accounts,
-                "scaled_param": m.fs.ash_handling.ash_mass_flow,
-                "tech": 2,
-                "ccs": "A",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": ash_accounts,
+            "scaled_param": m.fs.ash_handling.ash_mass_flow,
+            "tech": 2,
+            "ccs": "A",
+        },
     )
 
     # Fixed and Variable Costs:
@@ -406,7 +392,7 @@ def test_build_process_costs_emptymodel():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = QGESSCosting()
 
     # Fixed and Variable Costs:
@@ -458,7 +444,7 @@ def test_build_process_costs_emptymodel_nonearguments():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = QGESSCosting()
 
     # Fixed and Variable Costs:
@@ -496,7 +482,7 @@ def test_build_process_costs_fixedonly():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = QGESSCosting()
 
     # check that the model solved properly and has 0 degrees of freedom
@@ -567,7 +553,7 @@ def test_build_process_costs_fixedonly_nonearguments():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = QGESSCosting()
 
     # check that the model solved properly and has 0 degrees of freedom
@@ -624,7 +610,7 @@ def test_build_process_costs_variableonly():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = QGESSCosting()
 
     # check that the model solved properly and has 0 degrees of freedom
@@ -679,7 +665,7 @@ def test_build_process_costs_variableonly_nonearguments():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = QGESSCosting()
 
     # check that the model solved properly and has 0 degrees of freedom
@@ -762,7 +748,7 @@ def test_build_process_costs_allOM():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = QGESSCosting()
 
     # check that the model solved properly and has 0 degrees of freedom
@@ -844,7 +830,7 @@ def test_build_process_costs_allOM_nonearguments():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = QGESSCosting()
 
     # check that the model solved properly and has 0 degrees of freedom
@@ -927,7 +913,7 @@ def test_power_plant_costing():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = QGESSCosting()
 
     ###########################################################################
@@ -942,16 +928,14 @@ def test_power_plant_costing():
     )
     m.fs.subcritical_PC.coal_feed_rate.fix()
     m.fs.subcritical_PC.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": coal_accounts,
-                "scaled_param": m.fs.subcritical_PC.coal_feed_rate,
-                "tech": 1,
-                "ccs": "A",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": coal_accounts,
+            "scaled_param": m.fs.subcritical_PC.coal_feed_rate,
+            "tech": 1,
+            "ccs": "A",
+        },
     )
 
     # two-stage, slurry-feed IGCC
@@ -962,16 +946,14 @@ def test_power_plant_costing():
     )
     m.fs.IGCC_1.feedwater_flow_rate.fix()
     m.fs.IGCC_1.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": feedwater_accounts,
-                "scaled_param": m.fs.IGCC_1.feedwater_flow_rate,
-                "tech": 3,
-                "ccs": "A",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": feedwater_accounts,
+            "scaled_param": m.fs.IGCC_1.feedwater_flow_rate,
+            "tech": 3,
+            "ccs": "A",
+        },
     )
 
     # single-stage, slurry-feed, IGCC
@@ -982,16 +964,14 @@ def test_power_plant_costing():
     )
     m.fs.IGCC_2.syngas_flow_rate.fix()
     m.fs.IGCC_2.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": syngas_accounts,
-                "scaled_param": m.fs.IGCC_2.syngas_flow_rate,
-                "tech": 4,
-                "ccs": "A",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": syngas_accounts,
+            "scaled_param": m.fs.IGCC_2.syngas_flow_rate,
+            "tech": 4,
+            "ccs": "A",
+        },
     )
 
     # single-stage, dry-feed, IGCC
@@ -1000,16 +980,14 @@ def test_power_plant_costing():
     m.fs.IGCC_3.HRSG_duty = pyo.Var(initialize=1777.86, units=pyunits.MBtu / pyunits.hr)
     m.fs.IGCC_3.HRSG_duty.fix()
     m.fs.IGCC_3.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": HRSG_accounts,
-                "scaled_param": m.fs.IGCC_3.HRSG_duty,
-                "tech": 5,
-                "ccs": "A",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": HRSG_accounts,
+            "scaled_param": m.fs.IGCC_3.HRSG_duty,
+            "tech": 5,
+            "ccs": "A",
+        },
     )
 
     # NGCC
@@ -1018,16 +996,14 @@ def test_power_plant_costing():
     m.fs.NGCC.turbine_power = pyo.Var(initialize=212500, units=pyunits.kW)
     m.fs.NGCC.turbine_power.fix()
     m.fs.NGCC.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": steam_turbine_accounts,
-                "scaled_param": m.fs.NGCC.turbine_power,
-                "tech": 6,
-                "ccs": "A",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": steam_turbine_accounts,
+            "scaled_param": m.fs.NGCC.turbine_power,
+            "tech": 6,
+            "ccs": "A",
+        },
     )
 
     # AUSC PC
@@ -1038,16 +1014,14 @@ def test_power_plant_costing():
     )
     m.fs.AUSC.feedwater_flow.fix()
     m.fs.AUSC.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": AUSC_accounts,
-                "scaled_param": m.fs.AUSC.feedwater_flow,
-                "tech": 7,
-                "ccs": "B",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": AUSC_accounts,
+            "scaled_param": m.fs.AUSC.feedwater_flow,
+            "tech": 7,
+            "ccs": "B",
+        },
     )
 
     # custom carbon capture
@@ -1056,15 +1030,13 @@ def test_power_plant_costing():
     m.fs.CCS.CO2_flow = pyo.Var(initialize=493587.88, units=pyunits.lb / pyunits.hr)
     m.fs.CCS.CO2_flow.fix()
     m.fs.CCS.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": CCS_accounts,
-                "scaled_param": m.fs.CCS.CO2_flow,
-                "tech": 6,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": CCS_accounts,
+            "scaled_param": m.fs.CCS.CO2_flow,
+            "tech": 6,
+        },
     )
 
     # Fixed and Variable Costs:
@@ -1196,7 +1168,7 @@ def test_sCO2_costing():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = QGESSCosting()
 
     # ######################################################
@@ -1207,16 +1179,14 @@ def test_sCO2_costing():
     m.fs.boiler.temp = pyo.Var(initialize=620, units=pyunits.C)  # C
     m.fs.boiler.temp.fix()
     m.fs.boiler.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_sCO2_unit_cost,
-            "costing_method_arguments": {
-                "equipment": "Coal-fired heater",
-                "scaled_param": m.fs.boiler.heat_duty,
-                "temp_C": m.fs.boiler.temp,
-                "CE_index_year": "2017",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_sCO2_unit_cost,
+        costing_method_arguments={
+            "equipment": "Coal-fired heater",
+            "scaled_param": m.fs.boiler.heat_duty,
+            "temp_C": m.fs.boiler.temp,
+            "CE_index_year": "2017",
+        },
     )
 
     # ######################################################
@@ -1227,17 +1197,15 @@ def test_sCO2_costing():
     m.fs.turbine.temp = pyo.Var(initialize=620, units=pyunits.C)
     m.fs.turbine.temp.fix()
     m.fs.turbine.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_sCO2_unit_cost,
-            "costing_method_arguments": {
-                "equipment": "Axial turbine",
-                "scaled_param": m.fs.turbine.work_isentropic,
-                "temp_C": m.fs.turbine.temp,
-                "n_equip": 1,
-                "CE_index_year": "2017",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_sCO2_unit_cost,
+        costing_method_arguments={
+            "equipment": "Axial turbine",
+            "scaled_param": m.fs.turbine.work_isentropic,
+            "temp_C": m.fs.turbine.temp,
+            "n_equip": 1,
+            "CE_index_year": "2017",
+        },
     )
 
     # ######################################################
@@ -1246,16 +1214,14 @@ def test_sCO2_costing():
     m.fs.generator.work_isentropic = pyo.Var(initialize=1006.2, units=pyunits.MW)
     m.fs.generator.work_isentropic.fix()
     m.fs.generator.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_sCO2_unit_cost,
-            "costing_method_arguments": {
-                "equipment": "Generator",
-                "scaled_param": m.fs.generator.work_isentropic,
-                "n_equip": 1,
-                "CE_index_year": "2017",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_sCO2_unit_cost,
+        costing_method_arguments={
+            "equipment": "Generator",
+            "scaled_param": m.fs.generator.work_isentropic,
+            "n_equip": 1,
+            "CE_index_year": "2017",
+        },
     )
 
     # ######################################################
@@ -1276,16 +1242,14 @@ def test_sCO2_costing():
         return b.HTR.UA * b.HTR.LMTD == b.HTR.heat_duty
 
     m.fs.HTR.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_sCO2_unit_cost,
-            "costing_method_arguments": {
-                "equipment": "Recuperator",
-                "scaled_param": m.fs.HTR.UA,
-                "temp_C": m.fs.HTR.temp,
-                "CE_index_year": "2017",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_sCO2_unit_cost,
+        costing_method_arguments={
+            "equipment": "Recuperator",
+            "scaled_param": m.fs.HTR.UA,
+            "temp_C": m.fs.HTR.temp,
+            "CE_index_year": "2017",
+        },
     )
 
     # ######################################################
@@ -1304,16 +1268,14 @@ def test_sCO2_costing():
         return b.LTR.UA * b.LTR.LMTD == b.LTR.heat_duty
 
     m.fs.LTR.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_sCO2_unit_cost,
-            "costing_method_arguments": {
-                "equipment": "Recuperator",
-                "scaled_param": m.fs.LTR.UA,
-                "temp_C": m.fs.LTR.temp,
-                "CE_index_year": "2017",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_sCO2_unit_cost,
+        costing_method_arguments={
+            "equipment": "Recuperator",
+            "scaled_param": m.fs.LTR.UA,
+            "temp_C": m.fs.LTR.temp,
+            "CE_index_year": "2017",
+        },
     )
 
     # ######################################################
@@ -1338,16 +1300,14 @@ def test_sCO2_costing():
         return b.co2_cooler.UA * b.co2_cooler.LMTD == b.co2_cooler.heat_duty
 
     m.fs.co2_cooler.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_sCO2_unit_cost,
-            "costing_method_arguments": {
-                "equipment": "Recuperator",
-                "scaled_param": m.fs.co2_cooler.UA,
-                "temp_C": m.fs.co2_cooler.temp,
-                "CE_index_year": "2017",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_sCO2_unit_cost,
+        costing_method_arguments={
+            "equipment": "Recuperator",
+            "scaled_param": m.fs.co2_cooler.UA,
+            "temp_C": m.fs.co2_cooler.temp,
+            "CE_index_year": "2017",
+        },
     )
 
     # ######################################################
@@ -1358,16 +1318,14 @@ def test_sCO2_costing():
     )
     m.fs.main_compressor.flow_vol.fix()
     m.fs.main_compressor.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_sCO2_unit_cost,
-            "costing_method_arguments": {
-                "equipment": "Barrel type compressor",
-                "scaled_param": m.fs.main_compressor.flow_vol,
-                "n_equip": 5.0,
-                "CE_index_year": "2017",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_sCO2_unit_cost,
+        costing_method_arguments={
+            "equipment": "Barrel type compressor",
+            "scaled_param": m.fs.main_compressor.flow_vol,
+            "n_equip": 5.0,
+            "CE_index_year": "2017",
+        },
     )
 
     # ######################################################
@@ -1378,16 +1336,14 @@ def test_sCO2_costing():
     )
     m.fs.main_compressor_motor.work_isentropic.fix()
     m.fs.main_compressor_motor.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_sCO2_unit_cost,
-            "costing_method_arguments": {
-                "equipment": "Open drip-proof motor",
-                "scaled_param": m.fs.main_compressor_motor.work_isentropic,
-                "n_equip": 5.0,
-                "CE_index_year": "2017",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_sCO2_unit_cost,
+        costing_method_arguments={
+            "equipment": "Open drip-proof motor",
+            "scaled_param": m.fs.main_compressor_motor.work_isentropic,
+            "n_equip": 5.0,
+            "CE_index_year": "2017",
+        },
     )
 
     # ######################################################
@@ -1398,16 +1354,14 @@ def test_sCO2_costing():
     )
     m.fs.bypass_compressor.flow_vol.fix()
     m.fs.bypass_compressor.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_sCO2_unit_cost,
-            "costing_method_arguments": {
-                "equipment": "Barrel type compressor",
-                "scaled_param": m.fs.bypass_compressor.flow_vol,
-                "n_equip": 4.0,
-                "CE_index_year": "2017",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_sCO2_unit_cost,
+        costing_method_arguments={
+            "equipment": "Barrel type compressor",
+            "scaled_param": m.fs.bypass_compressor.flow_vol,
+            "n_equip": 4.0,
+            "CE_index_year": "2017",
+        },
     )
 
     # ######################################################
@@ -1419,16 +1373,14 @@ def test_sCO2_costing():
     m.fs.bypass_compressor_motor.work_isentropic.fix()
 
     m.fs.bypass_compressor_motor.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_sCO2_unit_cost,
-            "costing_method_arguments": {
-                "equipment": "Open drip-proof motor",
-                "scaled_param": m.fs.bypass_compressor_motor.work_isentropic,
-                "n_equip": 4.0,
-                "CE_index_year": "2017",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_sCO2_unit_cost,
+        costing_method_arguments={
+            "equipment": "Open drip-proof motor",
+            "scaled_param": m.fs.bypass_compressor_motor.work_isentropic,
+            "n_equip": 4.0,
+            "CE_index_year": "2017",
+        },
     )
 
     # Fixed and Variable Costs:
@@ -1539,7 +1491,7 @@ def test_ASU_costing():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = QGESSCosting()
 
     m.fs.ASU = UnitModelBlock()
@@ -1547,14 +1499,12 @@ def test_ASU_costing():
     m.fs.ASU.O2_flow.fix()
 
     m.fs.ASU.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_ASU_cost,
-            "costing_method_arguments": {
-                "scaled_param": m.fs.ASU.O2_flow,
-                "CE_index_year": "2017",
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_ASU_cost,
+        costing_method_arguments={
+            "scaled_param": m.fs.ASU.O2_flow,
+            "CE_index_year": "2017",
+        },
     )
 
     # try solving
@@ -1582,7 +1532,7 @@ def test_OM_costing():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyunits.s})
+    m.fs = FlowsheetBlock(dynamic=True, time_units=pyunits.s)
     m.fs.costing = QGESSCosting()
 
     # build fixed costs

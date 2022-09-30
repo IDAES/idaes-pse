@@ -39,7 +39,7 @@ def build_costing():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = QGESSCosting()
     CE_index_year = "2018"
 
@@ -54,17 +54,15 @@ def build_costing():
     m.fs.b1.feedwater_flowrate.fix()
 
     m.fs.b1.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": FW_accounts,
-                "scaled_param": m.fs.b1.feedwater_flowrate,
-                "tech": 6,
-                "ccs": "B",
-                "CE_index_year": CE_index_year,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": FW_accounts,
+            "scaled_param": m.fs.b1.feedwater_flowrate,
+            "tech": 6,
+            "ccs": "B",
+            "CE_index_year": CE_index_year,
+        },
     )
 
     return m
@@ -100,17 +98,15 @@ def test_units1_costing(build_costing):
     )
     m.fs.b2.raw_water_withdrawal.fix()
     m.fs.b2.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": RW_withdraw_accounts,
-                "scaled_param": m.fs.b2.raw_water_withdrawal,
-                "tech": 6,
-                "ccs": "B",
-                "CE_index_year": CE_index_year,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": RW_withdraw_accounts,
+            "scaled_param": m.fs.b2.raw_water_withdrawal,
+            "tech": 6,
+            "ccs": "B",
+            "CE_index_year": CE_index_year,
+        },
     )
 
     # Accounts with fuel gas flowrate as the reference/scaling parameter
@@ -125,17 +121,15 @@ def test_units1_costing(build_costing):
     )
     m.fs.b3.fg_flowrate.fix()
     m.fs.b3.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": FuelG_accounts,
-                "scaled_param": m.fs.b3.fg_flowrate,
-                "tech": 6,
-                "ccs": "B",
-                "CE_index_year": CE_index_year,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": FuelG_accounts,
+            "scaled_param": m.fs.b3.fg_flowrate,
+            "tech": 6,
+            "ccs": "B",
+            "CE_index_year": CE_index_year,
+        },
     )
 
     # Accounts with process water discharge as the reference/scaling parameter
@@ -148,17 +142,15 @@ def test_units1_costing(build_costing):
     )
     m.fs.b4.process_water_discharge.fix()
     m.fs.b4.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": PW_discharge_accounts,
-                "scaled_param": m.fs.b4.process_water_discharge,
-                "tech": 6,
-                "ccs": "B",
-                "CE_index_year": CE_index_year,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": PW_discharge_accounts,
+            "scaled_param": m.fs.b4.process_water_discharge,
+            "tech": 6,
+            "ccs": "B",
+            "CE_index_year": CE_index_year,
+        },
     )
 
     # Initialize costing
@@ -206,17 +198,15 @@ def test_units2_costing(build_costing):
     )
     m.fs.b5.fg_flowrate.fix()
     m.fs.b5.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": FG_accounts,
-                "scaled_param": m.fs.b5.fg_flowrate,
-                "tech": 6,
-                "ccs": "B",
-                "CE_index_year": CE_index_year,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": FG_accounts,
+            "scaled_param": m.fs.b5.fg_flowrate,
+            "tech": 6,
+            "ccs": "B",
+            "CE_index_year": CE_index_year,
+        },
     )
 
     # Accounts with combustion turbine gross power as the reference/scaling
@@ -230,17 +220,15 @@ def test_units2_costing(build_costing):
     m.fs.b6.ct_gross_power = pyo.Var(initialize=CT_gross_power, units=pyunits.kW)
     m.fs.b6.ct_gross_power.fix()
     m.fs.b6.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": CT_grosspower_accounts,
-                "scaled_param": m.fs.b6.ct_gross_power,
-                "tech": 6,
-                "ccs": "B",
-                "CE_index_year": CE_index_year,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": CT_grosspower_accounts,
+            "scaled_param": m.fs.b6.ct_gross_power,
+            "tech": 6,
+            "ccs": "B",
+            "CE_index_year": CE_index_year,
+        },
     )
 
     # Accounts with HRSG duty as the reference/scaling parameter
@@ -253,17 +241,15 @@ def test_units2_costing(build_costing):
     m.fs.b7.hrsg_duty = pyo.Var(initialize=HRSG_duty, units=pyunits.MBtu / pyunits.hr)
     m.fs.b7.hrsg_duty.fix()
     m.fs.b7.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": HRSG_duty_accounts,
-                "scaled_param": m.fs.b7.hrsg_duty,
-                "tech": 6,
-                "ccs": "B",
-                "CE_index_year": CE_index_year,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": HRSG_duty_accounts,
+            "scaled_param": m.fs.b7.hrsg_duty,
+            "tech": 6,
+            "ccs": "B",
+            "CE_index_year": CE_index_year,
+        },
     )
 
     # Accounts with gas flow to stack as the reference/scaling parameter
@@ -278,17 +264,15 @@ def test_units2_costing(build_costing):
     )
     m.fs.b8.stack_flow_gas.fix()
     m.fs.b8.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": Stack_flow_gas_accounts,
-                "scaled_param": m.fs.b8.stack_flow_gas,
-                "tech": 6,
-                "ccs": "B",
-                "CE_index_year": CE_index_year,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": Stack_flow_gas_accounts,
+            "scaled_param": m.fs.b8.stack_flow_gas,
+            "tech": 6,
+            "ccs": "B",
+            "CE_index_year": CE_index_year,
+        },
     )
 
     # Initialize costing
@@ -325,17 +309,15 @@ def test_units3_costing(build_costing):
     m.fs.b9.st_gross_power = pyo.Var(initialize=ST_gross_power, units=pyunits.kW)
     m.fs.b9.st_gross_power.fix()
     m.fs.b9.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": Steam_turbine_gross_power_accounts,
-                "scaled_param": m.fs.b9.st_gross_power,
-                "tech": 6,
-                "ccs": "B",
-                "CE_index_year": CE_index_year,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": Steam_turbine_gross_power_accounts,
+            "scaled_param": m.fs.b9.st_gross_power,
+            "tech": 6,
+            "ccs": "B",
+            "CE_index_year": CE_index_year,
+        },
     )
 
     # Accounts with condenser duty as the reference/scaling parameter
@@ -350,17 +332,15 @@ def test_units3_costing(build_costing):
     )
     m.fs.b10.cond_duty.fix()
     m.fs.b10.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": Condenser_duty_accounts,
-                "scaled_param": m.fs.b10.cond_duty,
-                "tech": 6,
-                "ccs": "B",
-                "CE_index_year": CE_index_year,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": Condenser_duty_accounts,
+            "scaled_param": m.fs.b10.cond_duty,
+            "tech": 6,
+            "ccs": "B",
+            "CE_index_year": CE_index_year,
+        },
     )
 
     # Accounts with cooling tower duty as the reference/scaling parameter
@@ -376,17 +356,15 @@ def test_units3_costing(build_costing):
     )
     m.fs.b11.cool_tower_duty.fix()
     m.fs.b11.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": Cooling_tower_accounts,
-                "scaled_param": m.fs.b11.cool_tower_duty,
-                "tech": 6,
-                "ccs": "B",
-                "CE_index_year": CE_index_year,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": Cooling_tower_accounts,
+            "scaled_param": m.fs.b11.cool_tower_duty,
+            "tech": 6,
+            "ccs": "B",
+            "CE_index_year": CE_index_year,
+        },
     )
 
     # Accounts with circulating water flowrate as the reference/scaling
@@ -401,17 +379,15 @@ def test_units3_costing(build_costing):
     )
     m.fs.b12.circ_water_flow.fix()
     m.fs.b12.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": Circ_water_accounts,
-                "scaled_param": m.fs.b12.circ_water_flow,
-                "tech": 6,
-                "ccs": "B",
-                "CE_index_year": CE_index_year,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": Circ_water_accounts,
+            "scaled_param": m.fs.b12.circ_water_flow,
+            "tech": 6,
+            "ccs": "B",
+            "CE_index_year": CE_index_year,
+        },
     )
 
     # Accounts with total plant gross power as the reference/scaling parameter
@@ -436,17 +412,15 @@ def test_units3_costing(build_costing):
     m.fs.b13.gross_power = pyo.Var(initialize=plant_gross_power, units=pyunits.kW)
     m.fs.b13.gross_power.fix()
     m.fs.b13.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": plant_gross_power_accounts,
-                "scaled_param": m.fs.b13.gross_power,
-                "tech": 6,
-                "ccs": "B",
-                "CE_index_year": CE_index_year,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": plant_gross_power_accounts,
+            "scaled_param": m.fs.b13.gross_power,
+            "tech": 6,
+            "ccs": "B",
+            "CE_index_year": CE_index_year,
+        },
     )
 
     # Accounts with auxilliary load as the reference/scaling parameter
@@ -474,17 +448,15 @@ def test_units3_costing(build_costing):
     m.fs.b14.auxilliary_load = pyo.Var(initialize=aux_load, units=pyunits.kW)
     m.fs.b14.auxilliary_load.fix()
     m.fs.b14.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": auxilliary_load_accounts,
-                "scaled_param": m.fs.b14.auxilliary_load,
-                "tech": 6,
-                "ccs": "B",
-                "CE_index_year": CE_index_year,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": auxilliary_load_accounts,
+            "scaled_param": m.fs.b14.auxilliary_load,
+            "tech": 6,
+            "ccs": "B",
+            "CE_index_year": CE_index_year,
+        },
     )
 
     # Accounts with STG,CTG output as the reference/scaling parameter
@@ -497,17 +469,15 @@ def test_units3_costing(build_costing):
     m.fs.b15.stg_ctg_output = pyo.Var(initialize=stg_ctg_op, units=pyunits.kW)
     m.fs.b15.stg_ctg_output.fix()
     m.fs.b15.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": stg_ctg_accounts,
-                "scaled_param": m.fs.b15.stg_ctg_output,
-                "tech": 6,
-                "ccs": "B",
-                "CE_index_year": CE_index_year,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": stg_ctg_accounts,
+            "scaled_param": m.fs.b15.stg_ctg_output,
+            "tech": 6,
+            "ccs": "B",
+            "CE_index_year": CE_index_year,
+        },
     )
 
     # Accounts with gas turbine power as the reference/scaling parameter
@@ -520,17 +490,15 @@ def test_units3_costing(build_costing):
     m.fs.b16.gas_turbine_power = pyo.Var(initialize=gt_power, units=pyunits.kW)
     m.fs.b16.gas_turbine_power.fix()
     m.fs.b16.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": m.fs.costing,
-            "costing_method": QGESSCostingData.get_PP_costing,
-            "costing_method_arguments": {
-                "cost_accounts": gasturbine_accounts,
-                "scaled_param": m.fs.b16.gas_turbine_power,
-                "tech": 6,
-                "ccs": "B",
-                "CE_index_year": CE_index_year,
-            },
-        }
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": gasturbine_accounts,
+            "scaled_param": m.fs.b16.gas_turbine_power,
+            "tech": 6,
+            "ccs": "B",
+            "CE_index_year": CE_index_year,
+        },
     )
 
     # Initialize costing
