@@ -38,13 +38,13 @@ class ViscosityWilkePhase(object):
     @staticmethod
     def build_phi_ij(b, pobj):
         pname = pobj.local_name
-        if not hasattr(b, "viscosity_phi_ij"):
+        if not hasattr(b, "visc_d_phi_ij"):
             mw_dict = {k: b.params.get_component(k).mw for k in b.components_in_phase(pname)}
 
             def phi_rule(blk, i, j):
                 return pobj.viscosity_phi_ij_callback(blk, i, j, pname, mw_dict)
 
-            b.visc_phi_ij = pyo.Expression(
+            b.visc_d_phi_ij = pyo.Expression(
                 b.components_in_phase(pname),
                 b.components_in_phase(pname),
                 rule=phi_rule,
@@ -64,7 +64,7 @@ class ViscosityWilkePhase(object):
             pname = pobj.local_name
 
             return sum([b.mole_frac_phase_comp[pname, i] * b.visc_d_phase_comp[pname, i]
-                        / sum([b.mole_frac_phase_comp[pname, j] * b.visc_phi_ij[i, j] for j in b.components_in_phase(pname)])
+                        / sum([b.mole_frac_phase_comp[pname, j] * b.visc_d_phi_ij[i, j] for j in b.components_in_phase(pname)])
                         for i in b.components_in_phase(pname)])
 
 

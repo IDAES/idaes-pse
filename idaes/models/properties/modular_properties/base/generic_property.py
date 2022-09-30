@@ -3761,7 +3761,8 @@ class GenericStateBlockData(StateBlockData):
                     return Expression.Skip
 
             self.visc_d_phase_comp = Expression(
-                self.phase_component_set,
+                self.phase_list,
+                self.component_list,
                 doc="Diffusivity for each phase-component pair",
                 rule=rule_visc_d_phase_comp,
             )
