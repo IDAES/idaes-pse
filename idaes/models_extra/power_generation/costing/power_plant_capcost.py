@@ -49,6 +49,7 @@ from pyomo.environ import (
     Expr_if,
     units as pyunits,
 )
+from pyomo.core.base.expression import ScalarExpression
 from pyomo.core.base.units_container import InconsistentUnitsError
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
@@ -121,6 +122,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         chemicals=None,
         waste=None,
         tonne_CO2_capture=None,
+        CE_index_year="2018",
     ):
         """
         This is where you do all your process wide costing.
@@ -133,26 +135,63 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         4. self.aggregate_flow_costs (indexed by flow type)
         """
 
+        try:
+            CE_index_units = getattr(
+                pyunits, "MUSD_" + CE_index_year
+            )  # millions of USD, for base year
+        except AttributeError:
+            raise Exception(
+                "CE_index_year %s is not a valid currency base option. "
+                "Valid CE index options include CE500, CE394 and years from "
+                "1990 to 2020." % (CE_index_year)
+            )
+
+        self.capacity_factor = Param(
+            initialize=0.85,
+            mutable=True,
+            doc="capacity factor of the plant",
+            units=pyunits.dimensionless,
+        )
+        if net_power is not None:
+            if not hasattr(self, "net_power"):
+                self.net_power = Param(
+                    self.parent_block().time,
+                    initialize=net_power,
+                    mutable=True,
+                    units=net_power.get_units(),
+                )
+        else:
+            self.net_power = net_power  # None
+
         if total_plant_cost is None:
-            self.get_total_TPC()
+            self.get_total_TPC(CE_index_year)
 
         if fixed_OM is True:
             self.get_fixed_OM_costs(
+                net_power=self.net_power,
                 nameplate_capacity=nameplate_capacity,
+                capacity_factor=self.capacity_factor,
                 labor_rate=labor_rate,
                 labor_burden=labor_burden,
                 operators_per_shift=operators_per_shift,
                 tech=tech,
+                CE_index_year=CE_index_year,
             )
 
         if variable_OM is True:
-            self.get_variable_OM_costs(net_power, resources, rates, prices=prices)
+            self.get_variable_OM_costs(
+                net_power,
+                resources,
+                rates,
+                prices=prices,
+                capacity_factor=self.capacity_factor,
+            )
 
         # build system costs (owner's, total overnight costs, annualized costs, COE, and cost of capture)
         if fixed_OM and variable_OM:
             # total overnight cost requires fixed costs
             self.pct_TPC = Param(
-                initialize=20.2 / 100, doc="Fixed percentaje for other owners cost"
+                initialize=20.2 / 100, doc="Fixed percentage for other owners cost"
             )
             self.six_month_labor = Expression(
                 expr=(
@@ -166,7 +205,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             if fuel is not None:
                 self.fuel_cost_OC = Expression(
                     expr=self.variable_operating_costs[0, fuel]
-                    / (85 / 100)
+                    / self.capacity_factor
                     / 12
                     * 2.25,
                     doc="Owner's costs - 2.25 months of fuel costs",
@@ -177,7 +216,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 self.waste_costs_OC = Expression(
                     expr=(
                         sum(self.variable_operating_costs[0, i] for i in waste)
-                        / (85 / 100)
+                        / self.capacity_factor
                         / 12
                     )
                 )
@@ -193,24 +232,48 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 expr=(
                     sum(self.variable_operating_costs[0, i] for i in non_fuel_resources)
                 )
-                / (85 / 100)
+                / self.capacity_factor
                 / 12
             )
+
+            if land_cost is not None:
+                if (
+                    (type(land_cost) in [Expression, ScalarExpression])
+                    or (type(land_cost) is Param and land_cost.get_units is None)
+                    or (type(land_cost) is Var and land_cost.get_units is None)
+                ):
+                    land_cost_units_factor = 1 * CE_index_units
+                else:
+                    land_cost_units_factor = 1
 
             self.total_overnight_capital = Expression(
                 expr=self.total_TPC
                 # pre production costs
                 + self.six_month_labor
-                + self.maintenance_material_cost / 12  # 1 month maintenance materials
-                + self.non_fuel_and_waste_OC  # 1 month non fuel consumables
-                + (self.waste_costs_OC if waste is not None else 0)  # 1 month waste
-                # inventory capital costs
-                + (self.fuel_cost_OC if fuel is not None else 0)  # 60 day fuel supply
-                # Other costs
                 + (
-                    self.chemical_costs_OC if waste is not None else 0
-                )  # Initial Cost for Catalyst and Chemicals
-                + (land_cost if land_cost is not None else 0)
+                    self.maintenance_material_cost / 12  # 1 month maintenance materials
+                    + self.non_fuel_and_waste_OC  # 1 month non fuel consumables
+                    + (
+                        self.waste_costs_OC if waste is not None else 0 * CE_index_units
+                    )  # 1 month waste
+                    # inventory capital costs
+                    + (
+                        self.fuel_cost_OC if fuel is not None else 0 * CE_index_units
+                    )  # 60 day fuel supply
+                    # Other costs
+                    + (
+                        self.chemical_costs_OC
+                        if waste is not None
+                        else 0 * CE_index_units
+                    )  # Initial Cost for Catalyst and Chemicals
+                )
+                * 1
+                * pyunits.year  # variable costs for 1 year
+                + (
+                    land_cost * land_cost_units_factor
+                    if land_cost is not None
+                    else 0 * CE_index_units
+                )
                 + self.total_TPC
                 * self.pct_TPC  # other owners costs (other + spare parts + financing + other pre-production)
             )
@@ -230,32 +293,50 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 mutable=True,
                 doc="Fixed charge rate from Exhibit 3-5 based on CRF values, real for three/five years 0.0707, nominal for three/five years 0.0886",
             )
-            self.capacity_factor = Param(
-                initialize=0.85, doc="capacity factor of the plant"
-            )
             self.annualized_cost = Expression(
                 expr=self.fixed_charge_factor * self.total_as_spent_cost
+            )
+
+            self.add_COE_cost = Param(
+                initialize=70.9e-6,
+                mutable=True,
+                doc="additional cost to be added to the COE calculations in millions",
+                units=CE_index_units / pyunits.MWh,
             )
 
             # only build COE for power plants
             if net_power is not None:
                 self.cost_of_electricity = Expression(
                     expr=(
-                        self.annualized_cost
-                        + self.total_fixed_OM_cost
-                        + self.total_variable_OM_cost[0] * self.capacity_factor
+                        (
+                            self.annualized_cost / pyunits.year
+                            + self.total_fixed_OM_cost / pyunits.year
+                            + self.total_variable_OM_cost[0] * self.capacity_factor
+                        )
+                        / (
+                            self.capacity_factor
+                            * self.net_power[0]
+                            * 8760
+                            * pyunits.hr
+                            / pyunits.year
+                        )
+                        + self.add_COE_cost
                     )
-                    / (self.capacity_factor * net_power[0])
                 )
             if tonne_CO2_capture is not None:
+                if not hasattr(self, "tonne_CO2_capture"):
+                    self.tonne_CO2_capture = Param(
+                        initialize=tonne_CO2_capture, mutable=True, units=pyunits.ton
+                    )
                 self.cost_of_capture = Expression(
                     expr=(
-                        self.annualized_cost
-                        + self.total_fixed_OM_cost
-                        + self.total_variable_OM_cost[0] * self.capacity_factor
+                        (
+                            self.annualized_cost / pyunits.year
+                            + self.total_fixed_OM_cost / pyunits.year
+                            + self.total_variable_OM_cost[0] * self.capacity_factor
+                        )
+                        / self.tonne_CO2_capture
                     )
-                    * 1e6
-                    / tonne_CO2_capture
                 )
 
     @staticmethod
@@ -277,7 +358,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             var_dict["Total TPC [$MM]"] = value(self.total_TPC)
 
         if hasattr(self, "total_overnight_capital"):
-            var_dict["Total Overnigth Cost [$MM]"] = value(self.total_overnight_capital)
+            var_dict["Total Overnight Cost [$MM]"] = value(self.total_overnight_capital)
 
         if hasattr(self, "total_as_spent_cost"):
             var_dict["Total As Spent Cost [$MM]"] = value(self.total_as_spent_cost)
@@ -305,14 +386,16 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             var_dict["Total Annualized Cost [$MM/year]"] = (
                 value(self.annualized_cost)
                 + value(self.total_fixed_OM_cost)
-                + 85 / 100 * value(self.total_variable_OM_cost[0])
+                + self.capacity_factor * value(self.total_variable_OM_cost[0])
             )
 
         if hasattr(self, "cost_of_electricity"):
-            var_dict["Cost of Electricity [$/MWh]"] = value(self.cost_of_electricity)
+            var_dict["Cost of Electricity [$/MWh]"] = value(
+                self.cost_of_electricity * 1e6
+            )
 
         if hasattr(self, "cost_of_capture"):
-            var_dict["Cost of Capture [$/tonne]"] = value(self.cost_of_capture)
+            var_dict["Cost of Capture [$/tonne]"] = value(self.cost_of_capture * 1e6)
 
         report_dir = {}
         report_dir["Value"] = {}
@@ -888,7 +971,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             costing.cost_scaling_fracs[i, p]
                             * (
                                 pyunits.convert(scaled_param[j], ref_units)
-                                / costing.ref_param[i, p]
+                                / (costing.ref_param[i, p] * ref_units)
                             )
                             ** costing.exp[i]
                             for j, p in enumerate(process_params[i])
@@ -899,7 +982,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     pyunits.convert(
                         costing.ref_cost[i] * ref_cost_units, CE_index_units
                     )
-                    * (pyunits.convert(scaled_param, ref_units) / costing.ref_param[i])
+                    * (
+                        pyunits.convert(scaled_param, ref_units)
+                        / (costing.ref_param[i] * ref_units)
+                    )
                     ** costing.exp[i]
                 )
 
@@ -986,6 +1072,11 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         param_dict = sCO2_costing_params[equipment]
 
+        if custom_accounts is not None:
+            # adding custom params to the dictionary
+            for key, value in custom_accounts.items():
+                param_dict[key] = value
+
         # define parameters
         self.costing.ref_cost = Param(
             mutable=True,
@@ -995,61 +1086,85 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         )
 
         self.costing.exp = Param(
-            mutable=True, initialize=param_dict["b"], doc="Scaling exponent"
+            mutable=True,
+            initialize=param_dict["b"],
+            doc="Scaling exponent",
+            units=pyunits.dimensionless,
         )
 
         self.costing.c = Param(
             mutable=True,
             initialize=param_dict["c"],
             doc="coefficient for temperature correction",
+            units=pyunits.C**-1,
         )
 
         self.costing.d = Param(
             mutable=True,
             initialize=param_dict["d"],
             doc="coefficient for temperature correction",
+            units=pyunits.C**-2,
         )
 
         self.costing.material_cost = Param(
             mutable=True,
-            doc="material installation cost",
+            doc="material installation cost factor",
             initialize=param_dict["Material Cost"],
+            units=pyunits.dimensionless,
         )
 
         self.costing.labor_cost = Param(
             mutable=True,
             initialize=param_dict["Labor Cost"],
-            doc="labor installation cost",
+            doc="labor installation cost factor",
+            units=pyunits.dimensionless,
         )
 
         # estimates for the percentages of TPC will be added later
 
         self.costing.eng_fee = Param(
-            mutable=True, initialize=0, doc="engineering fee percentage"
+            mutable=True,
+            initialize=0,
+            doc="engineering fee percentage",
+            units=pyunits.dimensionless,
         )
 
         self.costing.process_conting = Param(
-            mutable=True, initialize=0, doc="process contingency percentage"
+            mutable=True,
+            initialize=0,
+            doc="process contingency percentage",
+            units=pyunits.dimensionless,
         )
 
         self.costing.project_conting = Param(
-            mutable=True, initialize=0, doc="project contingency percentage"
+            mutable=True,
+            initialize=0,
+            doc="project contingency percentage",
+            units=pyunits.dimensionless,
         )
 
         # define variables
         # n_equip is left as a fixed variable to support MINLP optimization
         self.costing.n_equip = Var(
-            initialize=n_equip, doc="number of pieces of equipment"
+            initialize=n_equip,
+            doc="number of pieces of equipment",
+            units=pyunits.dimensionless,
         )
 
         self.costing.n_equip.fix(n_equip)
 
         self.costing.scaled_param = Var(
-            initialize=scaled_param, bounds=(0, 1e12), doc="scaled parameter"
+            initialize=scaled_param,
+            bounds=(0, 1e12),
+            doc="scaled parameter",
+            units=scaled_param.get_units(),
         )
 
         self.costing.temp_factor = Var(
-            initialize=1, bounds=(0.9, 100), doc="temperature correction factor"
+            initialize=1,
+            bounds=(0.9, 100),
+            doc="temperature correction factor",
+            units=pyunits.dimensionless,
         )
 
         self.costing.equipment_cost = Var(
@@ -1096,7 +1211,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             else:
                 self.costing.temperature = Var(
-                    initialize=500, bounds=(0, 1e6), doc="dummy var for temperature"
+                    initialize=500,
+                    bounds=(0, 1e6),
+                    doc="dummy var for temperature",
+                    units=pyunits.C,
                 )
 
                 self.costing.temp_eq = Constraint(
@@ -1106,11 +1224,11 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 def temp_correction_rule(costing):  # rule for temp correction
                     return (
                         Expr_if(
-                            costing.temperature < 550,
-                            1e-6 * costing.temperature + 1,
+                            costing.temperature < 550 * pyunits.C,
+                            1e-6 * costing.temperature / pyunits.C + 1,
                             1
-                            + costing.c * (costing.temperature - 550)
-                            + costing.d * (costing.temperature - 550) ** 2,
+                            + costing.c * (costing.temperature - 550 * pyunits.C)
+                            + costing.d * (costing.temperature - 550 * pyunits.C) ** 2,
                         )
                         == costing.temp_factor
                     )
@@ -1125,7 +1243,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 costing.equipment_cost
                 == costing.n_equip
                 * pyunits.convert(costing.ref_cost, CE_index_units)
-                * (costing.scaled_param**costing.exp)
+                * (
+                    (costing.scaled_param / costing.scaled_param.get_units())
+                    ** costing.exp
+                )
                 * costing.temp_factor
             )
 
@@ -1171,6 +1292,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
     # -----------------------------------------------------------------------------
     def get_ASU_cost(self, scaled_param, CE_index_year="2018"):
         # scaled parameter is O2 flowrate in TPD
+        # only one set of parameters used, ref is hard coded for TPD and 2017
 
         params = {
             "Reference Cost": 3.26e6,
@@ -1213,33 +1335,42 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             initialize=params["Reference Cost"],
             mutable=True,
             doc="ASU reference cost",
-            units=pyunits.USD_2008,
+            units=pyunits.USD_2008_Nov,
         )
 
         self.costing.ref_param = Param(
             initialize=params["Reference Parameter"],
             mutable=True,
             doc="ASU reference parameter value",
+            units=pyunits.ton / pyunits.d,
         )
 
         self.costing.exp = Param(
-            initialize=params["Exponent"], mutable=True, doc="ASU scaling exponent"
+            initialize=params["Exponent"],
+            mutable=True,
+            doc="ASU scaling exponent",
+            units=pyunits.dimensionless,
         )
 
         self.costing.eng_fee = Param(
-            mutable=True, initialize=params["Eng Fee"], doc="engineering fee percentage"
+            mutable=True,
+            initialize=params["Eng Fee"],
+            doc="engineering fee percentage",
+            units=pyunits.dimensionless,
         )
 
         self.costing.process_conting = Param(
             mutable=True,
             initialize=params["Process"],
             doc="process contingency percentage",
+            units=pyunits.dimensionless,
         )
 
         self.costing.project_conting = Param(
             mutable=True,
             initialize=params["Project"],
             doc="project contingency percentage",
+            units=pyunits.dimensionless,
         )
 
         # define variables
@@ -1258,15 +1389,12 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         )
 
         # rule for scaling BEC
-        # reference cost is in 2008 dollars, 566.2 is CE index for Nov 2008
 
         def bare_erected_cost_rule(costing):
             return (
                 costing.bare_erected_cost
                 == pyunits.convert(
-                    costing.ref_cost
-                    * 575.4
-                    / 566.2,  # convert USD from Nov 2008 to 2008 (aggregate)
+                    costing.ref_cost,
                     CE_index_units,
                 )
                 * (scaled_param / costing.ref_param) ** costing.exp
@@ -1299,7 +1427,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
     def get_fixed_OM_costs(
         b,
+        net_power=None,
         nameplate_capacity=650,
+        capacity_factor=0.85,
         labor_rate=38.50,
         labor_burden=30,
         operators_per_shift=6,
@@ -1349,20 +1479,20 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # create and fix total_TPC if it does not exist yet
         if not hasattr(b, "total_TPC"):
             b.total_TPC = Var(
-                initialize=0,
+                initialize=100,
                 bounds=(0, 1e4),
                 doc="total TPC in $MM",
                 units=CE_index_units,
             )
             if fixed_TPC is None:
-                b.total_TPC.fix(100)
+                b.total_TPC.fix(100 * CE_index_units)
                 _log.warning(
                     "b.costing.total_TPC does not exist and a value "
                     "for fixed_TPC was not specified, total_TPC will be "
                     "fixed to 100 MM$"
                 )
             else:
-                b.total_TPC.fix(fixed_TPC)
+                b.total_TPC.fix(fixed_TPC * CE_index_units)
         else:
             if fixed_TPC is not None:
                 _log.warning(
@@ -1371,10 +1501,20 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 )
 
         # make params
-        b.labor_rate = Param(initialize=labor_rate, mutable=True)
-        b.labor_burden = Param(initialize=labor_burden, mutable=True)
-        b.operators_per_shift = Param(initialize=operators_per_shift, mutable=True)
-        b.nameplate_capacity = Param(initialize=nameplate_capacity, mutable=True)
+        b.labor_rate = Param(
+            initialize=labor_rate,
+            mutable=True,
+            units=getattr(pyunits, "USD_" + CE_index_year) / pyunits.hr,
+        )
+        b.labor_burden = Param(
+            initialize=labor_burden, mutable=True, units=pyunits.dimensionless
+        )
+        b.operators_per_shift = Param(
+            initialize=operators_per_shift, mutable=True, units=pyunits.dimensionless
+        )
+        b.nameplate_capacity = Param(
+            initialize=nameplate_capacity, mutable=True, units=pyunits.MW
+        )
 
         maintenance_percentages = {
             1: [0.4, 0.016],
@@ -1443,10 +1583,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # maintenance material cost is technically a variable cost, but it makes
         # more sense to include with the fixed costs becuase it uses TPC
         b.maintenance_material_cost = Var(
-            initialize=5e-6,
+            initialize=2e-7,
             bounds=(0, 1e4),
-            doc="cost of maintenance materials in $MM/MWh",
-            units=CE_index_units,
+            doc="cost of maintenance materials in $MM/year",
+            units=CE_index_units / pyunits.year,
         )
 
         # create constraints
@@ -1455,8 +1595,15 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # calculated from labor rate, labor burden, and operators per shift
         @b.Constraint()
         def annual_labor_cost_rule(c):
-            return c.annual_operating_labor_cost * 1e6 == (
-                c.operators_per_shift * c.labor_rate * (1 + c.labor_burden / 100) * 8760
+            return c.annual_operating_labor_cost == pyunits.convert(
+                (
+                    c.operators_per_shift
+                    * c.labor_rate
+                    * (1 + c.labor_burden / 100)
+                    * 8760
+                    * pyunits.hr
+                ),
+                CE_index_units,
             )
 
         # technology specific percentage of TPC
@@ -1489,30 +1636,35 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 + c.other_fixed_costs
             )
 
-        power_plant = False
         # technology specific percentage of TPC
         @b.Constraint()
         def maintenance_material_cost_rule(c):
-            if power_plant is True:
+            if net_power is not None:
                 return c.maintenance_material_cost == (
                     TPC
                     * c.maintenance_material_TPC_split
                     * c.maintenance_material_percent
-                    / 0.85
+                    / (capacity_factor * pyunits.year)
+                    * net_power[0]
                     / c.nameplate_capacity
-                    / 8760
                 )
             else:
                 return c.maintenance_material_cost == (
                     TPC
                     * c.maintenance_material_TPC_split
                     * c.maintenance_material_percent
-                    / 0.85
-                    * (85 / 100)
+                    / (capacity_factor * pyunits.year)
+                    * (capacity_factor)
                 )
 
     def get_variable_OM_costs(
-        self, production_rate, resources, rates, prices={}, CE_index_year="2018"
+        self,
+        production_rate,
+        resources,
+        rates,
+        prices={},
+        CE_index_year="2018",
+        capacity_factor=0.85,
     ):
         """
         This function is used to calculate the variable cost of producing either
@@ -1533,10 +1685,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         """
 
-        if not hasattr(self, "time"):  # flowsheet is not dynamic
-            self.time = [0]
-        if not hasattr(self, "time_units"):  # no time units defined
-            self.time_units = pyunits.s
+        if not hasattr(self.parent_block(), "time"):  # flowsheet is not dynamic
+            self.parent_block().time = [0]
+        if not hasattr(self.parent_block(), "time_units"):  # no time units defined
+            self.parent_block().time_units = pyunits.s
 
         try:
             CE_index_units = getattr(pyunits, "MUSD_" + CE_index_year)
@@ -1545,24 +1697,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 "CE_index_year %s is not a valid currency base option. "
                 "Valid CE index options include CE500, CE394 and years from "
                 "1990 to 2020." % (CE_index_year)
-            )
-
-        # check the units on production_rate
-        if isinstance(production_rate, Expression) and production_rate.is_indexed:
-            production_units = pyunits.get_units(
-                production_rate[production_rate.index_set().first()]
-            )
-        else:
-            production_units = pyunits.get_units(production_rate)
-
-        try:
-            pyunits.convert(production_units, pyunits.MW)
-            cost_units = CE_index_units / pyunits.MWh
-            unit_tag = "$MM/MWh"
-        except InconsistentUnitsError:
-            raise Exception(
-                "units not compatible, make sure production rate exists and "
-                "has dimensions of power"
             )
 
         # assert arguments are correct types
@@ -1593,7 +1727,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             "thermal_reclaimer_unit_waste": 38 * 1e-6 * CE_index_units / pyunits.ton,
         }
 
-        # add entrys from prices to defualt_prices
+        # add entrys from prices to default_prices
         for key in prices.keys():
             default_prices[key] = prices[key]
 
@@ -1613,42 +1747,42 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         # make vars
         self.variable_operating_costs = Var(
-            self.time,
+            self.parent_block().time,
             resources,
-            initialize=1,
-            doc="variable operating costs in $MM/production basis",
-            units=cost_units,
+            initialize=2e-7,
+            doc="variable operating costs in $MM/year",
+            units=CE_index_units / pyunits.year,
         )
 
         self.other_variable_costs = Var(
-            self.time,
+            self.parent_block().time,
             initialize=0,
-            doc="a variable to include non-standard O&M costs in $MM/production basis",
-            units=cost_units,
+            doc="a variable to include non-standard O&M costs in $MM/year",
+            units=CE_index_units / pyunits.year,
         )
         # assume the user is not using this
         self.other_variable_costs.fix(0)
 
         self.total_variable_OM_cost = Var(
-            self.time,
-            initialize=1,
-            doc="total variable operating and maintenance costs in $MM/production basis",
-            units=cost_units,
+            self.parent_block().time,
+            initialize=4e-6,
+            doc="total variable operating and maintenance costs in $MM/year",
+            units=CE_index_units / pyunits.year,
         )
 
-        @self.Constraint(self.time, resources)
+        @self.Constraint(self.parent_block().time, resources)
         def variable_cost_rule_power(c, t, r):
 
             return c.variable_operating_costs[t, r] == (
                 pyunits.convert(
-                    resource_prices[r] * resource_rates[r][t] * 365 * 85 / 100,
-                    CE_index_units / c.time_units,
+                    resource_prices[r] * resource_rates[r][t] * capacity_factor,
+                    CE_index_units / pyunits.year,
                 )
             )
 
         if hasattr(self, "maintenance_material_cost"):  # built by get_fixed_OM_costs
 
-            @self.Constraint(self.time)
+            @self.Constraint(self.parent_block().time)
             def total_variable_cost_rule_power(c, t):
                 return (
                     c.total_variable_OM_cost[t]
@@ -1659,7 +1793,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         else:  # not built yet, don't include that variable
 
-            @self.Constraint(self.time)
+            @self.Constraint(self.parent_block().time)
             def total_variable_cost_rule_power(c, t):
                 return (
                     c.total_variable_OM_cost[t]
@@ -1793,9 +1927,21 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     % (value(o.name), value(o.costing.equipment_cost))
                 )
 
-    def get_total_TPC(b):
+    def get_total_TPC(b, CE_index_year):
         # This method accepts either a concrete model or a flowsheet block
         # isinstance( m.fs.boiler.costing, QGESSCostingData)
+
+        try:
+            CE_index_units = getattr(
+                pyunits, "MUSD_" + CE_index_year
+            )  # millions of USD, for base year
+        except AttributeError:
+            raise Exception(
+                "CE_index_year %s is not a valid currency base option. "
+                "Valid CE index options include CE500, CE394 and years from "
+                "1990 to 2020." % (CE_index_year)
+            )
+
         TPC_list = []
         for o in b.parent_block().component_objects(descend_into=True):
             # look for costing blocks
@@ -1803,7 +1949,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 for key in o.costing.total_plant_cost.keys():
                     TPC_list.append(o.costing.total_plant_cost[key])
 
-        b.total_TPC = Var(initialize=0, bounds=(0, 1e4), doc="total TPC in $MM")
+        b.total_TPC = Var(
+            initialize=100,
+            bounds=(0, 1e4),
+            doc="total TPC in $MM",
+            # assume that total_plant_cost is in millions of
+            # USD_year, where year is the CE_index_year users set
+            units=CE_index_units,
+        )
 
         @b.Constraint()
         def total_TPC_eq(c):

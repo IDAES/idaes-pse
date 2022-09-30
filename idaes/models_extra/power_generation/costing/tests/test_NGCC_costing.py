@@ -27,6 +27,7 @@ import pyomo.environ as pyo
 from idaes.core import FlowsheetBlock, UnitModelBlock, UnitModelCostingBlock
 from idaes.core.solvers import get_solver
 from pyomo.environ import units as pyunits
+from pyomo.util.check_units import assert_units_consistent
 
 # Get default solver for testing
 solver = get_solver()
@@ -166,6 +167,10 @@ def test_units1_costing(build_costing):
 
     # Solve the model
     results = solver.solve(m, tee=True)
+
+    # check unit consistency
+    assert_units_consistent(m)
+
     assert results.solver.termination_condition == pyo.TerminationCondition.optimal
     assert results.solver.status == pyo.SolverStatus.ok
 
@@ -292,6 +297,10 @@ def test_units2_costing(build_costing):
 
     # Solve the model
     results = solver.solve(m, tee=True)
+
+    # check unit consistency
+    assert_units_consistent(m)
+
     assert results.solver.termination_condition == pyo.TerminationCondition.optimal
     assert results.solver.status == pyo.SolverStatus.ok
     # Accounts with HRSG duty as reference parameter
@@ -530,6 +539,10 @@ def test_units3_costing(build_costing):
 
     # Solve the model
     results = solver.solve(m, tee=True)
+
+    # check unit consistency
+    assert_units_consistent(m)
+
     assert results.solver.termination_condition == pyo.TerminationCondition.optimal
     assert results.solver.status == pyo.SolverStatus.ok
 
@@ -567,6 +580,10 @@ def test_flowsheet_costing(build_costing):
 
     # Solve the model
     results = solver.solve(m, tee=True)
+
+    # check unit consistency
+    assert_units_consistent(m)
+
     assert results.solver.termination_condition == pyo.TerminationCondition.optimal
     assert results.solver.status == pyo.SolverStatus.ok
 

@@ -21,6 +21,7 @@ from pyomo.core.base.constraint import ScalarConstraint, IndexedConstraint
 from pyomo.core.base.var import IndexedVar
 from pyomo.environ import units as pyunits
 from pyomo.core.base.units_container import InconsistentUnitsError
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock, UnitModelBlock, UnitModelCostingBlock
 from idaes.core.solvers import get_solver
@@ -232,6 +233,9 @@ def test_PP_costing():
     # try solving
     solver = get_solver()
     results = solver.solve(m, tee=True)
+
+    # check unit consistency
+    assert_units_consistent(m)
 
     assert results.solver.termination_condition == pyo.TerminationCondition.optimal
 
@@ -689,11 +693,8 @@ def test_build_process_costs_variableonly_nonearguments():
     )  # 30 is a fixed value, 30 must be replaced by a model variable
     m.fs.costing.display()
 
-    with pytest.raises(
-        Exception,
-        match="units not compatible, make sure "
-        "production rate exists and has dimensions of power",
-    ):
+    # methods don't require net_power, will fail on next error
+    with pytest.raises(TypeError, match="resources argument must be a list"):
         m.fs.costing.build_process_costs(
             net_power=None,
             fixed_OM=False,
@@ -704,6 +705,7 @@ def test_build_process_costs_variableonly_nonearguments():
             fuel=None,
         )
 
+    # checking that same error occurs whether net_power is passed or not
     m.fs.net_power = pyo.Var(m.fs.time, initialize=650, units=pyunits.MW)
     m.fs.net_power.fix()
     with pytest.raises(TypeError, match="resources argument must be a list"):
@@ -856,11 +858,8 @@ def test_build_process_costs_allOM_nonearguments():
     )  # 30 is a fixed value, 30 must be replaced by a model variable
     m.fs.costing.display()
 
-    with pytest.raises(
-        Exception,
-        match="units not compatible, make sure "
-        "production rate exists and has dimensions of power",
-    ):
+    # methods don't require net_power, will fail on next error
+    with pytest.raises(TypeError, match="resources argument must be a list"):
         m.fs.costing.build_process_costs(
             net_power=None,
             fixed_OM=False,
@@ -871,6 +870,7 @@ def test_build_process_costs_allOM_nonearguments():
             fuel=None,
         )
 
+    # checking that same error occurs whether net_power is passed or not
     m.fs.net_power = pyo.Var(m.fs.time, initialize=650, units=pyunits.MW)
     m.fs.net_power.fix()
     with pytest.raises(TypeError, match="resources argument must be a list"):
@@ -1105,6 +1105,9 @@ def test_power_plant_costing():
     solver = get_solver()
     results = solver.solve(m, tee=True)
 
+    # check unit consistency
+    assert_units_consistent(m)
+
     assert results.solver.termination_condition == pyo.TerminationCondition.optimal
     #  all numbers come from the NETL excel file
     # "201.001.001_BBR4 COE Spreadsheet_Rev0U_20190919_njk.xlsm"
@@ -1195,15 +1198,13 @@ def test_sCO2_costing():
     # Add a flowsheet object to the model
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.costing = QGESSCosting()
-    m.fs.costing.CE_index = pyo.Var(initialize=567.5)
-    m.fs.costing.CE_index.fix()
 
     # ######################################################
     # Primary Heater
     m.fs.boiler = UnitModelBlock()
-    m.fs.boiler.heat_duty = pyo.Var(initialize=1461.5e6)
+    m.fs.boiler.heat_duty = pyo.Var(initialize=1461.5, units=pyunits.MW)
     m.fs.boiler.heat_duty.fix()
-    m.fs.boiler.temp = pyo.Var(initialize=620)  # C
+    m.fs.boiler.temp = pyo.Var(initialize=620, units=pyunits.C)  # C
     m.fs.boiler.temp.fix()
     m.fs.boiler.costing = UnitModelCostingBlock(
         default={
@@ -1211,8 +1212,9 @@ def test_sCO2_costing():
             "costing_method": QGESSCostingData.get_sCO2_unit_cost,
             "costing_method_arguments": {
                 "equipment": "Coal-fired heater",
-                "scaled_param": m.fs.boiler.heat_duty * (1e-6),
+                "scaled_param": m.fs.boiler.heat_duty,
                 "temp_C": m.fs.boiler.temp,
+                "CE_index_year": "2017",
             },
         }
     )
@@ -1220,9 +1222,9 @@ def test_sCO2_costing():
     # ######################################################
     # CO2 Turbine
     m.fs.turbine = UnitModelBlock()
-    m.fs.turbine.work_isentropic = pyo.Var(initialize=1006.2e6)
+    m.fs.turbine.work_isentropic = pyo.Var(initialize=1006.2, units=pyunits.MW)
     m.fs.turbine.work_isentropic.fix()
-    m.fs.turbine.temp = pyo.Var(initialize=620)
+    m.fs.turbine.temp = pyo.Var(initialize=620, units=pyunits.C)
     m.fs.turbine.temp.fix()
     m.fs.turbine.costing = UnitModelCostingBlock(
         default={
@@ -1230,9 +1232,10 @@ def test_sCO2_costing():
             "costing_method": QGESSCostingData.get_sCO2_unit_cost,
             "costing_method_arguments": {
                 "equipment": "Axial turbine",
-                "scaled_param": m.fs.turbine.work_isentropic * (1e-6),
+                "scaled_param": m.fs.turbine.work_isentropic,
                 "temp_C": m.fs.turbine.temp,
                 "n_equip": 1,
+                "CE_index_year": "2017",
             },
         }
     )
@@ -1240,15 +1243,17 @@ def test_sCO2_costing():
     # ######################################################
     # Generator
     m.fs.generator = UnitModelBlock()
-    m.fs.generator.work_isentropic = pyo.Var(initialize=1006.2e6)
+    m.fs.generator.work_isentropic = pyo.Var(initialize=1006.2, units=pyunits.MW)
+    m.fs.generator.work_isentropic.fix()
     m.fs.generator.costing = UnitModelCostingBlock(
         default={
             "flowsheet_costing_block": m.fs.costing,
             "costing_method": QGESSCostingData.get_sCO2_unit_cost,
             "costing_method_arguments": {
                 "equipment": "Generator",
-                "scaled_param": m.fs.generator.work_isentropic * (1e-6),
+                "scaled_param": m.fs.generator.work_isentropic,
                 "n_equip": 1,
+                "CE_index_year": "2017",
             },
         }
     )
@@ -1256,16 +1261,16 @@ def test_sCO2_costing():
     # ######################################################
     # High Temperature Recuperator
     m.fs.HTR = UnitModelBlock()
-    m.fs.HTR.heat_duty = pyo.Var(initialize=1461e6)  # W
+    m.fs.HTR.heat_duty = pyo.Var(initialize=1461e6, units=pyunits.W)
     m.fs.HTR.heat_duty.fix()
-    m.fs.HTR.LMTD = pyo.Var(initialize=21.45)
+    m.fs.HTR.LMTD = pyo.Var(initialize=21.45, units=pyunits.C)
     m.fs.HTR.LMTD.fix()
-    m.fs.HTR.temp = pyo.Var(initialize=453)
+    m.fs.HTR.temp = pyo.Var(initialize=453, units=pyunits.C)
     m.fs.HTR.temp.fix()
 
-    m.fs.HTR.UA = pyo.Var(initialize=1e8)
+    m.fs.HTR.UA = pyo.Var(initialize=1e8, units=pyunits.W / pyunits.C)
 
-    # gives units of W/K
+    # gives units of W/C = W/K
     @m.fs.Constraint()
     def HTR_UA_rule(b):
         return b.HTR.UA * b.HTR.LMTD == b.HTR.heat_duty
@@ -1278,6 +1283,7 @@ def test_sCO2_costing():
                 "equipment": "Recuperator",
                 "scaled_param": m.fs.HTR.UA,
                 "temp_C": m.fs.HTR.temp,
+                "CE_index_year": "2017",
             },
         }
     )
@@ -1285,13 +1291,13 @@ def test_sCO2_costing():
     # ######################################################
     # Low Temperature Recuperator
     m.fs.LTR = UnitModelBlock()
-    m.fs.LTR.heat_duty = pyo.Var(initialize=911.7e6)  # W
+    m.fs.LTR.heat_duty = pyo.Var(initialize=911.7e6, units=pyunits.W)
     m.fs.LTR.heat_duty.fix()
-    m.fs.LTR.LMTD = pyo.Var(initialize=5.21)
+    m.fs.LTR.LMTD = pyo.Var(initialize=5.21, units=pyunits.C)
     m.fs.LTR.LMTD.fix()
-    m.fs.LTR.temp = pyo.Var(initialize=216)
+    m.fs.LTR.temp = pyo.Var(initialize=216, units=pyunits.C)
     m.fs.LTR.temp.fix()
-    m.fs.LTR.UA = pyo.Var(initialize=1e8)
+    m.fs.LTR.UA = pyo.Var(initialize=1e8, units=pyunits.W / pyunits.C)
 
     @m.fs.Constraint()
     def LTR_UA_rule(b):
@@ -1305,6 +1311,7 @@ def test_sCO2_costing():
                 "equipment": "Recuperator",
                 "scaled_param": m.fs.LTR.UA,
                 "temp_C": m.fs.LTR.temp,
+                "CE_index_year": "2017",
             },
         }
     )
@@ -1312,9 +1319,9 @@ def test_sCO2_costing():
     # ######################################################
     # CO2 Cooler, costed using the recouperator not dry cooler
     m.fs.co2_cooler = UnitModelBlock()
-    m.fs.co2_cooler.heat_duty = pyo.Var(initialize=739421217)
+    m.fs.co2_cooler.heat_duty = pyo.Var(initialize=739.421217e6, units=pyunits.W)
     m.fs.co2_cooler.heat_duty.fix()
-    m.fs.co2_cooler.temp = pyo.Var(initialize=81)
+    m.fs.co2_cooler.temp = pyo.Var(initialize=81, units=pyunits.C)
     m.fs.co2_cooler.temp.fix()
 
     # Estimating LMTD
@@ -1322,9 +1329,9 @@ def test_sCO2_costing():
     # Back-calculated UA: 41819213 W/K
     # Heat duty from report: 2523 MMBTu/hr --> 739421217 W
     # Estimated LMTD: 17.68 K
-    m.fs.co2_cooler.LMTD = pyo.Var(initialize=5)
-    m.fs.co2_cooler.UA = pyo.Var(initialize=1e5)
-    m.fs.co2_cooler.LMTD.fix(17.68)
+    m.fs.co2_cooler.LMTD = pyo.Var(initialize=5, units=pyunits.C)
+    m.fs.co2_cooler.UA = pyo.Var(initialize=1e5, units=pyunits.W / pyunits.C)
+    m.fs.co2_cooler.LMTD.fix(17.68 * pyunits.C)
 
     @m.fs.Constraint()
     def co2_cooler_UA_rule(b):
@@ -1338,6 +1345,7 @@ def test_sCO2_costing():
                 "equipment": "Recuperator",
                 "scaled_param": m.fs.co2_cooler.UA,
                 "temp_C": m.fs.co2_cooler.temp,
+                "CE_index_year": "2017",
             },
         }
     )
@@ -1345,7 +1353,9 @@ def test_sCO2_costing():
     # ######################################################
     # Main Compressor - 5.99 m^3/s in Baseline620
     m.fs.main_compressor = UnitModelBlock()
-    m.fs.main_compressor.flow_vol = pyo.Var(initialize=5.99)
+    m.fs.main_compressor.flow_vol = pyo.Var(
+        initialize=5.99, units=pyunits.m**3 / pyunits.s
+    )
     m.fs.main_compressor.flow_vol.fix()
     m.fs.main_compressor.costing = UnitModelCostingBlock(
         default={
@@ -1355,6 +1365,7 @@ def test_sCO2_costing():
                 "equipment": "Barrel type compressor",
                 "scaled_param": m.fs.main_compressor.flow_vol,
                 "n_equip": 5.0,
+                "CE_index_year": "2017",
             },
         }
     )
@@ -1362,7 +1373,9 @@ def test_sCO2_costing():
     # ######################################################
     # Main Compressor Motor
     m.fs.main_compressor_motor = UnitModelBlock()
-    m.fs.main_compressor_motor.work_isentropic = pyo.Var(initialize=159.7e6)
+    m.fs.main_compressor_motor.work_isentropic = pyo.Var(
+        initialize=159.7, units=pyunits.MW
+    )
     m.fs.main_compressor_motor.work_isentropic.fix()
     m.fs.main_compressor_motor.costing = UnitModelCostingBlock(
         default={
@@ -1370,8 +1383,9 @@ def test_sCO2_costing():
             "costing_method": QGESSCostingData.get_sCO2_unit_cost,
             "costing_method_arguments": {
                 "equipment": "Open drip-proof motor",
-                "scaled_param": m.fs.main_compressor_motor.work_isentropic * (1e-6),
+                "scaled_param": m.fs.main_compressor_motor.work_isentropic,
                 "n_equip": 5.0,
+                "CE_index_year": "2017",
             },
         }
     )
@@ -1379,7 +1393,9 @@ def test_sCO2_costing():
     # ######################################################
     # Recompressor - 6.89 m^3/s in Baseline620
     m.fs.bypass_compressor = UnitModelBlock()
-    m.fs.bypass_compressor.flow_vol = pyo.Var(initialize=6.89)
+    m.fs.bypass_compressor.flow_vol = pyo.Var(
+        initialize=6.89, units=pyunits.m**3 / pyunits.s
+    )
     m.fs.bypass_compressor.flow_vol.fix()
     m.fs.bypass_compressor.costing = UnitModelCostingBlock(
         default={
@@ -1389,6 +1405,7 @@ def test_sCO2_costing():
                 "equipment": "Barrel type compressor",
                 "scaled_param": m.fs.bypass_compressor.flow_vol,
                 "n_equip": 4.0,
+                "CE_index_year": "2017",
             },
         }
     )
@@ -1396,7 +1413,9 @@ def test_sCO2_costing():
     # ######################################################
     # Recompressor Motor
     m.fs.bypass_compressor_motor = UnitModelBlock()
-    m.fs.bypass_compressor_motor.work_isentropic = pyo.Var(initialize=124.3e6)
+    m.fs.bypass_compressor_motor.work_isentropic = pyo.Var(
+        initialize=124.3, units=pyunits.MW
+    )
     m.fs.bypass_compressor_motor.work_isentropic.fix()
 
     m.fs.bypass_compressor_motor.costing = UnitModelCostingBlock(
@@ -1405,8 +1424,9 @@ def test_sCO2_costing():
             "costing_method": QGESSCostingData.get_sCO2_unit_cost,
             "costing_method_arguments": {
                 "equipment": "Open drip-proof motor",
-                "scaled_param": m.fs.bypass_compressor_motor.work_isentropic * (1e-6),
+                "scaled_param": m.fs.bypass_compressor_motor.work_isentropic,
                 "n_equip": 4.0,
+                "CE_index_year": "2017",
             },
         }
     )
@@ -1440,6 +1460,7 @@ def test_sCO2_costing():
         rates=rates,
         prices=prices,
         fuel="natural_gas",
+        CE_index_year="2017",
     )
 
     # add initialize
@@ -1449,47 +1470,50 @@ def test_sCO2_costing():
     solver = get_solver()
     results = solver.solve(m, tee=True)
 
+    # check unit consistency
+    assert_units_consistent(m)
+
     assert results.solver.termination_condition == pyo.TerminationCondition.optimal
 
     assert (
         pytest.approx(pyo.value(m.fs.boiler.costing.costing.equipment_cost), abs=1e-1)
-        == 229.859
+        == 216.291
     )
     assert (
         pytest.approx(pyo.value(m.fs.turbine.costing.costing.equipment_cost), abs=1e-1)
-        == 14.007
+        == 13.180
     )
     assert (
         pytest.approx(
             pyo.value(m.fs.generator.costing.costing.equipment_cost), abs=1e-1
         )
-        == 11.908
+        == 4.758
     )
     assert (
         pytest.approx(pyo.value(m.fs.HTR.costing.costing.equipment_cost), abs=1e-1)
-        == 42.675
+        == 40.156
     )
     assert (
         pytest.approx(pyo.value(m.fs.LTR.costing.costing.equipment_cost), abs=1e-1)
-        == 86.939
+        == 81.807
     )
     assert (
         pytest.approx(
             pyo.value(m.fs.co2_cooler.costing.costing.equipment_cost), abs=1e-1
         )
-        == 29.523
+        == 27.784
     )
     assert (
         pytest.approx(
             pyo.value(m.fs.main_compressor.costing.costing.equipment_cost), abs=1e-1
         )
-        == 33.722
+        == 31.732
     )
     assert (
         pytest.approx(
             pyo.value(m.fs.bypass_compressor.costing.costing.equipment_cost), abs=1e-1
         )
-        == 28.092
+        == 26.434
     )
     assert (
         pytest.approx(
@@ -1497,13 +1521,13 @@ def test_sCO2_costing():
             + pyo.value(m.fs.bypass_compressor_motor.costing.costing.equipment_cost),
             abs=1e-1,
         )
-        == 30.960
+        == 29.133
     )
     assert (
         pytest.approx(
             pyo.value(m.fs.bypass_compressor.costing.costing.equipment_cost), abs=1e-1
         )
-        == 28.092
+        == 26.434
     )
 
     return m
@@ -1517,12 +1541,10 @@ def test_ASU_costing():
     # Add a flowsheet object to the model
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.costing = QGESSCosting()
-    m.fs.costing.CE_index = pyo.Var(initialize=567.5)
-    m.fs.costing.CE_index.fix()
 
     m.fs.ASU = UnitModelBlock()
-    m.fs.ASU.O2_flow = pyo.Var()
-    m.fs.ASU.O2_flow.fix(13078)  # TPD
+    m.fs.ASU.O2_flow = pyo.Var(initialize=13078, units=pyunits.ton / pyunits.d)
+    m.fs.ASU.O2_flow.fix()
 
     m.fs.ASU.costing = UnitModelCostingBlock(
         default={
@@ -1530,6 +1552,7 @@ def test_ASU_costing():
             "costing_method": QGESSCostingData.get_ASU_cost,
             "costing_method_arguments": {
                 "scaled_param": m.fs.ASU.O2_flow,
+                "CE_index_year": "2017",
             },
         }
     )
@@ -1537,6 +1560,9 @@ def test_ASU_costing():
     # try solving
     solver = get_solver()
     results = solver.solve(m, tee=True)
+
+    # check unit consistency
+    assert_units_consistent(m)
 
     assert results.solver.termination_condition == pyo.TerminationCondition.optimal
 
@@ -1569,7 +1595,7 @@ def test_OM_costing():
 
     QGESSCostingData.get_fixed_OM_costs(
         m.fs,
-        nameplate_capacity,
+        nameplate_capacity=nameplate_capacity,
         labor_rate=labor_rate,
         labor_burden=labor_burden,
         operators_per_shift=operators_per_shift,
@@ -1596,7 +1622,11 @@ def test_OM_costing():
     prices = {"solvent": 500 * pyunits.USD_2018 / pyunits.ton}
 
     QGESSCostingData.get_variable_OM_costs(
-        m.fs, m.fs.net_power, resources, rates, prices=prices  # pass a flowsheet object
+        m.fs,
+        production_rate=m.fs.net_power,
+        resources=resources,
+        rates=rates,
+        prices=prices,  # pass a flowsheet object
     )
 
     QGESSCostingData.initialize_variable_OM_costs(m.fs)  # pass a flowsheet object
@@ -1612,8 +1642,13 @@ def test_OM_costing():
     solver = get_solver()
     results = solver.solve(m, tee=True)
 
+    # check unit consistency
+    assert_units_consistent(m)
+
     assert results.solver.termination_condition == pyo.TerminationCondition.optimal
 
     assert pytest.approx(28.094, abs=0.1) == (pyo.value(m.fs.total_fixed_OM_cost))
 
-    assert pytest.approx(7.682, abs=0.1) == (pyo.value(m.fs.total_variable_OM_cost[0]))
+    assert pytest.approx(156.164, abs=0.1) == (
+        pyo.value(m.fs.total_variable_OM_cost[0])
+    )

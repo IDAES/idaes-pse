@@ -30,6 +30,7 @@ import pyomo.environ as pyo
 from pyomo.environ import units as pyunits
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
+from pyomo.util.check_units import assert_units_consistent
 
 # Get default solver for testing
 solver = get_solver()
@@ -687,7 +688,7 @@ def test_ccs_units_costing():
         CE_index_year="2013",
     )
 
-    QGESSCostingData.get_total_TPC(m.fs)
+    QGESSCostingData.get_total_TPC(m.fs, "2013")
 
     # Initialize costing
     QGESSCostingData.costing_initialization(m.fs)
@@ -695,6 +696,10 @@ def test_ccs_units_costing():
 
     # Solve the model
     results = solver.solve(m, tee=True)
+
+    # check unit consistency
+    assert_units_consistent(m)
+
     assert results.solver.termination_condition == pyo.TerminationCondition.optimal
     assert results.solver.status == pyo.SolverStatus.ok
 
