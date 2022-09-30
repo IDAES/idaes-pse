@@ -70,6 +70,7 @@ def register_idaes_currency_units():
                 "USD_2006 = 500/499.6 * USD_CE500",
                 "USD_2007 = 500/525.4 * USD_CE500",
                 "USD_2008 = 500/575.4 * USD_CE500",
+                "USD_2008_Nov = 500/566.2 * USD_CE500",
                 "USD_2009 = 500/521.9 * USD_CE500",
                 "USD_2010 = 500/550.8 * USD_CE500",
                 "USD_2011 = 500/585.7 * USD_CE500",
@@ -81,6 +82,7 @@ def register_idaes_currency_units():
                 "USD_2017 = 500/567.5 * USD_CE500",
                 "USD_2018 = 500/603.1 * USD_CE500",
                 "USD_2019 = 500/607.5 * USD_CE500",
+                "USD_2019_Sep = 500/599.3 * USD_CE500",
                 "USD_2020 = 500/596.2 * USD_CE500",
             ]
         )
