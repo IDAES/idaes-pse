@@ -74,13 +74,7 @@ def test_config():
         solid_property_package=m.fs.solid_props, gas_property_package=m.fs.gas_props
     )
 
-    # m.fs.unit = FixedBed1D(
-    #     gas_property_package=m.fs.gas_props,
-    #     solid_property_package=m.fs.solid_props,
-    #     reaction_package=m.fs.solid_rxns,
-    # )
     m.fs.unit = FixedBed1D(
-        # finite_elements=40,
         gas_phase_config={"property_package": m.fs.gas_props},
         solid_phase_config={
             "property_package": m.fs.solid_props,
@@ -89,7 +83,7 @@ def test_config():
     )
 
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 9
+    assert len(m.fs.unit.config) == 14
 
     assert m.fs.unit.config.dynamic is True
     assert m.fs.unit.config.has_holdup is True
@@ -115,15 +109,7 @@ class TestIronOC(object):
             solid_property_package=m.fs.solid_props, gas_property_package=m.fs.gas_props
         )
 
-        # m.fs.unit = FixedBed1D(
-        #     finite_elements=40,
-        #     gas_property_package=m.fs.gas_props,
-        #     solid_property_package=m.fs.solid_props,
-        #     reaction_package=m.fs.solid_rxns,
-        # )
         m.fs.unit = FixedBed1D(
-            # finite_elements=40,
-            # has_holdup=True,
             gas_phase_config={"property_package": m.fs.gas_props},
             solid_phase_config={
                 "property_package": m.fs.solid_props,
@@ -213,7 +199,7 @@ class TestIronOC(object):
         assert isinstance(iron_oc.fs.unit.gas_solid_htc_eqn, Constraint)
         assert isinstance(iron_oc.fs.unit.gas_phase_heat_transfer, Constraint)
 
-        assert number_variables(iron_oc) == 3650
+        assert number_variables(iron_oc) == 26271
         assert number_total_constraints(iron_oc) == 2925
         assert number_unused_variables(iron_oc) == 206
 
