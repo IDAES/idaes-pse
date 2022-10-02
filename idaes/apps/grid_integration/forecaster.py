@@ -408,11 +408,15 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
             num_days = len(historical_price[b]) // 24
             while num_days > self.max_historical_days:
-                warnings.warn(Warning(
-                    f"The number of days of the provided historical prices for bus {b} is greater than the max value {self.max_historical_days}. Dropping the first day's data."
-                    f"Drooping the data for the first {num_days - self.max_historical_days} day(s)"
-                ))
-                historical_price[b] = historical_price[b][((num_days - self.max_historical_days)*24):]
+                warnings.warn(
+                    Warning(
+                        f"The number of days of the provided historical prices for bus {b} is greater than the max value {self.max_historical_days}. Dropping the first day's data."
+                        f"Drooping the data for the first {num_days - self.max_historical_days} day(s)"
+                    )
+                )
+                historical_price[b] = historical_price[b][
+                    ((num_days - self.max_historical_days) * 24) :
+                ]
 
     @property
     def max_historical_days(self):
