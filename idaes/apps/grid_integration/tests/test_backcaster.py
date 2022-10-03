@@ -14,9 +14,7 @@
 import pytest
 from pyomo.common import unittest as pyo_unittest
 from idaes.apps.grid_integration.forecaster import ForecastError, Backcaster
-import warnings
-
-pytestmark = pytest.mark.filterwarnings("error")
+import idaes.logger as idaeslog
 
 
 @pytest.fixture
@@ -43,23 +41,30 @@ def test_create_backcaster(historical_da_prices, historical_rt_prices):
 
 @pytest.mark.unit
 def test_create_backcaster_with_small_max_historical_days(
-    historical_da_prices, historical_rt_prices
+    caplog, historical_da_prices, historical_rt_prices
 ):
-    max_n_days = 1.0
-    with pytest.raises(Warning, match=r".*Dropping the first day's data.*"):
+    max_n_days = 1
+    with caplog.at_level(idaeslog.WARNING):
         backcaster = Backcaster(
             historical_da_prices, historical_rt_prices, max_historical_days=max_n_days
         )
-        expected_historical_da_prices = {"test_bus": [3] * 24}
-        expected_historical_rt_prices = {"test_bus": [30] * 24}
 
-        pyo_unittest.assertStructuredAlmostEqual(
-            first=backcaster.historical_da_prices, second=expected_historical_da_prices
-        )
+    _warn_msg = (
+        f"The number of days in the input historical prices for bus test_bus is greater than the max value 1."
+        f" Dropping the data for the first 2 day(s)."
+    )
+    assert _warn_msg in caplog.text
 
-        pyo_unittest.assertStructuredAlmostEqual(
-            first=backcaster.historical_rt_prices, second=expected_historical_rt_prices
-        )
+    expected_historical_da_prices = {"test_bus": [3] * 24}
+    expected_historical_rt_prices = {"test_bus": [30] * 24}
+
+    pyo_unittest.assertStructuredAlmostEqual(
+        first=backcaster.historical_da_prices, second=expected_historical_da_prices
+    )
+
+    pyo_unittest.assertStructuredAlmostEqual(
+        first=backcaster.historical_rt_prices, second=expected_historical_rt_prices
+    )
 
 
 @pytest.mark.unit
