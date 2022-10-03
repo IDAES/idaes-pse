@@ -47,6 +47,7 @@ def common_components(nt, nz, nx, ncomp):
             "enth_mol": nx * nz * nt,
             "pressure": nx * nz * nt,
             "mole_frac_comp": nx * nz * nt * ncomp,
+            "diff_eff_coeff": nt * nx * nz * ncomp,
             "resistivity_log_preexponential_factor": 1,
             "resistivity_thermal_exponent_dividend": 1,
             "solid_heat_capacity": 1,
@@ -61,6 +62,7 @@ def common_components(nt, nz, nx, ncomp):
             "material_flux_x1_eqn": nz * nt * ncomp,
             "heat_flux_x0_eqn": nz * nt,
             "heat_flux_x1_eqn": nz * nt,
+            "diff_eff_coeff_eqn": nt * nx * nz * ncomp,
             "material_balance_eqn": nx * nz * nt * ncomp,
             "energy_balance_solid_eqn": nx * nz * nt,
         },
@@ -71,7 +73,6 @@ def common_components(nt, nz, nx, ncomp):
             "conc_mol_comp_x0": nz * nt * ncomp,
             "conc_mol_comp": nz * nx * nt * ncomp,
             "conc_mol_comp_x1": nz * nt * ncomp,
-            "diff_eff_coeff": nt * nx * nz * ncomp,
             "diff_eff_coeff_xfaces": nt * (nx + 1) * nz * ncomp,
             "diff_eff_coeff_zfaces": nt * nx * (nz + 1) * ncomp,
             "temperature_xfaces": nt * (nx + 1) * nz,
@@ -178,6 +179,7 @@ def modelHoldupNotDynamic():
     )
     m.fs.fuel_electrode = soc.PorousConductiveSlab(
         has_holdup=True,
+        has_gas_holdup=True,
         control_volume_zfaces=zfaces,
         control_volume_xfaces=xfaces_electrode,
         component_list=["H2", "H2O", "N2"],

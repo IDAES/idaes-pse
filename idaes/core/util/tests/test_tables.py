@@ -35,7 +35,6 @@ from idaes.core.util.tables import (
     create_stream_table_ui,
     stream_table_dataframe_to_string,
     generate_table,
-    tag_state_quantities,
     stream_states_dict,
 )
 import idaes.models.properties.examples.saponification_thermo as thermo_props
@@ -451,63 +450,6 @@ def test_mixed_table(gtmodel):
     assert st.loc["c"]["Fvol"] == 30
     assert st.loc["c"]["F"] == 10
     assert st.loc["c"]["T"] == 300
-
-
-@pytest.mark.unit
-def test_tag_states(gtmodel):
-    m = gtmodel
-
-    sd = {
-        "a": m.state_a[0],
-        "b[1]": m.state_b[(0, 1)],
-        "b[2]": m.state_b[(0, 2)],
-        "b[3]": m.state_b[(0, 3)],
-        "c": m.state_c[0],
-    }
-
-    tags = tag_state_quantities(
-        sd,
-        attributes=(
-            "pressure",
-            "temperature",
-            "flow_mol",
-            "flow_vol",
-            "enth_mol",
-            ("flow_mol", "CO2"),
-            ("flow_mol", "H2O"),
-        ),
-        labels=(
-            "_pressure",
-            "_temperature",
-            "_flow_mol",
-            "_flow_vol",
-            "_enth_mol_differ",
-            "_flow_mol[CO2]",
-            "_flow_mol[H2O]",
-        ),
-    )
-
-    assert value(tags["a_pressure"]) == 11000
-    assert value(tags["a_enth_mol_differ"]) == 1100
-    assert value(tags["a_temperature"]) == 1100 * 2
-    assert value(tags["a_flow_mol[CO2]"]) == 110
-    assert value(tags["a_flow_mol[H2O]"]) == 111
-
-    assert value(tags["b[1]_pressure"]) == 10000
-    assert value(tags["b[1]_enth_mol_differ"]) == 1000
-    assert value(tags["b[1]_flow_mol[CO2]"]) == 100
-    assert value(tags["b[1]_flow_mol[H2O]"]) == 101
-
-    assert value(tags["c_pressure"]) == 1000
-    assert value(tags["c_temperature"]) == 300
-    assert value(tags["c_flow_mol"]) == 10
-    assert value(tags["c_flow_vol"]) == 30
-    assert "c_flow_mol[H2O]" not in tags
-
-    # check that I can change things
-    tags["a_enth_mol_differ"].value = 1200
-    assert value(m.state_a[0].enth_mol) == 1200
-    assert value(m.state_a[0].temperature) == 1200 * 2
 
 
 @pytest.fixture()
