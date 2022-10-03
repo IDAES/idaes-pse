@@ -30,8 +30,8 @@ from pyomo.environ import units as pyunits
 from idaes.core import LiquidPhase, VaporPhase, Component
 
 from idaes.models.properties.modular_properties.state_definitions import FTPx
-from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
-from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
+from idaes.models.properties.modular_properties.eos.ceos_ncp import Cubic, CubicType
+from idaes.models.properties.modular_properties.phase_equil.smooth_VLE_ncp import SmoothVLE
 from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
     LogBubbleDew,
 )
@@ -65,6 +65,8 @@ configuration = {
                 "mw": (78.1136e-3, pyunits.kg / pyunits.mol),  # [1]
                 "pressure_crit": (48.9e5, pyunits.Pa),  # [1]
                 "temperature_crit": (562.2, pyunits.K),  # [1]
+                "volume_crit": (256e-06, pyunits.metre**3/pyunits.mol),  # [1]
+                "compress_factor_crit": (0.268, pyunits.dimensionless),  # [1]
                 "omega": 0.212,  # [1]
                 "cp_mol_ig_comp_coeff": {
                     "A": (-3.392e1, pyunits.J / pyunits.mol / pyunits.K),  # [1]
@@ -95,6 +97,8 @@ configuration = {
                 "mw": (92.1405e-3, pyunits.kg / pyunits.mol),  # [1]
                 "pressure_crit": (41e5, pyunits.Pa),  # [1]
                 "temperature_crit": (591.8, pyunits.K),  # [1]
+                "volume_crit": (316e-06, pyunits.metre**3/pyunits.mol),  # [1]
+                "compress_factor_crit": (0.264, pyunits.dimensionless),  # [1]
                 "omega": 0.263,  # [1]
                 "cp_mol_ig_comp_coeff": {
                     "A": (-2.435e1, pyunits.J / pyunits.mol / pyunits.K),  # [1]
