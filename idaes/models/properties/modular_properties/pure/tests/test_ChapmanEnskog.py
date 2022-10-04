@@ -78,7 +78,7 @@ def test_visc_vap_comp_sulfur_dioxide():
 
     m.props[1].temperature = Var(initialize=273.16, units=pyunits.K)
 
-    ChapmanEnskogLennardJones.viscosity_dynamic_vap_comp.build_parameters(m.params)
+    ChapmanEnskogLennardJones.visc_d_phase_comp.build_parameters(m.params, "Vap")
 
     assert isinstance(m.params.lennard_jones_sigma, Var)
     assert value(m.params.lennard_jones_sigma) == pytest.approx(4.112e-10, rel=1e-12)
@@ -86,8 +86,8 @@ def test_visc_vap_comp_sulfur_dioxide():
     assert value(m.params.lennard_jones_epsilon_reduced) == 335.4
     assert m.params.viscosity_collision_integral_callback is collision_integral_neufeld_callback
 
-    expr = ChapmanEnskogLennardJones.viscosity_dynamic_vap_comp.return_expression(
-        m.props[1], m.params
+    expr = ChapmanEnskogLennardJones.visc_d_phase_comp.return_expression(
+        m.props[1], m.params, "Vap", m.props[1].temperature
     )
     expr_micropoise = pyunits.convert(expr, pyunits.micropoise)
 
@@ -141,10 +141,10 @@ def test_visc_vap_comp_methanol():
     # and then give more sig figs than they ought
     m.props[1].temperature = Var(initialize=273 + 300, units=pyunits.K)
 
-    ChapmanEnskogLennardJones.viscosity_dynamic_vap_comp.build_parameters(m.params)
+    ChapmanEnskogLennardJones.visc_d_phase_comp.build_parameters(m.params, "Vap")
 
-    expr = ChapmanEnskogLennardJones.viscosity_dynamic_vap_comp.return_expression(
-        m.props[1], m.params
+    expr = ChapmanEnskogLennardJones.visc_d_phase_comp.return_expression(
+        m.props[1], m.params, "Vap", m.props[1].temperature
     )
     expr_micropoise = pyunits.convert(expr, pyunits.micropoise)
     # Pulled from Table 9.2, Properties of Gases and Liquids
@@ -194,10 +194,10 @@ def test_visc_vap_comp_ethane():
 
     m.props[1].temperature = Var(initialize=273 + 300, units=pyunits.K)
 
-    ChapmanEnskogLennardJones.viscosity_dynamic_vap_comp.build_parameters(m.params)
+    ChapmanEnskogLennardJones.visc_d_phase_comp.build_parameters(m.params, "Vap")
 
-    expr = ChapmanEnskogLennardJones.viscosity_dynamic_vap_comp.return_expression(
-        m.props[1], m.params
+    expr = ChapmanEnskogLennardJones.visc_d_phase_comp.return_expression(
+        m.props[1], m.params, "Vap", m.props[1].temperature
     )
     expr_micropoise = pyunits.convert(expr, pyunits.micropoise)
     # Pulled from Table 9.2, Properties of Gases and Liquids

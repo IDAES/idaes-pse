@@ -19,7 +19,7 @@ import pyomo.environ as pyo
 
 from idaes.core.util.misc import set_param_from_config
 from idaes.core.util.constants import Constants
-
+from idaes.core.util.exceptions import ConfigurationError
 
 
 
@@ -48,19 +48,22 @@ class ChapmanEnskogLennardJones(object):
             set_param_from_config(cobj, param="lennard_jones_epsilon_reduced")
 
     # Ideal liquid properties methods
-    class viscosity_dynamic_vap_comp(object):
+    class visc_d_phase_comp(object):
         @staticmethod
-        def build_parameters(cobj):
+        def build_parameters(cobj, p):
+            # pobj = cobj.parent_block().get_phase(p)
+            # if not pobj.is_vapor_phase:
+            #     raise ConfigurationError(f"The Chapman-Enskog works only for vapor phases, not phase {p}")
             ChapmanEnskogLennardJones.build_lennard_jones_parameters(cobj)
             if not hasattr(cobj, "viscosity_collision_integral_callback"):
                 cobj.viscosity_collision_integral_callback = collision_integral_neufeld_callback
 
         @staticmethod
-        def return_expression(b, cobj):
+        def return_expression(b, cobj, p,  T):
             # Properties of Gases and Liquids, Eq. 9.3.9
             units = b.params.get_metadata().derived_units
 
-            T = pyunits.convert(b.temperature, to_units=pyunits.K)
+            T = pyunits.convert(T, to_units=pyunits.K)
             sigma = pyunits.convert(cobj.lennard_jones_sigma, pyunits.angstrom)
             M = pyunits.convert(cobj.mw, pyunits.g/pyunits.mol)
             T_dim = T / pyunits.convert(cobj.lennard_jones_epsilon_reduced, to_units=pyunits.K)
