@@ -48,7 +48,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v2
         with:
-          name: deprector-idaes-${{ github.ref }}
+          name: deprector-idaes-${{ github.sha }}
           path: deprector.json
 
       - name: Analyze deprecations
