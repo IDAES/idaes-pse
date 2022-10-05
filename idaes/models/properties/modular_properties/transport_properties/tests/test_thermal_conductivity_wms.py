@@ -23,8 +23,8 @@ from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_equivalent
 import pyomo.environ as pyo
 
-from idaes.models.properties.modular_properties.transport_properties.thermal_conductivity_wms import (
-    ThermalConductivityWMSPhase,
+from idaes.models.properties.modular_properties.transport_properties import (
+    ThermalConductivityWMS,
 )
 from idaes.models.properties.modular_properties.transport_properties.viscosity_wilke import (
     wilke_phi_ij_callback,
@@ -124,7 +124,7 @@ def construct_dummy_model(component_dict, chapman_enskog=False):
             "Vap": {
                 "type": VaporPhase,
                 "equation_of_state": Ideal,
-                "therm_cond_phase": ThermalConductivityWMSPhase,
+                "therm_cond_phase": ThermalConductivityWMS,
             },
         },
         base_units={
@@ -140,7 +140,7 @@ def construct_dummy_model(component_dict, chapman_enskog=False):
     )
 
     m.props = m.params.state_block_class([1], defined_state=False, parameters=m.params)
-    ThermalConductivityWMSPhase.therm_cond_phase.build_parameters(m.params.Vap)
+    ThermalConductivityWMS.therm_cond_phase.build_parameters(m.params.Vap)
     # Add common variables
     m.props[1].temperature = Var(initialize=300, units=pyunits.K)
     m.props[1].mole_frac_phase_comp = Var(
@@ -202,7 +202,7 @@ def test_wms_therm_cond_phase_():
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ThermalConductivityWMSPhase.therm_cond_phase.return_expression(
+    expr = ThermalConductivityWMS.therm_cond_phase.return_expression(
         m.props[1], m.params.Vap
     )
     m.props[1].mole_frac_phase_comp["Vap", "benzene"].value = 0.25
@@ -254,7 +254,7 @@ def test_wms_therm_cond_phase_benzene_n_hexane():
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ThermalConductivityWMSPhase.therm_cond_phase.return_expression(
+    expr = ThermalConductivityWMS.therm_cond_phase.return_expression(
         m.props[1], m.params.Vap
     )
     # Pulled off Figure 10-6 from Properties of Gases and Liquids, 5th Ed.
@@ -301,7 +301,7 @@ def test_wms_therm_cond_phase_methanol_n_hexane():
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ThermalConductivityWMSPhase.therm_cond_phase.return_expression(
+    expr = ThermalConductivityWMS.therm_cond_phase.return_expression(
         m.props[1], m.params.Vap
     )
     # Pulled off Figure 10-6 from Properties of Gases and Liquids, 5th Ed.
@@ -354,7 +354,7 @@ def test_wms_therm_cond_phase_benzene_argon():
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ThermalConductivityWMSPhase.therm_cond_phase.return_expression(
+    expr = ThermalConductivityWMS.therm_cond_phase.return_expression(
         m.props[1], m.params.Vap
     )
     # Pulled off Figure 10-6 from Properties of Gases and Liquids, 5th Ed.

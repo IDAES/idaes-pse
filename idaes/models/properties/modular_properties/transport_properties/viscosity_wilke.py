@@ -24,7 +24,7 @@ from idaes.models.properties.modular_properties.base.utility import get_componen
 
 # ---------------------------------------------------------------------------------------
 # Rule to obtain mixture viscosity of a low pressure gas from pure component viscosities.
-class ViscosityWilkePhase(object):
+class ViscosityWilke(object):
     @staticmethod
     def build_parameters(pobj):
         if not hasattr(pobj, "viscosity_phi_ij_callback"):
@@ -51,12 +51,12 @@ class ViscosityWilkePhase(object):
     class visc_d_phase(object):
         @staticmethod
         def build_parameters(pobj):
-            ViscosityWilkePhase.build_parameters(pobj)
+            ViscosityWilke.build_parameters(pobj)
 
         @staticmethod
         def return_expression(b, pobj):
             # Properties of Gases and Liquids, Eq. 9-5.14
-            ViscosityWilkePhase.build_phi_ij(b, pobj)
+            ViscosityWilke.build_phi_ij(b, pobj)
 
             pname = pobj.local_name
 

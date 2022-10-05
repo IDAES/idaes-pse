@@ -24,23 +24,23 @@ from idaes.core.util.misc import set_param_from_config
 from idaes.core.util.constants import Constants
 from idaes.models.properties.modular_properties.base.utility import get_component_object
 from idaes.models.properties.modular_properties.transport_properties.viscosity_wilke import (
-    ViscosityWilkePhase,
+    ViscosityWilke,
     wilke_phi_ij_callback,
     herring_zimmer_phi_ij_callback,
 )
 
 
-class ThermalConductivityWMSPhase(object):
+class ThermalConductivityWMS(object):
     class therm_cond_phase(object):
         @staticmethod
         def build_parameters(pobj):
-            ViscosityWilkePhase.build_parameters(pobj)
+            ViscosityWilke.build_parameters(pobj)
 
         @staticmethod
         def return_expression(b, pobj):
             # Properties of Gases and Liquids, Eq. 9-5.14
             # and Eq. 10-6.4
-            ViscosityWilkePhase.build_phi_ij(b, pobj)
+            ViscosityWilke.build_phi_ij(b, pobj)
 
             pname = pobj.local_name
 

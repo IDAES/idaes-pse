@@ -11,9 +11,10 @@
 # license information.
 #################################################################################
 """
-FIXME
+Test Wilke mixing rules for viscosity from Properties of Gases and Liquids, 5th Ed.
+Section 9-5-2
 
-Authors: Andrew Lee
+Authors: Douglas Allan
 """
 
 import pytest
@@ -26,7 +27,7 @@ from pyomo.util.check_units import assert_units_equivalent
 import pyomo.environ as pyo
 
 from idaes.models.properties.modular_properties.transport_properties.viscosity_wilke import (
-    ViscosityWilkePhase,
+    ViscosityWilke,
     wilke_phi_ij_callback,
     herring_zimmer_phi_ij_callback,
 )
@@ -87,7 +88,7 @@ def construct_dummy_model(component_dict):
             "Vap": {
                 "type": VaporPhase,
                 "equation_of_state": Ideal,
-                "visc_d_phase": ViscosityWilkePhase,
+                "visc_d_phase": ViscosityWilke,
             },
         },
         base_units={
@@ -103,7 +104,7 @@ def construct_dummy_model(component_dict):
     )
 
     m.props = m.params.state_block_class([1], defined_state=False, parameters=m.params)
-    ViscosityWilkePhase.visc_d_phase.build_parameters(m.params.Vap)
+    ViscosityWilke.visc_d_phase.build_parameters(m.params.Vap)
 
     # Add common variables
     m.props[1].mole_frac_phase_comp = Var(
@@ -136,7 +137,7 @@ def test_wilke_visc_d_phase_N2_CO2():
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d_phase.return_expression(m.props[1], m.params.Vap)
+    expr = ViscosityWilke.visc_d_phase.return_expression(m.props[1], m.params.Vap)
 
     phi_N2_N2 = m.props[1].visc_d_phi_ij["N2", "N2"]
     assert_units_equivalent(phi_N2_N2, pyunits.dimensionless)
@@ -187,7 +188,7 @@ def test_wilke_visc_d_phase_ammonia_hydrogen():
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d_phase.return_expression(m.props[1], m.params.Vap)
+    expr = ViscosityWilke.visc_d_phase.return_expression(m.props[1], m.params.Vap)
 
     expr_micropoise = pyunits.convert(expr, pyunits.micropoise)
     # Pulled from Table 9.2, Properties of Gases and Liquids 5th Ed.
@@ -221,7 +222,7 @@ def test_wilke_visc_d_phase_N2O_SO2():
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d_phase.return_expression(m.props[1], m.params.Vap)
+    expr = ViscosityWilke.visc_d_phase.return_expression(m.props[1], m.params.Vap)
 
     expr_micropoise = pyunits.convert(expr, pyunits.micropoise)
     # Pulled from Table 9.2, Properties of Gases and Liquids 5th Ed.
@@ -253,7 +254,7 @@ def test_herning_zipperer_visc_d_phase_N2_CO2():
 
     m.params.Vap.viscosity_phi_ij_callback = herring_zimmer_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d_phase.return_expression(m.props[1], m.params.Vap)
+    expr = ViscosityWilke.visc_d_phase.return_expression(m.props[1], m.params.Vap)
 
     phi_N2_N2 = m.props[1].visc_d_phi_ij["N2", "N2"]
     assert_units_equivalent(phi_N2_N2, pyunits.dimensionless)
@@ -302,7 +303,7 @@ def test_herning_zipperer_visc_d_phase_ammonia_hydrogen():
 
     m.params.Vap.viscosity_phi_ij_callback = herring_zimmer_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d_phase.return_expression(m.props[1], m.params.Vap)
+    expr = ViscosityWilke.visc_d_phase.return_expression(m.props[1], m.params.Vap)
 
     expr_micropoise = pyunits.convert(expr, pyunits.micropoise)
     # Pulled from Table 9.2, Properties of Gases and Liquids 5th Ed.
@@ -338,7 +339,7 @@ def test_herning_zipperer_visc_d_phase_N2O_SO2():
 
     m.params.Vap.viscosity_phi_ij_callback = herring_zimmer_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d_phase.return_expression(m.props[1], m.params.Vap)
+    expr = ViscosityWilke.visc_d_phase.return_expression(m.props[1], m.params.Vap)
 
     expr_micropoise = pyunits.convert(expr, pyunits.micropoise)
     # Pulled from Table 9.2, Properties of Gases and Liquids 5th Ed.
