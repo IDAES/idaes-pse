@@ -89,7 +89,7 @@ def test_visc_vap_comp_sulfur_dioxide():
     # and then give more sig figs than they ought
     m.props[1].temperature = Var(initialize=273 + 300, units=pyunits.K)
 
-    ChungViscosityPure.viscosity_dynamic_vap_comp.build_parameters(m.params, "Vap")
+    ChungViscosityPure.visc_d_phase_comp.build_parameters(m.params, "Vap")
 
     assert isinstance(m.params.dipole_moment, Var)
     # The SI unit for dipole moment, coulomb meters, is hilariously oversized for molecular dipoles
@@ -103,7 +103,7 @@ def test_visc_vap_comp_sulfur_dioxide():
         is collision_integral_neufeld_callback
     )
 
-    expr = ChungViscosityPure.viscosity_dynamic_vap_comp.return_expression(
+    expr = ChungViscosityPure.visc_d_phase_comp.return_expression(
         m.props[1], m.params, "Vap", m.props[1].temperature
     )
     assert value(expr) == pytest.approx(2.455e-05, rel=5e-4)
@@ -174,7 +174,7 @@ def test_visc_vap_comp_methanol():
     # and then give more sig figs than they ought
     m.props[1].temperature = Var(initialize=273 + 300, units=pyunits.K)
 
-    ChungViscosityPure.viscosity_dynamic_vap_comp.build_parameters(m.params, "Vap")
+    ChungViscosityPure.visc_d_phase_comp.build_parameters(m.params, "Vap")
 
     assert isinstance(m.params.dipole_moment, Var)
     # The SI unit for dipole moment, coulomb meters, is hilariously oversized for molecular dipoles
@@ -184,7 +184,7 @@ def test_visc_vap_comp_methanol():
     assert isinstance(m.params.association_factor_chung, Var)
     assert value(m.params.association_factor_chung) == 0.215
 
-    expr = ChungViscosityPure.viscosity_dynamic_vap_comp.return_expression(
+    expr = ChungViscosityPure.visc_d_phase_comp.return_expression(
         m.props[1], m.params, "Vap", m.props[1].temperature
     )
     expr_micropoise = pyunits.convert(expr, pyunits.micropoise)
@@ -254,14 +254,14 @@ def test_visc_vap_comp_ethane():
 
     m.props[1].temperature = Var(initialize=273 + 300, units=pyunits.K)
 
-    ChungViscosityPure.viscosity_dynamic_vap_comp.build_parameters(m.params, "Vap")
+    ChungViscosityPure.visc_d_phase_comp.build_parameters(m.params, "Vap")
 
     assert isinstance(m.params.dipole_moment, Var)
     assert value(m.params.dipole_moment) == pytest.approx(0, rel=1e-12)
     assert isinstance(m.params.association_factor_chung, Var)
     assert value(m.params.association_factor_chung) == 0
 
-    expr = ChungViscosityPure.viscosity_dynamic_vap_comp.return_expression(
+    expr = ChungViscosityPure.visc_d_phase_comp.return_expression(
         m.props[1], m.params, "Vap", m.props[1].temperature
     )
     expr_micropoise = pyunits.convert(expr, pyunits.micropoise)
