@@ -337,13 +337,19 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         """
         self.flow_types.add(flow_type)
 
-        # Create a Var to hold the cost
-        # Units will be different between flows, so have to use scalar Vars
-        fvar = pyo.Var(
-            units=pyo.units.get_units(cost), doc=f"Cost parameter for {flow_type} flow"
-        )
-        self.add_component(f"{flow_type}_cost", fvar)
-        fvar.fix(cost)
+        name = f"{flow_type}_cost"
+        current_component = self.component(name)
+        if current_component is not None and current_component is cost:
+            pass
+        else:
+            # Create a Var to hold the cost
+            # Units will be different between flows, so have to use scalar Vars
+            fvar = pyo.Var(
+                units=pyo.units.get_units(cost),
+                doc=f"Cost parameter for {flow_type} flow",
+            )
+            self.add_component(name, fvar)
+            fvar.fix(cost)
 
         self._registered_flows[flow_type] = []
 
