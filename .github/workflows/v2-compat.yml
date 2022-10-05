@@ -4,6 +4,11 @@ on:
     branches:
       - 2.0_rel
 
+defaults:
+  run:
+    # -l: login shell, needed when using Conda
+    shell: bash -l {0}
+
 env:
   PYTEST_ADDOPTS: "--color=yes"
   PIP_PROGRESS_BAR: "off"
