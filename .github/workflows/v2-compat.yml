@@ -12,15 +12,14 @@ defaults:
 env:
   PYTEST_ADDOPTS: "--color=yes"
   PIP_PROGRESS_BAR: "off"
+  PYTHON_VERSION: '3.10'
+  CONDA_ENV: idaes-pse-dev
 
 jobs:
 
   depr-triggers:
     name: Check depr triggers within IDAES
     runs-on: ubuntu-latest
-    env:
-      PYTHON_VERSION: '3.10'
-      CONDA_ENV: idaes-pse-dev
     steps:
 
       - uses: actions/checkout@v3
@@ -72,9 +71,13 @@ jobs:
               pytest --pyargs watertap -m "not integration"
 
     steps:
+      
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install external codebase (${{ matrix.pip-target }})
-        run:
+        run: |
           pip install "${{ matrix.pip-target }}"
           pip uninstall --yes idaes-pse
           pip install "$idaes_pip_target"
