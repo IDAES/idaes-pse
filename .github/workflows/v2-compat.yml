@@ -1,0 +1,53 @@
+name: IDAES v2 compat
+on:
+  pull_request:
+    branches:
+      - 2.0_rel
+
+env:
+  PYTEST_ADDOPTS: "--color=yes"
+  PIP_PROGRESS_BAR: "off"
+
+jobs:
+
+  depr-triggers:
+    name: Check depr triggers within IDAES
+    runs-on: ubuntu-latest
+    env:
+      PYTHON_VERSION: '3.10'
+      CONDA_ENV: idaes-pse-dev
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - name: Set up Conda environment
+        uses: conda-incubator/setup-miniconda@v2.1.1
+        with:
+          activate-environment: ${{ env.CONDA_ENV }}
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up idaes
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
+
+      - name: Set up deprector
+        run: |
+          pip install "idaes-devtools @ git+https://github.com/IDAES/devtools"
+
+      - name: Collect deprecations
+        run: |
+          deprector collect idaes -- -m unit
+
+      - name: Save deprector output
+        if: success()
+        uses: actions/upload-artifact@v2
+        with:
+          name: deprector-idaes-${{ github.ref }}
+          path: deprector.json
+
+      - name: Analyze deprecations
+        run: |
+          deprector analyze idaes --callsite-registry idaes
+
+  
