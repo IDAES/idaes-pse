@@ -55,4 +55,31 @@ jobs:
         run: |
           deprector analyze idaes --callsite-registry idaes
 
+  legacy-code:
+    name: Run legacy codebase (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    env:
+      idaes_pip_target: idaes-pse @ https://github.com/IDAES/idaes-pse/archive/${{ github.ref }}.zip
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - watertap-0.6.0rc0
+        include:
+          - project: watertap-0.6.0rc0
+            pip-target: watertap[testing]==0.6.0rc0
+            test-command: |
+              pytest --pyargs watertap -m "not integration"
+
+    steps:
+
+      - name: Install external codebase (${{ matrix.pip-target }})
+        run:
+          pip install "${{ matrix.pip-target }}"
+          pip uninstall --yes idaes-pse
+          pip install "$idaes_pip_target"
+
+      - name: Run test command
+        run: ${{ matrix.test-command }}
+
   
