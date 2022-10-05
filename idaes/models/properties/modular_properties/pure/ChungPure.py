@@ -11,7 +11,11 @@
 # license information.
 #################################################################################
 """
-Method to set constant pure component properties:
+Pure component gas viscosities at low pressures from critical properties,
+acentric factor, and dipole moment. Also requires an association factor, which
+can be found for some highly polar substances in Table 9-1 in the Properties
+of Gases and Liquids, 5th Ed. Chung et al. might also have additional factors
+in some of their papers. If unknown, set the association factor to zero.
 
 """
 from pyomo.environ import log, Var, units as pyunits
@@ -24,12 +28,6 @@ from idaes.models.properties.modular_properties.pure.ChapmanEnskog import (
 )
 
 
-# -----------------------------------------------------------------------------
-# Gas viscosities at low pressures from critical properties, acentric factor,
-# and dipole moment. Also requires an association factor, which can be found
-# for some highly polar substances in Table 9-1 in the Properties of Gases and
-# Liquids, 5th Ed. Chung et al. might also have additional factors in some of
-# their papers. If unknown, set the association factor to zero.
 class ChungViscosityPure(object):
     @staticmethod
     def build_common_parameters(cobj):
@@ -37,7 +35,7 @@ class ChungViscosityPure(object):
         if not hasattr(cobj, "dipole_moment"):
             cobj.dipole_moment = Var(
                 doc="Molecular dipole moment",
-                units=units["dipole_moment"]
+                units=units["current"] * units["time"] * units["length"]
             )
             set_param_from_config(cobj, param="dipole_moment")
 
@@ -48,20 +46,19 @@ class ChungViscosityPure(object):
             )
             set_param_from_config(cobj, param="association_factor_chung")
 
-    # Ideal liquid properties methods
-    class viscosity_dynamic_vap_comp(object):
+    class visc_d_phase_comp(object):
         @staticmethod
-        def build_parameters(cobj):
+        def build_parameters(cobj, p):
             ChungViscosityPure.build_common_parameters(cobj)
             if not hasattr(cobj, "viscosity_collision_integral_callback"):
                 cobj.viscosity_collision_integral_callback = collision_integral_neufeld_callback
 
         @staticmethod
-        def return_expression(b, cobj):
+        def return_expression(b, cobj, p,  T):
             # Properties of Gases and Liquids 5th Ed., Section 9-4-2
             units = b.params.get_metadata().derived_units
 
-            T = pyunits.convert(b.temperature, to_units=pyunits.K)
+            T = pyunits.convert(T, to_units=pyunits.K)
             T_crit = pyunits.convert(cobj.temperature_crit, to_units=pyunits.K)
             V_crit = 1 / pyunits.convert(cobj.dens_mol_crit, to_units=pyunits.mol/pyunits.mL)
             M = pyunits.convert(cobj.mw, pyunits.g/pyunits.mol)
