@@ -11,16 +11,10 @@
 # license information.
 #################################################################################
 """
-Tests for methods from Perry's
+Tests for Lennard-Jones implementation of Chapman Enskog viscosity from
+Properties of Gases and Liquids, 5th Ed., 9-4-1
 
-All methods and parameters from:
-
-Perry's Chemical Engineers' Handbook, 7th Edition
-Perry, Green, Maloney, 1997, McGraw-Hill
-
-All parameter indicies based on conventions used by the source
-
-Authors: Andrew Lee
+Authors: Douglas Allan
 """
 
 import pytest
@@ -36,8 +30,9 @@ from idaes.core.base.property_meta import PropertyClassMetadata
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
-@pytest.mark.unit
-def test_visc_vap_comp_sulfur_dioxide():
+
+
+def construct_dummy_model(param_dict):
     m = ConcreteModel()
 
     # Create a dummy parameter block
@@ -46,8 +41,8 @@ def test_visc_vap_comp_sulfur_dioxide():
     m.params.config = ConfigBlock(implicit=True)
     # Parameters for sulfur dioxide, from Properties of Gases and Liquids 5th ed. Appendix B.
     m.params.config.parameter_data = {
-        "lennard_jones_sigma": 4.112 * pyunits.angstrom,
-        "lennard_jones_epsilon_reduced": 335.4 * pyunits.K,
+        "lennard_jones_sigma": (param_dict["sigma"], pyunits.angstrom),
+        "lennard_jones_epsilon_reduced": (param_dict["epsilon"], pyunits.K,)
     }
 
     # Also need to dummy configblock on the model for the test
@@ -60,7 +55,6 @@ def test_visc_vap_comp_sulfur_dioxide():
     m.meta_object.default_units["length"] = pyunits.m
     m.meta_object.default_units["time"] = pyunits.s
     m.meta_object.default_units["amount"] = pyunits.mol
-    m.meta_object.default_units["current"] = pyunits.ampere
 
     def get_metadata(self):
         return m.meta_object
@@ -69,14 +63,25 @@ def test_visc_vap_comp_sulfur_dioxide():
     m.params.get_metadata = types.MethodType(get_metadata, m.params)
 
     # Create variables that should exist on param block
-    m.params.mw = Var(initialize=0.064065, units=pyunits.kg / pyunits.mol)
-    m.params.omega = Var(initialize=0.257, units=pyunits.dimensionless)
+    m.params.mw = Var(initialize=param_dict["mw"], units=pyunits.kg / pyunits.mol)
+    m.params.omega = Var(initialize=param_dict["omega"], units=pyunits.dimensionless)
 
     # Create a dummy state block
     m.props = Block([1])
     add_object_reference(m.props[1], "params", m.params)
 
     m.props[1].temperature = Var(initialize=273.16, units=pyunits.K)
+    return m
+@pytest.mark.unit
+def test_visc_vap_comp_sulfur_dioxide():
+    m = construct_dummy_model(
+        {
+            "sigma": 4.112,
+            "epsilon": 335.4,
+            "mw": 0.064065,
+            "omega": 0.257,
+        }
+    )
 
     ChapmanEnskogLennardJones.visc_d_phase_comp.build_parameters(m.params, "Vap")
 
@@ -103,44 +108,14 @@ def test_visc_vap_comp_sulfur_dioxide():
 
 @pytest.mark.unit
 def test_visc_vap_comp_methanol():
-    m = ConcreteModel()
-
-    # Create a dummy parameter block
-    m.params = Block()
-
-    m.params.config = ConfigBlock(implicit=True)
-    # Properties of Methanol from Properties of Gases and Liquids 5th Ed. Appendix B.
-    m.params.config.parameter_data = {
-        "lennard_jones_sigma": 3.626 * pyunits.angstrom,
-        "lennard_jones_epsilon_reduced": 481.8 * pyunits.K,
-    }
-
-    m.meta_object = PropertyClassMetadata()
-    m.meta_object.default_units["temperature"] = pyunits.K
-    m.meta_object.default_units["mass"] = pyunits.kg
-    m.meta_object.default_units["length"] = pyunits.m
-    m.meta_object.default_units["time"] = pyunits.s
-    m.meta_object.default_units["amount"] = pyunits.mol
-    m.meta_object.default_units["current"] = pyunits.ampere
-
-    def get_metadata(self):
-        return m.meta_object
-
-    m.get_metadata = types.MethodType(get_metadata, m)
-    m.params.get_metadata = types.MethodType(get_metadata, m.params)
-
-    # Create variables that should exist on param block
-    m.params.mw = Var(initialize=32.042e-3, units=pyunits.kg / pyunits.mol)
-    m.params.omega = Var(initialize=0.565, units=pyunits.dimensionless)
-
-    # Create a dummy state block
-    m.props = Block([1])
-    add_object_reference(m.props[1], "params", m.params)
-
-    # Poling et al. like to leave out the .15 from Kelvin conversion
-    # and then give more sig figs than they ought
-    m.props[1].temperature = Var(initialize=273 + 300, units=pyunits.K)
-
+    m = construct_dummy_model(
+        {
+            "sigma": 3.626,
+            "epsilon": 481.8,
+            "mw": 32.042e-3,
+            "omega": 0.565,
+        }
+    )
     ChapmanEnskogLennardJones.visc_d_phase_comp.build_parameters(m.params, "Vap")
 
     expr = ChapmanEnskogLennardJones.visc_d_phase_comp.return_expression(
@@ -158,42 +133,14 @@ def test_visc_vap_comp_methanol():
 
 @pytest.mark.unit
 def test_visc_vap_comp_ethane():
-    m = ConcreteModel()
-
-    # Create a dummy parameter block
-    m.params = Block()
-
-    m.params.config = ConfigBlock(implicit=True)
-    # Properties of Ethane from Properties of Gases and Liquids 5th Ed. Appendix B.
-    m.params.config.parameter_data = {
-        "lennard_jones_sigma": 4.443 * pyunits.angstrom,
-        "lennard_jones_epsilon_reduced": 215.7 * pyunits.K,
-    }
-
-    m.meta_object = PropertyClassMetadata()
-    m.meta_object.default_units["temperature"] = pyunits.K
-    m.meta_object.default_units["mass"] = pyunits.kg
-    m.meta_object.default_units["length"] = pyunits.m
-    m.meta_object.default_units["time"] = pyunits.s
-    m.meta_object.default_units["amount"] = pyunits.mol
-    m.meta_object.default_units["current"] = pyunits.ampere
-
-    def get_metadata(self):
-        return m.meta_object
-
-    m.get_metadata = types.MethodType(get_metadata, m)
-    m.params.get_metadata = types.MethodType(get_metadata, m.params)
-
-    # Create variables that should exist on param block
-    m.params.mw = Var(initialize=30.070e-3, units=pyunits.kg / pyunits.mol)
-    m.params.omega = Var(initialize=0.099, units=pyunits.dimensionless)
-
-    # Create a dummy state block
-    m.props = Block([1])
-    add_object_reference(m.props[1], "params", m.params)
-
-    m.props[1].temperature = Var(initialize=273 + 300, units=pyunits.K)
-
+    m = construct_dummy_model(
+        {
+            "sigma": 4.443,
+            "epsilon": 215.7,
+            "mw": 30.070e-3,
+            "omega": 0.099,
+        }
+    )
     ChapmanEnskogLennardJones.visc_d_phase_comp.build_parameters(m.params, "Vap")
 
     expr = ChapmanEnskogLennardJones.visc_d_phase_comp.return_expression(
