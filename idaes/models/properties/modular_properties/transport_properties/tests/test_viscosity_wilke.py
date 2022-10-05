@@ -26,7 +26,9 @@ from pyomo.util.check_units import assert_units_equivalent
 import pyomo.environ as pyo
 
 from idaes.models.properties.modular_properties.transport_properties.viscosity_wilke import (
-    ViscosityWilkePhase, wilke_phi_ij_callback, herring_zimmer_phi_ij_callback
+    ViscosityWilkePhase,
+    wilke_phi_ij_callback,
+    herring_zimmer_phi_ij_callback,
 )
 
 from idaes.core.util.misc import add_object_reference
@@ -41,6 +43,7 @@ from idaes.models.properties.modular_properties.pure import ConstantProperties
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
+
 @declare_process_block_class("DummyParameterBlock")
 class DummyParameterData(GenericParameterData):
     def configure(self):
@@ -53,9 +56,11 @@ class DummyParameterData(GenericParameterData):
 def define_state(b):
     b.state_defined = True
 
+
 # Dummy method to avoid errors when setting metadata dict
 def set_metadata(b):
     pass
+
 
 def construct_dummy_model(component_dict):
     m = ConcreteModel()
@@ -69,20 +74,20 @@ def construct_dummy_model(component_dict):
                 "visc_d_phase_comp": {"Vap": ConstantProperties},
                 "parameter_data": {
                     "mw": (component_dict[comp1]["mw"], pyunits.g / pyunits.mol),
-                }
+                },
             },
             comp2: {
                 "visc_d_phase_comp": {"Vap": ConstantProperties},
                 "parameter_data": {
                     "mw": (component_dict[comp2]["mw"], pyunits.g / pyunits.mol),
-                }
+                },
             },
         },
         phases={
             "Vap": {
                 "type": VaporPhase,
                 "equation_of_state": Ideal,
-                "visc_d_phase": ViscosityWilkePhase
+                "visc_d_phase": ViscosityWilkePhase,
             },
         },
         base_units={
@@ -120,18 +125,20 @@ def construct_dummy_model(component_dict):
     )
     return m
 
+
 @pytest.mark.unit
 def test_wilke_visc_d_phase_N2_CO2():
-    component_dict = {"N2":{"mw": 28.014, "visc_d_Vap": 175.8}, "CO2":{"mw": 44.009, "visc_d_Vap": 146.6}}
+    component_dict = {
+        "N2": {"mw": 28.014, "visc_d_Vap": 175.8},
+        "CO2": {"mw": 44.009, "visc_d_Vap": 146.6},
+    }
     m = construct_dummy_model(component_dict)
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d_phase.return_expression(
-        m.props[1], m.params.Vap
-    )
+    expr = ViscosityWilkePhase.visc_d_phase.return_expression(m.props[1], m.params.Vap)
 
-    phi_N2_N2 = m.props[1].visc_d_phi_ij["N2","N2"]
+    phi_N2_N2 = m.props[1].visc_d_phi_ij["N2", "N2"]
     assert_units_equivalent(phi_N2_N2, pyunits.dimensionless)
     assert pyo.value(phi_N2_N2) == pytest.approx(1, rel=1e-12)
 
@@ -147,16 +154,19 @@ def test_wilke_visc_d_phase_N2_CO2():
     assert_units_equivalent(phi_CO2_N2, pyunits.dimensionless)
     # Eq. 9-5.15, Properties of Gases and Liquids 5th Ed.
     assert pyo.value(phi_CO2_N2) == pytest.approx(
-        pyo.value(
-            phi_N2_CO2 * 146.6 / 175.8 * 28.014 / 44.009
-        ),
-        rel=1e-12
+        pyo.value(phi_N2_CO2 * 146.6 / 175.8 * 28.014 / 44.009), rel=1e-12
     )
 
     expr_micropoise = pyunits.convert(expr, pyunits.micropoise)
     # Pulled from Table 9.2, Properties of Gases and Liquids 5th Ed.
     mole_frac_list = [0.0, 0.213, 0.495, 0.767, 1.0]  # Mole fraction of N2
-    visc_list = [146.6, 153.5, 161.8, 172.1, 175.8]   # Experimental viscosities in millipoise
+    visc_list = [
+        146.6,
+        153.5,
+        161.8,
+        172.1,
+        175.8,
+    ]  # Experimental viscosities in millipoise
     err_list = [0.0, -1.3, -1.8, -2.8, 0.0]  # Percent error in Wilke's method
     for i in range(5):
         m.props[1].mole_frac_phase_comp["Vap", "N2"] = mole_frac_list[i]
@@ -169,19 +179,27 @@ def test_wilke_visc_d_phase_N2_CO2():
 
 @pytest.mark.unit
 def test_wilke_visc_d_phase_ammonia_hydrogen():
-    component_dict = {"NH3": {"mw": 17.031, "visc_d_Vap": 105.9}, "H2": {"mw": 2.016, "visc_d_Vap": 90.6}}
+    component_dict = {
+        "NH3": {"mw": 17.031, "visc_d_Vap": 105.9},
+        "H2": {"mw": 2.016, "visc_d_Vap": 90.6},
+    }
     m = construct_dummy_model(component_dict)
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d_phase.return_expression(
-        m.props[1], m.params.Vap
-    )
+    expr = ViscosityWilkePhase.visc_d_phase.return_expression(m.props[1], m.params.Vap)
 
     expr_micropoise = pyunits.convert(expr, pyunits.micropoise)
     # Pulled from Table 9.2, Properties of Gases and Liquids 5th Ed.
     mole_frac_list = [0.0, 0.195, 0.399, 0.536, 0.677, 1.0]  # Mole fraction of NH3
-    visc_list = [90.6, 118.4, 123.8, 122.4, 120.0, 105.9]  # Experimental viscosities in millipoise
+    visc_list = [
+        90.6,
+        118.4,
+        123.8,
+        122.4,
+        120.0,
+        105.9,
+    ]  # Experimental viscosities in millipoise
     err_list = [0.0, -11.0, -12.0, -11.0, -9.7, 0.0]  # Percent error in Wilke's method
     for i in range(6):
         m.props[1].mole_frac_phase_comp["Vap", "NH3"] = mole_frac_list[i]
@@ -191,22 +209,30 @@ def test_wilke_visc_d_phase_ammonia_hydrogen():
 
     assert_units_equivalent(expr, pyunits.Pa * pyunits.s)
 
+
 @pytest.mark.unit
 @pytest.mark.unit
 def test_wilke_visc_d_phase_N2O_SO2():
-    component_dict = {"N2O": {"mw": 44.013, "visc_d_Vap": 173.0}, "SO2": {"mw": 64.066, "visc_d_Vap": 152.3}}
+    component_dict = {
+        "N2O": {"mw": 44.013, "visc_d_Vap": 173.0},
+        "SO2": {"mw": 64.066, "visc_d_Vap": 152.3},
+    }
     m = construct_dummy_model(component_dict)
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d_phase.return_expression(
-        m.props[1], m.params.Vap
-    )
+    expr = ViscosityWilkePhase.visc_d_phase.return_expression(m.props[1], m.params.Vap)
 
     expr_micropoise = pyunits.convert(expr, pyunits.micropoise)
     # Pulled from Table 9.2, Properties of Gases and Liquids 5th Ed.
     mole_frac_list = [0.0, 0.325, 0.625, 0.817, 1.0]  # Mole fraction of NH3
-    visc_list = [152.3, 161.7, 167.8, 170.7, 173.0]  # Experimental viscosities in millipoise
+    visc_list = [
+        152.3,
+        161.7,
+        167.8,
+        170.7,
+        173.0,
+    ]  # Experimental viscosities in millipoise
     err_list = [0.0, -2.2, -2.2, -1.3, 0.0]  # Percent error in Wilke's method
     for i in range(5):
         m.props[1].mole_frac_phase_comp["Vap", "N2O"] = mole_frac_list[i]
@@ -216,18 +242,20 @@ def test_wilke_visc_d_phase_N2O_SO2():
 
     assert_units_equivalent(expr, pyunits.Pa * pyunits.s)
 
+
 @pytest.mark.unit
 def test_herning_zipperer_visc_d_phase_N2_CO2():
-    component_dict = {"N2":{"mw": 28.014, "visc_d_Vap": 175.8}, "CO2":{"mw": 44.009, "visc_d_Vap": 146.6}}
+    component_dict = {
+        "N2": {"mw": 28.014, "visc_d_Vap": 175.8},
+        "CO2": {"mw": 44.009, "visc_d_Vap": 146.6},
+    }
     m = construct_dummy_model(component_dict)
 
     m.params.Vap.viscosity_phi_ij_callback = herring_zimmer_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d_phase.return_expression(
-        m.props[1], m.params.Vap
-    )
+    expr = ViscosityWilkePhase.visc_d_phase.return_expression(m.props[1], m.params.Vap)
 
-    phi_N2_N2 = m.props[1].visc_d_phi_ij["N2","N2"]
+    phi_N2_N2 = m.props[1].visc_d_phi_ij["N2", "N2"]
     assert_units_equivalent(phi_N2_N2, pyunits.dimensionless)
     assert pyo.value(phi_N2_N2) == pytest.approx(1, rel=1e-12)
 
@@ -242,17 +270,18 @@ def test_herning_zipperer_visc_d_phase_N2_CO2():
     phi_CO2_N2 = m.props[1].visc_d_phi_ij["CO2", "N2"]
     assert_units_equivalent(phi_CO2_N2, pyunits.dimensionless)
     # Eq. 9-5.15, Properties of Gases and Liquids 5th Ed.
-    assert pyo.value(phi_CO2_N2) == pytest.approx(
-        1 / pyo.value(
-            phi_N2_CO2
-        ),
-        rel=1e-12
-    )
+    assert pyo.value(phi_CO2_N2) == pytest.approx(1 / pyo.value(phi_N2_CO2), rel=1e-12)
 
     expr_micropoise = pyunits.convert(expr, pyunits.micropoise)
     # Pulled from Table 9.2, Properties of Gases and Liquids 5th Ed.
     mole_frac_list = [0.0, 0.213, 0.495, 0.767, 1.0]  # Mole fraction of N2
-    visc_list = [146.6, 153.5, 161.8, 172.1, 175.8]   # Experimental viscosities in millipoise
+    visc_list = [
+        146.6,
+        153.5,
+        161.8,
+        172.1,
+        175.8,
+    ]  # Experimental viscosities in millipoise
     err_list = [0.0, -1, -1.5, -2.5, 0.0]  # Percent error in H&Z's method
     for i in range(5):
         m.props[1].mole_frac_phase_comp["Vap", "N2"] = mole_frac_list[i]
@@ -265,44 +294,62 @@ def test_herning_zipperer_visc_d_phase_N2_CO2():
 
 @pytest.mark.unit
 def test_herning_zipperer_visc_d_phase_ammonia_hydrogen():
-    component_dict = {"NH3": {"mw": 17.031, "visc_d_Vap": 105.9}, "H2": {"mw": 2.016, "visc_d_Vap": 90.6}}
+    component_dict = {
+        "NH3": {"mw": 17.031, "visc_d_Vap": 105.9},
+        "H2": {"mw": 2.016, "visc_d_Vap": 90.6},
+    }
     m = construct_dummy_model(component_dict)
 
     m.params.Vap.viscosity_phi_ij_callback = herring_zimmer_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d_phase.return_expression(
-        m.props[1], m.params.Vap
-    )
+    expr = ViscosityWilkePhase.visc_d_phase.return_expression(m.props[1], m.params.Vap)
 
     expr_micropoise = pyunits.convert(expr, pyunits.micropoise)
     # Pulled from Table 9.2, Properties of Gases and Liquids 5th Ed.
     mole_frac_list = [0.0, 0.195, 0.399, 0.536, 0.677, 1.0]  # Mole fraction of NH3
-    visc_list = [90.6, 118.4, 123.8, 122.4, 120.0, 105.9]  # Experimental viscosities in millipoise
+    visc_list = [
+        90.6,
+        118.4,
+        123.8,
+        122.4,
+        120.0,
+        105.9,
+    ]  # Experimental viscosities in millipoise
     err_list = [0.0, -18.0, -19.0, -16.0, -14.0, 0.0]  # Percent error in H&Z's method
     for i in range(6):
         m.props[1].mole_frac_phase_comp["Vap", "NH3"] = mole_frac_list[i]
         m.props[1].mole_frac_phase_comp["Vap", "H2"] = 1 - mole_frac_list[i]
         err = 100 * value(expr_micropoise / visc_list[i] - 1)
-        assert err == pytest.approx(err_list[i], abs=1)  # Not as many sig figs in the table
+        assert err == pytest.approx(
+            err_list[i], abs=1
+        )  # Not as many sig figs in the table
 
     assert_units_equivalent(expr, pyunits.Pa * pyunits.s)
+
 
 @pytest.mark.unit
 @pytest.mark.unit
 def test_herning_zipperer_visc_d_phase_N2O_SO2():
-    component_dict = {"N2O": {"mw": 44.013, "visc_d_Vap": 173.0}, "SO2": {"mw": 64.066, "visc_d_Vap": 152.3}}
+    component_dict = {
+        "N2O": {"mw": 44.013, "visc_d_Vap": 173.0},
+        "SO2": {"mw": 64.066, "visc_d_Vap": 152.3},
+    }
     m = construct_dummy_model(component_dict)
 
     m.params.Vap.viscosity_phi_ij_callback = herring_zimmer_phi_ij_callback
 
-    expr = ViscosityWilkePhase.visc_d_phase.return_expression(
-        m.props[1], m.params.Vap
-    )
+    expr = ViscosityWilkePhase.visc_d_phase.return_expression(m.props[1], m.params.Vap)
 
     expr_micropoise = pyunits.convert(expr, pyunits.micropoise)
     # Pulled from Table 9.2, Properties of Gases and Liquids 5th Ed.
     mole_frac_list = [0.0, 0.325, 0.625, 0.817, 1.0]  # Mole fraction of NH3
-    visc_list = [152.3, 161.7, 167.8, 170.7, 173.0]  # Experimental viscosities in millipoise
+    visc_list = [
+        152.3,
+        161.7,
+        167.8,
+        170.7,
+        173.0,
+    ]  # Experimental viscosities in millipoise
     err_list = [0.0, -2.2, -2.1, -1.2, 0.0]  # Percent error in Wilke's method
     for i in range(5):
         m.props[1].mole_frac_phase_comp["Vap", "N2O"] = mole_frac_list[i]

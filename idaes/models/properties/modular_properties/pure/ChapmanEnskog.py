@@ -22,7 +22,6 @@ from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError
 
 
-
 # ------------------------------------------------------------------------------------
 # Gas viscosity at low pressures from Lennard Jones paramters. Note that LJ parameters
 # are underdetermined when estimated from viscosity data (see The Indeterminacy of
@@ -36,14 +35,14 @@ class ChapmanEnskogLennardJones(object):
         if not hasattr(cobj, "lennard_jones_sigma"):
             cobj.lennard_jones_sigma = Var(
                 doc="Parameter sigma from Lennard Jones potential",
-                units=units["length"]
+                units=units["length"],
             )
             set_param_from_config(cobj, param="lennard_jones_sigma")
 
         if not hasattr(cobj, "lennard_jones_epsilon_reduced"):
             cobj.lennard_jones_epsilon_reduced = Var(
                 doc="Parameter epsilon from Lennard Jones potential reduced by Boltzmann constant",
-                units=units["temperature"]
+                units=units["temperature"],
             )
             set_param_from_config(cobj, param="lennard_jones_epsilon_reduced")
 
@@ -56,28 +55,39 @@ class ChapmanEnskogLennardJones(object):
             #     raise ConfigurationError(f"The Chapman-Enskog works only for vapor phases, not phase {p}")
             ChapmanEnskogLennardJones.build_lennard_jones_parameters(cobj)
             if not hasattr(cobj, "viscosity_collision_integral_callback"):
-                cobj.viscosity_collision_integral_callback = collision_integral_neufeld_callback
+                cobj.viscosity_collision_integral_callback = (
+                    collision_integral_neufeld_callback
+                )
 
         @staticmethod
-        def return_expression(b, cobj, p,  T):
+        def return_expression(b, cobj, p, T):
             # Properties of Gases and Liquids, Eq. 9.3.9
             units = b.params.get_metadata().derived_units
 
             T = pyunits.convert(T, to_units=pyunits.K)
             sigma = pyunits.convert(cobj.lennard_jones_sigma, pyunits.angstrom)
-            M = pyunits.convert(cobj.mw, pyunits.g/pyunits.mol)
-            T_dim = T / pyunits.convert(cobj.lennard_jones_epsilon_reduced, to_units=pyunits.K)
+            M = pyunits.convert(cobj.mw, pyunits.g / pyunits.mol)
+            T_dim = T / pyunits.convert(
+                cobj.lennard_jones_epsilon_reduced, to_units=pyunits.K
+            )
             Omega = cobj.viscosity_collision_integral_callback(T_dim)
 
-            C = 26.69 * pyunits.micropoise * pyunits.angstrom ** 2 / pyo.sqrt(pyunits.g / pyunits.mol * pyunits.K)
-            visc = C * pyo.sqrt(M * T) / (sigma ** 2 * Omega)
+            C = (
+                26.69
+                * pyunits.micropoise
+                * pyunits.angstrom**2
+                / pyo.sqrt(pyunits.g / pyunits.mol * pyunits.K)
+            )
+            visc = C * pyo.sqrt(M * T) / (sigma**2 * Omega)
 
             return pyunits.convert(visc, units["dynamic_viscosity"])
+
 
 def collision_integral_kim_ross_callback(T_dim):
     # Properties of Gases and Liquids, Eq. 9.4.5
     # T_dim = T^* = T / lennard_jones_epsilon
     return 1.604 / pyo.sqrt(T_dim)
+
 
 def collision_integral_neufeld_callback(T_dim):
     # Properties of Gases and Liquids, Eq. 9.4.3
@@ -88,4 +98,4 @@ def collision_integral_neufeld_callback(T_dim):
     D = 0.77320
     E = 2.16178
     F = 2.43787
-    return A * T_dim ** -B + C * pyo.exp(-D * T_dim) + E * pyo.exp(-F * T_dim)
+    return A * T_dim**-B + C * pyo.exp(-D * T_dim) + E * pyo.exp(-F * T_dim)

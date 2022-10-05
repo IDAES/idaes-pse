@@ -386,6 +386,7 @@ def test_visc_d_phase_comp(frame):
 
     assert_units_equivalent(expr, pyunits.Pa * pyunits.s)
 
+
 @pytest.mark.unit
 def test_therm_cond_liq_comp(frame):
     Constant.therm_cond_phase_comp.build_parameters(frame.params, "Liq")

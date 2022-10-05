@@ -24,7 +24,9 @@ from idaes.core.util.misc import set_param_from_config
 from idaes.core.util.constants import Constants
 from idaes.models.properties.modular_properties.base.utility import get_component_object
 from idaes.models.properties.modular_properties.transport_properties.viscosity_wilke import (
-    ViscosityWilkePhase, wilke_phi_ij_callback, herring_zimmer_phi_ij_callback
+    ViscosityWilkePhase,
+    wilke_phi_ij_callback,
+    herring_zimmer_phi_ij_callback,
 )
 
 
@@ -43,6 +45,16 @@ class ThermalConductivityWMSPhase(object):
             pname = pobj.local_name
 
             # Properties of Gases and Liquids, Eq. 10-6.2
-            return sum([b.mole_frac_phase_comp[pname, i] * b.therm_cond_phase_comp[pname, i]
-                        / sum([b.mole_frac_phase_comp[pname, j] * b.visc_d_phi_ij[i, j] for j in b.components_in_phase(pname)])
-                        for i in b.components_in_phase(pname)])
+            return sum(
+                [
+                    b.mole_frac_phase_comp[pname, i]
+                    * b.therm_cond_phase_comp[pname, i]
+                    / sum(
+                        [
+                            b.mole_frac_phase_comp[pname, j] * b.visc_d_phi_ij[i, j]
+                            for j in b.components_in_phase(pname)
+                        ]
+                    )
+                    for i in b.components_in_phase(pname)
+                ]
+            )

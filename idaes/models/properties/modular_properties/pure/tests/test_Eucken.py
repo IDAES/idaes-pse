@@ -30,6 +30,7 @@ from idaes.core.base.property_meta import PropertyClassMetadata
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
+
 def construct_dummy_model(param_dict):
     m = ConcreteModel()
 
@@ -62,7 +63,7 @@ def construct_dummy_model(param_dict):
     # Create variables that should exist on param block
     m.params.mw = Var(initialize=param_dict["mw"], units=pyunits.kg / pyunits.mol)
     # Hacking cp on the fake component object
-    m.params.cp_mol_pure = Var(initialize=1, units=pyunits.J/pyunits.mol/pyunits.K)
+    m.params.cp_mol_pure = Var(initialize=1, units=pyunits.J / pyunits.mol / pyunits.K)
     m.params.cp_mol_ig_comp = Block()
 
     def return_expression(b, cobj, T):
@@ -76,14 +77,15 @@ def construct_dummy_model(param_dict):
 
     m.props[1].temperature = Var(initialize=298, units=pyunits.K)
     # Have to trick the block into considering "params" as the component name
-    m.props[1].visc_d_phase_comp = Var(["Vap"], ["params"], initialize=1e-7, units=pyunits.Pa * pyunits.s)
+    m.props[1].visc_d_phase_comp = Var(
+        ["Vap"], ["params"], initialize=1e-7, units=pyunits.Pa * pyunits.s
+    )
     return m
+
 
 @pytest.mark.unit
 def test_therm_cond_phase_comp_acetone():
-    m = construct_dummy_model(
-        {"mw": 58.080e-3}
-    )
+    m = construct_dummy_model({"mw": 58.080e-3})
 
     Eucken.therm_cond_phase_comp.build_parameters(m.params, "Vap")
 
@@ -96,15 +98,21 @@ def test_therm_cond_phase_comp_acetone():
 
     # Pulled from Table 10-2, Properties of Gases and Liquids 5th Ed.
     T_list = [353, 393, 457]  # Gas temperature in K
-    therm_cond_list = [15.7e-3, 19.4e-3, 24.7e-3]  # Experimental thermal conductivity in W/(m K)
+    therm_cond_list = [
+        15.7e-3,
+        19.4e-3,
+        24.7e-3,
+    ]  # Experimental thermal conductivity in W/(m K)
     visc_list = [90.0e-7, 100e-7, 114.5e-7]  # Viscosities in Pascal seconds
     Cv_list = [77.9, 84.2, 96.1]  # Constant *volume* heat capacity in J/(mol K)
     f_int_list = [1, 1.32, 1.15]
-    err_list = [[-4.7, -8.7, -8.4],  # Eucken percent error
-                [16, 12, 13],  # Modified Eucken percent error
-                [5.1, 0.9, 1.7]]  # Stiel and Thodos percent error
+    err_list = [
+        [-4.7, -8.7, -8.4],  # Eucken percent error
+        [16, 12, 13],  # Modified Eucken percent error
+        [5.1, 0.9, 1.7],
+    ]  # Stiel and Thodos percent error
     for i in range(3):
-        m.props[1].temperature.value = (T_list[i])
+        m.props[1].temperature.value = T_list[i]
         m.props[1].visc_d_phase_comp["Vap", "params"].value = visc_list[i]
         m.params.cp_mol_pure.value = Cv_list[i] + 8.314
         for j in range(3):
@@ -119,9 +127,7 @@ def test_therm_cond_phase_comp_acetone():
 
 @pytest.mark.unit
 def test_therm_cond_phase_comp_CO2():
-    m = construct_dummy_model(
-        {"mw": 44.009e-3}
-    )
+    m = construct_dummy_model({"mw": 44.009e-3})
 
     Eucken.therm_cond_phase_comp.build_parameters(m.params, "Vap")
 
@@ -134,15 +140,35 @@ def test_therm_cond_phase_comp_CO2():
 
     # Pulled from Table 10-2, Properties of Gases and Liquids 5th Ed.
     T_list = [200, 300, 473, 598, 1273]  # Gas temperature in K
-    therm_cond_list = [9.51e-3, 16.7e-3, 28.4e-3, 37.9e-3, 81.7e-3]  # Experimental thermal conductivity in W/(m K)
-    visc_list = [101.5e-7, 149.5e-7, 225.0e-7, 272.8e-7, 465.1e-7]  # Viscosities in Pascal seconds
-    Cv_list = [24.7, 28.9, 35.6, 39.5, 48.8]  # Constant *volume* heat capacity in J/(mol K)
+    therm_cond_list = [
+        9.51e-3,
+        16.7e-3,
+        28.4e-3,
+        37.9e-3,
+        81.7e-3,
+    ]  # Experimental thermal conductivity in W/(m K)
+    visc_list = [
+        101.5e-7,
+        149.5e-7,
+        225.0e-7,
+        272.8e-7,
+        465.1e-7,
+    ]  # Viscosities in Pascal seconds
+    Cv_list = [
+        24.7,
+        28.9,
+        35.6,
+        39.5,
+        48.8,
+    ]  # Constant *volume* heat capacity in J/(mol K)
     f_int_list = [1, 1.32, 1.15]
-    err_list = [[5.3, -3.2, -2.2, -4.8, -13],  # Eucken percent error
-                [15, 7.5, 11, 9.3, 2.4],  # Modified Eucken percent error
-                [9.8, 1.9, 4.1, 1.9, -5.6]]  # Stiel and Thodos percent error
+    err_list = [
+        [5.3, -3.2, -2.2, -4.8, -13],  # Eucken percent error
+        [15, 7.5, 11, 9.3, 2.4],  # Modified Eucken percent error
+        [9.8, 1.9, 4.1, 1.9, -5.6],
+    ]  # Stiel and Thodos percent error
     for i in range(5):
-        m.props[1].temperature.value = (T_list[i])
+        m.props[1].temperature.value = T_list[i]
         m.props[1].visc_d_phase_comp["Vap", "params"].value = visc_list[i]
         m.params.cp_mol_pure.value = Cv_list[i] + 8.314
         for j in range(3):
@@ -154,11 +180,10 @@ def test_therm_cond_phase_comp_CO2():
 
     assert_units_equivalent(expr, pyunits.W / pyunits.m / pyunits.K)
 
+
 @pytest.mark.unit
 def test_therm_cond_phase_comp_ammonia():
-    m = construct_dummy_model(
-        {"mw": 17.031e-3}
-    )
+    m = construct_dummy_model({"mw": 17.031e-3})
 
     Eucken.therm_cond_phase_comp.build_parameters(m.params, "Vap")
 
@@ -175,11 +200,13 @@ def test_therm_cond_phase_comp_ammonia():
     visc_list = [73.2e-7, 90.6e-7]  # Viscosities in Pascal seconds
     Cv_list = [25.4, 26.7]  # Constant *volume* heat capacity in J/(mol K)
     f_int_list = [1, 1.32, 1.15]
-    err_list = [[15, 10],  # Eucken percent error
-                [26, 21],  # Modified Eucken percent error
-                [20, 16]]  # Stiel and Thodos percent error
+    err_list = [
+        [15, 10],  # Eucken percent error
+        [26, 21],  # Modified Eucken percent error
+        [20, 16],
+    ]  # Stiel and Thodos percent error
     for i in range(2):
-        m.props[1].temperature.value = (T_list[i])
+        m.props[1].temperature.value = T_list[i]
         m.props[1].visc_d_phase_comp["Vap", "params"].value = visc_list[i]
         m.params.cp_mol_pure.value = Cv_list[i] + 8.314
         for j in range(3):

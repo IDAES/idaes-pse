@@ -31,7 +31,9 @@ from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.models.properties.modular_properties.pure.ChungPure import *
-from idaes.models.properties.modular_properties.pure.ChapmanEnskog import collision_integral_neufeld_callback
+from idaes.models.properties.modular_properties.pure.ChapmanEnskog import (
+    collision_integral_neufeld_callback,
+)
 from idaes.core.util.misc import add_object_reference
 from idaes.core.base.property_meta import PropertyClassMetadata
 from idaes.core.util.exceptions import ConfigurationError
@@ -48,8 +50,8 @@ def test_visc_vap_comp_sulfur_dioxide():
     m.params.config = ConfigBlock(implicit=True)
     # Properties of Sulfur Dioxide from Properties of Gases and Liquids Example 9-1
     m.params.config.parameter_data = {
-            "dipole_moment": 1.6 * pyunits.debye,
-            "association_factor_chung": 0,
+        "dipole_moment": 1.6 * pyunits.debye,
+        "association_factor_chung": 0,
     }
 
     m.meta_object = PropertyClassMetadata()
@@ -70,8 +72,12 @@ def test_visc_vap_comp_sulfur_dioxide():
     m.params.mw = Var(initialize=0.064065, units=pyunits.kg / pyunits.mol)
     m.params.temperature_crit = Var(initialize=430.8, units=pyunits.K)
     m.params.dens_mol_crit = Var(
-        initialize=pyo.value(pyunits.convert(1/122 * pyunits.mol / pyunits.cm ** 3, pyunits.mol / pyunits.m ** 3)),
-        units=pyunits.mol / pyunits.m ** 3
+        initialize=pyo.value(
+            pyunits.convert(
+                1 / 122 * pyunits.mol / pyunits.cm**3, pyunits.mol / pyunits.m**3
+            )
+        ),
+        units=pyunits.mol / pyunits.m**3,
     )
     m.params.omega = Var(initialize=0.257, units=pyunits.dimensionless)
 
@@ -87,10 +93,15 @@ def test_visc_vap_comp_sulfur_dioxide():
 
     assert isinstance(m.params.dipole_moment, Var)
     # The SI unit for dipole moment, coulomb meters, is hilariously oversized for molecular dipoles
-    assert value(m.params.dipole_moment) == pytest.approx(5.337025523170434e-30, rel=1e-12)
+    assert value(m.params.dipole_moment) == pytest.approx(
+        5.337025523170434e-30, rel=1e-12
+    )
     assert isinstance(m.params.association_factor_chung, Var)
     assert value(m.params.association_factor_chung) == 0
-    assert m.params.viscosity_collision_integral_callback is collision_integral_neufeld_callback
+    assert (
+        m.params.viscosity_collision_integral_callback
+        is collision_integral_neufeld_callback
+    )
 
     expr = ChungViscosityPure.viscosity_dynamic_vap_comp.return_expression(
         m.props[1], m.params, "Vap", m.props[1].temperature
@@ -105,7 +116,7 @@ def test_visc_vap_comp_sulfur_dioxide():
     for i in range(4):
         # Poling et al. like to leave out the .15 from Kelvin conversion
         # and then give more sig figs than they ought
-        m.props[1].temperature.value = (T_list[i] + 273)
+        m.props[1].temperature.value = T_list[i] + 273
         err = 100 * value(expr_micropoise / visc_list[i] - 1)
         # Obtain percent error, then compare to Poling et al.'s
         # percent error from using Chung's method.
@@ -124,8 +135,8 @@ def test_visc_vap_comp_methanol():
     m.params.config = ConfigBlock(implicit=True)
     # Properties of Methanol from Properties of Gases and Liquids 5th Ed. Appendix A.
     m.params.config.parameter_data = {
-            "dipole_moment": 1.69 * pyunits.debye,  # This got pulled from Wikipedia
-            "association_factor_chung": 0.215,
+        "dipole_moment": 1.69 * pyunits.debye,  # This got pulled from Wikipedia
+        "association_factor_chung": 0.215,
     }
 
     m.meta_object = PropertyClassMetadata()
@@ -146,8 +157,12 @@ def test_visc_vap_comp_methanol():
     m.params.mw = Var(initialize=32.042e-3, units=pyunits.kg / pyunits.mol)
     m.params.temperature_crit = Var(initialize=512.46, units=pyunits.K)
     m.params.dens_mol_crit = Var(
-        initialize=pyo.value(pyunits.convert(1/118.00 * pyunits.mol / pyunits.cm ** 3, pyunits.mol / pyunits.m ** 3)),
-        units=pyunits.mol / pyunits.m ** 3
+        initialize=pyo.value(
+            pyunits.convert(
+                1 / 118.00 * pyunits.mol / pyunits.cm**3, pyunits.mol / pyunits.m**3
+            )
+        ),
+        units=pyunits.mol / pyunits.m**3,
     )
     m.params.omega = Var(initialize=0.565, units=pyunits.dimensionless)
 
@@ -163,7 +178,9 @@ def test_visc_vap_comp_methanol():
 
     assert isinstance(m.params.dipole_moment, Var)
     # The SI unit for dipole moment, coulomb meters, is hilariously oversized for molecular dipoles
-    assert value(m.params.dipole_moment) == pytest.approx(5.63723320884877e-30, rel=1e-12)
+    assert value(m.params.dipole_moment) == pytest.approx(
+        5.63723320884877e-30, rel=1e-12
+    )
     assert isinstance(m.params.association_factor_chung, Var)
     assert value(m.params.association_factor_chung) == 0.215
 
@@ -181,13 +198,14 @@ def test_visc_vap_comp_methanol():
     for i in range(3):
         # Poling et al. like to leave out the .15 from Kelvin conversion
         # and then give more sig figs than they ought
-        m.props[1].temperature.value = (T_list[i] + 273)
+        m.props[1].temperature.value = T_list[i] + 273
         err = 100 * value(expr_micropoise / visc_list[i] - 1)
         # Obtain percent error, then compare to Poling et al.'s
         # percent error from using Chung's method.
         assert err == pytest.approx(err_list[i], abs=0.5)
 
     assert_units_equivalent(expr, pyunits.Pa * pyunits.s)
+
 
 @pytest.mark.unit
 def test_visc_vap_comp_ethane():
@@ -199,8 +217,8 @@ def test_visc_vap_comp_ethane():
     m.params.config = ConfigBlock(implicit=True)
     # Properties of Ethane from Properties of Gases and Liquids 5th Ed. Appendix A
     m.params.config.parameter_data = {
-            "dipole_moment": 0 * pyunits.debye,
-            "association_factor_chung": 0,
+        "dipole_moment": 0 * pyunits.debye,
+        "association_factor_chung": 0,
     }
 
     m.meta_object = PropertyClassMetadata()
@@ -221,8 +239,12 @@ def test_visc_vap_comp_ethane():
     m.params.mw = Var(initialize=30.070e-3, units=pyunits.kg / pyunits.mol)
     m.params.temperature_crit = Var(initialize=305.32, units=pyunits.K)
     m.params.dens_mol_crit = Var(
-        initialize=pyo.value(pyunits.convert(1/145.50 * pyunits.mol / pyunits.cm ** 3, pyunits.mol / pyunits.m ** 3)),
-        units=pyunits.mol / pyunits.m ** 3
+        initialize=pyo.value(
+            pyunits.convert(
+                1 / 145.50 * pyunits.mol / pyunits.cm**3, pyunits.mol / pyunits.m**3
+            )
+        ),
+        units=pyunits.mol / pyunits.m**3,
     )
     m.params.omega = Var(initialize=0.099, units=pyunits.dimensionless)
 
@@ -256,7 +278,7 @@ def test_visc_vap_comp_ethane():
     for i in range(3):
         # Poling et al. like to leave out the .15 from Kelvin conversion
         # and then give more sig figs than they ought
-        m.props[1].temperature.value = (T_list[i] + 273)
+        m.props[1].temperature.value = T_list[i] + 273
         err = 100 * value(expr_micropoise / visc_list[i] - 1)
         # Obtain percent error, then compare to Poling et al.'s
         # percent error from using Chung's method.

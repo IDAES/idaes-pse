@@ -31,7 +31,6 @@ from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 
-
 def construct_dummy_model(param_dict):
     m = ConcreteModel()
 
@@ -42,7 +41,10 @@ def construct_dummy_model(param_dict):
     # Parameters for sulfur dioxide, from Properties of Gases and Liquids 5th ed. Appendix B.
     m.params.config.parameter_data = {
         "lennard_jones_sigma": (param_dict["sigma"], pyunits.angstrom),
-        "lennard_jones_epsilon_reduced": (param_dict["epsilon"], pyunits.K,)
+        "lennard_jones_epsilon_reduced": (
+            param_dict["epsilon"],
+            pyunits.K,
+        ),
     }
 
     # Also need to dummy configblock on the model for the test
@@ -72,6 +74,8 @@ def construct_dummy_model(param_dict):
 
     m.props[1].temperature = Var(initialize=273.16, units=pyunits.K)
     return m
+
+
 @pytest.mark.unit
 def test_visc_vap_comp_sulfur_dioxide():
     m = construct_dummy_model(
@@ -89,7 +93,10 @@ def test_visc_vap_comp_sulfur_dioxide():
     assert value(m.params.lennard_jones_sigma) == pytest.approx(4.112e-10, rel=1e-12)
     assert isinstance(m.params.lennard_jones_epsilon_reduced, Var)
     assert value(m.params.lennard_jones_epsilon_reduced) == 335.4
-    assert m.params.viscosity_collision_integral_callback is collision_integral_neufeld_callback
+    assert (
+        m.params.viscosity_collision_integral_callback
+        is collision_integral_neufeld_callback
+    )
 
     expr = ChapmanEnskogLennardJones.visc_d_phase_comp.return_expression(
         m.props[1], m.params, "Vap", m.props[1].temperature
@@ -100,7 +107,7 @@ def test_visc_vap_comp_sulfur_dioxide():
     T_list = [10, 100, 300, 700]  # Gas temperature in C
     visc_list = [120, 163, 246, 376]  # Experimental viscosities in millipoise
     for i in range(4):
-        m.props[1].temperature.value = (T_list[i] + 273.15)
+        m.props[1].temperature.value = T_list[i] + 273.15
         assert pyo.value(expr_micropoise) == pytest.approx(visc_list[i], rel=0.03)
 
     assert_units_equivalent(expr, pyunits.Pa * pyunits.s)
@@ -126,10 +133,11 @@ def test_visc_vap_comp_methanol():
     T_list = [67, 127, 277]  # Gas temperature in C
     visc_list = [112, 132, 181]  # Experimental viscosities in millipoise
     for i in range(3):
-        m.props[1].temperature.value = (T_list[i] + 273.15)
+        m.props[1].temperature.value = T_list[i] + 273.15
         assert pyo.value(expr_micropoise) == pytest.approx(visc_list[i], rel=0.03)
 
     assert_units_equivalent(expr, pyunits.Pa * pyunits.s)
+
 
 @pytest.mark.unit
 def test_visc_vap_comp_ethane():
@@ -152,7 +160,7 @@ def test_visc_vap_comp_ethane():
     visc_list = [100, 120, 156]  # Experimental viscosities in millipoise
 
     for i in range(3):
-        m.props[1].temperature.value = (T_list[i] + 273.15)
+        m.props[1].temperature.value = T_list[i] + 273.15
         assert pyo.value(expr_micropoise) == pytest.approx(visc_list[i], rel=0.03)
 
     assert_units_equivalent(expr, pyunits.Pa * pyunits.s)

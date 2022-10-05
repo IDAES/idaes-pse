@@ -24,7 +24,8 @@ import pyomo.environ as pyo
 from idaes.core.util.misc import set_param_from_config
 from idaes.core.util.constants import Constants
 from idaes.models.properties.modular_properties.pure.ChapmanEnskog import (
-    collision_integral_kim_ross_callback, collision_integral_neufeld_callback
+    collision_integral_kim_ross_callback,
+    collision_integral_neufeld_callback,
 )
 
 
@@ -35,14 +36,14 @@ class ChungViscosityPure(object):
         if not hasattr(cobj, "dipole_moment"):
             cobj.dipole_moment = Var(
                 doc="Molecular dipole moment",
-                units=units["current"] * units["time"] * units["length"]
+                units=units["current"] * units["time"] * units["length"],
             )
             set_param_from_config(cobj, param="dipole_moment")
 
         if not hasattr(cobj, "association_factor_chung"):
             cobj.association_factor_chung = Var(
                 doc="Correction term used for highly polar components",
-                units=pyunits.dimensionless
+                units=pyunits.dimensionless,
             )
             set_param_from_config(cobj, param="association_factor_chung")
 
@@ -51,32 +52,43 @@ class ChungViscosityPure(object):
         def build_parameters(cobj, p):
             ChungViscosityPure.build_common_parameters(cobj)
             if not hasattr(cobj, "viscosity_collision_integral_callback"):
-                cobj.viscosity_collision_integral_callback = collision_integral_neufeld_callback
+                cobj.viscosity_collision_integral_callback = (
+                    collision_integral_neufeld_callback
+                )
 
         @staticmethod
-        def return_expression(b, cobj, p,  T):
+        def return_expression(b, cobj, p, T):
             # Properties of Gases and Liquids 5th Ed., Section 9-4-2
             units = b.params.get_metadata().derived_units
 
             T = pyunits.convert(T, to_units=pyunits.K)
             T_crit = pyunits.convert(cobj.temperature_crit, to_units=pyunits.K)
-            V_crit = 1 / pyunits.convert(cobj.dens_mol_crit, to_units=pyunits.mol/pyunits.mL)
-            M = pyunits.convert(cobj.mw, pyunits.g/pyunits.mol)
+            V_crit = 1 / pyunits.convert(
+                cobj.dens_mol_crit, to_units=pyunits.mol / pyunits.mL
+            )
+            M = pyunits.convert(cobj.mw, pyunits.g / pyunits.mol)
             mu = pyunits.convert(cobj.dipole_moment, pyunits.debye)
             omega = cobj.omega
             kappa = cobj.association_factor_chung
-            Omega = cobj.viscosity_collision_integral_callback(1.2593 * T / T_crit)  # Eq. 9-4.10
+            Omega = cobj.viscosity_collision_integral_callback(
+                1.2593 * T / T_crit
+            )  # Eq. 9-4.10
             # Eq. 9-4.12
-            mu_r = 131.3 * pyo.sqrt(pyunits.mL / pyunits.mol * pyunits.K) / pyunits.debye * (
-                mu / pyo.sqrt(V_crit * T_crit)
+            mu_r = (
+                131.3
+                * pyo.sqrt(pyunits.mL / pyunits.mol * pyunits.K)
+                / pyunits.debye
+                * (mu / pyo.sqrt(V_crit * T_crit))
             )
             # Eq. 9-4.11
-            Fc = 1 - 0.2756 * omega + 0.059035 * mu_r ** 4 + kappa
+            Fc = 1 - 0.2756 * omega + 0.059035 * mu_r**4 + kappa
             C = (
-                    40.785 * pyunits.micropoise * (pyunits.mL/pyunits.mol) ** (2/3)
-                    / pyo.sqrt(pyunits.g / pyunits.mol * pyunits.K)
-             )
+                40.785
+                * pyunits.micropoise
+                * (pyunits.mL / pyunits.mol) ** (2 / 3)
+                / pyo.sqrt(pyunits.g / pyunits.mol * pyunits.K)
+            )
             # Eq. 9-4.10
-            visc = C * Fc * pyo.sqrt(M * T) / (V_crit ** (2/3) * Omega)
+            visc = C * Fc * pyo.sqrt(M * T) / (V_crit ** (2 / 3) * Omega)
 
             return pyunits.convert(visc, units["dynamic_viscosity"])

@@ -22,7 +22,6 @@ from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError
 
 
-
 # ------------------------------------------------------------------------------------
 # Gas viscosity at low pressures from Lennard Jones paramters. Note that LJ parameters
 # are underdetermined when estimated from viscosity data (see The Indeterminacy of
@@ -43,22 +42,26 @@ class Eucken(object):
             if not hasattr(cobj, "f_int_eucken"):
                 cobj.f_int_eucken = Var(
                     doc="Dimensionless factor in Eucken formula associated with internal degrees of freedom",
-                    units=pyunits.dimensionless
+                    units=pyunits.dimensionless,
                 )
                 set_param_from_config(cobj, param="f_int_eucken")
 
         @staticmethod
-        def return_expression(b, cobj, p,  T):
+        def return_expression(b, cobj, p, T):
             # Properties of Gases and Liquids, Eq. 10-3.2
             units = b.params.get_metadata().derived_units
 
-            M = pyunits.convert(cobj.mw, pyunits.kg/pyunits.mol)
+            M = pyunits.convert(cobj.mw, pyunits.kg / pyunits.mol)
             R = pyunits.convert(Constants.gas_constant, units["heat_capacity_mole"])
             f_int = cobj.f_int_eucken
 
-            therm_cond = b.visc_d_phase_comp[p, cobj.local_name] / M * (
-                f_int * cobj.cp_mol_ig_comp.return_expression(b, cobj, T)
-                + (15/4 - 5*f_int/2) * R
+            therm_cond = (
+                b.visc_d_phase_comp[p, cobj.local_name]
+                / M
+                * (
+                    f_int * cobj.cp_mol_ig_comp.return_expression(b, cobj, T)
+                    + (15 / 4 - 5 * f_int / 2) * R
+                )
             )
 
             return pyunits.convert(therm_cond, units["thermal_conductivity"])

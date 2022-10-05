@@ -270,12 +270,12 @@ class Constant(object):
                 Var(
                     doc=f"Parameter for {p} phase dynamic viscosity",
                     units=units["dynamic_viscosity"],
-                )
+                ),
             )
             set_param_from_config(cobj, param=f"visc_d_{p}_comp_coeff")
 
         @staticmethod
-        def return_expression(b, cobj, p,  T):
+        def return_expression(b, cobj, p, T):
             return getattr(cobj, f"visc_d_{p}_comp_coeff")
 
     class therm_cond_phase_comp(object):
@@ -287,7 +287,7 @@ class Constant(object):
                 Var(
                     doc=f"Parameter for {p} phase thermal conductivity",
                     units=units["thermal_conductivity"],
-                )
+                ),
             )
             set_param_from_config(cobj, param=f"therm_cond_{p}_comp_coeff")
 

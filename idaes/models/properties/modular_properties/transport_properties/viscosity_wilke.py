@@ -22,8 +22,6 @@ from idaes.core.util.constants import Constants
 from idaes.models.properties.modular_properties.base.utility import get_component_object
 
 
-
-
 # ---------------------------------------------------------------------------------------
 # Rule to obtain mixture viscosity of a low pressure gas from pure component viscosities.
 class ViscosityWilkePhase(object):
@@ -31,11 +29,14 @@ class ViscosityWilkePhase(object):
     def build_parameters(pobj):
         if not hasattr(pobj, "viscosity_phi_ij_callback"):
             pobj.viscosity_phi_ij_callback = wilke_phi_ij_callback
+
     @staticmethod
     def build_phi_ij(b, pobj):
         pname = pobj.local_name
         if not hasattr(b, "visc_d_phi_ij"):
-            mw_dict = {k: b.params.get_component(k).mw for k in b.components_in_phase(pname)}
+            mw_dict = {
+                k: b.params.get_component(k).mw for k in b.components_in_phase(pname)
+            }
 
             def phi_rule(blk, i, j):
                 return pobj.viscosity_phi_ij_callback(blk, i, j, pname, mw_dict)
@@ -44,7 +45,7 @@ class ViscosityWilkePhase(object):
                 b.components_in_phase(pname),
                 b.components_in_phase(pname),
                 rule=phi_rule,
-                doc="Intermediate quantity for calculating gas mixture viscosity and thermal conductivity"
+                doc="Intermediate quantity for calculating gas mixture viscosity and thermal conductivity",
             )
 
     class visc_d_phase(object):
@@ -59,9 +60,19 @@ class ViscosityWilkePhase(object):
 
             pname = pobj.local_name
 
-            return sum([b.mole_frac_phase_comp[pname, i] * b.visc_d_phase_comp[pname, i]
-                        / sum([b.mole_frac_phase_comp[pname, j] * b.visc_d_phi_ij[i, j] for j in b.components_in_phase(pname)])
-                        for i in b.components_in_phase(pname)])
+            return sum(
+                [
+                    b.mole_frac_phase_comp[pname, i]
+                    * b.visc_d_phase_comp[pname, i]
+                    / sum(
+                        [
+                            b.mole_frac_phase_comp[pname, j] * b.visc_d_phi_ij[i, j]
+                            for j in b.components_in_phase(pname)
+                        ]
+                    )
+                    for i in b.components_in_phase(pname)
+                ]
+            )
 
 
 def wilke_phi_ij_callback(b, i, j, pname, mw_dict):
@@ -69,10 +80,9 @@ def wilke_phi_ij_callback(b, i, j, pname, mw_dict):
     visc_i = b.visc_d_phase_comp[pname, i]
     visc_j = b.visc_d_phase_comp[pname, j]
     return (
-        (1 + pyo.sqrt(visc_i/visc_j)
-            * (mw_dict[j]/mw_dict[i]) ** 0.25) ** 2
-        / pyo.sqrt(8 * (1 + mw_dict[i]/mw_dict[j]))
-    )
+        1 + pyo.sqrt(visc_i / visc_j) * (mw_dict[j] / mw_dict[i]) ** 0.25
+    ) ** 2 / pyo.sqrt(8 * (1 + mw_dict[i] / mw_dict[j]))
+
 
 def herring_zimmer_phi_ij_callback(b, i, j, pname, mw_dict):
     # Equation 9-5.17 in Properties of Gases and Liquids 5th ed.
