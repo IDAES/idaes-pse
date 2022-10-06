@@ -16,6 +16,8 @@ This module contains miscellaneous utility functions for use in IDAES models.
 """
 from enum import Enum
 
+from pyomo.common.deprecation import deprecated, relocated_module_attribute
+
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock
 
@@ -23,6 +25,17 @@ import idaes.logger as idaeslog
 from idaes.core.util.tags import svg_tag as svg_tag_new
 
 _log = idaeslog.getLogger(__name__)
+
+
+relocated_module_attribute(
+    "get_solver", "idaes.core.solvers.get_solver", version="2.0.0.alpha0"
+)
+
+relocated_module_attribute(
+    "VarLikeExpression",
+    "idaes.core.base.var_like_expression.VarLikeExpression",
+    version="2.0.0.alpha0",
+)
 
 
 # Author: Andrew Lee
