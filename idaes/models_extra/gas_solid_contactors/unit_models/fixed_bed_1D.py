@@ -30,6 +30,12 @@ from pyomo.environ import (
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.dae import ContinuousSet, DerivativeVar
+from pyomo.util.subsystems import TemporarySubsystemManager
+from pyomo.common.collections import ComponentSet
+from pyomo.contrib.incidence_analysis import (
+    IncidenceGraphInterface,
+    solve_strongly_connected_components
+)
 
 # Import IDAES cores
 from idaes.core import (
@@ -51,6 +57,11 @@ from idaes.core.util.exceptions import (
     BurntToast,
     InitializationError,
 )
+from idaes.core.util.initialization import (
+    fix_state_vars,
+    revert_state_vars)
+from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.dyn_utils import get_index_set_except
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants as constants
 from idaes.core.util.math import smooth_abs
@@ -305,6 +316,13 @@ see reaction package for documentation.}""",
         # Call UnitModel.build to build default attributes
         super().build()
 
+        # local aliases used to shorten object names
+        solid_phase = self.config.solid_phase_config
+        gas_phase = self.config.gas_phase_config
+
+        # Get units meta data from property packages
+        units_meta_solid = solid_phase.property_package.get_metadata().get_derived_units
+
         # Consistency check for transformation method and transformation scheme
         if (
             self.config.transformation_method == "dae.finite_difference"
@@ -351,13 +369,13 @@ see reaction package for documentation.}""",
             )
 
         # Set arguments for gas sides if homoogeneous reaction block
-        if self.config.gas_phase_config.reaction_package is not None:
+        if gas_phase.reaction_package is not None:
             has_rate_reaction_gas_phase = True
         else:
             has_rate_reaction_gas_phase = False
 
         # Set arguments for gas and solid sides if heterogeneous reaction block
-        if self.config.solid_phase_config.reaction_package is not None:
+        if solid_phase.reaction_package is not None:
             has_mass_transfer_gas_phase = True
         else:
             has_mass_transfer_gas_phase = False
@@ -371,17 +389,11 @@ see reaction package for documentation.}""",
         # Set heat of reaction terms
         if (
             self.config.energy_balance_type != EnergyBalanceType.none
-            and self.config.gas_phase_config.reaction_package is not None
+            and gas_phase.reaction_package is not None
         ):
             has_heat_of_reaction_gas_phase = True
         else:
             has_heat_of_reaction_gas_phase = False
-
-        # local aliases used to shorten object names
-        solid_phase = self.config.solid_phase_config
-
-        # Get units meta data from property packages
-        units_meta_solid = solid_phase.property_package.get_metadata().get_derived_units
 
         # Create a unit model length domain
         self.length_domain = ContinuousSet(
@@ -409,10 +421,10 @@ see reaction package for documentation.}""",
                 dynamic=True,  # Fixed beds must be dynamic
                 has_holdup=True,  # holdup must be True for fixed beds
                 area_definition=DistributedVars.variant,
-                property_package=self.config.gas_phase_config.property_package,
-                property_package_args=self.config.gas_phase_config.property_package_args,
-                reaction_package=self.config.gas_phase_config.reaction_package,
-                reaction_package_args=self.config.gas_phase_config.reaction_package_args,
+                property_package=gas_phase.property_package,
+                property_package_args=gas_phase.property_package_args,
+                reaction_package=gas_phase.reaction_package,
+                reaction_package_args=gas_phase.reaction_package_args,
         )
 
         self.gas_phase.add_geometry(
@@ -426,9 +438,9 @@ see reaction package for documentation.}""",
             information_flow=FlowDirection.forward, has_phase_equilibrium=False
         )
 
-        if self.config.gas_phase_config.reaction_package is not None:
+        if gas_phase.reaction_package is not None:
             self.gas_phase.add_reaction_blocks(
-                has_equilibrium=self.config.gas_phase_config.has_equilibrium_reactions
+                has_equilibrium=gas_phase.has_equilibrium_reactions
             )
 
         self.gas_phase.add_material_balances(
@@ -943,7 +955,8 @@ see reaction package for documentation.}""",
             )
             def solid_enthalpy_balances(b, t, x):
                 if solid_phase.reaction_package is not None:
-                    return b.solid_energy_accumulation[t, x] == b.solid_phase_heat[
+                    return b.solid_energy_accumulation[t, x] / units_meta_solid(
+                        "time") == b.solid_phase_heat[
                         t, x
                     ] + -sum(
                         b.solid_reactions[t, x].reaction_rate[r]
@@ -1048,6 +1061,7 @@ see reaction package for documentation.}""",
             )
             def isothermal_gas_phase(b, t, x):
                 # Skip constraint at the initial and boundary points
+                t0 = b.flowsheet().config.time.first()
                 if (
                     x == b.length_domain.first()
                     or t == b.flowsheet().config.time.first()
@@ -1056,7 +1070,7 @@ see reaction package for documentation.}""",
                 else:
                     return (
                         b.gas_phase.properties[t, x].temperature
-                        == b.solid_properties[0, x].temperature
+                        == b.solid_properties[t0, x].temperature
                     )
 
             @self.Constraint(
@@ -1066,13 +1080,24 @@ see reaction package for documentation.}""",
             )
             def isothermal_solid_phase(b, t, x):
                 # Skip constraint at the initial point
+                t0 = b.flowsheet().config.time.first()
                 if t == b.flowsheet().config.time.first():
                     return Constraint.Skip
                 else:
                     return (
                         b.solid_properties[t, x].temperature
-                        == b.solid_properties[0, x].temperature
+                        == b.solid_properties[t0, x].temperature
                     )
+
+        # Set default scaling values for some CV1D vars (to avoid warnings)
+        if hasattr(self.gas_phase, "heat"):
+            for (t, x), v in self.gas_phase.heat.items():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1e-6)
+        if hasattr(self.gas_phase, "area"):
+            for (t, x), v in self.gas_phase.area.items():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1)
 
     # =========================================================================
     # Model initialization routine
@@ -1086,7 +1111,7 @@ see reaction package for documentation.}""",
         optarg=None,
     ):
         """
-        Initialization routine for MB unit.
+        Initialization routine for 1DFixedBed unit.
 
         Keyword Arguments:
             gas_phase_state_args : a dict of arguments to be passed to the
@@ -1501,34 +1526,181 @@ see reaction package for documentation.}""",
                     f"check the output logs for more information."
                 )
 
+    def block_triangularization_initialize(
+        blk,
+        gas_phase_state_args=None,
+        solid_phase_state_args=None,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        calc_var_kwds=None
+    ):
+        """
+        Block triangularization (BT) initialization routine for 1D FixedBed unit.
+
+        The BT initialization routine initializes the unit model in the following steps
+        Step 1: Convert the system of equations from a partial differential set of
+            equations (PDAE) to an algebraic set of equations (AE) by deactivating
+            the discretization equations and sum_component_equations (if present),
+            and fixing the state variables to a guess (typically inlet conditions).
+        Step 2: Decompose the AE into strongly connected components
+            via block triangularization and solve individual blocks
+        Step 3: revert the fixed variables and deactivated constraints to their
+            original states.
+
+        The initialization procedure is wrapped in the TemporarySubsystemManager utility
+        to ensure that the deactivation of constraints and fixing of variables are only
+        temporary and the final model structure is unchanged after initialization.
+
+        Keyword Arguments:
+            gas_phase_state_args : a dict of arguments to be passed to the
+                        property package(s) to provide an initial state for
+                        initialization (see documentation of the specific
+                        property package) (default = None).
+            solid_phase_state_args : a dict of arguments to be passed to the
+                        property package(s) to provide an initial state for
+                        initialization (see documentation of the specific
+                        property package) (default = None).
+            outlvl : sets output level of initialization routine
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
+            calc_var_kwds: Dictionary of keyword arguments for
+                calculate_variable_from_constraint
+
+        Returns:
+            None
+        """
+
+        # Set up logger for initialization and solve
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+
+        # =========================================================================
+        # Check that the original model has zero degrees of freedom
+        if degrees_of_freedom(blk) != 0:
+            msg = (
+                "Original model has nonzero degrees of freedom. This was "
+                "unexpected. "
+                + "\n"
+                + "Degrees of freedom: " + str(degrees_of_freedom(blk))
+            )
+            init_log.error(msg)
+            raise ValueError("Nonzero degrees of freedom.")
+
+        # =========================================================================
+        # Create list of constraints to deactivate
+        to_deactivate = []
+        # Deactivate gas/solid phase sum equations and discretization equations
+        # (mass/energy flow, mass/energy accumulation, pressure)
+        endswith_terms = (
+            "disc_eq",
+            "sum_component_eqn"
+            )
+        for c in blk.component_objects(Constraint, descend_into=True):
+            if c.local_name.endswith(endswith_terms):
+                c.attribute_errors_generate_exceptions = False
+                to_deactivate.append(c)
+
+        # Additional equations to deactivate if energy balance type is none
+        if hasattr(blk, "isothermal_gas_phase"):
+            isothermal_gas_phase_eqn = blk.isothermal_gas_phase[...]
+            isothermal_gas_phase_eqn.attribute_errors_generate_exceptions = False
+            to_deactivate.extend(isothermal_gas_phase_eqn)
+        if hasattr(blk, "isothermal_solid_phase"):
+            isothermal_solid_phase_eqn = blk.isothermal_solid_phase[...]
+            isothermal_solid_phase_eqn.attribute_errors_generate_exceptions = False
+            to_deactivate.extend(isothermal_solid_phase_eqn)
+
+        # =========================================================================
+        # Variables to fix during initialization
+
+        # List of state vars to fix (typically fixed to boundary/initial conditions)
+        gas_flags = fix_state_vars(blk.gas_phase.properties, gas_phase_state_args)
+        solid_flags = fix_state_vars(blk.solid_properties, solid_phase_state_args)
+
+        # List of additional variables to fix
+        to_fix = []
+        # Flow derivative variables are fixed to ensure square AE
+        set_value = 0
+        time_set = blk.flowsheet().time
+        for t in blk.flowsheet().time:
+            for var in ComponentSet(blk.component_objects(Var)):
+                if var.name.endswith('_flow_dx'):
+                    n = var.index_set().dimen
+                    if n == 1:
+                        var.set_value(set_value)
+                        to_fix.append(var[t])
+                    elif n >= 2:
+                        info = get_index_set_except(var, time_set)
+                        non_time_set = info['set_except']
+                        index_getter = info['index_getter']
+                        for non_time_index in non_time_set:
+                            index = index_getter(non_time_index, t)
+                            var[index].set_value(set_value)
+                            to_fix.append(var[index])
+
+        # =========================================================================
+        with TemporarySubsystemManager(
+                to_fix=to_fix,
+                to_deactivate=to_deactivate):
+
+            # Check if the system is structurally singular
+            igraph = IncidenceGraphInterface(blk)
+            N = len(igraph.constraints)
+            M = len(igraph.variables)
+            matching = igraph.maximum_matching()
+            if not (N == len(matching) and M == len(matching)):
+                msg = (
+                    "Model is structurally singular as maximum matching "
+                    "does not include all costraints and variables "
+                    "\n"
+                    "Number of constraints: " + str(N)
+                    + "\n"
+                    + "Number of variables: " + str(M)
+                    + "\n"
+                    + "Maximum matching: " + str(len(matching))
+                )
+                init_log.warning(msg)
+                raise ValueError("Structural singularity")
+
+            # Decompose AE system into strongly connected components and solve
+            if calc_var_kwds is None:
+                calc_var_kwds = {"eps": 1e-8}
+            solve_strongly_connected_components(
+                blk,
+                calc_var_kwds=calc_var_kwds,
+                solver=solver
+                )
+
+        # Revert the state vars to their original state
+        revert_state_vars(blk.gas_phase.properties, gas_flags)
+        revert_state_vars(blk.solid_properties, solid_flags)
+
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
         # local aliases used to shorten object names
         gas_phase = self.config.gas_phase_config
+        solid_phase = self.config.solid_phase_config
 
         # Get units meta data from property packages
         units_meta_gas = gas_phase.property_package.get_metadata().get_derived_units
 
         # scale some variables
         if hasattr(self, "bed_diameter"):
-            if iscale.get_scaling_factor(self.bed_diameter) is None:
-                sf = 1 / value(self.bed_diameter)
-                iscale.set_scaling_factor(self.bed_diameter, 1e-1 * sf)
+            sf = 1 / value(self.bed_diameter)
+            iscale.set_scaling_factor(self.bed_diameter, 1e-1 * sf)
 
         if hasattr(self, "bed_area"):
-            if iscale.get_scaling_factor(self.bed_area) is None:
-                sf = 1 / value(constants.pi * (0.5 * self.bed_diameter) ** 2)
-                iscale.set_scaling_factor(self.bed_area, 1e-1 * sf)
+            sf = 1 / value(constants.pi * (0.5 * self.bed_diameter) ** 2)
+            iscale.set_scaling_factor(self.bed_area, 1e-1 * sf)
 
         if hasattr(self, "solid_phase_area"):
-            if iscale.get_scaling_factor(self.solid_phase_area) is None:
-                sf = iscale.get_scaling_factor(self.bed_area)
-                iscale.set_scaling_factor(self.solid_phase_area, sf)
+            sf = iscale.get_scaling_factor(self.bed_area)
+            iscale.set_scaling_factor(self.solid_phase_area, sf)
 
         if hasattr(self.gas_phase, "area"):
-            if iscale.get_scaling_factor(self.gas_phase.area) is None:
-                sf = iscale.get_scaling_factor(self.bed_area)
-                iscale.set_scaling_factor(self.gas_phase.area, sf)
+            sf = iscale.get_scaling_factor(self.bed_area)
+            iscale.set_scaling_factor(self.gas_phase.area, sf)
 
         if self.config.energy_balance_type != EnergyBalanceType.none:
             if hasattr(self, "Re_particle"):
@@ -1592,8 +1764,8 @@ see reaction package for documentation.}""",
                         iscale.set_scaling_factor(v, 1e-2 * sf)
 
             if hasattr(self, "gas_solid_htc"):
-                if iscale.get_scaling_factor(self.gas_solid_htc) is None:
-                    for (t, x), v in self.gas_solid_htc.items():
+                for (t, x), v in self.gas_solid_htc.items():
+                    if iscale.get_scaling_factor(v) is None:
                         sf1 = iscale.get_scaling_factor(self.Nu_particle[t, x])
                         sf2 = iscale.get_scaling_factor(
                             self.gas_phase.properties[t, x].therm_cond
@@ -1782,20 +1954,26 @@ see reaction package for documentation.}""",
 
         if hasattr(self, "solid_material_balances"):
             component_list = (
-                self.config.solid_phase_config.property_package.component_list
+                solid_phase.property_package.component_list
             )
-            if self.config.solid_phase_config.reaction_package is not None:
+            # Get a single representative value in component list
+            for j in component_list:
+                break
+            if solid_phase.reaction_package is not None:
                 rate_reaction_idx = (
-                    self.config.solid_phase_config.reaction_package.rate_reaction_idx
+                    solid_phase.reaction_package.rate_reaction_idx
                 )
+                # Get a single representative value in rate_reaction index list
+                for r in rate_reaction_idx:
+                    break
                 for (t, x, j), c in self.solid_material_balances.items():
                     sf1 = iscale.get_scaling_factor(self.solid_phase_area[t, x])
                     sf2 = iscale.get_scaling_factor(
-                        self.solid_properties[t, x]._params.mw_comp[component_list[1]],
+                        self.solid_properties[t, x]._params.mw_comp[j],
                         default=1e1,
                     )
                     sf3 = iscale.get_scaling_factor(
-                        self.solid_reactions[t, x].reaction_rate[rate_reaction_idx[1]]
+                        self.solid_reactions[t, x].reaction_rate[r]
                     )
                     iscale.constraint_scaling_transform(
                         c, sf1 * sf2 * sf3, overwrite=False
@@ -1804,20 +1982,23 @@ see reaction package for documentation.}""",
                 for (t, x, j), c in self.solid_material_balances.items():
                     sf1 = iscale.get_scaling_factor(self.solid_phase_area[t, x])
                     sf2 = iscale.get_scaling_factor(
-                        self.solid_properties[t, x]._params.mw_comp[component_list[1]],
+                        self.solid_properties[t, x]._params.mw_comp[j],
                         default=1e1,
                     )
                     iscale.constraint_scaling_transform(c, sf1 * sf2, overwrite=False)
 
         if hasattr(self, "solid_sum_component_eqn"):
             component_list = (
-                self.config.solid_phase_config.property_package.component_list
+                solid_phase.property_package.component_list
             )
+            # Get a single representative value in component list
+            for j in component_list:
+                break
             for (t, x), c in self.solid_sum_component_eqn.items():
                 iscale.constraint_scaling_transform(
                     c,
                     iscale.get_scaling_factor(
-                        self.solid_properties[t, x].mass_frac_comp[component_list[1]]
+                        self.solid_properties[t, x].mass_frac_comp[j]
                     ),
                     overwrite=False,
                 )
@@ -1873,6 +2054,6 @@ see reaction package for documentation.}""",
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
-            {"Gas Inlet": self.gas_inlet, "Gas Outlet": self.gas_outlet,},
+            {"Gas Inlet": self.gas_inlet, "Gas Outlet": self.gas_outlet},
             time_point=time_point,
         )
