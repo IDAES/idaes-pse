@@ -31,19 +31,19 @@ class ViscosityWilke(object):
             pobj.viscosity_phi_ij_callback = wilke_phi_ij_callback
 
     @staticmethod
-    def build_phi_ij(b, pobj):
-        pname = pobj.local_name
+    def build_phi_ij(b, p):
+        pobj = b.params.get_phase(p)
         if not hasattr(b, "visc_d_phi_ij"):
             mw_dict = {
-                k: b.params.get_component(k).mw for k in b.components_in_phase(pname)
+                k: b.params.get_component(k).mw for k in b.components_in_phase(p)
             }
 
             def phi_rule(blk, i, j):
-                return pobj.viscosity_phi_ij_callback(blk, i, j, pname, mw_dict)
+                return pobj.viscosity_phi_ij_callback(blk, i, j, p, mw_dict)
 
             b.visc_d_phi_ij = pyo.Expression(
-                b.components_in_phase(pname),
-                b.components_in_phase(pname),
+                b.components_in_phase(p),
+                b.components_in_phase(p),
                 rule=phi_rule,
                 doc="Intermediate quantity for calculating gas mixture viscosity and thermal conductivity",
             )
@@ -54,23 +54,21 @@ class ViscosityWilke(object):
             ViscosityWilke.build_parameters(pobj)
 
         @staticmethod
-        def return_expression(b, pobj):
+        def return_expression(b, p):
             # Properties of Gases and Liquids, Eq. 9-5.14
-            ViscosityWilke.build_phi_ij(b, pobj)
-
-            pname = pobj.local_name
+            ViscosityWilke.build_phi_ij(b, p)
 
             return sum(
                 [
-                    b.mole_frac_phase_comp[pname, i]
-                    * b.visc_d_phase_comp[pname, i]
+                    b.mole_frac_phase_comp[p, i]
+                    * b.visc_d_phase_comp[p, i]
                     / sum(
                         [
-                            b.mole_frac_phase_comp[pname, j] * b.visc_d_phi_ij[i, j]
-                            for j in b.components_in_phase(pname)
+                            b.mole_frac_phase_comp[p, j] * b.visc_d_phi_ij[i, j]
+                            for j in b.components_in_phase(p)
                         ]
                     )
-                    for i in b.components_in_phase(pname)
+                    for i in b.components_in_phase(p)
                 ]
             )
 

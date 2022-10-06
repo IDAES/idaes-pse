@@ -3773,7 +3773,7 @@ class GenericStateBlockData(StateBlockData):
                     cobj.config.therm_cond_phase_comp is not None
                     and p in cobj.config.therm_cond_phase_comp
                 ):
-                    return cobj.config.therm_cond_phase_comp[p].return_expression(
+                    return cobj.config.therm_cond_phase_comp[p].therm_cond_phase_comp.return_expression(
                         b, cobj, p, b.temperature
                     )
                 else:
@@ -3786,7 +3786,7 @@ class GenericStateBlockData(StateBlockData):
                 rule=rule_therm_cond_phase_comp,
             )
         except AttributeError:
-            self.del_component(self.visc_d_phase_comp)
+            self.del_component(self.therm_cond_phase_comp_comp)
             raise
 
     def _visc_d_phase(self):
@@ -3813,7 +3813,7 @@ class GenericStateBlockData(StateBlockData):
                     cobj.config.visc_d_phase_comp is not None
                     and p in cobj.config.visc_d_phase_comp
                 ):
-                    return cobj.config.visc_d_phase_comp[p].return_expression(
+                    return cobj.config.visc_d_phase_comp[p].visc_d_phase_comp.return_expression(
                         b, cobj, p, b.temperature
                     )
                 else:

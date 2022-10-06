@@ -81,11 +81,15 @@ _phase_dicts_pr = {
         "type": VaporPhase,
         "equation_of_state": Cubic,
         "equation_of_state_options": {"type": CubicType.PR},
+        "visc_d_phase": ViscosityWilke,
+        "therm_cond_phase": ThermalConductivityWMS,
     },
     "Liq": {
         "type": LiquidPhase,
         "equation_of_state": Cubic,
         "equation_of_state_options": {"type": CubicType.PR},
+        "visc_d_phase": None,
+        "therm_cond_phase": None,
     },
 }
 
