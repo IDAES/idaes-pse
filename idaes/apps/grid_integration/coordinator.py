@@ -69,10 +69,14 @@ class DoubleLoopCoordinator:
         self.plugin_config = plugin_config
 
         context.register_initialization_callback(self.initialize_customized_results)
+        context.register_for_hourly_stats(self.push_hourly_stats_to_forecaster)
         context.register_before_ruc_solve_callback(self.pass_static_params_to_DA)
         context.register_before_ruc_solve_callback(self.bid_into_DAM)
         context.register_after_ruc_generation_callback(self.fetch_DA_prices)
         context.register_after_ruc_generation_callback(self.fetch_DA_dispatches)
+        context.register_after_ruc_generation_callback(
+            self.push_day_ahead_stats_to_forecaster
+        )
         context.register_before_operations_solve_callback(self.pass_static_params_to_RT)
         context.register_before_operations_solve_callback(self.bid_into_RTM)
         context.register_after_operations_callback(self.track_sced_signal)
@@ -126,6 +130,47 @@ class DoubleLoopCoordinator:
         customized_results["Power Output"] = []
 
         return
+
+    def push_hourly_stats_to_forecaster(self, prescient_hourly_stats):
+
+        """
+        This method pushes the hourly stats from Prescient to the price forecaster
+        once the hourly stats are published.
+
+        Arguments:
+            prescient_hourly_stats: Prescient HourlyStats object.
+
+        Returns:
+            None
+        """
+
+        self.bidder.forecaster.fetch_hourly_stats_from_prescient(prescient_hourly_stats)
+
+    def push_day_ahead_stats_to_forecaster(
+        self, options, simulator, day_ahead_result, uc_date, uc_hour
+    ):
+        """
+        This method pushes the day-ahead market to the price forecaster after the
+        UC is solved.
+
+        Arguments:
+            options: Prescient options from prescient.simulator.config.
+
+            simulator: Prescient simulator.
+
+            day_ahead_result: a Prescient RucPlan object.
+
+            ruc_date: the date of the day-ahead market we bid into.
+
+            ruc_hour: the hour the RUC is being solved in the day before.
+
+        Returns:
+            None
+        """
+
+        self.bidder.forecaster.fetch_day_ahead_stats_from_prescient(
+            uc_date, uc_hour, day_ahead_result
+        )
 
     def _update_bids(self, gen_dict, bids, start_hour, horizon):
 
