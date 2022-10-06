@@ -339,8 +339,12 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
         name = f"{flow_type}_cost"
         current_component = self.component(name)
-        if current_component is not None and current_component is cost:
-            pass
+        if current_component is not None:
+            if current_component is not cost:
+                raise RuntimeError(
+                    f"Component {name} already exists on {self} but is not {cost}."
+                )
+            # now self.{flow_type}_cost is cost, so just use it
         else:
             # Create a Var to hold the cost
             # Units will be different between flows, so have to use scalar Vars

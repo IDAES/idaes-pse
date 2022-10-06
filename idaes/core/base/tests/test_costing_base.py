@@ -267,6 +267,18 @@ class TestFlowsheetCostingBlock:
         }
 
     @pytest.mark.unit
+    def test_register_flow_component_exists(self, costing):
+        costing.costing.test_flow_3_cost = Var()
+        with pytest.raises(
+            RuntimeError,
+            match="Component test_flow_3_cost already exists on costing but is not 42.",
+        ):
+            costing.costing.register_flow_type("test_flow_3", 42)
+        # cleanup for next test
+        costing.costing.flow_types.remove("test_flow_3")
+        costing.costing.del_component(costing.costing.test_flow_3_cost)
+
+    @pytest.mark.unit
     def test_cost_flow_invalid_type(self, costing):
         with pytest.raises(
             ValueError,
