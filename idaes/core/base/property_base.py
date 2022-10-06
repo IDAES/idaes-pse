@@ -191,7 +191,7 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
             StateBlock
 
         """
-        # default = kwargs.pop("default", {})
+        default = kwargs.pop("default", {})
         initialize = kwargs.pop("initialize", {})
 
         # TODO: Should find a better way to do this
@@ -200,13 +200,13 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         self.get_phase_component_set()
 
         if initialize == {}:
-            kwargs["parameters"] = self
+            default["parameters"] = self
         else:
             for i in initialize.keys():
                 initialize[i]["parameters"] = self
 
         return self.state_block_class(  # pylint: disable=not-callable
-            *args, **kwargs, initialize=initialize
+            *args, **kwargs, **default, initialize=initialize
         )
 
     def get_phase_component_set(self):
