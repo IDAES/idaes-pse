@@ -22,6 +22,7 @@ import logging
 import inspect
 
 from pyomo.common.config import ConfigBlock
+from pyomo.common.deprecation import deprecation_warning
 from pyomo.environ import Block
 from pyomo.common.pyomo_typing import get_overloads_for
 

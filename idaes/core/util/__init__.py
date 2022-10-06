@@ -11,6 +11,7 @@
 # license information.
 #################################################################################
 from .model_serializer import to_json, from_json, StoreSpec
+from .misc import TagReference
 from .tags import svg_tag, ModelTag, ModelTagGroup
 
 from pyomo.common.deprecation import relocated_module_attribute

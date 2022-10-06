@@ -80,6 +80,41 @@ def extract_data(data_dict):
     return _rule_initialize
 
 
+@deprecated(
+    "idaes.core.util.misc.TagReference will be removed in a future version",
+    version=1.12,
+)
+def TagReference(s, description=""):
+    """
+    Create a Pyomo reference with an added description string attribute to
+    describe the reference. The intended use for these references is to create
+    a time-indexed reference to variables in a model corresponding to plant
+    measurment tags.
+
+    Args:
+        s: Pyomo time slice of a variable or expression
+        description (str): A description the measurment
+
+    Returns:
+        A Pyomo Reference object with an added doc attribute
+    """
+    r = pyo.Reference(s)
+    r.description = description
+    return r
+
+
+@deprecated(
+    "idaes.core.util.misc.svg_tag has moved to idaes.core.util.tags.svg_tag",
+    version=1.12,
+)
+def svg_tag(*args, **kwargs):
+    """
+    Moved to idaes.core.util.tags.svg_tag
+    Leaving redirection function here for deprecation warning.
+    """
+    return svg_tag_new(*args, **kwargs)
+
+
 def set_param_from_config(b, param, config=None, index=None):
     """
     Utility method to set parameter value from a config block. This allows for
