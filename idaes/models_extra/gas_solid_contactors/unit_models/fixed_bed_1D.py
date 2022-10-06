@@ -34,7 +34,7 @@ from pyomo.util.subsystems import TemporarySubsystemManager
 from pyomo.common.collections import ComponentSet
 from pyomo.contrib.incidence_analysis import (
     IncidenceGraphInterface,
-    solve_strongly_connected_components
+    solve_strongly_connected_components,
 )
 
 # Import IDAES cores
@@ -57,9 +57,7 @@ from idaes.core.util.exceptions import (
     BurntToast,
     InitializationError,
 )
-from idaes.core.util.initialization import (
-    fix_state_vars,
-    revert_state_vars)
+from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import get_index_set_except
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -414,17 +412,17 @@ see reaction package for documentation.}""",
             populate gas control volume"""
 
         self.gas_phase = ControlVolume1DBlock(
-                transformation_method=self.config.transformation_method,
-                transformation_scheme=self.config.transformation_scheme,
-                finite_elements=self.config.finite_elements,
-                collocation_points=self.config.collocation_points,
-                dynamic=True,  # Fixed beds must be dynamic
-                has_holdup=True,  # holdup must be True for fixed beds
-                area_definition=DistributedVars.variant,
-                property_package=gas_phase.property_package,
-                property_package_args=gas_phase.property_package_args,
-                reaction_package=gas_phase.reaction_package,
-                reaction_package_args=gas_phase.reaction_package_args,
+            transformation_method=self.config.transformation_method,
+            transformation_scheme=self.config.transformation_scheme,
+            finite_elements=self.config.finite_elements,
+            collocation_points=self.config.collocation_points,
+            dynamic=True,  # Fixed beds must be dynamic
+            has_holdup=True,  # holdup must be True for fixed beds
+            area_definition=DistributedVars.variant,
+            property_package=gas_phase.property_package,
+            property_package_args=gas_phase.property_package_args,
+            reaction_package=gas_phase.reaction_package,
+            reaction_package_args=gas_phase.reaction_package_args,
         )
 
         self.gas_phase.add_geometry(
@@ -956,9 +954,8 @@ see reaction package for documentation.}""",
             def solid_enthalpy_balances(b, t, x):
                 if solid_phase.reaction_package is not None:
                     return b.solid_energy_accumulation[t, x] / units_meta_solid(
-                        "time") == b.solid_phase_heat[
-                        t, x
-                    ] + -sum(
+                        "time"
+                    ) == b.solid_phase_heat[t, x] + -sum(
                         b.solid_reactions[t, x].reaction_rate[r]
                         * b.solid_phase_area[t, x]
                         * pyunits.convert(
@@ -1532,7 +1529,7 @@ see reaction package for documentation.}""",
         solid_phase_state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
-        calc_var_kwds=None
+        calc_var_kwds=None,
     ):
         """
         Block triangularization (BT) initialization routine for 1D FixedBed unit.
@@ -1582,7 +1579,8 @@ see reaction package for documentation.}""",
                 "Original model has nonzero degrees of freedom. This was "
                 "unexpected. "
                 + "\n"
-                + "Degrees of freedom: " + str(degrees_of_freedom(blk))
+                + "Degrees of freedom: "
+                + str(degrees_of_freedom(blk))
             )
             init_log.error(msg)
             raise ValueError("Nonzero degrees of freedom.")
@@ -1592,10 +1590,7 @@ see reaction package for documentation.}""",
         to_deactivate = []
         # Deactivate gas/solid phase sum equations and discretization equations
         # (mass/energy flow, mass/energy accumulation, pressure)
-        endswith_terms = (
-            "disc_eq",
-            "sum_component_eqn"
-            )
+        endswith_terms = ("disc_eq", "sum_component_eqn")
         for c in blk.component_objects(Constraint, descend_into=True):
             if c.local_name.endswith(endswith_terms):
                 c.attribute_errors_generate_exceptions = False
@@ -1625,24 +1620,22 @@ see reaction package for documentation.}""",
         time_set = blk.flowsheet().time
         for t in blk.flowsheet().time:
             for var in ComponentSet(blk.component_objects(Var)):
-                if var.name.endswith('_flow_dx'):
+                if var.name.endswith("_flow_dx"):
                     n = var.index_set().dimen
                     if n == 1:
                         var.set_value(set_value)
                         to_fix.append(var[t])
                     elif n >= 2:
                         info = get_index_set_except(var, time_set)
-                        non_time_set = info['set_except']
-                        index_getter = info['index_getter']
+                        non_time_set = info["set_except"]
+                        index_getter = info["index_getter"]
                         for non_time_index in non_time_set:
                             index = index_getter(non_time_index, t)
                             var[index].set_value(set_value)
                             to_fix.append(var[index])
 
         # =========================================================================
-        with TemporarySubsystemManager(
-                to_fix=to_fix,
-                to_deactivate=to_deactivate):
+        with TemporarySubsystemManager(to_fix=to_fix, to_deactivate=to_deactivate):
 
             # Check if the system is structurally singular
             igraph = IncidenceGraphInterface(blk)
@@ -1654,11 +1647,14 @@ see reaction package for documentation.}""",
                     "Model is structurally singular as maximum matching "
                     "does not include all costraints and variables "
                     "\n"
-                    "Number of constraints: " + str(N)
+                    "Number of constraints: "
+                    + str(N)
                     + "\n"
-                    + "Number of variables: " + str(M)
+                    + "Number of variables: "
+                    + str(M)
                     + "\n"
-                    + "Maximum matching: " + str(len(matching))
+                    + "Maximum matching: "
+                    + str(len(matching))
                 )
                 init_log.warning(msg)
                 raise ValueError("Structural singularity")
@@ -1667,10 +1663,8 @@ see reaction package for documentation.}""",
             if calc_var_kwds is None:
                 calc_var_kwds = {"eps": 1e-8}
             solve_strongly_connected_components(
-                blk,
-                calc_var_kwds=calc_var_kwds,
-                solver=solver
-                )
+                blk, calc_var_kwds=calc_var_kwds, solver=solver
+            )
 
         # Revert the state vars to their original state
         revert_state_vars(blk.gas_phase.properties, gas_flags)
@@ -1953,16 +1947,12 @@ see reaction package for documentation.}""",
                 )
 
         if hasattr(self, "solid_material_balances"):
-            component_list = (
-                solid_phase.property_package.component_list
-            )
+            component_list = solid_phase.property_package.component_list
             # Get a single representative value in component list
             for j in component_list:
                 break
             if solid_phase.reaction_package is not None:
-                rate_reaction_idx = (
-                    solid_phase.reaction_package.rate_reaction_idx
-                )
+                rate_reaction_idx = solid_phase.reaction_package.rate_reaction_idx
                 # Get a single representative value in rate_reaction index list
                 for r in rate_reaction_idx:
                     break
@@ -1988,9 +1978,7 @@ see reaction package for documentation.}""",
                     iscale.constraint_scaling_transform(c, sf1 * sf2, overwrite=False)
 
         if hasattr(self, "solid_sum_component_eqn"):
-            component_list = (
-                solid_phase.property_package.component_list
-            )
+            component_list = solid_phase.property_package.component_list
             # Get a single representative value in component list
             for j in component_list:
                 break

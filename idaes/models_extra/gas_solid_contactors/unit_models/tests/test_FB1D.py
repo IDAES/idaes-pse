@@ -25,7 +25,7 @@ from pyomo.environ import (
     value,
     units as pyunits,
     Constraint,
-    Var
+    Var,
 )
 from pyomo.dae import ContinuousSet, Integral
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -128,15 +128,12 @@ class TestIronOC(object):
     def iron_oc(self):
         m = ConcreteModel()
         horizon = 360
-        m.fs = FlowsheetBlock(dynamic=True,
-                              time_set=[0, horizon],
-                              time_units=pyunits.s)
+        m.fs = FlowsheetBlock(dynamic=True, time_set=[0, horizon], time_units=pyunits.s)
 
         m.fs.gas_props = GasPhaseParameterBlock()
         m.fs.solid_props = SolidPhaseParameterBlock()
         m.fs.solid_rxns = HeteroReactionParameterBlock(
-            solid_property_package=m.fs.solid_props,
-            gas_property_package=m.fs.gas_props
+            solid_property_package=m.fs.solid_props, gas_property_package=m.fs.gas_props
         )
 
         m.fs.unit = FixedBed1D(
@@ -149,7 +146,7 @@ class TestIronOC(object):
 
         # Discretize time domain
         t_element_size = 120  # s
-        ntfe = int(horizon/t_element_size)
+        ntfe = int(horizon / t_element_size)
         m.discretizer = TransformationFactory("dae.finite_difference")
         m.discretizer.apply_to(m, nfe=ntfe, wrt=m.fs.time, scheme="BACKWARD")
 
@@ -210,18 +207,12 @@ class TestIronOC(object):
         assert isinstance(iron_oc.fs.unit.gas_super_vel, Constraint)
         assert isinstance(iron_oc.fs.unit.gas_phase_config_pressure_drop, Constraint)
         assert isinstance(iron_oc.fs.unit.gas_comp_hetero_rxn, Constraint)
-        assert isinstance(
-            iron_oc.fs.unit.solid_material_holdup_calculation, Constraint
-        )
-        assert isinstance(
-            iron_oc.fs.unit.solid_material_balances, Constraint
-        )
+        assert isinstance(iron_oc.fs.unit.solid_material_holdup_calculation, Constraint)
+        assert isinstance(iron_oc.fs.unit.solid_material_balances, Constraint)
         assert isinstance(iron_oc.fs.unit.solid_sum_component_eqn, Constraint)
         assert isinstance(iron_oc.fs.unit.solid_phase_heat_transfer, Constraint)
         assert isinstance(iron_oc.fs.unit.solid_energy_holdup_calculation, Constraint)
-        assert isinstance(
-            iron_oc.fs.unit.solid_enthalpy_balances, Constraint
-        )
+        assert isinstance(iron_oc.fs.unit.solid_enthalpy_balances, Constraint)
 
         assert isinstance(iron_oc.fs.unit.reynolds_number_particle, Constraint)
         assert isinstance(iron_oc.fs.unit.prandtl_number, Constraint)
@@ -288,9 +279,7 @@ class TestIronOC(object):
         assert pytest.approx(0.01111, rel=1e-3) == iscale.get_scaling_factor(
             FB1D.bed_diameter
         )
-        assert pytest.approx(1, rel=1e-3) == iscale.get_scaling_factor(
-            FB1D.bed_height
-        )
+        assert pytest.approx(1, rel=1e-3) == iscale.get_scaling_factor(FB1D.bed_height)
 
         for c in FB1D.bed_area_eqn.values():
             assert pytest.approx(
@@ -329,10 +318,11 @@ class TestIronOC(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, iron_oc):
-        optarg = {"tol": 1e-5,
-                  "bound_push": 1e-22,
-                  "nlp_scaling_method": "user-scaling"
-                  }
+        optarg = {
+            "tol": 1e-5,
+            "bound_push": 1e-22,
+            "nlp_scaling_method": "user-scaling",
+        }
 
         initialization_tester(iron_oc, optarg=optarg)
 
@@ -340,8 +330,7 @@ class TestIronOC(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_block_triangularization_initialization(self, iron_oc):
-        iron_oc.fs.unit.block_triangularization_initialize(
-            calc_var_kwds={'eps': 1e-5})
+        iron_oc.fs.unit.block_triangularization_initialize(calc_var_kwds={"eps": 1e-5})
 
         # Calculate scaling factors
         iscale.calculate_scaling_factors(iron_oc)
@@ -355,19 +344,26 @@ class TestIronOC(object):
 
         for t in iron_oc.fs.time:
             if t != iron_oc.fs.time.first():
-                assert not iron_oc.fs.unit.solid_properties[t, x0].particle_porosity.fixed
-            assert iron_oc.fs.unit.solid_properties[t, x0].density_particle_constraint.active
-            assert iron_oc.fs.unit.solid_properties[t, x0].density_skeletal_constraint.active
+                assert not iron_oc.fs.unit.solid_properties[
+                    t, x0
+                ].particle_porosity.fixed
+            assert iron_oc.fs.unit.solid_properties[
+                t, x0
+            ].density_particle_constraint.active
+            assert iron_oc.fs.unit.solid_properties[
+                t, x0
+            ].density_skeletal_constraint.active
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize_by_time(self, iron_oc):
 
-        optarg = {"tol": 1e-5,
-                  "bound_push": 1e-22,
-                  "nlp_scaling_method": "user-scaling"
-                  }
+        optarg = {
+            "tol": 1e-5,
+            "bound_push": 1e-22,
+            "nlp_scaling_method": "user-scaling",
+        }
         solver = get_solver("ipopt", optarg)  # create solver
 
         initialize_by_time_element(iron_oc.fs, iron_oc.fs.time, solver=solver)
@@ -381,9 +377,15 @@ class TestIronOC(object):
 
         for t in iron_oc.fs.time:
             if t != iron_oc.fs.time.first():
-                assert not iron_oc.fs.unit.solid_properties[t, x0].particle_porosity.fixed
-            assert iron_oc.fs.unit.solid_properties[t, x0].density_particle_constraint.active
-            assert iron_oc.fs.unit.solid_properties[t, x0].density_skeletal_constraint.active
+                assert not iron_oc.fs.unit.solid_properties[
+                    t, x0
+                ].particle_porosity.fixed
+            assert iron_oc.fs.unit.solid_properties[
+                t, x0
+            ].density_particle_constraint.active
+            assert iron_oc.fs.unit.solid_properties[
+                t, x0
+            ].density_skeletal_constraint.active
 
         # Assert that constraints are feasible after initialization
         for con in iron_oc.fs.component_data_objects(Constraint, active=True):
@@ -474,23 +476,19 @@ class TestIronOC_NoReaction(object):
     def iron_oc(self):
         m = ConcreteModel()
         horizon = 360
-        m.fs = FlowsheetBlock(dynamic=True,
-                              time_set=[0, horizon],
-                              time_units=pyunits.s)
+        m.fs = FlowsheetBlock(dynamic=True, time_set=[0, horizon], time_units=pyunits.s)
 
         m.fs.gas_props = GasPhaseParameterBlock()
         m.fs.solid_props = SolidPhaseParameterBlock()
 
         m.fs.unit = FixedBed1D(
             gas_phase_config={"property_package": m.fs.gas_props},
-            solid_phase_config={
-                "property_package": m.fs.solid_props
-            },
+            solid_phase_config={"property_package": m.fs.solid_props},
         )
 
         # Discretize time domain
         t_element_size = 120  # s
-        ntfe = int(horizon/t_element_size)
+        ntfe = int(horizon / t_element_size)
         m.discretizer = TransformationFactory("dae.finite_difference")
         m.discretizer.apply_to(m, nfe=ntfe, wrt=m.fs.time, scheme="BACKWARD")
 
@@ -550,18 +548,12 @@ class TestIronOC_NoReaction(object):
         assert isinstance(iron_oc.fs.unit.solid_phase_area_constraint, Constraint)
         assert isinstance(iron_oc.fs.unit.gas_super_vel, Constraint)
         assert isinstance(iron_oc.fs.unit.gas_phase_config_pressure_drop, Constraint)
-        assert isinstance(
-            iron_oc.fs.unit.solid_material_holdup_calculation, Constraint
-        )
-        assert isinstance(
-            iron_oc.fs.unit.solid_material_balances, Constraint
-        )
+        assert isinstance(iron_oc.fs.unit.solid_material_holdup_calculation, Constraint)
+        assert isinstance(iron_oc.fs.unit.solid_material_balances, Constraint)
         assert isinstance(iron_oc.fs.unit.solid_sum_component_eqn, Constraint)
         assert isinstance(iron_oc.fs.unit.solid_phase_heat_transfer, Constraint)
         assert isinstance(iron_oc.fs.unit.solid_energy_holdup_calculation, Constraint)
-        assert isinstance(
-            iron_oc.fs.unit.solid_enthalpy_balances, Constraint
-        )
+        assert isinstance(iron_oc.fs.unit.solid_enthalpy_balances, Constraint)
 
         assert isinstance(iron_oc.fs.unit.reynolds_number_particle, Constraint)
         assert isinstance(iron_oc.fs.unit.prandtl_number, Constraint)
@@ -581,10 +573,11 @@ class TestIronOC_NoReaction(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, iron_oc):
-        optarg = {"tol": 1e-5,
-                  "bound_push": 1e-22,
-                  "nlp_scaling_method": "user-scaling"
-                  }
+        optarg = {
+            "tol": 1e-5,
+            "bound_push": 1e-22,
+            "nlp_scaling_method": "user-scaling",
+        }
         # Calculate scaling factors
         iscale.calculate_scaling_factors(iron_oc)
 
@@ -594,8 +587,7 @@ class TestIronOC_NoReaction(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_block_triangularization_initialization(self, iron_oc):
-        iron_oc.fs.unit.block_triangularization_initialize(
-            calc_var_kwds={'eps': 1e-5})
+        iron_oc.fs.unit.block_triangularization_initialize(calc_var_kwds={"eps": 1e-5})
 
         # Calculate scaling factors
         iscale.calculate_scaling_factors(iron_oc)
@@ -609,19 +601,26 @@ class TestIronOC_NoReaction(object):
 
         for t in iron_oc.fs.time:
             if t != iron_oc.fs.time.first():
-                assert not iron_oc.fs.unit.solid_properties[t, x0].particle_porosity.fixed
-            assert iron_oc.fs.unit.solid_properties[t, x0].density_particle_constraint.active
-            assert iron_oc.fs.unit.solid_properties[t, x0].density_skeletal_constraint.active
+                assert not iron_oc.fs.unit.solid_properties[
+                    t, x0
+                ].particle_porosity.fixed
+            assert iron_oc.fs.unit.solid_properties[
+                t, x0
+            ].density_particle_constraint.active
+            assert iron_oc.fs.unit.solid_properties[
+                t, x0
+            ].density_skeletal_constraint.active
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize_by_time(self, iron_oc):
 
-        optarg = {"tol": 1e-5,
-                  "bound_push": 1e-22,
-                  "nlp_scaling_method": "user-scaling"
-                  }
+        optarg = {
+            "tol": 1e-5,
+            "bound_push": 1e-22,
+            "nlp_scaling_method": "user-scaling",
+        }
         solver = get_solver("ipopt", optarg)  # create solver
 
         initialize_by_time_element(iron_oc.fs, iron_oc.fs.time, solver=solver)
@@ -635,9 +634,15 @@ class TestIronOC_NoReaction(object):
 
         for t in iron_oc.fs.time:
             if t != iron_oc.fs.time.first():
-                assert not iron_oc.fs.unit.solid_properties[t, x0].particle_porosity.fixed
-            assert iron_oc.fs.unit.solid_properties[t, x0].density_particle_constraint.active
-            assert iron_oc.fs.unit.solid_properties[t, x0].density_skeletal_constraint.active
+                assert not iron_oc.fs.unit.solid_properties[
+                    t, x0
+                ].particle_porosity.fixed
+            assert iron_oc.fs.unit.solid_properties[
+                t, x0
+            ].density_particle_constraint.active
+            assert iron_oc.fs.unit.solid_properties[
+                t, x0
+            ].density_skeletal_constraint.active
 
         # Assert that constraints are feasible after initialization
         for con in iron_oc.fs.component_data_objects(Constraint, active=True):
@@ -706,9 +711,7 @@ class TestIronOC_NoReaction(object):
     def test_conservation(self, iron_oc):
 
         iron_oc.fs.unit.time_set = ContinuousSet(
-            bounds=(iron_oc.fs.time.first(),
-                    iron_oc.fs.time.last()
-                    ),
+            bounds=(iron_oc.fs.time.first(), iron_oc.fs.time.last()),
             initialize=iron_oc.fs.time.get_finite_elements(),
             doc="time domain",
         )
@@ -721,32 +724,28 @@ class TestIronOC_NoReaction(object):
                 b.gas_phase.properties[t, 0].mw,
                 b.gas_phase.properties[t, 0].mw_eqn,
             )
-            return (
-                b.gas_phase.properties[t, 0].mw
-                * b.gas_inlet.flow_mol[t]
-                    )
+            return b.gas_phase.properties[t, 0].mw * b.gas_inlet.flow_mol[t]
+
         iron_oc.fs.unit.gas_input_total = Integral(
             iron_oc.fs.unit.time_set,
             wrt=iron_oc.fs.unit.time_set,
             rule=gas_input_total,
-            doc="Gas input total, kg"
-            )
+            doc="Gas input total, kg",
+        )
 
         def gas_output_total(b, t):
             calculate_variable_from_constraint(
                 b.gas_phase.properties[t, 1].mw,
                 b.gas_phase.properties[t, 1].mw_eqn,
             )
-            return (
-                b.gas_phase.properties[t, 1].mw
-                * b.gas_outlet.flow_mol[t]
-                    )
+            return b.gas_phase.properties[t, 1].mw * b.gas_outlet.flow_mol[t]
+
         iron_oc.fs.unit.gas_output_total = Integral(
             iron_oc.fs.unit.time_set,
             wrt=iron_oc.fs.unit.time_set,
             rule=gas_output_total,
-            doc="Gas output total, kg"
-            )
+            doc="Gas output total, kg",
+        )
 
         def gas_holdup(b, x):
             tf = b.flowsheet().time.last()
@@ -763,19 +762,20 @@ class TestIronOC_NoReaction(object):
                 b.gas_phase.properties[tf, x].dens_mol
                 * b.gas_phase.properties[tf, 1].mw
                 * b.gas_phase.area[tf, x]
-                )
+            )
             mass_initial_per_length = (
                 b.gas_phase.properties[t0, x].dens_mol
                 * b.gas_phase.properties[t0, 1].mw
                 * b.gas_phase.area[t0, x]
-                )
+            )
             return (mass_final_per_length - mass_initial_per_length) * b.bed_height
+
         iron_oc.fs.unit.gas_holdup = Integral(
             iron_oc.fs.unit.length_domain,
             wrt=iron_oc.fs.unit.length_domain,
             rule=gas_holdup,
-            doc="Gas mass holdup, kg"
-            )
+            doc="Gas mass holdup, kg",
+        )
 
         def oc_at_initial_time(b, x):
             t0 = b.flowsheet().time.first()
@@ -784,16 +784,16 @@ class TestIronOC_NoReaction(object):
                 b.solid_properties[t0, x].density_particle_constraint,
             )
             mass_per_length = (
-                b.solid_properties[t0, x].dens_mass_particle
-                * b.solid_phase_area[t0, x]
-                )
+                b.solid_properties[t0, x].dens_mass_particle * b.solid_phase_area[t0, x]
+            )
             return mass_per_length * b.bed_height
+
         iron_oc.fs.unit.oc_at_initial_time = Integral(
             iron_oc.fs.unit.length_domain,
             wrt=iron_oc.fs.unit.length_domain,
             rule=oc_at_initial_time,
-            doc="OC at initial reaction time, kg"
-            )
+            doc="OC at initial reaction time, kg",
+        )
 
         def oc_at_final_time(b, x):
             tf = b.flowsheet().time.last()
@@ -802,24 +802,25 @@ class TestIronOC_NoReaction(object):
                 b.solid_properties[tf, x].density_particle_constraint,
             )
             mass_per_length = (
-                b.solid_properties[tf, x].dens_mass_particle
-                * b.solid_phase_area[tf, x]
-                )
+                b.solid_properties[tf, x].dens_mass_particle * b.solid_phase_area[tf, x]
+            )
             return mass_per_length * b.bed_height
+
         iron_oc.fs.unit.oc_at_final_time = Integral(
             iron_oc.fs.unit.length_domain,
             wrt=iron_oc.fs.unit.length_domain,
             rule=oc_at_final_time,
-            doc="OC at final reaction time, kg"
-            )
+            doc="OC at final reaction time, kg",
+        )
 
         mass_change_gas = value(
             iron_oc.fs.unit.gas_input_total
             - iron_oc.fs.unit.gas_output_total
-            - iron_oc.fs.unit.gas_holdup)
+            - iron_oc.fs.unit.gas_holdup
+        )
         mass_change_solid = value(
-            iron_oc.fs.unit.oc_at_initial_time
-            - iron_oc.fs.unit.oc_at_final_time)
+            iron_oc.fs.unit.oc_at_initial_time - iron_oc.fs.unit.oc_at_final_time
+        )
 
         assert mass_change_gas <= 1e-8
         assert mass_change_solid <= 1e-8
@@ -829,14 +830,16 @@ class TestIronOC_NoReaction(object):
         ###########################################################################
         def ch4_reacted_mol(b, t):
             return (
-                b.gas_inlet.flow_mol[t]*b.gas_inlet.mole_frac_comp[t, 'CH4']
-                - b.gas_outlet.flow_mol[t]*b.gas_outlet.mole_frac_comp[t, 'CH4'])
+                b.gas_inlet.flow_mol[t] * b.gas_inlet.mole_frac_comp[t, "CH4"]
+                - b.gas_outlet.flow_mol[t] * b.gas_outlet.mole_frac_comp[t, "CH4"]
+            )
+
         iron_oc.fs.unit.ch4_reacted_mol = Integral(
             iron_oc.fs.unit.time_set,
             wrt=iron_oc.fs.unit.time_set,
             rule=ch4_reacted_mol,
-            doc="CH4 reacted total, mol"
-            )
+            doc="CH4 reacted total, mol",
+        )
 
         def fe2o3_at_initial_time_mol(b, x):
             t0 = b.flowsheet().time.first()
@@ -846,17 +849,18 @@ class TestIronOC_NoReaction(object):
             )
             mol_fe2o3_per_length = (
                 b.solid_properties[t0, x].dens_mass_particle
-                * b.solid_properties[t0, x].mass_frac_comp['Fe2O3']
+                * b.solid_properties[t0, x].mass_frac_comp["Fe2O3"]
                 * b.solid_phase_area[t0, x]
                 / b.solid_properties[t0, x]._params.mw_comp["Fe2O3"]
-                )
+            )
             return mol_fe2o3_per_length * b.bed_height
+
         iron_oc.fs.unit.fe2o3_at_initial_time_mol = Integral(
             iron_oc.fs.unit.length_domain,
             wrt=iron_oc.fs.unit.length_domain,
             rule=fe2o3_at_initial_time_mol,
-            doc="Fe2O3 at initial reaction time, mol"
-            )
+            doc="Fe2O3 at initial reaction time, mol",
+        )
 
         def fe2o3_at_final_time_mol(b, x):
             tf = b.flowsheet().time.last()
@@ -866,41 +870,38 @@ class TestIronOC_NoReaction(object):
             )
             mol_fe2o3_per_length = (
                 b.solid_properties[tf, x].dens_mass_particle
-                * b.solid_properties[tf, x].mass_frac_comp['Fe2O3']
+                * b.solid_properties[tf, x].mass_frac_comp["Fe2O3"]
                 * b.solid_phase_area[tf, x]
                 / b.solid_properties[tf, x]._params.mw_comp["Fe2O3"]
-                )
+            )
             return mol_fe2o3_per_length * b.bed_height
+
         iron_oc.fs.unit.fe2o3_at_final_time_mol = Integral(
             iron_oc.fs.unit.length_domain,
             wrt=iron_oc.fs.unit.length_domain,
             rule=fe2o3_at_final_time_mol,
-            doc="Fe2O3 at final reaction time, mol"
-            )
+            doc="Fe2O3 at final reaction time, mol",
+        )
 
         def gas_input_energy_total(b, t):
-            return (
-                b.gas_phase.properties[t, 0].enth_mol
-                * b.gas_inlet.flow_mol[t]
-                    )
+            return b.gas_phase.properties[t, 0].enth_mol * b.gas_inlet.flow_mol[t]
+
         iron_oc.fs.unit.gas_input_energy_total = Integral(
             iron_oc.fs.unit.time_set,
             wrt=iron_oc.fs.unit.time_set,
             rule=gas_input_energy_total,
-            doc="Gas input energy total, J"
-            )
+            doc="Gas input energy total, J",
+        )
 
         def gas_output_energy_total(b, t):
-            return (
-                b.gas_phase.properties[t, 1].enth_mol
-                * b.gas_outlet.flow_mol[t]
-                    )
+            return b.gas_phase.properties[t, 1].enth_mol * b.gas_outlet.flow_mol[t]
+
         iron_oc.fs.unit.gas_output_energy_total = Integral(
             iron_oc.fs.unit.time_set,
             wrt=iron_oc.fs.unit.time_set,
             rule=gas_output_energy_total,
-            doc="Gas output energy total, J"
-            )
+            doc="Gas output energy total, J",
+        )
 
         def gas_energy_holdup(b, x):
             tf = b.flowsheet().time.last()
@@ -909,19 +910,20 @@ class TestIronOC_NoReaction(object):
                 b.gas_phase.properties[tf, x].dens_mol
                 * b.gas_phase.properties[tf, x].enth_mol
                 * b.gas_phase.area[tf, x]
-                )
+            )
             energy_initial_per_length = (
                 b.gas_phase.properties[t0, x].dens_mol
                 * b.gas_phase.properties[t0, x].enth_mol
                 * b.gas_phase.area[t0, x]
-                )
+            )
             return (energy_final_per_length - energy_initial_per_length) * b.bed_height
+
         iron_oc.fs.unit.gas_energy_holdup = Integral(
             iron_oc.fs.unit.length_domain,
             wrt=iron_oc.fs.unit.length_domain,
             rule=gas_energy_holdup,
-            doc="Gas energy holdup, J"
-            )
+            doc="Gas energy holdup, J",
+        )
 
         def oc_energy_at_initial_time(b, x):
             t0 = b.flowsheet().time.first()
@@ -929,14 +931,15 @@ class TestIronOC_NoReaction(object):
                 b.solid_properties[t0, x].dens_mass_particle
                 * b.solid_properties[t0, x].enth_mass
                 * b.solid_phase_area[t0, x]
-                )
+            )
             return energy_per_length * b.bed_height
+
         iron_oc.fs.unit.oc_energy_at_initial_time = Integral(
             iron_oc.fs.unit.length_domain,
             wrt=iron_oc.fs.unit.length_domain,
             rule=oc_energy_at_initial_time,
-            doc="OC energy at initial reaction time, J"
-            )
+            doc="OC energy at initial reaction time, J",
+        )
 
         def oc_energy_at_final_time(b, x):
             tf = b.flowsheet().time.last()
@@ -944,33 +947,44 @@ class TestIronOC_NoReaction(object):
                 b.solid_properties[tf, x].dens_mass_particle
                 * b.solid_properties[tf, x].enth_mass
                 * b.solid_phase_area[tf, x]
-                )
+            )
             return energy_per_length * b.bed_height
+
         iron_oc.fs.unit.oc_energy_at_final_time = Integral(
             iron_oc.fs.unit.length_domain,
             wrt=iron_oc.fs.unit.length_domain,
             rule=oc_energy_at_final_time,
-            doc="OC at final reaction time, J"
-            )
+            doc="OC at final reaction time, J",
+        )
 
-        if (iron_oc.fs.unit.config.energy_balance_type is not EnergyBalanceType.none and
-                iron_oc.fs.unit.config.solid_phase_config.reaction_package is not None):
-            e_reaction = value(
-                (iron_oc.fs.unit.fe2o3_at_final_time_mol
-                 - iron_oc.fs.unit.fe2o3_at_initial_time_mol)
-                * iron_oc.fs.unit.solid_reactions[0, 1]._params.dh_rxn["R1"])/12
+        if (
+            iron_oc.fs.unit.config.energy_balance_type is not EnergyBalanceType.none
+            and iron_oc.fs.unit.config.solid_phase_config.reaction_package is not None
+        ):
+            e_reaction = (
+                value(
+                    (
+                        iron_oc.fs.unit.fe2o3_at_final_time_mol
+                        - iron_oc.fs.unit.fe2o3_at_initial_time_mol
+                    )
+                    * iron_oc.fs.unit.solid_reactions[0, 1]._params.dh_rxn["R1"]
+                )
+                / 12
+            )
         else:
             e_reaction = 0
 
         enthalpy_change_gas = value(  # in - out - holdup/accumulation
             iron_oc.fs.unit.gas_input_energy_total
             - iron_oc.fs.unit.gas_output_energy_total
-            - iron_oc.fs.unit.gas_energy_holdup)
+            - iron_oc.fs.unit.gas_energy_holdup
+        )
 
         enthalpy_change_solid = value(
             iron_oc.fs.unit.oc_energy_at_final_time
             - iron_oc.fs.unit.oc_energy_at_initial_time
-            - e_reaction)
+            - e_reaction
+        )
 
         ebal_abs_tol = enthalpy_change_solid - enthalpy_change_gas
 
@@ -1005,15 +1019,12 @@ class TestIronOC_conservation_with_reaction(object):
     def iron_oc(self):
         m = ConcreteModel()
         horizon = 3600
-        m.fs = FlowsheetBlock(dynamic=True,
-                              time_set=[0, horizon],
-                              time_units=pyunits.s)
+        m.fs = FlowsheetBlock(dynamic=True, time_set=[0, horizon], time_units=pyunits.s)
 
         m.fs.gas_props = GasPhaseParameterBlock()
         m.fs.solid_props = SolidPhaseParameterBlock()
         m.fs.solid_rxns = HeteroReactionParameterBlock(
-            solid_property_package=m.fs.solid_props,
-            gas_property_package=m.fs.gas_props
+            solid_property_package=m.fs.solid_props, gas_property_package=m.fs.gas_props
         )
 
         m.fs.unit = FixedBed1D(
@@ -1027,7 +1038,7 @@ class TestIronOC_conservation_with_reaction(object):
 
         # Discretize time domain
         t_element_size = 120  # s
-        ntfe = int(horizon/t_element_size)
+        ntfe = int(horizon / t_element_size)
         m.discretizer = TransformationFactory("dae.finite_difference")
         m.discretizer.apply_to(m, nfe=ntfe, wrt=m.fs.time, scheme="BACKWARD")
 
@@ -1073,16 +1084,13 @@ class TestIronOC_conservation_with_reaction(object):
         iscale.calculate_scaling_factors(iron_oc)
 
         # Initialize model
-        iron_oc.fs.unit.block_triangularization_initialize(
-            calc_var_kwds={'eps': 1e-5})
+        iron_oc.fs.unit.block_triangularization_initialize(calc_var_kwds={"eps": 1e-5})
 
         # Solve model
         initialize_by_time_element(iron_oc.fs, iron_oc.fs.time, solver=solver)
 
         iron_oc.fs.unit.time_set = ContinuousSet(
-            bounds=(iron_oc.fs.time.first(),
-                    iron_oc.fs.time.last()
-                    ),
+            bounds=(iron_oc.fs.time.first(), iron_oc.fs.time.last()),
             initialize=iron_oc.fs.time.get_finite_elements(),
             doc="time domain",
         )
@@ -1095,32 +1103,28 @@ class TestIronOC_conservation_with_reaction(object):
                 b.gas_phase.properties[t, 0].mw,
                 b.gas_phase.properties[t, 0].mw_eqn,
             )
-            return (
-                b.gas_phase.properties[t, 0].mw
-                * b.gas_inlet.flow_mol[t]
-                    )
+            return b.gas_phase.properties[t, 0].mw * b.gas_inlet.flow_mol[t]
+
         iron_oc.fs.unit.gas_input_total = Integral(
             iron_oc.fs.unit.time_set,
             wrt=iron_oc.fs.unit.time_set,
             rule=gas_input_total,
-            doc="Gas input total, kg"
-            )
+            doc="Gas input total, kg",
+        )
 
         def gas_output_total(b, t):
             calculate_variable_from_constraint(
                 b.gas_phase.properties[t, 1].mw,
                 b.gas_phase.properties[t, 1].mw_eqn,
             )
-            return (
-                b.gas_phase.properties[t, 1].mw
-                * b.gas_outlet.flow_mol[t]
-                    )
+            return b.gas_phase.properties[t, 1].mw * b.gas_outlet.flow_mol[t]
+
         iron_oc.fs.unit.gas_output_total = Integral(
             iron_oc.fs.unit.time_set,
             wrt=iron_oc.fs.unit.time_set,
             rule=gas_output_total,
-            doc="Gas output total, kg"
-            )
+            doc="Gas output total, kg",
+        )
 
         def gas_holdup(b, x):
             tf = b.flowsheet().time.last()
@@ -1137,19 +1141,20 @@ class TestIronOC_conservation_with_reaction(object):
                 b.gas_phase.properties[tf, x].dens_mol
                 * b.gas_phase.properties[tf, 1].mw
                 * b.gas_phase.area[tf, x]
-                )
+            )
             mass_initial_per_length = (
                 b.gas_phase.properties[t0, x].dens_mol
                 * b.gas_phase.properties[t0, 1].mw
                 * b.gas_phase.area[t0, x]
-                )
+            )
             return (mass_final_per_length - mass_initial_per_length) * b.bed_height
+
         iron_oc.fs.unit.gas_holdup = Integral(
             iron_oc.fs.unit.length_domain,
             wrt=iron_oc.fs.unit.length_domain,
             rule=gas_holdup,
-            doc="Gas mass holdup, kg"
-            )
+            doc="Gas mass holdup, kg",
+        )
 
         def oc_at_initial_time(b, x):
             t0 = b.flowsheet().time.first()
@@ -1158,16 +1163,16 @@ class TestIronOC_conservation_with_reaction(object):
                 b.solid_properties[t0, x].density_particle_constraint,
             )
             mass_per_length = (
-                b.solid_properties[t0, x].dens_mass_particle
-                * b.solid_phase_area[t0, x]
-                )
+                b.solid_properties[t0, x].dens_mass_particle * b.solid_phase_area[t0, x]
+            )
             return mass_per_length * b.bed_height
+
         iron_oc.fs.unit.oc_at_initial_time = Integral(
             iron_oc.fs.unit.length_domain,
             wrt=iron_oc.fs.unit.length_domain,
             rule=oc_at_initial_time,
-            doc="OC at initial reaction time, kg"
-            )
+            doc="OC at initial reaction time, kg",
+        )
 
         def oc_at_final_time(b, x):
             tf = b.flowsheet().time.last()
@@ -1176,26 +1181,27 @@ class TestIronOC_conservation_with_reaction(object):
                 b.solid_properties[tf, x].density_particle_constraint,
             )
             mass_per_length = (
-                b.solid_properties[tf, x].dens_mass_particle
-                * b.solid_phase_area[tf, x]
-                )
+                b.solid_properties[tf, x].dens_mass_particle * b.solid_phase_area[tf, x]
+            )
             return mass_per_length * b.bed_height
+
         iron_oc.fs.unit.oc_at_final_time = Integral(
             iron_oc.fs.unit.length_domain,
             wrt=iron_oc.fs.unit.length_domain,
             rule=oc_at_final_time,
-            doc="OC at final reaction time, kg"
-            )
+            doc="OC at final reaction time, kg",
+        )
 
         mass_change_gas = value(
             iron_oc.fs.unit.gas_input_total
             - iron_oc.fs.unit.gas_output_total
-            - iron_oc.fs.unit.gas_holdup)
+            - iron_oc.fs.unit.gas_holdup
+        )
         mass_change_solid = value(
-            iron_oc.fs.unit.oc_at_initial_time
-            - iron_oc.fs.unit.oc_at_final_time)
+            iron_oc.fs.unit.oc_at_initial_time - iron_oc.fs.unit.oc_at_final_time
+        )
         mbal_abs_tol = abs(mass_change_gas + mass_change_solid)
-        mbal_rel_tol = mbal_abs_tol/mass_change_solid
+        mbal_rel_tol = mbal_abs_tol / mass_change_solid
         assert mbal_rel_tol <= 0.15
 
         ###########################################################################
@@ -1203,14 +1209,16 @@ class TestIronOC_conservation_with_reaction(object):
         ###########################################################################
         def ch4_reacted_mol(b, t):
             return (
-                b.gas_inlet.flow_mol[t]*b.gas_inlet.mole_frac_comp[t, 'CH4']
-                - b.gas_outlet.flow_mol[t]*b.gas_outlet.mole_frac_comp[t, 'CH4'])
+                b.gas_inlet.flow_mol[t] * b.gas_inlet.mole_frac_comp[t, "CH4"]
+                - b.gas_outlet.flow_mol[t] * b.gas_outlet.mole_frac_comp[t, "CH4"]
+            )
+
         iron_oc.fs.unit.ch4_reacted_mol = Integral(
             iron_oc.fs.unit.time_set,
             wrt=iron_oc.fs.unit.time_set,
             rule=ch4_reacted_mol,
-            doc="CH4 reacted total, mol"
-            )
+            doc="CH4 reacted total, mol",
+        )
 
         def fe2o3_at_initial_time_mol(b, x):
             t0 = b.flowsheet().time.first()
@@ -1220,17 +1228,18 @@ class TestIronOC_conservation_with_reaction(object):
             )
             mol_fe2o3_per_length = (
                 b.solid_properties[t0, x].dens_mass_particle
-                * b.solid_properties[t0, x].mass_frac_comp['Fe2O3']
+                * b.solid_properties[t0, x].mass_frac_comp["Fe2O3"]
                 * b.solid_phase_area[t0, x]
                 / b.solid_properties[t0, x]._params.mw_comp["Fe2O3"]
-                )
+            )
             return mol_fe2o3_per_length * b.bed_height
+
         iron_oc.fs.unit.fe2o3_at_initial_time_mol = Integral(
             iron_oc.fs.unit.length_domain,
             wrt=iron_oc.fs.unit.length_domain,
             rule=fe2o3_at_initial_time_mol,
-            doc="Fe2O3 at initial reaction time, mol"
-            )
+            doc="Fe2O3 at initial reaction time, mol",
+        )
 
         def fe2o3_at_final_time_mol(b, x):
             tf = b.flowsheet().time.last()
@@ -1240,41 +1249,38 @@ class TestIronOC_conservation_with_reaction(object):
             )
             mol_fe2o3_per_length = (
                 b.solid_properties[tf, x].dens_mass_particle
-                * b.solid_properties[tf, x].mass_frac_comp['Fe2O3']
+                * b.solid_properties[tf, x].mass_frac_comp["Fe2O3"]
                 * b.solid_phase_area[tf, x]
                 / b.solid_properties[tf, x]._params.mw_comp["Fe2O3"]
-                )
+            )
             return mol_fe2o3_per_length * b.bed_height
+
         iron_oc.fs.unit.fe2o3_at_final_time_mol = Integral(
             iron_oc.fs.unit.length_domain,
             wrt=iron_oc.fs.unit.length_domain,
             rule=fe2o3_at_final_time_mol,
-            doc="Fe2O3 at final reaction time, mol"
-            )
+            doc="Fe2O3 at final reaction time, mol",
+        )
 
         def gas_input_energy_total(b, t):
-            return (
-                b.gas_phase.properties[t, 0].enth_mol
-                * b.gas_inlet.flow_mol[t]
-                    )
+            return b.gas_phase.properties[t, 0].enth_mol * b.gas_inlet.flow_mol[t]
+
         iron_oc.fs.unit.gas_input_energy_total = Integral(
             iron_oc.fs.unit.time_set,
             wrt=iron_oc.fs.unit.time_set,
             rule=gas_input_energy_total,
-            doc="Gas input energy total, J"
-            )
+            doc="Gas input energy total, J",
+        )
 
         def gas_output_energy_total(b, t):
-            return (
-                b.gas_phase.properties[t, 1].enth_mol
-                * b.gas_outlet.flow_mol[t]
-                    )
+            return b.gas_phase.properties[t, 1].enth_mol * b.gas_outlet.flow_mol[t]
+
         iron_oc.fs.unit.gas_output_energy_total = Integral(
             iron_oc.fs.unit.time_set,
             wrt=iron_oc.fs.unit.time_set,
             rule=gas_output_energy_total,
-            doc="Gas output energy total, J"
-            )
+            doc="Gas output energy total, J",
+        )
 
         def gas_energy_holdup(b, x):
             tf = b.flowsheet().time.last()
@@ -1283,19 +1289,20 @@ class TestIronOC_conservation_with_reaction(object):
                 b.gas_phase.properties[tf, x].dens_mol
                 * b.gas_phase.properties[tf, x].enth_mol
                 * b.gas_phase.area[tf, x]
-                )
+            )
             energy_initial_per_length = (
                 b.gas_phase.properties[t0, x].dens_mol
                 * b.gas_phase.properties[t0, x].enth_mol
                 * b.gas_phase.area[t0, x]
-                )
+            )
             return (energy_final_per_length - energy_initial_per_length) * b.bed_height
+
         iron_oc.fs.unit.gas_energy_holdup = Integral(
             iron_oc.fs.unit.length_domain,
             wrt=iron_oc.fs.unit.length_domain,
             rule=gas_energy_holdup,
-            doc="Gas energy holdup, J"
-            )
+            doc="Gas energy holdup, J",
+        )
 
         def oc_energy_at_initial_time(b, x):
             t0 = b.flowsheet().time.first()
@@ -1303,14 +1310,15 @@ class TestIronOC_conservation_with_reaction(object):
                 b.solid_properties[t0, x].dens_mass_particle
                 * b.solid_properties[t0, x].enth_mass
                 * b.solid_phase_area[t0, x]
-                )
+            )
             return energy_per_length * b.bed_height
+
         iron_oc.fs.unit.oc_energy_at_initial_time = Integral(
             iron_oc.fs.unit.length_domain,
             wrt=iron_oc.fs.unit.length_domain,
             rule=oc_energy_at_initial_time,
-            doc="OC energy at initial reaction time, J"
-            )
+            doc="OC energy at initial reaction time, J",
+        )
 
         def oc_energy_at_final_time(b, x):
             tf = b.flowsheet().time.last()
@@ -1318,33 +1326,42 @@ class TestIronOC_conservation_with_reaction(object):
                 b.solid_properties[tf, x].dens_mass_particle
                 * b.solid_properties[tf, x].enth_mass
                 * b.solid_phase_area[tf, x]
-                )
+            )
             return energy_per_length * b.bed_height
+
         iron_oc.fs.unit.oc_energy_at_final_time = Integral(
             iron_oc.fs.unit.length_domain,
             wrt=iron_oc.fs.unit.length_domain,
             rule=oc_energy_at_final_time,
-            doc="OC at final reaction time, J"
-            )
+            doc="OC at final reaction time, J",
+        )
 
         if iron_oc.fs.unit.config.solid_phase_config.reaction_package is not None:
-            e_reaction = value(
-                (iron_oc.fs.unit.fe2o3_at_final_time_mol
-                 - iron_oc.fs.unit.fe2o3_at_initial_time_mol)
-                * iron_oc.fs.unit.solid_reactions[0, 1]._params.dh_rxn["R1"])/12
+            e_reaction = (
+                value(
+                    (
+                        iron_oc.fs.unit.fe2o3_at_final_time_mol
+                        - iron_oc.fs.unit.fe2o3_at_initial_time_mol
+                    )
+                    * iron_oc.fs.unit.solid_reactions[0, 1]._params.dh_rxn["R1"]
+                )
+                / 12
+            )
         else:
             e_reaction = 0
 
         enthalpy_change_gas = value(  # in - out - holdup/accumulation
             iron_oc.fs.unit.gas_input_energy_total
             - iron_oc.fs.unit.gas_output_energy_total
-            - iron_oc.fs.unit.gas_energy_holdup)
+            - iron_oc.fs.unit.gas_energy_holdup
+        )
 
         enthalpy_change_solid = value(
             iron_oc.fs.unit.oc_energy_at_final_time
             - iron_oc.fs.unit.oc_energy_at_initial_time
-            - e_reaction)
+            - e_reaction
+        )
 
         ebal_abs_tol = enthalpy_change_solid - enthalpy_change_gas
-        ebal_rel_tol = ebal_abs_tol/enthalpy_change_solid
+        ebal_rel_tol = ebal_abs_tol / enthalpy_change_solid
         assert ebal_rel_tol <= 0.15
