@@ -549,6 +549,9 @@ class Cubic(EoSBase):
         )
 
     @staticmethod
+    def cp_mass_phase(blk, p):
+        return blk.cp_mol_phase[p] / blk.mw_phase[p]
+    @staticmethod
     def cp_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)
         cname = pobj._cubic_type.name
@@ -590,6 +593,9 @@ class Cubic(EoSBase):
         return cp_ideal_gas + cp_departure
 
     @staticmethod
+    def cv_mass_phase(blk, p):
+        return blk.cv_mol_phase[p] / blk.mw_phase[p]
+    @staticmethod
     def cv_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)
         cname = pobj._cubic_type.name
@@ -610,7 +616,7 @@ class Cubic(EoSBase):
             1 / (V**2 + EoS_u * bm * V + EoS_w * bm**2)
         ) * dam_dT
 
-        # See Chapter 6 in [1]
+        # See Equation 6.2-35 in [1]
         return cp + blk.temperature * dPdT**2 / dPdV
 
     @staticmethod

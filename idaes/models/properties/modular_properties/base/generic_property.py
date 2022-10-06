@@ -1032,7 +1032,7 @@ class GenericParameterData(PhysicalParameterBlock):
                 "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
                 "mole_frac_comp": {"method": "_mole_frac_comp"},
                 "mole_frac_phase_comp": {"method": None},
-                "phase_frac": {"method": None},
+                "phase_frac": {"method": None},  # Molar phase fraction TODO: fix ambiguity between mole and mass basis
                 "temperature": {"method": None},
                 "pressure": {"method": None},
                 "act_phase_comp": {"method": "_act_phase_comp"},
@@ -1050,6 +1050,7 @@ class GenericParameterData(PhysicalParameterBlock):
                     "method": "_conc_mol_phase_comp_apparent"
                 },
                 "conc_mol_phase_comp_true": {"method": "_conc_mol_phase_comp_true"},
+                "cp_mass_phase": {"method": "_cp_mass_phase"},
                 "cp_mol": {"method": "_cp_mol"},
                 "cp_mol_phase": {"method": "_cp_mol_phase"},
                 "cp_mol_phase_comp": {"method": "_cp_mol_phase_comp"},
@@ -1100,6 +1101,7 @@ class GenericParameterData(PhysicalParameterBlock):
                 "mw": {"method": "_mw"},
                 "mw_comp": {"method": "_mw_comp"},
                 "mw_phase": {"method": "_mw_phase"},
+                "number_prandtl_phase": {"method": "_number_prandtl_phase"},
                 "pressure_phase_comp": {"method": "_pressure_phase_comp"},
                 "pressure_phase_comp_true": {"method": "_pressure_phase_comp_true"},
                 "pressure_phase_comp_apparent": {
@@ -2676,7 +2678,16 @@ class GenericStateBlockData(StateBlockData):
         except AttributeError:
             self.del_component(self.conc_mol_phase_comp_true)
             raise
+    def _cp_mass_phase(self):
+        try:
+            def rule_cp_mass_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.cp_mass_phase(b, p)
 
+            self.cp_mass_phase = Expression(self.phase_list, rule=rule_cp_mass_phase)
+        except AttributeError:
+            self.del_component(self.cp_mass_phase)
+            raise
     def _cp_mol(self):
         try:
 
@@ -2729,6 +2740,16 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.cv_mol)
             raise
 
+    def _cv_mass_phase(self):
+        try:
+            def rule_cv_mass_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.cv_mass_phase(b, p)
+
+            self.cv_mass_phase = Expression(self.phase_list, rule=rule_cv_mass_phase)
+        except AttributeError:
+            self.del_component(self.cv_mass_phase)
+            raise
     def _cv_mol_phase(self):
         try:
 
@@ -3601,7 +3622,19 @@ class GenericStateBlockData(StateBlockData):
         except AttributeError:
             self.del_component(self.mw_phase)
             raise
+    def _number_prandtl_phase(self):
+        try:
+            def rule_number_prandtl_phase(b, p):
+                return b.cp_mass_phase[p] * b.visc_d_phase[p] / b.therm_cond_phase[p]
 
+            self.number_prandtl_phase = Expression(
+                self.phase_list,
+                rule=rule_number_prandtl_phase,
+                doc="Prandtl number by phase",
+            )
+        except AttributeError:
+            self.del_component(self.number_prandtl_phase)
+            raise
     def _pressure_phase_comp(self):
         try:
 
