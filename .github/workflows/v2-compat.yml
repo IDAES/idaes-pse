@@ -55,7 +55,7 @@ jobs:
           deprector analyze idaes --callsite-registry idaes
 
   legacy-code:
-    name: Run legacy codebase (${{ matrix.project }})
+    name: Run legacy code (${{ matrix.project }})
     runs-on: ubuntu-latest
     env:
       idaes_pip_target: idaes-pse @ https://github.com/IDAES/idaes-pse/archive/${{ github.ref }}.zip
