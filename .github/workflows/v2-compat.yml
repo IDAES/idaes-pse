@@ -64,11 +64,26 @@ jobs:
       matrix:
         project:
           - watertap-0.6.0rc0
+          - watertap-0.5.0
+          - watertap-0.4.0
+          - dispatches-1.0.0
         include:
           - project: watertap-0.6.0rc0
             pip-target: watertap[testing]==0.6.0rc0
             test-command: |
               pytest --pyargs watertap -m "not integration"
+          - project: watertap-0.5.0
+            pip-target: watertap[testing]==0.5.0
+            test-command: |
+              pytest --pyargs watertap -m "not integration"
+          - project: watertap-0.4.0
+            pip-target: watertap[testing]==0.4.0
+            test-command: |
+              pytest --pyargs watertap -m "not integration"
+          - project: dispatches-1.0.0
+            pip-target: dispatches==1.0.0
+            test-command: |
+              pytest --pyargs dispatches -m "not integration"
 
     steps:
       
