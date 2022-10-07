@@ -97,6 +97,8 @@ _phase_dicts_ideal = {
     "Vap": {
         "type": VaporPhase,
         "equation_of_state": Ideal,
+        "visc_d_phase": ViscosityWilke,
+        "therm_cond_phase": ThermalConductivityWMS,
     },
 }
 
@@ -109,7 +111,7 @@ _component_params = {
         "entr_mol_ig_comp": NIST,
         "cp_mol_ig_comp": NIST,
         "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones},
-        "therm_cond_phase_comp": {"Vap": ThermalConductivityWMS},
+        "therm_cond_phase_comp": {"Vap": Eucken},
         "parameter_data": {
             "mw": (0.0020159, pyunits.kg / pyunits.mol),
             "pressure_crit": (13e5, pyunits.Pa),
@@ -127,6 +129,7 @@ _component_params = {
             },
             "lennard_jones_sigma": (2.826, pyunits.angstrom),
             "lennard_jones_epsilon_reduced": (59.7, pyunits.K),
+            "f_int_eucken": 1,
         },
     },
     "CO": {
@@ -137,7 +140,7 @@ _component_params = {
         "entr_mol_ig_comp": NIST,
         "cp_mol_ig_comp": NIST,
         "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones},
-        "therm_cond_phase_comp": {"Vap": ThermalConductivityWMS},
+        "therm_cond_phase_comp": {"Vap": Eucken},
         "parameter_data": {
             "mw": (0.0280101, pyunits.kg / pyunits.mol),
             "pressure_crit": (35e5, pyunits.Pa),
@@ -155,6 +158,7 @@ _component_params = {
             },
             "lennard_jones_sigma": (3.690, pyunits.angstrom),
             "lennard_jones_epsilon_reduced": (91.7, pyunits.K),
+            "f_int_eucken": 1,
         },
     },
     "H2O": {
@@ -188,13 +192,14 @@ _component_params = {
             },
             "lennard_jones_sigma": (2.641, pyunits.angstrom),
             "lennard_jones_epsilon_reduced": (809.1, pyunits.K),
+            "f_int_eucken": 1,
         },
     },
     "CO2": {
         "type": Component,
         "valid_phase_types": [PhaseType.vaporPhase],
         "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones},
-        "therm_cond_phase_comp": {"Vap": ThermalConductivityWMS},
+        "therm_cond_phase_comp": {"Vap": Eucken},
         "elemental_composition": {"C": 1, "O": 2},
         "enth_mol_ig_comp": NIST,
         "entr_mol_ig_comp": NIST,
@@ -216,13 +221,14 @@ _component_params = {
             },
             "lennard_jones_sigma": (3.941, pyunits.angstrom),
             "lennard_jones_epsilon_reduced": (195.2, pyunits.K),
+            "f_int_eucken": 1,
         },
     },
     "O2": {
         "type": Component,
         "valid_phase_types": [PhaseType.vaporPhase],
         "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones},
-        "therm_cond_phase_comp": {"Vap": ThermalConductivityWMS},
+        "therm_cond_phase_comp": {"Vap": Eucken},
         "elemental_composition": {"O": 2},
         "enth_mol_ig_comp": NIST,
         "entr_mol_ig_comp": NIST,
@@ -244,6 +250,7 @@ _component_params = {
             },
             "lennard_jones_sigma": (3.467, pyunits.angstrom),
             "lennard_jones_epsilon_reduced": (106.7, pyunits.K),
+            "f_int_eucken": 1,
         },
     },
     "N2": {
@@ -254,7 +261,7 @@ _component_params = {
         "entr_mol_ig_comp": NIST,
         "cp_mol_ig_comp": NIST,
         "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones},
-        "therm_cond_phase_comp": {"Vap": ThermalConductivityWMS},
+        "therm_cond_phase_comp": {"Vap": Eucken},
         "parameter_data": {
             "mw": (0.0280134, pyunits.kg / pyunits.mol),
             "pressure_crit": (33.9e5, pyunits.Pa),
@@ -272,6 +279,7 @@ _component_params = {
             },
             "lennard_jones_sigma": (3.798, pyunits.angstrom),
             "lennard_jones_epsilon_reduced": (71.4, pyunits.K),
+            "f_int_eucken": 1,
         },
     },
     "Ar": {
@@ -282,7 +290,7 @@ _component_params = {
         "entr_mol_ig_comp": NIST,
         "cp_mol_ig_comp": NIST,
         "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones},
-        "therm_cond_phase_comp": {"Vap": ThermalConductivityWMS},
+        "therm_cond_phase_comp": {"Vap": Eucken},
         "parameter_data": {
             "mw": (0.039948, pyunits.kg / pyunits.mol),
             "pressure_crit": (48.7e5, pyunits.Pa),
@@ -300,6 +308,7 @@ _component_params = {
             },
             "lennard_jones_sigma": (3.542, pyunits.angstrom),
             "lennard_jones_epsilon_reduced": (93.3, pyunits.K),
+            "f_int_eucken": 1,
         },
     },
     "CH4": {
@@ -310,7 +319,7 @@ _component_params = {
         "entr_mol_ig_comp": NIST,
         "cp_mol_ig_comp": NIST,
         "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones},
-        "therm_cond_phase_comp": {"Vap": ThermalConductivityWMS},
+        "therm_cond_phase_comp": {"Vap": Eucken},
         "parameter_data": {
             "mw": (0.0160425, pyunits.kg / pyunits.mol),
             "pressure_crit": (46e5, pyunits.Pa),
@@ -328,6 +337,7 @@ _component_params = {
             },
             "lennard_jones_sigma": (3.758, pyunits.angstrom),
             "lennard_jones_epsilon_reduced": (148.6, pyunits.K),
+            "f_int_eucken": 1,
         },
     },
     "C2H6": {
@@ -338,7 +348,7 @@ _component_params = {
         "entr_mol_ig_comp": RPP4,
         "cp_mol_ig_comp": NIST,
         "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones},
-        "therm_cond_phase_comp": {"Vap": ThermalConductivityWMS},
+        "therm_cond_phase_comp": {"Vap": Eucken},
         "parameter_data": {
             "mw": (0.030069, pyunits.kg / pyunits.mol),
             "pressure_crit": (48.8e5, pyunits.Pa),
@@ -354,6 +364,7 @@ _component_params = {
             "entr_mol_form_vap_comp_ref": (229.2, pyunits.J / pyunits.mol / pyunits.K),
             "lennard_jones_sigma": (4.443, pyunits.angstrom),
             "lennard_jones_epsilon_reduced": (215.7, pyunits.K),
+            "f_int_eucken": 1,
         },
     },
     "C3H8": {
@@ -364,7 +375,7 @@ _component_params = {
         "entr_mol_ig_comp": RPP4,
         "cp_mol_ig_comp": NIST,
         "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones},
-        "therm_cond_phase_comp": {"Vap": ThermalConductivityWMS},
+        "therm_cond_phase_comp": {"Vap": Eucken},
         "parameter_data": {
             "mw": (0.0320849, pyunits.kg / pyunits.mol),
             "pressure_crit": (42.5e5, pyunits.Pa),
@@ -380,6 +391,7 @@ _component_params = {
             "entr_mol_form_vap_comp_ref": (270.3, pyunits.J / pyunits.mol / pyunits.K),
             "lennard_jones_sigma": (5.118, pyunits.angstrom),
             "lennard_jones_epsilon_reduced": (237.1, pyunits.K),
+            "f_int_eucken": 1,
         },
     },
     "C4H10": {
@@ -390,7 +402,7 @@ _component_params = {
         "entr_mol_ig_comp": RPP5,
         "cp_mol_ig_comp": NIST,
         "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones},
-        "therm_cond_phase_comp": {"Vap": ThermalConductivityWMS},
+        "therm_cond_phase_comp": {"Vap": Eucken},
         "parameter_data": {
             "mw": (0.058123, pyunits.kg / pyunits.mol),  # RPP5
             "pressure_crit": (37.96e5, pyunits.Pa),  # RPP5
@@ -415,6 +427,7 @@ _component_params = {
             # In short, the n-butane parameters will adequately represent both species for most temperatures
             "lennard_jones_sigma": (4.687, pyunits.angstrom),
             "lennard_jones_epsilon_reduced": (531.4, pyunits.K),
+            "f_int_eucken": 1,
         },
     },
     "H2S": {
@@ -425,7 +438,7 @@ _component_params = {
         "entr_mol_ig_comp": NIST,
         "cp_mol_ig_comp": NIST,
         "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones},
-        "therm_cond_phase_comp": {"Vap": ThermalConductivityWMS},
+        "therm_cond_phase_comp": {"Vap": Eucken},
         "parameter_data": {
             "mw": (0.034081, pyunits.kg / pyunits.mol),  # NIST
             "pressure_crit": (89.6291e5, pyunits.Pa),  # NIST <- Goodwin 1983
@@ -443,6 +456,7 @@ _component_params = {
             },
             "lennard_jones_sigma": (3.623, pyunits.angstrom),
             "lennard_jones_epsilon_reduced": (301.1, pyunits.K),
+            "f_int_eucken": 1,
         },
     },
     "SO2": {
@@ -453,7 +467,7 @@ _component_params = {
         "entr_mol_ig_comp": NIST,
         "cp_mol_ig_comp": NIST,
         "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones},
-        "therm_cond_phase_comp": {"Vap": ThermalConductivityWMS},
+        "therm_cond_phase_comp": {"Vap": Eucken},
         "parameter_data": {
             "mw": (0.064064, pyunits.kg / pyunits.mol),  # NIST
             "pressure_crit": (78.84e5, pyunits.Pa),  # RPP5
@@ -471,6 +485,7 @@ _component_params = {
             },
             "lennard_jones_sigma": (4.112, pyunits.angstrom),
             "lennard_jones_epsilon_reduced": (335.4, pyunits.K),
+            "f_int_eucken": 1,
         },
     },
     "C2H4": {
@@ -481,7 +496,7 @@ _component_params = {
         "entr_mol_ig_comp": NIST,
         "cp_mol_ig_comp": NIST,
         "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones},
-        "therm_cond_phase_comp": {"Vap": ThermalConductivityWMS},
+        "therm_cond_phase_comp": {"Vap": Eucken},
         "parameter_data": {
             "mw": (0.0280532, pyunits.kg / pyunits.mol),  # NIST
             "pressure_crit": (50.6e5, pyunits.Pa),  # NIST
@@ -499,12 +514,13 @@ _component_params = {
             },
             "lennard_jones_sigma": (4.163, pyunits.angstrom),
             "lennard_jones_epsilon_reduced": (224.7, pyunits.K),
+            "f_int_eucken": 1,
         },
     },
 }
 
 _water_visc_d = {"Vap": ChapmanEnskogLennardJones, "Liq": None}
-_water_therm_cond = {"Vap": ThermalConductivityWMS, "Liq": None}
+_water_therm_cond = {"Vap": Eucken, "Liq": None}
 
 # returns a configuration dictionary for the list of specified components
 def get_prop(components=None, phases="Vap", eos=EosType.PR, scaled=False):

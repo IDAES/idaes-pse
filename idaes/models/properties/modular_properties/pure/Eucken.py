@@ -54,12 +54,13 @@ class Eucken(object):
             M = pyunits.convert(cobj.mw, pyunits.kg / pyunits.mol)
             R = pyunits.convert(Constants.gas_constant, units["heat_capacity_mole"])
             f_int = cobj.f_int_eucken
+            cp_mol_ig_comp = cobj.config.cp_mol_ig_comp.cp_mol_ig_comp.return_expression
 
             therm_cond = (
                 b.visc_d_phase_comp[p, cobj.local_name]
                 / M
                 * (
-                    f_int * cobj.cp_mol_ig_comp.return_expression(b, cobj, T)
+                    f_int * cp_mol_ig_comp(b, cobj, T)
                     + (15 / 4 - 5 * f_int / 2) * R
                 )
             )

@@ -814,7 +814,7 @@ class GenericParameterData(PhysicalParameterBlock):
                             pass
 
         # Validate and other phase indexed props
-        phase_indexed_props = ["diffus_phase_comp", "visc_d_phase_comp"]
+        phase_indexed_props = ["diffus_phase_comp", "visc_d_phase_comp", "therm_cond_phase_comp"]
         for prop in phase_indexed_props:
             for j in self.component_list:
                 cobj = self.get_component(j)
@@ -827,12 +827,28 @@ class GenericParameterData(PhysicalParameterBlock):
                                 f"contained unrecognised phase {p}."
                             )
                         else:
-                            try:
-                                meth.build_parameters(cobj, p)
-                            except AttributeError:
-                                # No build_parameters method
-                                # Assume it is not needed and continue
-                                continue
+                            if hasattr(meth, "build_parameters"):
+                                build_parameters = meth.build_parameters
+                            else:
+                                # If not, guess meth is a class holding property subclasses
+                                try:
+                                    build_parameters = getattr(meth, prop).build_parameters
+                                except AttributeError:
+                                    # If all else fails, assume no build_parameters method
+                                    build_parameters = None
+
+                            # Call build_parameters if it exists
+                            if build_parameters is not None:
+                                try:
+                                    build_parameters(cobj, p)
+                                except KeyError:
+                                    raise ConfigurationError(
+                                        "{} values were not defined for parameter {} in "
+                                        "component {}. Please check the parameter_data "
+                                        "argument to ensure values are provided.".format(
+                                            self.name, prop, j
+                                        )
+                                    )
 
         for p in self.phase_list:
             pobj = self.get_phase(p)
@@ -2130,6 +2146,14 @@ class GenericStateBlockData(StateBlockData):
                     )
                     iscale.set_scaling_factor(v, sf_rho * sf_u)
 
+        if self.is_property_constructed("cp_mol_phase"):
+            for p in self.phase_list:
+                # Cp of air is 30 J/mol K, Cp of liquid water is 75 J/mol K, 1/50 is a good default value
+                # for small molecules. For large molecules, this value will be inappropriate
+                sf_cp_mol_phase = iscale.get_scaling_factor(self.cp_mol_phase[p], default=1/50, warning=True)
+                iscale.set_scaling_factor(self.cp_mol_phase[p], 1/50, overwrite=False)
+                iscale.constraint_scaling_transform(self.cp_mol_phase_eqn[p], sf_cp_mol_phase, overwrite=False)
+
         # Phase equilibrium constraint
         if hasattr(self, "equilibrium_constraint"):
             pe_form_config = self.params.config.phase_equilibrium_state
@@ -2425,6 +2449,35 @@ class GenericStateBlockData(StateBlockData):
                 )
                 iscale.constraint_scaling_transform(v, sf_x, overwrite=False)
 
+        if self.is_property_constructed("therm_cond_phase"):
+            for p in self.phase_list:
+                pobj = self.params.get_phase(p)
+                if pobj.is_vapor_phase():
+                    sf_default = 100
+                elif pobj.is_liquid_phase():
+                    sf_default = 10
+                elif pobj.is_solid_phase():
+                    sf_default = 1/10
+                else:
+                    sf_default=1
+                sf_therm_cond = iscale.get_scaling_factor(self.therm_cond_phase[p], default=sf_default, warning=True)
+                iscale.set_scaling_factor(self.therm_cond_phase[p], sf_therm_cond, overwrite=False)
+                iscale.constraint_scaling_transform(self.therm_cond_phase_eqn[p], sf_therm_cond, overwrite=False)
+
+        if self.is_property_constructed("visc_d_phase"):
+            for p in self.phase_list:
+                pobj = self.params.get_phase(p)
+                if pobj.is_vapor_phase():
+                    sf_default = 1e5
+                elif pobj.is_liquid_phase():
+                    # Works well for water and small organic molecules, not for honey or syrup
+                    sf_default = 1e3
+                else:
+                    sf_default=1
+                sf_visc_d = iscale.get_scaling_factor(self.visc_d_phase[p], default=sf_default, warning=True)
+                iscale.set_scaling_factor(self.visc_d_phase[p], sf_visc_d, overwrite=False)
+                iscale.constraint_scaling_transform(self.visc_d_phase_eqn[p], sf_visc_d, overwrite=False)
+
     def components_in_phase(self, phase):
         """
         Generator method which yields components present in a given phase.
@@ -2703,14 +2756,20 @@ class GenericStateBlockData(StateBlockData):
 
     def _cp_mol_phase(self):
         try:
-
+            units = self.params.get_metadata().derived_units
+            self.cp_mol_phase = Var(
+                self.phase_list,
+                doc="Specific molar heat capacity at constant pressure",
+                units= units["heat_capacity_mole"]
+            )
             def rule_cp_mol_phase(b, p):
                 p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.cp_mol_phase(b, p)
+                return b.cp_mol_phase[p] == p_config.equation_of_state.cp_mol_phase(b, p)
 
-            self.cp_mol_phase = Expression(self.phase_list, rule=rule_cp_mol_phase)
+            self.cp_mol_phase_eqn = Constraint(self.phase_list, rule=rule_cp_mol_phase)
         except AttributeError:
             self.del_component(self.cp_mol_phase)
+            self.del_component(self.cp_mol_phase_eqn)
             raise
 
     def _cp_mol_phase_comp(self):
@@ -3750,23 +3809,27 @@ class GenericStateBlockData(StateBlockData):
             raise
 
     def _therm_cond_phase(self):
+        units = self.params.get_metadata().derived_units
         try:
-
-            def rule_therm_cond_phase(b, p):
-                return get_phase_method(b, "therm_cond_phase", p)(b, p)
-
-            self.therm_cond_phase = Expression(
+            self.therm_cond_phase = Var(
                 self.phase_list,
                 doc="Thermal conductivity for each phase",
+                units=units["thermal_conductivity"]
+            )
+            def rule_therm_cond_phase(b, p):
+                return b.therm_cond_phase[p] == get_phase_method(b, "therm_cond_phase", p)(b, p)
+
+            self.therm_cond_phase_eqn = Constraint(
+                self.phase_list,
                 rule=rule_therm_cond_phase,
             )
         except AttributeError:
             self.del_component(self.therm_cond_phase)
+            self.del_component(self.therm_cond_phase_eqn)
             raise
 
     def _therm_cond_phase_comp(self):
         try:
-
             def rule_therm_cond_phase_comp(b, p, j):
                 cobj = b.params.get_component(j)
                 if (
@@ -3786,22 +3849,30 @@ class GenericStateBlockData(StateBlockData):
                 rule=rule_therm_cond_phase_comp,
             )
         except AttributeError:
-            self.del_component(self.therm_cond_phase_comp_comp)
+            self.del_component(self.therm_cond_phase_comp)
             raise
 
     def _visc_d_phase(self):
+        units = self.params.get_metadata().derived_units
         try:
+            self.visc_d_phase = Var(
+                self.phase_list,
+                doc="Dynamic viscosity for each phase",
+                units= units["dynamic_viscosity"]
+            )
 
             def rule_visc_d_phase(b, p):
-                return get_phase_method(b, "visc_d_phase", p)(b, p)
+                return b.visc_d_phase[p] == get_phase_method(b, "visc_d_phase", p)(b, p)
 
-            self.visc_d_phase = Expression(
+            self.visc_d_phase_eqn = Constraint(
                 self.phase_list,
                 doc="Dynamic viscosity for each phase",
                 rule=rule_visc_d_phase,
             )
+
         except AttributeError:
             self.del_component(self.visc_d_phase)
+            self.del_component(self.visc_d_phase_eqn)
             raise
 
     def _visc_d_phase_comp(self):

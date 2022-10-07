@@ -37,24 +37,22 @@ class ThermalConductivityWMS(object):
             ViscosityWilke.build_parameters(pobj)
 
         @staticmethod
-        def return_expression(b, pobj):
+        def return_expression(b, p):
             # Properties of Gases and Liquids, Eq. 9-5.14
             # and Eq. 10-6.4
-            ViscosityWilke.build_phi_ij(b, pobj)
-
-            pname = pobj.local_name
+            ViscosityWilke.build_phi_ij(b, p)
 
             # Properties of Gases and Liquids, Eq. 10-6.2
             return sum(
                 [
-                    b.mole_frac_phase_comp[pname, i]
-                    * b.therm_cond_phase_comp[pname, i]
+                    b.mole_frac_phase_comp[p, i]
+                    * b.therm_cond_phase_comp[p, i]
                     / sum(
                         [
-                            b.mole_frac_phase_comp[pname, j] * b.visc_d_phi_ij[i, j]
-                            for j in b.components_in_phase(pname)
+                            b.mole_frac_phase_comp[p, j] * b.visc_d_phi_ij[i, j]
+                            for j in b.components_in_phase(p)
                         ]
                     )
-                    for i in b.components_in_phase(pname)
+                    for i in b.components_in_phase(p)
                 ]
             )

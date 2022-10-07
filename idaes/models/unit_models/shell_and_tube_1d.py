@@ -357,11 +357,6 @@ class ShellAndTube1DData(HeatExchanger1DData):
         super(UnitModelBlockData, self).calculate_scaling_factors()
 
         for i, c in self.hot_side_heat_transfer_eq.items():
-            print(
-                iscale.get_scaling_factor(
-                    self.hot_side.heat[i], default=1, warning=False
-                )
-            )
             iscale.constraint_scaling_transform(
                 c,
                 iscale.get_scaling_factor(

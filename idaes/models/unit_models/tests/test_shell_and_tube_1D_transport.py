@@ -24,6 +24,7 @@ from pyomo.environ import (
     value,
     units as pyunits,
 )
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
@@ -67,6 +68,8 @@ from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
 from idaes.models.properties.modular_properties.phase_equil.forms import log_fugacity
 import idaes.models.properties.modular_properties.pure.RPP4 as RPP
 
+from idaes.logger import DEBUG
+
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
@@ -79,9 +82,24 @@ class TestBTX_cocurrent(object):
         m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = GenericParameterBlock(
-            **get_prop({"N2", "O2", "Ar", "H2O", "CO2"}, {"Vap"}, eos=EosType.PR),
+            **get_prop({"N2", "O2", "Ar", "H2O", "CO2"}, {"Vap"}, eos=EosType.IDEAL),
             doc="Air property parameters",
         )
+        m.fs.properties.set_default_scaling("enth_mol_phase", 1e-1)
+        m.fs.properties.set_default_scaling("pressure", 1e-5)
+        m.fs.properties.set_default_scaling("temperature", 1e-2)
+        m.fs.properties.set_default_scaling("flow_mol", 1E-1)
+        m.fs.properties.set_default_scaling("flow_mol_phase", 1e-1)
+        _mf_scale = {
+            "Ar": 100,
+            "O2": 10,
+            "N2": 10,
+            "H2O": 100,
+            "CO2": 1000}
+        for comp, s in _mf_scale.items():
+            m.fs.properties.set_default_scaling("mole_frac_comp", s, index=comp)
+            m.fs.properties.set_default_scaling("mole_frac_phase_comp", s, index=("Vap", comp))
+            m.fs.properties.set_default_scaling("flow_mol_phase_comp", s * 1e-1, index=("Vap", comp))
 
         m.fs.unit = HX1D(
             hot_side={"property_package": m.fs.properties},
@@ -93,42 +111,50 @@ class TestBTX_cocurrent(object):
         m.fs.unit.tube_reynolds_number = pyo.Var(
             m.fs.time,
             m.fs.unit.cold_side.length_domain,
-            units=pyo.units.dimensionless
+            units=pyo.units.dimensionless,
+            initialize=4000
         )
+
         @m.fs.unit.Constraint(m.fs.time, m.fs.unit.cold_side.length_domain)
         def tube_reynolds_number_eqn(b, t, x):
             return (
-                b.tube_reynolds_number[t, x] * b.cold_side.properties[t, x].visc_d_phase["Vap"] * b.tube_side_xsec_area_calc
-                == b.cold_side.properties[t, x].mass_flow_phase["Vap"] * b.tube_inner_diameter
+                    b.tube_reynolds_number[t, x]
+                    == b.cold_side.properties[t, x].flow_mass_phase["Vap"] * b.tube_inner_diameter
+                    / b.cold_side.properties[t, x].visc_d_phase["Vap"] / b.cold_side.area
             )
+
         @m.fs.unit.Constraint(m.fs.time, m.fs.unit.cold_side.length_domain)
         def tube_heat_transfer_coeff_eqn(b, t, x):
-             return b.cold_side_heat_transfer_coefficient == (
-                 0.027 * b.cold_side.properties[t, x].therm_cond_phase["Vap"] / b.tube_inner_diameter
-                 * b.tube_reynolds_number[t, x]**0.8 * b.cold_side.properties[t, x].number_prandtl**(1/3)
-             )
+            return b.cold_side_heat_transfer_coefficient[t, x] == (
+                    0.027 * b.cold_side.properties[t, x].therm_cond_phase["Vap"] / b.tube_inner_diameter
+                    * b.tube_reynolds_number[t, x] ** 0.8 * b.cold_side.properties[t, x].number_prandtl_phase[
+                        "Vap"] ** (1 / 3)
+            )
 
         m.fs.unit.shell_reynolds_number = pyo.Var(
             m.fs.time,
             m.fs.unit.hot_side.length_domain,
-            units=pyo.units.dimensionless
+            units=pyo.units.dimensionless,
+            initialize=4000
         )
+
         @m.fs.unit.Constraint(m.fs.time, m.fs.unit.hot_side.length_domain)
         def shell_reynolds_number_eqn(b, t, x):
             return (
-                b.shell_reynolds_number[t, x]
-                * b.hot_side.properties[t, x].visc_d_phase["Vap"]
-                * b.shell_side_xsec_area_calc
-                == b.hot_side.properties[t, x].mass_flow_phase["Vap"]
-                * b.tube_outer_diameter
+                    b.shell_reynolds_number[t, x]
+                    == b.hot_side.properties[t, x].flow_mass_phase["Vap"]
+                    * b.tube_outer_diameter / b.hot_side.area
+                    / b.hot_side.properties[t, x].visc_d_phase["Vap"]
             )
+
         @m.fs.unit.Constraint(m.fs.time, m.fs.unit.hot_side.length_domain)
         def shell_heat_transfer_coeff_eqn(b, t, x):
-             return b.hot_side_heat_transfer_coefficient == (
-                 0.6 * 0.254 * b.hot_side.properties[t, x].therm_cond_phase["Vap"] / b.tube_outer_diameter
-                 * b.shell_reynolds_number[t, x]**0.632 * b.hot_side.properties[t, x].number_prandtl**(1/3)
-             )
-
+            return b.hot_side_heat_transfer_coefficient[t, x] == (
+                    0.6 * 0.254 * b.hot_side.properties[t, x].therm_cond_phase["Vap"] / b.tube_outer_diameter
+                    * b.shell_reynolds_number[t, x] ** 0.632 * b.hot_side.properties[t, x].number_prandtl_phase[
+                        "Vap"] ** (
+                            1 / 3)
+            )
         m.fs.unit.length.fix(4.85)
 
         m.fs.unit.shell_diameter.fix(0.4)
@@ -157,6 +183,19 @@ class TestBTX_cocurrent(object):
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "N2"].fix(0.7732)
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "Ar"].fix(0.0092)
 
+        for t in m.fs.time:
+            for x in m.fs.unit.cold_side.length_domain:
+                iscale.set_scaling_factor(m.fs.unit.cold_side.heat[t, x], 1e-3)
+                iscale.set_scaling_factor(m.fs.unit.tube_reynolds_number[t, x], 1e-4)
+                iscale.constraint_scaling_transform(m.fs.unit.tube_reynolds_number_eqn[t, x], 1e-4)
+                iscale.set_scaling_factor(m.fs.unit.cold_side_heat_transfer_coefficient[t, x], 1e-2)
+                iscale.constraint_scaling_transform(m.fs.unit.tube_heat_transfer_coeff_eqn[t, x], 1e-2)
+            for x in m.fs.unit.hot_side.length_domain:
+                iscale.set_scaling_factor(m.fs.unit.hot_side.heat[t, x], 1e-3)
+                iscale.set_scaling_factor(m.fs.unit.shell_reynolds_number[t, x], 1e-3)
+                iscale.constraint_scaling_transform(m.fs.unit.shell_reynolds_number_eqn[t, x], 1e-3)
+                iscale.set_scaling_factor(m.fs.unit.hot_side_heat_transfer_coefficient[t, x], 1e-2)
+                iscale.constraint_scaling_transform(m.fs.unit.shell_heat_transfer_coeff_eqn[t, x], 1e-2)
 
         iscale.calculate_scaling_factors(m)
 
@@ -165,7 +204,49 @@ class TestBTX_cocurrent(object):
     @pytest.mark.component
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, hx):
-        initialization_tester(hx)
+        hx.fs.unit.cold_side_heat_transfer_coefficient.fix(51000)
+        hx.fs.unit.tube_reynolds_number.fix()
+        hx.fs.unit.tube_reynolds_number_eqn.deactivate()
+        hx.fs.unit.tube_heat_transfer_coeff_eqn.deactivate()
+        hx.fs.unit.hot_side_heat_transfer_coefficient.fix(2000)
+        hx.fs.unit.shell_reynolds_number.fix()
+        hx.fs.unit.shell_reynolds_number_eqn.deactivate()
+        hx.fs.unit.shell_heat_transfer_coeff_eqn.deactivate()
+
+        hx.fs.unit.initialize_build(outlvl=DEBUG)
+
+        hx.fs.unit.cold_side_heat_transfer_coefficient.unfix()
+        hx.fs.unit.tube_reynolds_number.unfix()
+        hx.fs.unit.tube_reynolds_number_eqn.activate()
+        hx.fs.unit.tube_heat_transfer_coeff_eqn.activate()
+        hx.fs.unit.hot_side_heat_transfer_coefficient.unfix()
+        hx.fs.unit.shell_reynolds_number.unfix()
+        hx.fs.unit.shell_reynolds_number_eqn.activate()
+        hx.fs.unit.shell_heat_transfer_coeff_eqn.activate()
+        for t in hx.fs.time:
+            for x in hx.fs.unit.cold_side.length_domain:
+                calculate_variable_from_constraint(
+                    hx.fs.unit.tube_reynolds_number[t,x],
+                    hx.fs.unit.tube_reynolds_number_eqn[t,x]
+                )
+                calculate_variable_from_constraint(
+                    hx.fs.unit.cold_side_heat_transfer_coefficient[t,x],
+                    hx.fs.unit.tube_heat_transfer_coeff_eqn[t,x]
+                )
+            for x in hx.fs.unit.hot_side.length_domain:
+                calculate_variable_from_constraint(
+                    hx.fs.unit.shell_reynolds_number[t,x],
+                    hx.fs.unit.shell_reynolds_number_eqn[t,x]
+                )
+                calculate_variable_from_constraint(
+                    hx.fs.unit.hot_side_heat_transfer_coefficient[t,x],
+                    hx.fs.unit.shell_heat_transfer_coeff_eqn[t,x]
+                )
+        results = solver.solve(hx, tee=True)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+        #initialization_tester(hx)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
