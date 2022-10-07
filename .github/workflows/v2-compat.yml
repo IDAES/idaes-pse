@@ -97,6 +97,10 @@ jobs:
           pip uninstall --yes idaes-pse
           pip install "$idaes_pip_target"
 
+      - name: Install IDAES extensions
+        run: |
+          idaes get-extensions --verbose
+
       - name: Run test command
         run: ${{ matrix.test-command }}
 
