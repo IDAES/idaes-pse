@@ -449,6 +449,7 @@ class TestIronOC(object):
         )
 
     @pytest.mark.component
+    @pytest.mark.xfail(reason="known DAE unit consistency issue, see Pyomo/pyomo#1790")
     def test_units_consistent(self, iron_oc):
         assert_units_consistent(iron_oc)
 
@@ -471,9 +472,9 @@ class TestIronOC(object):
                 "Bed Height": iron_oc.fs.unit.bed_height,
                 "Bed Area": iron_oc.fs.unit.bed_area,
                 "Gas Inlet Velocity": iron_oc.fs.unit.velocity_superficial_gas[0, 0],
-                "Gas Outlet Velocity": iron_oc.fs.unit.velocity_superficial_gas[0, 1]
+                "Gas Outlet Velocity": iron_oc.fs.unit.velocity_superficial_gas[0, 1],
             }
-            }
+        }
 
     @pytest.mark.component
     def test_initialization_error(self, iron_oc):
@@ -1005,6 +1006,7 @@ class TestIronOC_NoReaction(object):
         assert abs(ebal_abs_tol) <= 1e-8
 
     @pytest.mark.component
+    @pytest.mark.xfail(reason="known DAE unit consistency issue, see Pyomo/pyomo#1790")
     def test_units_consistent(self, iron_oc):
         assert_units_consistent(iron_oc)
 
@@ -1027,9 +1029,9 @@ class TestIronOC_NoReaction(object):
                 "Bed Height": iron_oc.fs.unit.bed_height,
                 "Bed Area": iron_oc.fs.unit.bed_area,
                 "Gas Inlet Velocity": iron_oc.fs.unit.velocity_superficial_gas[0, 0],
-                "Gas Outlet Velocity": iron_oc.fs.unit.velocity_superficial_gas[0, 1]
+                "Gas Outlet Velocity": iron_oc.fs.unit.velocity_superficial_gas[0, 1],
             }
-            }
+        }
 
     @pytest.mark.component
     def test_initialization_error(self, iron_oc):

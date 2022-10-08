@@ -1071,7 +1071,7 @@ see reaction package for documentation.}""",
         def bubble_growth_coefficient(b, t, x):
             # 0.0256 m/s^2 is a unitted constant in the correlation
             bub_grow_const = pyunits.convert(
-                2.56e-2 * pyunits.m / pyunits.s**2,
+                2.56e-2 * pyunits.m / pyunits.s ** 2,
                 units_meta_gas("length") / units_meta_gas("time") ** 2,
             )
             return (
@@ -1080,7 +1080,7 @@ see reaction package for documentation.}""",
                     b.solid_emulsion.properties[t, x]._params.velocity_mf,
                     to_units=units_meta_gas("velocity"),
                 )
-            ) ** 2 == (bub_grow_const**2) * (
+            ) ** 2 == (bub_grow_const ** 2) * (
                 pyunits.convert(b.bed_diameter, to_units=units_meta_gas("length"))
                 / pyunits.convert(
                     constants.acceleration_gravity,
@@ -1095,7 +1095,7 @@ see reaction package for documentation.}""",
         def bubble_diameter_maximum(b, t, x):
             return (b.bubble_diameter_max[t, x] ** 5) * pyunits.convert(
                 constants.acceleration_gravity, to_units=units_meta_gas("acceleration")
-            ) == (2.59**5) * (
+            ) == (2.59 ** 5) * (
                 (b.velocity_superficial_gas[t, x] - b.velocity_emulsion_gas[t, x])
                 * pyunits.convert(b.bed_area, to_units=units_meta_gas("area"))
             ) ** 2
@@ -1120,7 +1120,7 @@ see reaction package for documentation.}""",
             if x == b.length_domain.first():
                 return (
                     b.bubble_diameter[t, x] ** 5
-                    == (1.38**5)
+                    == (1.38 ** 5)
                     * (
                         pyunits.convert(
                             constants.acceleration_gravity,
@@ -1155,7 +1155,7 @@ see reaction package for documentation.}""",
         def bubble_velocity_rise(b, t, x):
             return (
                 b.velocity_bubble_rise[t, x] ** 2
-                == (0.711**2)
+                == (0.711 ** 2)
                 * pyunits.convert(
                     constants.acceleration_gravity,
                     to_units=units_meta_gas("acceleration"),
@@ -1439,7 +1439,7 @@ see reaction package for documentation.}""",
                 # moved to LHS for Pyomo unit stability (floating point issue
                 # when adding unit container exponents)
                 conv_heat_const_1 = pyunits.convert(
-                    0.03 * pyunits.kg**1.3 / pyunits.mol**1.3,
+                    0.03 * pyunits.kg ** 1.3 / pyunits.mol ** 1.3,
                     units_meta_gas("mass") ** 1.3 / units_meta_gas("amount") ** 1.3,
                 )
                 return (
@@ -1450,7 +1450,7 @@ see reaction package for documentation.}""",
                         to_units=units_meta_gas("length"),
                     )
                     == b.gas_emulsion.properties[t, x].therm_cond
-                    * ((b._reform_var_5[t, x] ** 2 + b.eps_conv**2) ** 0.5) ** 1.3
+                    * ((b._reform_var_5[t, x] ** 2 + b.eps_conv ** 2) ** 0.5) ** 1.3
                 )
 
             # Gas to solid convective heat transfer # replaced "ap" with
@@ -1579,11 +1579,13 @@ see reaction package for documentation.}""",
                 doc="Solid Emulsion - Heat Transfer",
             )
             def solid_emulsion_heat_transfer(b, t, x):
-                return pyunits.convert(
-                    b.solid_emulsion.heat[t, x],
-                    to_units=units_meta_gas("power") / units_meta_gas("length"),
-                ) == b.ht_conv[t, x] * pyunits.convert(
-                    b.bed_area, to_units=units_meta_gas("area")
+                return (
+                    pyunits.convert(
+                        b.solid_emulsion.heat[t, x],
+                        to_units=units_meta_gas("power") / units_meta_gas("length"),
+                    )
+                    == b.ht_conv[t, x]
+                    * pyunits.convert(b.bed_area, to_units=units_meta_gas("area"))
                 )
 
         # ---------------------------------------------------------------------
