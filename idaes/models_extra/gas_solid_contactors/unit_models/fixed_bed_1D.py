@@ -14,7 +14,6 @@
 IDAES 1D Fixed Bed model.
 
 """
-from __future__ import division
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -73,8 +72,8 @@ __author__ = "Chinedu Okoli"
 _log = idaeslog.getLogger(__name__)
 
 # Assumptions:
-# Only Vap and Sol phases, which are explicitly named as such
-# Perfect mixing in Vap phase
+# Only gas and solid phases, which are explicitly named as such
+# Perfect mixing in gas phase
 # Axially varying gas and solid phase
 # Reaction/adsorption on the solid is the rate limiting step
 
@@ -216,32 +215,18 @@ constructed,
         "pressure_drop_type",
         ConfigValue(
             default="ergun_correlation",
-            domain=In(["simple_correlation", "ergun_correlation"]),
+            domain=In(["ergun_correlation", "simple_correlation"]),
             description="Construction flag for type of pressure drop",
             doc="""Indicates what type of pressure drop correlation should be used,
-**default** - "simple_correlation".
+**default** - "ergun_correlation".
 **Valid values:** {
-**"simple_correlation"** - Use a simplified pressure drop correlation,
-**"ergun_correlation"** - Use the Ergun equation.}""",
+**"ergun_correlation"** - Use the Ergun equation,
+**"simple_correlation"** - Use a simplified pressure drop correlation.}""",
         ),
     )
 
     # Create template for phase specific config arguments
     _PhaseTemplate = UnitModelBlockData.CONFIG()
-    _PhaseTemplate.declare(
-        "has_equilibrium_reactions",
-        ConfigValue(
-            default=False,
-            domain=Bool,
-            description="Equilibrium reaction construction flag",
-            doc="""Indicates whether terms for equilibrium controlled reactions
-should be constructed,
-**default** - True.
-**Valid values:** {
-**True** - include equilibrium reaction terms,
-**False** - exclude equilibrium reaction terms.}""",
-        ),
-    )
     _PhaseTemplate.declare(
         "property_package",
         ConfigValue(
@@ -291,6 +276,20 @@ and used when constructing these,
 **default** - None.
 **Valid values:** {
 see reaction package for documentation.}""",
+        ),
+    )
+    _PhaseTemplate.declare(
+        "has_equilibrium_reactions",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            description="Equilibrium reaction construction flag",
+            doc="""Indicates whether terms for equilibrium controlled reactions
+should be constructed,
+**default** - True.
+**Valid values:** {
+**True** - include equilibrium reaction terms,
+**False** - exclude equilibrium reaction terms.}""",
         ),
     )
 
@@ -464,7 +463,8 @@ see reaction package for documentation.}""",
             populate solid control volume"""
 
         # Build Solid Phase StateBlock
-        # As there is no solid flow, only need a single state block
+        # As there is no solid flow, there is not need for a control volume as a
+        # set of indexed state blocks will be sufficient.
         # Defined state is set to True so that the "sum(mass_frac)=1" eqn in
         # the solid state block is deactivated. This is done here as there is
         # currently no way to deactivate the constraint at the initial time
@@ -507,7 +507,6 @@ see reaction package for documentation.}""",
         """ Add performace equation method"""
         self._apply_transformation()
         self._make_performance()
-        # self._apply_transformation()
 
     # =========================================================================
     def _apply_transformation(self):
@@ -694,7 +693,6 @@ see reaction package for documentation.}""",
                 blk = self.gas_phase.properties[t0, x]
                 if hasattr(blk, "sum_component_eqn"):
                     blk.sum_component_eqn.deactivate()
-                    # del blk.sum_component_eqn
 
         # ---------------------------------------------------------------------
         # Geometry contraints
@@ -803,6 +801,9 @@ see reaction package for documentation.}""",
                         * b.solid_properties[t, x]._params.voidage ** 3
                     )
                 )
+
+        elif self.config.has_pressure_change is False:
+            pass
 
         else:
             raise BurntToast(
@@ -1534,15 +1535,16 @@ see reaction package for documentation.}""",
         """
         Block triangularization (BT) initialization routine for 1D FixedBed unit.
 
-        The BT initialization routine initializes the unit model in the following steps
+        The BT initialization routine initializes the unit model in the following steps:
+
         Step 1: Convert the system of equations from a partial differential set of
-            equations (PDAE) to an algebraic set of equations (AE) by deactivating
-            the discretization equations and sum_component_equations (if present),
-            and fixing the state variables to a guess (typically inlet conditions).
+                equations (PDAE) to an algebraic set of equations (AE) by deactivating
+                the discretization equations and sum_component_equations (if present),
+                and fixing the state variables to a guess (typically inlet conditions).
         Step 2: Decompose the AE into strongly connected components
-            via block triangularization and solve individual blocks
+                via block triangularization and solve individual blocks
         Step 3: revert the fixed variables and deactivated constraints to their
-            original states.
+                original states.
 
         The initialization procedure is wrapped in the TemporarySubsystemManager utility
         to ensure that the deactivation of constraints and fixing of variables are only
@@ -1662,9 +1664,18 @@ see reaction package for documentation.}""",
             # Decompose AE system into strongly connected components and solve
             if calc_var_kwds is None:
                 calc_var_kwds = {"eps": 1e-8}
-            solve_strongly_connected_components(
-                blk, calc_var_kwds=calc_var_kwds, solver=solver
-            )
+            try:
+                solve_strongly_connected_components(
+                    blk, calc_var_kwds=calc_var_kwds, solver=solver
+                )
+            except RuntimeError:
+                msg = (
+                    "Initial value for variable results in a derivative value "
+                    "that is very close to zero. Please provide a different initial "
+                    "guess and/or adjust calc_var_kwds tolerance setting."
+                )
+                init_log.warning(msg)
+                raise
 
         # Revert the state vars to their original state
         revert_state_vars(blk.gas_phase.properties, gas_flags)
@@ -2045,3 +2056,12 @@ see reaction package for documentation.}""",
             {"Gas Inlet": self.gas_inlet, "Gas Outlet": self.gas_outlet},
             time_point=time_point,
         )
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {}
+        var_dict["Bed Height"] = self.bed_height
+        var_dict["Bed Area"] = self.bed_area
+        var_dict["Gas Inlet Velocity"] = self.velocity_superficial_gas[time_point, 0]
+        var_dict["Gas Outlet Velocity"] = self.velocity_superficial_gas[time_point, 1]
+
+        return {"vars": var_dict}

@@ -851,9 +851,13 @@ see reaction package for documentation.}""",
                     )
                 )
 
-            #             to_units=deltaP_units)
+            # to_units=deltaP_units)
             # The above expression has no absolute values - assumes:
             # (velocity_superficial_gas + velocity_superficial_solid) > 0
+
+        elif self.config.has_pressure_change is False:
+            pass
+
         else:
             raise BurntToast(
                 "{} encountered unrecognized argument for "
