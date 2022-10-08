@@ -59,10 +59,7 @@ class Eucken(object):
             therm_cond = (
                 b.visc_d_phase_comp[p, cobj.local_name]
                 / M
-                * (
-                    f_int * cp_mol_ig_comp(b, cobj, T)
-                    + (15 / 4 - 5 * f_int / 2) * R
-                )
+                * (f_int * cp_mol_ig_comp(b, cobj, T) + (15 / 4 - 5 * f_int / 2) * R)
             )
 
             return pyunits.convert(therm_cond, units["thermal_conductivity"])

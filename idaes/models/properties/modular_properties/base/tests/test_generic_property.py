@@ -1441,6 +1441,7 @@ class TestGenericStateBlock(object):
         assert value(frame.props[1].therm_cond_phase_comp["p2", "a"]) == 4
         assert value(frame.props[1].therm_cond_phase_comp["p2", "b"]) == 4
         assert value(frame.props[1].therm_cond_phase_comp["p1", "c"]) == 4
+
     @pytest.mark.unit
     def test_surf_tens_phase(self, frame):
         # Surface tension is only built for Liquid Phases, and we have none.

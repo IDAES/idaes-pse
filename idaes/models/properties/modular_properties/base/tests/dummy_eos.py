@@ -57,9 +57,11 @@ class DummyEoS(EoSBase):
     @staticmethod
     def compress_fact_phase(b, p):
         return 42
+
     @staticmethod
     def cp_mass_phase(b, p):
         return 42
+
     @staticmethod
     def cp_mol_phase(b, p):
         return 42
@@ -67,6 +69,7 @@ class DummyEoS(EoSBase):
     @staticmethod
     def cp_mol_phase_comp(b, p, j):
         return 42
+
     @staticmethod
     def cv_mass_phase(b, p):
         return 42

@@ -80,9 +80,11 @@ class Ideal(EoSBase):
             return 1
         else:
             return 0
+
     @staticmethod
     def cp_mass_phase(blk, p):
         return blk.cp_mol_phase[p] / blk.mw_phase[p]
+
     @staticmethod
     def cp_mol_phase(b, p):
         return sum(
@@ -101,9 +103,11 @@ class Ideal(EoSBase):
             return get_method(b, "cp_mol_sol_comp", j)(b, cobj(b, j), b.temperature)
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+
     @staticmethod
     def cv_mass_phase(blk, p):
         return blk.cv_mol_phase[p] / blk.mw_phase[p]
+
     @staticmethod
     def cv_mol_phase(b, p):
         return sum(

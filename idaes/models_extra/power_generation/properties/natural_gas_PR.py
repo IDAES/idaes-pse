@@ -38,10 +38,15 @@ from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
     IdealBubbleDew,
 )
 from idaes.models.properties.modular_properties.pure import (
-    NIST, RPP4, RPP5, ChapmanEnskogLennardJones, Eucken
+    NIST,
+    RPP4,
+    RPP5,
+    ChapmanEnskogLennardJones,
+    Eucken,
 )
 from idaes.models.properties.modular_properties.transport_properties import (
-    ViscosityWilke, ThermalConductivityWMS
+    ViscosityWilke,
+    ThermalConductivityWMS,
 )
 
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
@@ -555,8 +560,12 @@ def get_prop(components=None, phases="Vap", eos=EosType.PR, scaled=False):
     for comp in components:
         c[comp] = copy.deepcopy(_component_params[comp])
         if comp == "H2O":
-            c["H2O"]["visc_d_phase_comp"] = copy.deepcopy({p: _water_visc_d[p] for p in phases})
-            c["H2O"]["therm_cond_phase_comp"] = copy.deepcopy({p: _water_therm_cond[p] for p in phases})
+            c["H2O"]["visc_d_phase_comp"] = copy.deepcopy(
+                {p: _water_visc_d[p] for p in phases}
+            )
+            c["H2O"]["therm_cond_phase_comp"] = copy.deepcopy(
+                {p: _water_therm_cond[p] for p in phases}
+            )
     for k in phases:
         if eos == EosType.PR:
             configuration["phases"][k] = copy.deepcopy(_phase_dicts_pr[k])

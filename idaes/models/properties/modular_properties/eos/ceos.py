@@ -20,6 +20,7 @@ from enum import Enum
 from copy import deepcopy
 
 from pyomo.environ import (
+    Constraint,
     exp,
     Expression,
     ExternalFunction,
@@ -227,12 +228,24 @@ class Cubic(EoSBase):
         )
 
         if mixing_rule_a == MixingRuleA.default:
+            units = b.params.get_metadata().derived_units
+            b.add_component(
+                cname + "_am",
+                Var(
+                    b.phase_list,
+                    units=units["gas_constant"]
+                    * units["temperature"]
+                    / units["density_mole"],
+                    initialize=0.01,
+                ),
+            )
 
             def rule_am(m, p):
                 a = getattr(m, cname + "_a")
-                return rule_am_default(m, cname, a, p)
+                am = getattr(m, cname + "_am")
+                return am[p] == rule_am_default(m, cname, a, p)
 
-            b.add_component(cname + "_am", Expression(b.phase_list, rule=rule_am))
+            b.add_component(cname + "_am_eqn", Constraint(b.phase_list, rule=rule_am))
 
             def rule_daij_dT(m, i, j):
                 a = getattr(m, cname + "_a")
@@ -251,9 +264,19 @@ class Cubic(EoSBase):
                 Expression(b.component_list, b.component_list, rule=rule_daij_dT),
             )
 
+            b.add_component(
+                cname + "_dam_dT",
+                Var(
+                    b.phase_list,
+                    initialize=1e-4,
+                    units=units["gas_constant"] / units["density_mole"],
+                ),
+            )
+
             def rule_dam_dT(m, p):
                 daij_dT = getattr(m, cname + "_daij_dT")
-                return sum(
+                dam_dT = getattr(m, cname + "_dam_dT")
+                return dam_dT[p] == sum(
                     sum(
                         m.mole_frac_phase_comp[p, i]
                         * m.mole_frac_phase_comp[p, j]
@@ -264,7 +287,18 @@ class Cubic(EoSBase):
                 )
 
             b.add_component(
-                cname + "_dam_dT", Expression(b.phase_list, rule=rule_dam_dT)
+                cname + "_dam_dT_eqn", Constraint(b.phase_list, rule=rule_dam_dT)
+            )
+
+            b.add_component(
+                cname + "_d2am_dT2",
+                Var(
+                    b.phase_list,
+                    initialize=1e-6,
+                    units=units["gas_constant"]
+                    / units["density_mole"]
+                    / units["temperature"],
+                ),
             )
 
             def rule_d2am_dT2(m, p):
@@ -297,10 +331,11 @@ class Cubic(EoSBase):
                             * m.mole_frac_phase_comp[p, j]
                             * d2aij_dT2
                         )
-                return d2am_dT2
+                d2am_dT2_Var = getattr(m, cname + "_d2am_dT2")
+                return d2am_dT2_Var[p] == d2am_dT2
 
             b.add_component(
-                cname + "_d2am_dT2", Expression(b.phase_list, rule=rule_d2am_dT2)
+                cname + "_d2am_dT2_eqn", Constraint(b.phase_list, rule=rule_d2am_dT2)
             )
 
             def rule_delta(m, p, i):
@@ -551,6 +586,7 @@ class Cubic(EoSBase):
     @staticmethod
     def cp_mass_phase(blk, p):
         return blk.cp_mol_phase[p] / blk.mw_phase[p]
+
     @staticmethod
     def cp_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)
@@ -595,6 +631,7 @@ class Cubic(EoSBase):
     @staticmethod
     def cv_mass_phase(blk, p):
         return blk.cv_mol_phase[p] / blk.mw_phase[p]
+
     @staticmethod
     def cv_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)
