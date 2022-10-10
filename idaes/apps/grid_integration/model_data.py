@@ -366,11 +366,19 @@ class ThermalGeneratorModelData(GeneratorModelData):
         if not isinstance(value, Real):
             raise TypeError("Value for initial_p_output shoulde be real numbers.")
 
-        if self.initial_status > 0 and value < self.p_min and not isclose(value, self.p_min):
-            raise ValueError(f"The initial status of the generator was on before T0, so the initial power output should at least be p_min {self.p_min}, but {value} is provided.")
+        if (
+            self.initial_status > 0
+            and value < self.p_min
+            and not isclose(value, self.p_min)
+        ):
+            raise ValueError(
+                f"The initial status of the generator was on before T0, so the initial power output should at least be p_min {self.p_min}, but {value} is provided."
+            )
 
         if self.initial_status < 0 and (value > 0 and not isclose(value, 0)):
-            raise ValueError(f"The initial status of the generator was off before T0, so the initial power output should at 0, but {value} is provided.")
+            raise ValueError(
+                f"The initial status of the generator was off before T0, so the initial power output should at 0, but {value} is provided."
+            )
 
         self._initial_p_output = value
 

@@ -17,7 +17,10 @@ from idaes.apps.grid_integration import Tracker
 from idaes.apps.grid_integration import Bidder, SelfScheduler
 from idaes.apps.grid_integration import DoubleLoopCoordinator
 from idaes.apps.grid_integration.forecaster import AbstractPrescientPriceForecaster
-from idaes.apps.grid_integration.model_data import GeneratorModelData, ThermalGeneratorModelData
+from idaes.apps.grid_integration.model_data import (
+    GeneratorModelData,
+    ThermalGeneratorModelData,
+)
 
 
 class TestingModel:
@@ -43,7 +46,9 @@ class TestingModel:
         """
 
         if not isinstance(model_data, ThermalGeneratorModelData):
-            raise TypeError(f"model_data must be an instance of ThermalGeneratorModelData.")
+            raise TypeError(
+                f"model_data must be an instance of ThermalGeneratorModelData."
+            )
         self._model_data = model_data
 
         self.generator = self.model_data.gen_name
