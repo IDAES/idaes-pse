@@ -10,20 +10,18 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
-#
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
 
 import pytest
+
+from pyomo.util.check_units import assert_units_consistent
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    Objective,
+    SolverFactory,
+    value,
+    units as pyunits,
+)
 
 from idaes.core import FlowsheetBlock
 from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
@@ -33,17 +31,9 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from idaes.models.unit_models import GibbsReactor
-from pyomo.util.check_units import assert_units_consistent
-
-from pyomo.environ import (
-    check_optimal_termination,
-    ConcreteModel,
-    Objective,
-    SolverFactory,
-    value,
-)
-
+from idaes.models.properties.modular_properties.eos.ceos import Cubic
 from idaes.core.solvers import get_solver
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 import idaes.logger as idaeslog
 
@@ -61,10 +51,10 @@ class TestNaturalGasProps(object):
     @pytest.fixture()
     def m(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.props = GenericParameterBlock(
-            default=get_prop(
+            **get_prop(
                 components=[
                     "H2",
                     "CO",
@@ -80,7 +70,7 @@ class TestNaturalGasProps(object):
                 ]
             )
         )
-        m.fs.state = m.fs.props.build_state_block([1], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([1], defined_state=True)
 
         return m
 
@@ -156,17 +146,13 @@ class TestNaturalGasProps(object):
     @pytest.mark.component
     def test_gibbs(self, m):
         m.fs.props = GenericParameterBlock(
-            default=get_prop(
-                components=["H2", "CO", "H2O", "CO2", "O2", "N2", "Ar", "CH4"]
-            )
+            **get_prop(components=["H2", "CO", "H2O", "CO2", "O2", "N2", "Ar", "CH4"])
         )
         m.fs.reactor = GibbsReactor(
-            default={
-                "dynamic": False,
-                "has_heat_transfer": True,
-                "has_pressure_change": False,
-                "property_package": m.fs.props,
-            }
+            dynamic=False,
+            has_heat_transfer=True,
+            has_pressure_change=False,
+            property_package=m.fs.props,
         )
 
         m.fs.reactor.inlet.flow_mol.fix(8000)  # mol/s
@@ -210,3 +196,106 @@ class TestNaturalGasProps(object):
         )
 
         assert -634e6 == pytest.approx(value(m.fs.reactor.heat_duty[0]), 1e-3)
+
+
+# Reference: CoolProp: http://www.coolprop.org/index.html
+data = {
+    "phase": "Vap",
+    "pressure": 101325,
+    "temperature": 311.8730783132979,
+    "enth_mol_phase": 24188.517506218643,
+    "heat_capacity_ratio_phase": 1.290590129342867,
+    "cp_mol_phase": 37.726122878482165,
+    "cv_mol_phase": 29.2316840341025,
+    "isentropic_speed_sound_phase": 279.2959607849875,
+    "mole_frac_phase_comp": {"CO2": 0.94, "H2O": 0.06},
+}
+
+
+class Test_CO2_H2O_Properties:
+    @pytest.fixture(scope="class")
+    def build_model(self):
+        m = ConcreteModel()
+
+        # Properties
+        comp_props = get_prop(components=["CO2", "H2O"], phases=["Vap", "Liq"])
+
+        # Parameters block
+        m.params = GenericParameterBlock(**comp_props)
+
+        m.props = m.params.build_state_block(
+            [1], defined_state=True, parameters=m.params, has_phase_equilibrium=True
+        )
+
+        m.props[1].flow_mol.fix(100)
+        m.props[1].pressure.fix(101325)
+        m.props[1].mole_frac_comp["CO2"].fix(0.94)
+        m.props[1].mole_frac_comp["H2O"].fix(0.06)
+        m.props[1].temperature.fix(311.8730783132979)
+
+        assert degrees_of_freedom(m) == 0
+
+        m.props.initialize()
+        results = get_solver(options={"bound_push": 1e-8}).solve(m)
+
+        assert check_optimal_termination(results)
+
+        return m
+
+    @pytest.mark.unit
+    def test_cp_mol_phase(self, build_model):
+        m = build_model
+        assert (
+            str(pyunits.get_units(Cubic.cp_mol_phase(m.props[1], "Vap")))
+            == "kg*m**2/K/mol/s**2"
+        )
+
+        assert (
+            pytest.approx(value(Cubic.cp_mol_phase(m.props[1], "Vap")), rel=0.1)
+            == data["cp_mol_phase"]
+        )
+
+    @pytest.mark.unit
+    def test_cv_mol_phase(self, build_model):
+        m = build_model
+        assert (
+            str(pyunits.get_units(Cubic.cv_mol_phase(m.props[1], "Vap")))
+            == "kg*m**2/K/mol/s**2"
+        )
+
+        assert (
+            pytest.approx(value(Cubic.cv_mol_phase(m.props[1], "Vap")), rel=0.1)
+            == data["cv_mol_phase"]
+        )
+
+    @pytest.mark.unit
+    def test_heat_capacity_ratio_phase(self, build_model):
+        m = build_model
+        assert (
+            str(pyunits.get_units(Cubic.heat_capacity_ratio_phase(m.props[1], "Vap")))
+            == "None"
+        )
+
+        assert (
+            pytest.approx(
+                value(Cubic.heat_capacity_ratio_phase(m.props[1], "Vap")), rel=0.1
+            )
+            == data["heat_capacity_ratio_phase"]
+        )
+
+    @pytest.mark.unit
+    def test_isentropic_speed_sound_phase(self, build_model):
+        m = build_model
+        assert (
+            str(
+                pyunits.get_units(Cubic.isentropic_speed_sound_phase(m.props[1], "Vap"))
+            )
+            == "m/s"
+        )
+
+        assert (
+            pytest.approx(
+                value(Cubic.isentropic_speed_sound_phase(m.props[1], "Vap")), rel=0.1
+            )
+            == data["isentropic_speed_sound_phase"]
+        )

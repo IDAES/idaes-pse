@@ -203,7 +203,7 @@ see property package for documentation.}""",
             state_obj = self.config.property_package.build_state_block(
                 self.flowsheet().time,
                 doc="State block for " + i + "_inlet to tray",
-                default=state_block_args,
+                **state_block_args,
             )
 
             setattr(self, "properties_in_" + i, state_obj)
@@ -216,7 +216,7 @@ see property package for documentation.}""",
         self.properties_out = self.config.property_package.build_state_block(
             self.flowsheet().time,
             doc="State block for mixed outlet from tray",
-            default=mixed_block_args,
+            **mixed_block_args,
         )
 
         self._add_material_balance()

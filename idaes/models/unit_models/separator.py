@@ -415,9 +415,7 @@ objects linked the mixed state and all outlet states,
         # Create an instance of StateBlock for all outlets
         for o in outlet_list:
             o_obj = self.config.property_package.build_state_block(
-                self.flowsheet().time,
-                doc="Material properties at outlet",
-                default=tmp_dict,
+                self.flowsheet().time, doc="Material properties at outlet", **tmp_dict
             )
 
             setattr(self, o + "_state", o_obj)
@@ -439,9 +437,7 @@ objects linked the mixed state and all outlet states,
         tmp_dict["defined_state"] = True
 
         self.mixed_state = self.config.property_package.build_state_block(
-            self.flowsheet().time,
-            doc="Material properties of mixed stream",
-            default=tmp_dict,
+            self.flowsheet().time, doc="Material properties of mixed stream", **tmp_dict
         )
 
         return self.mixed_state
@@ -1683,11 +1679,10 @@ objects linked the mixed state and all outlet states,
 
     def _get_performance_contents(self, time_point=0):
         if hasattr(self, "split_fraction"):
+            var_dict = {}
             for k in self.split_fraction.keys():
                 if k[0] == time_point:
-                    var_dict = {
-                        f"Split Fraction [{str(k[1:])}]": self.split_fraction[k]
-                    }
+                    var_dict[f"Split Fraction [{str(k[1:])}]"] = self.split_fraction[k]
             return {"vars": var_dict}
         else:
             return None

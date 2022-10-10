@@ -960,7 +960,7 @@ example, if pyomo units is imported as pyunits,
     def _create_component_and_phase_objects(self):
         # Create chemical component objects
         for c in self.component_list:
-            setattr(self, str(c), Component(default={"_component_list_exists": True}))
+            setattr(self, str(c), Component(_component_list_exists=True))
         # Create phase objects
         self.private_phase_list = Set(initialize=["Vap", "Liq"])
         # Make mixed phase object for mixed phase option

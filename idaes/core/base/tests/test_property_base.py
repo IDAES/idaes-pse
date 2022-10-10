@@ -18,8 +18,9 @@ Author: Andrew Lee
 import pytest
 import types
 
-from pyomo.environ import ConcreteModel, Constraint, Set, Var, units as pyunits
+from pyomo.environ import Block, ConcreteModel, Constraint, Set, Var, units as pyunits
 from pyomo.common.config import ConfigBlock
+from pyomo.network import Port
 
 from idaes.core import (
     declare_process_block_class,
@@ -136,8 +137,8 @@ def test_get_phase_component_set_subset():
     m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
     m.p.p1 = Phase()
-    m.p.p2 = Phase(default={"component_list": ["a", "b"]})
-    m.p.p3 = Phase(default={"component_list": ["c"]})
+    m.p.p2 = Phase(component_list=["a", "b"])
+    m.p.p3 = Phase(component_list=["c"])
     m.p.a = Component()
     m.p.b = Component()
     m.p.c = Component()
@@ -213,97 +214,6 @@ def test_get_phase():
         "appear to be an instance of a Phase object.",
     ):
         m.p.get_phase("a")
-
-
-@pytest.mark.unit
-def test_validate_parameter_block_no_component_list():
-    m = ConcreteModel()
-    m.p = ParameterBlock()
-
-    with pytest.raises(
-        PropertyPackageError, match="Property package p has not defined any Components."
-    ):
-        m.p._validate_parameter_block()
-
-
-@pytest.mark.unit
-def test_validate_parameter_block_no_phase_list():
-    m = ConcreteModel()
-    m.p = ParameterBlock()
-
-    m.meta_object = PropertyClassMetadata()
-    m.meta_object.add_default_units(
-        {
-            "time": pyunits.s,
-            "length": pyunits.m,
-            "mass": pyunits.kg,
-            "amount": pyunits.mol,
-            "temperature": pyunits.K,
-        }
-    )
-
-    def get_metadata(self):
-        return m.meta_object
-
-    m.p.get_metadata = types.MethodType(get_metadata, m.p)
-
-    m.p.c1 = Component()
-    m.p.c2 = Component()
-
-    with pytest.raises(
-        PropertyPackageError, match="Property package p has not defined any Phases."
-    ):
-        m.p._validate_parameter_block()
-
-
-@pytest.mark.unit
-def test_validate_parameter_block_invalid_component_object():
-    m = ConcreteModel()
-    m.p = ParameterBlock()
-
-    m.p.component_list = Set(initialize=["foo"])
-
-    m.p.phase_list = Set(initialize=["p1", "p2"])
-    m.p.foo = object()
-
-    with pytest.raises(TypeError):
-        m.p._validate_parameter_block()
-
-
-@pytest.mark.unit
-def test_validate_parameter_block_invalid_phase_object():
-    m = ConcreteModel()
-    m.p = ParameterBlock()
-
-    m.meta_object = PropertyClassMetadata()
-    m.meta_object.add_default_units(
-        {
-            "time": pyunits.s,
-            "length": pyunits.m,
-            "mass": pyunits.kg,
-            "amount": pyunits.mol,
-            "temperature": pyunits.K,
-        }
-    )
-
-    def get_metadata(self):
-        return m.meta_object
-
-    m.p.get_metadata = types.MethodType(get_metadata, m.p)
-
-    m.p.c1 = Component()
-    m.p.c2 = Component()
-
-    m.p.phase_list = Set(initialize=["foo"])
-    m.p.foo = object()
-
-    with pytest.raises(
-        TypeError,
-        match="Property package p has an object foo whose "
-        "name appears in phase_list but is not an "
-        "instance of Phase",
-    ):
-        m.p._validate_parameter_block()
 
 
 @pytest.mark.unit
@@ -418,6 +328,181 @@ def test_StateBlock_NotImplementedErrors():
         m.p.calculate_dew_point_pressure()
 
 
+@pytest.mark.unit
+def test_StateBlock_build_port_1index():
+    m = ConcreteModel()
+
+    m.state_block = TestStateBlock([1, 2, 3])
+
+    # Need to add define_port_members method to all state blocks
+    def define_port_members(blk):
+        return {
+            "ScalarVar": blk.scalar_var,
+            "IndexedVar": blk.indexed_var,
+        }
+
+    for sbd in m.state_block.values():
+        # Add a scalar var to all state blocks
+        sbd.scalar_var = Var(initialize=1)
+
+        # Add an indexed block to all state blocks
+        sbd.indexed_var = Var([5, 6], initialize=42)
+
+        # Set define_port_members method
+        sbd.define_port_members = types.MethodType(define_port_members, sbd)
+
+    # Call build_port
+    port, ref_name_list = m.state_block.build_port("test_doc")
+
+    # Check Port and members
+    assert isinstance(port, Port)
+    assert port.doc == "test_doc"
+
+    for i in m.state_block:
+        assert port.ScalarVar[i] is m.state_block[i].scalar_var
+        for j in m.state_block[i].indexed_var:
+            assert port.IndexedVar[i, j] is m.state_block[i].indexed_var[j]
+
+    # Check References
+    assert len(ref_name_list) == 2
+    for ref, cname in ref_name_list:
+        assert cname in ["ScalarVar", "IndexedVar"]
+        if cname == "ScalarVar":
+            assert isinstance(ref, Var)
+            assert ref is port.ScalarVar
+            for i, v in ref.items():
+                assert i in [1, 2, 3]
+                assert v is m.state_block[i].scalar_var
+        elif cname == "IndexedVar":
+            assert isinstance(ref, Var)
+            assert ref is port.IndexedVar
+            for i, v in ref.items():
+                assert i[0] in [1, 2, 3]
+                assert i[1] in [5, 6]
+                assert v is m.state_block[i[0]].indexed_var[i[1]]
+        else:
+            # Catch for unexpected name
+            raise ValueError
+
+
+@pytest.mark.unit
+def test_StateBlock_build_port_2index():
+    m = ConcreteModel()
+
+    m.state_block = TestStateBlock([1, 2, 3], [10, 20])
+
+    # Need to add define_port_members method to all state blocks
+    def define_port_members(blk):
+        return {
+            "ScalarVar": blk.scalar_var,
+            "IndexedVar": blk.indexed_var,
+        }
+
+    for sbd in m.state_block.values():
+        # Add a scalar var to all state blocks
+        sbd.scalar_var = Var(initialize=1)
+
+        # Add an indexed block to all state blocks
+        sbd.indexed_var = Var([5, 6], initialize=42)
+
+        # Set define_port_members method
+        sbd.define_port_members = types.MethodType(define_port_members, sbd)
+
+    # Call build_port
+    port, ref_name_list = m.state_block.build_port("test_doc")
+
+    # Check Port and members
+    assert isinstance(port, Port)
+    assert port.doc == "test_doc"
+
+    for i in m.state_block:
+        assert port.ScalarVar[i] is m.state_block[i].scalar_var
+        for j in m.state_block[i].indexed_var:
+            assert port.IndexedVar[i, j] is m.state_block[i].indexed_var[j]
+
+    # Check References
+    assert len(ref_name_list) == 2
+    for ref, cname in ref_name_list:
+        assert cname in ["ScalarVar", "IndexedVar"]
+        if cname == "ScalarVar":
+            assert isinstance(ref, Var)
+            assert ref is port.ScalarVar
+            for i, v in ref.items():
+                assert i[0] in [1, 2, 3]
+                assert i[1] in [10, 20]
+                assert v is m.state_block[i].scalar_var
+        elif cname == "IndexedVar":
+            assert isinstance(ref, Var)
+            assert ref is port.IndexedVar
+            for i, v in ref.items():
+                assert i[0] in [1, 2, 3]
+                assert i[1] in [10, 20]
+                assert i[2] in [5, 6]
+                assert v is m.state_block[i[0], i[1]].indexed_var[i[2]]
+        else:
+            # Catch for unexpected name
+            raise ValueError
+
+
+@pytest.mark.unit
+def test_StateBlock_build_port_2index_subset():
+    m = ConcreteModel()
+
+    m.state_block = TestStateBlock([1, 2, 3], [10, 20])
+
+    # Need to add define_port_memebers method to all state blocks
+    def define_port_members(blk):
+        return {
+            "ScalarVar": blk.scalar_var,
+            "IndexedVar": blk.indexed_var,
+        }
+
+    for sbd in m.state_block.values():
+        # add a scalar var to all state blocks
+        sbd.scalar_var = Var(initialize=1)
+
+        # Add an indexed block to all state blocks
+        sbd.indexed_var = Var([5, 6], initialize=42)
+
+        # Set define_port_members method
+        sbd.define_port_members = types.MethodType(define_port_members, sbd)
+
+    # Call build_port
+    port, ref_name_list = m.state_block.build_port("test_doc")
+
+    # Check Port and members
+    assert isinstance(port, Port)
+    assert port.doc == "test_doc"
+
+    for i in m.state_block:
+        assert port.ScalarVar[i] is m.state_block[i].scalar_var
+        for j in m.state_block[i].indexed_var:
+            assert port.IndexedVar[i, j] is m.state_block[i].indexed_var[j]
+
+    # Check References
+    assert len(ref_name_list) == 2
+    for ref, cname in ref_name_list:
+        assert cname in ["ScalarVar", "IndexedVar"]
+        if cname == "ScalarVar":
+            assert isinstance(ref, Var)
+            assert ref is port.ScalarVar
+            for i, v in ref.items():
+                assert i[0] in [1, 2, 3]
+                assert i[1] in [10, 20]
+                assert v is m.state_block[i].scalar_var
+        elif cname == "IndexedVar":
+            assert isinstance(ref, Var)
+            assert ref is port.IndexedVar
+            for i, v in ref.items():
+                assert i[0] in [1, 2, 3]
+                assert i[1] in [10, 20]
+                assert i[2] in [5, 6]
+                assert v is m.state_block[i[0], i[1]].indexed_var[i[2]]
+        else:
+            # Catch for unexpected name
+            raise ValueError
+
+
 # -----------------------------------------------------------------------------
 # Test parameter block reference attribute
 @declare_process_block_class("Parameters")
@@ -462,7 +547,7 @@ class _StateTest(StateBlockData):
 def test_param_ref():
     m = ConcreteModel()
     m.pb = Parameters()
-    m.p = StateTest(default={"parameters": m.pb})
+    m.p = StateTest(parameters=m.pb)
 
     assert m.p.params == m.p.config.parameters
 
@@ -472,7 +557,7 @@ def test_validate_params():
     # Test that validate params has been triggered
     m = ConcreteModel()
     m.pb = Parameters()
-    m.p = StateTest(default={"parameters": m.pb})
+    m.p = StateTest(parameters=m.pb)
 
     # If validation has been triggered, Phase & Component objects should exist
     assert isinstance(m.pb.p1, Phase)
@@ -483,7 +568,7 @@ def test_validate_params():
 def test_has_inherent_reactions_state_block():
     m = ConcreteModel()
     m.pb = Parameters()
-    m.p = StateTest(default={"parameters": m.pb})
+    m.p = StateTest(parameters=m.pb)
 
     assert not m.p.has_inherent_reactions
 
@@ -521,7 +606,7 @@ class _State(StateBlockData):
 def m():
     m = ConcreteModel()
     m.pb = Parameters()
-    m.p = State(default={"parameters": m.pb})
+    m.p = State(parameters=m.pb)
 
     return m
 

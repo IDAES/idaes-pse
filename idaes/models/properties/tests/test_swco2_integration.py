@@ -28,9 +28,9 @@ class TestIntegration(object):
     @pytest.fixture(scope="class")
     def compressor_model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = swco2.SWCO2ParameterBlock()
-        m.fs.unit = Compressor(default={"property_package": m.fs.properties})
+        m.fs.unit = Compressor(property_package=m.fs.properties)
         return m
 
     @pytest.mark.unit

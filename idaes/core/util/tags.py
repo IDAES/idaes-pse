@@ -30,7 +30,7 @@ __Author__ = "John Eslick"
 class ModelTag:
     """The purpose of this class is to facilitate a simpler method of accessing,
     displaying, and reporting model quantities. The structure of IDAES models is
-    a complex hiarachy. This class allows quantities to be accessed more directly
+    a complex hierarchy. This class allows quantities to be accessed more directly
     and provides more control over how they are reported."""
 
     __slots__ = [
@@ -53,7 +53,7 @@ class ModelTag:
         Args:
             expr: A Pyomo Var, Expression, Param, Reference, or unnamed
                 expression to tag. This can be a scalar or indexed.
-            format_string: A formating string used to print an elememnt of the
+            format_string: A formatting string used to print an element of the
                 tagged expression (e.g. '{:.3f}').
             doc: A description of the tagged quantity.
             display_units: Pyomo units to display the quantity in. If a string
@@ -71,14 +71,14 @@ class ModelTag:
         self._display_units = display_units  # unit to display value in
         self._cache_validation_value = {}  # value when converted value stored
         self._cache_display_value = {}  # value to display after unit conversions
-        self._name = None  # tag name (just used to claify error messages)
+        self._name = None  # tag name (just used to clarify error messages)
         self._root = None  # use this to cache scalar tags in indexed parent
         self._index = None  # index to get cached converted value from parent
         self._group = None  # Group object if this is a member of a group
         self._str_units = True  # include units to stringify the tag
         # if _set_in_display_units is True and no units are provided for for
         # set, fix, setub, and setlb, the units will be assumed to be the
-        # display units.  If it is false and no units are proided, the units are
+        # display units.  If it is false and no units are provided, the units are
         # assumed to be the native units of the quantity
         self._set_in_display_units = False
 
@@ -136,7 +136,7 @@ class ModelTag:
         return self.display(units=self.str_include_units)
 
     def __call__(self, *args, **kwargs):
-        """Calling an instance of a tagged quantitiy gets the display string see
+        """Calling an instance of a tagged quantity gets the display string see
         display()"""
         return self.display(*args, **kwargs)
 
@@ -234,7 +234,7 @@ class ModelTag:
     def get_display_value(self, index=None, convert=True):
         """Get the value of the expression to display.  Do unit conversion if
         needed.  This caches the unit conversion, to save time if this is called
-        repeatededly.  The unconverted value is used to ensure the cached
+        repeatedly.  The unconverted value is used to ensure the cached
         converted value is still valid.
 
         Args:
@@ -311,6 +311,13 @@ class ModelTag:
             return issubclass(self._expression.ctype, pyo.Var)
         except AttributeError:
             return False
+
+    @property
+    def fixed(self):
+        """Get the tagged variable if the tag is not a variable, raise TypeError"""
+        if not self.is_var:
+            return False
+        return self.expression.fixed
 
     @property
     def is_indexed(self):
@@ -683,7 +690,6 @@ class ModelTagGroup(dict):
 
 
 def svg_tag(
-    tags=None,
     svg=None,
     tag_group=None,
     outfile=None,
@@ -691,15 +697,13 @@ def svg_tag(
     tag_map=None,
     show_tags=False,
     byte_encoding="utf-8",
-    tag_format=None,
-    tag_format_default="{:.4e}",
 ):
     """
     Replace text in a SVG with tag values for the model. This works by looking
     for text elements in the SVG with IDs that match the tags or are in tag_map.
 
     Args:
-        svg: a file pointer or a string continaing svg contents
+        svg: a file pointer or a string containing svg contents
         tag_group: a ModelTagGroup with tags to display in the SVG
         outfile: a file name to save the results, if None don't save
         idx: if None not indexed, otherwise an index in the indexing set of the
@@ -717,24 +721,6 @@ def svg_tag(
     if svg is None:
         raise RuntimeError("svg string or file-like object required.")
 
-    # Deal with soon to be depricated input by converting it to new style
-    if tags is not None:
-        deprecation_warning(
-            "svg_tag, the tags, tag_format and "
-            "tag_format_default arguments are deprecated use tag_group instead.",
-            version=1.12,
-        )
-        # As a temporary measure, allow a tag and tag format dict.  To simplfy
-        # and make it easier to remove this option in the future, use the old
-        # style input to make a ModelTagGroup object.
-        tag_group = ModelTagGroup()
-        for key, tag in tags.items():
-            if tag_format is None:
-                tag_format = {}
-            format_string = tag_format.get(key, tag_format_default)
-            tag_group[key] = ModelTag(expr=tag, format_string=format_string)
-            tag_group.str_include_units = False
-
     # get SVG content string
     if isinstance(svg, str):  # already a string
         pass
@@ -751,6 +737,7 @@ def svg_tag(
         tag_map = dict()
         for tag in tag_group:
             new_tag = tag.replace("@", "_")
+            new_tag = new_tag.replace(" ", "_")
             tag_map[new_tag] = tag
 
     # Ture SVG string into XML document

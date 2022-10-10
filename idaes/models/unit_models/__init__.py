@@ -18,6 +18,7 @@ from .heater import Heater
 from .heat_exchanger_ntu import HeatExchangerNTU
 from .heat_exchanger_1D import HeatExchanger1D
 from .heat_exchanger_lc import HeatExchangerLumpedCapacitance
+from .shell_and_tube_1d import ShellAndTube1D
 from .mixer import Mixer, MomentumMixingType, MixingType
 from .plug_flow_reactor import PFR
 from .pressure_changer import PressureChanger, Turbine, Pump, Compressor

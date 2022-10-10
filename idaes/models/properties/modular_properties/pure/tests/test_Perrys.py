@@ -96,7 +96,7 @@ def frame():
 
 @pytest.mark.unit
 def test_cp_mol_liq_comp(frame):
-    cp_mol_liq_comp.build_parameters(frame.params)
+    Perrys.cp_mol_liq_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.cp_mol_liq_comp_coeff_1, Var)
     assert value(frame.params.cp_mol_liq_comp_coeff_1) == 2.7637e05
@@ -109,7 +109,7 @@ def test_cp_mol_liq_comp(frame):
     assert isinstance(frame.params.cp_mol_liq_comp_coeff_5, Var)
     assert value(frame.params.cp_mol_liq_comp_coeff_5) == 9.3701e-06
 
-    expr = cp_mol_liq_comp.return_expression(
+    expr = Perrys.cp_mol_liq_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == pytest.approx(76.150, rel=1e-3)
@@ -122,12 +122,12 @@ def test_cp_mol_liq_comp(frame):
 
 @pytest.mark.unit
 def test_enth_mol_liq_comp(frame):
-    enth_mol_liq_comp.build_parameters(frame.params)
+    Perrys.enth_mol_liq_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.enth_mol_form_liq_comp_ref, Var)
     assert value(frame.params.enth_mol_form_liq_comp_ref) == -285.83e3
 
-    expr = enth_mol_liq_comp.return_expression(
+    expr = Perrys.enth_mol_liq_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == value(frame.params.enth_mol_form_liq_comp_ref)
@@ -143,11 +143,11 @@ def test_enth_mol_liq_comp_no_formation(frame):
     frame.config.include_enthalpy_of_formation = False
     frame.params.config.include_enthalpy_of_formation = False
 
-    enth_mol_liq_comp.build_parameters(frame.params)
+    Perrys.enth_mol_liq_comp.build_parameters(frame.params)
 
     assert not hasattr(frame.params, "enth_mol_form_liq_comp_ref")
 
-    expr = enth_mol_liq_comp.return_expression(
+    expr = Perrys.enth_mol_liq_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == 0
@@ -160,12 +160,12 @@ def test_enth_mol_liq_comp_no_formation(frame):
 
 @pytest.mark.unit
 def test_entr_mol_liq_comp(frame):
-    entr_mol_liq_comp.build_parameters(frame.params)
+    Perrys.entr_mol_liq_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.entr_mol_form_liq_comp_ref, Var)
     assert value(frame.params.entr_mol_form_liq_comp_ref) == 69.95
 
-    expr = entr_mol_liq_comp.return_expression(
+    expr = Perrys.entr_mol_liq_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == value(frame.params.entr_mol_form_liq_comp_ref)
@@ -178,12 +178,12 @@ def test_entr_mol_liq_comp(frame):
 
 @pytest.mark.unit
 def test_dens_mol_liq_comp(frame):
-    dens_mol_liq_comp.build_parameters(frame.params)
+    Perrys.dens_mol_liq_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.dens_mol_liq_comp_coeff_eqn_type, Param)
     assert value(frame.params.dens_mol_liq_comp_coeff_eqn_type) == 1
 
-    expr = dens_mol_liq_comp.return_expression(
+    expr = Perrys.dens_mol_liq_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == pytest.approx(55.583e3, rel=1e-4)
@@ -196,7 +196,7 @@ def test_dens_mol_liq_comp(frame):
 
 @pytest.mark.unit
 def test_dens_mol_liq_comp_eqn_1(frame):
-    dens_mol_liq_comp_eqn_1.build_parameters(frame.params)
+    Perrys.dens_mol_liq_comp_eqn_1.build_parameters(frame.params)
 
     assert isinstance(frame.params.dens_mol_liq_comp_coeff_1, Var)
     assert value(frame.params.dens_mol_liq_comp_coeff_1) == 5.459
@@ -207,7 +207,7 @@ def test_dens_mol_liq_comp_eqn_1(frame):
     assert isinstance(frame.params.dens_mol_liq_comp_coeff_4, Var)
     assert value(frame.params.dens_mol_liq_comp_coeff_4) == 0.081
 
-    expr = dens_mol_liq_comp_eqn_1.return_expression(
+    expr = Perrys.dens_mol_liq_comp_eqn_1.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == pytest.approx(55.583e3, rel=1e-4)
@@ -220,7 +220,7 @@ def test_dens_mol_liq_comp_eqn_1(frame):
 
 @pytest.mark.unit
 def test_dens_mol_liq_comp_eqn_2(frame):
-    dens_mol_liq_comp_eqn_2.build_parameters(frame.params)
+    Perrys.dens_mol_liq_comp_eqn_2.build_parameters(frame.params)
 
     assert isinstance(frame.params.dens_mol_liq_comp_coeff_1, Var)
     assert value(frame.params.dens_mol_liq_comp_coeff_1) == 5.459
@@ -231,7 +231,7 @@ def test_dens_mol_liq_comp_eqn_2(frame):
     assert isinstance(frame.params.dens_mol_liq_comp_coeff_4, Var)
     assert value(frame.params.dens_mol_liq_comp_coeff_4) == 0.081
 
-    expr = dens_mol_liq_comp_eqn_2.return_expression(
+    expr = Perrys.dens_mol_liq_comp_eqn_2.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == pytest.approx(4.99375e10, rel=1e-4)
@@ -243,102 +243,15 @@ def test_dens_mol_liq_comp_eqn_2(frame):
 
 
 @pytest.mark.unit
-def test_dens_mol_liq_comp_deprecated(caplog):
-    def frame_deprecated():
-        m = ConcreteModel()
-
-        # Create a dummy parameter block
-        m.params = Block()
-
-        m.params.config = ConfigBlock(implicit=True)
-        m.params.config.parameter_data = {
-            "dens_mol_liq_comp_coeff": {
-                "1": 5.459,
-                "2": 0.30542,
-                "3": 647.13,
-                "4": 0.081,
-            },
-            "cp_mol_liq_comp_coeff": {
-                "1": 2.7637e05,
-                "2": -2.0901e03,
-                "3": 8.1250e00,
-                "4": -1.4116e-2,
-                "5": 9.3701e-06,
-            },
-            "enth_mol_form_liq_comp_ref": -285.83e3,
-            "entr_mol_form_liq_comp_ref": 69.95,
-        }
-        m.params.config.include_enthalpy_of_formation = True
-
-        # Also need to dummy configblock on the model for the test
-        m.config = ConfigBlock(implicit=True)
-        m.config.include_enthalpy_of_formation = True
-
-        m.meta_object = PropertyClassMetadata()
-        m.meta_object.default_units["temperature"] = pyunits.K
-        m.meta_object.default_units["mass"] = pyunits.kg
-        m.meta_object.default_units["length"] = pyunits.m
-        m.meta_object.default_units["time"] = pyunits.s
-        m.meta_object.default_units["amount"] = pyunits.mol
-
-        def get_metadata(self):
-            return m.meta_object
-
-        m.get_metadata = types.MethodType(get_metadata, m)
-        m.params.get_metadata = types.MethodType(get_metadata, m.params)
-
-        # Add necessary parameters to parameter block
-        m.params.temperature_ref = Var(initialize=273.16, units=pyunits.K)
-
-        # Create a dummy state block
-        m.props = Block([1])
-        add_object_reference(m.props[1], "params", m.params)
-
-        m.props[1].temperature = Var(initialize=273.16, units=pyunits.K)
-
-        return m
-
-    m = frame_deprecated()
-    dens_mol_liq_comp.build_parameters(m.params)
-
-    caplog.set_level(
-        idaeslog.WARNING,
-        logger=(
-            "idaes.models.properties.modular_properties." "generic.generic_property"
-        ),
-    )
-
-    assert isinstance(m.params.dens_mol_liq_comp_coeff_eqn_type, Param)
-    assert value(m.params.dens_mol_liq_comp_coeff_eqn_type) == 1
-
-    expr = dens_mol_liq_comp.return_expression(
-        m.props[1], m.params, m.props[1].temperature
-    )
-    assert value(expr) == pytest.approx(55.583e3, rel=1e-4)
-
-    m.props[1].temperature.value = 333.15
-    assert value(expr) == pytest.approx(54.703e3, rel=1e-4)
-
-    assert_units_equivalent(expr, pyunits.mol / pyunits.m**3)
-
-    assert (
-        "DEPRECATED - params dens_mol_liq_comp_coeff index "
-        "'eqn_type' "
-        "should be specified, defaulting to "
-        "equation form 1." in caplog.text
-    )
-
-
-@pytest.mark.unit
 def test_dens_mol_liq_comp_exceptions(frame):
     frame.params.config.parameter_data["dens_mol_liq_comp_coeff"]["eqn_type"] = 3
     with pytest.raises(ConfigurationError):
-        dens_mol_liq_comp.build_parameters(frame.params)
+        Perrys.dens_mol_liq_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.dens_mol_liq_comp_coeff_eqn_type, Param)
     assert value(frame.params.dens_mol_liq_comp_coeff_eqn_type) == 3
 
     with pytest.raises(ConfigurationError):
-        dens_mol_liq_comp.return_expression(
+        Perrys.dens_mol_liq_comp.return_expression(
             frame.props[1], frame.params, frame.props[1].temperature
         )

@@ -140,7 +140,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             )
 
         self.properties_in = self.config.property_package.build_state_block(
-            self.flowsheet().time, doc="Material properties at inlet", default=tmp_dict
+            self.flowsheet().time, doc="Material properties at inlet", **tmp_dict
         )
 
         # Reverse defined_state
@@ -148,9 +148,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         tmp_dict_2["defined_state"] = not tmp_dict["defined_state"]
 
         self.properties_out = self.config.property_package.build_state_block(
-            self.flowsheet().time,
-            doc="Material properties at outlet",
-            default=tmp_dict_2,
+            self.flowsheet().time, doc="Material properties at outlet", **tmp_dict_2
         )
 
     def add_reaction_blocks(self, has_equilibrium=None):
@@ -186,7 +184,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         self.reactions = self.config.reaction_package.build_reaction_block(
             self.flowsheet().time,
             doc="Reaction properties in control volume",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
     def _add_material_balance_common(

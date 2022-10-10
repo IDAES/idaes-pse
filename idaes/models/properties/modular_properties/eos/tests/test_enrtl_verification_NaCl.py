@@ -98,7 +98,7 @@ class TestStateBlockSymmetric(object):
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
-        m.params = GenericParameterBlock(default=configuration)
+        m.params = GenericParameterBlock(**configuration)
 
         m.state = m.params.build_state_block([1])
 
@@ -589,7 +589,7 @@ class TestStateBlockUnsymmetric(object):
         eos_opt["reference_state"] = Unsymmetric
 
         m = ConcreteModel()
-        m.params = GenericParameterBlock(default=config)
+        m.params = GenericParameterBlock(**config)
 
         m.state = m.params.build_state_block([1])
 

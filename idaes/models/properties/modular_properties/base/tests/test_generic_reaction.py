@@ -91,17 +91,15 @@ class TestGenericReactionParameterBlock(object):
 
         # Add a dummy thermo package for validation
         m.params = GenericParameterBlock(
-            default={
-                "components": {"c1": {}, "c2": {}},
-                "phases": {
-                    "p1": {"equation_of_state": DummyEoS},
-                    "p2": {"equation_of_state": DummyEoS},
-                },
-                "state_definition": modules[__name__],
-                "pressure_ref": 1e5,
-                "temperature_ref": 300,
-                "base_units": base_units,
-            }
+            components={"c1": {}, "c2": {}},
+            phases={
+                "p1": {"equation_of_state": DummyEoS},
+                "p2": {"equation_of_state": DummyEoS},
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
         )
 
         return m
@@ -109,17 +107,15 @@ class TestGenericReactionParameterBlock(object):
     @pytest.mark.unit
     def test_rate_build(self, m):
         m.rxn_params = GenericReactionParameterBlock(
-            default={
-                "property_package": m.params,
-                "rate_reactions": {
-                    "r1": {
-                        "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
-                        "heat_of_reaction": "foo",
-                        "rate_form": "foo",
-                    }
-                },
-                "base_units": base_units,
-            }
+            property_package=m.params,
+            rate_reactions={
+                "r1": {
+                    "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
+                    "heat_of_reaction": "foo",
+                    "rate_form": "foo",
+                }
+            },
+            base_units=base_units,
         )
 
         rxn_config = m.rxn_params.config.rate_reactions
@@ -162,23 +158,21 @@ class TestGenericReactionParameterBlock(object):
             match="Unrecognized units of measurment for quantity time " "\(foo\)",
         ):
             m.rxn_params = GenericReactionParameterBlock(
-                default={
-                    "property_package": m.params,
-                    "rate_reactions": {
-                        "r1": {
-                            "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
-                            "heat_of_reaction": "foo",
-                            "rate_form": "foo",
-                        }
-                    },
-                    "base_units": {
-                        "time": "foo",
-                        "length": pyunits.m,
-                        "mass": pyunits.kg,
-                        "amount": pyunits.mol,
-                        "temperature": pyunits.K,
-                    },
-                }
+                property_package=m.params,
+                rate_reactions={
+                    "r1": {
+                        "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
+                        "heat_of_reaction": "foo",
+                        "rate_form": "foo",
+                    }
+                },
+                base_units={
+                    "time": "foo",
+                    "length": pyunits.m,
+                    "mass": pyunits.kg,
+                    "amount": pyunits.mol,
+                    "temperature": pyunits.K,
+                },
             )
 
     @pytest.mark.unit
@@ -188,22 +182,20 @@ class TestGenericReactionParameterBlock(object):
             match="Unrecognized units of measurment for quantity time " "\(None\)",
         ):
             m.rxn_params = GenericReactionParameterBlock(
-                default={
-                    "property_package": m.params,
-                    "rate_reactions": {
-                        "r1": {
-                            "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
-                            "heat_of_reaction": "foo",
-                            "rate_form": "foo",
-                        }
-                    },
-                    "base_units": {
-                        "length": pyunits.m,
-                        "mass": pyunits.kg,
-                        "amount": pyunits.mol,
-                        "temperature": pyunits.K,
-                    },
-                }
+                property_package=m.params,
+                rate_reactions={
+                    "r1": {
+                        "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
+                        "heat_of_reaction": "foo",
+                        "rate_form": "foo",
+                    }
+                },
+                base_units={
+                    "length": pyunits.m,
+                    "mass": pyunits.kg,
+                    "amount": pyunits.mol,
+                    "temperature": pyunits.K,
+                },
             )
 
     @pytest.mark.unit
@@ -215,13 +207,9 @@ class TestGenericReactionParameterBlock(object):
             "argument.",
         ):
             m.rxn_params = GenericReactionParameterBlock(
-                default={
-                    "property_package": m.params,
-                    "base_units": base_units,
-                    "rate_reactions": {
-                        "r1": {"heat_of_reaction": "foo", "rate_form": "foo"}
-                    },
-                }
+                property_package=m.params,
+                base_units=base_units,
+                rate_reactions={"r1": {"heat_of_reaction": "foo", "rate_form": "foo"}},
             )
 
     @pytest.mark.unit
@@ -232,17 +220,15 @@ class TestGenericReactionParameterBlock(object):
             "r1 included unrecognised phase p7.",
         ):
             m.rxn_params = GenericReactionParameterBlock(
-                default={
-                    "property_package": m.params,
-                    "base_units": base_units,
-                    "rate_reactions": {
-                        "r1": {
-                            "stoichiometry": {("p7", "c1"): -1, ("p1", "c2"): 2},
-                            "heat_of_reaction": "foo",
-                            "rate_form": "foo",
-                        }
-                    },
-                }
+                property_package=m.params,
+                base_units=base_units,
+                rate_reactions={
+                    "r1": {
+                        "stoichiometry": {("p7", "c1"): -1, ("p1", "c2"): 2},
+                        "heat_of_reaction": "foo",
+                        "rate_form": "foo",
+                    }
+                },
             )
 
     @pytest.mark.unit
@@ -253,17 +239,15 @@ class TestGenericReactionParameterBlock(object):
             "r1 included unrecognised component c7.",
         ):
             m.rxn_params = GenericReactionParameterBlock(
-                default={
-                    "property_package": m.params,
-                    "base_units": base_units,
-                    "rate_reactions": {
-                        "r1": {
-                            "stoichiometry": {("p1", "c7"): -1, ("p1", "c2"): 2},
-                            "heat_of_reaction": "foo",
-                            "rate_form": "foo",
-                        }
-                    },
-                }
+                property_package=m.params,
+                base_units=base_units,
+                rate_reactions={
+                    "r1": {
+                        "stoichiometry": {("p1", "c7"): -1, ("p1", "c2"): 2},
+                        "heat_of_reaction": "foo",
+                        "rate_form": "foo",
+                    }
+                },
             )
 
     @pytest.mark.unit
@@ -274,16 +258,14 @@ class TestGenericReactionParameterBlock(object):
         )
 
         m.rxn_params = GenericReactionParameterBlock(
-            default={
-                "property_package": m.params,
-                "base_units": base_units,
-                "rate_reactions": {
-                    "r1": {
-                        "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
-                        "heat_of_reaction": "foo",
-                    }
-                },
-            }
+            property_package=m.params,
+            base_units=base_units,
+            rate_reactions={
+                "r1": {
+                    "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
+                    "heat_of_reaction": "foo",
+                }
+            },
         )
 
         assert (
@@ -296,17 +278,15 @@ class TestGenericReactionParameterBlock(object):
     @pytest.mark.unit
     def test_equil_build(self, m):
         m.rxn_params = GenericReactionParameterBlock(
-            default={
-                "property_package": m.params,
-                "base_units": base_units,
-                "equilibrium_reactions": {
-                    "e1": {
-                        "stoichiometry": {("p2", "c1"): -3, ("p2", "c2"): 4},
-                        "heat_of_reaction": "foo",
-                        "equilibrium_form": "foo",
-                    }
-                },
-            }
+            property_package=m.params,
+            base_units=base_units,
+            equilibrium_reactions={
+                "e1": {
+                    "stoichiometry": {("p2", "c1"): -3, ("p2", "c2"): 4},
+                    "heat_of_reaction": "foo",
+                    "equilibrium_form": "foo",
+                }
+            },
         )
 
         rxn_config = m.rxn_params.config.equilibrium_reactions
@@ -341,13 +321,11 @@ class TestGenericReactionParameterBlock(object):
             "argument.",
         ):
             m.rxn_params = GenericReactionParameterBlock(
-                default={
-                    "property_package": m.params,
-                    "base_units": base_units,
-                    "equilibrium_reactions": {
-                        "e1": {"heat_of_reaction": "foo", "equilibrium_form": "foo"}
-                    },
-                }
+                property_package=m.params,
+                base_units=base_units,
+                equilibrium_reactions={
+                    "e1": {"heat_of_reaction": "foo", "equilibrium_form": "foo"}
+                },
             )
 
     @pytest.mark.unit
@@ -358,17 +336,15 @@ class TestGenericReactionParameterBlock(object):
             "reaction e1 included unrecognised phase p7.",
         ):
             m.rxn_params = GenericReactionParameterBlock(
-                default={
-                    "property_package": m.params,
-                    "base_units": base_units,
-                    "equilibrium_reactions": {
-                        "e1": {
-                            "stoichiometry": {("p7", "c1"): -3, ("p2", "c2"): 4},
-                            "heat_of_reaction": "foo",
-                            "equilibrium_form": "foo",
-                        }
-                    },
-                }
+                property_package=m.params,
+                base_units=base_units,
+                equilibrium_reactions={
+                    "e1": {
+                        "stoichiometry": {("p7", "c1"): -3, ("p2", "c2"): 4},
+                        "heat_of_reaction": "foo",
+                        "equilibrium_form": "foo",
+                    }
+                },
             )
 
     @pytest.mark.unit
@@ -379,17 +355,15 @@ class TestGenericReactionParameterBlock(object):
             "reaction e1 included unrecognised component c7.",
         ):
             m.rxn_params = GenericReactionParameterBlock(
-                default={
-                    "property_package": m.params,
-                    "base_units": base_units,
-                    "equilibrium_reactions": {
-                        "e1": {
-                            "stoichiometry": {("p2", "c7"): -3, ("p2", "c2"): 4},
-                            "heat_of_reaction": "foo",
-                            "equilibrium_form": "foo",
-                        }
-                    },
-                }
+                property_package=m.params,
+                base_units=base_units,
+                equilibrium_reactions={
+                    "e1": {
+                        "stoichiometry": {("p2", "c7"): -3, ("p2", "c2"): 4},
+                        "heat_of_reaction": "foo",
+                        "equilibrium_form": "foo",
+                    }
+                },
             )
 
     @pytest.mark.unit
@@ -401,39 +375,35 @@ class TestGenericReactionParameterBlock(object):
             "argument.",
         ):
             m.rxn_params = GenericReactionParameterBlock(
-                default={
-                    "property_package": m.params,
-                    "base_units": base_units,
-                    "equilibrium_reactions": {
-                        "e1": {
-                            "stoichiometry": {("p2", "c1"): -3, ("p2", "c2"): 4},
-                            "heat_of_reaction": "foo",
-                        }
-                    },
-                }
+                property_package=m.params,
+                base_units=base_units,
+                equilibrium_reactions={
+                    "e1": {
+                        "stoichiometry": {("p2", "c1"): -3, ("p2", "c2"): 4},
+                        "heat_of_reaction": "foo",
+                    }
+                },
             )
 
     @pytest.mark.unit
     def test_rate_and_equil_build(self, m):
         m.rxn_params = GenericReactionParameterBlock(
-            default={
-                "property_package": m.params,
-                "base_units": base_units,
-                "rate_reactions": {
-                    "r1": {
-                        "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
-                        "heat_of_reaction": "foo",
-                        "rate_form": "foo",
-                    }
-                },
-                "equilibrium_reactions": {
-                    "e1": {
-                        "stoichiometry": {("p2", "c1"): -3, ("p2", "c2"): 4},
-                        "heat_of_reaction": "foo",
-                        "equilibrium_form": "foo",
-                    }
-                },
-            }
+            property_package=m.params,
+            base_units=base_units,
+            rate_reactions={
+                "r1": {
+                    "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
+                    "heat_of_reaction": "foo",
+                    "rate_form": "foo",
+                }
+            },
+            equilibrium_reactions={
+                "e1": {
+                    "stoichiometry": {("p2", "c1"): -3, ("p2", "c2"): 4},
+                    "heat_of_reaction": "foo",
+                    "equilibrium_form": "foo",
+                }
+            },
         )
 
         r_rxn_config = m.rxn_params.config.rate_reactions
@@ -484,26 +454,24 @@ class TestGenericReactionParameterBlock(object):
     @pytest.mark.unit
     def test_build_parameters(self, m):
         m.rxn_params = GenericReactionParameterBlock(
-            default={
-                "property_package": m.params,
-                "base_units": base_units,
-                "rate_reactions": {
-                    "r1": {
-                        "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
-                        "heat_of_reaction": constant_dh_rxn,
-                        "rate_form": "foo",
-                        "parameter_data": {"dh_rxn_ref": -10000},
-                    }
-                },
-                "equilibrium_reactions": {
-                    "e1": {
-                        "stoichiometry": {("p2", "c1"): -3, ("p2", "c2"): 4},
-                        "heat_of_reaction": constant_dh_rxn,
-                        "equilibrium_form": "foo",
-                        "parameter_data": {"dh_rxn_ref": -20000},
-                    }
-                },
-            }
+            property_package=m.params,
+            base_units=base_units,
+            rate_reactions={
+                "r1": {
+                    "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
+                    "heat_of_reaction": constant_dh_rxn,
+                    "rate_form": "foo",
+                    "parameter_data": {"dh_rxn_ref": -10000},
+                }
+            },
+            equilibrium_reactions={
+                "e1": {
+                    "stoichiometry": {("p2", "c1"): -3, ("p2", "c2"): 4},
+                    "heat_of_reaction": constant_dh_rxn,
+                    "equilibrium_form": "foo",
+                    "parameter_data": {"dh_rxn_ref": -20000},
+                }
+            },
         )
 
         assert isinstance(m.rxn_params.reaction_r1.dh_rxn_ref, Var)
@@ -523,70 +491,66 @@ class TestGenericReactionBlock(object):
 
         # Add a dummy thermo package for validation
         m.params = GenericParameterBlock(
-            default={
-                "components": {"c1": {}, "c2": {}},
-                "phases": {
-                    "p1": {"equation_of_state": DummyEoS},
-                    "p2": {"equation_of_state": DummyEoS},
-                },
-                "state_definition": modules[__name__],
-                "pressure_ref": 1e5,
-                "temperature_ref": 300,
-                "base_units": base_units,
-            }
+            components={"c1": {}, "c2": {}},
+            phases={
+                "p1": {"equation_of_state": DummyEoS},
+                "p2": {"equation_of_state": DummyEoS},
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
         )
 
         m.sblock = m.params.build_state_block([1])
 
         m.rxn_params = GenericReactionParameterBlock(
-            default={
-                "property_package": m.params,
-                "base_units": base_units,
-                "rate_reactions": {
-                    "r1": {
-                        "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
-                        "heat_of_reaction": constant_dh_rxn,
-                        "rate_constant": arrhenius,
-                        "rate_form": power_law_rate,
-                        "concentration_form": ConcentrationForm.moleFraction,
-                        "parameter_data": {
-                            "dh_rxn_ref": -10000,
-                            "arrhenius_const": 1,
-                            "energy_activation": 1000,
-                        },
-                    }
-                },
-                "equilibrium_reactions": {
-                    "e1": {
-                        "stoichiometry": {("p2", "c1"): -3, ("p2", "c2"): 4},
-                        "heat_of_reaction": constant_dh_rxn,
-                        "equilibrium_constant": van_t_hoff,
-                        "equilibrium_form": power_law_equil,
-                        "concentration_form": ConcentrationForm.moleFraction,
-                        "parameter_data": {
-                            "dh_rxn_ref": -20000,
-                            "k_eq_ref": 100,
-                            "T_eq_ref": 350,
-                        },
+            property_package=m.params,
+            base_units=base_units,
+            rate_reactions={
+                "r1": {
+                    "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
+                    "heat_of_reaction": constant_dh_rxn,
+                    "rate_constant": arrhenius,
+                    "rate_form": power_law_rate,
+                    "concentration_form": ConcentrationForm.moleFraction,
+                    "parameter_data": {
+                        "dh_rxn_ref": -10000,
+                        "arrhenius_const": 1,
+                        "energy_activation": 1000,
                     },
-                    "e2": {
-                        "stoichiometry": {("p2", "c1"): -5, ("p2", "c2"): 6},
-                        "heat_of_reaction": constant_dh_rxn,
-                        "equilibrium_constant": van_t_hoff,
-                        "equilibrium_form": log_power_law_equil,
-                        "concentration_form": ConcentrationForm.moleFraction,
-                        "parameter_data": {
-                            "dh_rxn_ref": -20000,
-                            "k_eq_ref": 100,
-                            "T_eq_ref": 350,
-                        },
+                }
+            },
+            equilibrium_reactions={
+                "e1": {
+                    "stoichiometry": {("p2", "c1"): -3, ("p2", "c2"): 4},
+                    "heat_of_reaction": constant_dh_rxn,
+                    "equilibrium_constant": van_t_hoff,
+                    "equilibrium_form": power_law_equil,
+                    "concentration_form": ConcentrationForm.moleFraction,
+                    "parameter_data": {
+                        "dh_rxn_ref": -20000,
+                        "k_eq_ref": 100,
+                        "T_eq_ref": 350,
                     },
                 },
-            }
+                "e2": {
+                    "stoichiometry": {("p2", "c1"): -5, ("p2", "c2"): 6},
+                    "heat_of_reaction": constant_dh_rxn,
+                    "equilibrium_constant": van_t_hoff,
+                    "equilibrium_form": log_power_law_equil,
+                    "concentration_form": ConcentrationForm.moleFraction,
+                    "parameter_data": {
+                        "dh_rxn_ref": -20000,
+                        "k_eq_ref": 100,
+                        "T_eq_ref": 350,
+                    },
+                },
+            },
         )
 
         m.rblock = m.rxn_params.build_reaction_block(
-            [1], default={"state_block": m.sblock, "has_equilibrium": True}
+            [1], state_block=m.sblock, has_equilibrium=True
         )
 
         return m

@@ -165,21 +165,17 @@ see property package for documentation.}""",
         self.properties_in = self.config.inlet_property_package.build_state_block(
             self.flowsheet().time,
             doc="Material properties in incoming stream",
-            default={
-                "defined_state": True,
-                "has_phase_equilibrium": False,
-                **self.config.inlet_property_package_args,
-            },
+            defined_state=True,
+            has_phase_equilibrium=False,
+            **self.config.inlet_property_package_args
         )
 
         self.properties_out = self.config.outlet_property_package.build_state_block(
             self.flowsheet().time,
             doc="Material properties in outgoing stream",
-            default={
-                "defined_state": self.config.outlet_state_defined,
-                "has_phase_equilibrium": self.config.has_phase_equilibrium,
-                **self.config.outlet_property_package_args,
-            },
+            defined_state=self.config.outlet_state_defined,
+            has_phase_equilibrium=self.config.has_phase_equilibrium,
+            **self.config.outlet_property_package_args
         )
 
         # Add outlet port

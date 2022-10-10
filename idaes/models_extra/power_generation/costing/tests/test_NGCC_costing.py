@@ -38,7 +38,7 @@ def build_costing():
     m = pyo.ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.get_costing(year="2018")
 
     # Accounts with Feedwater Flow to HP section of HRSG, as the

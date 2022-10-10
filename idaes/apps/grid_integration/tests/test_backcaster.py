@@ -14,6 +14,7 @@
 import pytest
 from pyomo.common import unittest as pyo_unittest
 from idaes.apps.grid_integration.forecaster import ForecastError, Backcaster
+import idaes.logger as idaeslog
 
 
 @pytest.fixture
@@ -40,23 +41,30 @@ def test_create_backcaster(historical_da_prices, historical_rt_prices):
 
 @pytest.mark.unit
 def test_create_backcaster_with_small_max_historical_days(
-    historical_da_prices, historical_rt_prices
+    caplog, historical_da_prices, historical_rt_prices
 ):
-    max_n_days = 1.0
-    with pytest.raises(Warning, match=r".*Dropping the first day's data.*"):
+    max_n_days = 1
+    with caplog.at_level(idaeslog.WARNING):
         backcaster = Backcaster(
             historical_da_prices, historical_rt_prices, max_historical_days=max_n_days
         )
-        expected_historical_da_prices = {"test_bus": [3] * 24}
-        expected_historical_rt_prices = {"test_bus": [30] * 24}
 
-        pyo_unittest.assertStructuredAlmostEqual(
-            first=backcaster.historical_da_prices, second=expected_historical_da_prices
-        )
+    _warn_msg = (
+        f"The number of days in the input historical prices for bus test_bus is greater than the max value 1."
+        f" Dropping the data for the first 2 day(s)."
+    )
+    assert _warn_msg in caplog.text
 
-        pyo_unittest.assertStructuredAlmostEqual(
-            first=backcaster.historical_rt_prices, second=expected_historical_rt_prices
-        )
+    expected_historical_da_prices = {"test_bus": [3] * 24}
+    expected_historical_rt_prices = {"test_bus": [30] * 24}
+
+    pyo_unittest.assertStructuredAlmostEqual(
+        first=backcaster.historical_da_prices, second=expected_historical_da_prices
+    )
+
+    pyo_unittest.assertStructuredAlmostEqual(
+        first=backcaster.historical_rt_prices, second=expected_historical_rt_prices
+    )
 
 
 @pytest.mark.unit
@@ -133,7 +141,9 @@ def test_forecast_real_time_prices(base_backcaster):
     result_forecasts = base_backcaster.forecast_real_time_prices(
         date="2022-05-11", hour=18, bus="test_bus", horizon=horizon, n_samples=n_samples
     )
-    expected_forecasts = {n_samples - i - 1: [(i + 1) * 10] * horizon for i in range(n_samples)}
+    expected_forecasts = {
+        n_samples - i - 1: [(i + 1) * 10] * horizon for i in range(n_samples)
+    }
 
     pyo_unittest.assertStructuredAlmostEqual(
         first=result_forecasts, second=expected_forecasts
@@ -153,6 +163,34 @@ def test_forecast_day_ahead_prices(base_backcaster):
 
     pyo_unittest.assertStructuredAlmostEqual(
         first=result_forecasts, second=expected_forecasts
+    )
+
+
+@pytest.mark.unit
+def test_forecast_day_ahead_and_real_time_prices(base_backcaster):
+
+    (
+        da_result_forecasts,
+        rt_forecasts,
+    ) = base_backcaster.forecast_day_ahead_and_real_time_prices(
+        date="2022-05-11", hour=0, bus="test_bus", horizon=48, n_samples=2
+    )
+    expected_da_forecasts = {0: [3] * 24 + [1] * 24, 1: [2] * 24 + [3] * 24}
+
+    pyo_unittest.assertStructuredAlmostEqual(
+        first=da_result_forecasts, second=expected_da_forecasts
+    )
+
+    (
+        da_forecasts,
+        rt_result_forecasts,
+    ) = base_backcaster.forecast_day_ahead_and_real_time_prices(
+        date="2022-05-11", hour=18, bus="test_bus", horizon=4, n_samples=3
+    )
+
+    expected_rt_forecasts = {3 - i - 1: [(i + 1) * 10] * 4 for i in range(3)}
+    pyo_unittest.assertStructuredAlmostEqual(
+        first=rt_result_forecasts, second=expected_rt_forecasts
     )
 
 
@@ -188,3 +226,102 @@ def test_forecast_nonexistent_bus_prices(base_backcaster):
             horizon=horizon,
             n_samples=n_samples,
         )
+
+
+class MockPrescientHourlyStats:
+    def __init__(self, bus_to_prices_dict) -> None:
+        self.observed_bus_LMPs = bus_to_prices_dict
+
+
+@pytest.mark.unit
+def test_fetch_hourly_stats_from_prescient(base_backcaster, historical_rt_prices):
+
+    prescient_hourly_stats = MockPrescientHourlyStats({"test_bus": 15})
+    base_backcaster.fetch_hourly_stats_from_prescient(prescient_hourly_stats)
+
+    expected_current_day_rt_prices = {}
+    expected_current_day_rt_prices["test_bus"] = [15]
+
+    pyo_unittest.assertStructuredAlmostEqual(
+        first=expected_current_day_rt_prices["test_bus"],
+        second=base_backcaster._current_day_rt_prices["test_bus"],
+    )
+
+    for i in range(23):
+        prescient_hourly_stats.observed_bus_LMPs["test_bus"] = 15
+        base_backcaster.fetch_hourly_stats_from_prescient(prescient_hourly_stats)
+
+    expected_current_day_rt_prices_1 = {}
+    expected_current_day_rt_prices_1["test_bus"] = []
+
+    expected_historical_rt_prices = [10] * 24 + [20] * 24 + [30] * 24 + [15] * 24
+
+    pyo_unittest.assertStructuredAlmostEqual(
+        first=expected_current_day_rt_prices_1["test_bus"],
+        second=base_backcaster._current_day_rt_prices["test_bus"],
+    )
+    pyo_unittest.assertStructuredAlmostEqual(
+        first=expected_historical_rt_prices,
+        second=base_backcaster._historical_rt_prices["test_bus"],
+    )
+
+
+@pytest.mark.unit
+def test_fetch_hourly_stats_from_prescient_greater_than_max_historical_days(
+    base_backcaster, historical_rt_prices
+):
+
+    days = 8
+    target_lmp = []
+    for day in range(days):
+        for t in range(24):
+            prescient_hourly_stats = MockPrescientHourlyStats({"test_bus": day * 10})
+            base_backcaster.fetch_hourly_stats_from_prescient(prescient_hourly_stats)
+            target_lmp.append(day * 10)
+
+    expected_historical_rt_prices = [20] * 24 + [30] * 24 + target_lmp
+
+    pyo_unittest.assertStructuredAlmostEqual(
+        first=expected_historical_rt_prices,
+        second=base_backcaster._historical_rt_prices["test_bus"],
+    )
+
+
+class DAPrices:
+    def __init__(self, da_prices) -> None:
+        self.day_ahead_prices = da_prices
+
+    def get(self, info):
+        bus, t = info
+        return self.day_ahead_prices[bus][t]
+
+
+class MockRucMarket:
+    def __init__(self, da_prices) -> None:
+        self.day_ahead_prices = DAPrices(da_prices)
+
+
+class MockPrescientRucPlan:
+    def __init__(self, da_prices) -> None:
+        self.ruc_market = MockRucMarket(da_prices)
+
+
+@pytest.mark.unit
+def test_fetch_day_ahead_stats_from_prescient(base_backcaster, historical_da_prices):
+
+    for i in range(base_backcaster.max_historical_days + 1):
+        da_price = {"test_bus": [i] * 24}
+        day_ahead_result = MockPrescientRucPlan(da_price)
+        base_backcaster.fetch_day_ahead_stats_from_prescient(
+            None, None, day_ahead_result
+        )
+
+    expected_historical_da_prices = {}
+    expected_historical_da_prices["test_bus"] = []
+    for i in range(1, base_backcaster.max_historical_days + 1):
+        expected_historical_da_prices["test_bus"] += [i] * 24
+
+    pyo_unittest.assertStructuredAlmostEqual(
+        first=expected_historical_da_prices,
+        second=base_backcaster._historical_da_prices,
+    )

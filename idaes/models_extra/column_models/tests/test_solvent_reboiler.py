@@ -58,16 +58,14 @@ class TestAbsorberVaporFlow(object):
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.liquid_properties = GenericParameterBlock(default=aqueous_mea)
-        m.fs.vapor_properties = GenericParameterBlock(default=flue_gas)
+        m.fs.liquid_properties = GenericParameterBlock(**aqueous_mea)
+        m.fs.vapor_properties = GenericParameterBlock(**flue_gas)
 
         m.fs.unit = SolventReboiler(
-            default={
-                "liquid_property_package": m.fs.liquid_properties,
-                "vapor_property_package": m.fs.vapor_properties,
-            }
+            liquid_property_package=m.fs.liquid_properties,
+            vapor_property_package=m.fs.vapor_properties,
         )
 
         m.fs.unit.inlet.flow_mol[0].fix(83.89)
@@ -189,7 +187,7 @@ class TestAbsorberVaporFlow(object):
             model.fs.unit.vapor_reboil.temperature[0]
         )
 
-        assert pytest.approx(391220, rel=1e-5) == value(model.fs.unit.heat_duty[0])
+        assert pytest.approx(420983, rel=1e-5) == value(model.fs.unit.heat_duty[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -266,16 +264,14 @@ class TestAbsorberHeatDuty(object):
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.liquid_properties = GenericParameterBlock(default=aqueous_mea)
-        m.fs.vapor_properties = GenericParameterBlock(default=flue_gas)
+        m.fs.liquid_properties = GenericParameterBlock(**aqueous_mea)
+        m.fs.vapor_properties = GenericParameterBlock(**flue_gas)
 
         m.fs.unit = SolventReboiler(
-            default={
-                "liquid_property_package": m.fs.liquid_properties,
-                "vapor_property_package": m.fs.vapor_properties,
-            }
+            liquid_property_package=m.fs.liquid_properties,
+            vapor_property_package=m.fs.vapor_properties,
         )
 
         m.fs.unit.inlet.flow_mol[0].fix(83.89)
@@ -363,32 +359,32 @@ class TestAbsorberHeatDuty(object):
         model.fs.unit.bottoms.display()
         model.fs.unit.vapor_reboil.display()
 
-        assert pytest.approx(73.3324, rel=1e-5) == value(
+        assert pytest.approx(74.1048, rel=1e-5) == value(
             model.fs.unit.bottoms.flow_mol[0]
         )
-        assert pytest.approx(0.0284629, rel=1e-5) == value(
+        assert pytest.approx(0.0285059, rel=1e-5) == value(
             model.fs.unit.bottoms.mole_frac_comp[0, "CO2"]
         )
-        assert pytest.approx(0.124121, rel=1e-5) == value(
+        assert pytest.approx(0.122827, rel=1e-5) == value(
             model.fs.unit.bottoms.mole_frac_comp[0, "MEA"]
         )
-        assert pytest.approx(0.847416, rel=1e-5) == value(
+        assert pytest.approx(0.848667, rel=1e-5) == value(
             model.fs.unit.bottoms.mole_frac_comp[0, "H2O"]
         )
         assert pytest.approx(183700, rel=1e-5) == value(
             model.fs.unit.bottoms.pressure[0]
         )
-        assert pytest.approx(393.934, rel=1e-5) == value(
+        assert pytest.approx(393.810, rel=1e-5) == value(
             model.fs.unit.bottoms.temperature[0]
         )
 
-        assert pytest.approx(10.5576, rel=1e-5) == value(
+        assert pytest.approx(9.7852, rel=1e-5) == value(
             model.fs.unit.vapor_reboil.flow_mol[0]
         )
-        assert pytest.approx(0.0613360, rel=1e-5) == value(
+        assert pytest.approx(0.063605, rel=1e-5) == value(
             model.fs.unit.vapor_reboil.mole_frac_comp[0, "CO2"]
         )
-        assert pytest.approx(0.938664, rel=1e-5) == value(
+        assert pytest.approx(0.936395, rel=1e-5) == value(
             model.fs.unit.vapor_reboil.mole_frac_comp[0, "H2O"]
         )
         assert value(model.fs.unit.vapor_reboil.mole_frac_comp[0, "N2"]) <= 1e-8
@@ -396,7 +392,7 @@ class TestAbsorberHeatDuty(object):
         assert pytest.approx(183700, rel=1e-5) == value(
             model.fs.unit.vapor_reboil.pressure[0]
         )
-        assert pytest.approx(393.934, rel=1e-5) == value(
+        assert pytest.approx(393.810, rel=1e-5) == value(
             model.fs.unit.vapor_reboil.temperature[0]
         )
 

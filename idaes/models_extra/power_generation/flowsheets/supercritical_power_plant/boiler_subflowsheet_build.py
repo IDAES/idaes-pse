@@ -51,13 +51,12 @@ __author__ = "Miguel Zamarripa"
 # Import Pyomo libraries
 from pyomo.environ import (
     ConcreteModel,
-    SolverFactory,
     value,
     TransformationFactory,
     units as pyunits,
 )
 from pyomo.network import Arc
-from idaes.core.util.misc import svg_tag
+from idaes.core.util.tags import svg_tag
 
 # Import IDAES core
 from idaes.core import FlowsheetBlock
@@ -73,7 +72,7 @@ from idaes.models.unit_models import Heater, Mixer
 from idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger import (
     BoilerHeatExchanger,
     TubeArrangement,
-    DeltaTMethod,
+    HeatExchangerFlowPattern,
 )
 from idaes.models.unit_models.separator import (
     Separator,
@@ -96,7 +95,7 @@ def main():
     m = ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
 
@@ -117,88 +116,70 @@ def build_boiler(fs):
     # Create unit models
     # Boiler Economizer
     fs.ECON = BoilerHeatExchanger(
-        default={
-            "side_1_property_package": fs.prop_water,
-            "side_2_property_package": fs.prop_fluegas,
-            "has_pressure_change": True,
-            "has_holdup": False,
-            "delta_T_method": DeltaTMethod.counterCurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
-            "has_radiation": False,
-        }
+        cold_side={"property_package": fs.prop_water, "has_pressure_change": True},
+        hot_side={"property_package": fs.prop_fluegas, "has_pressure_change": True},
+        has_holdup=False,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        tube_arrangement=TubeArrangement.inLine,
+        cold_side_water_phase="Liq",
+        has_radiation=False,
     )
     # Primary Superheater
     fs.PrSH = BoilerHeatExchanger(
-        default={
-            "side_1_property_package": fs.prop_water,
-            "side_2_property_package": fs.prop_fluegas,
-            "has_pressure_change": True,
-            "has_holdup": False,
-            "delta_T_method": DeltaTMethod.counterCurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Vap",
-            "has_radiation": True,
-        }
+        cold_side={"property_package": fs.prop_water, "has_pressure_change": True},
+        hot_side={"property_package": fs.prop_fluegas, "has_pressure_change": True},
+        has_holdup=False,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        tube_arrangement=TubeArrangement.inLine,
+        cold_side_water_phase="Vap",
+        has_radiation=True,
     )
 
     # Finishing Superheater
     fs.FSH = BoilerHeatExchanger(
-        default={
-            "side_1_property_package": fs.prop_water,
-            "side_2_property_package": fs.prop_fluegas,
-            "has_pressure_change": True,
-            "has_holdup": False,
-            "delta_T_method": DeltaTMethod.counterCurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Vap",
-            "has_radiation": True,
-        }
+        cold_side={"property_package": fs.prop_water, "has_pressure_change": True},
+        hot_side={"property_package": fs.prop_fluegas, "has_pressure_change": True},
+        has_holdup=False,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        tube_arrangement=TubeArrangement.inLine,
+        cold_side_water_phase="Vap",
+        has_radiation=True,
     )
 
     # Reheater
     fs.RH = BoilerHeatExchanger(
-        default={
-            "side_1_property_package": fs.prop_water,
-            "side_2_property_package": fs.prop_fluegas,
-            "has_pressure_change": True,
-            "has_holdup": False,
-            "delta_T_method": DeltaTMethod.counterCurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Vap",
-            "has_radiation": True,
-        }
+        cold_side={"property_package": fs.prop_water, "has_pressure_change": True},
+        hot_side={"property_package": fs.prop_fluegas, "has_pressure_change": True},
+        has_holdup=False,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        tube_arrangement=TubeArrangement.inLine,
+        cold_side_water_phase="Vap",
+        has_radiation=True,
     )
     # Platen Superheater
-    fs.PlSH = Heater(default={"property_package": fs.prop_water})
+    fs.PlSH = Heater(property_package=fs.prop_water)
 
     # Boiler Water Wall
-    fs.Water_wall = Heater(default={"property_package": fs.prop_water})
+    fs.Water_wall = Heater(property_package=fs.prop_water)
 
     # Boiler Splitter (splits FSH flue gas outlet to Reheater and PrSH)
     fs.Spl1 = Separator(
-        default={
-            "property_package": fs.prop_fluegas,
-            "split_basis": SplittingType.totalFlow,
-            "energy_split_basis": EnergySplittingType.equal_temperature,
-        }
+        property_package=fs.prop_fluegas,
+        split_basis=SplittingType.totalFlow,
+        energy_split_basis=EnergySplittingType.equal_temperature,
     )
     # Flue gas mixer (mixing FG from Reheater and Primary SH, inlet to ECON)
     fs.mix1 = Mixer(
-        default={
-            "property_package": fs.prop_fluegas,
-            "inlet_list": ["Reheat_out", "PrSH_out"],
-            "dynamic": False,
-        }
+        property_package=fs.prop_fluegas,
+        inlet_list=["Reheat_out", "PrSH_out"],
+        dynamic=False,
     )
 
     # Mixer for Attemperator #1 (between PrSH and PlSH)
     fs.ATMP1 = Mixer(
-        default={
-            "property_package": fs.prop_water,
-            "inlet_list": ["Steam", "SprayWater"],
-            "dynamic": False,
-        }
+        property_package=fs.prop_water,
+        inlet_list=["Steam", "SprayWater"],
+        dynamic=False,
     )
 
     # Build connections (streams)
@@ -206,12 +187,12 @@ def build_boiler(fs):
     # Steam Route (side 1 = tube side = steam/water side)
     # Boiler feed water to Economizer (to be imported in full plant model)
     #    fs.bfw2econ = Arc(source=fs.FWH8.outlet,
-    #                           destination=fs.ECON.side_1_inlet)
-    fs.econ2ww = Arc(source=fs.ECON.side_1_outlet, destination=fs.Water_wall.inlet)
-    fs.ww2prsh = Arc(source=fs.Water_wall.outlet, destination=fs.PrSH.side_1_inlet)
-    fs.prsh2plsh = Arc(source=fs.PrSH.side_1_outlet, destination=fs.PlSH.inlet)
-    fs.plsh2fsh = Arc(source=fs.PlSH.outlet, destination=fs.FSH.side_1_inlet)
-    fs.FSHtoATMP1 = Arc(source=fs.FSH.side_1_outlet, destination=fs.ATMP1.Steam)
+    #                           destination=fs.ECON.cold_side_inlet)
+    fs.econ2ww = Arc(source=fs.ECON.cold_side_outlet, destination=fs.Water_wall.inlet)
+    fs.ww2prsh = Arc(source=fs.Water_wall.outlet, destination=fs.PrSH.cold_side_inlet)
+    fs.prsh2plsh = Arc(source=fs.PrSH.cold_side_outlet, destination=fs.PlSH.inlet)
+    fs.plsh2fsh = Arc(source=fs.PlSH.outlet, destination=fs.FSH.cold_side_inlet)
+    fs.FSHtoATMP1 = Arc(source=fs.FSH.cold_side_outlet, destination=fs.ATMP1.Steam)
     #    fs.fsh2hpturbine=Arc(source=fs.ATMP1.outlet,
     #                           destination=fs.HPTinlet)
     # (to be imported in full plant model)
@@ -220,33 +201,33 @@ def build_boiler(fs):
     # water wall connected with boiler block (to fix the heat duty)
     # platen SH connected with boiler block (to fix the heat duty)
     # Finishing superheater connected with a flowsheet level constraint
-    fs.fg_fsh2_separator = Arc(source=fs.FSH.side_2_outlet, destination=fs.Spl1.inlet)
-    fs.fg_fsh2rh = Arc(source=fs.Spl1.outlet_1, destination=fs.RH.side_2_inlet)
-    fs.fg_fsh2PrSH = Arc(source=fs.Spl1.outlet_2, destination=fs.PrSH.side_2_inlet)
-    fs.fg_rhtomix = Arc(source=fs.RH.side_2_outlet, destination=fs.mix1.Reheat_out)
-    fs.fg_prsh2mix = Arc(source=fs.PrSH.side_2_outlet, destination=fs.mix1.PrSH_out)
-    fs.fg_mix2econ = Arc(source=fs.mix1.outlet, destination=fs.ECON.side_2_inlet)
+    fs.fg_fsh2_separator = Arc(source=fs.FSH.hot_side_outlet, destination=fs.Spl1.inlet)
+    fs.fg_fsh2rh = Arc(source=fs.Spl1.outlet_1, destination=fs.RH.hot_side_inlet)
+    fs.fg_fsh2PrSH = Arc(source=fs.Spl1.outlet_2, destination=fs.PrSH.hot_side_inlet)
+    fs.fg_rhtomix = Arc(source=fs.RH.hot_side_outlet, destination=fs.mix1.Reheat_out)
+    fs.fg_prsh2mix = Arc(source=fs.PrSH.hot_side_outlet, destination=fs.mix1.PrSH_out)
+    fs.fg_mix2econ = Arc(source=fs.mix1.outlet, destination=fs.ECON.hot_side_inlet)
 
 
 # Set inputs ==========================
 def initialize(m):
     # ------------- ECONOMIZER -----------------------------------------------
     # BFW Boiler Feed Water inlet temeperature = 555 F = 563.706 K
-    m.fs.ECON.side_1_inlet.flow_mol[0].fix(24194.177)  # mol/s
-    m.fs.ECON.side_1_inlet.enth_mol[0].fix(14990.97)
-    m.fs.ECON.side_1_inlet.pressure[0].fix(26922222.222)  # Pa
+    m.fs.ECON.cold_side_inlet.flow_mol[0].fix(24194.177)  # mol/s
+    m.fs.ECON.cold_side_inlet.enth_mol[0].fix(14990.97)
+    m.fs.ECON.cold_side_inlet.pressure[0].fix(26922222.222)  # Pa
 
     # FLUE GAS Inlet from Primary Superheater
     FGrate = 21290.6999  # mol/s
     # Use FG molar composition to set component flow rates (baseline report)
-    m.fs.ECON.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate * 8.69 / 100)
-    m.fs.ECON.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate * 14.49 / 100)
-    m.fs.ECON.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate * 74.34 / 100)
-    m.fs.ECON.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate * 2.47 / 100)
-    m.fs.ECON.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate * 0.0006)
-    m.fs.ECON.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate * 0.002)
-    m.fs.ECON.side_2_inlet.temperature[0].fix(682.335)  # K
-    m.fs.ECON.side_2_inlet.pressure[0].fix(100145)  # Pa
+    m.fs.ECON.hot_side_inlet.flow_mol_comp[0, "H2O"].fix(FGrate * 8.69 / 100)
+    m.fs.ECON.hot_side_inlet.flow_mol_comp[0, "CO2"].fix(FGrate * 14.49 / 100)
+    m.fs.ECON.hot_side_inlet.flow_mol_comp[0, "N2"].fix(FGrate * 74.34 / 100)
+    m.fs.ECON.hot_side_inlet.flow_mol_comp[0, "O2"].fix(FGrate * 2.47 / 100)
+    m.fs.ECON.hot_side_inlet.flow_mol_comp[0, "NO"].fix(FGrate * 0.0006)
+    m.fs.ECON.hot_side_inlet.flow_mol_comp[0, "SO2"].fix(FGrate * 0.002)
+    m.fs.ECON.hot_side_inlet.temperature[0].fix(682.335)  # K
+    m.fs.ECON.hot_side_inlet.pressure[0].fix(100145)  # Pa
 
     # economizer design variables and parameters
     ITM = 0.0254  # inch to meter conversion
@@ -280,21 +261,21 @@ def initialize(m):
     # Steam from water wall
     hprsh = value(iapws95.htpx(773.15 * pyunits.K, 24865516.722 * pyunits.Pa))
     print(hprsh)
-    m.fs.PrSH.side_1_inlet.flow_mol[0].fix(24190.26)  # mol/s
-    m.fs.PrSH.side_1_inlet.enth_mol[0].fix(hprsh)  # J/mol
-    m.fs.PrSH.side_1_inlet.pressure[0].fix(2.5449e7)  # Pascals
+    m.fs.PrSH.cold_side_inlet.flow_mol[0].fix(24190.26)  # mol/s
+    m.fs.PrSH.cold_side_inlet.enth_mol[0].fix(hprsh)  # J/mol
+    m.fs.PrSH.cold_side_inlet.pressure[0].fix(2.5449e7)  # Pascals
 
     # FLUE GAS Inlet from Primary Superheater
     FGrate = 21290.6999 * 0.18  # mol/s
     # Use FG molar composition to set component flow rates (baseline report)
-    m.fs.PrSH.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate * 8.69 / 100)
-    m.fs.PrSH.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate * 14.49 / 100)
-    m.fs.PrSH.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate * 74.34 / 100)
-    m.fs.PrSH.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate * 2.47 / 100)
-    m.fs.PrSH.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate * 0.0006)
-    m.fs.PrSH.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate * 0.002)
-    m.fs.PrSH.side_2_inlet.temperature[0].fix(1180.335)
-    m.fs.PrSH.side_2_inlet.pressure[0].fix(100145)
+    m.fs.PrSH.hot_side_inlet.flow_mol_comp[0, "H2O"].fix(FGrate * 8.69 / 100)
+    m.fs.PrSH.hot_side_inlet.flow_mol_comp[0, "CO2"].fix(FGrate * 14.49 / 100)
+    m.fs.PrSH.hot_side_inlet.flow_mol_comp[0, "N2"].fix(FGrate * 74.34 / 100)
+    m.fs.PrSH.hot_side_inlet.flow_mol_comp[0, "O2"].fix(FGrate * 2.47 / 100)
+    m.fs.PrSH.hot_side_inlet.flow_mol_comp[0, "NO"].fix(FGrate * 0.0006)
+    m.fs.PrSH.hot_side_inlet.flow_mol_comp[0, "SO2"].fix(FGrate * 0.002)
+    m.fs.PrSH.hot_side_inlet.temperature[0].fix(1180.335)
+    m.fs.PrSH.hot_side_inlet.pressure[0].fix(100145)
 
     # Primary Superheater
     ITM = 0.0254  # inch to meter conversion
@@ -322,21 +303,21 @@ def initialize(m):
     #  ----- Finishing Superheater ----------------------
     # Steam from Platen Supeheater
     hfsh = value(iapws95.htpx(823.15 * pyunits.K, 24790249.01 * pyunits.Pa))
-    m.fs.FSH.side_1_inlet.flow_mol[0].fix(24194.177)  # mol/s
-    m.fs.FSH.side_1_inlet.enth_mol[0].fix(hfsh)  # J/mol
-    m.fs.FSH.side_1_inlet.pressure[0].fix(24790249.01)  # Pascals
+    m.fs.FSH.cold_side_inlet.flow_mol[0].fix(24194.177)  # mol/s
+    m.fs.FSH.cold_side_inlet.enth_mol[0].fix(hfsh)  # J/mol
+    m.fs.FSH.cold_side_inlet.pressure[0].fix(24790249.01)  # Pascals
 
     # FLUE GAS Inlet from Primary Superheater
     FGrate = 21290.6999  # mol/s
     # Use FG molar composition to set component flow rates (baseline report)
-    m.fs.FSH.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate * 8.69 / 100)
-    m.fs.FSH.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate * 14.49 / 100)
-    m.fs.FSH.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate * 74.34 / 100)
-    m.fs.FSH.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate * 2.47 / 100)
-    m.fs.FSH.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate * 0.0006)
-    m.fs.FSH.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate * 0.002)
-    m.fs.FSH.side_2_inlet.temperature[0].fix(1300.335)
-    m.fs.FSH.side_2_inlet.pressure[0].fix(100145)
+    m.fs.FSH.hot_side_inlet.flow_mol_comp[0, "H2O"].fix(FGrate * 8.69 / 100)
+    m.fs.FSH.hot_side_inlet.flow_mol_comp[0, "CO2"].fix(FGrate * 14.49 / 100)
+    m.fs.FSH.hot_side_inlet.flow_mol_comp[0, "N2"].fix(FGrate * 74.34 / 100)
+    m.fs.FSH.hot_side_inlet.flow_mol_comp[0, "O2"].fix(FGrate * 2.47 / 100)
+    m.fs.FSH.hot_side_inlet.flow_mol_comp[0, "NO"].fix(FGrate * 0.0006)
+    m.fs.FSH.hot_side_inlet.flow_mol_comp[0, "SO2"].fix(FGrate * 0.002)
+    m.fs.FSH.hot_side_inlet.temperature[0].fix(1300.335)
+    m.fs.FSH.hot_side_inlet.pressure[0].fix(100145)
 
     # Finishing Superheater
     ITM = 0.0254  # inch to meter conversion
@@ -363,21 +344,21 @@ def initialize(m):
 
     #  ----- Reheater Superheater ----------------------
     #   Steam from HP Turbine outlet
-    m.fs.RH.side_1_inlet.flow_mol[0].fix(21235.27)  # mol/s
-    m.fs.RH.side_1_inlet.enth_mol[0].fix(53942.7569)  # J/mol
-    m.fs.RH.side_1_inlet.pressure[0].fix(3677172.33638)  # Pascals
+    m.fs.RH.cold_side_inlet.flow_mol[0].fix(21235.27)  # mol/s
+    m.fs.RH.cold_side_inlet.enth_mol[0].fix(53942.7569)  # J/mol
+    m.fs.RH.cold_side_inlet.pressure[0].fix(3677172.33638)  # Pascals
 
     # FLUE GAS Inlet from Finishing Superheater
     FGrate = 21290.6999 * 0.85  # mol/s
     # Use FG molar composition to set component flow rates (baseline report)
-    m.fs.RH.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate * 8.69 / 100)
-    m.fs.RH.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate * 14.49 / 100)
-    m.fs.RH.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate * 74.34 / 100)
-    m.fs.RH.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate * 2.47 / 100)
-    m.fs.RH.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate * 0.0006)
-    m.fs.RH.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate * 0.002)
-    m.fs.RH.side_2_inlet.temperature[0].fix(1180.335)
-    m.fs.RH.side_2_inlet.pressure[0].fix(100145)
+    m.fs.RH.hot_side_inlet.flow_mol_comp[0, "H2O"].fix(FGrate * 8.69 / 100)
+    m.fs.RH.hot_side_inlet.flow_mol_comp[0, "CO2"].fix(FGrate * 14.49 / 100)
+    m.fs.RH.hot_side_inlet.flow_mol_comp[0, "N2"].fix(FGrate * 74.34 / 100)
+    m.fs.RH.hot_side_inlet.flow_mol_comp[0, "O2"].fix(FGrate * 2.47 / 100)
+    m.fs.RH.hot_side_inlet.flow_mol_comp[0, "NO"].fix(FGrate * 0.0006)
+    m.fs.RH.hot_side_inlet.flow_mol_comp[0, "SO2"].fix(FGrate * 0.002)
+    m.fs.RH.hot_side_inlet.temperature[0].fix(1180.335)
+    m.fs.RH.hot_side_inlet.pressure[0].fix(100145)
 
     # Reheater Superheater
     ITM = 0.0254  # inch to meter conversion
@@ -480,29 +461,29 @@ def initialize(m):
 def unfix_inlets(m):
 
     # Use FG molar composition to set component flow rates (baseline report)
-    m.fs.ECON.side_2_inlet.flow_mol_comp[0, "H2O"].unfix()
-    m.fs.ECON.side_2_inlet.flow_mol_comp[0, "CO2"].unfix()
-    m.fs.ECON.side_2_inlet.flow_mol_comp[0, "N2"].unfix()
-    m.fs.ECON.side_2_inlet.flow_mol_comp[0, "O2"].unfix()
-    m.fs.ECON.side_2_inlet.flow_mol_comp[0, "NO"].unfix()
-    m.fs.ECON.side_2_inlet.flow_mol_comp[0, "SO2"].unfix()
-    m.fs.ECON.side_2_inlet.temperature[0].unfix()
-    m.fs.ECON.side_2_inlet.pressure[0].unfix()
+    m.fs.ECON.hot_side_inlet.flow_mol_comp[0, "H2O"].unfix()
+    m.fs.ECON.hot_side_inlet.flow_mol_comp[0, "CO2"].unfix()
+    m.fs.ECON.hot_side_inlet.flow_mol_comp[0, "N2"].unfix()
+    m.fs.ECON.hot_side_inlet.flow_mol_comp[0, "O2"].unfix()
+    m.fs.ECON.hot_side_inlet.flow_mol_comp[0, "NO"].unfix()
+    m.fs.ECON.hot_side_inlet.flow_mol_comp[0, "SO2"].unfix()
+    m.fs.ECON.hot_side_inlet.temperature[0].unfix()
+    m.fs.ECON.hot_side_inlet.pressure[0].unfix()
 
     # PrSH Primary superheater inlets (steam and flue gas) --------------------
-    m.fs.PrSH.side_1_inlet.flow_mol.unfix()
-    m.fs.PrSH.side_1_inlet.enth_mol[0].unfix()
-    m.fs.PrSH.side_1_inlet.pressure[0].unfix()
+    m.fs.PrSH.cold_side_inlet.flow_mol.unfix()
+    m.fs.PrSH.cold_side_inlet.enth_mol[0].unfix()
+    m.fs.PrSH.cold_side_inlet.pressure[0].unfix()
 
     # Use FG molar composition to set component flow rates (baseline report)
-    m.fs.PrSH.side_2_inlet.flow_mol_comp[0, "H2O"].unfix()
-    m.fs.PrSH.side_2_inlet.flow_mol_comp[0, "CO2"].unfix()
-    m.fs.PrSH.side_2_inlet.flow_mol_comp[0, "N2"].unfix()
-    m.fs.PrSH.side_2_inlet.flow_mol_comp[0, "O2"].unfix()
-    m.fs.PrSH.side_2_inlet.flow_mol_comp[0, "NO"].unfix()
-    m.fs.PrSH.side_2_inlet.flow_mol_comp[0, "SO2"].unfix()
-    m.fs.PrSH.side_2_inlet.temperature[0].unfix()
-    m.fs.PrSH.side_2_inlet.pressure[0].unfix()
+    m.fs.PrSH.hot_side_inlet.flow_mol_comp[0, "H2O"].unfix()
+    m.fs.PrSH.hot_side_inlet.flow_mol_comp[0, "CO2"].unfix()
+    m.fs.PrSH.hot_side_inlet.flow_mol_comp[0, "N2"].unfix()
+    m.fs.PrSH.hot_side_inlet.flow_mol_comp[0, "O2"].unfix()
+    m.fs.PrSH.hot_side_inlet.flow_mol_comp[0, "NO"].unfix()
+    m.fs.PrSH.hot_side_inlet.flow_mol_comp[0, "SO2"].unfix()
+    m.fs.PrSH.hot_side_inlet.temperature[0].unfix()
+    m.fs.PrSH.hot_side_inlet.pressure[0].unfix()
 
     # WaterWall  water from economizer  ---------------------------------------
     m.fs.Water_wall.inlet[:].flow_mol.unfix()
@@ -510,19 +491,19 @@ def unfix_inlets(m):
     m.fs.Water_wall.inlet[:].pressure.unfix()
 
     # Use FG molar composition to set component flow rates (baseline report)
-    m.fs.RH.side_2_inlet.flow_mol_comp[0, "H2O"].unfix()
-    m.fs.RH.side_2_inlet.flow_mol_comp[0, "CO2"].unfix()
-    m.fs.RH.side_2_inlet.flow_mol_comp[0, "N2"].unfix()
-    m.fs.RH.side_2_inlet.flow_mol_comp[0, "O2"].unfix()
-    m.fs.RH.side_2_inlet.flow_mol_comp[0, "NO"].unfix()
-    m.fs.RH.side_2_inlet.flow_mol_comp[0, "SO2"].unfix()
-    m.fs.RH.side_2_inlet.temperature[0].unfix()
-    m.fs.RH.side_2_inlet.pressure[0].unfix()
+    m.fs.RH.hot_side_inlet.flow_mol_comp[0, "H2O"].unfix()
+    m.fs.RH.hot_side_inlet.flow_mol_comp[0, "CO2"].unfix()
+    m.fs.RH.hot_side_inlet.flow_mol_comp[0, "N2"].unfix()
+    m.fs.RH.hot_side_inlet.flow_mol_comp[0, "O2"].unfix()
+    m.fs.RH.hot_side_inlet.flow_mol_comp[0, "NO"].unfix()
+    m.fs.RH.hot_side_inlet.flow_mol_comp[0, "SO2"].unfix()
+    m.fs.RH.hot_side_inlet.temperature[0].unfix()
+    m.fs.RH.hot_side_inlet.pressure[0].unfix()
 
     # Finishing Superheater (steam from Platen SH)-----------------------------
-    m.fs.FSH.side_1_inlet.flow_mol.unfix()
-    m.fs.FSH.side_1_inlet.enth_mol[0].unfix()
-    m.fs.FSH.side_1_inlet.pressure[0].unfix()
+    m.fs.FSH.cold_side_inlet.flow_mol.unfix()
+    m.fs.FSH.cold_side_inlet.enth_mol[0].unfix()
+    m.fs.FSH.cold_side_inlet.pressure[0].unfix()
 
     # Platen SH steam inlet conditions from Water Wall-------------------------
     m.fs.PlSH.inlet[:].flow_mol.unfix()

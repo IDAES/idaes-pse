@@ -24,10 +24,10 @@ from idaes.models.properties import iapws95
 @pytest.mark.component
 def test_pump():
     m = pyo.ConcreteModel()
-    m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
+    m.fs = idaes.core.FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.unit1 = cmodels.Pump(default={"property_package": m.fs.properties})
-    m.fs.unit2 = hmodels.HelmPump(default={"property_package": m.fs.properties})
+    m.fs.unit1 = cmodels.Pump(property_package=m.fs.properties)
+    m.fs.unit2 = hmodels.HelmPump(property_package=m.fs.properties)
     # set inputs
 
     Fin = 1e4  # mol/s
@@ -61,12 +61,10 @@ def test_pump():
 @pytest.mark.component
 def test_turbine():
     m = pyo.ConcreteModel()
-    m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
+    m.fs = idaes.core.FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.unit1 = cmodels.Turbine(default={"property_package": m.fs.properties})
-    m.fs.unit2 = hmodels.HelmIsentropicTurbine(
-        default={"property_package": m.fs.properties}
-    )
+    m.fs.unit1 = cmodels.Turbine(property_package=m.fs.properties)
+    m.fs.unit2 = hmodels.HelmIsentropicTurbine(property_package=m.fs.properties)
 
     # set inputs
     Fin = 1000  # mol/s
@@ -101,12 +99,10 @@ def test_turbine():
 @pytest.mark.component
 def test_compressor():
     m = pyo.ConcreteModel()
-    m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
+    m.fs = idaes.core.FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.unit1 = cmodels.Compressor(default={"property_package": m.fs.properties})
-    m.fs.unit2 = hmodels.HelmIsentropicCompressor(
-        default={"property_package": m.fs.properties}
-    )
+    m.fs.unit1 = cmodels.Compressor(property_package=m.fs.properties)
+    m.fs.unit2 = hmodels.HelmIsentropicCompressor(property_package=m.fs.properties)
 
     # set inputs
     Fin = 1000  # mol/s
@@ -142,12 +138,10 @@ def test_compressor():
 @pytest.mark.component
 def test_compressor_pump_compare():
     m = pyo.ConcreteModel()
-    m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
+    m.fs = idaes.core.FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.unit1 = hmodels.HelmPump(default={"property_package": m.fs.properties})
-    m.fs.unit2 = hmodels.HelmIsentropicCompressor(
-        default={"property_package": m.fs.properties}
-    )
+    m.fs.unit1 = hmodels.HelmPump(property_package=m.fs.properties)
+    m.fs.unit2 = hmodels.HelmIsentropicCompressor(property_package=m.fs.properties)
 
     Fin = 1e4  # mol/s
     hin = 4000  # J/mol

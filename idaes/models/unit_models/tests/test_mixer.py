@@ -79,7 +79,9 @@ from idaes.core.util.testing import (
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
-from idaes.power_generation.properties.natural_gas_PR import get_prop
+
+# TODO: Should have a test for this that does not requrie models_extra
+from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 
@@ -100,10 +102,10 @@ class TestMixer(object):
     @pytest.fixture(scope="function")
     def mixer_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.mix = MixerFrame(default={"property_package": m.fs.pp})
+        m.fs.mix = MixerFrame(property_package=m.fs.pp)
 
         return m
 
@@ -271,7 +273,7 @@ class TestMixer(object):
     @pytest.mark.unit
     def test_get_mixed_state_block(self, mixer_frame):
         mixer_frame.fs.sb = TestStateBlock(
-            mixer_frame.fs.time, default={"parameters": mixer_frame.fs.pp}
+            mixer_frame.fs.time, parameters=mixer_frame.fs.pp
         )
 
         mixer_frame.fs.mix.config.mixed_state_block = mixer_frame.fs.sb
@@ -294,7 +296,7 @@ class TestMixer(object):
     @pytest.mark.unit
     def test_get_mixed_state_block_mismatch(self, mixer_frame):
         mixer_frame.fs.sb = TestStateBlock(
-            mixer_frame.fs.time, default={"parameters": mixer_frame.fs.pp}
+            mixer_frame.fs.time, parameters=mixer_frame.fs.pp
         )
 
         # Change parameters arg to create mismatch
@@ -511,7 +513,7 @@ class TestMixer(object):
             inlet_blocks, mixed_block
         )
 
-        assert mixer_frame.fs.mix.inlet_idx.type() is RangeSet
+        assert mixer_frame.fs.mix.inlet_idx.ctype is RangeSet
         assert isinstance(mixer_frame.fs.mix.minimum_pressure, Var)
         assert len(mixer_frame.fs.mix.minimum_pressure) == 2
         assert isinstance(mixer_frame.fs.mix.eps_pressure, Param)
@@ -573,10 +575,10 @@ class TestMixer(object):
     @pytest.mark.unit
     def test_build_default(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.mix = Mixer(default={"property_package": m.fs.pp})
+        m.fs.mix = Mixer(property_package=m.fs.pp)
 
         assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
         assert len(m.fs.mix.material_mixing_equations) == 4
@@ -585,7 +587,7 @@ class TestMixer(object):
         assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
         assert len(m.fs.mix.enthalpy_mixing_equations) == 1
 
-        assert m.fs.mix.inlet_idx.type() is RangeSet
+        assert m.fs.mix.inlet_idx.ctype is RangeSet
         assert isinstance(m.fs.mix.minimum_pressure, Var)
         assert len(m.fs.mix.minimum_pressure) == 2
         assert isinstance(m.fs.mix.eps_pressure, Param)
@@ -601,12 +603,10 @@ class TestMixer(object):
     @pytest.mark.unit
     def test_build_phase_equilibrium(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.mix = Mixer(
-            default={"property_package": m.fs.pp, "has_phase_equilibrium": True}
-        )
+        m.fs.mix = Mixer(property_package=m.fs.pp, has_phase_equilibrium=True)
 
         assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
         assert len(m.fs.mix.material_mixing_equations) == 4
@@ -615,7 +615,7 @@ class TestMixer(object):
         assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
         assert len(m.fs.mix.enthalpy_mixing_equations) == 1
 
-        assert m.fs.mix.inlet_idx.type() is RangeSet
+        assert m.fs.mix.inlet_idx.ctype is RangeSet
         assert isinstance(m.fs.mix.minimum_pressure, Var)
         assert len(m.fs.mix.minimum_pressure) == 2
         assert isinstance(m.fs.mix.eps_pressure, Param)
@@ -631,14 +631,11 @@ class TestMixer(object):
     @pytest.mark.unit
     def test_build_phase_pressure_equality(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
         m.fs.mix = Mixer(
-            default={
-                "property_package": m.fs.pp,
-                "momentum_mixing_type": MomentumMixingType.equality,
-            }
+            property_package=m.fs.pp, momentum_mixing_type=MomentumMixingType.equality
         )
 
         assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
@@ -659,14 +656,11 @@ class TestMixer(object):
     @pytest.mark.unit
     def test_model_checks(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
         m.fs.mix = Mixer(
-            default={
-                "property_package": m.fs.pp,
-                "momentum_mixing_type": MomentumMixingType.equality,
-            }
+            property_package=m.fs.pp, momentum_mixing_type=MomentumMixingType.equality
         )
 
         m.fs.mix.model_check()
@@ -679,11 +673,11 @@ class TestMixer(object):
     @pytest.mark.unit
     def test_get_stream_table_contents(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
-        m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+        m.fs.sb = TestStateBlock(m.fs.time, parameters=m.fs.pp)
 
-        m.fs.mix = Mixer(default={"property_package": m.fs.pp})
+        m.fs.mix = Mixer(property_package=m.fs.pp)
 
         stable = m.fs.mix._get_stream_table_contents()
 
@@ -738,13 +732,11 @@ class TestMixer(object):
     @pytest.mark.component
     def test_initialize(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
-        m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+        m.fs.sb = TestStateBlock(m.fs.time, parameters=m.fs.pp)
 
-        m.fs.mix = Mixer(
-            default={"property_package": m.fs.pp, "mixed_state_block": m.fs.sb}
-        )
+        m.fs.mix = Mixer(property_package=m.fs.pp, mixed_state_block=m.fs.sb)
 
         # Change one inlet pressure to check initialization calculations
         m.fs.mix.inlet_1_state[0].pressure = 8e4
@@ -779,11 +771,11 @@ class TestBTX(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = BTXParameterBlock(default={"valid_phase": "Liq"})
+        m.fs.properties = BTXParameterBlock(valid_phase="Liq")
 
-        m.fs.unit = Mixer(default={"property_package": m.fs.properties})
+        m.fs.unit = Mixer(property_package=m.fs.properties)
 
         m.fs.unit.inlet_1.flow_mol[0].fix(5)  # mol/s
         m.fs.unit.inlet_1.temperature[0].fix(365)  # K
@@ -1002,7 +994,7 @@ class TestMixer_NoPressure(object):
     @pytest.mark.unit
     def test_pressure_minimization_unsupported(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = NoPressureTestBlock()
 
         with pytest.raises(
@@ -1014,18 +1006,16 @@ class TestMixer_NoPressure(object):
             "supports pressure.",
         ):
             m.fs.mix = Mixer(
-                default={
-                    "property_package": m.fs.pp,
-                    "momentum_mixing_type": MomentumMixingType.minimize,
-                    "construct_ports": False,
-                }
+                property_package=m.fs.pp,
+                momentum_mixing_type=MomentumMixingType.minimize,
+                construct_ports=False,
             )
 
     @pytest.mark.build
     @pytest.mark.unit
     def test_pressure_equal_unsupported(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = NoPressureTestBlock()
 
         with pytest.raises(
@@ -1037,18 +1027,16 @@ class TestMixer_NoPressure(object):
             "supports pressure.",
         ):
             m.fs.mix = Mixer(
-                default={
-                    "property_package": m.fs.pp,
-                    "momentum_mixing_type": MomentumMixingType.equality,
-                    "construct_ports": False,
-                }
+                property_package=m.fs.pp,
+                momentum_mixing_type=MomentumMixingType.equality,
+                construct_ports=False,
             )
 
     @pytest.mark.build
     @pytest.mark.unit
     def test_pressure_equal_and_min_unsupported(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = NoPressureTestBlock()
 
         with pytest.raises(
@@ -1060,26 +1048,22 @@ class TestMixer_NoPressure(object):
             "supports pressure.",
         ):
             m.fs.mix = Mixer(
-                default={
-                    "property_package": m.fs.pp,
-                    "momentum_mixing_type": MomentumMixingType.minimize_and_equality,
-                    "construct_ports": False,
-                }
+                property_package=m.fs.pp,
+                momentum_mixing_type=MomentumMixingType.minimize_and_equality,
+                construct_ports=False,
             )
 
     @pytest.mark.build
     @pytest.mark.unit
     def test_pressure_none_unsupported(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = NoPressureTestBlock()
 
         m.fs.mix = Mixer(
-            default={
-                "property_package": m.fs.pp,
-                "momentum_mixing_type": MomentumMixingType.none,
-                "construct_ports": False,
-            }
+            property_package=m.fs.pp,
+            momentum_mixing_type=MomentumMixingType.none,
+            construct_ports=False,
         )
 
 
@@ -1090,16 +1074,14 @@ class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = iapws95.Iapws95ParameterBlock()
 
         m.fs.unit = Mixer(
-            default={
-                "property_package": m.fs.properties,
-                "material_balance_type": MaterialBalanceType.componentTotal,
-                "momentum_mixing_type": MomentumMixingType.equality,
-            }
+            property_package=m.fs.properties,
+            material_balance_type=MaterialBalanceType.componentTotal,
+            momentum_mixing_type=MomentumMixingType.equality,
         )
 
         m.fs.unit.inlet_1.flow_mol[0].fix(100)
@@ -1250,11 +1232,11 @@ class TestSaponification(object):
     @pytest.fixture(scope="class")
     def sapon(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = SaponificationParameterBlock()
 
-        m.fs.unit = Mixer(default={"property_package": m.fs.properties})
+        m.fs.unit = Mixer(property_package=m.fs.properties)
 
         m.fs.unit.inlet_1.flow_vol[0].fix(1e-3)
         m.fs.unit.inlet_1.temperature[0].fix(320)
@@ -1468,15 +1450,11 @@ class TestSaponification(object):
 def test_construction_component_not_in_phase():
     m = ConcreteModel()
     m.fs = FlowsheetBlock()
-    m.fs.prop_params = GenericParameterBlock(
-        default=get_prop(["H2O", "H2"], ["Liq", "Vap"])
-    )
+    m.fs.prop_params = GenericParameterBlock(**get_prop(["H2O", "H2"], ["Liq", "Vap"]))
     m.fs.inject1 = Mixer(
-        default={
-            "property_package": m.fs.prop_params,
-            "inlet_list": ["in1", "in2"],
-            "momentum_mixing_type": MomentumMixingType.none,
-        }
+        property_package=m.fs.prop_params,
+        inlet_list=["in1", "in2"],
+        momentum_mixing_type=MomentumMixingType.none,
     )
     iscale.calculate_scaling_factors(m)
 
@@ -1484,10 +1462,10 @@ def test_construction_component_not_in_phase():
 @pytest.mark.unit
 def test_initialization_error():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.mix = Mixer(default={"property_package": m.fs.pp})
+    m.fs.mix = Mixer(property_package=m.fs.pp)
 
     m.fs.mix.inlet_1_state[0].material_flow_mol.fix(10)
     m.fs.mix.inlet_2_state[0].material_flow_mol.fix(10)

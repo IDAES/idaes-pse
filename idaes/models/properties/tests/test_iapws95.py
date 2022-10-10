@@ -119,14 +119,12 @@ class TestMixPh(object):
     def model(self):
         model = ConcreteModel()
         model.params = iapws95.Iapws95ParameterBlock(
-            default={
-                "temperature_bounds": (249 * pyunits.K, 2501 * pyunits.K),
-                "pressure_bounds": (0.11 * pyunits.Pa, 1.1e9 * pyunits.Pa),
-                "enthalpy_mol_bounds": (
-                    0.1 * pyunits.J / pyunits.mol,
-                    1.1e5 * pyunits.J / pyunits.mol,
-                ),
-            }
+            temperature_bounds=(249 * pyunits.K, 2501 * pyunits.K),
+            pressure_bounds=(0.11 * pyunits.Pa, 1100000000.0 * pyunits.Pa),
+            enthalpy_mol_bounds=(
+                0.1 * pyunits.J / pyunits.mol,
+                110000.0 * pyunits.J / pyunits.mol,
+            ),
         )
         return model
 
@@ -136,12 +134,10 @@ class TestMixPh(object):
         l = 0.1 / 0.018
         u = 1.1e5 / 0.018
         model.params = iapws95.Iapws95ParameterBlock(
-            default={
-                "enthalpy_mass_bounds": (
-                    l * pyunits.J / pyunits.kg,
-                    u * pyunits.J / pyunits.kg,
-                )
-            }
+            enthalpy_mass_bounds=(
+                l * pyunits.J / pyunits.kg,
+                u * pyunits.J / pyunits.kg,
+            )
         )
         assert pytest.approx(0.1, rel=1e-3) == value(
             model.params.default_enthalpy_bounds[0]
@@ -168,9 +164,7 @@ class TestMixPh(object):
 
     @pytest.mark.unit
     def test_build(self, model):
-        model.prop = iapws95.Iapws95StateBlock(
-            [1], default={"parameters": model.params}
-        )
+        model.prop = iapws95.Iapws95StateBlock([1], parameters=model.params)
 
         assert isinstance(model.prop[1].flow_mol, Var)
         assert isinstance(model.prop[1].pressure, Var)
@@ -431,7 +425,7 @@ class TestLGPh(object):
     def model(self):
         model = ConcreteModel()
         model.params = iapws95.Iapws95ParameterBlock(
-            default={"phase_presentation": iapws95.PhaseType.LG}
+            phase_presentation=iapws95.PhaseType.LG
         )
 
         return model
@@ -447,9 +441,7 @@ class TestLGPh(object):
 
     @pytest.mark.unit
     def test_build(self, model):
-        model.prop = iapws95.Iapws95StateBlock(
-            [1], default={"parameters": model.params}
-        )
+        model.prop = iapws95.Iapws95StateBlock([1], parameters=model.params)
 
         assert isinstance(model.prop[1].flow_mol, Var)
         assert isinstance(model.prop[1].pressure, Var)
@@ -713,7 +705,7 @@ class TestLPh(object):
     def model(self):
         model = ConcreteModel()
         model.params = iapws95.Iapws95ParameterBlock(
-            default={"phase_presentation": iapws95.PhaseType.L}
+            phase_presentation=iapws95.PhaseType.L
         )
 
         return model
@@ -729,9 +721,7 @@ class TestLPh(object):
 
     @pytest.mark.unit
     def test_build(self, model):
-        model.prop = iapws95.Iapws95StateBlock(
-            [1], default={"parameters": model.params}
-        )
+        model.prop = iapws95.Iapws95StateBlock([1], parameters=model.params)
 
         assert isinstance(model.prop[1].flow_mol, Var)
         assert isinstance(model.prop[1].pressure, Var)
@@ -995,7 +985,7 @@ class TestGPh(object):
     def model(self):
         model = ConcreteModel()
         model.params = iapws95.Iapws95ParameterBlock(
-            default={"phase_presentation": iapws95.PhaseType.G}
+            phase_presentation=iapws95.PhaseType.G
         )
 
         return model
@@ -1011,9 +1001,7 @@ class TestGPh(object):
 
     @pytest.mark.unit
     def test_build(self, model):
-        model.prop = iapws95.Iapws95StateBlock(
-            [1], default={"parameters": model.params}
-        )
+        model.prop = iapws95.Iapws95StateBlock([1], parameters=model.params)
 
         assert isinstance(model.prop[1].flow_mol, Var)
         assert isinstance(model.prop[1].pressure, Var)
@@ -1276,9 +1264,7 @@ class TestMixTpx(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = iapws95.Iapws95ParameterBlock(
-            default={"state_vars": iapws95.StateVars.TPX}
-        )
+        model.params = iapws95.Iapws95ParameterBlock(state_vars=iapws95.StateVars.TPX)
 
         return model
 
@@ -1293,9 +1279,7 @@ class TestMixTpx(object):
 
     @pytest.mark.unit
     def test_build(self, model):
-        model.prop = iapws95.Iapws95StateBlock(
-            [1], default={"parameters": model.params}
-        )
+        model.prop = iapws95.Iapws95StateBlock([1], parameters=model.params)
 
         assert isinstance(model.prop[1].flow_mol, Var)
         assert isinstance(model.prop[1].pressure, Var)
@@ -1593,10 +1577,7 @@ class TestLgTpx(object):
     def model(self):
         model = ConcreteModel()
         model.params = iapws95.Iapws95ParameterBlock(
-            default={
-                "phase_presentation": iapws95.PhaseType.LG,
-                "state_vars": iapws95.StateVars.TPX,
-            }
+            phase_presentation=iapws95.PhaseType.LG, state_vars=iapws95.StateVars.TPX
         )
 
         return model
@@ -1612,9 +1593,7 @@ class TestLgTpx(object):
 
     @pytest.mark.unit
     def test_build(self, model):
-        model.prop = iapws95.Iapws95StateBlock(
-            [1], default={"parameters": model.params}
-        )
+        model.prop = iapws95.Iapws95StateBlock([1], parameters=model.params)
 
         assert isinstance(model.prop[1].flow_mol, Var)
         assert isinstance(model.prop[1].pressure, Var)
@@ -1898,10 +1877,7 @@ class TestLTpx(object):
     def model(self):
         model = ConcreteModel()
         model.params = iapws95.Iapws95ParameterBlock(
-            default={
-                "phase_presentation": iapws95.PhaseType.L,
-                "state_vars": iapws95.StateVars.TPX,
-            }
+            phase_presentation=iapws95.PhaseType.L, state_vars=iapws95.StateVars.TPX
         )
 
         return model
@@ -1917,9 +1893,7 @@ class TestLTpx(object):
 
     @pytest.mark.unit
     def test_build(self, model):
-        model.prop = iapws95.Iapws95StateBlock(
-            [1], default={"parameters": model.params}
-        )
+        model.prop = iapws95.Iapws95StateBlock([1], parameters=model.params)
 
         assert isinstance(model.prop[1].flow_mol, Var)
         assert isinstance(model.prop[1].pressure, Var)
@@ -2205,10 +2179,7 @@ class TestGTpx(object):
     def model(self):
         model = ConcreteModel()
         model.params = iapws95.Iapws95ParameterBlock(
-            default={
-                "phase_presentation": iapws95.PhaseType.G,
-                "state_vars": iapws95.StateVars.TPX,
-            }
+            phase_presentation=iapws95.PhaseType.G, state_vars=iapws95.StateVars.TPX
         )
         return model
 
@@ -2223,9 +2194,7 @@ class TestGTpx(object):
 
     @pytest.mark.unit
     def test_build(self, model):
-        model.prop = iapws95.Iapws95StateBlock(
-            [1], default={"parameters": model.params}
-        )
+        model.prop = iapws95.Iapws95StateBlock([1], parameters=model.params)
 
         assert isinstance(model.prop[1].flow_mol, Var)
         assert isinstance(model.prop[1].pressure, Var)

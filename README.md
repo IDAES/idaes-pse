@@ -6,8 +6,8 @@ scale-up, operation and troubleshooting of innovative, advanced energy systems.
 
 <!-- BEGIN Status badges -->
 ## Project Build and Download Statuses
-![Tests](https://github.com/IDAES/idaes-pse/workflows/Tests/badge.svg?branch=main)
-![Integration](https://github.com/IDAES/idaes-pse/workflows/Integration/badge.svg?branch=main)
+[![Tests](https://github.com/IDAES/idaes-pse/actions/workflows/core.yml/badge.svg)](https://github.com/IDAES/idaes-pse/actions/workflows/core.yml)
+[![Integration](https://github.com/IDAES/idaes-pse/actions/workflows/integration.yml/badge.svg)](https://github.com/IDAES/idaes-pse/actions/workflows/integration.yml)
 [![codecov](https://codecov.io/gh/IDAES/idaes-pse/branch/main/graph/badge.svg?token=1lNQNbSB29)](https://codecov.io/gh/IDAES/idaes-pse)
 [![Documentation Status](https://readthedocs.org/projects/idaes-pse/badge/?version=latest)](https://idaes-pse.readthedocs.io/en/latest/?badge=latest)
 [![GitHub contributors](https://img.shields.io/github/contributors/IDAES/idaes-pse.svg)](https://github.com/IDAES/idaes-pse/graphs/contributors)
@@ -36,7 +36,7 @@ pip install idaes_pse
 # install latest version from the main branch of this repository
 pip install 'idaes-pse[prerelease] @ https://github.com/IDAES/idaes-pse/archive/main.zip'
 ```
-
+.
 You can check the version installed with the command:
 
 ```bash
@@ -59,7 +59,7 @@ From there you can explore the examples and tutorials.
 
 For more information on how to use Jupyter Lab, use the built-in *Help* menu and the extensive documentation on the [Jupyter website](https://jupyter.org).
 
-Finally, refer to the [complete idaes-pse documentation](https://idaes-pse.readthedocs.io/en/stable) for more detailed [installation instructions](https://idaes-pse.readthedocs.io/en/stable/getting_started/), [user guide](https://idaes-pse.readthedocs.io/en/stable/user_guide/), examples, technical specification, etc.
+Finally, refer to the [complete idaes-pse documentation](https://idaes-pse.readthedocs.io/en/stable) for detailed [installation instructions](https://idaes-pse.readthedocs.io/en/stable/tutorials/getting_started/index.html), examples, guides, and reference.
 
 ## System requirements
 
@@ -100,6 +100,6 @@ and [Transformative Power Generation Program](https://www.energy.gov/fecm/scienc
 
 ## Contributing
 
-Please see our [Advanced User Guide](https://idaes-pse.readthedocs.io/en/stable/advanced_user_guide/) and [Developer Documentation](https://idaes-pse.readthedocs.io/en/stable/advanced_user_guide/developer/) on how to work with the idaes-pse source code and contirbute changes to the project.
+Please see our [Advanced User Installation](https://idaes-pse.readthedocs.io/en/stable/tutorials/advanced_install/) and [How-to Guides](https://idaes-pse.readthedocs.io/en/stable/how_to_guides/) on how to work with the idaes-pse source code and contribute changes to the project.
 
 **By contributing to this repository, you are agreeing to all the terms set out in the LICENSE.md and COPYRIGHT.md files in this directory.**

@@ -49,7 +49,9 @@ class TestMissingModel:
             if a != missing_attr:
                 setattr(self, a, self.attr_dict[a])
 
+
 horizon = 4
+
 
 @pytest.mark.unit
 def test_model_object_missing_methods():

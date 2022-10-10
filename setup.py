@@ -34,7 +34,7 @@ def rglob(path, glob):
 
 
 DEPENDENCIES_FOR_PRERELEASE_VERSION = [
-    "pyomo @ https://github.com/IDAES/pyomo/archive/6.4.1.zip"
+    "pyomo @ https://github.com/IDAES/pyomo/archive/6.4.2.zip"
 ]
 
 # For included DMF data
@@ -83,10 +83,10 @@ kwargs = dict(
         "numpy",
         "networkx",
         "omlt==0.3.1",  # fix the version for now as package evolves
-        "pandas",
+        "pandas<1.5",
         "pint",
         "psutil",
-        "pyomo>=6.4.1",
+        "pyomo @ https://github.com/IDAES/pyomo/archive/6.4.2.zip",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
@@ -134,6 +134,9 @@ kwargs = dict(
             "*.json.gz",
             "*.dat",
             "*.h5",
+            "*.pb",  # for Keras Surrogate folder
+            "*.data-00000-of-00001",  # for Keras Surrogate folder
+            "*.index",  # for Keras Surrogate folder
             "*.trc",
             "*.xlsx",  # idaes/dmf/tests/data_files - tabular import test files
         ]

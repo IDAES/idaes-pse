@@ -102,7 +102,7 @@ class TestSymmetric_0KCl(object):
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
-        m.params = GenericParameterBlock(default=configuration)
+        m.params = GenericParameterBlock(**configuration)
 
         m.state = m.params.build_state_block([1])
 
@@ -425,7 +425,7 @@ class TestUnsymmetric_0KCl(object):
         eos_opt["reference_state"] = Unsymmetric
 
         m = ConcreteModel()
-        m.params = GenericParameterBlock(default=config)
+        m.params = GenericParameterBlock(**config)
 
         m.state = m.params.build_state_block([1])
 
@@ -739,7 +739,7 @@ class TestUnsymmetric_0NaCl(object):
         eos_opt["reference_state"] = Unsymmetric
 
         m = ConcreteModel()
-        m.params = GenericParameterBlock(default=config)
+        m.params = GenericParameterBlock(**config)
 
         # Set parameters to those used in 1982 paper [1]
         m.params.Liq.tau["H2O", "K+, Cl-"].set_value(8.064)
@@ -820,7 +820,7 @@ class TestUnsymmetric_Mixed_tau0(object):
         eos_opt = config["phases"]["Liq"]["equation_of_state_options"] = {}
         eos_opt["reference_state"] = Unsymmetric
 
-        m.params = GenericParameterBlock(default=config)
+        m.params = GenericParameterBlock(**config)
 
         m.state = m.params.build_state_block([1])
 
@@ -1035,7 +1035,7 @@ class TestUnsymmetric_Mixed_tau1(object):
         eos_opt = config["phases"]["Liq"]["equation_of_state_options"] = {}
         eos_opt["reference_state"] = Unsymmetric
 
-        m.params = GenericParameterBlock(default=config)
+        m.params = GenericParameterBlock(**config)
 
         m.state = m.params.build_state_block([1])
 
@@ -1243,7 +1243,7 @@ class TestUnsymmetric_Mixed_tau2(object):
         eos_opt = config["phases"]["Liq"]["equation_of_state_options"] = {}
         eos_opt["reference_state"] = Unsymmetric
 
-        m.params = GenericParameterBlock(default=config)
+        m.params = GenericParameterBlock(**config)
 
         m.state = m.params.build_state_block([1])
 

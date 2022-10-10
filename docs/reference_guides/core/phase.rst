@@ -1,7 +1,7 @@
 Phase Class
 ===========
 
-.. module:: idaes.core.phases
+.. module:: idaes.core.base.phases
 
 .. autoclass:: Phase
     :members:

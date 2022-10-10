@@ -11,7 +11,7 @@ considered to be negligible. ControlVolume0DBlock blocks generally contain two
 the material within and leaving the volume - and one
 :ref:`StateBlocks <reference_guides/core/reaction_property_class:Reaction Blocks>`.
 
-.. module:: idaes.core.control_volume0d
+.. module:: idaes.core.base.control_volume0d
 
 .. autoclass:: ControlVolume0DBlock
     :members:

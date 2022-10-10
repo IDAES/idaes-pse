@@ -45,7 +45,7 @@ All Unit Models need to have an initialization routine, which should be customiz
 UnitModelBlock Classes
 -----------------------
 
-.. module:: idaes.core.unit_model
+.. module:: idaes.core.base.unit_model
 
 .. autoclass:: UnitModelBlockData
     :members:

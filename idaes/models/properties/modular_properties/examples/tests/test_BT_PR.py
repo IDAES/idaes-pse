@@ -62,11 +62,11 @@ class TestBTExample(object):
     def m(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = GenericParameterBlock(default=configuration)
+        m.fs.props = GenericParameterBlock(**configuration)
 
-        m.fs.state = m.fs.props.build_state_block([1], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([1], defined_state=True)
 
         iscale.calculate_scaling_factors(m.fs.props)
         iscale.calculate_scaling_factors(m.fs.state[1])

@@ -34,11 +34,7 @@ class TestNaturalGasPropertyPackage(unittest.TestCase):
     def test_build(self):
         m = pyo.ConcreteModel()
         m.properties = NaturalGasParameterBlock()
-        m.state = m.properties.build_state_block(
-            # As usual, if defined_state is True, we need to specify
-            # every mole fraction
-            default={"defined_state": False},
-        )
+        m.state = m.properties.build_state_block(defined_state=False)
         state = m.state
 
         # The following tests are very specific to this property package.

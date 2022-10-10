@@ -41,11 +41,9 @@ class TestFlueGasBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=flue_gas)
+        model.params = GenericParameterBlock(**flue_gas)
 
-        model.props = model.params.build_state_block(
-            [1], default={"defined_state": True}
-        )
+        model.props = model.params.build_state_block([1], defined_state=True)
 
         model.props[1].calculate_scaling_factors()
 
@@ -131,11 +129,9 @@ class TestWetCO2Block(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=wet_co2)
+        model.params = GenericParameterBlock(**wet_co2)
 
-        model.props = model.params.build_state_block(
-            [1], default={"defined_state": True}
-        )
+        model.props = model.params.build_state_block([1], defined_state=True)
 
         model.props[1].calculate_scaling_factors()
 

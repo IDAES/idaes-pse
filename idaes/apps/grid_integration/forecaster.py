@@ -13,6 +13,10 @@
 from abc import ABC, abstractmethod
 from numbers import Real
 import numpy as np
+import idaes.logger as idaeslog
+
+
+_logger = idaeslog.getLogger(__name__)
 
 
 class ForecastError(Exception):
@@ -401,11 +405,16 @@ class Backcaster(AbstractPrescientPriceForecaster):
                     f"The number of prices for each bus should be a multiple of 24. But for bus {b}, {n_prices} are provided."
                 )
 
-            while len(historical_price[b]) // 24 > self.max_historical_days:
-                raise Warning(
-                    f"The number of days of the provided historical prices for bus {b} is greater than the max value {self.max_historical_days}. Dropping the first day's data."
+            num_days = len(historical_price[b]) // 24
+            if num_days > self.max_historical_days:
+                _logger.warning(
+                    f"The number of days in the input historical prices for bus {b} is greater than the max value {self.max_historical_days}."
+                    f" Dropping the data for the first {num_days - self.max_historical_days} day(s)."
                 )
-                historical_price[b] = historical_price[b][24:]
+
+                historical_price[b] = historical_price[b][
+                    ((num_days - self.max_historical_days) * 24) :
+                ]
 
     @property
     def max_historical_days(self):

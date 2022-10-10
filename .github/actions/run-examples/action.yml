@@ -26,6 +26,11 @@ runs:
         rm -rf *
         git clone https://github.com/IDAES/examples-pse.git --branch ${{ inputs.git-ref }} .
         git log -n 1
+    - name: Install examples package and/or dependencies
+      working-directory: ${{ inputs.working-dir }}
+      shell: bash -l {0}
+      run: |
+        pip install --progress-bar off --editable .
     - name: Set up config file
       shell: bash
       # issue the cp command from the (source) dir where the config file is stored

@@ -72,7 +72,7 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
     ):
         m = pyo.ConcreteModel()
         default = {"dynamic": False}
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         pipeline_config = {
             "property_package": m.fs.properties,
@@ -80,10 +80,10 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
             "transformation_scheme": scheme,
             "has_holdup": True,
         }
-        m.fs.pipeline = GasPipeline(default=pipeline_config)
+        m.fs.pipeline = GasPipeline(**pipeline_config)
         pipeline = m.fs.pipeline
         compressor_config = {"property_package": m.fs.properties}
-        m.fs.compressor = Compressor(default=compressor_config)
+        m.fs.compressor = Compressor(**compressor_config)
         compressor = m.fs.compressor
         cv = m.fs.pipeline.control_volume
         # Fix geometry variables
@@ -157,16 +157,16 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
             "time_set": [0.0, 20.0],
             "time_units": pyo.units.hr,
         }
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         pipeline_config = {
             "property_package": m.fs.properties,
             "finite_elements": nxfe,
         }
-        m.fs.pipeline = GasPipeline(default=pipeline_config)
+        m.fs.pipeline = GasPipeline(**pipeline_config)
         pipeline = m.fs.pipeline
         compressor_config = {"property_package": m.fs.properties}
-        m.fs.compressor = Compressor(default=compressor_config)
+        m.fs.compressor = Compressor(**compressor_config)
         compressor = m.fs.compressor
         m._compressor_to_pipeline = Arc(
             ports=(compressor.outlet_port, pipeline.inlet_port),
@@ -364,16 +364,16 @@ class TestConstructPipelineCompressorFlowsheet(unittest.TestCase):
         default = {
             "dynamic": False,
         }
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         pipeline_config = {
             "property_package": m.fs.properties,
             "finite_elements": 2,
         }
-        m.fs.pipeline = GasPipeline(default=pipeline_config)
+        m.fs.pipeline = GasPipeline(**pipeline_config)
         pipeline = m.fs.pipeline
         compressor_default = {"property_package": m.fs.properties}
-        m.fs.compressor = Compressor(default=compressor_default)
+        m.fs.compressor = Compressor(**compressor_default)
         compressor = m.fs.compressor
 
         m._compressor_to_pipeline = Arc(
@@ -427,17 +427,17 @@ class TestConstructPipelineCompressorFlowsheet(unittest.TestCase):
             "time_set": [0.0, 20.0],
             "time_units": pyo.units.hr,
         }
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         pipeline_config = {
             "property_package": m.fs.properties,
             "finite_elements": 4,
         }
-        m.fs.pipeline = GasPipeline(default=pipeline_config)
+        m.fs.pipeline = GasPipeline(**pipeline_config)
         pipeline = m.fs.pipeline
 
         compressor_config = {"property_package": m.fs.properties}
-        m.fs.compressor = Compressor(default=compressor_config)
+        m.fs.compressor = Compressor(**compressor_config)
         compressor = m.fs.compressor
 
         m._pipeline_to_compressor = Arc(

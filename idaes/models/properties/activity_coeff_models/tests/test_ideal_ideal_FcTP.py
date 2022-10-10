@@ -40,17 +40,13 @@ class TestFcTP_LV_inlet:
     def model(self):
         # Create a flowsheet for test
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties_ideal_vl = BTXParameterBlock(
-            default={
-                "valid_phase": ("Liq", "Vap"),
-                "activity_coeff_model": "Ideal",
-                "state_vars": "FcTP",
-            }
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal", state_vars="FcTP"
         )
         m.fs.state_block_ideal_vl = m.fs.properties_ideal_vl.build_state_block(
-            [0], default={"defined_state": True}
+            [0], defined_state=True
         )
 
         m.fs.state_block_ideal_vl[0].flow_mol_comp["benzene"].fix(0.5)
@@ -126,17 +122,13 @@ class TestFcTP_L_inlet:
     def model(self):
         # Create a flowsheet for test
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties_ideal_l = BTXParameterBlock(
-            default={
-                "valid_phase": "Liq",
-                "activity_coeff_model": "Ideal",
-                "state_vars": "FcTP",
-            }
+            valid_phase="Liq", activity_coeff_model="Ideal", state_vars="FcTP"
         )
         m.fs.state_block_ideal_l = m.fs.properties_ideal_l.build_state_block(
-            [0], default={"has_phase_equilibrium": False, "defined_state": True}
+            [0], has_phase_equilibrium=False, defined_state=True
         )
 
         m.fs.state_block_ideal_l[0].flow_mol_comp["benzene"].fix(0.5)
@@ -212,17 +204,13 @@ class TestFcTP_V_inlet:
     def model(self):
         # Create a flowsheet for test
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties_ideal_v = BTXParameterBlock(
-            default={
-                "valid_phase": "Vap",
-                "activity_coeff_model": "Ideal",
-                "state_vars": "FcTP",
-            }
+            valid_phase="Vap", activity_coeff_model="Ideal", state_vars="FcTP"
         )
         m.fs.state_block_ideal_v = m.fs.properties_ideal_v.build_state_block(
-            [0], default={"has_phase_equilibrium": False, "defined_state": True}
+            [0], has_phase_equilibrium=False, defined_state=True
         )
 
         m.fs.state_block_ideal_v[0].flow_mol_comp["benzene"].fix(0.5)
@@ -298,17 +286,13 @@ class TestFcTP_LV_outlet:
     def model(self):
         # Create a flowsheet for test
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties_ideal_vl = BTXParameterBlock(
-            default={
-                "valid_phase": ("Liq", "Vap"),
-                "activity_coeff_model": "Ideal",
-                "state_vars": "FcTP",
-            }
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal", state_vars="FcTP"
         )
         m.fs.state_block_ideal_vl = m.fs.properties_ideal_vl.build_state_block(
-            [0], default={"defined_state": False}
+            [0], defined_state=False
         )
 
         m.fs.state_block_ideal_vl[0].flow_mol_comp["benzene"].fix(0.5)
@@ -384,17 +368,13 @@ class TestFcTP_L_outlet:
     def model(self):
         # Create a flowsheet for test
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties_ideal_l = BTXParameterBlock(
-            default={
-                "valid_phase": "Liq",
-                "activity_coeff_model": "Ideal",
-                "state_vars": "FcTP",
-            }
+            valid_phase="Liq", activity_coeff_model="Ideal", state_vars="FcTP"
         )
         m.fs.state_block_ideal_l = m.fs.properties_ideal_l.build_state_block(
-            [0], default={"has_phase_equilibrium": False, "defined_state": False}
+            [0], has_phase_equilibrium=False, defined_state=False
         )
 
         m.fs.state_block_ideal_l[0].flow_mol_comp["benzene"].fix(0.5)
@@ -470,17 +450,13 @@ class TestFcTP_V_outlet:
     def model(self):
         # Create a flowsheet for test
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties_ideal_v = BTXParameterBlock(
-            default={
-                "valid_phase": "Vap",
-                "activity_coeff_model": "Ideal",
-                "state_vars": "FcTP",
-            }
+            valid_phase="Vap", activity_coeff_model="Ideal", state_vars="FcTP"
         )
         m.fs.state_block_ideal_v = m.fs.properties_ideal_v.build_state_block(
-            [0], default={"has_phase_equilibrium": False, "defined_state": False}
+            [0], has_phase_equilibrium=False, defined_state=False
         )
 
         m.fs.state_block_ideal_v[0].flow_mol_comp["benzene"].fix(0.5)

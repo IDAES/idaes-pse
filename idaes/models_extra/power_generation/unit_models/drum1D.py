@@ -259,12 +259,10 @@ discretizing length domain (default=3)""",
 
         # Build Control Volume
         self.control_volume = ControlVolume0DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         self.control_volume.add_geometry()
@@ -285,19 +283,14 @@ discretizing length domain (default=3)""",
         )
 
         self.flash = HelmPhaseSeparator(
-            default={
-                "dynamic": False,
-                "property_package": self.config.property_package,
-            }
+            dynamic=False, property_package=self.config.property_package
         )
 
         self.mixer = HelmMixer(
-            default={
-                "dynamic": False,
-                "property_package": self.config.property_package,
-                "momentum_mixing_type": MomentumMixingType.equality,
-                "inlet_list": ["FeedWater", "SaturatedWater"],
-            }
+            dynamic=False,
+            property_package=self.config.property_package,
+            momentum_mixing_type=MomentumMixingType.equality,
+            inlet_list=["FeedWater", "SaturatedWater"],
         )
 
         # Inlet Ports
@@ -678,18 +671,18 @@ discretizing length domain (default=3)""",
             else:
                 term = 0
             return term == 4 * b.diff_therm_metal * (
-                b.radial_domain.first() + b.radial_domain[2]
-            ) / (b.radial_domain[2] - b.radial_domain.first()) ** 2 / (
-                3 * b.radial_domain.first() + b.radial_domain[2]
+                b.radial_domain.first() + b.radial_domain.at(2)
+            ) / (b.radial_domain.at(2) - b.radial_domain.first()) ** 2 / (
+                3 * b.radial_domain.first() + b.radial_domain.at(2)
             ) * (
-                b.drum_wall_temperature[t, b.radial_domain[2]]
+                b.drum_wall_temperature[t, b.radial_domain.at(2)]
                 - b.drum_wall_temperature[t, b.radial_domain.first()]
             ) + 8 * b.diff_therm_metal / b.therm_cond_metal * b.heat_transfer_in[
                 t
             ] * b.radial_domain.first() / (
-                b.radial_domain[2] - b.radial_domain.first()
+                b.radial_domain.at(2) - b.radial_domain.first()
             ) / (
-                3 * b.radial_domain.first() + b.radial_domain[2]
+                3 * b.radial_domain.first() + b.radial_domain.at(2)
             ) * (
                 b.control_volume.properties_out[t].temperature
                 - b.drum_wall_temperature[t, b.radial_domain.first()]
@@ -704,18 +697,18 @@ discretizing length domain (default=3)""",
             else:
                 term = 0
             return term == 4 * b.diff_therm_metal * (
-                b.radial_domain.last() + b.radial_domain[-2]
-            ) / (b.radial_domain.last() - b.radial_domain[-2]) ** 2 / (
-                3 * b.radial_domain.last() + b.radial_domain[-2]
+                b.radial_domain.last() + b.radial_domain.at(-2)
+            ) / (b.radial_domain.last() - b.radial_domain.at(-2)) ** 2 / (
+                3 * b.radial_domain.last() + b.radial_domain.at(-2)
             ) * (
-                b.drum_wall_temperature[t, b.radial_domain[-2]]
+                b.drum_wall_temperature[t, b.radial_domain.at(-2)]
                 - b.drum_wall_temperature[t, b.radial_domain.last()]
             ) + 8 * b.diff_therm_metal / b.therm_cond_metal * b.heat_transfer_out[
                 t
             ] * b.radial_domain.last() / (
-                b.radial_domain.last() - b.radial_domain[-2]
+                b.radial_domain.last() - b.radial_domain.at(-2)
             ) / (
-                3 * b.radial_domain.last() + b.radial_domain[-2]
+                3 * b.radial_domain.last() + b.radial_domain.at(-2)
             ) * (
                 b.temperature_ambient[t]
                 - b.drum_wall_temperature[t, b.radial_domain.last()]
@@ -836,16 +829,16 @@ discretizing length domain (default=3)""",
         def mean_temperature(b, t):
             return (
                 2
-                * (b.radial_domain[2] - b.radial_domain[1])
+                * (b.radial_domain.at(2) - b.radial_domain.at(1))
                 / (b.drum_ro**2 - b.drum_ri**2)
                 * (
                     sum(
                         0.5
                         * (
-                            b.radial_domain[i - 1]
-                            * b.drum_wall_temperature[t, b.radial_domain[i - 1]]
-                            + b.radial_domain[i]
-                            * b.drum_wall_temperature[t, b.radial_domain[i]]
+                            b.radial_domain.at(i - 1)
+                            * b.drum_wall_temperature[t, b.radial_domain.at(i - 1)]
+                            + b.radial_domain.at(i)
+                            * b.drum_wall_temperature[t, b.radial_domain.at(i)]
                         )
                         for i in range(2, len(b.radial_domain) + 1)
                     )
@@ -866,16 +859,16 @@ discretizing length domain (default=3)""",
             else:
                 return (
                     2
-                    * (b.radial_domain[2] - b.radial_domain[1])
+                    * (b.radial_domain.at(2) - b.radial_domain.at(1))
                     / (b.radial_domain[b.rindex[r].value] ** 2 - b.drum_ri**2)
                     * (
                         sum(
                             0.5
                             * (
-                                b.radial_domain[j - 1]
-                                * b.drum_wall_temperature[t, b.radial_domain[j - 1]]
-                                + b.radial_domain[j]
-                                * b.drum_wall_temperature[t, b.radial_domain[j]]
+                                b.radial_domain.at(j - 1)
+                                * b.drum_wall_temperature[t, b.radial_domain.at(j - 1)]
+                                + b.radial_domain.at(j)
+                                * b.drum_wall_temperature[t, b.radial_domain.at(j)]
                             )
                             for j in range(2, b.rindex[r].value + 1)
                         )

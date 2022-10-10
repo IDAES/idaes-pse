@@ -21,7 +21,6 @@ from pandas import DataFrame
 from pyomo.environ import Constraint, Reference, Var, Block
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
-from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
@@ -233,12 +232,10 @@ see property package for documentation.}""",
 
         # Build Control Volume
         self.control_volume = ControlVolume0DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
         )
 
         self.control_volume.add_state_blocks(has_phase_equilibrium=True)
@@ -271,17 +268,15 @@ see property package for documentation.}""",
                 split_map[p] = "Liq"
 
         self.split = Separator(
-            default={
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-                "outlet_list": ["Vap", "Liq"],
-                "split_basis": SplittingType.phaseFlow,
-                "ideal_separation": self.config.ideal_separation,
-                "ideal_split_map": split_map,
-                "mixed_state_block": self.control_volume.properties_out,
-                "has_phase_equilibrium": not self.config.ideal_separation,
-                "energy_split_basis": self.config.energy_split_basis,
-            }
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
+            outlet_list=["Vap", "Liq"],
+            split_basis=SplittingType.phaseFlow,
+            ideal_separation=self.config.ideal_separation,
+            ideal_split_map=split_map,
+            mixed_state_block=self.control_volume.properties_out,
+            has_phase_equilibrium=not self.config.ideal_separation,
+            energy_split_basis=self.config.energy_split_basis,
         )
         if not self.config.ideal_separation:
 
@@ -371,21 +366,3 @@ see property package for documentation.}""",
                             stream_attributes["Units"][k + " " + kname] = quant.u
 
         return DataFrame.from_dict(stream_attributes, orient="columns")
-
-    @deprecated(
-        "The get_costing method is being deprecated in favor of the new "
-        "FlowsheetCostingBlock tools.",
-        version="TBD",
-    )
-    def get_costing(self, year=None, module=costing, **kwargs):
-        if not hasattr(self.flowsheet(), "costing"):
-            self.flowsheet().get_costing(year=year, module=module)
-
-        units_meta = self.config.property_package.get_metadata().get_derived_units
-
-        self.costing = Block()
-        self.length = Var(initialize=1, doc="vessel length", units=units_meta("length"))
-        self.diameter = Var(
-            initialize=1, doc="vessel diameter", units=units_meta("length")
-        )
-        module.flash_costing(self.costing, **kwargs)

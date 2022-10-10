@@ -95,12 +95,12 @@ class SocContactResistorData(UnitModelBlockData):
             )
 
         @self.Expression(tset, iznodes)
-        def voltage_drop(b, t, iz):
+        def voltage_drop_total(b, t, iz):
             return b.contact_resistance[t, iz] * b.current_density[t, iz]
 
         @self.Expression(tset, iznodes)
         def joule_heating_flux(b, t, iz):
-            return b.voltage_drop[t, iz] * b.current_density[t, iz]
+            return b.voltage_drop_total[t, iz] * b.current_density[t, iz]
 
         @self.Constraint(tset, iznodes)
         def heat_flux_x_eqn(b, t, iz):
@@ -110,10 +110,20 @@ class SocContactResistorData(UnitModelBlockData):
             )
 
     def initialize_build(
-        self, outlvl=idaeslog.NOTSET, solver=None, optarg=None, fix_heat_flux_x0=True
+        self,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
+        fix_heat_flux_x0=True,
+        temperature_guess=None,
     ):
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
+        if temperature_guess is not None:
+            for t in self.flowsheet().time:
+                for iz in self.iznodes:
+                    common._set_if_unfixed(self.temperature_z[t, iz], temperature_guess)
 
         self.temperature_deviation_x.fix()
         if fix_heat_flux_x0:

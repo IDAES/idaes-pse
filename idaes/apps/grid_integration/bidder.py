@@ -1183,9 +1183,9 @@ class Bidder(StochasticProgramBidder):
         for t in time_index:
 
             # make sure the orignal points in the bids
-            # for power, marginal_cost in self.bidding_model_object.model_data.p_cost:
-            #     if round(power, 2) not in bids[t][gen]:
-            #         bids[t][gen][power] = marginal_cost
+            for power, marginal_cost in self.bidding_model_object.model_data.p_cost:
+                if round(power, 2) not in bids[t][gen]:
+                    bids[t][gen][power] = marginal_cost
 
             pmin = self.bidding_model_object.model_data.p_min
 
@@ -1216,14 +1216,20 @@ class Bidder(StochasticProgramBidder):
                     "cost_curve_type": "piecewise",
                     "values": bids[t][gen],
                 }
-                tx_utils.validate_and_clean_cost_curve(
-                    curve=temp_curve,
-                    curve_type="cost_curve",
-                    p_min=min([p[0] for p in bids[t][gen]]),
-                    p_max=max([p[0] for p in bids[t][gen]]),
-                    gen_name=gen,
-                    t=t,
-                )
+
+                try:
+                    tx_utils.validate_and_clean_cost_curve(
+                        curve=temp_curve,
+                        curve_type="cost_curve",
+                        p_min=min([p[0] for p in bids[t][gen]]),
+                        p_max=max([p[0] for p in bids[t][gen]]),
+                        gen_name=gen,
+                        t=t,
+                    )
+                except NameError as ex:
+                    raise RuntimeError(
+                        "'egret' must be installed to use this functionality"
+                    )
 
         # create full bids: this includes info in addition to costs
         full_bids = {}

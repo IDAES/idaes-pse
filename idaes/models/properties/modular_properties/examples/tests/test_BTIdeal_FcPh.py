@@ -80,6 +80,7 @@ config_dict = {
                 "pressure_crit": 48.9e5,  # [1]
                 "temperature_crit": 562.2,  # [1]
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": 1.0162,  # [2] pg. 2-98
                     "2": 0.2655,
                     "3": 562.16,
@@ -120,6 +121,7 @@ config_dict = {
                 "pressure_crit": 41e5,  # [1]
                 "temperature_crit": 591.8,  # [1]
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": 0.8488,  # [2] pg. 2-98
                     "2": 0.26655,
                     "3": 591.8,
@@ -187,7 +189,7 @@ class TestParamBlock(object):
     @pytest.mark.unit
     def test_build(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=config_dict)
+        model.params = GenericParameterBlock(**config_dict)
 
         assert isinstance(model.params.phase_list, Set)
         assert len(model.params.phase_list) == 2
@@ -249,10 +251,10 @@ class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=config_dict)
+        model.params = GenericParameterBlock(**config_dict)
 
         model.props = model.params.state_block_class(
-            [1], default={"parameters": model.params, "defined_state": True}
+            [1], parameters=model.params, defined_state=True
         )
 
         model.props[1].calculate_scaling_factors()

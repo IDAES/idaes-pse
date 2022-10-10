@@ -47,9 +47,9 @@ class TestSkeletonDefault(object):
     @pytest.fixture(scope="class")
     def skeleton_default(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.skeleton = SkeletonUnitModel(default={"dynamic": False})
+        m.fs.skeleton = SkeletonUnitModel(dynamic=False)
         m.fs.skeleton.comp_list = Set(initialize=["c1", "c2"])
 
         # input vars for skeleton
@@ -191,9 +191,9 @@ class TestSkeletonCustom(object):
     @pytest.fixture(scope="class")
     def skeleton_custom(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.skeleton = SkeletonUnitModel(default={"dynamic": False})
+        m.fs.skeleton = SkeletonUnitModel(dynamic=False)
         m.fs.skeleton.comp_list = Set(initialize=["c1", "c2"])
 
         # input vars for skeleton
