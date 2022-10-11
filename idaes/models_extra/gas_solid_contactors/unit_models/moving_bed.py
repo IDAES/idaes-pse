@@ -828,7 +828,7 @@ see reaction package for documentation.}""",
                             to_units=units_meta_solid("length"),
                         )
                         ** 2
-                        * b.bed_voidage ** 3
+                        * b.bed_voidage**3
                     )
                 ) + (
                     (1.75 * pyunits.dimensionless)
@@ -847,7 +847,7 @@ see reaction package for documentation.}""",
                             b.solid_phase.properties[t, x]._params.particle_dia,
                             to_units=units_meta_solid("length"),
                         )
-                        * b.bed_voidage ** 3
+                        * b.bed_voidage**3
                     )
                 )
 
