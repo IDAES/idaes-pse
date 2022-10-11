@@ -15,7 +15,7 @@ Tests for costing base classes
 """
 import pytest
 
-from pyomo.environ import ConcreteModel, Constraint, Set, units as pyunits, Var
+from pyomo.environ import ConcreteModel, Constraint, Set, units as pyunits, Var, Param
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import declare_process_block_class, UnitModelBlockData
@@ -165,7 +165,12 @@ class TestCostingPackageData(FlowsheetCostingBlockData):
         self.base_currency = pyunits.USD_test
         self.base_period = pyunits.year
 
-        self.defined_flows = {"test_flow_1": 0.2 * pyunits.J}
+        self.test_flow_2_cost = Param(initialize=0.07, units=pyunits.kW)
+
+        self.defined_flows = {
+            "test_flow_1": 0.2 * pyunits.J,
+            "test_flow_2": self.test_flow_2_cost,
+        }
 
         self._bgp = True
 
@@ -219,9 +224,12 @@ class TestFlowsheetCostingBlock:
     def test_basic_attributes(self, costing):
         assert costing.costing._registered_unit_costing == []
         assert isinstance(costing.costing.flow_types, Set)
-        assert len(costing.costing.flow_types) == 1
+        assert len(costing.costing.flow_types) == 2
         assert "test_flow_1" in costing.costing.flow_types
-        assert costing.costing._registered_flows == {"test_flow_1": []}
+        assert costing.costing._registered_flows == {
+            "test_flow_1": [],
+            "test_flow_2": [],
+        }
 
         assert costing.costing._costing_methods_map == {
             TypeAData: TestCostingPackageData.method_1,
@@ -233,6 +241,8 @@ class TestFlowsheetCostingBlock:
         assert isinstance(costing.costing.test_flow_1_cost, Var)
         assert costing.costing.test_flow_1_cost.value == 0.2
         assert_units_equivalent(costing.costing.test_flow_1_cost.get_units(), pyunits.J)
+
+        assert isinstance(costing.costing.test_flow_2_cost, Param)
 
         # Test that build_global_parameters was called successfully
         assert costing.costing._bgp
@@ -250,7 +260,23 @@ class TestFlowsheetCostingBlock:
         )
         assert "test_flow" in costing.costing.flow_types
 
-        assert costing.costing._registered_flows == {"test_flow_1": [], "test_flow": []}
+        assert costing.costing._registered_flows == {
+            "test_flow_1": [],
+            "test_flow_2": [],
+            "test_flow": [],
+        }
+
+    @pytest.mark.unit
+    def test_register_flow_component_exists(self, costing):
+        costing.costing.test_flow_3_cost = Var()
+        with pytest.raises(
+            RuntimeError,
+            match="Component test_flow_3_cost already exists on costing but is not 42.",
+        ):
+            costing.costing.register_flow_type("test_flow_3", 42)
+        # cleanup for next test
+        costing.costing.flow_types.remove("test_flow_3")
+        costing.costing.del_component(costing.costing.test_flow_3_cost)
 
     @pytest.mark.unit
     def test_cost_flow_invalid_type(self, costing):
