@@ -80,26 +80,26 @@ The IDAES FixedBed1D model has construction arguments specific to the whole unit
 
 **Arguments that are applicable to the gas phase:**
 
-* property_package - property package to use when constructing bubble region Property Blocks (default = 'use_parent_value'). 
+* property_package - property package to use when constructing gas phase Property Blocks (default = 'use_parent_value'). 
   This is provided as a Physical Parameter Block by the Flowsheet when creating the model. 
   If a value is not provided, the ControlVolume Block will try to use the default property package if one is defined.
-* property_package_args - set of arguments to be passed to the bubble region Property Blocks when they are created (default = 'use_parent_value').
-* reaction_package - reaction package to use when constructing bubble region Reaction Blocks (default = None). 
+* property_package_args - set of arguments to be passed to the gas phase Property Blocks when they are created (default = 'use_parent_value').
+* reaction_package - reaction package to use when constructing gas phase Reaction Blocks (default = None). 
   This is provided as a Reaction Parameter Block by the Flowsheet when creating the model. 
   If a value is not provided, the ControlVolume Block will try to use the default property package if one is defined.
-* reaction_package_args - set of arguments to be passed to the bubble region Reaction Blocks when they are created (default = None).
+* reaction_package_args - set of arguments to be passed to the gas phase Reaction Blocks when they are created (default = None).
 * has_equilibrium_reactions - sets flag to indicate if terms of equilibrium controlled reactions should be constructed (default = False).
 
 **Arguments that are applicable to the solid phase:**
 
-* property_package - property package to use when constructing bubble region Property Blocks (default = 'use_parent_value'). 
+* property_package - property package to use when constructing solid phase Property Blocks (default = 'use_parent_value'). 
   This is provided as a Physical Parameter Block by the Flowsheet when creating the model. 
-  If a value is not provided, the ControlVolume Block will try to use the default property package if one is defined.
-* property_package_args - set of arguments to be passed to the bubble region Property Blocks when they are created (default = 'use_parent_value').
-* reaction_package - reaction package to use when constructing bubble region Reaction Blocks (default = None). 
+  If a value is not provided, the Indexed State Blocks will try to use the default property package if one is defined.
+* property_package_args - set of arguments to be passed to the solid phase Property Blocks when they are created (default = 'use_parent_value').
+* reaction_package - reaction package to use when constructing solid phase Reaction Blocks (default = None). 
   This is provided as a Reaction Parameter Block by the Flowsheet when creating the model. 
-  If a value is not provided, the ControlVolume Block will try to use the default property package if one is defined.
-* reaction_package_args - set of arguments to be passed to the bubble region Reaction Blocks when they are created (default = None).
+  If a value is not provided, the Indexed State Blocks will try to use the default property package if one is defined.
+* reaction_package_args - set of arguments to be passed to the solid phase Reaction Blocks when they are created (default = None).
 * has_equilibrium_reactions - sets flag to indicate if terms of equilibrium controlled reactions should be constructed (default = False).
 
 Additionally, FixedBed1D units have the following construction arguments which are passed to all the ControlVolume1DBlock and state Blocks
@@ -151,7 +151,7 @@ If `pressure_drop_type` is `simple_correlation`:
 
 If `pressure_drop_type` is `ergun_correlation`:
 
-.. math:: - \frac{ dP_{g,t,x} }{ dx } = \frac{ 150 \mu_{g,t,x} {\left( 1 - \varepsilon \right)}^{2} \left( u_{g,t,x} + u_{s,t} \right) }{ \varepsilon^{3} d_{p}^2 } + \frac{ 1.75 \left( 1 - \varepsilon \right) \rho_{mass,g,t,x} \left( u_{g,t,x} + u_{s,t} \right)^{2} }{ \varepsilon^{3} d_{p} }
+.. math:: - \frac{ dP_{g,t,x} }{ dx } = \frac{ 150 \mu_{g,t,x} {\left( 1 - \varepsilon \right)}^{2} u_{g,t,x} }{ \varepsilon^{3} d_{p}^2 } + \frac{ 1.75 \left( 1 - \varepsilon \right) \rho_{mass,g,t,x} u_{g,t,x}^{2} }{ \varepsilon^{3} d_{p} }
 
 Reaction Constraints
 ^^^^^^^^^^^^^^^^^^^^
@@ -269,7 +269,6 @@ List of Variables
    ":math:`T_{g,t,x}`", "Gas phase temperature", "``gas_phase.properties.temperature``"
    ":math:`T_{s,t,x}`", "Solid phase temperature", "``solid_phase.properties.temperature``"
    ":math:`u_{g,t,x}`", "Superficial velocity of the gas", "``velocity_superficial_gas``"
-   ":math:`u_{s,t}`", "Superficial velocity of the solids", "``velocity_superficial_solid``"
    "*Greek letters*", " ", " "
    ":math:`\varepsilon`", "Reactor bed voidage", "``bed_voidage``"
    ":math:`\mu_{g,t,x}`", "Dynamic viscosity of gas mixture", "``gas_phase.properties.visc_d``"
