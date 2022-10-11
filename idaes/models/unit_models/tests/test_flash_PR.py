@@ -37,9 +37,9 @@ from idaes.core import (
 )
 from idaes.models.unit_models.flash import Flash, EnergySplittingType
 from idaes.models.properties.modular_properties.base.generic_property_ncp import (
-        GenericParameterBlock)
-from idaes.models.properties.modular_properties.examples.BT_PR \
-    import configuration
+    GenericParameterBlock,
+)
+from idaes.models.properties.modular_properties.examples.BT_PR import configuration
 
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
@@ -52,11 +52,10 @@ from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
-solver.options['linear_solver'] = 'MA57'
+solver.options["linear_solver"] = "MA57"
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
@@ -265,4 +264,3 @@ class TestBTXPengRobinson(object):
             )
             <= 1e-6
         )
-
