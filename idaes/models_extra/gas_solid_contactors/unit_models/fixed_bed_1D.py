@@ -1134,14 +1134,11 @@ should be constructed,
             def isothermal_gas_phase(b, t, x):
                 # Skip constraint at the initial and boundary points
                 t0 = b.flowsheet().config.time.first()
-                if b.config.flow_type == 'forward_flow':
+                if b.config.flow_type == "forward_flow":
                     x_inlet = b.length_domain.first()
                 else:
                     x_inlet = b.length_domain.last()
-                if (
-                    x == x_inlet
-                    or t == b.flowsheet().config.time.first()
-                ):
+                if x == x_inlet or t == b.flowsheet().config.time.first():
                     return Constraint.Skip
                 else:
                     return (
@@ -1305,7 +1302,7 @@ should be constructed,
         if blk.config.has_holdup is True:
             # Fix initial conditions of flowrate
             t0 = blk.flowsheet().time.first()
-            if blk.config.flow_type == 'forward_flow':
+            if blk.config.flow_type == "forward_flow":
                 x_inlet = blk.length_domain.first()
             else:
                 x_inlet = blk.length_domain.last()
@@ -1480,16 +1477,13 @@ should be constructed,
         calc_var_kwds = {"eps": 5e-6}
         if blk.config.energy_balance_type != EnergyBalanceType.none:
             # Unfix temperatures
-            if blk.config.flow_type == 'forward_flow':
+            if blk.config.flow_type == "forward_flow":
                 x_inlet = blk.length_domain.first()
             else:
                 x_inlet = blk.length_domain.last()
             for t in blk.flowsheet().time:
                 for x in blk.length_domain:
-                    if (
-                        t != blk.flowsheet().config.time.first()
-                        and x != x_inlet
-                    ):
+                    if t != blk.flowsheet().config.time.first() and x != x_inlet:
                         # Unfix gas temperature variables except at the inlet
                         blk.gas_phase.properties[t, x].temperature.unfix()
 
@@ -1573,17 +1567,14 @@ should be constructed,
 
         # Initialize energy balance
         if blk.config.energy_balance_type == EnergyBalanceType.none:
-            if blk.config.flow_type == 'forward_flow':
+            if blk.config.flow_type == "forward_flow":
                 x_inlet = blk.length_domain.first()
             else:
                 x_inlet = blk.length_domain.last()
             t0 = blk.flowsheet().config.time.first()
             for t in blk.flowsheet().time:
                 for x in blk.length_domain:
-                    if (
-                        t != blk.flowsheet().config.time.first()
-                        and x != x_inlet
-                    ):
+                    if t != blk.flowsheet().config.time.first() and x != x_inlet:
                         # Unfix gas temperature variables except at the inlet
                         blk.gas_phase.properties[t, x].temperature.unfix()
                         blk.gas_phase.properties[t, x].temperature = value(

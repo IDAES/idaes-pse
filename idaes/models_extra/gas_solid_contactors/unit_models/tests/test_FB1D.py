@@ -145,7 +145,7 @@ def test_config_validation():
 
     with pytest.raises(ConfigurationError):
         m.fs.unit = FixedBed1D(
-            flow_type='reverse_flow',
+            flow_type="reverse_flow",
             transformation_method="dae.collocation",
             gas_phase_config={"property_package": m.fs.gas_props},
             solid_phase_config={
@@ -156,7 +156,7 @@ def test_config_validation():
 
     with pytest.raises(ConfigurationError):
         m.fs.unit = FixedBed1D(
-            flow_type='reverse_flow',
+            flow_type="reverse_flow",
             transformation_method="dae.finite_difference",
             transformation_scheme="BACKWARD",
             gas_phase_config={"property_package": m.fs.gas_props},
@@ -168,7 +168,7 @@ def test_config_validation():
 
     with pytest.raises(ConfigurationError):
         m.fs.unit = FixedBed1D(
-            flow_type='forward_flow',
+            flow_type="forward_flow",
             transformation_method="dae.finite_difference",
             transformation_scheme="FORWARD",
             gas_phase_config={"property_package": m.fs.gas_props},
@@ -579,7 +579,7 @@ class TestIronOC_reverse_flow(object):
         )
 
         m.fs.unit = FixedBed1D(
-            flow_type='reverse_flow',
+            flow_type="reverse_flow",
             gas_phase_config={"property_package": m.fs.gas_props},
             solid_phase_config={
                 "property_package": m.fs.solid_props,
