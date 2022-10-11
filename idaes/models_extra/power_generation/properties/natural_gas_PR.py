@@ -351,7 +351,7 @@ _component_params = {
         "elemental_composition": {"C": 2, "H": 6},
         "enth_mol_ig_comp": RPP4,
         "entr_mol_ig_comp": RPP4,
-        "cp_mol_ig_comp": NIST,
+        "cp_mol_ig_comp": RPP4,
         "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones},
         "therm_cond_phase_comp": {"Vap": Eucken},
         "parameter_data": {
@@ -378,7 +378,7 @@ _component_params = {
         "elemental_composition": {"C": 3, "H": 8},
         "enth_mol_ig_comp": RPP4,
         "entr_mol_ig_comp": RPP4,
-        "cp_mol_ig_comp": NIST,
+        "cp_mol_ig_comp": RPP4,
         "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones},
         "therm_cond_phase_comp": {"Vap": Eucken},
         "parameter_data": {
@@ -405,7 +405,7 @@ _component_params = {
         "elemental_composition": {"C": 4, "H": 10},
         "enth_mol_ig_comp": RPP5,
         "entr_mol_ig_comp": RPP5,
-        "cp_mol_ig_comp": NIST,
+        "cp_mol_ig_comp": RPP5,
         "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones},
         "therm_cond_phase_comp": {"Vap": Eucken},
         "parameter_data": {

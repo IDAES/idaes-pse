@@ -2788,6 +2788,11 @@ class GenericStateBlockData(StateBlockData):
                 self.phase_list,
                 doc="Specific molar heat capacity at constant pressure",
                 units=units["heat_capacity_mole"],
+                initialize=pyunits.convert_value(
+                    50,
+                    from_units=pyunits.J / pyunits.mole / pyunits.K,
+                    to_units=units["heat_capacity_mole"]
+                )
             )
 
             def rule_cp_mol_phase(b, p):
@@ -3850,6 +3855,11 @@ class GenericStateBlockData(StateBlockData):
                 self.phase_list,
                 doc="Thermal conductivity for each phase",
                 units=units["thermal_conductivity"],
+                initialize=pyunits.convert_value(
+                    1,
+                    from_units=pyunits.W / pyunits.m / pyunits.K,
+                    to_units=units["thermal_conductivity"]
+                )
             )
 
             def rule_therm_cond_phase(b, p):
@@ -3898,6 +3908,11 @@ class GenericStateBlockData(StateBlockData):
                 self.phase_list,
                 doc="Dynamic viscosity for each phase",
                 units=units["dynamic_viscosity"],
+                initialize=pyunits.convert_value(
+                    1e-5,
+                    from_units=pyunits.Pa * pyunits.s,
+                    to_units=units["dynamic_viscosity"]
+                )
             )
 
             def rule_visc_d_phase(b, p):

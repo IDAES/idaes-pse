@@ -233,6 +233,9 @@ class Test_CO2_H2O_Properties:
         m.props[1].mole_frac_comp["H2O"].fix(0.06)
         m.props[1].temperature.fix(311.8730783132979)
 
+        # Trigger construction of intermediate variables and constraints
+        tmp = m.props[1].cv_mol_phase["Vap"]
+
         assert degrees_of_freedom(m) == 0
 
         m.props.initialize()
