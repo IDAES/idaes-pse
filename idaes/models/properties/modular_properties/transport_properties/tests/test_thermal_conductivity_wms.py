@@ -74,12 +74,20 @@ def construct_dummy_model(component_dict, chapman_enskog=False):
             "therm_cond_phase_comp": {"Vap": ConstantProperties.Constant},
             "parameter_data": {
                 "mw": (component_dict[comp1]["mw"], pyunits.g / pyunits.mol),
+                "therm_cond_Vap_comp_coeff": (
+                    component_dict[comp1]["therm_cond_Vap"],
+                    pyunits.W / pyunits.m / pyunits.K,
+                ),
             },
         },
         comp2: {
             "therm_cond_phase_comp": {"Vap": ConstantProperties.Constant},
             "parameter_data": {
                 "mw": (component_dict[comp2]["mw"], pyunits.g / pyunits.mol),
+                "therm_cond_Vap_comp_coeff": (
+                    component_dict[comp2]["therm_cond_Vap"],
+                    pyunits.W / pyunits.m / pyunits.K,
+                ),
             },
         },
     }
@@ -147,15 +155,6 @@ def construct_dummy_model(component_dict, chapman_enskog=False):
         m.params.phase_list, m.params.component_list, initialize=0.5
     )
 
-    for comp in components:
-        cobj = m.params.get_component(comp)
-        if chapman_enskog:
-            ChapmanEnskog.ChapmanEnskogLennardJones.visc_d_phase_comp.build_parameters(
-                cobj, "Vap"
-            )
-        else:
-            ConstantProperties.Constant.visc_d_phase_comp.build_parameters(cobj, "Vap")
-
     def rule_visc_d_phase_comp(b, p, j):
         cobj = b.params.get_component(j)
         if (
@@ -171,7 +170,7 @@ def construct_dummy_model(component_dict, chapman_enskog=False):
     m.props[1].visc_d_phase_comp = pyo.Expression(
         m.props[1].phase_list,
         m.props[1].component_list,
-        doc="Diffusivity for each phase-component pair",
+        doc="Viscosity for each phase-component pair",
         rule=rule_visc_d_phase_comp,
     )
 
@@ -202,9 +201,7 @@ def test_wms_therm_cond_phase_():
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ThermalConductivityWMS.therm_cond_phase.return_expression(
-        m.props[1], m.params.Vap
-    )
+    expr = ThermalConductivityWMS.therm_cond_phase.return_expression(m.props[1], "Vap")
     m.props[1].mole_frac_phase_comp["Vap", "benzene"].value = 0.25
     m.props[1].mole_frac_phase_comp["Vap", "Ar"].value = 0.75
 
@@ -254,9 +251,7 @@ def test_wms_therm_cond_phase_benzene_n_hexane():
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ThermalConductivityWMS.therm_cond_phase.return_expression(
-        m.props[1], m.params.Vap
-    )
+    expr = ThermalConductivityWMS.therm_cond_phase.return_expression(m.props[1], "Vap")
     # Pulled off Figure 10-6 from Properties of Gases and Liquids, 5th Ed.
     # That table cites: Bennett, L. A., and R. G. Vines: J. Chem. Phys., 23: 1587 (1955).
     mole_frac_list = [0.0, 0.25188, 0.50090, 0.74994, 1.0]  # Mole fraction of benzene
@@ -301,9 +296,7 @@ def test_wms_therm_cond_phase_methanol_n_hexane():
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ThermalConductivityWMS.therm_cond_phase.return_expression(
-        m.props[1], m.params.Vap
-    )
+    expr = ThermalConductivityWMS.therm_cond_phase.return_expression(m.props[1], "Vap")
     # Pulled off Figure 10-6 from Properties of Gases and Liquids, 5th Ed.
     # That table cites: Bennett, L. A., and R. G. Vines:J. Chem. Phys., 23: 1587 (1955).
     mole_frac_list = [
@@ -354,9 +347,7 @@ def test_wms_therm_cond_phase_benzene_argon():
 
     assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
 
-    expr = ThermalConductivityWMS.therm_cond_phase.return_expression(
-        m.props[1], m.params.Vap
-    )
+    expr = ThermalConductivityWMS.therm_cond_phase.return_expression(m.props[1], "Vap")
     # Pulled off Figure 10-6 from Properties of Gases and Liquids, 5th Ed.
     # That table cites: Bennett, L. A., and R. G. Vines:J. Chem. Phys., 23: 1587 (1955).
     mole_frac_list = [0.0, 0.25130, 0.50026, 0.74780, 1.0]  # Mole fraction of benzene

@@ -44,8 +44,7 @@ def construct_dummy_model(param_dict):
     }
 
     # Also need to dummy configblock on the model for the test
-    # m.config = ConfigBlock(implicit=True)
-    # m.config.include_enthalpy_of_formation = True
+    m.config = ConfigBlock(implicit=True)
 
     m.meta_object = PropertyClassMetadata()
     m.meta_object.default_units["temperature"] = pyunits.K
@@ -64,12 +63,12 @@ def construct_dummy_model(param_dict):
     m.params.mw = Var(initialize=param_dict["mw"], units=pyunits.kg / pyunits.mol)
     # Hacking cp on the fake component object
     m.params.cp_mol_pure = Var(initialize=1, units=pyunits.J / pyunits.mol / pyunits.K)
-    m.params.cp_mol_ig_comp = Block()
+    m.params.config.cp_mol_ig_comp = Block()
 
     def return_expression(b, cobj, T):
         return cobj.cp_mol_pure
 
-    m.params.cp_mol_ig_comp.return_expression = return_expression
+    m.params.config.cp_mol_ig_comp.return_expression = return_expression
 
     # Create a dummy state block
     m.props = Block([1])
@@ -217,3 +216,57 @@ def test_therm_cond_phase_comp_ammonia():
             assert err == pytest.approx(err_list[j][i], abs=0.6)
 
     assert_units_equivalent(expr, pyunits.W / pyunits.m / pyunits.K)
+
+
+@pytest.mark.unit
+def test_no_cp_ig_error():
+    m = ConcreteModel()
+
+    # Create a dummy parameter block
+    m.params = Block()
+
+    m.params.config = ConfigBlock(implicit=True)
+    # Parameters for sulfur dioxide, from Properties of Gases and Liquids 5th ed. Appendix B.
+    m.params.config.parameter_data = {
+        "f_int_eucken": (1.61, pyunits.dimensionless),
+    }
+
+    # Also need to dummy configblock on the model for the test
+    m.config = ConfigBlock(implicit=True)
+
+    m.meta_object = PropertyClassMetadata()
+    m.meta_object.default_units["temperature"] = pyunits.K
+    m.meta_object.default_units["mass"] = pyunits.kg
+    m.meta_object.default_units["length"] = pyunits.m
+    m.meta_object.default_units["time"] = pyunits.s
+    m.meta_object.default_units["amount"] = pyunits.mol
+
+    def get_metadata(self):
+        return m.meta_object
+
+    m.get_metadata = types.MethodType(get_metadata, m)
+    m.params.get_metadata = types.MethodType(get_metadata, m.params)
+
+    # Create variables that should exist on param block
+    m.params.mw = Var(initialize=2.0, units=pyunits.kg / pyunits.mol)
+    # Hacking cp on the fake component object
+
+    # Create a dummy state block
+    m.props = Block([1])
+    add_object_reference(m.props[1], "params", m.params)
+
+    m.props[1].temperature = Var(initialize=298, units=pyunits.K)
+    # Have to trick the block into considering "params" as the component name
+    m.props[1].visc_d_phase_comp = Var(
+        ["Vap"], ["params"], initialize=1e-7, units=pyunits.Pa * pyunits.s
+    )
+
+    Eucken.therm_cond_phase_comp.build_parameters(m.params, "Vap")
+
+    with pytest.raises(
+        ConfigurationError,
+        match="Cannot find method to calculate cp_mol_ig_comp for component params.",
+    ):
+        expr = Eucken.therm_cond_phase_comp.return_expression(
+            m.props[1], m.params, "Vap", m.props[1].temperature
+        )
