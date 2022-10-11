@@ -154,7 +154,7 @@ def test_units1_costing(build_costing):
     )
 
     # Initialize costing
-    QGESSCostingData.costing_initialization(m.fs)
+    QGESSCostingData.costing_initialization(m.fs.costing)
     assert degrees_of_freedom(m) == 0
 
     # Solve the model
@@ -276,7 +276,7 @@ def test_units2_costing(build_costing):
     )
 
     # Initialize costing
-    QGESSCostingData.costing_initialization(m.fs)
+    QGESSCostingData.costing_initialization(m.fs.costing)
     assert degrees_of_freedom(m) == 0
 
     # Solve the model
@@ -502,7 +502,7 @@ def test_units3_costing(build_costing):
     )
 
     # Initialize costing
-    QGESSCostingData.costing_initialization(m.fs)
+    QGESSCostingData.costing_initialization(m.fs.costing)
     assert degrees_of_freedom(m) == 0
 
     # Solve the model
@@ -543,7 +543,7 @@ def test_flowsheet_costing(build_costing):
     )
 
     # Initialize costing
-    QGESSCostingData.costing_initialization(m.fs)
+    QGESSCostingData.costing_initialization(m.fs.costing)
     assert degrees_of_freedom(m) == 0
 
     # Solve the model

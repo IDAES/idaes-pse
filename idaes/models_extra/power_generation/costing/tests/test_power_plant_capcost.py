@@ -214,7 +214,7 @@ def test_PP_costing():
     )
 
     # add initialize
-    QGESSCostingData.costing_initialization(m.fs)
+    QGESSCostingData.costing_initialization(m.fs.costing)
 
     # try solving
     solver = get_solver()
@@ -1071,7 +1071,7 @@ def test_power_plant_costing():
     )
 
     # add initialize
-    QGESSCostingData.costing_initialization(m.fs)
+    QGESSCostingData.costing_initialization(m.fs.costing)
 
     # try solving
     solver = get_solver()
@@ -1416,7 +1416,7 @@ def test_sCO2_costing():
     )
 
     # add initialize
-    QGESSCostingData.costing_initialization(m.fs)
+    QGESSCostingData.costing_initialization(m.fs.costing)
 
     # try solving
     solver = get_solver()
@@ -1428,56 +1428,44 @@ def test_sCO2_costing():
     assert results.solver.termination_condition == pyo.TerminationCondition.optimal
 
     assert (
-        pytest.approx(pyo.value(m.fs.boiler.costing.costing.equipment_cost), abs=1e-1)
+        pytest.approx(pyo.value(m.fs.boiler.costing.equipment_cost), abs=1e-1)
         == 216.291
     )
     assert (
-        pytest.approx(pyo.value(m.fs.turbine.costing.costing.equipment_cost), abs=1e-1)
+        pytest.approx(pyo.value(m.fs.turbine.costing.equipment_cost), abs=1e-1)
         == 13.180
     )
     assert (
-        pytest.approx(
-            pyo.value(m.fs.generator.costing.costing.equipment_cost), abs=1e-1
-        )
+        pytest.approx(pyo.value(m.fs.generator.costing.equipment_cost), abs=1e-1)
         == 4.758
     )
+    assert pytest.approx(pyo.value(m.fs.HTR.costing.equipment_cost), abs=1e-1) == 40.156
+    assert pytest.approx(pyo.value(m.fs.LTR.costing.equipment_cost), abs=1e-1) == 81.807
     assert (
-        pytest.approx(pyo.value(m.fs.HTR.costing.costing.equipment_cost), abs=1e-1)
-        == 40.156
-    )
-    assert (
-        pytest.approx(pyo.value(m.fs.LTR.costing.costing.equipment_cost), abs=1e-1)
-        == 81.807
-    )
-    assert (
-        pytest.approx(
-            pyo.value(m.fs.co2_cooler.costing.costing.equipment_cost), abs=1e-1
-        )
+        pytest.approx(pyo.value(m.fs.co2_cooler.costing.equipment_cost), abs=1e-1)
         == 27.784
     )
     assert (
-        pytest.approx(
-            pyo.value(m.fs.main_compressor.costing.costing.equipment_cost), abs=1e-1
-        )
+        pytest.approx(pyo.value(m.fs.main_compressor.costing.equipment_cost), abs=1e-1)
         == 31.732
     )
     assert (
         pytest.approx(
-            pyo.value(m.fs.bypass_compressor.costing.costing.equipment_cost), abs=1e-1
+            pyo.value(m.fs.bypass_compressor.costing.equipment_cost), abs=1e-1
         )
         == 26.434
     )
     assert (
         pytest.approx(
-            pyo.value(m.fs.main_compressor_motor.costing.costing.equipment_cost)
-            + pyo.value(m.fs.bypass_compressor_motor.costing.costing.equipment_cost),
+            pyo.value(m.fs.main_compressor_motor.costing.equipment_cost)
+            + pyo.value(m.fs.bypass_compressor_motor.costing.equipment_cost),
             abs=1e-1,
         )
         == 29.133
     )
     assert (
         pytest.approx(
-            pyo.value(m.fs.bypass_compressor.costing.costing.equipment_cost), abs=1e-1
+            pyo.value(m.fs.bypass_compressor.costing.equipment_cost), abs=1e-1
         )
         == 26.434
     )
@@ -1516,12 +1504,9 @@ def test_ASU_costing():
 
     assert results.solver.termination_condition == pyo.TerminationCondition.optimal
 
-    m.fs.ASU.costing.costing.bare_erected_cost.display()
+    m.fs.ASU.costing.bare_erected_cost.display()
 
-    assert (
-        pytest.approx(pyo.value(m.fs.ASU.costing.costing.bare_erected_cost), abs=1)
-        == 3.4725
-    )
+    assert pytest.approx(pyo.value(m.fs.ASU.costing.bare_erected_cost), abs=1) == 3.4725
 
     return m
 
@@ -1553,7 +1538,7 @@ def test_OM_costing():
         fixed_TPC=fixed_TPC,
     )
 
-    QGESSCostingData.initialize_fixed_OM_costs(m.fs)
+    QGESSCostingData.initialize_fixed_OM_costs(m.fs.costing)
 
     # build variable costs
     m.fs.net_power = pyo.Var(m.fs.time, initialize=650, units=pyunits.MW)
@@ -1573,13 +1558,12 @@ def test_OM_costing():
 
     QGESSCostingData.get_variable_OM_costs(
         m.fs,
-        production_rate=m.fs.net_power,
         resources=resources,
         rates=rates,
         prices=prices,  # pass a flowsheet object
     )
 
-    QGESSCostingData.initialize_variable_OM_costs(m.fs)  # pass a flowsheet object
+    QGESSCostingData.initialize_variable_OM_costs(m.fs.costing)
 
     assert hasattr(m.fs, "total_fixed_OM_cost")
 
@@ -1599,6 +1583,6 @@ def test_OM_costing():
 
     assert pytest.approx(28.094, abs=0.1) == (pyo.value(m.fs.total_fixed_OM_cost))
 
-    assert pytest.approx(156.164, abs=0.1) == (
+    assert pytest.approx(182.367, abs=0.1) == (
         pyo.value(m.fs.total_variable_OM_cost[0])
     )

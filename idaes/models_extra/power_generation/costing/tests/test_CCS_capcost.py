@@ -22,6 +22,7 @@ process and its improvements. Applied Energy, 165, 648-659.
 
 import pytest
 from idaes.models_extra.power_generation.costing.power_plant_capcost import (
+    QGESSCosting,
     QGESSCostingData,
 )
 
@@ -55,7 +56,7 @@ def test_ccs_units_costing():
 
     # Add a flowsheet object to the model
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.get_costing(year="2018")
+    m.fs.costing = QGESSCosting()
 
     # Accounts with carbon capture system units
     # Absorber
@@ -688,10 +689,19 @@ def test_ccs_units_costing():
         CE_index_year="2013",
     )
 
-    QGESSCostingData.get_total_TPC(m.fs, "2013")
+    m.fs.costing.build_process_costs(
+        net_power=None,
+        fixed_OM=False,
+        variable_OM=False,
+        resources=None,
+        rates=None,
+        prices=None,
+        fuel=None,
+        CE_index_year="2013",
+    )
 
     # Initialize costing
-    QGESSCostingData.costing_initialization(m.fs)
+    QGESSCostingData.costing_initialization(m.fs.costing)
     assert degrees_of_freedom(m) == 0
 
     # Solve the model
