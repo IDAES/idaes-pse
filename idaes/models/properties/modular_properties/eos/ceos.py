@@ -22,6 +22,7 @@ from copy import deepcopy
 from pyomo.environ import (
     exp,
     Expression,
+    Constraint,
     ExternalFunction,
     log,
     Param,
@@ -366,7 +367,7 @@ class Cubic(EoSBase):
                 ac = getattr(m, cname + "_a_crit")[j]
                 func_alpha = getattr(m.params, cname + "_func_alpha")
 
-                return ac * func_alpha(m._teq[p1, p2], fw, cobj)
+                return ac * func_alpha(m.tbar[p1, p2], fw, cobj)
 
             b.add_component(
                 "_" + cname + "_a_eq",
@@ -406,7 +407,7 @@ class Cubic(EoSBase):
                 return (
                     am_eq[p1, p2, p3]
                     * m.pressure
-                    / (Cubic.gas_constant(b) * m._teq[p1, p2]) ** 2
+                    / (Cubic.gas_constant(b) * m.tbar[p1, p2]) ** 2
                 )
 
             b.add_component(
@@ -416,7 +417,7 @@ class Cubic(EoSBase):
 
             def rule_B_eq(m, p1, p2, p3):
                 bm = getattr(m, cname + "_bm")
-                return bm[p3] * m.pressure / (Cubic.gas_constant(b) * m._teq[p1, p2])
+                return bm[p3] * m.pressure / (Cubic.gas_constant(b) * m.tbar[p1, p2])
 
             b.add_component(
                 "_" + cname + "_B_eq",
@@ -446,6 +447,110 @@ class Cubic(EoSBase):
                     b.params._pe_pairs, b.phase_component_set, rule=rule_delta_eq
                 ),
             )
+
+            # Calculate cubic coeffs
+            def calculate_cubic_coeffs(b, p1, p2, p3):
+                """
+                Calculates the coefficients b, c, and d of the cubic
+                0 = z**3 + b * z**2 + c * z + d
+                """
+                
+                _A_eq = getattr(b, '_' + cname + '_A_eq')
+                _B_eq = getattr(b, '_' + cname + '_B_eq')
+                A_eq = _A_eq[p1, p2, p3]
+                B_eq = _B_eq[p1, p2, p3]
+                EoS_u = EoS_param[ctype]['u']
+                EoS_w = EoS_param[ctype]['w']
+    
+                _b = -(1 + B_eq - EoS_u * B_eq)
+                _c = (A_eq -
+                     EoS_u * B_eq -
+                     EoS_u * B_eq**2 +
+                     EoS_w * B_eq**2)
+                _d = -(A_eq * B_eq +
+                      EoS_w * B_eq**2 +
+                      EoS_w * B_eq**3)
+                return (_b, _c, _d)
+
+            def second_derivative(b, p1, p2, p3):
+                _b, _, _ = calculate_cubic_coeffs(b, p1, p2, p3)
+                z = b.compress_fact_phase[p3]
+                return 6 * z + 2 * _b
+            b.cubic_second_derivative = Expression(b.params._pe_pairs,
+                                                   b.phase_list,
+                                                   rule=second_derivative)
+
+    @staticmethod
+    def build_critical_properties(b):
+        reference_phase = 'Liq'
+        pobj = b.params.get_phase(reference_phase)
+        cname = pobj.config.equation_of_state_options['type'].name
+        ctype = pobj._cubic_type
+        
+        # Add components for calculation of mixture critical properties
+        def func_a_crit(m, j):
+            cobj = m.params.get_component(j)
+            fw = getattr(m, cname+"_fw")
+            return (EoS_param[ctype]['omegaA']*(
+                        (Cubic.gas_constant(b) *
+                        cobj.temperature_crit)**2/cobj.pressure_crit) *
+                    ((1+fw[j]*(1-sqrt(m.temperature_crit_mix /
+                                      cobj.temperature_crit)))**2))
+        b.add_component('a_crit',
+                        Expression(b.component_list,
+                                    rule=func_a_crit,
+                                    doc='Component a coefficient'))
+        
+        def rule_am_crit(m):
+            try:
+                rule = m.params.get_phase(reference_phase). \
+                    config.equation_of_state_options["mixing_rule_a"]
+            except KeyError:
+                rule = MixingRuleA.default
+    
+            a_crit = getattr(m, "a_crit")
+            if rule == MixingRuleA.default:
+                return rule_am_crit_default(m, cname, a_crit)
+            else:
+                raise ConfigurationError(
+                    "{} Unrecognized option for Equation of State "
+                    "mixing_rule_a: {}. Must be an instance of MixingRuleA "
+                    "Enum.".format(m.name, rule))
+        b.add_component('am_crit', Expression(rule=rule_am_crit))
+    
+        def rule_bm_crit(m):
+            try:
+                rule = m.params.get_phase(reference_phase). \
+                    config.equation_of_state_options["mixing_rule_b"]
+            except KeyError:
+                rule = MixingRuleB.default
+    
+            b = getattr(m, cname+"_b")
+            if rule == MixingRuleB.default:
+                return sum(m.mole_frac_comp[i] * b[i]
+                            for i in m.component_list)
+            else:
+                raise ConfigurationError(
+                    "{} Unrecognized option for Equation of State "
+                    "mixing_rule_a: {}. Must be an instance of MixingRuleB "
+                    "Enum.".format(m.name, rule))    
+        b.add_component('bm_crit', Expression(rule=rule_bm_crit))
+
+        def rule_A_crit(m):
+            am_crit = getattr(m, "am_crit")
+            # am_crit = b.am_crit
+            return EoS_param[ctype]['omegaA'] == \
+                (am_crit * m.pressure_crit_mix /
+                  (Cubic.gas_constant(b) * m.temperature_crit_mix)**2)
+        b.add_component('A_crit', Constraint(rule=rule_A_crit))
+    
+        def rule_B_crit(m):
+            bm_crit = getattr(m, "bm_crit")
+            # bm_crit = b.bm_crit
+            return EoS_param[ctype]['coeff_b'] == \
+                (bm_crit * m.pressure_crit_mix /
+                  (Cubic.gas_constant(b) * m.temperature_crit_mix))
+        b.add_component('B_crit', Constraint(rule=rule_B_crit))
 
     @staticmethod
     def calculate_scaling_factors(b, pobj):
@@ -1269,3 +1374,12 @@ def rule_am_default(m, cname, a, p, pp=()):
 
 def rule_bm_default(m, b, p):
     return sum(m.mole_frac_phase_comp[p, i] * b[i] for i in m.components_in_phase(p))
+
+
+def rule_am_crit_default(m, cname, a_crit):
+    k = getattr(m.params, cname + "_kappa")
+    return sum(sum(
+        m.mole_frac_comp[i] * m.mole_frac_comp[j] *
+        sqrt(a_crit[i] * a_crit[j]) * (1 - k[i, j])
+        for j in m.component_list)
+        for i in m.component_list)
