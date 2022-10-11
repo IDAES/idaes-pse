@@ -40,43 +40,48 @@ The IDAES FixedBed1D model has construction arguments specific to the whole unit
 * transformation_method - sets the discretization method to use by the Pyomo TransformationFactory 
   to transform the spatial domain (default = dae.finite_difference):
   
-  - dae.finite_difference - finite difference method.
-  - dae.collocation - orthogonal collocation method.
+      - dae.finite_difference - finite difference method.
+      - dae.collocation - orthogonal collocation method.
   
 * transformation_scheme - sets the scheme to use when transforming a domain. 
   Selected schemes should be compatible with the transformation_method chosen (default = None):
   
-  - None - defaults to "BACKWARD" for finite difference transformation method and to "LAGRANGE-RADAU" for collocation transformation method
-  - BACKWARD - use a finite difference transformation method.
-  - FORWARD - use a finite difference transformation method.
-  - LAGRANGE-RADAU - use a collocation transformation method.   
+      - None - defaults to "BACKWARD" for finite difference transformation method and to "LAGRANGE-RADAU" for collocation transformation method
+      - BACKWARD - use a finite difference transformation method.
+      - FORWARD - use a finite difference transformation method.
+      - LAGRANGE-RADAU - use a collocation transformation method.   
   
 * collocation_points - sets the number of collocation points to use when discretizing the spatial domains (default = 3, collocation methods only).
 
+* flow_type - indicates the flow arrangement within the unit to be modeled. Options are:
+
+      - 'forward_flow' - (default) gas flows in the forward direction (from x=0 to x=1)
+      - 'reverse_flow' - gas flows in the reverse direction (from x=1 to x=0).
+
 * material_balance_type - indicates what type of energy balance should be constructed (default = MaterialBalanceType.componentTotal).
 
-  - MaterialBalanceType.componentTotal - use total component balances.
-  - MaterialBalanceType.total - use total material balance.
+      - MaterialBalanceType.componentTotal - use total component balances.
+      - MaterialBalanceType.total - use total material balance.
     
 * energy_balance_type - indicates what type of energy balance should be constructed (default = EnergyBalanceType.enthalpyTotal).
 
-  - EnergyBalanceType.none - excludes energy balances.
-  - EnergyBalanceType.enthalpyTotal - single enthalpy balance for material.
+      - EnergyBalanceType.none - excludes energy balances.
+      - EnergyBalanceType.enthalpyTotal - single enthalpy balance for material.
 
 * momentum_balance_type - indicates what type of momentum balance should be constructed (default = MomentumBalanceType.pressureTotal).
 
-  - MomentumBalanceType.none - exclude momentum balances.
-  - MomentumBalanceType.pressureTotal - single pressure balance for material.
+      - MomentumBalanceType.none - exclude momentum balances.
+      - MomentumBalanceType.pressureTotal - single pressure balance for material.
 
 * has_pressure_change - indicates whether terms for pressure change should be constructed (default = True).
 
-  - True - include pressure change terms.
-  - False - exclude pressure change terms.
+      - True - include pressure change terms.
+      - False - exclude pressure change terms.
 
 * pressure_drop_type - indicates what type of pressure drop correlation should be used (default = "ergun_correlation").
 
-  - "ergun_correlation" - use the Ergun equation.
-  - "simple_correlation" - use a simplified pressure drop correlation.
+      - "ergun_correlation" - use the Ergun equation.
+      - "simple_correlation" - use a simplified pressure drop correlation.
 
 **Arguments that are applicable to the gas phase:**
 

@@ -150,6 +150,19 @@ discretizing length domain (default=3)""",
         ),
     )
     CONFIG.declare(
+        "flow_type",
+        ConfigValue(
+            default="forward_flow",
+            domain=In(["forward_flow", "reverse_flow"]),
+            description="Flow configuration of Fixed Bed",
+            doc="""Flow configuration of Fixed Bed
+**default** - "forward_flow".
+**Valid values:** {
+**"forward_flow"** - gas flows from 0 to 1,
+**"reverse_flow"** -  gas flows from 1 to 0.}""",
+        ),
+    )
+    CONFIG.declare(
         "material_balance_type",
         ConfigValue(
             default=MaterialBalanceType.componentTotal,
@@ -320,17 +333,78 @@ should be constructed,
         # Get units meta data from property packages
         units_meta_solid = solid_phase.property_package.get_metadata().get_derived_units
 
-        # Consistency check for transformation method and transformation scheme
+        # Set flow direction for the gas control volume
+        # Gas flows from 0 to 1
+        if self.config.flow_type == "forward_flow":
+            set_direction_gas = FlowDirection.forward
+        # Gas flows from 1 to 0
+        if self.config.flow_type == "reverse_flow":
+            set_direction_gas = FlowDirection.backward
+
+        # Consistency check for flow direction, transformation method and
+        # transformation scheme
         if (
-            self.config.transformation_method == "dae.finite_difference"
+            self.config.flow_type == "forward_flow"
+            and self.config.transformation_method == "dae.finite_difference"
             and self.config.transformation_scheme is None
         ):
             self.config.transformation_scheme = "BACKWARD"
         elif (
-            self.config.transformation_method == "dae.collocation"
+            self.config.flow_type == "reverse_flow"
+            and self.config.transformation_method == "dae.finite_difference"
+            and self.config.transformation_scheme is None
+        ):
+            self.config.transformation_scheme = "FORWARD"
+        elif (
+            self.config.flow_type == "forward_flow"
+            and self.config.transformation_method == "dae.collocation"
             and self.config.transformation_scheme is None
         ):
             self.config.transformation_scheme = "LAGRANGE-RADAU"
+        elif (
+            self.config.flow_type == "reverse_flow"
+            and self.config.transformation_method == "dae.collocation"
+        ):
+            raise ConfigurationError(
+                "{} invalid value for "
+                "transformation_method argument."
+                "Must be "
+                "dae.finite_difference "
+                "if "
+                "flow_type is"
+                " "
+                "reverse_flow"
+                ".".format(self.name)
+            )
+        elif (
+            self.config.flow_type == "forward_flow"
+            and self.config.transformation_scheme == "FORWARD"
+        ):
+            raise ConfigurationError(
+                "{} invalid value for "
+                "transformation_scheme argument. "
+                "Must be "
+                "BACKWARD "
+                "if flow_type is"
+                " "
+                "forward_flow"
+                ".".format(self.name)
+            )
+        elif (
+            self.config.flow_type == "reverse_flow"
+            and self.config.transformation_scheme == "BACKWARD"
+        ):
+            raise ConfigurationError(
+                "{} invalid value for "
+                "transformation_scheme argument."
+                "Must be "
+                "FORWARD "
+                "if "
+                "flow_type is"
+                " "
+                "reverse_flow"
+                ".".format(self.name)
+            )
         elif (
             self.config.transformation_method == "dae.finite_difference"
             and self.config.transformation_scheme != "BACKWARD"
@@ -428,11 +502,11 @@ should be constructed,
             length_domain=self.length_domain,
             length_domain_set=self.config.length_domain_set,
             length_var=self.bed_height,
-            flow_direction=FlowDirection.forward,
+            flow_direction=set_direction_gas,
         )
 
         self.gas_phase.add_state_blocks(
-            information_flow=FlowDirection.forward, has_phase_equilibrium=False
+            information_flow=set_direction_gas, has_phase_equilibrium=False
         )
 
         if gas_phase.reaction_package is not None:
@@ -1060,8 +1134,12 @@ should be constructed,
             def isothermal_gas_phase(b, t, x):
                 # Skip constraint at the initial and boundary points
                 t0 = b.flowsheet().config.time.first()
+                if b.config.flow_type == 'forward_flow':
+                    x_inlet = b.length_domain.first()
+                else:
+                    x_inlet = b.length_domain.last()
                 if (
-                    x == b.length_domain.first()
+                    x == x_inlet
                     or t == b.flowsheet().config.time.first()
                 ):
                     return Constraint.Skip
@@ -1143,7 +1221,7 @@ should be constructed,
         solid_phase = blk.config.solid_phase_config
 
         # Keep all unit model geometry constraints, derivative_var constraints,
-        # and property block constraints active. Additionaly, in control
+        # and property block constraints active. Additionally, in control
         # volumes - keep conservation linking constraints and
         # holdup calculation (for dynamic flowsheets) constraints active
 
@@ -1227,8 +1305,12 @@ should be constructed,
         if blk.config.has_holdup is True:
             # Fix initial conditions of flowrate
             t0 = blk.flowsheet().time.first()
+            if blk.config.flow_type == 'forward_flow':
+                x_inlet = blk.length_domain.first()
+            else:
+                x_inlet = blk.length_domain.last()
             for x in blk.length_domain:
-                if x != blk.length_domain.first():
+                if x != x_inlet:
                     blk.gas_phase.properties[t0, x].flow_mol.fix()
                     blk.gas_phase.properties[t0, x].sum_component_eqn.deactivate()
 
@@ -1398,11 +1480,15 @@ should be constructed,
         calc_var_kwds = {"eps": 5e-6}
         if blk.config.energy_balance_type != EnergyBalanceType.none:
             # Unfix temperatures
+            if blk.config.flow_type == 'forward_flow':
+                x_inlet = blk.length_domain.first()
+            else:
+                x_inlet = blk.length_domain.last()
             for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     if (
                         t != blk.flowsheet().config.time.first()
-                        and x != blk.length_domain.first()
+                        and x != x_inlet
                     ):
                         # Unfix gas temperature variables except at the inlet
                         blk.gas_phase.properties[t, x].temperature.unfix()
@@ -1487,24 +1573,30 @@ should be constructed,
 
         # Initialize energy balance
         if blk.config.energy_balance_type == EnergyBalanceType.none:
+            if blk.config.flow_type == 'forward_flow':
+                x_inlet = blk.length_domain.first()
+            else:
+                x_inlet = blk.length_domain.last()
+            t0 = blk.flowsheet().config.time.first()
             for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     if (
                         t != blk.flowsheet().config.time.first()
-                        and x != blk.length_domain.first()
+                        and x != x_inlet
                     ):
                         # Unfix gas temperature variables except at the inlet
                         blk.gas_phase.properties[t, x].temperature.unfix()
                         blk.gas_phase.properties[t, x].temperature = value(
-                            blk.solid_properties[0, x].temperature
+                            blk.solid_properties[t0, x].temperature
                         )
 
             for t in blk.flowsheet().time:
+                t0 = blk.flowsheet().config.time.first()
                 if t != blk.flowsheet().config.time.first():
                     for x in blk.length_domain:
                         # Unfix solid temperature variables except initial
                         blk.solid_properties[t, x].temperature = value(
-                            blk.solid_properties[0, x].temperature
+                            blk.solid_properties[t0, x].temperature
                         )
                         blk.solid_properties[t, x].temperature.unfix()
 
