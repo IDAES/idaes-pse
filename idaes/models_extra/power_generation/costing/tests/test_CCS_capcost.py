@@ -34,6 +34,10 @@ from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from pyomo.util.check_units import assert_units_consistent
 
+from pyomo.common.fileutils import this_file_dir
+
+directory = this_file_dir()
+
 # Get default solver for testing
 solver = get_solver()
 
@@ -42,7 +46,7 @@ solver = get_solver()
 def test_remove_existing_dictionaries():
     # Remove the dictionaries so they may be regenerated during testing
     dict_path = os.path.join(
-        os.path.join(os.getcwd(), ".."), "generic_ccs_costing_data.json"
+        os.path.join(directory, ".."), "generic_ccs_costing_data.json"
     )
     assert os.path.exists(dict_path)
 

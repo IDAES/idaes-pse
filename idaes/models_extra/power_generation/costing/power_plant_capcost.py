@@ -855,7 +855,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         try:
                             pyunits.convert(scaled_param[j], ref_units)
                         except InconsistentUnitsError:
-                            raise InconsistentUnitsError(
+                            raise Exception(
                                 "Account %s uses units of %s. "
                                 "Units of %s were passed. "
                                 "Cannot convert unit containers."
@@ -877,7 +877,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     try:
                         pyunits.convert(scaled_param, ref_units)
                     except InconsistentUnitsError:
-                        raise InconsistentUnitsError(
+                        raise Exception(
                             "Account %s uses units of %s. "
                             "Units of %s were passed. "
                             "Cannot convert unit containers."
