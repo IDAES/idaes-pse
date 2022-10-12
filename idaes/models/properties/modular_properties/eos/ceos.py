@@ -264,80 +264,6 @@ class Cubic(EoSBase):
                 Expression(b.component_list, b.component_list, rule=rule_daij_dT),
             )
 
-            b.add_component(
-                cname + "_dam_dT",
-                Var(
-                    b.phase_list,
-                    initialize=1e-4,
-                    units=units["gas_constant"] / units["density_mole"],
-                ),
-            )
-
-            def rule_dam_dT(m, p):
-                daij_dT = getattr(m, cname + "_daij_dT")
-                dam_dT = getattr(m, cname + "_dam_dT")
-                return dam_dT[p] == sum(
-                    sum(
-                        m.mole_frac_phase_comp[p, i]
-                        * m.mole_frac_phase_comp[p, j]
-                        * daij_dT[i, j]
-                        for j in m.components_in_phase(p)
-                    )
-                    for i in m.components_in_phase(p)
-                )
-
-            b.add_component(
-                cname + "_dam_dT_eqn", Constraint(b.phase_list, rule=rule_dam_dT)
-            )
-
-            b.add_component(
-                cname + "_d2am_dT2",
-                Var(
-                    b.phase_list,
-                    initialize=1e-6,
-                    units=units["gas_constant"]
-                    / units["density_mole"]
-                    / units["temperature"],
-                ),
-            )
-
-            def rule_d2am_dT2(m, p):
-                k = getattr(m.params, cname + "_kappa")
-                a = getattr(m, cname + "_a")
-                da_dT = getattr(m, cname + "_da_dT")
-                d2a_dT2 = getattr(m, cname + "_d2a_dT2")
-                # Placeholders for if temperature dependent k is needed
-                dk_dT = 0
-                d2k_dT2 = 0
-
-                # Initialize loop variable
-                d2am_dT2 = 0
-
-                for i in m.components_in_phase(p):
-                    for j in m.components_in_phase(p):
-                        d2aij_dT2 = sqrt(a[i] * a[j]) * (
-                            -d2k_dT2
-                            - dk_dT * (da_dT[i] / a[i] + da_dT[j] / a[j])
-                            + (1 - k[i, j])
-                            / 2
-                            * (
-                                d2a_dT2[i] / a[i]
-                                + d2a_dT2[j] / a[j]
-                                - 1 / 2 * (da_dT[i] / a[i] - da_dT[j] / a[j]) ** 2
-                            )
-                        )
-                        d2am_dT2 += (
-                            m.mole_frac_phase_comp[p, i]
-                            * m.mole_frac_phase_comp[p, j]
-                            * d2aij_dT2
-                        )
-                d2am_dT2_Var = getattr(m, cname + "_d2am_dT2")
-                return d2am_dT2_Var[p] == d2am_dT2
-
-            b.add_component(
-                cname + "_d2am_dT2_eqn", Constraint(b.phase_list, rule=rule_d2am_dT2)
-            )
-
             def rule_delta(m, p, i):
                 # See pg. 145 in Properties of Gases and Liquids
                 a = getattr(m, cname + "_a")
@@ -565,6 +491,137 @@ class Cubic(EoSBase):
         setattr(param_block, cname + "_func_d2alpha_dT2", func_d2alpha_dT2_soave)
 
     @staticmethod
+    def _build_dam_dT(b, p):
+        pobj = b.params.get_phase(p)
+        cname = pobj._cubic_type.name
+        units = b.params.get_metadata().derived_units
+
+        b.add_component(
+            cname + "_dam_dT",
+            Var(
+                b.phase_list,
+                initialize=1e-4,
+                units=units["gas_constant"] / units["density_mole"],
+            ),
+        )
+
+        def rule_dam_dT(m, p):
+            daij_dT = getattr(m, cname + "_daij_dT")
+            dam_dT = getattr(m, cname + "_dam_dT")
+            return dam_dT[p] == sum(
+                sum(
+                    m.mole_frac_phase_comp[p, i]
+                    * m.mole_frac_phase_comp[p, j]
+                    * daij_dT[i, j]
+                    for j in m.components_in_phase(p)
+                )
+                for i in m.components_in_phase(p)
+            )
+
+        b.add_component(
+            cname + "_dam_dT_eqn", Constraint(b.phase_list, rule=rule_dam_dT)
+        )
+    @staticmethod
+    def _build_d2am_dT2(b, p):
+        pobj = b.params.get_phase(p)
+        cname = pobj._cubic_type.name
+        units = b.params.get_metadata().derived_units
+
+        b.add_component(
+            cname + "_d2am_dT2",
+            Var(
+                b.phase_list,
+                initialize=1e-6,
+                units=units["gas_constant"]
+                      / units["density_mole"]
+                      / units["temperature"],
+            ),
+        )
+
+        def rule_d2am_dT2(m, p):
+            k = getattr(m.params, cname + "_kappa")
+            a = getattr(m, cname + "_a")
+            da_dT = getattr(m, cname + "_da_dT")
+            d2a_dT2 = getattr(m, cname + "_d2a_dT2")
+            # Placeholders for if temperature dependent k is needed
+            dk_dT = 0
+            d2k_dT2 = 0
+            # Initialize loop variable
+            d2am_dT2 = 0
+            for i in m.components_in_phase(p):
+                for j in m.components_in_phase(p):
+                    d2aij_dT2 = sqrt(a[i] * a[j]) * (
+                            -d2k_dT2
+                            - dk_dT * (da_dT[i] / a[i] + da_dT[j] / a[j])
+                            + (1 - k[i, j])
+                            / 2
+                            * (
+                                    d2a_dT2[i] / a[i]
+                                    + d2a_dT2[j] / a[j]
+                                    - 1 / 2 * (da_dT[i] / a[i] - da_dT[j] / a[j]) ** 2
+                            )
+                    )
+                    d2am_dT2 += (
+                            m.mole_frac_phase_comp[p, i]
+                            * m.mole_frac_phase_comp[p, j]
+                            * d2aij_dT2
+                    )
+            d2am_dT2_Var = getattr(m, cname + "_d2am_dT2")
+            return d2am_dT2_Var[p] == d2am_dT2
+
+        b.add_component(
+            cname + "_d2am_dT2_eqn", Constraint(b.phase_list, rule=rule_d2am_dT2)
+        )
+
+    def _build_dZ_dT(b, p):
+        pobj = b.params.get_phase(p)
+        cname = pobj._cubic_type.name
+        units = b.params.get_metadata().derived_units
+
+        if not hasattr(b, cname + "_dam_dT"):
+            Cubic._build_dam_dT(b, p)
+
+        b.add_component(
+            "_" + cname + "_dZ_dT",
+            Var(
+                b.phase_list,
+                initialize=0.1,
+                units=1 / units["temperature"],
+            ),
+        )
+        def rule_dZ_dT(blk, p):
+            pobj = blk.params.get_phase(p)
+            cname = pobj._cubic_type.name
+            am = getattr(blk, cname + "_am")[p]
+            A = getattr(blk, cname + "_A")[p]
+            B = getattr(blk, cname + "_B")[p]
+            dam_dT = getattr(blk, cname + "_dam_dT")[p]
+            Z = blk.compress_fact_phase[p]
+            T = blk.temperature
+
+            EoS_u = EoS_param[pobj._cubic_type]["u"]
+            EoS_w = EoS_param[pobj._cubic_type]["w"]
+
+            dBdT = -B / T
+            dAdT = (A / am) * dam_dT - (2 * A / T)
+
+            K2 = (EoS_u - 1) * B - 1
+            K3 = A - EoS_u * B - (EoS_u - EoS_w) * B ** 2
+            K4 = -(A * B + EoS_w * B ** 2 + EoS_w * B ** 3)
+
+            dK2dT = (EoS_u - 1) * dBdT
+            dK3dT = dAdT - EoS_u * dBdT - 2 * (EoS_u - EoS_w) * B * dBdT
+            dK4dT = -(A * dBdT + B * dAdT + 2 * EoS_w * B * dBdT + 3 * EoS_w * B ** 2 * dBdT)
+
+            dZ_dT_Var = getattr(blk, "_" + cname + "_dZ_dT")
+
+            return dZ_dT_Var[p] == -(Z ** 2 * dK2dT + Z * dK3dT + dK4dT) / (3 * Z ** 2 + 2 * K2 * Z + K3)
+
+        b.add_component(
+            "_" + cname + "_dZ_dT_eqn", Constraint(b.phase_list, rule=rule_dZ_dT)
+        )
+
+    @staticmethod
     def compress_fact_phase(b, p):
         pobj = b.params.get_phase(p)
         cname = pobj._cubic_type.name
@@ -592,6 +649,15 @@ class Cubic(EoSBase):
         pobj = blk.params.get_phase(p)
         cname = pobj._cubic_type.name
 
+        if not hasattr(blk, cname + "_dam_dT"):
+            Cubic._build_dam_dT(blk, p)
+
+        if not hasattr(blk, cname + "_d2am_dT2"):
+            Cubic._build_d2am_dT2(blk, p)
+
+        if not hasattr(blk, "_" + cname + "_dZ_dT"):
+            Cubic._build_dZ_dT(blk, p)
+
         am = getattr(blk, cname + "_am")[p]
         bm = getattr(blk, cname + "_bm")[p]
         B = getattr(blk, cname + "_B")[p]
@@ -602,7 +668,7 @@ class Cubic(EoSBase):
         T = blk.temperature
         R = Cubic.gas_constant(blk)
         Z = blk.compress_fact_phase[p]
-        dZdT = _dZ_dT(blk, p)
+        dZdT = getattr(blk, "_" + cname + "_dZ_dT")[p]
 
         EoS_u = EoS_param[pobj._cubic_type]["u"]
         EoS_w = EoS_param[pobj._cubic_type]["w"]
@@ -636,6 +702,10 @@ class Cubic(EoSBase):
     def cv_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)
         cname = pobj._cubic_type.name
+
+        if not hasattr(blk, cname + "_dam_dT"):
+            Cubic._build_dam_dT(blk, p)
+
         am = getattr(blk, cname + "_am")[p]
         bm = getattr(blk, cname + "_bm")[p]
         cp = blk.cp_mol_phase[p]
@@ -670,8 +740,11 @@ class Cubic(EoSBase):
     @staticmethod
     def energy_internal_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)
-
         cname = pobj._cubic_type.name
+
+        if not hasattr(blk, cname + "_dam_dT"):
+            Cubic._build_dam_dT(blk, p)
+
         am = getattr(blk, cname + "_am")[p]
         bm = getattr(blk, cname + "_bm")[p]
         B = getattr(blk, cname + "_B")[p]
@@ -707,8 +780,11 @@ class Cubic(EoSBase):
     @staticmethod
     def enth_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)
-
         cname = pobj._cubic_type.name
+
+        if not hasattr(blk, cname + "_dam_dT"):
+            Cubic._build_dam_dT(blk, p)
+
         am = getattr(blk, cname + "_am")[p]
         bm = getattr(blk, cname + "_bm")[p]
         B = getattr(blk, cname + "_B")[p]
@@ -750,8 +826,11 @@ class Cubic(EoSBase):
     @staticmethod
     def entr_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)
-
         cname = pobj._cubic_type.name
+
+        if not hasattr(blk, cname + "_dam_dT"):
+            Cubic._build_dam_dT(blk, p)
+
         bm = getattr(blk, cname + "_bm")[p]
         B = getattr(blk, cname + "_B")[p]
         dam_dT = getattr(blk, cname + "_dam_dT")[p]
@@ -933,33 +1012,6 @@ class Cubic(EoSBase):
         )
 
 
-def _dZ_dT(blk, p):
-    pobj = blk.params.get_phase(p)
-    cname = pobj._cubic_type.name
-    am = getattr(blk, cname + "_am")[p]
-    A = getattr(blk, cname + "_A")[p]
-    B = getattr(blk, cname + "_B")[p]
-    dam_dT = getattr(blk, cname + "_dam_dT")[p]
-    Z = blk.compress_fact_phase[p]
-    T = blk.temperature
-
-    EoS_u = EoS_param[pobj._cubic_type]["u"]
-    EoS_w = EoS_param[pobj._cubic_type]["w"]
-
-    dBdT = -B / T
-    dAdT = (A / am) * dam_dT - (2 * A / T)
-
-    K2 = (EoS_u - 1) * B - 1
-    K3 = A - EoS_u * B - (EoS_u - EoS_w) * B**2
-    K4 = -(A * B + EoS_w * B**2 + EoS_w * B**3)
-
-    dK2dT = (EoS_u - 1) * dBdT
-    dK3dT = dAdT - EoS_u * dBdT - 2 * (EoS_u - EoS_w) * B * dBdT
-    dK4dT = -(A * dBdT + B * dAdT + 2 * EoS_w * B * dBdT + 3 * EoS_w * B**2 * dBdT)
-
-    return -(Z**2 * dK2dT + Z * dK3dT + dK4dT) / (3 * Z**2 + 2 * K2 * Z + K3)
-
-
 def _N_dZ_dNj(blk, p, j):
     pobj = blk.params.get_phase(p)
     cname = pobj._cubic_type.name
@@ -1110,6 +1162,7 @@ def _log_fug_coeff_method(A, b, bm, B, delta, Z, cubic_type):
 
 def _d_log_fug_coeff_dT_phase_comp(blk, p, j):
     pobj = blk.params.get_phase(p)
+    cname = pobj._cubic_type.name
 
     if not (
         pobj._mixing_rule_a == MixingRuleA.default
@@ -1121,8 +1174,12 @@ def _d_log_fug_coeff_dT_phase_comp(blk, p, j):
             "that is not supported by this choice "
             "of mixing rules.".format(blk.name)
         )
+    if not hasattr(blk, cname + "_dam_dT"):
+        Cubic._build_dam_dT(blk, p)
 
-    cname = pobj._cubic_type.name
+    if not hasattr(blk, "_" + cname + "_dZ_dT"):
+        Cubic._build_dZ_dT(blk, p)
+
     am = getattr(blk, cname + "_am")[p]
     daij_dT = getattr(blk, cname + "_daij_dT")
     dam_dT = getattr(blk, cname + "_dam_dT")[p]
@@ -1133,7 +1190,7 @@ def _d_log_fug_coeff_dT_phase_comp(blk, p, j):
     delta = getattr(blk, cname + "_delta")[p, j]
 
     Z = blk.compress_fact_phase[p]
-    dZ_dT = _dZ_dT(blk, p)
+    dZ_dT = getattr(blk, "_" + cname + "_dZ_dT")
     T = blk.temperature
 
     u = EoS_param[pobj._cubic_type]["u"]
