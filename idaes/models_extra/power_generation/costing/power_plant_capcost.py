@@ -58,11 +58,11 @@ from idaes.core import (
     register_idaes_currency_units,
 )
 from idaes.models_extra.power_generation.costing.costing_dictionaries import (
-    BB_costing_params,
-    sCO2_costing_params,
+    load_BB_costing_dictionary,
+    load_sCO2_costing_dictionary,
 )
 from idaes.models_extra.power_generation.costing.generic_ccs_capcost_custom_dict import (
-    generic_ccs_costing_params,
+    load_generic_ccs_costing_dictionary,
 )
 
 from idaes.core.util.tables import stream_table_dataframe_to_string
@@ -122,14 +122,36 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         CE_index_year="2018",
     ):
         """
-        This is where you do all your process wide costing.
-        This is completely up to you, but you will have access to the
-        following aggregate costs:
+        This method builds process-wide costing, including fixed and variable
+        operating & maintenance costs, costs of production, cost of
+        electricity and cost of capture.
 
-        1. self.aggregate_capital_cost
-        2. self.aggregate_fixed_operating_cost
-        3. self.aggregate_variable_operating_cost
-        4. self.aggregate_flow_costs (indexed by flow type)
+        Args:
+            total_plant_cost: The TPC in $MM that will be used to determine fixed O&M,
+                costs. If the value is None, the function will try to use the
+                TPC calculated from the individual units. This quantity should
+                be a Pyomo Var or Param that will contain the TPC value.
+            nameplate_capacity: rated plant output in MW
+            labor_rate: hourly rate of plant operators in project dollar year
+            labor_burden: a percentage multiplier used to estimate non-salary
+                labor expenses
+            operators_per_shift: average number of operators per shift
+            tech: int 1-7 representing the catagories in get_PP_costing, used
+                to determine maintenance costs
+            land_cost: Expression, Var or Param to calculate land costs
+            net_power: actual plant output in MW, only required if calculating
+                variable costs
+            resources: list setting resources to cost
+            rates: list setting flow rates of resources
+            prices: list setting prices of resources
+            fixed_OM: True/False flag for calculating fixed O&M costs
+            variable_OM: True/False flag for calculating variable O&M costs
+            fuel: string setting fuel type for fuel costs
+            chemicals: string setting chemicals type for chemicals costs
+            waste: string setting waste type for waste costs
+            tonne_CO2_capture: Var or value to use for tonnes of CO2 capture
+                in one year
+            CE_index_year: year for cost basis, e.g. "2018" to use 2018 dollars
         """
 
         try:
@@ -520,10 +542,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 "Valid CE index options include CE500, CE394 and years from "
                 "1990 to 2020." % (CE_index_year)
             )
-        if additional_costing_params is not None:
-            # adding custom params to the dictionary
-            for key, val in additional_costing_params.items():
-                generic_ccs_costing_params[key] = val
 
         # define preloaded accounts
         PC_preloaded_accounts = {
@@ -601,121 +619,119 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         process_contingencies = {}
         project_contingencies = {}
 
+        # load the cost dictionaries and add custom accounts
+
+        # load BB costing dictionary
+        BB_costing_params = load_BB_costing_dictionary()
+
+        # load generic ccs costing dictionary
+        generic_ccs_costing_params = load_generic_ccs_costing_dictionary()
+
+        # for comptability with potential custom accounts, the loop handles
+        # new technologies, new CCS types for existing technologies, and new
+        # accounts for existing technology-CCS type pairs
+        # Users should not be adding new entries for existing accounts
+
+        if additional_costing_params is not None and additional_costing_params != {}:
+            accounts_to_merge = [generic_ccs_costing_params, additional_costing_params]
+        else:
+            accounts_to_merge = [generic_ccs_costing_params]
+
+        costing_params = BB_costing_params  # initialize with baseline accounts
+        for (
+            new_costing_params
+        ) in accounts_to_merge:  # merge new dictionaries sequentially
+            # adding ccs and any provided custom params to the ccs dictionary
+            # need to "freeze" dict so it is hashable for merging keys
+            frozen_dict = {**costing_params}
+            for techkey, techval in new_costing_params.items():
+                if (
+                    techkey in frozen_dict.keys()
+                ):  # if techkey already exists, append any new ccs types
+                    for ccskey, ccsval in new_costing_params[techkey].items():
+                        if (
+                            ccskey in frozen_dict[techkey].keys()
+                        ):  # if ccskey already exists, append any new accounts
+                            for accountkey, accountval in new_costing_params[techkey][
+                                ccskey
+                            ].items():
+                                if (
+                                    accountkey in frozen_dict[techkey][ccskey].keys()
+                                ):  # this is not allowed
+                                    raise ValueError(
+                                        "Data already exists for Account {} "
+                                        "using technology {} with CCS {}. "
+                                        "Please confirm that the custom "
+                                        "account dictionary is correct, or "
+                                        "add the new parameters as a new "
+                                        "account.".format(
+                                            accountkey, str(techkey), ccskey
+                                        )
+                                    )
+                                else:
+                                    frozen_dict[techkey][ccskey][
+                                        accountkey
+                                    ] = accountval
+                        else:  # it's a new type, append the entry
+                            frozen_dict[techkey][ccskey] = ccsval
+                else:
+                    frozen_dict[techkey] = techval
+            costing_params = {k: frozen_dict[k] for k in sorted(frozen_dict)}
+
         for account in cost_accounts:
-            try:  # first look for data in json file info
-                process_params[account] = BB_costing_params[str(tech)][ccs][account][
+            try:  # look for data in json file info
+                process_params[account] = costing_params[str(tech)][ccs][account][
                     "Process Parameter"
                 ]
-                reference_units[account] = BB_costing_params[str(tech)][ccs][
+                reference_units[account] = costing_params[str(tech)][ccs][
                     cost_accounts[0]
                 ]["Units"]
-                account_names[account] = BB_costing_params[str(tech)][ccs][account][
+                account_names[account] = costing_params[str(tech)][ccs][account][
                     "Account Name"
                 ]
                 exponents[account] = float(
-                    BB_costing_params[str(tech)][ccs][account]["Exponent"]
+                    costing_params[str(tech)][ccs][account]["Exponent"]
                 )
-                reference_costs[account] = BB_costing_params[str(tech)][ccs][account][
+                reference_costs[account] = costing_params[str(tech)][ccs][account][
                     "BEC"
                 ]
-                reference_cost_units[account] = BB_costing_params[str(tech)][ccs][
-                    account
-                ]["BEC_units"]
+                reference_cost_units[account] = costing_params[str(tech)][ccs][account][
+                    "BEC_units"
+                ]
                 reference_costs_init[account] = (
-                    BB_costing_params[str(tech)][ccs][account]["BEC"] * 1e-3
+                    costing_params[str(tech)][ccs][account]["BEC"] * 1e-3
                 )
 
                 if type(process_params[account]) == list:
                     for i, processparam in enumerate(process_params[account]):
-                        reference_params[account, processparam] = BB_costing_params[
+                        reference_params[account, processparam] = costing_params[
                             str(tech)
                         ][ccs][account]["RP Value"][i]
-                        cost_scaling_fractions[
-                            account, processparam
-                        ] = BB_costing_params[str(tech)][ccs][account][
-                            "Cost scaling fraction"
-                        ][
-                            i
-                        ]
+                        cost_scaling_fractions[account, processparam] = costing_params[
+                            str(tech)
+                        ][ccs][account]["Cost scaling fraction"][i]
 
                 elif type(process_params[account]) == str:
-                    reference_params[account] = BB_costing_params[str(tech)][ccs][
-                        account
-                    ]["RP Value"]
+                    reference_params[account] = costing_params[str(tech)][ccs][account][
+                        "RP Value"
+                    ]
 
-                engineering_fees[account] = BB_costing_params[str(tech)][ccs][account][
+                engineering_fees[account] = costing_params[str(tech)][ccs][account][
                     "Eng Fee"
                 ]
-                process_contingencies[account] = BB_costing_params[str(tech)][ccs][
+                process_contingencies[account] = costing_params[str(tech)][ccs][
                     account
                 ]["Process Contingency"]
-                project_contingencies[account] = BB_costing_params[str(tech)][ccs][
+                project_contingencies[account] = costing_params[str(tech)][ccs][
                     account
                 ]["Project Contingency"]
             except KeyError:
-                try:  # next look for data in custom dictionaries
-                    process_params[account] = generic_ccs_costing_params[str(tech)][
-                        ccs
-                    ][account]["Process Parameter"]
-                    reference_units[account] = generic_ccs_costing_params[str(tech)][
-                        ccs
-                    ][cost_accounts[0]]["Units"]
-                    account_names[account] = generic_ccs_costing_params[str(tech)][ccs][
-                        account
-                    ]["Account Name"]
-                    exponents[account] = float(
-                        generic_ccs_costing_params[str(tech)][ccs][account]["Exponent"]
+                print(
+                    "KeyError: Account {} could not be found in the "
+                    "dictionary for technology {} with CCS {}".format(
+                        account, str(tech), ccs
                     )
-                    reference_costs[account] = generic_ccs_costing_params[str(tech)][
-                        ccs
-                    ][account]["BEC"]
-                    reference_cost_units[account] = generic_ccs_costing_params[
-                        str(tech)
-                    ][ccs][account]["BEC_units"]
-                    reference_costs_init[account] = (
-                        generic_ccs_costing_params[str(tech)][ccs][account]["BEC"]
-                        * 1e-3
-                    )
-
-                    if type(process_params[account]) == list:
-                        for i, processparam in enumerate(process_params[account]):
-                            reference_params[
-                                account, processparam
-                            ] = generic_ccs_costing_params[str(tech)][ccs][account][
-                                "RP Value"
-                            ][
-                                i
-                            ]
-
-                            cost_scaling_fractions[
-                                account, processparam
-                            ] = generic_ccs_costing_params[str(tech)][ccs][account][
-                                "Cost scaling fraction"
-                            ][
-                                i
-                            ]
-
-                    elif type(process_params[account]) == str:
-                        reference_params[account] = generic_ccs_costing_params[
-                            str(tech)
-                        ][ccs][account]["RP Value"]
-
-                    engineering_fees[account] = generic_ccs_costing_params[str(tech)][
-                        ccs
-                    ][account]["Eng Fee"]
-                    process_contingencies[account] = generic_ccs_costing_params[
-                        str(tech)
-                    ][ccs][account]["Process Contingency"]
-                    project_contingencies[account] = generic_ccs_costing_params[
-                        str(tech)
-                    ][ccs][account]["Project Contingency"]
-                except KeyError:
-                    print(
-                        "KeyError: Account {} could not be found in the "
-                        "dictionary for technology {} with CCS {}".format(
-                            account, str(tech), ccs
-                        )
-                    )
+                )
 
         # check that all accounts use the same process parameter
         param_check = None
@@ -1086,6 +1102,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 "Valid CE index options include CE500, CE394 and years from "
                 "1990 to 2020." % (CE_index_year)
             )
+
+        # load sCO2 costing dictionary
+        sCO2_costing_params = load_sCO2_costing_dictionary()
 
         param_dict = sCO2_costing_params[equipment]
 
@@ -1987,6 +2006,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         print("Total flowsheet cost: $%.3f Million" % value(b.total_TPC))
 
     def check_sCO2_costing_bounds(b):
+        # load sCO2 costing dictionary
+        sCO2_costing_params = load_sCO2_costing_dictionary()
         # This method accepts a flowsheet-level costing block
         for o in b.parent_block().component_objects(descend_into=False):
             # look for costing blocks

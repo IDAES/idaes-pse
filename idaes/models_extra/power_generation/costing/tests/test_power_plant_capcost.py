@@ -1036,6 +1036,7 @@ def test_power_plant_costing():
             "cost_accounts": CCS_accounts,
             "scaled_param": m.fs.CCS.CO2_flow,
             "tech": 6,
+            "ccs": "B",
         },
     )
 
