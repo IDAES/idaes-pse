@@ -159,7 +159,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 pyunits, "MUSD_" + CE_index_year
             )  # millions of USD, for base year
         except AttributeError:
-            raise Exception(
+            raise AttributeError(
                 "CE_index_year %s is not a valid currency base option. "
                 "Valid CE index options include CE500, CE394 and years from "
                 "1990 to 2020." % (CE_index_year)
@@ -537,7 +537,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 pyunits, "MUSD_" + CE_index_year
             )  # millions of USD, for base year
         except AttributeError:
-            raise Exception(
+            raise AttributeError(
                 "CE_index_year %s is not a valid currency base option. "
                 "Valid CE index options include CE500, CE394 and years from "
                 "1990 to 2020." % (CE_index_year)
@@ -758,7 +758,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             ref_units[0][1]
                         ) / getattr(pyunits, ref_units[1])
                     except AttributeError:
-                        raise Exception(
+                        raise AttributeError(
                             "Account %s uses references units of %s. Cannot "
                             "parse reference units as Pyomo unit containers. "
                             "Check that source uses correct syntax for Pyomo "
@@ -781,7 +781,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             pyunits, ref_units[1][0]
                         ) ** int(ref_units[1][1])
                     except AttributeError:
-                        raise Exception(
+                        raise AttributeError(
                             "Account %s uses references units of %s. Cannot "
                             "parse reference units as Pyomo unit containers. "
                             "Check that source uses correct syntax for Pyomo "
@@ -803,7 +803,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             pyunits, ref_units[1]
                         )
                     except AttributeError:
-                        raise Exception(
+                        raise AttributeError(
                             "Account %s uses references units of %s. Cannot "
                             "parse reference units as Pyomo unit containers. "
                             "Check that source uses correct syntax for Pyomo "
@@ -819,7 +819,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     try:
                         ref_units = getattr(pyunits, ref_units[0]) ** int(ref_units[1])
                     except AttributeError:
-                        raise Exception(
+                        raise AttributeError(
                             "Account %s uses references units of %s. Cannot "
                             "parse reference units as Pyomo unit containers. "
                             "Check that source uses correct syntax for Pyomo "
@@ -832,7 +832,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     try:
                         ref_units = getattr(pyunits, ref_units)
                     except AttributeError:
-                        raise Exception(
+                        raise AttributeError(
                             "Account %s uses references units of %s. Cannot "
                             "parse reference units as Pyomo unit containers. "
                             "Check that source uses correct syntax for Pyomo "
@@ -855,7 +855,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         try:
                             pyunits.convert(scaled_param[j], ref_units)
                         except InconsistentUnitsError:
-                            raise Exception(
+                            raise InconsistentUnitsError(
                                 "Account %s uses units of %s. "
                                 "Units of %s were passed. "
                                 "Cannot convert unit containers."
@@ -877,7 +877,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     try:
                         pyunits.convert(scaled_param, ref_units)
                     except InconsistentUnitsError:
-                        raise Exception(
+                        raise InconsistentUnitsError(
                             "Account %s uses units of %s. "
                             "Units of %s were passed. "
                             "Cannot convert unit containers."
@@ -1097,7 +1097,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         try:
             CE_index_units = getattr(pyunits, "MUSD_" + CE_index_year)
         except AttributeError:
-            raise Exception(
+            raise AttributeError(
                 "CE_index_year %s is not a valid currency base option. "
                 "Valid CE index options include CE500, CE394 and years from "
                 "1990 to 2020." % (CE_index_year)
@@ -1354,7 +1354,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         try:
             CE_index_units = getattr(pyunits, "MUSD_" + CE_index_year)
         except AttributeError:
-            raise Exception(
+            raise AttributeError(
                 "CE_index_year %s is not a valid currency base option. "
                 "Valid CE index options include CE500, CE394 and years from "
                 "1990 to 2020." % (CE_index_year)
@@ -1506,7 +1506,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         try:
             CE_index_units = getattr(pyunits, "MUSD_" + CE_index_year)
         except AttributeError:
-            raise Exception(
+            raise AttributeError(
                 "CE_index_year %s is not a valid currency base option. "
                 "Valid CE index options include CE500, CE394 and years from "
                 "1990 to 2020." % (CE_index_year)
@@ -1731,7 +1731,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         try:
             CE_index_units = getattr(pyunits, "MUSD_" + CE_index_year)
         except AttributeError:
-            raise Exception(
+            raise AttributeError(
                 "CE_index_year %s is not a valid currency base option. "
                 "Valid CE index options include CE500, CE394 and years from "
                 "1990 to 2020." % (CE_index_year)
@@ -1943,7 +1943,15 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             if o.name in [
                 block.name for block in b._registered_unit_costing
             ] and hasattr(o, "total_plant_cost"):
-                print("%s: $%.2f Million" % (value(o.name), value(o.total_plant_cost)))
+                print(
+                    "%s: $%.2f Million"
+                    % (
+                        value(o.name),
+                        value(
+                            sum(o.total_plant_cost[key] for key in o.total_plant_cost)
+                        ),
+                    )
+                )
 
     def display_bare_erected_costs(b):
         print("-----Bare Erected Costs-----")
@@ -1951,8 +1959,19 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             # look for costing blocks
             if o.name in [
                 block.name for block in b._registered_unit_costing
-            ] and hasattr(o, "bare_erected_cost"):
-                print("%s: $%.2f Million" % (value(o.name), value(o.bare_erected_cost)))
+            ] and hasattr(o, "bare_erected_costs"):
+                print(
+                    "%s: $%.2f Million"
+                    % (
+                        value(o.name),
+                        value(
+                            sum(
+                                o.bare_erected_costs[key]
+                                for key in o.bare_erected_costs
+                            )
+                        ),
+                    )
+                )
 
     def display_equipment_costs(b):
         print("-----Equipment Costs-----")
@@ -1960,8 +1979,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             # look for costing blocks
             if o.name in [
                 block.name for block in b._registered_unit_costing
-            ] and hasattr(o, "equipment_cost"):
-                print("%s: $%.2f Million" % (value(o.name), value(o.equipment_cost)))
+            ] and hasattr(o, "equipment_costs"):
+                print(
+                    "%s: $%.2f Million"
+                    % (
+                        value(o.name),
+                        value(sum(o.equipment_costs[key] for key in o.equipment_costs)),
+                    )
+                )
 
     def get_total_TPC(b, CE_index_year):
         # This method accepts a flowsheet-level costing block
@@ -1971,7 +1996,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 pyunits, "MUSD_" + CE_index_year
             )  # millions of USD, for base year
         except AttributeError:
-            raise Exception(
+            raise AttributeError(
                 "CE_index_year %s is not a valid currency base option. "
                 "Valid CE index options include CE500, CE394 and years from "
                 "1990 to 2020." % (CE_index_year)

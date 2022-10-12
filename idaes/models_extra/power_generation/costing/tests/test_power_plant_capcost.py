@@ -18,6 +18,7 @@ import pytest
 
 import pyomo.environ as pyo
 from pyomo.core.base.constraint import ScalarConstraint, IndexedConstraint
+from pyomo.core.base.expression import ScalarExpression
 from pyomo.core.base.var import IndexedVar
 from pyomo.environ import units as pyunits
 from pyomo.core.base.units_container import InconsistentUnitsError
@@ -199,10 +200,6 @@ def test_PP_costing():
     rates = [m.fs.NG_rate, m.fs.solvent_rate]
     prices = {"solvent": 500 * pyunits.USD_2018 / pyunits.ton}
 
-    m.fs.costing.land_cost = pyo.Expression(
-        expr=156000 * (30 / 120) ** (0.78)
-    )  # 30 is a fixed value, 30 must be replaced by a model variable
-    m.fs.costing.display()
     m.fs.costing.build_process_costs(
         net_power=m.fs.net_power,
         fixed_OM=True,
@@ -378,7 +375,6 @@ def test_PP_costing():
         == 2564 / 1e3
     )
 
-    # m.fs.display()
     assert (
         pytest.approx(pyo.value(m.fs.costing.total_TPC), abs=1e-1) == 996662 / 1e3
     )  # 993753 / 1e3
@@ -412,11 +408,6 @@ def test_build_process_costs_emptymodel():
     rates = [m.fs.NG_rate, m.fs.solvent_rate]
     prices = {"solvent": 500 * pyunits.USD_2018 / pyunits.ton}
 
-    m.fs.costing.land_cost = pyo.Expression(
-        expr=156000 * (30 / 120) ** (0.78)
-    )  # 30 is a fixed value, 30 must be replaced by a model variable
-    m.fs.costing.display()
-
     assert not hasattr(m.fs.costing, "total_TPC")
     assert not hasattr(m.fs.costing, "total_TPC_eq")
 
@@ -449,11 +440,6 @@ def test_build_process_costs_emptymodel_nonearguments():
 
     # Fixed and Variable Costs:
     # build variable costs components
-
-    m.fs.costing.land_cost = pyo.Expression(
-        expr=156000 * (30 / 120) ** (0.78)
-    )  # 30 is a fixed value, 30 must be replaced by a model variable
-    m.fs.costing.display()
 
     assert not hasattr(m.fs.costing, "total_TPC")
     assert not hasattr(m.fs.costing, "total_TPC_eq")
@@ -505,10 +491,6 @@ def test_build_process_costs_fixedonly():
     rates = [m.fs.NG_rate, m.fs.solvent_rate]
     prices = {"solvent": 500 * pyunits.USD_2018 / pyunits.ton}
 
-    m.fs.costing.land_cost = pyo.Expression(
-        expr=156000 * (30 / 120) ** (0.78)
-    )  # 30 is a fixed value, 30 must be replaced by a model variable
-    m.fs.costing.display()
     m.fs.costing.build_process_costs(
         net_power=m.fs.net_power,
         fixed_OM=True,
@@ -562,10 +544,6 @@ def test_build_process_costs_fixedonly_nonearguments():
     # Fixed and Variable Costs:
     # build variable costs components
 
-    m.fs.costing.land_cost = pyo.Expression(
-        expr=156000 * (30 / 120) ** (0.78)
-    )  # 30 is a fixed value, 30 must be replaced by a model variable
-    m.fs.costing.display()
     m.fs.costing.build_process_costs(
         net_power=None,
         fixed_OM=True,
@@ -633,10 +611,6 @@ def test_build_process_costs_variableonly():
     rates = [m.fs.NG_rate, m.fs.solvent_rate]
     prices = {"solvent": 500 * pyunits.USD_2018 / pyunits.ton}
 
-    m.fs.costing.land_cost = pyo.Expression(
-        expr=156000 * (30 / 120) ** (0.78)
-    )  # 30 is a fixed value, 30 must be replaced by a model variable
-    m.fs.costing.display()
     m.fs.costing.build_process_costs(
         net_power=m.fs.net_power,
         fixed_OM=False,
@@ -673,11 +647,6 @@ def test_build_process_costs_variableonly_nonearguments():
 
     # Fixed and Variable Costs:
     # build variable costs components
-
-    m.fs.costing.land_cost = pyo.Expression(
-        expr=156000 * (30 / 120) ** (0.78)
-    )  # 30 is a fixed value, 30 must be replaced by a model variable
-    m.fs.costing.display()
 
     # methods don't require net_power, will fail on next error
     with pytest.raises(TypeError, match="resources argument must be a list"):
@@ -767,14 +736,28 @@ def test_build_process_costs_allOM():
     )
     m.fs.solvent_rate.fix()
 
-    resources = ["natural_gas", "solvent"]
-    rates = [m.fs.NG_rate, m.fs.solvent_rate]
-    prices = {"solvent": 500 * pyunits.USD_2018 / pyunits.ton}
+    m.fs.costing.sorbent = pyo.Var(
+        m.fs.time, initialize=1.0, units=pyunits.ft**3 / pyunits.d
+    )  # ft**3/day (EPAT: 6971.75)
+
+    resources = ["natural_gas", "solvent", "waste_sorbent", "sorbent"]
+    rates = [
+        m.fs.NG_rate,
+        m.fs.solvent_rate,
+        m.fs.costing.sorbent,
+        m.fs.costing.sorbent,
+    ]
+    prices = {
+        "solvent": 500 * pyunits.USD_2018 / pyunits.ton,
+        "sorbent": 4 * pyunits.USD_2018 / pyunits.ft**3,
+        "waste_sorbent": 0.86 * pyunits.USD_2018 / pyunits.ft**3,
+    }
 
     m.fs.costing.land_cost = pyo.Expression(
         expr=156000 * (30 / 120) ** (0.78)
     )  # 30 is a fixed value, 30 must be replaced by a model variable
-    m.fs.costing.display()
+    m.fs.tonne_CO2_capture = pyo.Var(initialize=1, units=pyunits.ton)
+
     m.fs.costing.build_process_costs(
         net_power=m.fs.net_power,
         fixed_OM=True,
@@ -783,6 +766,10 @@ def test_build_process_costs_allOM():
         rates=rates,
         prices=prices,
         fuel="natural_gas",
+        waste=["waste_sorbent"],
+        chemicals=["sorbent"],
+        land_cost=m.fs.costing.land_cost,
+        tonne_CO2_capture=m.fs.tonne_CO2_capture,
     )
 
     assert hasattr(m.fs.costing, "annual_operating_labor_cost")
@@ -823,6 +810,13 @@ def test_build_process_costs_allOM():
     assert hasattr(m.fs.costing, "total_variable_cost_rule_power")
     assert type(m.fs.costing.total_variable_cost_rule_power) is IndexedConstraint
 
+    assert hasattr(m.fs.costing, "waste_costs_OC")
+    assert type(m.fs.costing.waste_costs_OC) is ScalarExpression
+    assert hasattr(m.fs.costing, "chemical_costs_OC")
+    assert type(m.fs.costing.waste_costs_OC) is ScalarExpression
+    assert hasattr(m.fs.costing, "cost_of_capture")
+    assert type(m.fs.costing.cost_of_capture) is ScalarExpression
+
 
 @pytest.mark.component
 def test_build_process_costs_allOM_nonearguments():
@@ -838,11 +832,6 @@ def test_build_process_costs_allOM_nonearguments():
 
     # Fixed and Variable Costs:
     # build variable costs components
-
-    m.fs.costing.land_cost = pyo.Expression(
-        expr=156000 * (30 / 120) ** (0.78)
-    )  # 30 is a fixed value, 30 must be replaced by a model variable
-    m.fs.costing.display()
 
     # methods don't require net_power, will fail on next error
     with pytest.raises(TypeError, match="resources argument must be a list"):
@@ -905,6 +894,33 @@ def test_build_process_costs_allOM_nonearguments():
         prices=prices,
         fuel=None,
     )
+
+
+@pytest.mark.component
+def test_build_process_costs_invalid_currency_units():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    with pytest.raises(
+        AttributeError,
+        match="CE_index_year notavalidvalue is not a "
+        "valid currency base option. Valid CE index options "
+        "include CE500, CE394 and years from 1990 to 2020.",
+    ):
+        m.fs.costing.build_process_costs(
+            net_power=None,
+            fixed_OM=False,
+            variable_OM=False,
+            resources=None,
+            rates=None,
+            prices=None,
+            fuel=None,
+            CE_index_year="notavalidvalue",
+        )
 
 
 @pytest.mark.component
@@ -1057,10 +1073,6 @@ def test_power_plant_costing():
     rates = [m.fs.NG_rate, m.fs.solvent_rate]
     prices = {"solvent": 500 * pyunits.USD_2018 / pyunits.ton}
 
-    m.fs.costing.land_cost = pyo.Expression(
-        expr=156000 * (30 / 120) ** (0.78)
-    )  # 30 is a fixed value, 30 must be replaced by a model variable
-    m.fs.costing.display()
     m.fs.costing.build_process_costs(
         net_power=m.fs.net_power,
         fixed_OM=True,
@@ -1159,6 +1171,13 @@ def test_power_plant_costing():
         pytest.approx(pyo.value(m.fs.AUSC.costing.bare_erected_cost["8.4"]), abs=1e-1)
         == 57265 / 1e3
     )
+
+    # test various report utilities - "smoke tests" only
+    m.fs.costing.report()
+    QGESSCostingData.display_total_plant_costs(m.fs.costing)
+    QGESSCostingData.display_bare_erected_costs(m.fs.costing)
+    QGESSCostingData.display_equipment_costs(m.fs.costing)
+    QGESSCostingData.display_flowsheet_cost(m.fs.costing)
 
     return m
 
@@ -1401,10 +1420,6 @@ def test_sCO2_costing():
     rates = [m.fs.NG_rate, m.fs.solvent_rate]
     prices = {"solvent": 500 * pyunits.USD_2018 / pyunits.ton}
 
-    m.fs.costing.land_cost = pyo.Expression(
-        expr=156000 * (30 / 120) ** (0.78)
-    )  # 30 is a fixed value, 30 must be replaced by a model variable
-    m.fs.costing.display()
     m.fs.costing.build_process_costs(
         net_power=m.fs.net_power,
         fixed_OM=True,
@@ -1471,6 +1486,9 @@ def test_sCO2_costing():
         == 26.434
     )
 
+    # test bound check utility
+    QGESSCostingData.check_sCO2_costing_bounds(m.fs.costing)
+
     return m
 
 
@@ -1505,8 +1523,6 @@ def test_ASU_costing():
 
     assert results.solver.termination_condition == pyo.TerminationCondition.optimal
 
-    m.fs.ASU.costing.bare_erected_cost.display()
-
     assert pytest.approx(pyo.value(m.fs.ASU.costing.bare_erected_cost), abs=1) == 3.4725
 
     return m
@@ -1530,7 +1546,7 @@ def test_OM_costing():
     fixed_TPC = 800  # MM$
 
     QGESSCostingData.get_fixed_OM_costs(
-        m.fs,
+        m.fs.costing,
         nameplate_capacity=nameplate_capacity,
         labor_rate=labor_rate,
         labor_burden=labor_burden,
@@ -1538,8 +1554,6 @@ def test_OM_costing():
         tech=tech,
         fixed_TPC=fixed_TPC,
     )
-
-    QGESSCostingData.initialize_fixed_OM_costs(m.fs.costing)
 
     # build variable costs
     m.fs.net_power = pyo.Var(m.fs.time, initialize=650, units=pyunits.MW)
@@ -1558,18 +1572,18 @@ def test_OM_costing():
     prices = {"solvent": 500 * pyunits.USD_2018 / pyunits.ton}
 
     QGESSCostingData.get_variable_OM_costs(
-        m.fs,
+        m.fs.costing,
         resources=resources,
         rates=rates,
         prices=prices,  # pass a flowsheet object
     )
 
+    QGESSCostingData.initialize_fixed_OM_costs(m.fs.costing)
     QGESSCostingData.initialize_variable_OM_costs(m.fs.costing)
 
-    assert hasattr(m.fs, "total_fixed_OM_cost")
-
     assert hasattr(m.fs, "costing")
-    assert hasattr(m.fs, "total_variable_OM_cost")
+    assert hasattr(m.fs.costing, "total_fixed_OM_cost")
+    assert hasattr(m.fs.costing, "total_variable_OM_cost")
 
     assert degrees_of_freedom(m) == 0
 
@@ -1582,8 +1596,10 @@ def test_OM_costing():
 
     assert results.solver.termination_condition == pyo.TerminationCondition.optimal
 
-    assert pytest.approx(28.094, abs=0.1) == (pyo.value(m.fs.total_fixed_OM_cost))
+    assert pytest.approx(28.094, abs=0.1) == (
+        pyo.value(m.fs.costing.total_fixed_OM_cost)
+    )
 
     assert pytest.approx(182.367, abs=0.1) == (
-        pyo.value(m.fs.total_variable_OM_cost[0])
+        pyo.value(m.fs.costing.total_variable_OM_cost[0])
     )

@@ -20,6 +20,7 @@ Weilang Luo, Jian Chen (2016). Systematic study of aqueous monoethanolamine
 process and its improvements. Applied Energy, 165, 648-659.
 """
 
+import os
 import pytest
 from idaes.models_extra.power_generation.costing.power_plant_capcost import (
     QGESSCosting,
@@ -37,16 +38,16 @@ from pyomo.util.check_units import assert_units_consistent
 solver = get_solver()
 
 
-@pytest.fixture(scope="module")
-def build_costing():
-    # Create a Concrete Model as the top level object
-    m = pyo.ConcreteModel()
+@pytest.mark.component
+def test_remove_existing_dictionaries():
+    # Remove the dictionaries so they may be regenerated during testing
+    dict_path = os.path.join(
+        os.path.join(os.getcwd(), ".."), "generic_ccs_costing_data.json"
+    )
+    assert os.path.exists(dict_path)
 
-    # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.get_costing(year="2018")
-
-    return m
+    os.remove(dict_path)
+    assert not os.path.exists(dict_path)
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
