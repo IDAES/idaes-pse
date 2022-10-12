@@ -256,6 +256,7 @@ class StochasticProgramBidder(AbstractBidder):
         n_scenario,
         solver,
         forecaster,
+        real_time_underbid_penalty,
     ):
 
         """
@@ -284,6 +285,7 @@ class StochasticProgramBidder(AbstractBidder):
         self.n_scenario = n_scenario
         self.solver = solver
         self.forecaster = forecaster
+        self.real_time_underbid_penalty = real_time_underbid_penalty
 
         self._check_inputs()
 
@@ -337,6 +339,10 @@ class StochasticProgramBidder(AbstractBidder):
         model = self._set_up_bidding_problem(self.day_ahead_horizon)
         self._add_DA_bidding_constraints(model)
 
+        # do not relax the DA offering UB
+        for i in model.SCENARIOS:
+            model.fs[i].real_time_underbid_power.fix(0)
+
         return model
 
     def formulate_RT_bidding_problem(self):
@@ -351,8 +357,10 @@ class StochasticProgramBidder(AbstractBidder):
 
         model = self._set_up_bidding_problem(self.real_time_horizon)
         self._add_RT_bidding_constraints(model)
+
+        # relax the DA offering UB
         for i in model.SCENARIOS:
-            model.fs[i].day_ahead_power_ub.deactivate()
+            model.fs[i].real_time_underbid_power.unfix()
 
         return model
 
@@ -398,6 +406,9 @@ class StochasticProgramBidder(AbstractBidder):
             model.fs[i].real_time_energy_price = pyo.Param(
                 time_index, initialize=0, mutable=True
             )
+            model.fs[i].real_time_underbid_penalty = pyo.Param(
+                initialize=self.real_time_underbid_penalty, mutable=True
+            )
 
         return
 
@@ -413,8 +424,11 @@ class StochasticProgramBidder(AbstractBidder):
             None
         """
 
-        def day_ahead_power_ub_rule(fs, t):
-            return fs.power_output_ref[t] >= fs.day_ahead_power[t]
+        def relaxed_day_ahead_power_ub_rule(fs, t):
+            return (
+                fs.power_output_ref[t] + fs.real_time_underbid_power[t]
+                >= fs.day_ahead_power[t]
+            )
 
         for i in model.SCENARIOS:
             time_index = model.fs[i].power_output_ref.index_set()
@@ -422,8 +436,12 @@ class StochasticProgramBidder(AbstractBidder):
                 time_index, initialize=0, within=pyo.NonNegativeReals
             )
 
+            model.fs[i].real_time_underbid_power = pyo.Var(
+                time_index, initialize=0, within=pyo.NonNegativeReals
+            )
+
             model.fs[i].day_ahead_power_ub = pyo.Constraint(
-                time_index, rule=day_ahead_power_ub_rule
+                time_index, rule=relaxed_day_ahead_power_ub_rule
             )
 
         return
@@ -461,6 +479,8 @@ class StochasticProgramBidder(AbstractBidder):
                     + model.fs[k].real_time_energy_price[t]
                     * (model.fs[k].power_output_ref[t] - model.fs[k].day_ahead_power[t])
                     - weight * cost[t]
+                    - model.fs[k].real_time_underbid_penalty
+                    * model.fs[k].real_time_underbid_power[t]
                 )
 
         return
@@ -656,10 +676,12 @@ class StochasticProgramBidder(AbstractBidder):
                     dispatch = realized_day_ahead_dispatches[t + hour]
                 except IndexError as ex:
                     self.real_time_model.fs[s].day_ahead_power[t].unfix()
-                    self.real_time_model.fs[s].day_ahead_power_ub.activate()
+                    # unrelax the DA offering UB
+                    self.real_time_model.fs[s].real_time_underbid_power[t].fix(0)
                 else:
                     self.real_time_model.fs[s].day_ahead_power[t].fix(dispatch)
-                    self.real_time_model.fs[s].day_ahead_power_ub.deactivate()
+                    # relax the DA offering UB
+                    self.real_time_model.fs[s].real_time_underbid_power[t].unfix()
 
     def update_day_ahead_model(self, **kwargs):
 
@@ -812,6 +834,7 @@ class SelfScheduler(StochasticProgramBidder):
         n_scenario,
         solver,
         forecaster,
+        real_time_underbid_penalty=10000,
         fixed_to_schedule=False,
     ):
         """
@@ -843,6 +866,7 @@ class SelfScheduler(StochasticProgramBidder):
             n_scenario,
             solver,
             forecaster,
+            real_time_underbid_penalty,
         )
         self.fixed_to_schedule = fixed_to_schedule
 
@@ -1033,6 +1057,7 @@ class Bidder(StochasticProgramBidder):
         n_scenario,
         solver,
         forecaster,
+        real_time_underbid_penalty=10000,
     ):
 
         """
@@ -1062,6 +1087,7 @@ class Bidder(StochasticProgramBidder):
             n_scenario,
             solver,
             forecaster,
+            real_time_underbid_penalty,
         )
 
     def _add_DA_bidding_constraints(self, model):
