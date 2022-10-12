@@ -3884,6 +3884,7 @@ class GenericStateBlockData(StateBlockData):
                 if (
                     cobj.config.therm_cond_phase_comp is not None
                     and p in cobj.config.therm_cond_phase_comp
+                    and cobj.config.therm_cond_phase_comp[p] is not None
                 ):
                     return cobj.config.therm_cond_phase_comp[
                         p
@@ -3937,6 +3938,7 @@ class GenericStateBlockData(StateBlockData):
                 if (
                     cobj.config.visc_d_phase_comp is not None
                     and p in cobj.config.visc_d_phase_comp
+                    and cobj.config.visc_d_phase_comp[p] is not None
                 ):
                     return cobj.config.visc_d_phase_comp[
                         p
