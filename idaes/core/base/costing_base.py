@@ -330,6 +330,13 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         """
         This method allows users to register new material and utility flows
         with the FlowsheetCostingBlock for use when costing flows.
+        This method creates a new `Var` on the FlowsheetCostingBlock named
+        f`{flow_type}_cost` whose value is fixed to `cost`.
+
+        If a component named f`{flow_type}_cost` already exists on the
+        FlowsheetCostingBlock, then an error is raised unless f`{flow_type}_cost`
+        is `cost`. If f`{flow_type}_cost` is `cost`, no error is raised and
+        the existing component f`{flow_type}_cost` is used to cost the flow.
 
         Args:
             flow_type: string name to represent flow type
@@ -337,13 +344,23 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         """
         self.flow_types.add(flow_type)
 
-        # Create a Var to hold the cost
-        # Units will be different between flows, so have to use scalar Vars
-        fvar = pyo.Var(
-            units=pyo.units.get_units(cost), doc=f"Cost parameter for {flow_type} flow"
-        )
-        self.add_component(f"{flow_type}_cost", fvar)
-        fvar.fix(cost)
+        name = f"{flow_type}_cost"
+        current_component = self.component(name)
+        if current_component is not None:
+            if current_component is not cost:
+                raise RuntimeError(
+                    f"Component {name} already exists on {self} but is not {cost}."
+                )
+            # now self.{flow_type}_cost is cost, so just use it
+        else:
+            # Create a Var to hold the cost
+            # Units will be different between flows, so have to use scalar Vars
+            fvar = pyo.Var(
+                units=pyo.units.get_units(cost),
+                doc=f"Cost parameter for {flow_type} flow",
+            )
+            self.add_component(name, fvar)
+            fvar.fix(cost)
 
         self._registered_flows[flow_type] = []
 
