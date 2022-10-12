@@ -227,8 +227,9 @@ class Cubic(EoSBase):
             Expression(b.component_list, rule=func_b, doc="Component b coefficient"),
         )
 
+        units = b.params.get_metadata().derived_units
+
         if mixing_rule_a == MixingRuleA.default:
-            units = b.params.get_metadata().derived_units
             b.add_component(
                 cname + "_am",
                 Var(
@@ -291,12 +292,20 @@ class Cubic(EoSBase):
             )
 
         if mixing_rule_b == MixingRuleB.default:
-
+            b.add_component(
+                cname + "_bm",
+                Var(
+                    b.phase_list,
+                    units=1 / units["density_mole"],
+                    initialize=0.01,
+                ),
+            )
             def rule_bm(m, p):
                 b = getattr(m, cname + "_b")
-                return rule_bm_default(m, b, p)
+                bm = getattr(m, cname + "_ab")
+                return bm == rule_bm_default(m, b, p)
 
-            b.add_component(cname + "_bm", Expression(b.phase_list, rule=rule_bm))
+            b.add_component(cname + "_bm_eqn", Constraint(b.phase_list, rule=rule_bm))
         else:
             raise ConfigurationError(
                 "{} Unrecognized option for Equation of State "
