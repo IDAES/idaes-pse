@@ -2478,9 +2478,13 @@ class GenericStateBlockData(StateBlockData):
                 iscale.set_scaling_factor(
                     self.therm_cond_phase[p], sf_therm_cond, overwrite=False
                 )
-                iscale.constraint_scaling_transform(
-                    self.therm_cond_phase_eqn[p], sf_therm_cond, overwrite=False
-                )
+                try:
+                    iscale.constraint_scaling_transform(
+                        self.therm_cond_phase_eqn[p], sf_therm_cond, overwrite=False
+                    )
+                except KeyError:
+                    # Handle case where we have Constraint.Skip
+                    pass
 
         if self.is_property_constructed("visc_d_phase"):
             for p in self.phase_list:
@@ -2498,9 +2502,13 @@ class GenericStateBlockData(StateBlockData):
                 iscale.set_scaling_factor(
                     self.visc_d_phase[p], sf_visc_d, overwrite=False
                 )
-                iscale.constraint_scaling_transform(
-                    self.visc_d_phase_eqn[p], sf_visc_d, overwrite=False
-                )
+                try:
+                    iscale.constraint_scaling_transform(
+                        self.visc_d_phase_eqn[p], sf_visc_d, overwrite=False
+                    )
+                except KeyError:
+                    # Handle case where we have Constraint.Skip
+                    pass
 
     def components_in_phase(self, phase):
         """
@@ -3863,9 +3871,13 @@ class GenericStateBlockData(StateBlockData):
             )
 
             def rule_therm_cond_phase(b, p):
-                return b.therm_cond_phase[p] == get_phase_method(
-                    b, "therm_cond_phase", p
-                )(b, p)
+                try:
+                    return b.therm_cond_phase[p] == get_phase_method(
+                        b, "therm_cond_phase", p
+                    )(b, p)
+                except GenericPropertyPackageError:
+                    # What's the best way to communicate to the user that therm_cond_phase isn't meaningful here?
+                    return Constraint.Skip
 
             self.therm_cond_phase_eqn = Constraint(
                 self.phase_list,
@@ -3917,7 +3929,13 @@ class GenericStateBlockData(StateBlockData):
             )
 
             def rule_visc_d_phase(b, p):
-                return b.visc_d_phase[p] == get_phase_method(b, "visc_d_phase", p)(b, p)
+                try:
+                    return b.visc_d_phase[p] == get_phase_method(b, "visc_d_phase", p)(
+                        b, p
+                    )
+                except GenericPropertyPackageError:
+                    # What's the best way to communicate to the user that visc_d_phase isn't meaningful here?
+                    return Constraint.Skip
 
             self.visc_d_phase_eqn = Constraint(
                 self.phase_list,
