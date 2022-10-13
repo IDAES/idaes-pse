@@ -10,9 +10,12 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
+import os
+import json
+from pyomo.common.fileutils import this_file_dir
 
 
-def load_generic_ccs_costing_dictionary():
+def load_generic_ccs_costing_dictionary(path=None):
 
     """
     Custom dictionaries have been added as a way to add new scaling equations
@@ -31,6 +34,10 @@ def load_generic_ccs_costing_dictionary():
           assessment of the MEA process and its improvements. Applied Energy, 165,
           648-659.
     """
+    if path is None:
+        directory = this_file_dir()
+    else:
+        directory = path
 
     generic_ccs_costing_exponents = {
         "6": {
@@ -633,11 +640,6 @@ def load_generic_ccs_costing_dictionary():
     # the BEC_units happen to be in thousands of 2016 USD for these accounts
     # for the power plant methods to work, BEC_units must be "$year", "K$year" or
     # "$Myear" for USD, thousands USD and millions USD, respectively
-    import os
-    import json
-    from pyomo.common.fileutils import this_file_dir
-
-    directory = this_file_dir()
 
     if not os.path.exists(
         os.path.join(directory, "generic_ccs_costing_data.json")

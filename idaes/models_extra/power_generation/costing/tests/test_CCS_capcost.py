@@ -35,6 +35,10 @@ from idaes.core.solvers import get_solver
 from pyomo.util.check_units import assert_units_consistent
 
 from pyomo.common.fileutils import this_file_dir
+from pyomo.common.tempfiles import TempfileManager
+from idaes.models_extra.power_generation.costing.generic_ccs_capcost_custom_dict import (
+    load_generic_ccs_costing_dictionary,
+)
 
 directory = this_file_dir()
 
@@ -43,15 +47,14 @@ solver = get_solver()
 
 
 @pytest.mark.component
-def test_remove_existing_dictionaries():
-    # Remove the dictionaries so they may be regenerated during testing
-    dict_path = os.path.join(
-        os.path.join(directory, ".."), "generic_ccs_costing_data.json"
-    )
-    assert os.path.exists(dict_path)
+def test_regenerate_ccs_dictionaries():
+    # Switch to a temporary directory to test regenerating the dictionaries
+    _temp_context = TempfileManager.new_context()
+    wrkdir = _temp_context.create_tempdir()
 
-    os.remove(dict_path)
-    assert not os.path.exists(dict_path)
+    load_generic_ccs_costing_dictionary(path=wrkdir)
+
+    _temp_context.release(remove=True)
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")

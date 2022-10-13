@@ -46,59 +46,24 @@ tech type --> account --> property name --> property value
 
 
 def load_BB_costing_dictionary():
-    with open(os.path.join(directory, "BB_costing_exponents.json"), "r") as file:
-        BB_costing_exponents = json.load(file)
 
     """
     The costing params dictionary contains information from the BBR4 COE
     spreadsheet. It includes the total plant cost (TPC), reference parameter value,
     and units for that value.
-    
+
     Some accounts are costed using two different reference parameters, these
     accounts have been divided into two separate accounts following the naming
     convention x.x.a and x.x.b.
-    
+
     This dictionary is nested with the following structure:
     tech type --> CCS --> account --> property name --> property values
     """
+    with open(os.path.join(directory, "BB_costing_exponents.json"), "r") as file:
+        BB_costing_exponents = json.load(file)
+
     with open(os.path.join(directory, "BB_costing_parameters.json"), "r") as file:
         BB_costing_params = json.load(file)
-
-    # if not os.path.exists(
-    #     os.path.join(directory, "BB_costing_data.json")
-    # ):  # make the dictionary
-    #     # remove this section later, this is just a way to "zip together" the two BB_costing files
-
-    #     BB_costing_data = BB_costing_params
-
-    #     for tech in BB_costing_data.keys():  # do one technology at a time
-    #         for ccs in ["A", "B"]:
-    #             if ccs in BB_costing_data[tech]:  # check if CCS = A, for indexing
-    #                 accounts_dict = BB_costing_data[tech][ccs]  # shorter alias
-    #                 for account in accounts_dict.keys():  # do one account at a time
-    #                     accounts_dict[account][
-    #                         "BEC_units"
-    #                     ] = "K$2018"  # add BEC units as thousands of 2018 USD
-    #                     for accountkey in BB_costing_exponents[tech][
-    #                         account
-    #                     ].keys():  # get one " exponents"account property at a time
-    #                         accounts_dict[account][accountkey] = BB_costing_exponents[
-    #                             tech
-    #                         ][account][accountkey]
-    #                     sorted_accountkeys = sorted(
-    #                         accounts_dict[account]
-    #                     )  # now, sort the accountkeys alphabetically within each account
-    #                     accounts_dict[account] = {
-    #                         key: accounts_dict[account][key]
-    #                         for key in sorted_accountkeys
-    #                     }  # re-add the keys in alphabetical order
-    #                 BB_costing_data[tech][
-    #                     ccs
-    #                 ] = accounts_dict  # use the alias to update the original dictionary
-
-    #     with open(os.path.join(directory, "BB_costing_data.json"), "w") as outfile:
-    #         json.dump(BB_costing_data, outfile)
-    #     print("Success! New costing dictionary generated.")
 
     # assuming the dictionary exists, load it so it is importable when called
     with open(os.path.join(directory, "BB_costing_data.json"), "r") as file:
