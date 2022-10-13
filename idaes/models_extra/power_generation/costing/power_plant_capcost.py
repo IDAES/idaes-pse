@@ -98,41 +98,8 @@ def custom_power_plant_currency_units():
     else:
         pyo.units.load_definitions_from_strings(
             [
-                # "USD_CE500 = [currency]",
-                # "USD_CE394 = 500/394.0 * USD_CE500",
-                # "USD_1990 = 500/357.6 * USD_CE500",
-                # "USD_1991 = 500/361.3 * USD_CE500",
-                # "USD_1992 = 500/358.2 * USD_CE500",
-                # "USD_1993 = 500/359.2 * USD_CE500",
-                # "USD_1994 = 500/368.1 * USD_CE500",
-                # "USD_1995 = 500/381.1 * USD_CE500",
-                # "USD_1996 = 500/381.7 * USD_CE500",
-                # "USD_1997 = 500/386.5 * USD_CE500",
-                # "USD_1998 = 500/389.5 * USD_CE500",
-                # "USD_1999 = 500/390.6 * USD_CE500",
-                # "USD_2000 = 500/394.1 * USD_CE500",
-                # "USD_2001 = 500/394.3 * USD_CE500",
-                # "USD_2002 = 500/395.6 * USD_CE500",
-                # "USD_2003 = 500/402.0 * USD_CE500",
-                # "USD_2004 = 500/444.2 * USD_CE500",
-                # "USD_2005 = 500/468.2 * USD_CE500",
-                # "USD_2006 = 500/499.6 * USD_CE500",
-                # "USD_2007 = 500/525.4 * USD_CE500",
-                # "USD_2008 = 500/575.4 * USD_CE500",
-                "USD_2008_Nov = 500/566.2 * USD_CE500",  # TODO: better naming convention
-                # "USD_2009 = 500/521.9 * USD_CE500",
-                # "USD_2010 = 500/550.8 * USD_CE500",
-                # "USD_2011 = 500/585.7 * USD_CE500",
-                # "USD_2012 = 500/584.6 * USD_CE500",
-                # "USD_2013 = 500/567.3 * USD_CE500",
-                # "USD_2014 = 500/576.1 * USD_CE500",
-                # "USD_2015 = 500/556.8 * USD_CE500",
-                # "USD_2016 = 500/541.7 * USD_CE500",
-                # "USD_2017 = 500/567.5 * USD_CE500",
-                # "USD_2018 = 500/603.1 * USD_CE500",
-                # "USD_2019 = 500/607.5 * USD_CE500",
-                "USD_2019_Sep = 500/599.3 * USD_CE500",  # TODO: better naming convention
-                # "USD_2020 = 500/596.2 * USD_CE500",
+                "USD_2008_Nov = 500/566.2 * USD_CE500",
+                "USD_2019_Sep = 500/599.3 * USD_CE500",
             ]
         )
 
