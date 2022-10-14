@@ -120,7 +120,7 @@ jobs:
 
   pytest:
     name: pytest (py${{ matrix.python-version }}/${{ matrix.os }}/integration)
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner-image }}
     needs: [precheck]
     if: >-
       (
@@ -137,8 +137,13 @@ jobs:
           - '3.9'
           - '3.10'
         os:
-          - ubuntu-18.04
-          - windows-latest
+          - linux
+          - win64
+        include:
+          - os: linux
+            runner-image: ubuntu-20.04
+          - os: win64
+            runner-image: windows-2022
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/display-debug-info
@@ -156,7 +161,7 @@ jobs:
 
   examples:
     name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner-image }}
     needs: [precheck]
     if: >-
       (
@@ -173,8 +178,13 @@ jobs:
           - '3.9'
           - '3.10'
         os:
-          - ubuntu-18.04
-          - windows-latest
+          - linux
+          - win64
+        include:
+          - os: linux
+            runner-image: ubuntu-20.04
+          - os: win64
+            runner-image: windows-2022
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/display-debug-info
@@ -199,9 +209,9 @@ jobs:
           cat *errors.txt || echo "No error logs found"
 
   pytest-site-packages:
-    name: Run tests from site-packages (non-editable) installation (${{ matrix.install-mode }})
+    name: Run tests from site-packages (non-editable) installation (${{ matrix.install-mode }}/${{ matrix.os }})
     # NOTE: using ubuntu-latest (20.04) instead of 18.04 results in failures in power_generation/carbon_capture/mea_solvent_system/unit_models/tests/test_column.py
-    runs-on: ubuntu-18.04
+    runs-on: ${{ matrix.runner-image }}
     needs: [precheck]
     if: >-
       (
@@ -216,7 +226,11 @@ jobs:
           - pip-default
           - pip-optional
           - conda-like
+        os:
+          - linux
         include:
+          - os: linux
+            runner-image: ubuntu-20.04
           - install-mode: pip-default
             pip-install-target: '.'
           - install-mode: pip-optional
