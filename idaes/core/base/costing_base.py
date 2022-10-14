@@ -43,7 +43,7 @@ def register_idaes_currency_units():
         # Log a message and end
         _log.debug(
             "Standard base currency units (USD_CE500, USD_CE394) "
-            "already appear in Pyomo unit registry. Assuming repreated "
+            "already appear in Pyomo unit registry. Assuming repeated "
             "call of register_idaes_currency_units."
         )
     else:
