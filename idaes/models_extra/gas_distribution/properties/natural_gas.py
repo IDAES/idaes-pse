@@ -65,7 +65,7 @@ class NaturalGasParameterBlockData(PhysicalParameterBlock):
 
         nat_gas_data = {"mw": (18.0, pyunits.kg / pyunits.kmol)}
         nat_gas_config = {"parameter_data": nat_gas_data}
-        self.natural_gas = Component(default=nat_gas_config)
+        self.natural_gas = Component(**nat_gas_config)
         ng = self.natural_gas
 
         # Set up dictionaries we will rely on to compute heat capacities.

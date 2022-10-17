@@ -132,15 +132,15 @@ class TestSingleState(object):
         m = ConcreteModel()
 
         # Add a test thermo package for validation
-        m.pparams = GenericParameterBlock(default=thermo_config)
+        m.pparams = GenericParameterBlock(**thermo_config)
         m.rparams = GenericReactionParameterBlock(
-            default={"property_package": m.pparams, **rxn_config}
+            property_package=m.pparams, **rxn_config
         )
 
-        m.state = m.pparams.build_state_block([0], default={"defined_state": False})
+        m.state = m.pparams.build_state_block([0], defined_state=False)
 
         m.rxn = m.rparams.build_reaction_block(
-            [0], default={"state_block": m.state, "has_equilibrium": True}
+            [0], state_block=m.state, has_equilibrium=True
         )
 
         return m
@@ -222,24 +222,22 @@ class TestUnit(object):
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         # Add a test thermo package for validation
-        m.fs.pparams = GenericParameterBlock(default=thermo_config)
+        m.fs.pparams = GenericParameterBlock(**thermo_config)
         m.fs.rparams = GenericReactionParameterBlock(
-            default={"property_package": m.fs.pparams, **rxn_config}
+            property_package=m.fs.pparams, **rxn_config
         )
 
         # Don't include energy balances, as the test doesn't have a proper
         # enthalpy model. Fix outlet T instead.
         m.fs.R101 = EquilibriumReactor(
-            default={
-                "property_package": m.fs.pparams,
-                "reaction_package": m.fs.rparams,
-                "has_equilibrium_reactions": True,
-                "has_rate_reactions": False,
-                "energy_balance_type": EnergyBalanceType.none,
-            }
+            property_package=m.fs.pparams,
+            reaction_package=m.fs.rparams,
+            has_equilibrium_reactions=True,
+            has_rate_reactions=False,
+            energy_balance_type=EnergyBalanceType.none,
         )
 
         m.fs.R101.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix(55.56)

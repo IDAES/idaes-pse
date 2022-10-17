@@ -51,11 +51,11 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = StateJunction(default={"property_package": m.fs.properties})
+    m.fs.unit = StateJunction(property_package=m.fs.properties)
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 4
@@ -70,11 +70,11 @@ class TestSaponification(object):
     @pytest.fixture(scope="class")
     def sapon(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = SaponificationParameterBlock()
 
-        m.fs.unit = StateJunction(default={"property_package": m.fs.properties})
+        m.fs.unit = StateJunction(property_package=m.fs.properties)
 
         m.fs.unit.inlet.flow_vol.fix(1.0e-03)
         m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
@@ -140,11 +140,11 @@ class TestBTX(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = BTXParameterBlock(default={"valid_phase": "Liq"})
+        m.fs.properties = BTXParameterBlock(valid_phase="Liq")
 
-        m.fs.unit = StateJunction(default={"property_package": m.fs.properties})
+        m.fs.unit = StateJunction(property_package=m.fs.properties)
 
         m.fs.unit.inlet.flow_mol[0].fix(5)  # mol/s
         m.fs.unit.inlet.temperature[0].fix(365)  # K
@@ -223,11 +223,11 @@ class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = iapws95.Iapws95ParameterBlock()
 
-        m.fs.unit = StateJunction(default={"property_package": m.fs.properties})
+        m.fs.unit = StateJunction(property_package=m.fs.properties)
 
         m.fs.unit.inlet.flow_mol[0].fix(100)
         m.fs.unit.inlet.enth_mol[0].fix(4000)

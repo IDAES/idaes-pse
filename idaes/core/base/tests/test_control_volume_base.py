@@ -217,8 +217,8 @@ def test_config_block():
 def test_setup_dynamics_use_parent_value():
     # Test that dynamic = None works correctly
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.u = Unit(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
+    m.fs.u = Unit(dynamic=False)
     m.fs.u.cv = CVFrame()
 
     m.fs.u.cv._setup_dynamics()
@@ -230,7 +230,7 @@ def test_setup_dynamics_use_parent_value():
 @pytest.mark.unit
 def test_setup_dynamics_use_parent_value_fail_no_dynamic():
     # Test that default falls back to flowsheet
-    fs = Flowsheet(default={"dynamic": False}, concrete=True)
+    fs = Flowsheet(dynamic=False, concrete=True)
 
     # Create a Block (with no dynamic attribute)
     fs.b = Block()
@@ -243,14 +243,14 @@ def test_setup_dynamics_use_parent_value_fail_no_dynamic():
 @pytest.mark.unit
 def test_setup_dynamics_dynamic_in_ss():
     # Test that dynamic = None works correctly
-    fs = Flowsheet(default={"dynamic": False}, concrete=True)
+    fs = Flowsheet(dynamic=False, concrete=True)
 
     # Create a Block (with no dynamic attribute)
     fs.b = Block()
     # Add a time attribute to make sure the correct failure triggers
     fs.b.time_ref = Set(initialize=[0])
 
-    fs.b.cv = CVFrame(default={"dynamic": True, "has_holdup": True})
+    fs.b.cv = CVFrame(dynamic=True, has_holdup=True)
 
     # _setup_dynamics should return DynamicError
     with pytest.raises(DynamicError):
@@ -260,14 +260,14 @@ def test_setup_dynamics_dynamic_in_ss():
 @pytest.mark.unit
 def test_setup_dynamics_dynamic_holdup_inconsistent():
     # Test that dynamic = None works correctly
-    fs = Flowsheet(default={"dynamic": True, "time_units": units.s}, concrete=True)
+    fs = Flowsheet(dynamic=True, time_units=units.s, concrete=True)
 
     # Create a Block (with no dynamic attribute)
     fs.b = Block()
     # Add a time attribute to make sure the correct failure triggers
     fs.b.time_ref = Set(initialize=[0])
 
-    fs.b.cv = CVFrame(default={"dynamic": True, "has_holdup": False})
+    fs.b.cv = CVFrame(dynamic=True, has_holdup=False)
 
     # _setup_dynamics should return ConfigurationError
     with pytest.raises(ConfigurationError):
@@ -292,15 +292,15 @@ class _PropertyParameterBlock(PhysicalParameterBlock):
 def test_get_property_package_set():
     m = ConcreteModel()
     m.pp = PropertyParameterBlock()
-    m.cv = CVFrame(default={"property_package": m.pp})
+    m.cv = CVFrame(property_package=m.pp)
     m.cv._get_property_package()
 
 
 @pytest.mark.unit
 def test_get_property_package_default_args():
     m = ConcreteModel()
-    m.pp = PropertyParameterBlock(default={"default_arguments": {"test": "foo"}})
-    m.cv = CVFrame(default={"property_package": m.pp})
+    m.pp = PropertyParameterBlock(default_arguments={"test": "foo"})
+    m.cv = CVFrame(property_package=m.pp)
     m.cv._get_property_package()
 
     assert m.cv.config.property_package_args["test"] == "foo"
@@ -310,14 +310,9 @@ def test_get_property_package_default_args():
 def test_get_reaction_package_module_combine_args():
     # Test that local and default args combine correctly
     m = ConcreteModel()
-    m.pp = PropertyParameterBlock(
-        default={"default_arguments": {"test1": "foo", "test2": "bar"}}
-    )
+    m.pp = PropertyParameterBlock(default_arguments={"test1": "foo", "test2": "bar"})
     m.cv = CVFrame(
-        default={
-            "property_package": m.pp,
-            "property_package_args": {"test2": "baz", "test3": "bar"},
-        }
+        property_package=m.pp, property_package_args={"test2": "baz", "test3": "bar"}
     )
     m.cv._get_property_package()
 
@@ -369,7 +364,7 @@ def test_get_indexing_sets_missing_phase_list():
     m = ConcreteModel()
     m.pp = PropertyParameterBlock()
     m.pp.del_component(m.pp.phase_list)
-    m.cv = CVFrame(default={"property_package": m.pp})
+    m.cv = CVFrame(property_package=m.pp)
     m.cv._get_property_package()
 
     with pytest.raises(PropertyPackageError):
@@ -381,7 +376,7 @@ def test_get_indexing_sets_missing_component_list():
     m = ConcreteModel()
     m.pp = PropertyParameterBlock()
     m.pp.del_component(m.pp.component_list)
-    m.cv = CVFrame(default={"property_package": m.pp})
+    m.cv = CVFrame(property_package=m.pp)
     m.cv._get_property_package()
 
     with pytest.raises(PropertyPackageError):
@@ -412,8 +407,8 @@ class _ReactionParameterBlock(ReactionParameterBlock):
 @pytest.mark.unit
 def test_get_reaction_package_module():
     m = ConcreteModel()
-    m.rp = ReactionParameterTestBlock(default={"default_arguments": {"test": "foo"}})
-    m.cv = CVFrame(default={"reaction_package": m.rp})
+    m.rp = ReactionParameterTestBlock(default_arguments={"test": "foo"})
+    m.cv = CVFrame(reaction_package=m.rp)
 
     m.cv._get_reaction_package()
 
@@ -426,13 +421,10 @@ def test_get_reaction_package_module_default_args():
     # Test that local and default args combine correctly
     m = ConcreteModel()
     m.rp = ReactionParameterTestBlock(
-        default={"default_arguments": {"test1": "foo", "test2": "bar"}}
+        default_arguments={"test1": "foo", "test2": "bar"}
     )
     m.cv = CVFrame(
-        default={
-            "reaction_package": m.rp,
-            "reaction_package_args": {"test2": "baz", "test3": "bar"},
-        }
+        reaction_package=m.rp, reaction_package_args={"test2": "baz", "test3": "bar"}
     )
 
     m.cv._get_reaction_package()
@@ -449,7 +441,7 @@ def test_build():
     m = ConcreteModel()
     m.fs = Flowsheet()
     m.fs.pp = PropertyParameterBlock()
-    m.fs.cv = CVFrame(default={"property_package": m.fs.pp})
+    m.fs.cv = CVFrame(property_package=m.fs.pp)
 
     super(CVFrameData, m.fs.cv).build()
 
@@ -469,7 +461,7 @@ def test_auto_construct():
     m = ConcreteModel()
     m.fs = Flowsheet()
     m.fs.pp = PropertyParameterBlock()
-    m.fs.cv = CVFrame(default={"property_package": m.fs.pp, "auto_construct": True})
+    m.fs.cv = CVFrame(property_package=m.fs.pp, auto_construct=True)
 
     with pytest.raises(NotImplementedError):
         super(CVFrameData, m.fs.cv).build()

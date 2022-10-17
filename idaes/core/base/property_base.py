@@ -17,11 +17,12 @@ This module contains classes for property blocks and property parameter blocks.
 import sys
 
 # Import Pyomo libraries
-from pyomo.environ import Set, value, Var, Expression, Constraint
+from pyomo.environ import Set, value, Var, Expression, Constraint, Reference
 from pyomo.core.base.var import _VarData
 from pyomo.core.base.expression import _ExpressionData
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 from pyomo.common.formatting import tabular_writer
+from pyomo.network import Port
 
 # Import IDAES cores
 from idaes.core.base.process_block import ProcessBlock
@@ -114,7 +115,7 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         # set_default_scaling, get_default_scaling, and unset_default_scaling
         self.default_scaling_factor = {}
 
-    def set_default_scaling(self, attrbute, value, index=None):
+    def set_default_scaling(self, attribute, value, index=None):
         """Set a default scaling factor for a property.
 
         Args:
@@ -127,9 +128,9 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         Returns:
             None
         """
-        self.default_scaling_factor[(attrbute, index)] = value
+        self.default_scaling_factor[(attribute, index)] = value
 
-    def unset_default_scaling(self, attrbute, index=None):
+    def unset_default_scaling(self, attribute, index=None):
         """Remove a previously set default value
 
         Args:
@@ -140,11 +141,11 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
             None
         """
         try:
-            del self.default_scaling_factor[(attrbute, index)]
+            del self.default_scaling_factor[(attribute, index)]
         except KeyError:
             pass
 
-    def get_default_scaling(self, attrbute, index=None):
+    def get_default_scaling(self, attribute, index=None):
         """Returns a default scale factor for a property
 
         Args:
@@ -156,11 +157,11 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         """
         try:
             # If a specific component data index exists
-            return self.default_scaling_factor[(attrbute, index)]
+            return self.default_scaling_factor[(attribute, index)]
         except KeyError:
             try:
                 # indexed, but no specifc index?
-                return self.default_scaling_factor[(attrbute, None)]
+                return self.default_scaling_factor[(attribute, None)]
             except KeyError:
                 # Can't find a default scale factor for what you asked for
                 return None
@@ -182,7 +183,7 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
 
     def build_state_block(self, *args, **kwargs):
         """
-        Methods to construct a StateBlock assoicated with this
+        Methods to construct a StateBlock associated with this
         PhysicalParameterBlock. This will automatically set the parameters
         construction argument for the StateBlock.
 
@@ -190,17 +191,22 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
             StateBlock
 
         """
-        default = kwargs.pop("default", {})
+        # default = kwargs.pop("default", {})
         initialize = kwargs.pop("initialize", {})
 
+        # TODO: Should find a better way to do this
+        # For now, trigger get_phase_component_set to make sure
+        # it has been constructed before building the state block
+        self.get_phase_component_set()
+
         if initialize == {}:
-            default["parameters"] = self
+            kwargs["parameters"] = self
         else:
             for i in initialize.keys():
                 initialize[i]["parameters"] = self
 
         return self.state_block_class(  # pylint: disable=not-callable
-            *args, **kwargs, default=default, initialize=initialize
+            *args, **kwargs, initialize=initialize
         )
 
     def get_phase_component_set(self):
@@ -271,46 +277,6 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
                 "appear to be an instance of a Phase object.".format(self.name, phase)
             )
         return obj
-
-    def _validate_parameter_block(self):
-        """
-        Tries to catch some possible mistakes and provide the user with
-        useful error messages.
-        """
-        try:
-            # Check names in component list have matching Component objects
-            for c in self.component_list:
-                obj = getattr(self, str(c))
-                if not isinstance(obj, ComponentData):
-                    raise TypeError(
-                        "Property package {} has an object {} whose "
-                        "name appears in component_list but is not an "
-                        "instance of Component".format(self.name, c)
-                    )
-        except AttributeError:
-            # No component list
-            raise PropertyPackageError(
-                f"Property package {self.name} has not defined any " f"Components."
-            )
-
-        try:
-            # Valdiate that names in phase list have matching Phase objects
-            for p in self.phase_list:
-                obj = getattr(self, str(p))
-                if not isinstance(obj, PhaseData):
-                    raise TypeError(
-                        "Property package {} has an object {} whose "
-                        "name appears in phase_list but is not an "
-                        "instance of Phase".format(self.name, p)
-                    )
-        except AttributeError:
-            # No phase list
-            raise PropertyPackageError(
-                f"Property package {self.name} has not defined any Phases."
-            )
-
-        # Also check that the phase-component set has been created.
-        self.get_phase_component_set()
 
 
 class StateBlock(ProcessBlock):
@@ -504,6 +470,66 @@ class StateBlock(ProcessBlock):
 
         ostream.write("\n" + "=" * max_str_length + "\n")
 
+    def get_port_reference_name(self, component_name, port_name):
+        """
+        Get the standard name of a "port reference", the component
+        accessed on the port by "port_name.component_name".
+
+        Args:
+            component_name - name of port member of interest (str)
+            port_name - name of Port object (str)
+
+        Returns:
+            str with name for Reference used for Port member
+        """
+        return f"_{component_name}_{port_name}_ref"
+
+    def build_port(
+        self,
+        doc=None,
+        slice_index=None,
+        index=None,
+    ):
+        """
+        Constructs a Port based on this StateBlock attached to the target block.
+
+        Args:
+            doc - doc string or Prot object
+            slice_index - Slice index (e.g. (slice(None), 0.0) that will be
+                used to index self when constructing port references. Default = None.
+            index - time index to use when calling define_port_memebers. Default = None.
+
+        Returns:
+            Port object and list of tuples with form (Reference, member name)
+        """
+        if slice_index is None:
+            slice_index = Ellipsis
+        if index is None:
+            index = self.index_set().first()
+
+        # Create empty Port
+        p = Port(doc=doc)
+
+        # Get dict of Port members and names
+        # Need to get a representative member of StateBlockDatas
+        port_member_dict = self[index].define_port_members()
+
+        # Create References for port members
+        ref_name_list = []
+        for name, component in port_member_dict.items():
+            if not component.is_indexed():
+                slicer = self[slice_index].component(component.local_name)
+            else:
+                slicer = self[slice_index].component(component.local_name)[...]
+
+            ref = Reference(slicer)
+            ref_name_list.append((ref, name))
+
+            # Add Reference to Port
+            p.add(ref, name)
+
+        return p, ref_name_list
+
 
 class StateBlockData(ProcessBlockData):
     """
@@ -608,10 +634,6 @@ should be constructed in this state block,
         """
         super(StateBlockData, self).build()
         add_object_reference(self, "_params", self.config.parameters)
-
-        # TODO: Deprecate this at some point
-        # Backwards compatability check for old-style property packages
-        self._params._validate_parameter_block()
 
     @property
     def params(self):
@@ -775,7 +797,7 @@ should be constructed in this state block,
         a method to create the required property, and any associated
         components.
 
-        Create a property calculation if needed. Return an attrbute error if
+        Create a property calculation if needed. Return an attribute error if
         attr == 'domain' or starts with a _ . The error for _ prevents a
         recursion error if trying to get a function to create a property and
         that function doesn't exist.  Pyomo also ocasionally looks for things

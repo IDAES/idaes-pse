@@ -35,12 +35,12 @@ from idaes.core.util import scaling as iscale
 @pytest.mark.unit
 def test_basic_scaling():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     # Set flag to include inherent reactions
     m.fs.pp._has_inherent_reactions = True
 
-    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume0DBlock(property_package=m.fs.pp)
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -79,9 +79,9 @@ def test_basic_scaling():
 @pytest.mark.unit
 def test_user_set_scaling():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume0DBlock(property_package=m.fs.pp)
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_material_balances(
@@ -111,12 +111,10 @@ def test_user_set_scaling():
 @pytest.mark.unit
 def test_full_auto_scaling():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-    m.fs.cv = ControlVolume0DBlock(
-        default={"property_package": m.fs.pp, "reaction_package": m.fs.rp}
-    )
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
+    m.fs.cv = ControlVolume0DBlock(property_package=m.fs.pp, reaction_package=m.fs.rp)
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
@@ -148,7 +146,8 @@ def test_full_auto_scaling():
     # Unscaled variables are:
     # rate_reaction_extent (2 reactions)
     # equilibrium_reaction_extent  (2 reactions)
-    assert len(unscaled_var_list) == 4
+    # cp at inlet and outlet
+    assert len(unscaled_var_list) == 6
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
@@ -157,15 +156,11 @@ def test_full_auto_scaling():
 @pytest.mark.unit
 def test_full_auto_scaling_dynamic():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyo.units.s})
+    m.fs = FlowsheetBlock(dynamic=True, time_units=pyo.units.s)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.cv = ControlVolume0DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "dynamic": True,
-        }
+        property_package=m.fs.pp, reaction_package=m.fs.rp, dynamic=True
     )
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -201,7 +196,8 @@ def test_full_auto_scaling_dynamic():
     # Unscaled variables are:
     # rate_reaction_extent (2 reactions, 4 time points)
     # equilibrium_reaction_extent  (2 reactions, 4 time points)
-    assert len(unscaled_var_list) == 16
+    # cp at inlet and outlet  (4 time points)
+    assert len(unscaled_var_list) == 24
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
@@ -210,15 +206,11 @@ def test_full_auto_scaling_dynamic():
 @pytest.mark.unit
 def test_full_auto_scaling_mbtype_phase():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyo.units.s})
+    m.fs = FlowsheetBlock(dynamic=True, time_units=pyo.units.s)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.cv = ControlVolume0DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "dynamic": True,
-        }
+        property_package=m.fs.pp, reaction_package=m.fs.rp, dynamic=True
     )
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -255,7 +247,8 @@ def test_full_auto_scaling_mbtype_phase():
     # rate_reaction_extent (2 reactions, 4 time points)
     # equilibrium_reaction_extent  (2 reactions, 4 time points)
     # phase_equilibrium_generation  (2 reactions, 4 time points)
-    assert len(unscaled_var_list) == 24
+    # cp at inlet and outlet  (4 time points)
+    assert len(unscaled_var_list) == 32
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
@@ -264,15 +257,11 @@ def test_full_auto_scaling_mbtype_phase():
 @pytest.mark.unit
 def test_full_auto_scaling_mbtype_element():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyo.units.s})
+    m.fs = FlowsheetBlock(dynamic=True, time_units=pyo.units.s)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.cv = ControlVolume0DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "dynamic": True,
-        }
+        property_package=m.fs.pp, reaction_package=m.fs.rp, dynamic=True
     )
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -287,7 +276,9 @@ def test_full_auto_scaling_mbtype_element():
 
     # check that all variables have scaling factors
     unscaled_var_list = list(iscale.unscaled_variables_generator(m))
-    assert len(unscaled_var_list) == 0
+    # Unscaled variables are:
+    # cp at inlet and outlet (4 time points)
+    assert len(unscaled_var_list) == 8
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0

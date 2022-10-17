@@ -74,9 +74,9 @@ def read_data(fname, params):
 def test_thermo():
     # Read in test data and add mixtures
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.params = FlueGasParameterBlock()
-    m.fs.state = FlueGasStateBlock(default={"parameters": m.fs.params})
+    m.fs.state = FlueGasStateBlock(parameters=m.fs.params)
     m.fs.state.pressure.fix(1e5)  # ideal gas properties are pressure independent
 
     assert_units_consistent(m)

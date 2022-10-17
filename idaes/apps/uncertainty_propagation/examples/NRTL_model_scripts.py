@@ -38,11 +38,11 @@ def NRTL_model(data):
         for estimating parameters and covariance
     """
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = BTXParameterBlock(
-        default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "NRTL"}
+        valid_phase=("Liq", "Vap"), activity_coeff_model="NRTL"
     )
-    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    m.fs.flash = Flash(property_package=m.fs.properties)
 
     # Initialize at a certain inlet condition
     m.fs.flash.inlet.flow_mol.fix(1)
@@ -94,11 +94,11 @@ def NRTL_model_opt():
         for uncertainty propagation
     """
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = BTXParameterBlock(
-        default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "NRTL"}
+        valid_phase=("Liq", "Vap"), activity_coeff_model="NRTL"
     )
-    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    m.fs.flash = Flash(property_package=m.fs.properties)
 
     # Initialize at a certain inlet condition
     m.fs.flash.inlet.flow_mol.fix(1)
@@ -162,11 +162,11 @@ def NRTL_model_opt_infeasible():
         for uncertainty propagation
     """
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = BTXParameterBlock(
-        default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "NRTL"}
+        valid_phase=("Liq", "Vap"), activity_coeff_model="NRTL"
     )
-    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    m.fs.flash = Flash(property_package=m.fs.properties)
 
     # Initialize at a certain inlet condition
     m.fs.flash.inlet.flow_mol.fix(1)

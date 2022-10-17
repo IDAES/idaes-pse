@@ -20,6 +20,7 @@ from idaes.apps.grid_integration.model_data import GeneratorModelData
 def generator_params():
     return {
         "gen_name": "Testing_Generator",
+        "bus": "bus5",
         "generator_type": "thermal",
         "p_min": 30,
         "p_max": 76,
@@ -125,7 +126,14 @@ def test_invalid_fixed_commitment_value(generator_params):
 @pytest.mark.unit
 def test_invalid_generator_name(generator_params):
     generator_params["gen_name"] = 102_111
-    with pytest.raises(TypeError, match=r".*generator names must be str.*"):
+    with pytest.raises(TypeError, match=r".*gen_name must be str.*"):
+        GeneratorModelData(**generator_params)
+
+
+@pytest.mark.unit
+def test_invalid_bus_name(generator_params):
+    generator_params["bus"] = 102
+    with pytest.raises(TypeError, match=r".*bus must be str.*"):
         GeneratorModelData(**generator_params)
 
 

@@ -52,6 +52,10 @@ from idaes.core import (
     register_idaes_currency_units,
 )
 
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
+
 # Some more information about this module
 __author__ = "Miguel Zamarripa, Andrew Lee"
 
@@ -91,8 +95,8 @@ class VesselMaterial(StrEnum):
     Carpenter20CB3 = "Carpenter20CB3"
     Nickel200 = "Nickel200"
     Monel400 = "Monel400"
-    Inconel600 = "inconel600"
-    Incoloy825 = "incoloy825"
+    Inconel600 = "Inconel600"
+    Incoloy825 = "Incoloy825"
     Titanium = "Titanium"
 
 
@@ -152,7 +156,7 @@ class PumpMaterial(StrEnum):
     StainlessSteel = "StainlessSteel"
     HastelloyC = "HastelloyC"
     Monel = "Monel"
-    Nickel = "Mickel"
+    Nickel = "Nickel"
     Titanium = "Titanium"
     NiAlBronze = "NiAlBronze"
     CarbonSteel = "CarbonSteel"
@@ -449,7 +453,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                 construction, default = VesselMaterial.CarbonSteel.
             shell_thickness: thickness of vessel shell, including pressure
                 allowance. Default = 1.25 inches.
-            weight_limi: 1: (default) 1000 to 920,000 lb, 2: 4200 to 1M lb.
+            weight_limit: 1: (default) 1000 to 920,000 lb, 2: 4200 to 1M lb.
                 Option 2 is only valid for vertical vessels.
             aspect_ratio_range: vertical vessels only, default = 1;
                 1: 3 < D < 21 ft, 12 < L < 40 ft, 2: 3 < D < 24 ft; 27 < L < 170 ft.
@@ -1016,12 +1020,31 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             integer: whether the number of units should be constrained to be
                 an integer or not (default = True).
         """
-        # Confirm that unit is a turbine
+        # Confirm that unit is a compressor
         if not blk.unit_model.config.compressor:
-            raise TypeError(
+            _log.warning(
                 "cost_compressor method is only appropriate for "
                 "pressure changers with the compressor argument "
                 "equal to True."
+            )
+        # compressor = True, and using non-isentropic assumption
+        # pumps should use the cost_pump method
+        if (
+            blk.unit_model.config.thermodynamic_assumption
+            == ThermodynamicAssumption.pump
+        ):
+            _log.warning(
+                f"{blk.unit_model.name} - pressure changers with the pump "
+                "assumption should use the cost_pump method."
+            )
+        # isothermal or adiabatic compressors are too simple to cost
+        elif blk.unit_model.config.thermodynamic_assumption in [
+            ThermodynamicAssumption.isothermal,
+            ThermodynamicAssumption.adiabatic,
+        ]:
+            _log.warning(
+                f"{blk.unit_model.name} - pressure changers without isentropic "
+                "assumption are too simple to be costed."
             )
 
         # Build generic costing variables

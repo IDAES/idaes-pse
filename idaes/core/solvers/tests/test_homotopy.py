@@ -372,18 +372,14 @@ def test_basic_max_step(model):
 @pytest.fixture()
 def model2():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # vapor-liquid (ideal) - FTPz
     m.fs.properties_ideal_vl_FTPz = BTXParameterBlock(
-        default={
-            "valid_phase": ("Liq", "Vap"),
-            "activity_coeff_model": "Ideal",
-            "state_vars": "FTPz",
-        }
+        valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal", state_vars="FTPz"
     )
     m.fs.state_block = m.fs.properties_ideal_vl_FTPz.build_state_block(
-        default={"defined_state": True}
+        defined_state=True
     )
 
     m.fs.state_block.flow_mol.fix(1)

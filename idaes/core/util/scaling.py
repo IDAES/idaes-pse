@@ -37,7 +37,9 @@ from pyomo.network import Arc
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.common.modeling import unique_component_name
 from pyomo.core.base.constraint import _ConstraintData
-from pyomo.common.collections import ComponentMap
+from pyomo.common.collections import ComponentMap, ComponentSet
+from pyomo.dae import DerivativeVar
+from pyomo.dae.flatten import slice_component_along_sets
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 import idaes.logger as idaeslog
 
@@ -200,7 +202,7 @@ def calculate_scaling_factors(blk):
     scale_arc_constraints(blk)
 
 
-def set_scaling_factor(c, v, data_objects=True):
+def set_scaling_factor(c, v, data_objects=True, overwrite=True):
     """Set a scaling factor for a model component. This function creates the
     scaling_factor suffix if needed.
 
@@ -208,23 +210,39 @@ def set_scaling_factor(c, v, data_objects=True):
         c: component to supply scaling factor for
         v: scaling factor
         data_objects: set scaling factors for indexed data objects (default=True)
+        overwrite: whether to overwrite an existing scaling factor
     Returns:
         None
     """
     if isinstance(c, (float, int)):
         # property packages can return 0 for material balance terms on components
         # doesn't exist.  This handles the case where you get a constant 0 and
-        # need it's scale factor to scale the mass balance.
+        # need its scale factor to scale the mass balance.
         return 1
     try:
         suf = c.parent_block().scaling_factor
+
     except AttributeError:
         c.parent_block().scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
         suf = c.parent_block().scaling_factor
 
+    if not overwrite:
+        try:
+            tmp = suf[c]
+            # Able to access suffix value for c, so return without setting scaling factor
+            return
+        except KeyError:
+            # No value exists yet for c, go ahead and set it
+            pass
     suf[c] = v
     if data_objects and c.is_indexed():
         for cdat in c.values():
+            if not overwrite:
+                try:
+                    tmp = suf[cdat]
+                    continue
+                except KeyError:
+                    pass
             suf[cdat] = v
 
 
@@ -605,7 +623,7 @@ def get_jacobian(m, scaled=True, equality_constraints_only=False):
     """
     Get the Jacobian matrix at the current model values. This function also
     returns the Pynumero NLP which can be used to identify the constraints and
-    variables corresponding to the rows and comlumns.
+    variables corresponding to the rows and columns.
 
     Args:
         m: model to get Jacobian from
@@ -634,8 +652,8 @@ def extreme_jacobian_entries(
     Args:
         m: model
         scaled: if true use scaled Jacobian
-        large: >= to this value is consdered large
-        small: <= to this and >= zero is consdered small
+        large: >= to this value is considered large
+        small: <= to this and >= zero is considered small
 
     Returns:
         (list of tuples), Jacobian entry, Constraint, Variable
@@ -662,8 +680,8 @@ def extreme_jacobian_rows(
     Args:
         m: model
         scaled: if true use scaled Jacobian
-        large: >= to this value is consdered large
-        small: <= to this is consdered small
+        large: >= to this value is considered large
+        small: <= to this is considered small
 
     Returns:
         (list of tuples), Row norm, Constraint
@@ -693,8 +711,8 @@ def extreme_jacobian_columns(
     Args:
         m: model
         scaled: if true use scaled Jacobian
-        large: >= to this value is consdered large
-        small: <= to this is consdered small
+        large: >= to this value is considered large
+        small: <= to this is considered small
 
     Returns:
         (list of tuples), Column norm, Variable
@@ -723,8 +741,8 @@ def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
         m: calculate the condition number of the Jacobian from this model.
         scaled: if True use scaled Jacobian, else use unscaled
         ord: norm order, None = Frobenius, see scipy.sparse.linalg.norm for more
-        pinv: Use pseudoinverse, works for non-square matrixes
-        jac: (optional) perviously calculated jacobian
+        pinv: Use pseudoinverse, works for non-square matrices
+        jac: (optional) previously calculated Jacobian
 
     Returns:
         (float) Condition number
@@ -741,6 +759,106 @@ def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
     else:
         jac_inv = la.pinv(jac.toarray())
         return spla.norm(jac, ord) * la.norm(jac_inv, ord)
+
+
+def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
+    """
+    Scales time discretization equations generated via a Pyomo discretization
+    transformation. Also scales continuity equations for collocation methods
+    of discretization that require them.
+
+    Args:
+        blk: Block whose time discretization equations are being scaled
+        time_set: Time set object. For an IDAES flowsheet object fs, this is fs.time.
+        time_scaling_factor: Scaling factor to use for time
+
+    Returns:
+        None
+    """
+
+    tname = time_set.local_name
+
+    # Copy and pasted from solvers.petsc.find_discretization_equations then modified
+    for var in blk.component_objects(pyo.Var):
+        if isinstance(var, DerivativeVar):
+            cont_set_set = ComponentSet(var.get_continuousset_list())
+            if time_set in cont_set_set:
+                if len(cont_set_set) > 1:
+                    _log.warning(
+                        "IDAES presently does not support automatically scaling discretization equations for "
+                        f"second order or higher derivatives like {var.name} that are differentiated at least once with "
+                        "respect to time. Please scale the corresponding discretization equation yourself."
+                    )
+                    continue
+                state_var = var.get_state_var()
+                parent_block = var.parent_block()
+
+                disc_eq = getattr(parent_block, var.local_name + "_disc_eq")
+                # Look for continuity equation, which exists only for collocation with certain sets of polynomials
+                try:
+                    cont_eq = getattr(
+                        parent_block, state_var.local_name + "_" + tname + "_cont_eq"
+                    )
+                except AttributeError:
+                    cont_eq = None
+
+                deriv_dict = dict(
+                    (key, pyo.Reference(slc))
+                    for key, slc in slice_component_along_sets(var, (time_set,))
+                )
+                state_dict = dict(
+                    (key, pyo.Reference(slc))
+                    for key, slc in slice_component_along_sets(state_var, (time_set,))
+                )
+                disc_dict = dict(
+                    (key, pyo.Reference(slc))
+                    for key, slc in slice_component_along_sets(disc_eq, (time_set,))
+                )
+                if cont_eq is not None:
+                    cont_dict = dict(
+                        (key, pyo.Reference(slc))
+                        for key, slc in slice_component_along_sets(cont_eq, (time_set,))
+                    )
+                for key, deriv in deriv_dict.items():
+                    state = state_dict[key]
+                    disc = disc_dict[key]
+                    if cont_eq is not None:
+                        cont = cont_dict[key]
+                    for t in time_set:
+                        s_state = get_scaling_factor(state[t], default=1, warning=True)
+                        set_scaling_factor(
+                            deriv[t], s_state / time_scaling_factor, overwrite=False
+                        )
+                        s_deriv = get_scaling_factor(deriv[t])
+                        # Check time index to decide what constraints to scale
+                        if cont_eq is None:
+                            if t == time_set.first() or t == time_set.last():
+                                try:
+                                    constraint_scaling_transform(
+                                        disc[t], s_deriv, overwrite=False
+                                    )
+                                except KeyError:
+                                    # Discretization and continuity equations may or may not exist at the first or last time
+                                    # points depending on the method. Backwards skips first, forwards skips last, central skips
+                                    # both (which means the user needs to provide additional equations)
+                                    pass
+                            else:
+                                constraint_scaling_transform(
+                                    disc[t], s_deriv, overwrite=False
+                                )
+                        else:
+                            # Lagrange-Legendre is a pain, because it has continuity equations on the edges of finite
+                            # instead of discretization equations, but no intermediate continuity equations, so we have
+                            # to look for both at every timepoint
+                            try:
+                                constraint_scaling_transform(
+                                    disc[t], s_deriv, overwrite=False
+                                )
+                            except KeyError:
+                                if t != time_set.first():
+                                    constraint_scaling_transform(
+                                        cont[t], s_state, overwrite=False
+                                    )
 
 
 class CacheVars(object):
@@ -894,66 +1012,3 @@ class FlattenedScalingAssignment(object):
             nominal_state = 1 / scaling_factor[state_data]
             nominal_deriv = nominal_state / nominal_wrt
             scaling_factor[dv] = 1 / nominal_deriv
-
-
-################################################################################
-# DEPRECATED functions below.
-################################################################################
-
-
-def scale_single_constraint(c):
-    """This transforms a constraint with its scaling factor. If there is no
-    scaling factor for the constraint, the constraint is not scaled and a
-    message is logged. After transforming the constraint the scaling factor,
-    scaling expression, and nominal value are all unset to ensure the constraint
-    isn't scaled twice.
-
-    Args:
-        c: Pyomo constraint
-
-    Returns:
-        None
-    """
-    _log.warning(
-        "DEPRECATED: scale_single_constraint() will be removed and has no "
-        "direct replacement"
-    )
-    if not isinstance(c, _ConstraintData):
-        raise TypeError(
-            "{} is not a constraint and cannot be the input to "
-            "scale_single_constraint".format(c.name)
-        )
-
-    v = get_scaling_factor(c)
-    if v is None:
-        _log.warning(
-            f"{c.name} constraint has no scaling factor, so it was not scaled."
-        )
-        return
-    __scale_constraint(c, v)
-    unset_scaling_factor(c)
-
-
-def scale_constraints(blk, descend_into=True):
-    """This scales all constraints with their scaling factor suffix for a model
-    or block. After scaling the constraints, the scaling factor and expression
-    for each constraint is set to 1 to avoid double scaling the constraints.
-
-    Args:
-        blk: Pyomo block
-        descend_into: indicates whether to descend into the other blocks on blk.
-            (default = True)
-
-    Returns:
-        None
-    """
-    _log.warning(
-        "DEPRECATED: scale_single_constraint() will be removed and has no "
-        "direct replacement"
-    )
-    for c in blk.component_data_objects(pyo.Constraint, descend_into=False):
-        scale_single_constraint(c)
-    if descend_into:
-        for b in blk.component_objects(pyo.Block, descend_into=True):
-            for c in b.component_data_objects(pyo.Constraint, descend_into=False):
-                scale_single_constraint(c)

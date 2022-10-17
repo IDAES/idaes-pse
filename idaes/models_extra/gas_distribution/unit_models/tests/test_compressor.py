@@ -114,12 +114,12 @@ class TestCompressorValues(unittest.TestCase):
         default = {
             "dynamic": False,
         }
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         compressor_config = {
             "property_package": m.fs.properties,
         }
-        m.fs.compressor = IsothermalCompressor(default=compressor_config)
+        m.fs.compressor = IsothermalCompressor(**compressor_config)
 
         time = m.fs.time
         t0 = m.fs.time.first()
@@ -233,12 +233,12 @@ class TestSimpleCompressor(unittest.TestCase):
         default = {
             "dynamic": False,
         }
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         compressor_config = {
             "property_package": m.fs.properties,
         }
-        m.fs.compressor = IsothermalCompressor(default=compressor_config)
+        m.fs.compressor = IsothermalCompressor(**compressor_config)
 
         m.fs.compressor.inlet_state[0].temperature.fix(300.0 * pyo.units.K)
         m.fs.compressor.inlet_state[0].pressure.fix(20.0 * pyo.units.bar)

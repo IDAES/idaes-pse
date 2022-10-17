@@ -16,7 +16,6 @@ Standard IDAES PFR model.
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Var, Reference, Block
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
-from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
@@ -286,18 +285,16 @@ domain,
 
         # Build Control Volume
         self.control_volume = ControlVolume1DBlock(
-            default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-                "reaction_package": self.config.reaction_package,
-                "reaction_package_args": self.config.reaction_package_args,
-                "transformation_method": self.config.transformation_method,
-                "transformation_scheme": self.config.transformation_scheme,
-                "finite_elements": self.config.finite_elements,
-                "collocation_points": self.config.collocation_points,
-            }
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            property_package=self.config.property_package,
+            property_package_args=self.config.property_package_args,
+            reaction_package=self.config.reaction_package,
+            reaction_package_args=self.config.reaction_package_args,
+            transformation_method=self.config.transformation_method,
+            transformation_scheme=self.config.transformation_scheme,
+            finite_elements=self.config.finite_elements,
+            collocation_points=self.config.collocation_points,
         )
 
         self.control_volume.add_geometry(
@@ -378,22 +375,3 @@ domain,
         var_dict = {"Area": self.area}
 
         return {"vars": var_dict}
-
-    @deprecated(
-        "The get_costing method is being deprecated in favor of the new "
-        "FlowsheetCostingBlock tools.",
-        version="TBD",
-    )
-    def get_costing(self, year=None, module=costing, **kwargs):
-        if not hasattr(self.flowsheet(), "costing"):
-            self.flowsheet().get_costing(year=year, module=module)
-
-        self.costing = Block()
-        units_meta = self.config.property_package.get_metadata().get_derived_units
-        self.diameter = Var(
-            initialize=1, units=units_meta("length"), doc="vessel diameter"
-        )
-        self.diameter_eq = Constraint(
-            expr=self.volume == (self.length * const.pi * self.diameter**2) / 4
-        )
-        module.pfr_costing(self.costing, **kwargs)

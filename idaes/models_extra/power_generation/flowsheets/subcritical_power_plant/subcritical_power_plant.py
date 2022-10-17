@@ -11,6 +11,7 @@
 # license information.
 #################################################################################
 
+import os
 import time as wall_clock
 import matplotlib.pyplot as plt
 
@@ -21,14 +22,18 @@ from idaes.models.properties import iapws95
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
-from idaes.models_extra.power_generation.control.pid_controller import PIDController
+from idaes.models.control.controller import (
+    PIDController,
+    ControllerType,
+    ControllerMVBoundType,
+)
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.subcritical_boiler_flowsheet as blr
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.steam_cycle_flowsheet as stc
 from idaes.core.util.dyn_utils import copy_values_at_time, copy_non_time_indexed_values
 import idaes.logger as idaeslog
 import os
 import idaes.core.util.tables as tables
-from idaes.core.util.misc import svg_tag
+from idaes.core.util.tags import svg_tag, ModelTagGroup
 from idaes.core.solvers import get_solver
 
 _log = idaeslog.getLogger(__name__)
@@ -142,11 +147,11 @@ def set_scaling_factors(m):
     # Set scale factors for steam cycle
     fs = m.fs_main.fs_stc
 
-    iscale.set_scaling_factor(fs.condenser.side_1.heat, 1e-9)
-    iscale.set_scaling_factor(fs.condenser.side_2.heat, 1e-9)
+    iscale.set_scaling_factor(fs.condenser.hot_side.heat, 1e-9)
+    iscale.set_scaling_factor(fs.condenser.cold_side.heat, 1e-9)
 
-    iscale.set_scaling_factor(fs.aux_condenser.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(fs.aux_condenser.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(fs.aux_condenser.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(fs.aux_condenser.cold_side.heat, 1e-7)
 
     iscale.set_scaling_factor(fs.hotwell_tank.control_volume.energy_holdup, 1e-10)
     iscale.set_scaling_factor(fs.hotwell_tank.control_volume.material_holdup, 1e-6)
@@ -154,26 +159,26 @@ def set_scaling_factors(m):
         for t, c in fs.hotwell_tank.control_volume.energy_accumulation_disc_eq.items():
             iscale.constraint_scaling_transform(c, 1e-6)
 
-    iscale.set_scaling_factor(fs.fwh1.condense.side_1.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh1.condense.side_1.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh1.condense.side_2.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh1.condense.side_2.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh1.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(fs.fwh1.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh1.condense.hot_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh1.condense.hot_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh1.condense.cold_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh1.condense.cold_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh1.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh1.condense.cold_side.heat, 1e-7)
 
-    iscale.set_scaling_factor(fs.fwh2.condense.side_1.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh2.condense.side_1.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh2.condense.side_2.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh2.condense.side_2.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh2.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(fs.fwh2.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh2.condense.hot_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh2.condense.hot_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh2.condense.cold_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh2.condense.cold_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh2.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh2.condense.cold_side.heat, 1e-7)
 
-    iscale.set_scaling_factor(fs.fwh3.condense.side_1.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh3.condense.side_1.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh3.condense.side_2.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh3.condense.side_2.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh3.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(fs.fwh3.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh3.condense.hot_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh3.condense.hot_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh3.condense.cold_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh3.condense.cold_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh3.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh3.condense.cold_side.heat, 1e-7)
 
     iscale.set_scaling_factor(fs.da_tank.control_volume.energy_holdup, 1e-11)
     iscale.set_scaling_factor(fs.da_tank.control_volume.material_holdup, 1e-6)
@@ -181,19 +186,19 @@ def set_scaling_factors(m):
         for t, c in fs.da_tank.control_volume.energy_accumulation_disc_eq.items():
             iscale.constraint_scaling_transform(c, 1e-7)
 
-    iscale.set_scaling_factor(fs.fwh5.condense.side_1.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh5.condense.side_1.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh5.condense.side_2.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh5.condense.side_2.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh5.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(fs.fwh5.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh5.condense.hot_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh5.condense.hot_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh5.condense.cold_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh5.condense.cold_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh5.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh5.condense.cold_side.heat, 1e-7)
 
-    iscale.set_scaling_factor(fs.fwh6.condense.side_1.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh6.condense.side_1.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh6.condense.side_2.material_holdup, 1e-4)
-    iscale.set_scaling_factor(fs.fwh6.condense.side_2.energy_holdup, 1e-8)
-    iscale.set_scaling_factor(fs.fwh6.condense.side_1.heat, 1e-7)
-    iscale.set_scaling_factor(fs.fwh6.condense.side_2.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh6.condense.hot_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh6.condense.hot_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh6.condense.cold_side.material_holdup, 1e-4)
+    iscale.set_scaling_factor(fs.fwh6.condense.cold_side.energy_holdup, 1e-8)
+    iscale.set_scaling_factor(fs.fwh6.condense.hot_side.heat, 1e-7)
+    iscale.set_scaling_factor(fs.fwh6.condense.cold_side.heat, 1e-7)
 
     # scaling factor for control valves
     for t in m.fs_main.time:
@@ -233,7 +238,7 @@ def add_overall_performance_expressions(m):
             )
             * (
                 b.fs_stc.turb.inlet_split.mixed_state[t].enth_mol
-                - b.fs_stc.fwh6.desuperheat.tube.properties_out[t].enth_mol
+                - b.fs_stc.fwh6.desuperheat.cold_side.properties_out[t].enth_mol
             )
             + b.fs_stc.spray_valve.outlet.flow_mol[t]
             * (
@@ -696,17 +701,17 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         nstep = 2
     if m.dynamic:
         m.fs_main = FlowsheetBlock(
-            default={"dynamic": True, "time_set": time_set, "time_units": pyo.units.s}
+            dynamic=True, time_set=time_set, time_units=pyo.units.s
         )
     else:
-        m.fs_main = FlowsheetBlock(default={"dynamic": False})
+        m.fs_main = FlowsheetBlock(dynamic=False)
 
     # Add property packages to flowsheet library
     m.fs_main.prop_water = iapws95.Iapws95ParameterBlock()
     m.fs_main.prop_gas = FlueGasParameterBlock()
     # Declare two sub-flowsheets, one for boiler and the other for steam cycle
-    m.fs_main.fs_blr = FlowsheetBlock(default={"time_units": pyo.units.s})
-    m.fs_main.fs_stc = FlowsheetBlock(default={"time_units": pyo.units.s})
+    m.fs_main.fs_blr = FlowsheetBlock(time_units=pyo.units.s)
+    m.fs_main.fs_stc = FlowsheetBlock(time_units=pyo.units.s)
     # Parameter for sliding pressure slope versus gross power output
     m.fs_main.slope_pslide = pyo.Param(initialize=0.02, doc="slope of sliding pressure")
     m = blr.add_unit_models(m)
@@ -736,38 +741,33 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         # PID controllers
         # master of cascading level controller
         m.fs_main.drum_master_ctrl = PIDController(
-            default={
-                "pv": m.fs_main.fs_blr.aDrum.level,
-                "mv": m.fs_main.flow_level_ctrl_output,
-                "type": "PI",
-            }
+            process_var=m.fs_main.fs_blr.aDrum.level,
+            manipulated_var=m.fs_main.flow_level_ctrl_output,
+            type=ControllerType.PI,
+            calculate_initial_integral=False,
         )
         # slave of cascading level controller
         m.fs_main.drum_slave_ctrl = PIDController(
-            default={
-                "pv": m.fs_main.fs_stc.bfp.outlet.flow_mol,
-                "mv": m.fs_main.fs_stc.bfp_turb_valve.valve_opening,
-                "type": "PI",
-                "bounded_output": False,
-            }
+            process_var=m.fs_main.fs_stc.bfp.outlet.flow_mol,
+            manipulated_var=m.fs_main.fs_stc.bfp_turb_valve.valve_opening,
+            type=ControllerType.PI,
+            calculate_initial_integral=False,
         )
         # turbine master PID controller to control power output in MW
         # by manipulating throttling valve
         m.fs_main.turbine_master_ctrl = PIDController(
-            default={
-                "pv": m.fs_main.fs_stc.power_output,
-                "mv": m.fs_main.fs_stc.turb.throttle_valve[1].valve_opening,
-                "type": "PI",
-            }
+            process_var=m.fs_main.fs_stc.power_output,
+            manipulated_var=m.fs_main.fs_stc.turb.throttle_valve[1].valve_opening,
+            type=ControllerType.PI,
+            calculate_initial_integral=False,
         )
         # boiler master PID controller to control main steam pressure in MPa
         # by manipulating coal feed rate
         m.fs_main.boiler_master_ctrl = PIDController(
-            default={
-                "pv": m.fs_main.main_steam_pressure,
-                "mv": m.fs_main.fs_blr.aBoiler.flowrate_coal_raw,
-                "type": "PI",
-            }
+            process_var=m.fs_main.main_steam_pressure,
+            manipulated_var=m.fs_main.fs_blr.aBoiler.flowrate_coal_raw,
+            type=ControllerType.PI,
+            calculate_initial_integral=False,
         )
 
         # Call Pyomo DAE discretizer
@@ -881,7 +881,7 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         destination=m.fs_main.fs_stc.turb.ip_stages[1].inlet,
     )
     m.fs_main.S042 = Arc(
-        source=m.fs_main.fs_stc.fwh6.desuperheat.outlet_2,
+        source=m.fs_main.fs_stc.fwh6.desuperheat.cold_side_outlet,
         destination=m.fs_main.fs_blr.aECON.tube_inlet,
     )
     m.fs_main.B006 = Arc(
@@ -944,7 +944,9 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         )
         _log.info(
             "feed water flow_mol={}".format(
-                pyo.value(m.fs_main.fs_stc.fwh6.desuperheat.outlet_2.flow_mol[0])
+                pyo.value(
+                    m.fs_main.fs_stc.fwh6.desuperheat.cold_side_outlet.flow_mol[0]
+                )
             )
         )
         _log.info(
@@ -1169,7 +1171,9 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         )
         _log.info(
             "feed water flow_mol={}".format(
-                pyo.value(m.fs_main.fs_stc.fwh6.desuperheat.outlet_2.flow_mol[0])
+                pyo.value(
+                    m.fs_main.fs_stc.fwh6.desuperheat.cold_side_outlet.flow_mol[0]
+                )
             )
         )
         _log.info(
@@ -2238,9 +2242,22 @@ def print_pfd_results(m):
             tags[i + "_ySO2"] = s.mole_frac_comp["SO2"]
         except AttributeError:
             pass
-    with open("plant_pfd.svg", "r") as f:
+
+    tag_group = ModelTagGroup()
+    for t, v in tags.items():
+        try:
+            formatter = tag_formats[t]
+        except KeyError:
+            formatter = "{:.3f}"
+        tag_group.add(t, v, format_string=formatter)
+
+    dirpath = os.path.dirname(__file__)
+    svgpath = os.path.join(dirpath, "plant_pfd.svg")
+    with open(svgpath, "r") as f:
         svg_tag(
-            svg=f, tags=tags, outfile=f"plant_pfd_result.svg", tag_format=tag_formats
+            svg=f,
+            tag_group=tag_group,
+            outfile="plant_pfd_result.svg",
         )
     os.remove("streams.csv")
 

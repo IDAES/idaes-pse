@@ -20,7 +20,7 @@ import logging
 
 from pyomo.environ import Block, SolverFactory, TerminationCondition
 from pyomo.core.base.var import _VarData
-from pyomo.contrib.parmest.ipopt_solver_wrapper import ipopt_solve_with_stats
+from pyomo.contrib.parmest.utils.ipopt_solver_wrapper import ipopt_solve_with_stats
 
 from idaes.core.util.model_serializer import to_json, from_json
 from idaes.core.util.model_statistics import degrees_of_freedom

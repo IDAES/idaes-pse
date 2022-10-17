@@ -63,18 +63,18 @@
                         "id": 21
                     },
                     {
-                        "group": "out",
-                        "id": 24
+                        "group": "in",
+                        "id": 25
                     },
                     {
-                        "group": "in",
-                        "id": 27
+                        "group": "out",
+                        "id": 26
                     }
                 ]
             },
             "position": {
-                "x": 10,
-                "y": 10
+                "x": 150,
+                "y": 280
             },
             "size": {
                 "height": 50,
@@ -152,8 +152,8 @@
                 ]
             },
             "position": {
-                "x": 110,
-                "y": 110
+                "x": 300,
+                "y": 400
             },
             "size": {
                 "height": 50,
@@ -295,8 +295,8 @@
                 ]
             },
             "position": {
-                "x": 210,
-                "y": 210
+                "x": 450,
+                "y": -120
             },
             "size": {
                 "height": 50,
@@ -434,8 +434,8 @@
                 ]
             },
             "position": {
-                "x": 310,
-                "y": 310
+                "x": 600,
+                "y": 0
             },
             "size": {
                 "height": 50,
@@ -577,8 +577,8 @@
                 ]
             },
             "position": {
-                "x": 410,
-                "y": 410
+                "x": 150,
+                "y": 0
             },
             "size": {
                 "height": 50,
@@ -711,8 +711,8 @@
                 ]
             },
             "position": {
-                "x": 510,
-                "y": 510
+                "x": 300,
+                "y": 120
             },
             "size": {
                 "height": 50,
@@ -849,8 +849,8 @@
                 ]
             },
             "position": {
-                "x": 610,
-                "y": 610
+                "x": 300,
+                "y": -120
             },
             "size": {
                 "height": 50,
@@ -992,8 +992,8 @@
                 ]
             },
             "position": {
-                "x": 710,
-                "y": 710
+                "x": 150,
+                "y": 560
             },
             "size": {
                 "height": 50,
@@ -1190,8 +1190,8 @@
                 ]
             },
             "position": {
-                "x": 100,
-                "y": 10
+                "x": 300,
+                "y": 440
             },
             "size": {
                 "height": 50,
@@ -1425,8 +1425,8 @@
                 ]
             },
             "position": {
-                "x": 200,
-                "y": 110
+                "x": 450,
+                "y": 120
             },
             "size": {
                 "height": 50,
@@ -1499,131 +1499,16 @@
             "angle": 0,
             "attrs": {
                 "image": {
-                    "xlinkHref": "/images/icons/product.svg"
-                },
-                "label": {
-                    "text": "shell_outlet_1"
-                },
-                "root": {
-                    "title": "product"
-                }
-            },
-            "id": "shell_outlet_1",
-            "ports": {
-                "groups": {
-                    "in": {
-                        "attrs": {
-                            "rect": {
-                                "height": 0,
-                                "stroke": "#000000",
-                                "stroke-width": 0,
-                                "width": 0
-                            }
-                        },
-                        "markup": "<g><rect/></g>",
-                        "position": {
-                            "args": {
-                                "dx": 1,
-                                "dy": 1,
-                                "x": 2,
-                                "y": 25
-                            },
-                            "name": "left"
-                        }
-                    }
-                },
-                "items": [
-                    {
-                        "group": "in",
-                        "id": 25
-                    }
-                ]
-            },
-            "position": {
-                "x": 300,
-                "y": 210
-            },
-            "size": {
-                "height": 50,
-                "width": 50
-            },
-            "type": "standard.Image",
-            "z": 1
-        },
-        {
-            "attrs": {
-                "line": {
-                    "stroke": "#979797",
-                    "stroke-width": 2
-                }
-            },
-            "connector": {
-                "attrs": {
-                    "line": {
-                        "stroke": "#5c9adb"
-                    }
-                },
-                "name": "jumpover"
-            },
-            "id": "s_shell_outlet_1",
-            "labels": [
-                {
-                    "attrs": {
-                        "rect": {
-                            "fill": "#d7dce0",
-                            "fill-opacity": 0,
-                            "stroke": "white",
-                            "stroke-width": 0
-                        },
-                        "text": {
-                            "display": "none",
-                            "fill": "black",
-                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
-                            "text-anchor": "left"
-                        }
-                    },
-                    "position": {
-                        "distance": 0.66,
-                        "offset": -40
-                    }
-                },
-                {
-                    "attrs": {
-                        "text": {
-                            "text": "s_shell_outlet_1"
-                        }
-                    }
-                }
-            ],
-            "router": {
-                "name": "manhattan",
-                "padding": 10
-            },
-            "source": {
-                "id": "ECON",
-                "port": 24
-            },
-            "target": {
-                "id": "shell_outlet_1",
-                "port": 25
-            },
-            "type": "standard.Link",
-            "z": 2
-        },
-        {
-            "angle": 0,
-            "attrs": {
-                "image": {
                     "xlinkHref": "/images/icons/feed.svg"
                 },
                 "label": {
-                    "text": "tube_inlet_1"
+                    "text": "cold_side_inlet_1"
                 },
                 "root": {
                     "title": "feed"
                 }
             },
-            "id": "tube_inlet_1",
+            "id": "cold_side_inlet_1",
             "ports": {
                 "groups": {
                     "out": {
@@ -1650,13 +1535,13 @@
                 "items": [
                     {
                         "group": "out",
-                        "id": 26
+                        "id": 24
                     }
                 ]
             },
             "position": {
-                "x": 400,
-                "y": 310
+                "x": 0,
+                "y": 280
             },
             "size": {
                 "height": 50,
@@ -1680,7 +1565,7 @@
                 },
                 "name": "jumpover"
             },
-            "id": "s_tube_inlet_1",
+            "id": "s_cold_side_inlet_1",
             "labels": [
                 {
                     "attrs": {
@@ -1705,7 +1590,7 @@
                 {
                     "attrs": {
                         "text": {
-                            "text": "s_tube_inlet_1"
+                            "text": "s_cold_side_inlet_1"
                         }
                     }
                 }
@@ -1715,11 +1600,126 @@
                 "padding": 10
             },
             "source": {
-                "id": "tube_inlet_1",
-                "port": 26
+                "id": "cold_side_inlet_1",
+                "port": 24
             },
             "target": {
                 "id": "ECON",
+                "port": 25
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/product.svg"
+                },
+                "label": {
+                    "text": "hot_side_outlet_1"
+                },
+                "root": {
+                    "title": "product"
+                }
+            },
+            "id": "hot_side_outlet_1",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 2,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": 27
+                    }
+                ]
+            },
+            "position": {
+                "x": 300,
+                "y": 160
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "attrs": {
+                "line": {
+                    "stroke": "#979797",
+                    "stroke-width": 2
+                }
+            },
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "s_hot_side_outlet_1",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "s_hot_side_outlet_1"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "manhattan",
+                "padding": 10
+            },
+            "source": {
+                "id": "ECON",
+                "port": 26
+            },
+            "target": {
+                "id": "hot_side_outlet_1",
                 "port": 27
             },
             "type": "standard.Link",
@@ -1732,13 +1732,13 @@
                     "xlinkHref": "/images/icons/feed.svg"
                 },
                 "label": {
-                    "text": "shell_inlet_1"
+                    "text": "hot_side_inlet_1"
                 },
                 "root": {
                     "title": "feed"
                 }
             },
-            "id": "shell_inlet_1",
+            "id": "hot_side_inlet_1",
             "ports": {
                 "groups": {
                     "out": {
@@ -1770,8 +1770,8 @@
                 ]
             },
             "position": {
-                "x": 500,
-                "y": 410
+                "x": 0,
+                "y": 0
             },
             "size": {
                 "height": 50,
@@ -1795,7 +1795,7 @@
                 },
                 "name": "jumpover"
             },
-            "id": "s_shell_inlet_1",
+            "id": "s_hot_side_inlet_1",
             "labels": [
                 {
                     "attrs": {
@@ -1820,7 +1820,7 @@
                 {
                     "attrs": {
                         "text": {
-                            "text": "s_shell_inlet_1"
+                            "text": "s_hot_side_inlet_1"
                         }
                     }
                 }
@@ -1830,7 +1830,7 @@
                 "padding": 10
             },
             "source": {
-                "id": "shell_inlet_1",
+                "id": "hot_side_inlet_1",
                 "port": 28
             },
             "target": {
@@ -1847,13 +1847,13 @@
                     "xlinkHref": "/images/icons/feed.svg"
                 },
                 "label": {
-                    "text": "tube_inlet_2"
+                    "text": "cold_side_inlet_2"
                 },
                 "root": {
                     "title": "feed"
                 }
             },
-            "id": "tube_inlet_2",
+            "id": "cold_side_inlet_2",
             "ports": {
                 "groups": {
                     "out": {
@@ -1885,8 +1885,8 @@
                 ]
             },
             "position": {
-                "x": 600,
-                "y": 510
+                "x": 0,
+                "y": 560
             },
             "size": {
                 "height": 50,
@@ -1910,7 +1910,7 @@
                 },
                 "name": "jumpover"
             },
-            "id": "s_tube_inlet_2",
+            "id": "s_cold_side_inlet_2",
             "labels": [
                 {
                     "attrs": {
@@ -1935,7 +1935,7 @@
                 {
                     "attrs": {
                         "text": {
-                            "text": "s_tube_inlet_2"
+                            "text": "s_cold_side_inlet_2"
                         }
                     }
                 }
@@ -1945,7 +1945,7 @@
                 "padding": 10
             },
             "source": {
-                "id": "tube_inlet_2",
+                "id": "cold_side_inlet_2",
                 "port": 30
             },
             "target": {
@@ -1962,13 +1962,13 @@
                     "xlinkHref": "/images/icons/product.svg"
                 },
                 "label": {
-                    "text": "tube_outlet_1"
+                    "text": "cold_side_outlet_1"
                 },
                 "root": {
                     "title": "product"
                 }
             },
-            "id": "tube_outlet_1",
+            "id": "cold_side_outlet_1",
             "ports": {
                 "groups": {
                     "in": {
@@ -2000,8 +2000,8 @@
                 ]
             },
             "position": {
-                "x": 700,
-                "y": 610
+                "x": 300,
+                "y": 680
             },
             "size": {
                 "height": 50,
@@ -2025,7 +2025,7 @@
                 },
                 "name": "jumpover"
             },
-            "id": "s_tube_outlet_1",
+            "id": "s_cold_side_outlet_1",
             "labels": [
                 {
                     "attrs": {
@@ -2050,7 +2050,7 @@
                 {
                     "attrs": {
                         "text": {
-                            "text": "s_tube_outlet_1"
+                            "text": "s_cold_side_outlet_1"
                         }
                     }
                 }
@@ -2064,7 +2064,7 @@
                 "port": 32
             },
             "target": {
-                "id": "tube_outlet_1",
+                "id": "cold_side_outlet_1",
                 "port": 33
             },
             "type": "standard.Link",
@@ -2123,35 +2123,35 @@
                 "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "PrSH"
             },
+            "s_cold_side_inlet_1": {
+                "dest": "ECON",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                "source": "cold_side_inlet_1"
+            },
+            "s_cold_side_inlet_2": {
+                "dest": "RH",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                "source": "cold_side_inlet_2"
+            },
+            "s_cold_side_outlet_1": {
+                "dest": "cold_side_outlet_1",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                "source": "RH"
+            },
+            "s_hot_side_inlet_1": {
+                "dest": "FSH",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                "source": "hot_side_inlet_1"
+            },
+            "s_hot_side_outlet_1": {
+                "dest": "hot_side_outlet_1",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                "source": "ECON"
+            },
             "s_outlet_1": {
                 "dest": "outlet_1",
                 "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "ATMP1"
-            },
-            "s_shell_inlet_1": {
-                "dest": "FSH",
-                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
-                "source": "shell_inlet_1"
-            },
-            "s_shell_outlet_1": {
-                "dest": "shell_outlet_1",
-                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
-                "source": "ECON"
-            },
-            "s_tube_inlet_1": {
-                "dest": "ECON",
-                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
-                "source": "tube_inlet_1"
-            },
-            "s_tube_inlet_2": {
-                "dest": "RH",
-                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
-                "source": "tube_inlet_2"
-            },
-            "s_tube_outlet_1": {
-                "dest": "tube_outlet_1",
-                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
-                "source": "RH"
             },
             "ww2prsh": {
                 "dest": "PrSH",
@@ -2164,9 +2164,9 @@
             "columns": [
                 "Variable",
                 "Units",
-                "s_tube_inlet_2",
-                "s_shell_inlet_1",
-                "s_tube_inlet_1",
+                "s_cold_side_inlet_2",
+                "s_hot_side_inlet_1",
+                "s_cold_side_inlet_1",
                 "econ2ww",
                 "ww2prsh",
                 "prsh2plsh",
@@ -2179,8 +2179,8 @@
                 "fg_prsh2mix",
                 "fg_mix2econ",
                 "s_outlet_1",
-                "s_shell_outlet_1",
-                "s_tube_outlet_1"
+                "s_hot_side_outlet_1",
+                "s_cold_side_outlet_1"
             ],
             "data": [
                 [
@@ -3061,154 +3061,10 @@
                 },
                 "stream_contents": {
                     "0": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 1,
-                        "Hot Outlet": 1,
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "Molar Flow (mol/s)"
-                    },
-                    "1": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 0.01802,
-                        "Hot Outlet": 0.01802,
-                        "Units": {
-                            "html": "kg/s",
-                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
-                            "raw": "kilogram / second"
-                        },
-                        "Variable": "Mass Flow (kg/s)"
-                    },
-                    "10": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "flow_mol_comp CO2"
-                    },
-                    "11": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "flow_mol_comp H2O"
-                    },
-                    "12": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "flow_mol_comp SO2"
-                    },
-                    "13": {
-                        "Cold Inlet": 500,
-                        "Cold Outlet": 500,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "K",
-                            "latex": "\\mathrm{K}",
-                            "raw": "kelvin"
-                        },
-                        "Variable": "temperature"
-                    },
-                    "14": {
-                        "Cold Inlet": 101325.0,
-                        "Cold Outlet": 101325.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "Pa",
-                            "latex": "\\mathrm{Pa}",
-                            "raw": "pascal"
-                        },
-                        "Variable": "pressure"
-                    },
-                    "2": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 286.34379,
-                        "Hot Outlet": 286.34379,
-                        "Units": {
-                            "html": "K",
-                            "latex": "\\mathrm{K}",
-                            "raw": "kelvin"
-                        },
-                        "Variable": "T (K)"
-                    },
-                    "3": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 100000.0,
-                        "Hot Outlet": 100000.0,
-                        "Units": {
-                            "html": "Pa",
-                            "latex": "\\mathrm{Pa}",
-                            "raw": "pascal"
-                        },
-                        "Variable": "P (Pa)"
-                    },
-                    "4": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 0.0,
-                        "Hot Outlet": 0.0,
-                        "Units": {
-                            "html": "",
-                            "latex": "",
-                            "raw": "dimensionless"
-                        },
-                        "Variable": "Vapor Fraction"
-                    },
-                    "5": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 2168.59605,
-                        "Hot Outlet": 2168.59605,
-                        "Units": {
-                            "html": "J/mol",
-                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
-                            "raw": "joule / mole"
-                        },
-                        "Variable": "Molar Enthalpy (J/mol) Vap"
-                    },
-                    "6": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 1000.0,
-                        "Hot Outlet": 1000.0,
-                        "Units": {
-                            "html": "J/mol",
-                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
-                            "raw": "joule / mole"
-                        },
-                        "Variable": "Molar Enthalpy (J/mol) Liq"
-                    },
-                    "7": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
@@ -3216,11 +3072,11 @@
                         },
                         "Variable": "flow_mol_comp N2"
                     },
-                    "8": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
+                    "1": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
@@ -3228,17 +3084,161 @@
                         },
                         "Variable": "flow_mol_comp O2"
                     },
-                    "9": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
+                    "10": {
+                        "Cold Side Inlet": 286.34379,
+                        "Cold Side Outlet": 286.34379,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
+                        "Variable": "T (K)"
+                    },
+                    "11": {
+                        "Cold Side Inlet": 100000.0,
+                        "Cold Side Outlet": 100000.0,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
+                        "Variable": "P (Pa)"
+                    },
+                    "12": {
+                        "Cold Side Inlet": 0.0,
+                        "Cold Side Outlet": 0.0,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
+                        "Variable": "Vapor Fraction"
+                    },
+                    "13": {
+                        "Cold Side Inlet": 2168.59605,
+                        "Cold Side Outlet": 2168.59605,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
+                        "Variable": "Molar Enthalpy (J/mol) Vap"
+                    },
+                    "14": {
+                        "Cold Side Inlet": 1000.0,
+                        "Cold Side Outlet": 1000.0,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
+                        "Variable": "Molar Enthalpy (J/mol) Liq"
+                    },
+                    "2": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp NO"
+                    },
+                    "3": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Variable": "flow_mol_comp CO2"
+                    },
+                    "4": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Variable": "flow_mol_comp H2O"
+                    },
+                    "5": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Variable": "flow_mol_comp SO2"
+                    },
+                    "6": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 500,
+                        "Hot Side Outlet": 500,
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
+                        "Variable": "temperature"
+                    },
+                    "7": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 101325.0,
+                        "Hot Side Outlet": 101325.0,
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
+                        "Variable": "pressure"
+                    },
+                    "8": {
+                        "Cold Side Inlet": 1,
+                        "Cold Side Outlet": 1,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Variable": "Molar Flow (mol/s)"
+                    },
+                    "9": {
+                        "Cold Side Inlet": 0.01802,
+                        "Cold Side Outlet": 0.01802,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
+                            "raw": "kilogram / second"
+                        },
+                        "Variable": "Mass Flow (kg/s)"
                     }
                 },
                 "type": "boiler_heat_exchanger"
@@ -3261,154 +3261,10 @@
                 },
                 "stream_contents": {
                     "0": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 1,
-                        "Hot Outlet": 1,
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "Molar Flow (mol/s)"
-                    },
-                    "1": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 0.01802,
-                        "Hot Outlet": 0.01802,
-                        "Units": {
-                            "html": "kg/s",
-                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
-                            "raw": "kilogram / second"
-                        },
-                        "Variable": "Mass Flow (kg/s)"
-                    },
-                    "10": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "flow_mol_comp CO2"
-                    },
-                    "11": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "flow_mol_comp H2O"
-                    },
-                    "12": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "flow_mol_comp SO2"
-                    },
-                    "13": {
-                        "Cold Inlet": 500,
-                        "Cold Outlet": 500,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "K",
-                            "latex": "\\mathrm{K}",
-                            "raw": "kelvin"
-                        },
-                        "Variable": "temperature"
-                    },
-                    "14": {
-                        "Cold Inlet": 101325.0,
-                        "Cold Outlet": 101325.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "Pa",
-                            "latex": "\\mathrm{Pa}",
-                            "raw": "pascal"
-                        },
-                        "Variable": "pressure"
-                    },
-                    "2": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 286.34379,
-                        "Hot Outlet": 286.34379,
-                        "Units": {
-                            "html": "K",
-                            "latex": "\\mathrm{K}",
-                            "raw": "kelvin"
-                        },
-                        "Variable": "T (K)"
-                    },
-                    "3": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 100000.0,
-                        "Hot Outlet": 100000.0,
-                        "Units": {
-                            "html": "Pa",
-                            "latex": "\\mathrm{Pa}",
-                            "raw": "pascal"
-                        },
-                        "Variable": "P (Pa)"
-                    },
-                    "4": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 0.0,
-                        "Hot Outlet": 0.0,
-                        "Units": {
-                            "html": "",
-                            "latex": "",
-                            "raw": "dimensionless"
-                        },
-                        "Variable": "Vapor Fraction"
-                    },
-                    "5": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 2168.59605,
-                        "Hot Outlet": 2168.59605,
-                        "Units": {
-                            "html": "J/mol",
-                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
-                            "raw": "joule / mole"
-                        },
-                        "Variable": "Molar Enthalpy (J/mol) Vap"
-                    },
-                    "6": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 1000.0,
-                        "Hot Outlet": 1000.0,
-                        "Units": {
-                            "html": "J/mol",
-                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
-                            "raw": "joule / mole"
-                        },
-                        "Variable": "Molar Enthalpy (J/mol) Liq"
-                    },
-                    "7": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
@@ -3416,11 +3272,11 @@
                         },
                         "Variable": "flow_mol_comp N2"
                     },
-                    "8": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
+                    "1": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
@@ -3428,17 +3284,161 @@
                         },
                         "Variable": "flow_mol_comp O2"
                     },
-                    "9": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
+                    "10": {
+                        "Cold Side Inlet": 286.34379,
+                        "Cold Side Outlet": 286.34379,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
+                        "Variable": "T (K)"
+                    },
+                    "11": {
+                        "Cold Side Inlet": 100000.0,
+                        "Cold Side Outlet": 100000.0,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
+                        "Variable": "P (Pa)"
+                    },
+                    "12": {
+                        "Cold Side Inlet": 0.0,
+                        "Cold Side Outlet": 0.0,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
+                        "Variable": "Vapor Fraction"
+                    },
+                    "13": {
+                        "Cold Side Inlet": 2168.59605,
+                        "Cold Side Outlet": 2168.59605,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
+                        "Variable": "Molar Enthalpy (J/mol) Vap"
+                    },
+                    "14": {
+                        "Cold Side Inlet": 1000.0,
+                        "Cold Side Outlet": 1000.0,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
+                        "Variable": "Molar Enthalpy (J/mol) Liq"
+                    },
+                    "2": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp NO"
+                    },
+                    "3": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Variable": "flow_mol_comp CO2"
+                    },
+                    "4": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Variable": "flow_mol_comp H2O"
+                    },
+                    "5": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Variable": "flow_mol_comp SO2"
+                    },
+                    "6": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 500,
+                        "Hot Side Outlet": 500,
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
+                        "Variable": "temperature"
+                    },
+                    "7": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 101325.0,
+                        "Hot Side Outlet": 101325.0,
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
+                        "Variable": "pressure"
+                    },
+                    "8": {
+                        "Cold Side Inlet": 1,
+                        "Cold Side Outlet": 1,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Variable": "Molar Flow (mol/s)"
+                    },
+                    "9": {
+                        "Cold Side Inlet": 0.01802,
+                        "Cold Side Outlet": 0.01802,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
+                            "raw": "kilogram / second"
+                        },
+                        "Variable": "Mass Flow (kg/s)"
                     }
                 },
                 "type": "boiler_heat_exchanger"
@@ -3543,154 +3543,10 @@
                 },
                 "stream_contents": {
                     "0": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 1,
-                        "Hot Outlet": 1,
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "Molar Flow (mol/s)"
-                    },
-                    "1": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 0.01802,
-                        "Hot Outlet": 0.01802,
-                        "Units": {
-                            "html": "kg/s",
-                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
-                            "raw": "kilogram / second"
-                        },
-                        "Variable": "Mass Flow (kg/s)"
-                    },
-                    "10": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "flow_mol_comp CO2"
-                    },
-                    "11": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "flow_mol_comp H2O"
-                    },
-                    "12": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "flow_mol_comp SO2"
-                    },
-                    "13": {
-                        "Cold Inlet": 500,
-                        "Cold Outlet": 500,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "K",
-                            "latex": "\\mathrm{K}",
-                            "raw": "kelvin"
-                        },
-                        "Variable": "temperature"
-                    },
-                    "14": {
-                        "Cold Inlet": 101325.0,
-                        "Cold Outlet": 101325.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "Pa",
-                            "latex": "\\mathrm{Pa}",
-                            "raw": "pascal"
-                        },
-                        "Variable": "pressure"
-                    },
-                    "2": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 286.34379,
-                        "Hot Outlet": 286.34379,
-                        "Units": {
-                            "html": "K",
-                            "latex": "\\mathrm{K}",
-                            "raw": "kelvin"
-                        },
-                        "Variable": "T (K)"
-                    },
-                    "3": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 100000.0,
-                        "Hot Outlet": 100000.0,
-                        "Units": {
-                            "html": "Pa",
-                            "latex": "\\mathrm{Pa}",
-                            "raw": "pascal"
-                        },
-                        "Variable": "P (Pa)"
-                    },
-                    "4": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 0.0,
-                        "Hot Outlet": 0.0,
-                        "Units": {
-                            "html": "",
-                            "latex": "",
-                            "raw": "dimensionless"
-                        },
-                        "Variable": "Vapor Fraction"
-                    },
-                    "5": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 2168.59605,
-                        "Hot Outlet": 2168.59605,
-                        "Units": {
-                            "html": "J/mol",
-                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
-                            "raw": "joule / mole"
-                        },
-                        "Variable": "Molar Enthalpy (J/mol) Vap"
-                    },
-                    "6": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 1000.0,
-                        "Hot Outlet": 1000.0,
-                        "Units": {
-                            "html": "J/mol",
-                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
-                            "raw": "joule / mole"
-                        },
-                        "Variable": "Molar Enthalpy (J/mol) Liq"
-                    },
-                    "7": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
@@ -3698,11 +3554,11 @@
                         },
                         "Variable": "flow_mol_comp N2"
                     },
-                    "8": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
+                    "1": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
@@ -3710,17 +3566,161 @@
                         },
                         "Variable": "flow_mol_comp O2"
                     },
-                    "9": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
+                    "10": {
+                        "Cold Side Inlet": 286.34379,
+                        "Cold Side Outlet": 286.34379,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
+                        "Variable": "T (K)"
+                    },
+                    "11": {
+                        "Cold Side Inlet": 100000.0,
+                        "Cold Side Outlet": 100000.0,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
+                        "Variable": "P (Pa)"
+                    },
+                    "12": {
+                        "Cold Side Inlet": 0.0,
+                        "Cold Side Outlet": 0.0,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
+                        "Variable": "Vapor Fraction"
+                    },
+                    "13": {
+                        "Cold Side Inlet": 2168.59605,
+                        "Cold Side Outlet": 2168.59605,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
+                        "Variable": "Molar Enthalpy (J/mol) Vap"
+                    },
+                    "14": {
+                        "Cold Side Inlet": 1000.0,
+                        "Cold Side Outlet": 1000.0,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
+                        "Variable": "Molar Enthalpy (J/mol) Liq"
+                    },
+                    "2": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp NO"
+                    },
+                    "3": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Variable": "flow_mol_comp CO2"
+                    },
+                    "4": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Variable": "flow_mol_comp H2O"
+                    },
+                    "5": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Variable": "flow_mol_comp SO2"
+                    },
+                    "6": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 500,
+                        "Hot Side Outlet": 500,
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
+                        "Variable": "temperature"
+                    },
+                    "7": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 101325.0,
+                        "Hot Side Outlet": 101325.0,
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
+                        "Variable": "pressure"
+                    },
+                    "8": {
+                        "Cold Side Inlet": 1,
+                        "Cold Side Outlet": 1,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Variable": "Molar Flow (mol/s)"
+                    },
+                    "9": {
+                        "Cold Side Inlet": 0.01802,
+                        "Cold Side Outlet": 0.01802,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
+                            "raw": "kilogram / second"
+                        },
+                        "Variable": "Mass Flow (kg/s)"
                     }
                 },
                 "type": "boiler_heat_exchanger"
@@ -3743,154 +3743,10 @@
                 },
                 "stream_contents": {
                     "0": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 1,
-                        "Hot Outlet": 1,
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "Molar Flow (mol/s)"
-                    },
-                    "1": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 0.01802,
-                        "Hot Outlet": 0.01802,
-                        "Units": {
-                            "html": "kg/s",
-                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
-                            "raw": "kilogram / second"
-                        },
-                        "Variable": "Mass Flow (kg/s)"
-                    },
-                    "10": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "flow_mol_comp CO2"
-                    },
-                    "11": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "flow_mol_comp H2O"
-                    },
-                    "12": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "mol/s",
-                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
-                            "raw": "mole / second"
-                        },
-                        "Variable": "flow_mol_comp SO2"
-                    },
-                    "13": {
-                        "Cold Inlet": 500,
-                        "Cold Outlet": 500,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "K",
-                            "latex": "\\mathrm{K}",
-                            "raw": "kelvin"
-                        },
-                        "Variable": "temperature"
-                    },
-                    "14": {
-                        "Cold Inlet": 101325.0,
-                        "Cold Outlet": 101325.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
-                        "Units": {
-                            "html": "Pa",
-                            "latex": "\\mathrm{Pa}",
-                            "raw": "pascal"
-                        },
-                        "Variable": "pressure"
-                    },
-                    "2": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 286.34379,
-                        "Hot Outlet": 286.34379,
-                        "Units": {
-                            "html": "K",
-                            "latex": "\\mathrm{K}",
-                            "raw": "kelvin"
-                        },
-                        "Variable": "T (K)"
-                    },
-                    "3": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 100000.0,
-                        "Hot Outlet": 100000.0,
-                        "Units": {
-                            "html": "Pa",
-                            "latex": "\\mathrm{Pa}",
-                            "raw": "pascal"
-                        },
-                        "Variable": "P (Pa)"
-                    },
-                    "4": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 0.0,
-                        "Hot Outlet": 0.0,
-                        "Units": {
-                            "html": "",
-                            "latex": "",
-                            "raw": "dimensionless"
-                        },
-                        "Variable": "Vapor Fraction"
-                    },
-                    "5": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 2168.59605,
-                        "Hot Outlet": 2168.59605,
-                        "Units": {
-                            "html": "J/mol",
-                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
-                            "raw": "joule / mole"
-                        },
-                        "Variable": "Molar Enthalpy (J/mol) Vap"
-                    },
-                    "6": {
-                        "Cold Inlet": "-",
-                        "Cold Outlet": "-",
-                        "Hot Inlet": 1000.0,
-                        "Hot Outlet": 1000.0,
-                        "Units": {
-                            "html": "J/mol",
-                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
-                            "raw": "joule / mole"
-                        },
-                        "Variable": "Molar Enthalpy (J/mol) Liq"
-                    },
-                    "7": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
@@ -3898,11 +3754,11 @@
                         },
                         "Variable": "flow_mol_comp N2"
                     },
-                    "8": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
+                    "1": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
@@ -3910,17 +3766,161 @@
                         },
                         "Variable": "flow_mol_comp O2"
                     },
-                    "9": {
-                        "Cold Inlet": 1.0,
-                        "Cold Outlet": 1.0,
-                        "Hot Inlet": "-",
-                        "Hot Outlet": "-",
+                    "10": {
+                        "Cold Side Inlet": 286.34379,
+                        "Cold Side Outlet": 286.34379,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
+                        "Variable": "T (K)"
+                    },
+                    "11": {
+                        "Cold Side Inlet": 100000.0,
+                        "Cold Side Outlet": 100000.0,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
+                        "Variable": "P (Pa)"
+                    },
+                    "12": {
+                        "Cold Side Inlet": 0.0,
+                        "Cold Side Outlet": 0.0,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "",
+                            "latex": "",
+                            "raw": "dimensionless"
+                        },
+                        "Variable": "Vapor Fraction"
+                    },
+                    "13": {
+                        "Cold Side Inlet": 2168.59605,
+                        "Cold Side Outlet": 2168.59605,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
+                        "Variable": "Molar Enthalpy (J/mol) Vap"
+                    },
+                    "14": {
+                        "Cold Side Inlet": 1000.0,
+                        "Cold Side Outlet": 1000.0,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "J/mol",
+                            "latex": "\\frac{\\mathrm{J}}{\\mathrm{mol}}",
+                            "raw": "joule / mole"
+                        },
+                        "Variable": "Molar Enthalpy (J/mol) Liq"
+                    },
+                    "2": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
                         "Units": {
                             "html": "mol/s",
                             "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
                             "raw": "mole / second"
                         },
                         "Variable": "flow_mol_comp NO"
+                    },
+                    "3": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Variable": "flow_mol_comp CO2"
+                    },
+                    "4": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Variable": "flow_mol_comp H2O"
+                    },
+                    "5": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 1.0,
+                        "Hot Side Outlet": 1.0,
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Variable": "flow_mol_comp SO2"
+                    },
+                    "6": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 500,
+                        "Hot Side Outlet": 500,
+                        "Units": {
+                            "html": "K",
+                            "latex": "\\mathrm{K}",
+                            "raw": "kelvin"
+                        },
+                        "Variable": "temperature"
+                    },
+                    "7": {
+                        "Cold Side Inlet": "-",
+                        "Cold Side Outlet": "-",
+                        "Hot Side Inlet": 101325.0,
+                        "Hot Side Outlet": 101325.0,
+                        "Units": {
+                            "html": "Pa",
+                            "latex": "\\mathrm{Pa}",
+                            "raw": "pascal"
+                        },
+                        "Variable": "pressure"
+                    },
+                    "8": {
+                        "Cold Side Inlet": 1,
+                        "Cold Side Outlet": 1,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "mol/s",
+                            "latex": "\\frac{\\mathrm{mol}}{\\mathrm{s}}",
+                            "raw": "mole / second"
+                        },
+                        "Variable": "Molar Flow (mol/s)"
+                    },
+                    "9": {
+                        "Cold Side Inlet": 0.01802,
+                        "Cold Side Outlet": 0.01802,
+                        "Hot Side Inlet": "-",
+                        "Hot Side Outlet": "-",
+                        "Units": {
+                            "html": "kg/s",
+                            "latex": "\\frac{\\mathrm{kg}}{\\mathrm{s}}",
+                            "raw": "kilogram / second"
+                        },
+                        "Variable": "Mass Flow (kg/s)"
                     }
                 },
                 "type": "boiler_heat_exchanger"
@@ -3929,6 +3929,10 @@
                 "image": "/images/icons/splitter.svg",
                 "performance_contents": {
                     "0": {
+                        "Value": 0.5,
+                        "Variable": "Split Fraction [('outlet_1',)]"
+                    },
+                    "1": {
                         "Value": 0.5,
                         "Variable": "Split Fraction [('outlet_2',)]"
                     }
@@ -4107,6 +4111,26 @@
                 },
                 "type": "heater"
             },
+            "cold_side_inlet_1": {
+                "image": "/images/icons/feed.svg",
+                "type": "feed"
+            },
+            "cold_side_inlet_2": {
+                "image": "/images/icons/feed.svg",
+                "type": "feed"
+            },
+            "cold_side_outlet_1": {
+                "image": "/images/icons/product.svg",
+                "type": "product"
+            },
+            "hot_side_inlet_1": {
+                "image": "/images/icons/feed.svg",
+                "type": "feed"
+            },
+            "hot_side_outlet_1": {
+                "image": "/images/icons/product.svg",
+                "type": "product"
+            },
             "mix1": {
                 "image": "/images/icons/mixer.svg",
                 "performance_contents": {},
@@ -4203,26 +4227,6 @@
                 "type": "mixer"
             },
             "outlet_1": {
-                "image": "/images/icons/product.svg",
-                "type": "product"
-            },
-            "shell_inlet_1": {
-                "image": "/images/icons/feed.svg",
-                "type": "feed"
-            },
-            "shell_outlet_1": {
-                "image": "/images/icons/product.svg",
-                "type": "product"
-            },
-            "tube_inlet_1": {
-                "image": "/images/icons/feed.svg",
-                "type": "feed"
-            },
-            "tube_inlet_2": {
-                "image": "/images/icons/feed.svg",
-                "type": "feed"
-            },
-            "tube_outlet_1": {
                 "image": "/images/icons/product.svg",
                 "type": "product"
             }
@@ -4379,37 +4383,7 @@
             },
             "cell_index": 6
         },
-        "s_outlet_1": {
-            "cell_config": {
-                "gap": {
-                    "destination": {
-                        "x": -30,
-                        "y": 0
-                    },
-                    "source": {
-                        "x": 30,
-                        "y": 0
-                    }
-                }
-            },
-            "cell_index": 21
-        },
-        "s_shell_inlet_1": {
-            "cell_config": {
-                "gap": {
-                    "destination": {
-                        "x": -30,
-                        "y": 0
-                    },
-                    "source": {
-                        "x": 30,
-                        "y": 0
-                    }
-                }
-            },
-            "cell_index": 27
-        },
-        "s_shell_outlet_1": {
+        "s_cold_side_inlet_1": {
             "cell_config": {
                 "gap": {
                     "destination": {
@@ -4424,22 +4398,7 @@
             },
             "cell_index": 23
         },
-        "s_tube_inlet_1": {
-            "cell_config": {
-                "gap": {
-                    "destination": {
-                        "x": -30,
-                        "y": 0
-                    },
-                    "source": {
-                        "x": 30,
-                        "y": 0
-                    }
-                }
-            },
-            "cell_index": 25
-        },
-        "s_tube_inlet_2": {
+        "s_cold_side_inlet_2": {
             "cell_config": {
                 "gap": {
                     "destination": {
@@ -4454,7 +4413,7 @@
             },
             "cell_index": 29
         },
-        "s_tube_outlet_1": {
+        "s_cold_side_outlet_1": {
             "cell_config": {
                 "gap": {
                     "destination": {
@@ -4468,6 +4427,51 @@
                 }
             },
             "cell_index": 31
+        },
+        "s_hot_side_inlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 27
+        },
+        "s_hot_side_outlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 25
+        },
+        "s_outlet_1": {
+            "cell_config": {
+                "gap": {
+                    "destination": {
+                        "x": -30,
+                        "y": 0
+                    },
+                    "source": {
+                        "x": 30,
+                        "y": 0
+                    }
+                }
+            },
+            "cell_index": 21
         },
         "ww2prsh": {
             "cell_config": {

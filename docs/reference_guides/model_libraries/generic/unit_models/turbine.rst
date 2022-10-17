@@ -21,9 +21,9 @@ The example below demonstrates the basic Turbine model usage:
   from idaes.models.properties import iapws95
 
   m = pyo.ConcreteModel()
-  m.fs = FlowsheetBlock(default={"dynamic": False})
+  m.fs = FlowsheetBlock(dynamic=False)
   m.fs.properties = iapws95.Iapws95ParameterBlock()
-  m.fs.unit = Turbine(default={"property_package": m.fs.properties})
+  m.fs.unit = Turbine(property_package=m.fs.properties)
 
   m.fs.unit.inlet.flow_mol[0].fix(1000)
   m.fs.unit.inlet.enth_mol[0].fix(iapws95.htpx(T=800*pyo.units.K, P=1e7*pyo.units.Pa))

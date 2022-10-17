@@ -33,7 +33,7 @@ from idaes.core import LiquidPhase, VaporPhase, Component, PhaseType as PT
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
-from idaes.models.properties.modular_properties.phase_equil import smooth_VLE
+from idaes.models.properties.modular_properties.phase_equil.smooth_VLE import SmoothVLE
 from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
     IdealBubbleDew,
     LogBubbleDew,
@@ -146,13 +146,13 @@ def test_Txy_data():
         "temperature_ref": (300, pyunits.K),
         # Defining phase equilibria
         "phases_in_equilibrium": [("Vap", "Liq")],
-        "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+        "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
         "bubble_dew_method": IdealBubbleDew,
     }
 
     model = ConcreteModel()
 
-    model.params = GenericParameterBlock(default=configuration)
+    model.params = GenericParameterBlock(**configuration)
 
     TD = Txy_data(
         model,
@@ -253,7 +253,7 @@ def test_Txy_data_no_dew():
         "temperature_ref": (298.15, pyunits.K),
         # Defining phase equilibria
         "phases_in_equilibrium": [("Vap", "Liq")],
-        "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+        "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
         "bubble_dew_method": LogBubbleDew,
         "parameter_data": {
             "PR_kappa": {
@@ -267,7 +267,7 @@ def test_Txy_data_no_dew():
 
     model = ConcreteModel()
 
-    model.params = GenericParameterBlock(default=configuration)
+    model.params = GenericParameterBlock(**configuration)
 
     # Again, add more calculation points because the PR for single-phase
     # component VLE initialization hasn't been accepted
@@ -371,7 +371,7 @@ def test_Txy_data_no_bub():
         "temperature_ref": (298.15, pyunits.K),
         # Defining phase equilibria
         "phases_in_equilibrium": [("Vap", "Liq")],
-        "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+        "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
         "bubble_dew_method": LogBubbleDew,
         "parameter_data": {
             "PR_kappa": {
@@ -385,7 +385,7 @@ def test_Txy_data_no_bub():
 
     model = ConcreteModel()
 
-    model.params = GenericParameterBlock(default=configuration)
+    model.params = GenericParameterBlock(**configuration)
 
     # TODO: There probably should be a config option to run initialization at
     # each x or to use the initialization from the previous x. In the meantime,

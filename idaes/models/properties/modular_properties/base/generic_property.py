@@ -337,7 +337,7 @@ class GenericParameterData(PhysicalParameterBlock):
                         )
                     )
 
-            self.add_component(str(p), ptype(default=d))
+            self.add_component(str(p), ptype(**d))
 
         # Check if we need to create electrolyte component lists
         if self._electrolyte:
@@ -392,7 +392,7 @@ class GenericParameterData(PhysicalParameterBlock):
                     )
                 )
 
-            self.add_component(c, ctype(default=d))
+            self.add_component(c, ctype(**d))
 
         # If this is an electrolyte system, we now need to build the actual
         # component lists
@@ -626,13 +626,6 @@ class GenericParameterData(PhysicalParameterBlock):
                 "state_definition configuration argument. Please fix "
                 "your property parameter definition to include this.".format(self.name)
             )
-        elif isinstance(self.config.state_definition, types.ModuleType):
-            _log.info(
-                "DEPRECATED - definiton of generic property "
-                "packages is moving to using static classes "
-                "instead of modules. Please refer to the IDAES "
-                "documentation."
-            )
 
         units = self.get_metadata().derived_units
 
@@ -697,14 +690,6 @@ class GenericParameterData(PhysicalParameterBlock):
                         "for all phase pairs.".format(self.name)
                     )
 
-                if isinstance(pie_config[pp], types.ModuleType):
-                    _log.info(
-                        "DEPRECATED - definiton of generic property "
-                        "packages is moving to using static classes "
-                        "instead of modules. Please refer to the IDAES "
-                        "documentation."
-                    )
-
                 for j in self.component_list:
                     if (pp[0], j) in self._phase_component_set and (
                         pp[1],
@@ -742,14 +727,6 @@ class GenericParameterData(PhysicalParameterBlock):
         for c in self.component_list:
             cobj = self.get_component(c)
             for a, v in cobj.config.items():
-                if isinstance(v, types.ModuleType):
-                    _log.info(
-                        "DEPRECATED - definiton of generic property "
-                        "packages is moving to using static classes "
-                        "instead of modules. Please refer to the IDAES "
-                        "documentation."
-                    )
-
                 # Check to see if v has an attribute build_parameters
                 if hasattr(v, "build_parameters"):
                     build_parameters = v.build_parameters

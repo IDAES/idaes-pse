@@ -42,26 +42,19 @@ from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reductio
 
 # -----------------------------------------------------------------------------
 def main(m):
-    m.fs = FlowsheetBlock(
-        default={"dynamic": True, "time_set": [0, 3600], "time_units": pyunits.s}
-    )
+    m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 3600], time_units=pyunits.s)
 
     m.fs.gas_props = GasPhaseParameterBlock()
     m.fs.solid_props = SolidPhaseParameterBlock()
     m.fs.solid_rxns = HeteroReactionParameterBlock(
-        default={
-            "solid_property_package": m.fs.solid_props,
-            "gas_property_package": m.fs.gas_props,
-        }
+        solid_property_package=m.fs.solid_props, gas_property_package=m.fs.gas_props
     )
 
     m.fs.TGA = FixedBed0D(
-        default={
-            "energy_balance_type": EnergyBalanceType.none,
-            "gas_property_package": m.fs.gas_props,
-            "solid_property_package": m.fs.solid_props,
-            "reaction_package": m.fs.solid_rxns,
-        }
+        energy_balance_type=EnergyBalanceType.none,
+        gas_property_package=m.fs.gas_props,
+        solid_property_package=m.fs.solid_props,
+        reaction_package=m.fs.solid_rxns,
     )
 
     # Discretize time domain
