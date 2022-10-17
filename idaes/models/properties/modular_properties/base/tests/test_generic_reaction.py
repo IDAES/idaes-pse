@@ -31,6 +31,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 
+from idaes.core.base.property_meta import UnitSet
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
@@ -120,15 +121,15 @@ class TestGenericReactionParameterBlock(object):
 
         rxn_config = m.rxn_params.config.rate_reactions
 
-        assert m.rxn_params.get_metadata().default_units == {
-            "time": pyunits.s,
-            "length": pyunits.m,
-            "mass": pyunits.kg,
-            "amount": pyunits.mol,
-            "temperature": pyunits.K,
-            "current": None,
-            "luminous intensity": None,
-        }
+        default_units = m.rxn_params.get_metadata().default_units
+        assert isinstance(default_units, UnitSet)
+        assert default_units.TIME == pyunits.s
+        assert default_units.LENGTH == pyunits.m
+        assert default_units.MASS == pyunits.kg
+        assert default_units.AMOUNT == pyunits.mol
+        assert default_units.TEMPERATURE == pyunits.K
+        assert default_units.CURRENT == None
+        assert default_units.LUMINOUS_INTENSITY == None
 
         assert isinstance(m.rxn_params.rate_reaction_idx, Set)
         assert len(m.rxn_params.rate_reaction_idx) == 1
@@ -155,7 +156,7 @@ class TestGenericReactionParameterBlock(object):
     def test_invalid_unit(self, m):
         with pytest.raises(
             PropertyPackageError,
-            match="Unrecognized units of measurment for quantity time " "\(foo\)",
+            match="Unrecognized units of measurement for quantity time " "\(foo\)",
         ):
             m.rxn_params = GenericReactionParameterBlock(
                 property_package=m.params,
@@ -179,7 +180,7 @@ class TestGenericReactionParameterBlock(object):
     def test_missing_required_quantity(self, m):
         with pytest.raises(
             PropertyPackageError,
-            match="Unrecognized units of measurment for quantity time " "\(None\)",
+            match="Unrecognized units of measurement for quantity time " "\(None\)",
         ):
             m.rxn_params = GenericReactionParameterBlock(
                 property_package=m.params,

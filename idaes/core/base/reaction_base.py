@@ -214,7 +214,15 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         """
         r_units = self.get_metadata().default_units
         prop_units = self.config.property_package.get_metadata().default_units
-        for u in r_units:
+        for u in [
+            "time",
+            "length",
+            "mass",
+            "amount",
+            "temperature",
+            "current",
+            "luminous_intensity",
+        ]:
             if prop_units[u] is not r_units[u]:
                 raise PropertyPackageError(
                     "{} the property package associated with this "

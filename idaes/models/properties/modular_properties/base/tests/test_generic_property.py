@@ -39,6 +39,7 @@ from idaes.core import (
 )
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
+from idaes.core.base.property_meta import UnitSet
 
 import idaes.logger as idaeslog
 
@@ -96,15 +97,15 @@ class TestGenericParameterBlock(object):
 
         assert m.params.configured
 
-        assert m.params.get_metadata().default_units == {
-            "time": pyunits.s,
-            "length": pyunits.m,
-            "mass": pyunits.kg,
-            "amount": pyunits.mol,
-            "temperature": pyunits.K,
-            "current": None,
-            "luminous intensity": None,
-        }
+        default_units = m.params.get_metadata().default_units
+        assert isinstance(default_units, UnitSet)
+        assert default_units.TIME == pyunits.s
+        assert default_units.LENGTH == pyunits.m
+        assert default_units.MASS == pyunits.kg
+        assert default_units.AMOUNT == pyunits.mol
+        assert default_units.TEMPERATURE == pyunits.K
+        assert default_units.CURRENT == None
+        assert default_units.LUMINOUS_INTENSITY == None
 
         assert isinstance(m.params.component_list, Set)
         assert len(m.params.component_list) == 3
@@ -150,7 +151,7 @@ class TestGenericParameterBlock(object):
 
         with pytest.raises(
             PropertyPackageError,
-            match="Unrecognized units of measurment for quantity time " "\(foo\)",
+            match="Unrecognized units of measurement for quantity time " "\(foo\)",
         ):
             m.params = DummyParameterBlock(
                 components={"a": {}, "b": {}, "c": {}},
@@ -180,7 +181,7 @@ class TestGenericParameterBlock(object):
 
         with pytest.raises(
             PropertyPackageError,
-            match="Unrecognized units of measurment for quantity time " "\(None\)",
+            match="Unrecognized units of measurement for quantity time " "\(None\)",
         ):
             m.params = DummyParameterBlock(
                 components={"a": {}, "b": {}, "c": {}},

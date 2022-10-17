@@ -97,27 +97,100 @@ class HasPropertyClassMetadata(object):
         raise NotImplementedError()
 
 
-class UnitNames(object):
-    """Names for recognized units."""
+class UnitSet(object):
+    """
+    Object defining the set of recognised quantities in IDAES and their base units.
 
-    TM = TIME = "time"
-    LN = LENGTH = "length"
-    MA = MASS = "mass"
-    AM = AMOUNT = "amount"
-    TE = TEMPERATURE = "temperature"
-    CU = CURRENT = "current"
-    LI = LUMINOUS_INTENSITY = "luminous intensity"
+    Units of measurement are defined by setting units for the seven base SI quantities
+    (amount, current, length, luminous intensity, mass, temperature and time), from which units
+    for all other quantities are derived. The units of the seven base quantities must be provided
+    when instantiating the UnitSet - units are optional for current and luminous intensity.
 
+    Units can be accesses by via either a property on the UnitSet (e.g., UnitSet.TIME) or
+    via an index on the UnitSet (e.g., UnitSet["time"]).
+    """
 
-_base_units = {
-    "time": None,
-    "length": None,
-    "mass": None,
-    "amount": None,
-    "temperature": None,
-    "current": None,
-    "luminous intensity": None,
-}
+    # TODO: Test this in isolation
+    def __init__(self, **kwds):
+        self._time = kwds.pop("time", None)
+        self._length = kwds.pop("length", None)
+        self._mass = kwds.pop("mass", None)
+        self._amount = kwds.pop("amount", None)
+        self._temperature = kwds.pop("temperature", None)
+        self._current = kwds.pop("current", None)
+        self._luminous_intensity = kwds.pop("luminous_intensity", None)
+        if kwds:
+            raise PropertyPackageError(
+                f"Unrecognized base quantities: {[i for i in kwds.keys()]}"
+            )
+
+        # Check that valid units were assigned
+        for q in [
+            "time",
+            "length",
+            "mass",
+            "amount",
+            "temperature",
+            "current",
+            "luminous_intensity",
+        ]:
+            u = getattr(self, "_" + q)
+            if u is None:
+                if q in ["luminous_intensity", "current"]:
+                    # these units are infrequently used in PSE, so allow users
+                    # to skip these
+                    continue
+                else:
+                    raise PropertyPackageError(
+                        f"Units of measurement not provided for base quantity {q}. Units must be provided "
+                        "for all base quantities except for current and luminous intensity."
+                    )
+            elif not isinstance(u, _PyomoUnit):
+                raise PropertyPackageError(
+                    f"Unrecognized units of measurement for quantity {q} ({u})"
+                )
+        # TODO: Could add a check for dimensionality of base units (i.e., units for time are a measure of time)
+
+    def __getitem__(self, key):
+        # Check to catch cases where luminous intensity has a space
+        if key == "luminous intensity":
+            key = "luminous_intensity"
+
+        try:
+            return getattr(self, key.upper())
+        except AttributeError:
+            raise PropertyPackageError(
+                f"Unrecognised quantity {key}. Please check that this is a recognised quantity "
+                "defined in idaes.core.base.property_meta.UnitSet."
+            )
+
+    @property
+    def TIME(self):
+        return self._time
+
+    @property
+    def LENGTH(self):
+        return self._length
+
+    @property
+    def MASS(self):
+        return self._mass
+
+    @property
+    def AMOUNT(self):
+        return self._amount
+
+    @property
+    def TEMPERATURE(self):
+        return self._temperature
+
+    @property
+    def CURRENT(self):
+        return self._current
+
+    @property
+    def LUMINOUS_INTENSITY(self):
+        return self._luminous_intensity
 
 
 class PropertyClassMetadata(object):
@@ -127,8 +200,8 @@ class PropertyClassMetadata(object):
     Example usage::
 
             foo = PropertyClassMetadata()
-            foo.add_default_units({foo.U.TIME: 'fortnights',
-                                   foo.U.MASS: 'stones'})
+            foo.add_default_units(time = pyo.units.fortnights,
+                                  mass = pyo.units.stones)
             foo.add_properties({'under_sea': {'units': 'leagues'},
                                 'tentacle_size': {'units': 'yards'}})
             foo.add_required_properties({'under_sea': 'leagues',
@@ -136,17 +209,16 @@ class PropertyClassMetadata(object):
 
     """
 
-    #: Alias for class enumerating supported/known unit types
-    U = UnitNames
-
     def __init__(self):
-        self._default_units = _base_units.copy()
+        # TODO: Deprecate in favour of common units property
+        self._default_units = None
         self._derived_units = None
         self._properties = {}
         self._required_properties = {}
 
     @property
     def default_units(self):
+        # TODO: Deprecate in favour of common units property
         return self._default_units
 
     @property
@@ -180,19 +252,7 @@ class PropertyClassMetadata(object):
         Returns:
             None
         """
-        self._default_units.update(u)
-
-        # Validate values. Pyomo units are all-or-nothing, so check to see that
-        # this is the case
-        for q, u in self._default_units.items():
-            if u is None and (q == "luminous intensity" or q == "current"):
-                # these units are infrequently used in PSE, so allow users
-                # to skip these
-                continue
-            elif not isinstance(u, _PyomoUnit):
-                raise PropertyPackageError(
-                    f"Unrecognized units of measurment for quantity {q} ({u})"
-                )
+        self._default_units = UnitSet(**u)
 
     def add_properties(self, p):
         """Add properties to the metadata.
