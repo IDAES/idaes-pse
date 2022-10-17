@@ -23,7 +23,6 @@ from pyomo.core.base.units_container import UnitsError
 
 from idaes.core.util.misc import (
     add_object_reference,
-    TagReference,
     set_param_from_config,
 )
 import idaes.logger as idaeslog
@@ -49,31 +48,6 @@ def test_add_object_reference_fail():
 
     with pytest.raises(AttributeError):
         add_object_reference(m, "test_ref", m.s)
-
-
-# Author: John Eslick
-@pytest.mark.unit
-def test_tag_reference():
-    """DEPRECATED function test"""
-    m = ConcreteModel()
-    m.z = Var(
-        [0, 1],
-        ["A", "B"],
-        initialize={(0, "A"): 6, (0, "B"): 7, (1, "A"): 8, (1, "B"): 9},
-    )
-    test_tag = {}
-    test_tag["MyTag34&@!e.5"] = TagReference(m.z[:, "A"], description="z tag")
-    assert len(test_tag["MyTag34&@!e.5"]) == 2
-    assert test_tag["MyTag34&@!e.5"][0].value == 6
-    assert test_tag["MyTag34&@!e.5"][1].value == 8
-    assert test_tag["MyTag34&@!e.5"].description == "z tag"
-    m.b = Block([0, 1])
-    m.b[0].y = Var(initialize=1)
-    m.b[1].y = Var(initialize=2)
-    test_tag = TagReference(m.b[:].y, description="y tag")
-    assert test_tag[0].value == 1
-    assert test_tag[1].value == 2
-    assert test_tag.description == "y tag"
 
 
 @pytest.mark.unit

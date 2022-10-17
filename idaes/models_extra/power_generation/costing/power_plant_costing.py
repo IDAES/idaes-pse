@@ -31,7 +31,7 @@ Other methods:
 * check_sCO2_costing_bounds() to display a warnning if costing model have been
 used outside the range that where designed for
 """
-__author__ = "Costing Team (A. Noring and M. Zamarripa)"
+__author__ = "Costing Team (A. Noring, B. Paul, D. Caballero, and M. Zamarripa)"
 __version__ = "1.0.0"
 
 from pyomo.environ import (
@@ -49,11 +49,6 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 import idaes.core.util.scaling as iscale
 from idaes.core import register_idaes_currency_units
-from idaes.models_extra.power_generation.costing.costing_dictionaries import (
-    BB_costing_exponents,
-    BB_costing_params,
-    sCO2_costing_params,
-)
 
 import idaes.logger as idaeslog
 
@@ -61,6 +56,20 @@ _log = idaeslog.getLogger(__name__)
 
 # Register standard currency units
 register_idaes_currency_units()
+
+# adding to fix imports - this module will be removed in a future update
+import os
+import json
+from pyomo.common.fileutils import this_file_dir
+
+directory = this_file_dir()
+
+with open(os.path.join(directory, "BB_costing_exponents.json"), "r") as file:
+    BB_costing_exponents = json.load(file)
+with open(os.path.join(directory, "BB_costing_parameters.json"), "r") as file:
+    BB_costing_params = json.load(file)
+with open(os.path.join(directory, "sCO2_costing_parameters.json"), "r") as file:
+    sCO2_costing_params = json.load(file)
 
 # -----------------------------------------------------------------------------
 # Power Plant Costing Library
