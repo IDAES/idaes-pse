@@ -180,7 +180,8 @@ class TestGenericReactionParameterBlock(object):
     def test_missing_required_quantity(self, m):
         with pytest.raises(
             PropertyPackageError,
-            match="Unrecognized units of measurement for quantity time " "\(None\)",
+            match="Units of measurement not provided for base quantity time. Units must be "
+            "provided for all base quantities except for current and luminous intensity.",
         ):
             m.rxn_params = GenericReactionParameterBlock(
                 property_package=m.params,

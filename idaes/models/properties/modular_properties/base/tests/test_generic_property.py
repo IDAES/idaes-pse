@@ -181,7 +181,8 @@ class TestGenericParameterBlock(object):
 
         with pytest.raises(
             PropertyPackageError,
-            match="Unrecognized units of measurement for quantity time " "\(None\)",
+            match="Units of measurement not provided for base quantity time. "
+            "Units must be provided for all base quantities except for current and luminous intensity.",
         ):
             m.params = DummyParameterBlock(
                 components={"a": {}, "b": {}, "c": {}},
