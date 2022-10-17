@@ -42,14 +42,73 @@ def test_invalid_require_base_quantity():
 
 
 @pytest.mark.unit
-def test_missing_require_base_quantity():
+def test_mismatched_length_units():
     with pytest.raises(
         PropertyPackageError,
-        match="Units of measurement not provided for base quantity time. "
-        "Units must be provided for all base quantities except for current "
-        "and luminous intensity.",
+        match="Invalid units of measurement for quantity length \(s\). "
+        "Please ensure units provided are valid for this quantity.",
     ):
-        UnitSet()
+        UnitSet(length=units.s)
+
+
+@pytest.mark.unit
+def test_mismatched_mass_units():
+    with pytest.raises(
+        PropertyPackageError,
+        match="Invalid units of measurement for quantity mass \(m\). "
+        "Please ensure units provided are valid for this quantity.",
+    ):
+        UnitSet(mass=units.m)
+
+
+@pytest.mark.unit
+def test_mismatched_amount_units():
+    with pytest.raises(
+        PropertyPackageError,
+        match="Invalid units of measurement for quantity amount \(m\). "
+        "Please ensure units provided are valid for this quantity.",
+    ):
+        UnitSet(amount=units.m)
+
+
+@pytest.mark.unit
+def test_mismatched_temperature_units():
+    with pytest.raises(
+        PropertyPackageError,
+        match="Invalid units of measurement for quantity temperature \(m\). "
+        "Please ensure units provided are valid for this quantity.",
+    ):
+        UnitSet(temperature=units.m)
+
+
+@pytest.mark.unit
+def test_mismatched_current_units():
+    with pytest.raises(
+        PropertyPackageError,
+        match="Invalid units of measurement for quantity current \(m\). "
+        "Please ensure units provided are valid for this quantity.",
+    ):
+        UnitSet(current=units.m)
+
+
+@pytest.mark.unit
+def test_mismatched_luminous_intensity_units():
+    with pytest.raises(
+        PropertyPackageError,
+        match="Invalid units of measurement for quantity luminous_intensity \(m\). "
+        "Please ensure units provided are valid for this quantity.",
+    ):
+        UnitSet(luminous_intensity=units.m)
+
+
+@pytest.mark.unit
+def test_mismatched_time_units():
+    with pytest.raises(
+        PropertyPackageError,
+        match="Invalid units of measurement for quantity time \(m\). "
+        "Please ensure units provided are valid for this quantity.",
+    ):
+        UnitSet(time=units.m)
 
 
 @pytest.fixture(scope="module")

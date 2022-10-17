@@ -30,6 +30,7 @@ from pyomo.environ import (
     value,
     units as pyunits,
 )
+from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.core.base.property_meta import UnitSet
 from idaes.models.properties.modular_properties.base.generic_property import (
@@ -123,13 +124,13 @@ class TestGenericReactionParameterBlock(object):
 
         default_units = m.rxn_params.get_metadata().default_units
         assert isinstance(default_units, UnitSet)
-        assert default_units.TIME == pyunits.s
-        assert default_units.LENGTH == pyunits.m
-        assert default_units.MASS == pyunits.kg
-        assert default_units.AMOUNT == pyunits.mol
-        assert default_units.TEMPERATURE == pyunits.K
-        assert default_units.CURRENT == None
-        assert default_units.LUMINOUS_INTENSITY == None
+        assert_units_equivalent(default_units.TIME, pyunits.s)
+        assert_units_equivalent(default_units.LENGTH, pyunits.m)
+        assert_units_equivalent(default_units.MASS, pyunits.kg)
+        assert_units_equivalent(default_units.AMOUNT, pyunits.mol)
+        assert_units_equivalent(default_units.TEMPERATURE, pyunits.K)
+        assert_units_equivalent(default_units.CURRENT, pyunits.W)
+        assert_units_equivalent(default_units.LUMINOUS_INTENSITY, pyunits.candela)
 
         assert isinstance(m.rxn_params.rate_reaction_idx, Set)
         assert len(m.rxn_params.rate_reaction_idx) == 1
@@ -169,30 +170,6 @@ class TestGenericReactionParameterBlock(object):
                 },
                 base_units={
                     "time": "foo",
-                    "length": pyunits.m,
-                    "mass": pyunits.kg,
-                    "amount": pyunits.mol,
-                    "temperature": pyunits.K,
-                },
-            )
-
-    @pytest.mark.unit
-    def test_missing_required_quantity(self, m):
-        with pytest.raises(
-            PropertyPackageError,
-            match="Units of measurement not provided for base quantity time. Units must be "
-            "provided for all base quantities except for current and luminous intensity.",
-        ):
-            m.rxn_params = GenericReactionParameterBlock(
-                property_package=m.params,
-                rate_reactions={
-                    "r1": {
-                        "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
-                        "heat_of_reaction": "foo",
-                        "rate_form": "foo",
-                    }
-                },
-                base_units={
                     "length": pyunits.m,
                     "mass": pyunits.kg,
                     "amount": pyunits.mol,

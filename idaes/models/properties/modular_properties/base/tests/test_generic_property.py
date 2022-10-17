@@ -20,6 +20,7 @@ from sys import modules
 from types import MethodType
 
 from pyomo.environ import value, Block, ConcreteModel, Param, Set, Var, units as pyunits
+from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterData,
@@ -99,13 +100,13 @@ class TestGenericParameterBlock(object):
 
         default_units = m.params.get_metadata().default_units
         assert isinstance(default_units, UnitSet)
-        assert default_units.TIME == pyunits.s
-        assert default_units.LENGTH == pyunits.m
-        assert default_units.MASS == pyunits.kg
-        assert default_units.AMOUNT == pyunits.mol
-        assert default_units.TEMPERATURE == pyunits.K
-        assert default_units.CURRENT == None
-        assert default_units.LUMINOUS_INTENSITY == None
+        assert_units_equivalent(default_units.TIME, pyunits.s)
+        assert_units_equivalent(default_units.LENGTH, pyunits.m)
+        assert_units_equivalent(default_units.MASS, pyunits.kg)
+        assert_units_equivalent(default_units.AMOUNT, pyunits.mol)
+        assert_units_equivalent(default_units.TEMPERATURE, pyunits.K)
+        assert_units_equivalent(default_units.CURRENT, pyunits.W)
+        assert_units_equivalent(default_units.LUMINOUS_INTENSITY, pyunits.candela)
 
         assert isinstance(m.params.component_list, Set)
         assert len(m.params.component_list) == 3
@@ -168,36 +169,6 @@ class TestGenericParameterBlock(object):
                 temperature_ref=300,
                 base_units={
                     "time": "foo",
-                    "length": pyunits.m,
-                    "mass": pyunits.kg,
-                    "amount": pyunits.mol,
-                    "temperature": pyunits.K,
-                },
-            )
-
-    @pytest.mark.unit
-    def test_missing_required_quantity(self):
-        m = ConcreteModel()
-
-        with pytest.raises(
-            PropertyPackageError,
-            match="Units of measurement not provided for base quantity time. "
-            "Units must be provided for all base quantities except for current and luminous intensity.",
-        ):
-            m.params = DummyParameterBlock(
-                components={"a": {}, "b": {}, "c": {}},
-                phases={
-                    "p1": {
-                        "type": LiquidPhase,
-                        "component_list": ["a", "b"],
-                        "equation_of_state": DummyEoS,
-                    },
-                    "p2": {"equation_of_state": DummyEoS},
-                },
-                state_definition=modules[__name__],
-                pressure_ref=100000.0,
-                temperature_ref=300,
-                base_units={
                     "length": pyunits.m,
                     "mass": pyunits.kg,
                     "amount": pyunits.mol,

@@ -46,8 +46,8 @@ Example::
         # do the work of the class.
 
 """
-
-from pyomo.core.base.units_container import _PyomoUnit
+from pyomo.environ import units
+from pyomo.core.base.units_container import _PyomoUnit, InconsistentUnitsError
 
 from idaes.core.util.exceptions import PropertyPackageError
 import idaes.logger as idaeslog
@@ -104,60 +104,79 @@ class UnitSet(object):
     Units of measurement are defined by setting units for the seven base SI quantities
     (amount, current, length, luminous intensity, mass, temperature and time), from which units
     for all other quantities are derived. The units of the seven base quantities must be provided
-    when instantiating the UnitSet - units are optional for current and luminous intensity.
+    when instantiating the UnitSet, otherwise base SI units are assumed.
 
     Units can be accesses by via either a property on the UnitSet (e.g., UnitSet.TIME) or
     via an index on the UnitSet (e.g., UnitSet["time"]).
     """
 
-    # TODO: Test this in isolation
-    def __init__(self, **kwds):
-        self._time = kwds.pop("time", None)
-        self._length = kwds.pop("length", None)
-        self._mass = kwds.pop("mass", None)
-        self._amount = kwds.pop("amount", None)
-        self._temperature = kwds.pop("temperature", None)
-        self._current = kwds.pop("current", None)
-        self._luminous_intensity = kwds.pop("luminous_intensity", None)
+    base_quantities = [
+        "time",
+        "length",
+        "mass",
+        "amount",
+        "temperature",
+        "current",
+        "luminous_intensity",
+    ]
+
+    def __init__(
+        self,
+        amount: _PyomoUnit = units.mol,
+        current: _PyomoUnit = units.watt,
+        length: _PyomoUnit = units.meter,
+        luminous_intensity: _PyomoUnit = units.candela,
+        mass: _PyomoUnit = units.kilogram,
+        temperature: _PyomoUnit = units.kelvin,
+        time: _PyomoUnit = units.seconds,
+        **kwds,
+    ):
+        self._time = time
+        self._length = length
+        self._mass = mass
+        self._amount = amount
+        self._temperature = temperature
+        self._current = current
+        self._luminous_intensity = luminous_intensity
         if kwds:
             raise PropertyPackageError(
                 f"Unrecognized base quantities: {[i for i in kwds.keys()]}"
             )
 
         # Check that valid units were assigned
-        for q in [
-            "time",
-            "length",
-            "mass",
-            "amount",
-            "temperature",
-            "current",
-            "luminous_intensity",
-        ]:
+        for q in self.base_quantities:
             u = getattr(self, "_" + q)
-            if u is None:
-                if q in ["luminous_intensity", "current"]:
-                    # these units are infrequently used in PSE, so allow users
-                    # to skip these
-                    continue
-                else:
-                    raise PropertyPackageError(
-                        f"Units of measurement not provided for base quantity {q}. Units must be provided "
-                        "for all base quantities except for current and luminous intensity."
-                    )
-            elif not isinstance(u, _PyomoUnit):
+            if not isinstance(u, _PyomoUnit):
+                # Check for non-unit inputs from user
                 raise PropertyPackageError(
                     f"Unrecognized units of measurement for quantity {q} ({u})"
                 )
-        # TODO: Could add a check for dimensionality of base units (i.e., units for time are a measure of time)
+
+            # Check for expected dimensionality
+            expected_dimensionality = {
+                "amount": units.mol,
+                "current": units.watt,
+                "length": units.meter,
+                "luminous_intensity": units.candela,
+                "mass": units.kilogram,
+                "temperature": units.kelvin,
+                "time": units.seconds,
+            }
+            try:
+                # Try to convert user-input to SI units of expected dimensions
+                units.convert(u, expected_dimensionality[q])
+            except InconsistentUnitsError:
+                # An error indicates a mismatch in units or the units registry
+                raise PropertyPackageError(
+                    f"Invalid units of measurement for quantity {q} ({u}). "
+                    "Please ensure units provided are valid for this quantity and "
+                    "use the Pyomo unit registry."
+                )
 
     def __getitem__(self, key):
-        # Check to catch cases where luminous intensity has a space
-        if key == "luminous intensity":
-            key = "luminous_intensity"
-
         try:
-            return getattr(self, key.upper())
+            # Check to catch cases where luminous intensity has a space
+            return getattr(self, key.upper().replace(" ", "_"))
         except AttributeError:
             raise PropertyPackageError(
                 f"Unrecognised quantity {key}. Please check that this is a recognised quantity "
