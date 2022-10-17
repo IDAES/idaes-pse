@@ -18,6 +18,7 @@ Author: Andrew Lee
 import pytest
 
 from pyomo.environ import units
+from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.core.base.property_meta import UnitSet
 from idaes.core.util.exceptions import PropertyPackageError
@@ -106,3 +107,48 @@ def test_luminous_intensity(unit_set):
     assert unit_set["luminous_intensity"] == units.candela
     # Also check with space
     assert unit_set["luminous intensity"] == units.candela
+
+
+# ---------------------------------------------------------------------------------------------
+# Test derived units
+derived_quantities = {
+    "area": units.m**2,
+    "volume": units.m**3,
+    "flow_mass": units.kg * units.s**-1,
+    "flow_mole": units.mol * units.s**-1,
+    "flow_vol": units.m**3 * units.s**-1,
+    "flux_mass": (units.kg * units.s**-1 * units.m**-2),
+    "flux_mole": (units.mol * units.s**-1 * units.m**-2),
+    "flux_energy": (units.kg * units.s**-3),
+    "velocity": (units.m * units.s**-1),
+    "acceleration": (units.m * units.s**-2),
+    "density_mass": (units.kg * units.m**-3),
+    "density_mole": (units.mol * units.m**-3),
+    "molecular_weight": (units.kg / units.mol),
+    "energy": (units.kg * units.m**2 * units.s**-2),
+    "energy_mass": (units.m**2 * units.s**-2),
+    "energy_mole": (units.kg * units.m**2 * units.s**-2 * units.mol**-1),
+    "dynamic_viscosity": (units.kg * units.m**-1 * units.s**-1),
+    "entropy": (units.kg * units.m**2 * units.s**-2 * units.K**-1),
+    "entropy_mass": (units.m**2 * units.s**-2 * units.K**-1),
+    "entropy_mole": (
+        units.kg * units.m**2 * units.s**-2 * units.K**-1 * units.mol**-1
+    ),
+    "power": (units.kg * units.m**2 * units.s**-3),
+    "pressure": (units.kg * units.m**-1 * units.s**-2),
+    "heat_capacity_mass": (units.m**2 * units.s**-2 * units.K**-1),
+    "heat_capacity_mole": (
+        units.kg * units.m**2 * units.s**-2 * units.K**-1 * units.mol**-1
+    ),
+    "heat_transfer_coefficient": (units.kg * units.s**-3 * units.K**-1),
+    "thermal_conductivity": (units.kg * units.m * units.s**-3 * units.K**-1),
+    "gas_constant": (
+        units.kg * units.m**2 * units.s**-2 * units.K**-1 * units.mol**-1
+    ),
+}
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("quantity", derived_quantities.keys())
+def test_derived_units(unit_set, quantity):
+    assert_units_equivalent(unit_set[quantity], derived_quantities[quantity])

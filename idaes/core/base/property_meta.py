@@ -192,6 +192,143 @@ class UnitSet(object):
     def LUMINOUS_INTENSITY(self):
         return self._luminous_intensity
 
+    # Length based
+    @property
+    def AREA(self):
+        return self._length**2
+
+    @property
+    def VOLUME(self):
+        return self._length**3
+
+    # Flows
+    @property
+    def FLOW_MASS(self):
+        return self._mass * self._time**-1
+
+    @property
+    def FLOW_MOLE(self):
+        return self._amount * self._time**-1
+
+    @property
+    def FLOW_VOL(self):
+        return self._length**3 * self._time**-1
+
+    @property
+    def FLUX_MASS(self):
+        return self._mass * self._time**-1 * self._length**-2
+
+    @property
+    def FLUX_MOLE(self):
+        return self._amount * self._time**-1 * self._length**-2
+
+    @property
+    def FLUX_ENERGY(self):
+        return self._mass * self._time**-3
+
+    # Velocity and Acceleration
+    @property
+    def VELOCITY(self):
+        return self._length * self._time**-1
+
+    @property
+    def ACCELERATION(self):
+        return self._length * self._time**-2
+
+    # Pressures
+    @property
+    def PRESSURE(self):
+        return self._mass * self._length**-1 * self._time**-2
+
+    @property
+    def GAS_CONSTANT(self):
+        return (
+            self._mass
+            * self._length**2
+            * self._time**-2
+            * self._temperature**-1
+            * self._amount**-1
+        )
+
+    # Densities
+    @property
+    def DENSITY_MASS(self):
+        return self._mass * self._length**-3
+
+    @property
+    def DENSITY_MOLE(self):
+        return self._amount * self._length**-3
+
+    @property
+    def MOLECULAR_WEIGHT(self):
+        return self._mass / self._amount
+
+    # Energy
+    @property
+    def ENERGY(self):
+        return self._mass * self._length**2 * self._time**-2
+
+    @property
+    def ENERGY_MASS(self):
+        return self._length**2 * self._time**-2
+
+    @property
+    def ENERGY_MOLE(self):
+        return self._mass * self._length**2 * self._time**-2 * self._amount**-1
+
+    @property
+    def POWER(self):
+        return self._mass * self._length**2 * self._time**-3
+
+    # Heat Related
+    @property
+    def HEAT_CAPACITY_MASS(self):
+        return self._length**2 * self._time**-2 * self._temperature**-1
+
+    @property
+    def HEAT_CAPACITY_MOLE(self):
+        return (
+            self._mass
+            * self._length**2
+            * self._time**-2
+            * self._temperature**-1
+            * self._amount**-1
+        )
+
+    @property
+    def HEAT_TRANSFER_COEFFICIENT(self):
+        return self._mass * self._time**-3 * self._temperature**-1
+
+    # Entropy
+    @property
+    def ENTROPY(self):
+        return (
+            self._mass * self._length**2 * self._time**-2 * self._temperature**-1
+        )
+
+    @property
+    def ENTROPY_MASS(self):
+        return self._length**2 * self._time**-2 * self._temperature**-1
+
+    @property
+    def ENTROPY_MOLE(self):
+        return (
+            self._mass
+            * self._length**2
+            * self._time**-2
+            * self._temperature**-1
+            * self._amount**-1
+        )
+
+    # Transport Properties
+    @property
+    def DYNAMIC_VISCOSITY(self):
+        return self._mass * self._length**-1 * self._time**-1
+
+    @property
+    def THERMAL_CONDUCTIVITY(self):
+        return self._mass * self._length * self._time**-3 * self._temperature**-1
+
 
 class PropertyClassMetadata(object):
     """Container for metadata about the property class, which includes
