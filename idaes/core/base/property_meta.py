@@ -385,13 +385,10 @@ class PropertyClassMetadata(object):
         return self._required_properties
 
     def add_default_units(self, u):
-        """Add a dict with keys for the
-        quantities used in the property package (as strings) and values of
-        their default units as unit objects or strings.
+        """Add a dict with keys for the base quantities used in the
+        property package (as strings) and values of their default units as Pyomo unit objects.
 
-        The quantities used by the framework are in constants
-        defined in :class:`UnitNames`, aliased here in the class
-        attribute `U`.
+        If units are not provided for a quantity, it will be assumed to use base SI unites.
 
         Args:
             u (dict): Key=property, Value=units
@@ -399,6 +396,8 @@ class PropertyClassMetadata(object):
         Returns:
             None
         """
+        # TODO: Could look at replacing dict with defined arguments
+        # This would be a big API change
         try:
             self._default_units = UnitSet(**u)
         except TypeError:
