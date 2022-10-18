@@ -22,6 +22,7 @@ __author__ = "John Eslick, Maojian Wang"
 
 # Import Python libraries
 from collections import OrderedDict
+import os
 import argparse
 import logging
 
@@ -32,7 +33,7 @@ from pyomo.network import Arc, Port
 # IDAES Imports
 from idaes.core import FlowsheetBlock  # Flowsheet class
 from idaes.core.util import model_serializer as ms  # load/save model state
-from idaes.core.util.tags import svg_tag  # place numbers/text in an SVG
+from idaes.core.util.tags import svg_tag, ModelTagGroup  # place numbers/text in an SVG
 from idaes.models.properties import iapws95  # steam properties
 from idaes.models_extra.power_generation.unit_models.helm import (
     HelmTurbineMultistage,
@@ -957,7 +958,11 @@ def pfd_result(m, df, svg):
     tags["bfpt_power"] = pyo.value(m.fs.bfpt.work_mechanical[0])
     tags["bfpt_eff"] = pyo.value(m.fs.bfpt.efficiency_isentropic[0]) * 100
 
-    return svg_tag(tags, svg=svg)
+    tag_group = ModelTagGroup()
+    for t, v in tags.items():
+        tag_group.add(t, v, format_string="{:.3f}")
+
+    return svg_tag(tag_group=tag_group, svg=svg)
 
 
 def main(initialize_from_file=None, store_initialization=None):

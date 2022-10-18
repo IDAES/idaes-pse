@@ -513,7 +513,7 @@ class TestMixer(object):
             inlet_blocks, mixed_block
         )
 
-        assert mixer_frame.fs.mix.inlet_idx.type() is RangeSet
+        assert mixer_frame.fs.mix.inlet_idx.ctype is RangeSet
         assert isinstance(mixer_frame.fs.mix.minimum_pressure, Var)
         assert len(mixer_frame.fs.mix.minimum_pressure) == 2
         assert isinstance(mixer_frame.fs.mix.eps_pressure, Param)
@@ -587,7 +587,7 @@ class TestMixer(object):
         assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
         assert len(m.fs.mix.enthalpy_mixing_equations) == 1
 
-        assert m.fs.mix.inlet_idx.type() is RangeSet
+        assert m.fs.mix.inlet_idx.ctype is RangeSet
         assert isinstance(m.fs.mix.minimum_pressure, Var)
         assert len(m.fs.mix.minimum_pressure) == 2
         assert isinstance(m.fs.mix.eps_pressure, Param)
@@ -615,7 +615,7 @@ class TestMixer(object):
         assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
         assert len(m.fs.mix.enthalpy_mixing_equations) == 1
 
-        assert m.fs.mix.inlet_idx.type() is RangeSet
+        assert m.fs.mix.inlet_idx.ctype is RangeSet
         assert isinstance(m.fs.mix.minimum_pressure, Var)
         assert len(m.fs.mix.minimum_pressure) == 2
         assert isinstance(m.fs.mix.eps_pressure, Param)

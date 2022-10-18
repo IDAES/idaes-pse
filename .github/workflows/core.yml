@@ -72,7 +72,7 @@ jobs:
   pytest:
     # description: Run pytest with dev dependencies
     name: pytest (py${{ matrix.python-version }}/${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner-image }}
     needs: [code-formatting]
     strategy:
       fail-fast: false
@@ -83,9 +83,13 @@ jobs:
           - '3.9'
           - '3.10'
         os:
-          - ubuntu-18.04
-          - windows-latest
+          - linux
+          - win64
         include:
+          - os: linux
+            runner-image: ubuntu-20.04
+          - os: win64
+            runner-image: windows-2022
           - python-version: '3.8'
             # only generate coverage report for a single python version in the matrix
             # to avoid overloading Codecov

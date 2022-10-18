@@ -104,7 +104,7 @@ def test_build(model):
             pyo.Expression: {
                 "temperature": nz * nt,
                 "contact_resistance": nz * nt,
-                "voltage_drop": nz * nt,
+                "voltage_drop_total": nz * nt,
                 "joule_heating_flux": nz * nt,
             },
         },
@@ -145,7 +145,7 @@ def test_build2(model2):
             pyo.Expression: {
                 "temperature": nz * nt,
                 "contact_resistance": nz * nt,
-                "voltage_drop": nz * nt,
+                "voltage_drop_total": nz * nt,
                 "joule_heating_flux": nz * nt,
             },
         },
