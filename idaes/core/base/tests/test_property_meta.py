@@ -17,19 +17,11 @@ Author: Andrew Lee
 """
 import pytest
 
-from pyomo.environ import units
+from pyomo.environ import ConcreteModel, units
 from pyomo.util.check_units import assert_units_equivalent
 
-from idaes.core.base.property_meta import UnitSet
+from idaes.core.base.property_meta import PropertyClassMetadata, UnitSet
 from idaes.core.util.exceptions import PropertyPackageError
-
-
-@pytest.mark.unit
-def test_invalid_base_quantity():
-    with pytest.raises(
-        PropertyPackageError, match="Unrecognized base quantities: \['foo'\]"
-    ):
-        UnitSet(foo=units.s)
 
 
 @pytest.mark.unit
@@ -211,3 +203,20 @@ derived_quantities = {
 @pytest.mark.parametrize("quantity", derived_quantities.keys())
 def test_derived_units(unit_set, quantity):
     assert_units_equivalent(unit_set[quantity], derived_quantities[quantity])
+
+
+@pytest.mark.unit
+def test_add_default_units_extra_arg():
+    m = ConcreteModel()
+
+    m.meta_object = PropertyClassMetadata()
+
+    with pytest.raises(
+        TypeError,
+        match="Unexpected argument for base quantities found when creating "
+        "UnitSet. Please ensure that units are only defined for the seven "
+        "base quantities.",
+    ):
+        m.meta_object.add_default_units(
+            {"foo": "bar"},
+        )

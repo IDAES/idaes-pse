@@ -129,7 +129,6 @@ class UnitSet(object):
         mass: _PyomoUnit = units.kilogram,
         temperature: _PyomoUnit = units.kelvin,
         time: _PyomoUnit = units.seconds,
-        **kwds,
     ):
         self._time = time
         self._length = length
@@ -138,10 +137,6 @@ class UnitSet(object):
         self._temperature = temperature
         self._current = current
         self._luminous_intensity = luminous_intensity
-        if kwds:
-            raise PropertyPackageError(
-                f"Unrecognized base quantities: {[i for i in kwds.keys()]}"
-            )
 
         # Check that valid units were assigned
         for q in self.base_quantities:
@@ -404,7 +399,13 @@ class PropertyClassMetadata(object):
         Returns:
             None
         """
-        self._default_units = UnitSet(**u)
+        try:
+            self._default_units = UnitSet(**u)
+        except TypeError:
+            raise TypeError(
+                f"Unexpected argument for base quantities found when creating UnitSet. "
+                "Please ensure that units are only defined for the seven base quantities."
+            )
 
     def add_properties(self, p):
         """Add properties to the metadata.
