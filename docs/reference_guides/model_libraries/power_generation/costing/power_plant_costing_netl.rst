@@ -24,16 +24,18 @@ The first function (`get_PP_costing`) can be called to include cost correlations
 
 Similarly, `get_sCO2_unit_cost` can be called to include cost correlations for equipment in supercritical CO2 power cycle plants and the method `get_ASU_cost` calls costing for equipment in air separation units. The method `costing_initialization` exists to initialize pp, sCO2 and ASU costing blocks.
 
-The methods `get_fixed_OM_costs` and `get_variable_OM_costs` calculate operating and maintenance costs for fixed (operating labor, maintenance labor, admin/support labor, property taxes and insurance, maintenance materials) and variable (fuel, consumable and waste disposal costs for either electricity or hydrogen production indexed by time), respectively. The methods `initialize_fixed_OM_costs` and `initialize_variable_OM_costs` exist to initialize fixed and variable O&M costing blocks.
+The methods `get_fixed_OM_costs` and `get_variable_OM_costs` calculate operating and maintenance costs for fixed (operating labor, maintenance labor, admin/support labor, property taxes and insurance, maintenance materials) and variable (fuel, consumable and waste disposal costs for electricity production indexed by time), respectively. The methods `initialize_fixed_OM_costs` and `initialize_variable_OM_costs` exist to initialize fixed and variable O&M costing blocks. To build all operating and maintanence costs sequentially, users may call the `build_process_costs` method.
 
 Several reporting methods exist (`report`, `display_total_plant_costs`, `display_bare_erected_costs`, `display_equipment_costs`, `get_total_TPC`, `display_flowsheet_cost`) as well as a check on supercritical CO2 bounds (`check_sCO2_costing_bounds`).
+
+Finally, `custom_power_plant_currency_units` appends custom units for power plant scenarios to the existing registered Pyomo currency units dictionary.
 
 Details are given for each method later in this documentation; however, there are many similarities between methods as described below:
 
 Costing sub-blocks
 ^^^^^^^^^^^^^^^^^^
 
-In general, when `get_PP_costing or get_sCO2_unit_cost` is called on an instance of a unit model, a new sub-block is created 
+In general, when `get_PP_costing` or `get_sCO2_unit_cost` is called on an instance of a unit model, a new sub-block is created 
 on that unit named `costing` (i.e. `flowsheet.unit.costing`). All variables and constraints related to costing will be 
 constructed within this new block (see detailed documentation for each unit for details on these variables and constraints).
 
@@ -77,15 +79,9 @@ sCO2 Costing                2017
 ASU                         2011
 =========================== ====================== 
 
-The first time a 'get costing' function is called for a unit operation within a flowsheet, an additional `costing` block is created 
-on the flowsheet object (i.e. `flowsheet.costing`) in order to hold any global parameters relating to costing. The most 
-common of these paramters is the CE index parameter. The CE index will be set to the base year of the method called.
-
-.. note:: The global paramters are created when the first instance of `get_costing` is called and use the values provided there for initialization. Subsequent `get_costing` calls use the existing paramters, and do not change the initialized values. i.e. any "year" argument provided to a `get_costing` call after the first will be ignored.
-
-To manually set the dollar year the user must call `m.fs.get_costing(year=2019)`` before any calls to a `get costing` function are made.
-
-
+When a `costing` block is created 
+on the flowsheet object (i.e. `flowsheet.costing`), the methods automatically build any global parameters relating to costing under this block. The most 
+common of these paramters is the CE index parameter. The CE index will be set to the base year of the method called, set by the argument `CE_index_year` which is allowed in most methods in this module.
 
 Power Plant Costing Module
 --------------------------
@@ -284,13 +280,13 @@ Below is an example of how to add cost correlations to a flowsheet including a h
     )
 
     # initialize costing equations
-    QGESSCostingData.costing_initialization(m.fs)
+    QGESSCostingData.costing_initialization(m.fs.costing)
     
     opt = SolverFactory('ipopt')
     opt.options = {'tol': 1e-6, 'max_iter': 50}
     results = opt.solve(m, tee=True)
     
-    QGESS.display_flowsheet_cost(fs)
+    QGESS.display_flowsheet_cost(m.fs.costing)
 
 
 Supercritical CO2 Costing Module
@@ -365,6 +361,7 @@ The Fixed O&M costing function adds constraints to calculate correlations associ
 * b : Pyomo concrete model or flowsheet block
 * net_power: production rate of the plant in MW, if provided will enable additional production-related cost calculations but not required to use method
 * nameplate_capacity : rated plant output in MW, defaults to 650
+* capacity_factor: factor adjusting variable costs for plant capacity; defaults to 85%.
 * labor_rate : hourly rate of plant operators in project dollar year, defaults to 38.50
 * labor_burden : a percentage multiplier used to estimate non-salary labor expenses, defaults to 30
 * operators_per_shift : average number of operators per shift, defaults to 6
@@ -405,10 +402,9 @@ where 8760 is the number of operating hours per year, 0.25, 0.02 and 0.85 are as
 Variable Operating & Maintenance Costs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The Variable O&M costing function adds constraints to calculate correlations associated with fuel, consumable and waste disposal costs. The function may be used to calculate variable costs of producing either electricity in $/MWh or hydrogen in $/kg. The method takes the following arguments: 
+The Variable O&M costing function adds constraints to calculate correlations associated with fuel, consumable and waste disposal costs. The function may be used to calculate variable costs of producing electricity in $/MWh. The method takes the following arguments: 
 
-* self : pyomo flowsheet block
-* production_rate : pyomo var indexed by fs.time representing the net system power or the hydrogen production rate
+* b: pyomo flowsheet block
 * resources : a list of strings for the resorces to be costed
 * rates : a list of pyomo vars for resource consumption rates
 * prices : a dict of resource prices to be added to the premade dictionary
@@ -441,13 +437,37 @@ When this method is called, the following equations are added to the flowsheet a
 
 where variables are indexed by resource `r` and time `t`, 0.85 is an assumed price ratio coefficient, and the variable `other_variable_costs` exists to allow for unaccounted variable costs (default = 0).
 
+Build Process Costs
+^^^^^^^^^^^^^^^^^^^
+
+Users may quickly build all required process costs by calling the global method `m.fs.costing.build_process_costs`, which internally determines which fixed and variable cost quantities should be considered and/or calculated. The method takes the following arguments:
+
+* total_plant_cost: The TPC in $MM that will be used to determine fixed O&M, costs. If the value is None, the function will try to use the TPC calculated from the individual units. This quantity should be a Pyomo Var or Param that will contain the TPC value.
+* nameplate_capacity: rated plant output in MW
+* labor_rate: hourly rate of plant operators in project dollar year
+* labor_burden: a percentage multiplier used to estimate non-salary labor expenses
+* operators_per_shift: average number of operators per shift
+* tech: int 1-7 representing the catagories in get_PP_costing, used to determine maintenance costs
+* land_cost: Expression, Var or Param to calculate land costs
+* net_power: actual plant output in MW, only required if calculating variable costs
+* resources: list setting resources to cost
+* rates: list setting flow rates of resources
+* prices: list setting prices of resources
+* fixed_OM: True/False flag for calculating fixed O&M costs
+* variable_OM: True/False flag for calculating variable O&M costs
+* fuel: string setting fuel type for fuel costs
+* chemicals: string setting chemicals type for chemicals costs
+* waste: string setting waste type for waste costs
+* tonne_CO2_capture: Var or value to use for tonnes of CO2 capture in one year
+* CE_index_year: year for cost basis, e.g. "2018" to use 2018 dollars
+
 Utility Functions
 -----------------
 
 Initialize Costing
 ^^^^^^^^^^^^^^^^^^
 
-The `initialize_fixed_OM_costs` will initialize all fixed cost variable and constraint in the costing block. The `initialize_variable_OM_costs` does the same, and checks whether costing should assume electricity or hydrogen production.
+The `initialize_fixed_OM_costs` will initialize all fixed cost variable and constraint in the costing block. The `initialize_variable_OM_costs` does the same.
 
 The `costing_initialization` function will initialize all the variable within every costing block in the flowsheet.
 It takes one argument, the flowsheet object. It should be called after all the calls to 'get costing' functions are 
@@ -459,7 +479,7 @@ Total Flowsheet Cost Constraint
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For optimization, a constraint summing all the total plant costs is required.
-Calling build_flowsheet_cost_constraint(m) creates a variable named m.fs.flowsheet_cost 
+Calling build_flowsheet_cost_constraint(m) creates a variable named m.fs.costing.flowsheet_cost 
 and builds the required constraint at the flowsheet level.
 
 .. note:: The costing libraries can be used for simulation or optimization. For simulation, costing constraints can be built and solved after the flowsheet has been solved. For optimization, the costing constraints will need to be solved with the flowsheet.
@@ -468,7 +488,7 @@ and builds the required constraint at the flowsheet level.
 Display Total Flowsheet Cost
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Calling display_flowsheet_cost(m) will print the value of m.fs.flowsheet_cost.
+Calling display_flowsheet_cost(m.fs.costing) will print the value of m.fs.costing.flowsheet_cost.
 
 
 Display Individual Costs
@@ -476,12 +496,14 @@ Display Individual Costs
 
 There are three functions for displaying individual costs.
 
-* display_total_plant_costs(fs)
-* display_bare_erected_costs(fs)
-* display_equipment_costs(fs)
+* display_total_plant_costs(m.fs.costing)
+* display_bare_erected_costs(m.fs.costing)
+* display_equipment_costs(m.fs.costing)
 
 Each one prints out a list of the costed blocks and the cost level of the function chosen.
 The functions should be called after solving the model.
+
+Calling the `report(m.fs.costing)` method will print specific total costs (e.g. total TPC, cost of electricity, annualized cost) if they exist and are calculated by the methods.
 
 Checking Bounds
 ^^^^^^^^^^^^^^^
@@ -489,10 +511,13 @@ Checking Bounds
 Currently, only the sCO2 module has support for checking bounds.
 
 All costing methods have a range, outside of which the correlations become inaccurate.
-Calling check_sCO2_costing_bounds(fs) will display which components are within the proper range
+Calling check_sCO2_costing_bounds(m.fs.costing) will display which components are within the proper range
 and which are outside it. It should be called after the model is solved.
 
+Adding Custom Currency Units
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+The method `custom_power_plant_currency_units` allows the addition of custom currency units, such as specific months (e.g. USD_2008_Nov for the ASU reference costs) to the existing currency units dictionary containing only aggregates for each cost year.
 
 References
 ----------
