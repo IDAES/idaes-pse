@@ -11,13 +11,13 @@
 # license information.
 #################################################################################
 """
-Deprecation path for idaes.dmf
+Deprecation path for idaes.dmf.resource
 """
 from pyomo.common.deprecation import deprecation_warning
 
 deprecation_warning(
-    "The idaes.dmf package has been moved to idaes.core.dmf",
+    "The idaes.dmf.resource module has been moved to idaes.core.dmf.resource",
     version="2.0.0.alpha0",
 )
 
-from idaes.core.dmf import *
+from idaes.core.dmf.resource import *
