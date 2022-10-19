@@ -363,6 +363,7 @@ class PropertyClassMetadata(object):
     def __init__(self):
         # TODO: Deprecate in favour of common units property
         self._default_units = None
+        # TODO: Make this None
         self._properties = {}
         self._required_properties = {}
 
@@ -423,10 +424,11 @@ class PropertyClassMetadata(object):
         Returns:
             None
         """
-        for k, v in p.items():
-            if not isinstance(v, PropertyMetadata):
-                v = PropertyMetadata(name=k, **v)
-            self._properties[k] = v
+        # for k, v in p.items():
+        #     if not isinstance(v, PropertyMetadata):
+        #         v = PropertyMetadata(name=k, **v)
+        #     self._properties[k] = v
+        self._properties = PropertySet(**p)
 
     def add_required_properties(self, p):
         """Add required properties to the metadata.
@@ -470,3 +472,18 @@ class PropertyMetadata(dict):
             # Adding a default "null" unit in case it is not provided by user
             d["units"] = "-"
         super(PropertyMetadata, self).__init__(d)
+
+
+class PropertySet(object):
+    # TODO: Add doc string
+
+    def __init__(self, **kwargs):
+        for p, v in kwargs.items():
+            setattr(self, "_" + p, PropertyMetadata(name=p, **v))
+
+    def __getitem__(self, key):
+        try:
+            return getattr(self, "_" + key)
+        except AttributeError:
+            # TODO: Real error message - needs to be a KeyError to work with getattr elsewhere
+            raise KeyError()

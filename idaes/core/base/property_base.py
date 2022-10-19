@@ -793,14 +793,14 @@ should be constructed in this state block,
         """
         This method is used to avoid generating unnecessary property
         calculations in state blocks. __getattr__ is called whenever a
-        property is called for, and if a propery does not exist, it looks for
+        property is called for, and if a property does not exist, it looks for
         a method to create the required property, and any associated
         components.
 
         Create a property calculation if needed. Return an attribute error if
         attr == 'domain' or starts with a _ . The error for _ prevents a
         recursion error if trying to get a function to create a property and
-        that function doesn't exist.  Pyomo also ocasionally looks for things
+        that function doesn't exist.  Pyomo also occasionally looks for things
         that start with _ and may not exist.  Pyomo also looks for the domain
         attribute, and it may not exist.
         This works by creating a property calculation by calling the "_"+attr
@@ -912,6 +912,7 @@ should be constructed in this state block,
                     "{}. Please contact the developer of the "
                     "property package".format(self.name, attr)
                 )
+            meta = m[attr]
         except KeyError:
             # If attr not in metadata, assume package does not
             # support property
@@ -923,7 +924,7 @@ should be constructed in this state block,
 
         # Get method name from resulting properties
         try:
-            if m[attr]["method"] is None:
+            if meta["method"] is None:
                 # If method is none, property should be constructed
                 # by property package, so raise PropertyPackageError
                 clear_call_list(self, attr)
@@ -933,7 +934,7 @@ should be constructed in this state block,
                     "This can be caused by methods being called "
                     "out of order.".format(self.name, attr)
                 )
-            elif m[attr]["method"] is False:
+            elif meta["method"] is False:
                 # If method is False, package does not support property
                 # Raise NotImplementedError
                 clear_call_list(self, attr)
@@ -942,10 +943,10 @@ should be constructed in this state block,
                     "(property method is listed as False in "
                     "package property metadata).".format(self.name, attr)
                 )
-            elif isinstance(m[attr]["method"], str):
+            elif isinstance(meta["method"], str):
                 # Try to get method name in from PropertyBlock object
                 try:
-                    f = getattr(self, m[attr]["method"])
+                    f = getattr(self, meta["method"])
                 except AttributeError:
                     # If fails, method does not exist
                     clear_call_list(self, attr)
