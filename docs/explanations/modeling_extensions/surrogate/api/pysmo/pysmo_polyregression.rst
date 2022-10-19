@@ -1,12 +1,13 @@
 Generating Polynomial Models with PySMO
 ===========================================
 
-The *pysmo.polynomial_regression* method learns polynomial models from data. Presented with a small
-number of samples generated from experiments or computer simulations, the approach determines the most
-accurate polynomial approximation by comparing the accuracy and performance of polynomials of different
-orders and basis function forms.
+.. note::
+   The IDAES surrogate API is a wrapper around the original PySMO surrogate interface.
 
-*pysmo.polynomial_regression* considers three types of basis functions
+
+The *pysmo_surrogate.PysmoPolyTrainer* method learns polynomial models from data. Presented with a small number of samples generated from experiments or computer simulations, the approach determines the most accurate polynomial approximation by comparing the accuracy and performance of polynomials of different orders and basis function forms.
+
+*pysmo_surrogate.PysmoPolyTrainer* considers three types of basis functions
 
 * univariate polynomials,
 * second-degree bivariate polynomials, and
@@ -21,64 +22,124 @@ Thus, for a problem with :math:`m` sample points and :math:`n` input variables, 
 
 Basic Usage
 ------------
-To generate a polynomial model with PySMO, the  *pysmo.polynomial_regression* class is first initialized,
-and then the method ``training`` is called on the initialized object:
+To generate a polynomial model with PySMO, the  *pysmo_surrogate.PysmoPolyTrainer* trainer is called with the desired optional arguments:
 
 .. code:: python
 
    # Required imports
-   >>> from idaes.core.surrogate.pysmo import polynomial_regression
+   >>> from idaes.core.surrogate.pysmo_surrogate import PysmoPolyTrainer
    >>> import pandas as pd
 
    # Load dataset from a csv file
    >>> xy_data = pd.read_csv('data.csv', header=None, index_col=0)
 
-   # Initialize the PolynomialRegression class, extract the list of features and train the model
-   >>> pr_init = polynomial_regression.PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=3, *kwargs)
-   >>> features = pr_init.get_feature_vector()
-   >>> pr_init.training()
+   # Define the input and output labels
+   input_labels = ['X1', 'X2']
+   output_labels = ['Y1','Y2']
 
-* **xy_data** is a two-dimensional python data structure containing the input and output training data. The output values **MUST** be in the last column.
-* **maximum_polynomial_order** refers to the maximum polynomial order to be considered when training the surrogate.
+   # Create the PySMO regression trainer object
+   >>> pr_trainer = PysmoPolyTrainer(input_labels=input_labels, output_labels=output_labels, training_dataframe = data_training)
 
-**Optional Arguments**
+   # Set PySMO options
+   >>> pr_trainer.config.maximum_polynomial_order = 4
 
-* **multinomials** - boolean option which determines whether bivariate terms are considered in polynomial generation.
-* **training_split** - option which determines fraction of training data to be used for training (the rest will be for testing). Default is 0.8.
-* **number_of_crossvalidations** - Number of cross-validations during training. Default number is 3.
+   # Train the model
+   >>> poly_train = pr_trainer.train_surrogate()
 
-*pysmo.polynomial_regression* Output
----------------------------------------
-The result of the ``pysmo.polynomial_regression`` method is a python object containing information
-about the problem set-up, the final optimal polynomial order, the polynomial coefficients and different error and quality-of-fit metrics such as
-the mean-squared-error (MSE) and the :math:`R^{2}` coefficient-of-fit. A Pyomo expression can be generated from the
-object simply passing a list of variables into the function *generate_expression*:
+
+.. note::
+   **maximum_polynomial_order** refers to the maximum polynomial order to be considered when training the surrogate and must be specified.
+
+
+Configuration Options
+----------------------
+In addition to **maximum_polynomial_order**, ``PysmoPolyTrainer`` takes the following optional arguments that help define/improve the final regression model:
+
+.. list-table:: PySMO regression options
+   :widths: 20 20 60
+   :header-rows: 1
+
+   * - **Option**
+     - Configuration argument
+     - Description
+   * - **multinomials**
+     - *pysmo_poly_trainer.config.multinomials*
+     - Boolean option which determines whether bivariate terms are considered in polynomial generation.
+   * - **solution_method**
+     - *pysmo_poly_trainer.config.solution_method*
+     - | Method used to solve the regression option:
+       | BFGS ('BFGS'), maximum likelihood ('MLE') or Pyomo least squares minimization ('pyomo'). 
+       | Default is 'mle'.
+   * - **training_split** 
+     - *pysmo_poly_trainer.config.training_split*
+     - | Option which determines fraction of training data to be used for regression training (the rest will be for testing). 
+       | Note that this is different from the model training/test validation process. 
+       | PySMO's regression tool internally validates the quality of the model before it is returns to the user. 
+       | Default is 0.8.
+   * - **extra_features** 
+     - *pysmo_poly_trainer.config.extra_features*
+     - | Option for defining additional desired non-regular regression terms. 
+       | See section on custom basis functions for more details.
+
+Custom Basis Functions
+----------------------
+
+PySMO has advanced capabilities that allows the user to supply custom basis functions to be parts of the regression process. Custom basis functions can be added to the built-in functions to expand the functional forms available. This custom basis function feature allow the user to incorporate apriori knowledge or physics-based information about the system into the regression model. 
+
+The custom basis functions may be simple multivariate relationships (e.g. :math:`x_{1}/x_{2}`), trigonometric terms (e.g. :math:`sin(x_{1})`) or logarithmic terms (e.g. :math:`log(x_{2})`).
+
+To use this advanced capability in PySMO, the *config.extra_features* optional argument is supplied. Note it is necessary to use the xlabels assigned to the input parameters.
+
+.. code-block:: python
+  
+  pr_trainer.config.custom_basis_functions = ["x1/ x2", "sin(x2)", "...", "..." ...]
+
+
+Output
+-------
+The result of the ``pysmo_surrogate.PysmoPolyTrainer`` method is a python object containing information about the problem set-up, the final optimal polynomial order, the polynomial coefficients and different error and quality-of-fit metrics such as the mean-squared-error (MSE) and the :math:`R^{2}` coefficient-of-fit. 
+
+
+Visualization
+-------------
+
+.. rubric:: Visualizing Surrogate Model Results
+
+For visualizing PySMO-trained surrogates via parity and residual plots, see :ref:`Visualizing Surrogate Model Results<explanations/modeling_extensions/surrogate/plotting/index:Visualizing Surrogate Model Results>`.
+
+
+Building an IDAES Surrogate Object
+------------------------------------
+To add the model to an IDAES flowsheet, the SurrogateTrainer object needs to be transformed into an IDAES SurrogateObject object. This is done by calling PySMOSurrogate and passing the generated surrogate expressions, along with variable labels and optionally the bounds:
 
 .. code:: python
 
-   # Create a python list from the headers of the dataset supplied for training
-   >>> list_vars = []
-   >>> for i in features.keys():
-   >>>     list_vars.append(features[i])
-   # Pass list to generate_expression function to obtain a Pyomo expression as output
-   >>> print(pr_init.generate_expression(list_vars))
+   >>> surr = PysmoSurrogate(poly_train, input_labels, output_labels, input_bounds)
 
-Prediction with *pysmo.polynomial_regression* models
------------------------------------------------------
-Once a polynomial model has been trained, predictions for values at previously unsampled points :math:*x_unsampled* can be evaluated by calling the
-``predict_output()`` method on the unsampled points:
+
+Prediction with *pysmo_surrogate.PysmoPolyTrainer* models
+-----------------------------------------------------------
+Once a polynomial model has been trained and the SurrogateObject object created, predictions for values at previously unsampled points :math:`x_{unsampled}` (a Pandas dataframe) can be evaluated by calling the ``evaluate_surrogate()`` method on the unsampled points:
 
 .. code:: python
 
-   # Create a python list from the headers of the dataset supplied for training
-   >>> y_unsampled = pr_init.predict_output(x_unsampled)
-   
+   >>> y_unsampled = surr.evaluate_surrogate(x_unsampled)
+ 
+
+Confidence intervals for *pysmo_surrogate.PysmoPolyTrainer* models
+--------------------------------------------------------------------
+[Needs to be moved over to new intweface ---coming soon]
 The confidence intervals for the regression paramaters may be viewed using the method ``confint_regression``.
+
+
+Saving and Loading Surrogates
+------------------------------
+
 
 Flowsheet Integration
 ----------------------
 
-The result of the polynomial training process can be passed directly into a process flowsheet as an objective or a constraint.
+The result of the polynomial training process can be passed directly into a process flowsheet using the IDAES SurrogateBlock option. 
 The following code snippet demonstrates how an output polynomial model may be integrated directly into a Pyomo flowsheet as
 an objective:
 
@@ -113,19 +174,14 @@ an objective:
    >>> opt = pyo.SolverFactory("ipopt")
    >>> result = opt.solve(instance, tee=True)
 
-Further details about *pysmo.polynomial_regression* may be found by consulting the examples or reading the paper [...]
 
-.. module:: idaes.core.surrogate.pysmo.polynomial_regression
 
-Available Methods
-------------------
+PySMO Examples
+----------------
 
-.. autoclass:: idaes.core.surrogate.pysmo.polynomial_regression.FeatureScaling
-    :members:
+For an example of optimizing a flowsheet containing an PySMO-trained surrogate model, see the `Autothermal reformer flowsheet optimization example <https://github.com/IDAES/examples-pse/blob/main/src/Examples/SurrMod/FlowsheetOptimization/PySMO_flowsheet_optimization.ipynb>`_.
 
-.. autoclass:: idaes.core.surrogate.pysmo.polynomial_regression.PolynomialRegression
-    :members: __init__, get_feature_vector, set_additional_terms, training, predict_output, generate_expression, confint_regression 
-	
+
 References:
 ----------------
 [1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide", https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801
