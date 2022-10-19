@@ -28,7 +28,7 @@ from idaes.core.util.exceptions import PropertyPackageError
 def test_invalid_require_base_quantity():
     with pytest.raises(
         PropertyPackageError,
-        match="Unrecognized units of measurement for quantity time \(foo\)",
+        match="Unrecognized units of measurement for quantity TIME \(foo\)",
     ):
         UnitSet(time="foo")
 
@@ -37,7 +37,7 @@ def test_invalid_require_base_quantity():
 def test_mismatched_length_units():
     with pytest.raises(
         PropertyPackageError,
-        match="Invalid units of measurement for quantity length \(s\). "
+        match="Invalid units of measurement for quantity LENGTH \(s\). "
         "Please ensure units provided are valid for this quantity.",
     ):
         UnitSet(length=units.s)
@@ -47,7 +47,7 @@ def test_mismatched_length_units():
 def test_mismatched_mass_units():
     with pytest.raises(
         PropertyPackageError,
-        match="Invalid units of measurement for quantity mass \(m\). "
+        match="Invalid units of measurement for quantity MASS \(m\). "
         "Please ensure units provided are valid for this quantity.",
     ):
         UnitSet(mass=units.m)
@@ -57,7 +57,7 @@ def test_mismatched_mass_units():
 def test_mismatched_amount_units():
     with pytest.raises(
         PropertyPackageError,
-        match="Invalid units of measurement for quantity amount \(m\). "
+        match="Invalid units of measurement for quantity AMOUNT \(m\). "
         "Please ensure units provided are valid for this quantity.",
     ):
         UnitSet(amount=units.m)
@@ -67,7 +67,7 @@ def test_mismatched_amount_units():
 def test_mismatched_temperature_units():
     with pytest.raises(
         PropertyPackageError,
-        match="Invalid units of measurement for quantity temperature \(m\). "
+        match="Invalid units of measurement for quantity TEMPERATURE \(m\). "
         "Please ensure units provided are valid for this quantity.",
     ):
         UnitSet(temperature=units.m)
@@ -77,7 +77,7 @@ def test_mismatched_temperature_units():
 def test_mismatched_current_units():
     with pytest.raises(
         PropertyPackageError,
-        match="Invalid units of measurement for quantity current \(m\). "
+        match="Invalid units of measurement for quantity CURRENT \(m\). "
         "Please ensure units provided are valid for this quantity.",
     ):
         UnitSet(current=units.m)
@@ -87,7 +87,7 @@ def test_mismatched_current_units():
 def test_mismatched_luminous_intensity_units():
     with pytest.raises(
         PropertyPackageError,
-        match="Invalid units of measurement for quantity luminous_intensity \(m\). "
+        match="Invalid units of measurement for quantity LUMINOUS_INTENSITY \(m\). "
         "Please ensure units provided are valid for this quantity.",
     ):
         UnitSet(luminous_intensity=units.m)
@@ -97,7 +97,7 @@ def test_mismatched_luminous_intensity_units():
 def test_mismatched_time_units():
     with pytest.raises(
         PropertyPackageError,
-        match="Invalid units of measurement for quantity time \(m\). "
+        match="Invalid units of measurement for quantity TIME \(m\). "
         "Please ensure units provided are valid for this quantity.",
     ):
         UnitSet(time=units.m)
