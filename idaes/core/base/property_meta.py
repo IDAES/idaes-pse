@@ -110,15 +110,15 @@ class UnitSet(object):
     via an index on the UnitSet (e.g., UnitSet["time"]).
     """
 
-    base_quantities = [
-        "time",
-        "length",
-        "mass",
-        "amount",
-        "temperature",
-        "current",
-        "luminous_intensity",
-    ]
+    _base_quantities = {
+        "AMOUNT": units.mol,
+        "CURRENT": units.watt,
+        "LENGTH": units.meter,
+        "LUMINOUS_INTENSITY": units.candela,
+        "MASS": units.kilogram,
+        "TEMPERATURE": units.kelvin,
+        "TIME": units.seconds,
+    }
 
     def __init__(
         self,
@@ -139,8 +139,8 @@ class UnitSet(object):
         self._luminous_intensity = luminous_intensity
 
         # Check that valid units were assigned
-        for q in self.base_quantities:
-            u = getattr(self, "_" + q)
+        for q, expected_dim in self._base_quantities.items():
+            u = getattr(self, q)
             if not isinstance(u, _PyomoUnit):
                 # Check for non-unit inputs from user
                 raise PropertyPackageError(
@@ -148,18 +148,9 @@ class UnitSet(object):
                 )
 
             # Check for expected dimensionality
-            expected_dimensionality = {
-                "amount": units.mol,
-                "current": units.watt,
-                "length": units.meter,
-                "luminous_intensity": units.candela,
-                "mass": units.kilogram,
-                "temperature": units.kelvin,
-                "time": units.seconds,
-            }
             try:
                 # Try to convert user-input to SI units of expected dimensions
-                units.convert(u, expected_dimensionality[q])
+                units.convert(u, expected_dim)
             except InconsistentUnitsError:
                 # An error indicates a mismatch in units or the units registry
                 raise PropertyPackageError(
@@ -177,6 +168,9 @@ class UnitSet(object):
                 f"Unrecognised quantity {key}. Please check that this is a recognised quantity "
                 "defined in idaes.core.base.property_meta.UnitSet."
             )
+
+    def unitset_is_consistent(self, other):
+        return all(getattr(self, q) is getattr(other, q) for q in self._base_quantities)
 
     @property
     def TIME(self):
