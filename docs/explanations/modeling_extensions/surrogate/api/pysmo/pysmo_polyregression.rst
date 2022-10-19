@@ -100,21 +100,27 @@ Output
 The result of the ``pysmo_surrogate.PysmoPolyTrainer`` method is a python object containing information about the problem set-up, the final optimal polynomial order, the polynomial coefficients and different error and quality-of-fit metrics such as the mean-squared-error (MSE) and the :math:`R^{2}` coefficient-of-fit. 
 
 
-Visualization
--------------
+Confidence intervals for *pysmo_surrogate.PysmoPolyTrainer* models
+--------------------------------------------------------------------
+**[Needs to be moved over to new interface ---coming soon]**
 
-.. rubric:: Visualizing Surrogate Model Results
+The confidence intervals for the regression paramaters may be viewed using the method ``confint_regression``.
 
+
+Surrogate Visualization
+------------------------
 For visualizing PySMO-trained surrogates via parity and residual plots, see :ref:`Visualizing Surrogate Model Results<explanations/modeling_extensions/surrogate/plotting/index:Visualizing Surrogate Model Results>`.
 
 
 Building an IDAES Surrogate Object
 ------------------------------------
-To add the model to an IDAES flowsheet, the SurrogateTrainer object needs to be transformed into an IDAES SurrogateObject object. This is done by calling PySMOSurrogate and passing the generated surrogate expressions, along with variable labels and optionally the bounds:
+To add the model to an IDAES flowsheet or generate model predictions, the SurrogateTrainer object needs to be transformed into an IDAES SurrogateObject object. This is done by calling ``PySMOSurrogate`` and passing the generated surrogate expressions, along with variable labels and optionally the bounds:
 
 .. code:: python
 
    >>> surr = PysmoSurrogate(poly_train, input_labels, output_labels, input_bounds)
+
+The resulting ``PysmoSurrogate`` object may be saved to (and reloaded from) a JSON file; for details, see :ref:`the PySMO main page<explanations/modeling_extensions/surrogate/api/pysmo/index:PySMO: Python-based Surrogate Modeling Objects>`.
 
 
 Prediction with *pysmo_surrogate.PysmoPolyTrainer* models
@@ -124,60 +130,49 @@ Once a polynomial model has been trained and the SurrogateObject object created,
 .. code:: python
 
    >>> y_unsampled = surr.evaluate_surrogate(x_unsampled)
- 
-
-Confidence intervals for *pysmo_surrogate.PysmoPolyTrainer* models
---------------------------------------------------------------------
-[Needs to be moved over to new intweface ---coming soon]
-The confidence intervals for the regression paramaters may be viewed using the method ``confint_regression``.
-
-
-Saving and Loading Surrogates
-------------------------------
 
 
 Flowsheet Integration
 ----------------------
-
-The result of the polynomial training process can be passed directly into a process flowsheet using the IDAES SurrogateBlock option. 
-The following code snippet demonstrates how an output polynomial model may be integrated directly into a Pyomo flowsheet as
-an objective:
+The result of the polynomial training process can be passed directly into a process flowsheet using the IDAES ``SurrogateBlock`` option. 
+The following code snippet demonstrates how a saved polynomial model may be integrated directly into an IDAES flowsheet:
 
 .. code:: python
 
    # Required imports
-   >>> import pyomo.environ as pyo
-   >>> from idaes.core.surrogate.pysmo import polynomial_regression
-   >>> import pandas as pd
+   >>> from pyomo.environ import Var, ConcreteModel, Constraint, SolverFactory, Objective, minimize
+   >>> from idaes.core import FlowsheetBlock
+   >>> from idaes.core.surrogate.pysmo_surrogate import PysmoSurrogate
+   >>> from idaes.core.surrogate.surrogate_block import SurrogateBlock
 
    # Create a Pyomo model
    >>> m = pyo.ConcreteModel()
-   >>> i = pyo.Set(initialize=[1, 2])
+   >>> m.fs = FlowsheetBlock(default={"dynamic": False})
 
-   # Create a Pyomo variable with indexed by the 2D-set i with initial values {0, 0}
-   >>> init_x = {1: 0, 2: 0}
-   >>> def x_init(m, i):
-   >>>     return (init_x[i])
-   >>> m.x = pyo.Var(i, initialize=x_init)
+   # create input and output variables
+   >>> m.fs.X1 = Var(initialize=0, bounds=(0, 5)) 
+   >>> m.fs.X2 = Var(initialize=0, bounds=(0, 5)) 
+   >>> m.fs.Y1 = Var(initialize=0) 
+   >>> m.fs.Y2 = Var(initialize=0) 
 
-   # Train a simple polynomial model on data available in csv format, resulting in the Python object polyfit
-   >>> xy_data = pd.read_csv('data.csv', header=None, index_col=0)
-   >>> pr_init = polynomial_regression.PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=3)
-   >>> features = pr_init.get_feature_vector()
-   >>> polyfit = pr_init.training()
+   # create list of surrogate inputs and outputs for flowsheet
+   >>> inputs = [m.fs.X1, m.fs.X2]
+   >>> outputs = [m.fs.Y1, m.fs.Y2]
 
-   # Use the resulting polynomial as an objective, passing in the Pyomo variable x
-   >>> m.obj = pyo.Objective(expr=polyfit.generate_expression([m.x[1], m.x[2]]))
+   # create the Pyomo/IDAES block that corresponds to the surrogate
+   >>> m.fs.surrogate = SurrogateBlock(concrete=True)
+   >>> surrogates_obj =PysmoSurrogate.load_from_file('poly_surrogate.json') # poly_surrogate.json is an existing surrogate JSON file
+   >>> m.fs.surrogate.build_model(surrogates_obj, input_vars=inputs, output_vars=outputs)
+   >>> m.fs.surrogate.pprint()
+
+   # Set the variable Y1 as the model objective
+   >>> m.fs.obj = Objective(expr=m.fs.Y1, sense=minimize)
 
    # Solve the model
-   >>> instance = m
-   >>> opt = pyo.SolverFactory("ipopt")
-   >>> result = opt.solve(instance, tee=True)
+   >>> solver = SolverFactory('ipopt')
+   >>> res = solver.solve(m, tee=True)
+   >>> m.fs.display()
 
-
-
-PySMO Examples
-----------------
 
 For an example of optimizing a flowsheet containing an PySMO-trained surrogate model, see the `Autothermal reformer flowsheet optimization example <https://github.com/IDAES/examples-pse/blob/main/src/Examples/SurrMod/FlowsheetOptimization/PySMO_flowsheet_optimization.ipynb>`_.
 

@@ -44,6 +44,8 @@ Data can be read in or simulated using available Python packages. The main argum
 
 where [PySMO Kriging Option] is a valid keyword argument that can be passed to the PySMO Kriging Python function to customize the model. Each PySMO model type requires takes different optional arguments; a list of arguments for each PySMO model may be found on its personalized page.
 
+Saving and Loading PySMO models
+--------------------------------
 The user may save their trained surrogate objects by serializing to JSON, and load into a different script, notebook or environment. For example,
 
 .. code-block:: python
@@ -54,12 +56,8 @@ The user may save their trained surrogate objects by serializing to JSON, and lo
   # To load a model
   surrogate = PysmoSurrogate.load_from_file('pysmo_surrogate.json')
 
-
-Visualization
--------------
-
-.. rubric:: Visualizing Surrogate Model Results
-
+Visualizing Surrogate Model Results
+------------------------------------
 For visualizing PySMO-trained surrogates via parity and residual plots, see :ref:`Visualizing Surrogate Model Results<explanations/modeling_extensions/surrogate/plotting/index:Visualizing Surrogate Model Results>`.
 
 
