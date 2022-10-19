@@ -103,7 +103,7 @@ def phase_equil(b, phase_pair):
 
     def rule_temperature_slack_complementarity(b, p):
         flow_phase = b.flow_mol_phase[p]
-        if b.params.config.supercritical:
+        if b.params.config.supercritical_extension:
             if p == 'Vap':
                 return smooth_min(s[p], flow_phase, eps) == 0
             else:
@@ -131,7 +131,7 @@ def phase_equil(b, phase_pair):
         if p == 'Vap':
             return smooth_min(gn[p], flow_phase, eps) == 0
         else:
-            if b.params.config.supercritical:
+            if b.params.config.supercritical_extension:
                 return smooth_min(gp[p] + s[p], flow_phase, eps) == 0
             else:
                 return smooth_min(gp[p], flow_phase, eps) == 0
@@ -140,7 +140,7 @@ def phase_equil(b, phase_pair):
         Constraint(b.params.phase_list, rule=rule_cubic_slack_complementarity),
     )
 
-    if b.params.config.supercritical:
+    if b.params.config.supercritical_extension:
         b.add_component(
         "pp" + suffix,
         Var(initialize=0.0,
@@ -228,7 +228,6 @@ def calculate_tbar(b, phase_pair):
 
     if (hasattr(b, "temperature_bubble") and
         hasattr(b, "temperature_dew")):
-        # tbar = getattr(b, "tbar" + suffix)
         b.tbar[phase_pair].value = \
             0.5 * value(b.temperature_bubble[phase_pair] +
                         b.temperature_dew[phase_pair])
