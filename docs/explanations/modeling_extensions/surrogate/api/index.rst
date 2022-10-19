@@ -31,7 +31,7 @@ First, users must load or generate a dataset to train against, typically as a Pa
     import pd
     data = pd.read_csv(r'data.csv')  # load training data
     input_data, output_data = data.iloc[:, :2], data.iloc[:, 2:]  # 2 outputs
-    inpput_labels, output_labels = input_data.columns, output_data.columns]
+    input_labels, output_labels = input_data.columns, output_data.columns]
 
 .. rubric:: Sampling
 
@@ -46,11 +46,18 @@ If desired, users may sample additional points or perform a training/validation 
 Training Surrogates
 ^^^^^^^^^^^^^^^^^^^
 
-Once the training data is defined, users call the desired trainer method (`AlamoTrainer`, `PySMOPolyTrainer`, `PySMORBFTrainer`, `PySMOKrigingTrainer`) to return a `SurrogateTrainer` object that is ready to train. For example, an `AlamoTrainer` object is created as below:
+Once the training data is defined, users call the desired trainer method (`AlamoTrainer`, `PysmoPolyTrainer`, `PysmoRBFTrainer`, `PysmoKrigingTrainer`) to return a `SurrogateTrainer` object that is ready to train. For example, an `AlamoTrainer` object is created as below:
 
 .. code-block:: python
 
     trainer = AlamoTrainer(input_labels=input_labels, output_labels=output_labels, training_dataframe=data_training)
+
+Similarly, a PySMO RBF `PySMORBFTrainer` object would be created as:
+
+.. code-block:: python
+
+    trainer = PysmoRBFTrainer(input_labels=input_labels, output_labels=output_labels, training_dataframe=data_training)
+
 
 Trainers allow their own configuration options, which alter the regression or file behavior and belong to the trainer's `CONFIG` block. For example, ALAMO supports a configuration option for allowing linear basis functions:
 
@@ -70,6 +77,8 @@ To add the model to an IDAES flowsheet, the `SurrogateTrainer` object needs to b
 .. code-block:: python
 
     surr = AlamoSurrogate(expressions, input_labels, output_labels, input_bounds)
+
+A similar object can be created for PySMO or Keras by replacing `AlamoSurrogate` with `PySMOSurrogate` or `KerasSurrogate`.
 
 Flowsheet Integration
 ---------------------
