@@ -65,12 +65,12 @@ def phase_equil(b, phase_pair):
 
         # Equilibrium temperature
         def rule_tbar(b):
-            return b.tbar[phase_pair] - b.temperature - \
+            return b._tbar[phase_pair] - b.temperature - \
                 s['Vap'] + s['Liq'] == 0
-        b.add_component("tbar_constraint" + suffix, Constraint(rule=rule_tbar))
+        b.add_component("_tbar_constraint" + suffix, Constraint(rule=rule_tbar))
 
     else:
-        b.tbar[phase_pair] = b.temperature
+        b._tbar[phase_pair] = b.temperature
 
     b.add_component(
         "eps" + suffix,
@@ -207,8 +207,8 @@ def calculate_scaling_factors(b, phase_pair):
     sf_T = iscale.get_scaling_factor(b.temperature, default=1, warning=True)
 
     try:
-        tbar_cons = getattr(b, "tbar_constraint" + suffix)
-        iscale.set_scaling_factor(b.tbar[phase_pair], sf_T)
+        tbar_cons = getattr(b, "_tbar_constraint" + suffix)
+        iscale.set_scaling_factor(b._tbar[phase_pair], sf_T)
         iscale.constraint_scaling_transform(tbar_cons, sf_T, overwrite=False)
     except AttributeError:
         pass
@@ -219,7 +219,7 @@ def phase_equil_initialization(b, phase_pair):
 
     for c in b.component_objects(Constraint):
         # Activate equilibrium constraints
-        if c.local_name in ("tbar_constraint" + suffix,):
+        if c.local_name in ("_tbar_constraint" + suffix,):
             c.deactivate()
 
 
@@ -228,12 +228,12 @@ def calculate_tbar(b, phase_pair):
 
     if (hasattr(b, "temperature_bubble") and
         hasattr(b, "temperature_dew")):
-        b.tbar[phase_pair].value = \
+        b._tbar[phase_pair].value = \
             0.5 * value(b.temperature_bubble[phase_pair] +
                         b.temperature_dew[phase_pair])
 
     else:
-        b.tbar[phase_pair].value = value(b.temperature_bubble[phase_pair])
+        b._tbar[phase_pair].value = value(b.temperature_bubble[phase_pair])
 
 
 def calculate_pbar(b, phase_pair):
@@ -252,26 +252,25 @@ def calculate_pbar(b, phase_pair):
 
 def fix_tbar(b, phase_pair):
     suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
-    b.tbar[phase_pair].fix()
+    b._tbar[phase_pair].fix()
 
 
 def unfix_tbar(b, phase_pair):
     suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
-    b.tbar[phase_pair].unfix()
+    b._tbar[phase_pair].unfix()
 
 
 def calculate_temperature_slacks(b, phase_pair):
     suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
     
-    # tbar = getattr(b, "tbar" + suffix)
     s = getattr(b, "s" + suffix)
     
-    if b.tbar[phase_pair].value > b.temperature.value:
-        s['Vap'].value = value(b.tbar[phase_pair] - b.temperature)
+    if b._tbar[phase_pair].value > b.temperature.value:
+        s['Vap'].value = value(b._tbar[phase_pair] - b.temperature)
         s['Liq'].value = 0
-    elif b.tbar[phase_pair].value < b.temperature.value:
+    elif b._tbar[phase_pair].value < b.temperature.value:
         s['Vap'].value = 0
-        s['Liq'].value = value(b.temperature - b.tbar[phase_pair])
+        s['Liq'].value = value(b.temperature - b._tbar[phase_pair])
     else:
         s['Vap'].value = 0
         s['Liq'].value = 0

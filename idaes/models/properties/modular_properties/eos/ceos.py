@@ -367,7 +367,7 @@ class Cubic(EoSBase):
                 ac = getattr(m, cname + "_a_crit")[j]
                 func_alpha = getattr(m.params, cname + "_func_alpha")
 
-                return ac * func_alpha(m.tbar[p1, p2], fw, cobj)
+                return ac * func_alpha(m._tbar[p1, p2], fw, cobj)
 
             b.add_component(
                 "_" + cname + "_a_eq",
@@ -407,7 +407,7 @@ class Cubic(EoSBase):
                 return (
                     am_eq[p1, p2, p3]
                     * m.pressure
-                    / (Cubic.gas_constant(b) * m.tbar[p1, p2]) ** 2
+                    / (Cubic.gas_constant(b) * m._tbar[p1, p2]) ** 2
                 )
 
             b.add_component(
@@ -417,7 +417,7 @@ class Cubic(EoSBase):
 
             def rule_B_eq(m, p1, p2, p3):
                 bm = getattr(m, cname + "_bm")
-                return bm[p3] * m.pressure / (Cubic.gas_constant(b) * m.tbar[p1, p2])
+                return bm[p3] * m.pressure / (Cubic.gas_constant(b) * m._tbar[p1, p2])
 
             b.add_component(
                 "_" + cname + "_B_eq",

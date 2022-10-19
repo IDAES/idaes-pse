@@ -222,7 +222,7 @@ class GenericParameterData(PhysicalParameterBlock):
         "supercritical_extension",
         ConfigValue(
             default=False,
-            description="Flag for including the supercritical extension",
+            description="Flag to include supercritical extension",
             doc="""Flag indicating where the supercritical extension is used.""",
         ),
     )
@@ -1425,7 +1425,7 @@ class _GenericStateBlock(StateBlock):
         )
         
         # ---------------------------------------------------------------------
-        # Calculate tbar
+        # Calculate _tbar
         for k in blk.keys():
             if (blk[k].params.config.phases_in_equilibrium is not None and
                     (not blk[k].config.defined_state or blk[k].always_flash)):
@@ -1514,14 +1514,14 @@ class _GenericStateBlock(StateBlock):
                             blk[k].mole_frac_phase_comp_true[p, j].set_value(x)
 
             # If state block has phase equilibrium, use the average of all
-            # tbar's as an initial guess for T
+            # _tbar's as an initial guess for T
             if (
                 blk[k].params.config.phases_in_equilibrium is not None
                 and isinstance(blk[k].temperature, Var)
                 and not blk[k].temperature.fixed
             ):
                 blk[k].temperature.value = value(
-                    sum(blk[k].tbar[i] for i in blk[k].params._pe_pairs)
+                    sum(blk[k]._tbar[i] for i in blk[k].params._pe_pairs)
                     / len(blk[k].params._pe_pairs)
                 )
 
@@ -1640,7 +1640,7 @@ class _GenericStateBlock(StateBlock):
                         lc = log(c)
                         v.set_value(value(lc))
 
-            # Unfix tbar
+            # Unfix _tbar
             for pp in blk[k].params._pe_pairs:
                 blk[k].params.config.phase_equilibrium_state[pp] \
                     .unfix_tbar(blk[k], pp)
@@ -2053,7 +2053,7 @@ class GenericStateBlockData(StateBlockData):
         ):
 
             t_units = self.params.get_metadata().default_units["temperature"]
-            self.tbar = Var(
+            self._tbar = Var(
                 self.params._pe_pairs,
                 initialize=value(self.temperature),
                 doc='Temperature for calculating phase equilibrium',
