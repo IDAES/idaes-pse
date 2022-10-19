@@ -157,7 +157,7 @@ class TestGenericReactionParameterBlock(object):
     def test_invalid_unit(self, m):
         with pytest.raises(
             PropertyPackageError,
-            match="Unrecognized units of measurement for quantity time " "\(foo\)",
+            match="Unrecognized units of measurement for quantity TIME " "\(foo\)",
         ):
             m.rxn_params = GenericReactionParameterBlock(
                 property_package=m.params,

@@ -152,7 +152,7 @@ class TestGenericParameterBlock(object):
 
         with pytest.raises(
             PropertyPackageError,
-            match="Unrecognized units of measurement for quantity time " "\(foo\)",
+            match="Unrecognized units of measurement for quantity TIME " "\(foo\)",
         ):
             m.params = DummyParameterBlock(
                 components={"a": {}, "b": {}, "c": {}},
