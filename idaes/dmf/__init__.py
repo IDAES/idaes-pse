@@ -21,3 +21,22 @@ deprecation_warning(
 )
 
 from idaes.core.dmf import *
+from idaes.core.dmf import (
+    cli,
+    codesearch,
+    commands,
+    datasets,
+    dmfbase,
+    errors,
+    experiment,
+    getver,
+    help,
+    magics,
+    model_data,
+    resource,
+    resourcedb,
+    tables,
+    userapi,
+    util,
+    workspace,
+)
