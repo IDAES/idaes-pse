@@ -63,21 +63,21 @@ In addition to **maximum_polynomial_order**, ``PysmoPolyTrainer`` takes the foll
      - Configuration argument
      - Description
    * - **multinomials**
-     - *pysmo_poly_trainer.config.multinomials*
+     - *PysmoPolyTrainer.config.multinomials*
      - Boolean option which determines whether bivariate terms are considered in polynomial generation.
    * - **solution_method**
-     - *pysmo_poly_trainer.config.solution_method*
+     - *PysmoPolyTrainer.config.solution_method*
      - | Method used to solve the regression option:
        | BFGS ('BFGS'), maximum likelihood ('MLE') or Pyomo least squares minimization ('pyomo'). 
        | Default is 'mle'.
    * - **training_split** 
-     - *pysmo_poly_trainer.config.training_split*
+     - *PysmoPolyTrainer.config.training_split*
      - | Option which determines fraction of training data to be used for regression training (the rest will be for testing). 
        | Note that this is different from the model training/test validation process. 
        | PySMO's regression tool internally validates the quality of the model before it is returns to the user. 
        | Default is 0.8.
    * - **extra_features** 
-     - *pysmo_poly_trainer.config.extra_features*
+     - *PysmoPolyTrainer.config.extra_features*
      - | Option for defining additional desired non-regular regression terms. 
        | See section on custom basis functions for more details.
 
@@ -100,7 +100,7 @@ Output
 The result of the ``pysmo_surrogate.PysmoPolyTrainer`` method is a python object containing information about the problem set-up, the final optimal polynomial order, the polynomial coefficients and different error and quality-of-fit metrics such as the mean-squared-error (MSE) and the :math:`R^{2}` coefficient-of-fit. 
 
 
-Confidence intervals for *pysmo_surrogate.PysmoPolyTrainer* models
+Confidence intervals for *PysmoPolyTrainer* models
 --------------------------------------------------------------------
 **[Needs to be moved over to new interface ---coming soon]**
 
@@ -123,7 +123,7 @@ To add the model to an IDAES flowsheet or generate model predictions, the Surrog
 The resulting ``PysmoSurrogate`` object may be saved to (and reloaded from) a JSON file; for details, see :ref:`the PySMO main page<explanations/modeling_extensions/surrogate/api/pysmo/index:PySMO: Python-based Surrogate Modeling Objects>`.
 
 
-Prediction with *pysmo_surrogate.PysmoPolyTrainer* models
+Prediction with *PysmoPolyTrainer* models
 -----------------------------------------------------------
 Once a polynomial model has been trained and the SurrogateObject object created, predictions for values at previously unsampled points :math:`x_{unsampled}` (a Pandas dataframe) can be evaluated by calling the ``evaluate_surrogate()`` method on the unsampled points:
 
@@ -174,7 +174,7 @@ The following code snippet demonstrates how a saved polynomial model may be inte
    >>> m.fs.display()
 
 
-For an example of optimizing a flowsheet containing an PySMO-trained surrogate model, see the `Autothermal reformer flowsheet optimization example <https://github.com/IDAES/examples-pse/blob/main/src/Examples/SurrMod/FlowsheetOptimization/PySMO_flowsheet_optimization.ipynb>`_.
+For an example of optimizing a flowsheet containing a PySMO-trained polynomial regression surrogate model, see the `Autothermal reformer flowsheet optimization example <https://github.com/IDAES/examples-pse/blob/main/src/Examples/SurrMod/FlowsheetOptimization/PySMO_flowsheet_optimization.ipynb>`_.
 
 
 References:

@@ -1,7 +1,11 @@
 Generating Radial Basis Function (RBF) models with PySMO
 ==========================================================
 
-The *pysmo.radial_basis_function* package has the capability to generate different types of RBF surrogates from data
+.. note::
+   The IDAES surrogate API is a wrapper around the original PySMO surrogate interface.
+
+
+The *pysmo_surrogate.PysmoRBFTrainer* method has the capability to generate different types of RBF surrogates from data
 based on the basis function selected. RBFs models are usually of the form
 where
 
@@ -47,78 +51,124 @@ parameter (:math:`\sigma`)to be estimated.
 
 Basic Usage
 ------------
-To generate an RBF model with PySMO, the  *pysmo.radial_basis_function* class is first initialized,
-and then the function *training* is called on the initialized object:
+TTo generate an RBF model with PySMO, the  *pysmo_surrogate.PysmoRBFTrainer* trainer is called with the desired optional arguments:
 
 .. code:: python
 
    # Required imports
-   >>> from idaes.core.surrogate.pysmo import radial_basis_function
+   >>> from idaes.core.surrogate.pysmo_surrogate import PysmoRBFTrainer
    >>> import pandas as pd
 
    # Load dataset from a csv file
    >>> xy_data = pd.read_csv('data.csv', header=None, index_col=0)
 
-   # Initialize the RadialBasisFunctions class, extract the list of features and train the model
-   >>> rbf_init = radial_basis_function.RadialBasisFunctions(xy_data, *kwargs)
-   >>> features = rbf_init.get_feature_vector()
-   >>> rbf_fit = rbf_init.training()
+   # Define the input and output labels
+   input_labels = ['X1', 'X2']
+   output_labels = ['Y1','Y2']
 
-* *xy_data* is a two-dimensional python data structure containing the input and output training data. The output values **MUST** be in the last column.
+   # Create the RBF trainer object
+   >>> rbf_trainer = PysmoRBFTrainer(input_labels=input_labels, output_labels=output_labels, training_dataframe = data_training)
 
-**Optional Arguments**
+   # Set PySMO options
+   >>> rbf_trainer.config.basis_function = 'cubic'
 
-* *basis_function* - option to specify the type of basis function to be used in the RBF model. Default is 'gaussian'.
-* *regularization* - boolean which determines whether regularization of the RBF model is considered. Default is True.
+   # Train the model
+   >>> rbf_train = rbf_trainer.train_surrogate()
 
-    - When regularization is turned on, the resulting model is a regressing RBF model.
-    - When regularization is turned off, the resulting model is an interpolating RBF model.
+Configuration Options
+----------------------
+``PysmoRBFTrainer`` takes the following optional arguments:
+
+.. list-table:: PySMO RBF options
+   :widths: 20 20 60
+   :header-rows: 1
+
+   * - **Option**
+     - Configuration argument
+     - Description
+   * - **basis_function**
+     - *PysmoRBFTrainer.config.basis_function*
+     - Option to specify the type of basis function to be used in the RBF model. Default is 'gaussian'.
+   * - **regularization**
+     - *PysmoRBFTrainer.config.regularization*
+     - | Boolean argument which determines whether model regularization is applied during training. 
+       | Default is True.
+   * - **solution_method**
+     - *PysmoRBFTrainer.config.solution_method*
+     - | Method used to solve the parameter estimation problems for the RBF model:
+       | BFGS ('BFGS'), maximum likelihood ('algebraic') or Pyomo least squares minimization ('pyomo'). 
+       | Default is 'algebraic'.
+
+Output
+-------
+The result of the ``pysmo_surrogate.PysmoRBFTrainer`` method is a python object containing information about the problem set-up, the optimal radial basis function weights :math:`w_{j}` and different error and quality-of-fit metrics such as the mean-squared-error (MSE) and the :math:`R^{2}` coefficient-of-fit.
+
+Surrogate Visualization
+------------------------
+For visualizing PySMO-trained surrogates via parity and residual plots, see :ref:`Visualizing Surrogate Model Results<explanations/modeling_extensions/surrogate/plotting/index:Visualizing Surrogate Model Results>`.
 
 
-*pysmo.radial_basis_function* Output
----------------------------------------
-The result of *pysmo.radial_basis_function* (*rbf_fit* in above example) is a python object containing information
-about the problem set-up, the optimal radial basis function weights :math:`w_{j}` and different error and quality-of-fit metrics such as
-the mean-squared-error (MSE) and the :math:`R^{2}` coefficient-of-fit. A Pyomo expression can be generated from the
-object simply passing a list of variables into the function *generate_expression*:
+Building the IDAES Surrogate Object
+------------------------------------
+To add the model to an IDAES flowsheet or generate model predictions, the SurrogateTrainer object needs to be transformed into an IDAES SurrogateObject object. This is done by calling ``PySMOSurrogate`` and passing the generated surrogate expressions, along with variable labels and optionally the bounds:
 
 .. code:: python
 
-   # Create a python list from the headers of the dataset supplied for training
-   >>> list_vars = []
-   >>> for i in features.keys():
-   >>>     list_vars.append(features[i])
+   >>> surr = PysmoSurrogate(rbf_train, input_labels, output_labels, input_bounds)
 
-   # Pass list to generate_expression function to obtain a Pyomo expression as output
-   >>> print(rbf_init.generate_expression(list_vars))
+The resulting ``PysmoSurrogate`` object may be saved to (and reloaded from) a JSON file; for details, see :ref:`the PySMO main page<explanations/modeling_extensions/surrogate/api/pysmo/index:PySMO: Python-based Surrogate Modeling Objects>`.
 
-Similar to the *pysmo.polynomial_regression* module, the output of the *generate_expression* function can be passed
-into an IDAES or Pyomo module as a constraint, objective or expression.
-
-Prediction with *pysmo.radial_basis_function* models
------------------------------------------------------
-Once an RBF model has been trained, predictions for values at previously unsampled points *x_unsampled* can be evaluated by calling the
-*predict_output()* function on the unsampled points:
+Prediction with *PysmoRBFTrainer* models
+----------------------------------------------------------
+Once the RBF model has been trained and the SurrogateObject object created, predictions for values at previously unsampled points *x_unsampled* can be evaluated by calling SurrogateObject's ``evaluate_surrogate()`` function on the unsampled points:
 
 .. code:: python
 
-   # Create a python list from the headers of the dataset supplied for training
-   >>> y_unsampled = rbf_init.predict_output(x_unsampled)
+   >>> y_unsampled = surr.evaluate_surrogate(x_unsampled)
+
+Flowsheet Integration
+----------------------
+The result of the RBF training process can be passed directly into a process flowsheet using the IDAES ``SurrogateBlock`` option. The following code snippet demonstrates how a saved RBF model may be integrated directly into an IDAES flowsheet:
+
+.. code:: python
+
+   # Required imports
+   >>> from pyomo.environ import Var, ConcreteModel, Constraint, SolverFactory, Objective, minimize
+   >>> from idaes.core import FlowsheetBlock
+   >>> from idaes.core.surrogate.pysmo_surrogate import PysmoSurrogate
+   >>> from idaes.core.surrogate.surrogate_block import SurrogateBlock
+
+   # Create a Pyomo model
+   >>> m = pyo.ConcreteModel()
+   >>> m.fs = FlowsheetBlock(default={"dynamic": False})
+
+   # create input and output variables
+   >>> m.fs.X1 = Var(initialize=0, bounds=(0, 5)) 
+   >>> m.fs.X2 = Var(initialize=0, bounds=(0, 5)) 
+   >>> m.fs.Y1 = Var(initialize=0) 
+   >>> m.fs.Y2 = Var(initialize=0) 
+
+   # create list of surrogate inputs and outputs for flowsheet
+   >>> inputs = [m.fs.X1, m.fs.X2]
+   >>> outputs = [m.fs.Y1, m.fs.Y2]
+
+   # create the Pyomo/IDAES block that corresponds to the surrogate
+   >>> m.fs.surrogate = SurrogateBlock(concrete=True)
+   >>> surrogates_obj =PysmoSurrogate.load_from_file('rbf_surrogate.json') # rbf_surrogate.json is an existing surrogate JSON file containing the rbf model
+   >>> m.fs.surrogate.build_model(surrogates_obj, input_vars=inputs, output_vars=outputs)
+   >>> m.fs.surrogate.pprint()
+
+   # Set the variable Y1 as the model objective
+   >>> m.fs.obj = Objective(expr=m.fs.Y1, sense=minimize)
+
+   # Solve the model
+   >>> solver = SolverFactory('ipopt')
+   >>> res = solver.solve(m, tee=True)
+   >>> m.fs.display()
 
 
+For an example of optimizing a flowsheet containing a PySMO-trained RBF surrogate model, see the `Autothermal reformer flowsheet optimization example <https://github.com/IDAES/examples-pse/blob/main/src/Examples/SurrMod/FlowsheetOptimization/PySMO_flowsheet_optimization.ipynb>`_.
 
-Further details about *pysmo.radial_basis_function* module may be found by consulting the examples or reading the paper [...]
-
-.. module:: idaes.core.surrogate.pysmo.radial_basis_function
-
-Available Methods
-------------------
-
-.. autoclass:: idaes.core.surrogate.pysmo.radial_basis_function.FeatureScaling
-    :members:
-
-.. autoclass:: idaes.core.surrogate.pysmo.radial_basis_function.RadialBasisFunctions
-    :members: __init__, get_feature_vector, training, predict_output, r2_calculation, generate_expression
 
 References:
 ----------------
