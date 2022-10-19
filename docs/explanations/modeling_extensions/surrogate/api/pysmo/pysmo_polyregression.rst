@@ -22,7 +22,7 @@ Thus, for a problem with :math:`m` sample points and :math:`n` input variables, 
 
 Basic Usage
 ------------
-To generate a polynomial model with PySMO, the  *pysmo_surrogate.PysmoPolyTrainer* trainer is called with the desired optional arguments:
+To generate a polynomial model with PySMO, the  *pysmo_surrogate.PysmoPolyTrainer* trainer is instantiated and initialized with the desired configuration arguments, and the the training function ``train_surrogate`` is called:
 
 .. code:: python
 

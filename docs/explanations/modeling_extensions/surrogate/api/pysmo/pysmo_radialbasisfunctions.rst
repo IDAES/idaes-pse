@@ -46,12 +46,11 @@ PySMO offers a range of basis function transformations :math:`\psi`, as shown in
      - 'imq'
      - :math:`1/{\sqrt{1+\left(\sigma d\right)^{2}}}`
 
-Selection of parametric basis functions increase the flexibility of the radial basis function but adds an extra
-parameter (:math:`\sigma`)to be estimated.
+Selection of parametric basis functions increase the flexibility of the radial basis function but adds an extra parameter (:math:`\sigma`)to be estimated.
 
 Basic Usage
 ------------
-TTo generate an RBF model with PySMO, the  *pysmo_surrogate.PysmoRBFTrainer* trainer is called with the desired optional arguments:
+To generate an RBF model with PySMO, the  *pysmo_surrogate.PysmoRBFTrainer* trainer is instantiated and initialized with the desired configuration arguments, and the the training function ``train_surrogate`` is called:
 
 .. code:: python
 

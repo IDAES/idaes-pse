@@ -1,9 +1,11 @@
 Generating Kriging Models with PySMO
 ===================================================
 
-The *pysmo.kriging* trains Ordinary Kriging models. Interpolating kriging models assume that the outputs :math:`\hat{y}\in\mathbb{R}^{m\times1}`
-are correlated and may be treated as a normally distributed stochastic process. For a set of input measurements
-:math:`X=\left\{ x_{1},x_{2},\ldots,x_{m}\right\} ;x_{i}\in\mathbb{R}^{n}`, the output :math:`\hat{y}` is modeled
+.. note::
+   The IDAES surrogate API is a wrapper around the original PySMO surrogate interface.
+
+
+*pysmo_surrogate.PysmoKrigingTrainer* trains ordinary Kriging models. Interpolating kriging models assume that the outputs :math:`\hat{y}\in\mathbb{R}^{m\times1}` are correlated and may be treated as a normally distributed stochastic process. For a set of input measurements :math:`X=\left\{ x_{1},x_{2},\ldots,x_{m}\right\} ;x_{i}\in\mathbb{R}^{n}`, the output :math:`\hat{y}` is modeled
 as the sum of a mean :math:`\left(\mu\right)`$` and a Gaussian process error,
 
 .. math::
@@ -25,78 +27,125 @@ are selected such that the concentrated log likelihood function is maximized.
 
 Basic Usage
 ------------
-To generate a Kriging model with PySMO, the  *pysmo.kriging* class is first initialized,
-and then the function *training* is called on the initialized object:
+To generate a Kriging model with PySMO, the  *pysmo_surrogate.PysmoKrigingTrainer* trainer is instantiated and initialized with the desired optional arguments, and the the training function ``train_surrogate`` is called:
 
 .. code:: python
 
    # Required imports
-   >>> from idaes.core.surrogate.pysmo import kriging
+   >>> from idaes.core.surrogate.pysmo_surrogate import PysmoKrigingTrainer
    >>> import pandas as pd
 
    # Load dataset from a csv file
    >>> xy_data = pd.read_csv('data.csv', header=None, index_col=0)
 
-   # Initialize the KrigingModel class, extract the list of features and train the model
-   >>> krg_init = kriging.KrigingModel(xy_data, *kwargs)
-   >>> features = krg_init.get_feature_vector()
-   >>> krg_init.training()
+   # Define the input and output labels
+   input_labels = ['X1', 'X2']
+   output_labels = ['Y1','Y2']
 
-* *xy_data* is a two-dimensional python data structure containing the input and output training data. The output values **MUST** be in the last column.
+   # Create the Kriging trainer object
+   >>> krg_trainer = PysmoKrigingTrainer(input_labels=input_labels, output_labels=output_labels, training_dataframe = data_training)
 
-**Optional Arguments**
+   # Set desired PySMO kriging options
+   >>> krg_trainer.config.numerical_gradients = False
 
-* *numerical_gradients*: Whether or not numerical gradients should be used in training. This choice determines the algorithm used to solve the problem.
+   # Train the model
+   >>> krg_train = krg_trainer.train_surrogate()
 
-    - True: The problem is solved with BFGS using central differencing with :math:`\Delta=10^{-6}` to evaluate numerical gradients.
-    - False: The problem is solved with Basinhopping, a stochastic optimization algorithm.
 
-* *regularization* - Boolean option which determines whether or not regularization is considered during Kriging training. Default is True.
+Configuration Options
+----------------------
+``PysmoKrigingTrainer`` takes the following optional arguments:
 
-    - When regularization is turned on, the resulting model is a regressing kriging model.
-    - When regularization is turned off, the resulting model is an interpolating kriging model.
+.. list-table:: PySMO Kriging options
+   :widths: 20 20 60
+   :header-rows: 1
 
-*pysmo.kriging* Output
----------------------------------------
-The result of *pysmo.kriging* is a python object containing information
-about the optimal Kriging hyperparameters :math:`\left(\mu,\sigma^{2},\theta_{1},\ldots,\theta_{n}\right)`
-and different error and quality-of-fit metrics such as the mean-squared-error (MSE) and the :math:`R^{2}` coefficient-of-fit.
-A Pyomo expression can be generated from the object simply passing a list of variables into the function
-*generate_expression*:
+   * - **Option**
+     - Configuration argument
+     - Description
+   * - **numerical_gradients**
+     - *PysmoKrigingTrainer.config.numerical_gradients*
+     - | Whether or not numerical gradients should be used in training. This choice determines the algorithm used to solve the problem.
+       |    - True: The problem is solved with BFGS using central differencing with :math:`\Delta=10^{-6}` to evaluate numerical gradients.
+       |    - False: The problem is solved with Basinhopping, a stochastic optimization algorithm.
+   * - **regularization**
+     - *PysmoKrigingTrainer.config.regularization*
+     - | Boolean argument which determines whether model regularization is applied during training.
+       |    - When regularization is turned on, the resulting model is a regressing kriging model.
+       |    - When regularization is turned off, the resulting model is an interpolating kriging model.
+       | Default is True.
+
+Output
+-------
+The result of the ``pysmo_surrogate.PysmoKrigingTrainer`` method is a python object containing information about the optimal Kriging hyperparameters :math:`\left(\mu,\sigma^{2},\theta_{1},\ldots,\theta_{n}\right)` and different error and quality-of-fit metrics such as the mean-squared-error (MSE) and the :math:`R^{2}` coefficient-of-fit.
+
+Surrogate Visualization
+------------------------
+For visualizing PySMO-trained surrogates via parity and residual plots, see :ref:`Visualizing Surrogate Model Results<explanations/modeling_extensions/surrogate/plotting/index:Visualizing Surrogate Model Results>`.
+
+Building the IDAES Surrogate Object
+------------------------------------
+To add the model to an IDAES flowsheet or generate model predictions, the SurrogateTrainer object needs to be transformed into an IDAES SurrogateObject object. This is done by calling ``PySMOSurrogate`` and passing the generated surrogate expressions, along with variable labels and optionally the bounds:
 
 .. code:: python
 
-   # Create a python list from the headers of the dataset supplied for training
-   >>> list_vars = []
-   >>> for i in features.keys():
-   >>>     list_vars.append(features[i])
+   >>> surr = PysmoSurrogate(krg_train, input_labels, output_labels, input_bounds)
 
-   # Pass list to generate_expression function to obtain a Pyomo expression as output
-   >>> print(krg_init.generate_expression(list_vars))
+The resulting ``PysmoSurrogate`` object may be saved to (and reloaded from) a JSON file; for details, see :ref:`the PySMO main page<explanations/modeling_extensions/surrogate/api/pysmo/index:PySMO: Python-based Surrogate Modeling Objects>`.
 
-Similar to the *pysmo.polynomial_regression* module, the output of the *generate_expression* function can be passed
-into an IDAES or Pyomo module as a constraint, objective or expression.
-
-Prediction with *pysmo.kriging* models
------------------------------------------------------
-Once a Kriging model has been trained, predictions for values at previously unsampled points *x_unsampled* can be evaluated by calling the
-*predict_output()* function on the unsampled points:
+Prediction with *PysmoKrigingTrainer* models
+----------------------------------------------------------
+Once the Kriging model has been trained and the SurrogateObject object created, predictions for values at previously unsampled points *x_unsampled* can be evaluated by calling SurrogateObject's ``evaluate_surrogate()`` function on the unsampled points:
 
 .. code:: python
 
-   # Create a python list from the headers of the dataset supplied for training
-   >>> y_unsampled = kriging_init.predict_output(x_unsampled)
-
-Further details about *pysmo.kriging* module may be found by consulting the examples or reading the paper [...]
+   >>> y_unsampled = surr.evaluate_surrogate(x_unsampled)
 
 
-.. module:: idaes.core.surrogate.pysmo.kriging
 
-Available Methods
-------------------
+Flowsheet Integration
+----------------------
+The final Kriging model can be passed into a process flowsheet using the IDAES ``SurrogateBlock`` option. The following code snippet demonstrates how a saved Kriging model may be integrated directly into an IDAES flowsheet:
 
-.. autoclass:: idaes.core.surrogate.pysmo.kriging.KrigingModel
-    :members: __init__, get_feature_vector, training, predict_output, r2_calculation, generate_expression
+.. code:: python
+
+   # Required imports
+   >>> from pyomo.environ import Var, ConcreteModel, Constraint, SolverFactory, Objective, minimize
+   >>> from idaes.core import FlowsheetBlock
+   >>> from idaes.core.surrogate.pysmo_surrogate import PysmoSurrogate
+   >>> from idaes.core.surrogate.surrogate_block import SurrogateBlock
+
+   # Create a Pyomo model
+   >>> m = pyo.ConcreteModel()
+   >>> m.fs = FlowsheetBlock(default={"dynamic": False})
+
+   # create input and output variables
+   >>> m.fs.X1 = Var(initialize=0, bounds=(0, 5)) 
+   >>> m.fs.X2 = Var(initialize=0, bounds=(0, 5)) 
+   >>> m.fs.Y1 = Var(initialize=0) 
+   >>> m.fs.Y2 = Var(initialize=0) 
+
+   # create list of surrogate inputs and outputs for flowsheet
+   >>> inputs = [m.fs.X1, m.fs.X2]
+   >>> outputs = [m.fs.Y1, m.fs.Y2]
+
+   # create the Pyomo/IDAES block that corresponds to the surrogate
+   >>> m.fs.surrogate = SurrogateBlock(concrete=True)
+   >>> surrogates_obj =PysmoSurrogate.load_from_file('krg_surrogate.json') # krg_surrogate.json is an existing surrogate JSON file containing a kriging model
+   >>> m.fs.surrogate.build_model(surrogates_obj, input_vars=inputs, output_vars=outputs)
+   >>> m.fs.surrogate.pprint()
+
+   # Set the variable Y1 as the model objective
+   >>> m.fs.obj = Objective(expr=m.fs.Y1, sense=minimize)
+
+   # Solve the model
+   >>> solver = SolverFactory('ipopt')
+   >>> res = solver.solve(m, tee=True)
+   >>> m.fs.display()
+
+
+For an example of optimizing a flowsheet containing a PySMO-trained Kriging surrogate model, see the `Autothermal reformer flowsheet optimization example <https://github.com/IDAES/examples-pse/blob/main/src/Examples/SurrMod/FlowsheetOptimization/PySMO_flowsheet_optimization.ipynb>`_.
+
 
 References:
 ----------------
