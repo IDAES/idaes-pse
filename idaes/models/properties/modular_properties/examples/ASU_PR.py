@@ -82,7 +82,7 @@ configuration = {
                 "mw": (28.0135e-3, pyunits.kg / pyunits.mol),  # [1]
                 "pressure_crit": (34e5, pyunits.Pa),  # [1]
                 "temperature_crit": (126.2, pyunits.K),  # [1]
-                "volume_crit": (90.10e-06, pyunits.metre**3/pyunits.mol),  # [1]
+                "volume_crit": (90.10e-06, pyunits.meter**3/pyunits.mol),  # [1]
                 "compress_factor_crit": (0.289, pyunits.dimensionless),  # [1]
                 "omega": 0.037,  # [1]
                 "cp_mol_ig_comp_coeff": {
@@ -113,7 +113,7 @@ configuration = {
                 "mw": (39.948e-3, pyunits.kg / pyunits.mol),  # [1]
                 "pressure_crit": (48.98e5, pyunits.Pa),  # [1]
                 "temperature_crit": (150.86, pyunits.K),  # [1]
-                "volume_crit": (74.57e-06, pyunits.metre**3/pyunits.mol),  # [1]
+                "volume_crit": (74.57e-06, pyunits.meter**3/pyunits.mol),  # [1]
                 "compress_factor_crit": (0.291, pyunits.dimensionless),  # [1]
                 "omega": 0.001,  # [1]
                 "cp_mol_ig_comp_coeff": {
@@ -144,7 +144,7 @@ configuration = {
                 "mw": (31.999e-3, pyunits.kg / pyunits.mol),  # [1]
                 "pressure_crit": (50.43e5, pyunits.Pa),  # [1]
                 "temperature_crit": (154.58, pyunits.K),  # [1]
-                "volume_crit": (73.37e-06, pyunits.metre**3/pyunits.mol),  # [1]
+                "volume_crit": (73.37e-06, pyunits.meter**3/pyunits.mol),  # [1]
                 "compress_factor_crit": (0.288, pyunits.dimensionless),  # [1]
                 "omega": 0.025,  # [1]
                 "cp_mol_ig_comp_coeff": {
