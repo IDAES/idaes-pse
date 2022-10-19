@@ -66,7 +66,7 @@ def test_regenerate_ccs_dictionaries():
                 "5.1.a.epri": {
                     "Account Name": "Cansolv CO2 Removal System",
                     "BEC": 224191.4,
-                    "BEC_units": "K$2016",
+                    "BEC_units": "K$2018",
                     "Eng Fee": 0.2,
                     "Exponent": 2.788,
                     "Process Contingency": 0.18,
