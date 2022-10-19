@@ -481,76 +481,77 @@ class Cubic(EoSBase):
                                                    rule=second_derivative)
 
     @staticmethod
-    def build_critical_properties(b):
-        reference_phase = 'Liq'
-        pobj = b.params.get_phase(reference_phase)
-        cname = pobj.config.equation_of_state_options['type'].name
-        ctype = pobj._cubic_type
+    def build_critical_properties(b, p):
+        if p == 'Vap':
+            return None
+        else:
+            reference_phase = p
+            pobj = b.params.get_phase(reference_phase)
+            cname = pobj.config.equation_of_state_options['type'].name
+            ctype = pobj._cubic_type
+            
+            # Add components for calculation of mixture critical properties
+            def func_a_crit(m, j):
+                cobj = m.params.get_component(j)
+                fw = getattr(m, cname+"_fw")
+                return (EoS_param[ctype]['omegaA']*(
+                            (Cubic.gas_constant(b) *
+                            cobj.temperature_crit)**2/cobj.pressure_crit) *
+                        ((1+fw[j]*(1-sqrt(m.temperature_crit_mix /
+                                          cobj.temperature_crit)))**2))
+            b.add_component('a_crit',
+                            Expression(b.component_list,
+                                        rule=func_a_crit,
+                                        doc='Component a coefficient'))
+            
+            def rule_am_crit(m):
+                try:
+                    rule = m.params.get_phase(reference_phase). \
+                        config.equation_of_state_options["mixing_rule_a"]
+                except KeyError:
+                    rule = MixingRuleA.default
         
-        # Add components for calculation of mixture critical properties
-        def func_a_crit(m, j):
-            cobj = m.params.get_component(j)
-            fw = getattr(m, cname+"_fw")
-            return (EoS_param[ctype]['omegaA']*(
-                        (Cubic.gas_constant(b) *
-                        cobj.temperature_crit)**2/cobj.pressure_crit) *
-                    ((1+fw[j]*(1-sqrt(m.temperature_crit_mix /
-                                      cobj.temperature_crit)))**2))
-        b.add_component('a_crit',
-                        Expression(b.component_list,
-                                    rule=func_a_crit,
-                                    doc='Component a coefficient'))
+                a_crit = getattr(m, "a_crit")
+                if rule == MixingRuleA.default:
+                    return rule_am_crit_default(m, cname, a_crit)
+                else:
+                    raise ConfigurationError(
+                        "{} Unrecognized option for Equation of State "
+                        "mixing_rule_a: {}. Must be an instance of MixingRuleA "
+                        "Enum.".format(m.name, rule))
+            b.add_component('am_crit', Expression(rule=rule_am_crit))
         
-        def rule_am_crit(m):
-            try:
-                rule = m.params.get_phase(reference_phase). \
-                    config.equation_of_state_options["mixing_rule_a"]
-            except KeyError:
-                rule = MixingRuleA.default
+            def rule_bm_crit(m):
+                try:
+                    rule = m.params.get_phase(reference_phase). \
+                        config.equation_of_state_options["mixing_rule_b"]
+                except KeyError:
+                    rule = MixingRuleB.default
+        
+                b = getattr(m, cname+"_b")
+                if rule == MixingRuleB.default:
+                    return sum(m.mole_frac_comp[i] * b[i]
+                                for i in m.component_list)
+                else:
+                    raise ConfigurationError(
+                        "{} Unrecognized option for Equation of State "
+                        "mixing_rule_a: {}. Must be an instance of MixingRuleB "
+                        "Enum.".format(m.name, rule))    
+            b.add_component('bm_crit', Expression(rule=rule_bm_crit))
     
-            a_crit = getattr(m, "a_crit")
-            if rule == MixingRuleA.default:
-                return rule_am_crit_default(m, cname, a_crit)
-            else:
-                raise ConfigurationError(
-                    "{} Unrecognized option for Equation of State "
-                    "mixing_rule_a: {}. Must be an instance of MixingRuleA "
-                    "Enum.".format(m.name, rule))
-        b.add_component('am_crit', Expression(rule=rule_am_crit))
-    
-        def rule_bm_crit(m):
-            try:
-                rule = m.params.get_phase(reference_phase). \
-                    config.equation_of_state_options["mixing_rule_b"]
-            except KeyError:
-                rule = MixingRuleB.default
-    
-            b = getattr(m, cname+"_b")
-            if rule == MixingRuleB.default:
-                return sum(m.mole_frac_comp[i] * b[i]
-                            for i in m.component_list)
-            else:
-                raise ConfigurationError(
-                    "{} Unrecognized option for Equation of State "
-                    "mixing_rule_a: {}. Must be an instance of MixingRuleB "
-                    "Enum.".format(m.name, rule))    
-        b.add_component('bm_crit', Expression(rule=rule_bm_crit))
-
-        def rule_A_crit(m):
-            am_crit = getattr(m, "am_crit")
-            # am_crit = b.am_crit
-            return EoS_param[ctype]['omegaA'] == \
-                (am_crit * m.pressure_crit_mix /
-                  (Cubic.gas_constant(b) * m.temperature_crit_mix)**2)
-        b.add_component('A_crit', Constraint(rule=rule_A_crit))
-    
-        def rule_B_crit(m):
-            bm_crit = getattr(m, "bm_crit")
-            # bm_crit = b.bm_crit
-            return EoS_param[ctype]['coeff_b'] == \
-                (bm_crit * m.pressure_crit_mix /
-                  (Cubic.gas_constant(b) * m.temperature_crit_mix))
-        b.add_component('B_crit', Constraint(rule=rule_B_crit))
+            def rule_A_crit(m):
+                am_crit = getattr(m, "am_crit")
+                return EoS_param[ctype]['omegaA'] == \
+                    (am_crit * m.pressure_crit_mix /
+                      (Cubic.gas_constant(b) * m.temperature_crit_mix)**2)
+            b.add_component('A_crit', Constraint(rule=rule_A_crit))
+        
+            def rule_B_crit(m):
+                bm_crit = getattr(m, "bm_crit")
+                return EoS_param[ctype]['coeff_b'] == \
+                    (bm_crit * m.pressure_crit_mix /
+                      (Cubic.gas_constant(b) * m.temperature_crit_mix))
+            b.add_component('B_crit', Constraint(rule=rule_B_crit))
 
     @staticmethod
     def calculate_scaling_factors(b, pobj):

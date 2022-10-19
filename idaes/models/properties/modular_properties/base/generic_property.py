@@ -86,7 +86,6 @@ from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
     _valid_VL_component_list as bub_dew_VL_comp_list,
 )
 from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
-from idaes.models.properties.modular_properties.eos.ceos import Cubic
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -218,18 +217,9 @@ class GenericParameterData(PhysicalParameterBlock):
         ),
     )
 
-    # Mixture critical properties
+    # Supercritical extension
     CONFIG.declare(
-        "critical_properties",
-        ConfigValue(
-            default=Cubic,
-            description="Method to use to calculate mixture critical properties",
-            doc="""Method to use to calculate critical temperature and
-            pressure of the mixture.""",
-        ),
-    )
-    CONFIG.declare(
-        "supercritical",
+        "supercritical_extension",
         ConfigValue(
             default=False,
             description="Flag for including the supercritical extension",
@@ -1154,10 +1144,8 @@ class GenericParameterData(PhysicalParameterBlock):
                 "pressure_osm_phase": {"method": "_pressure_osm_phase"},
                 "pressure_sat_comp": {"method": "_pressure_sat_comp"},
                 "surf_tens_phase": {"method": "_surf_tens_phase"},
-                # "temperature_bubble": {"method": "_bubble_dew_method"},
-                # "temperature_dew": {"method": "_bubble_dew_method"},
-                "temperature_crit_mix": {'method': None},
-                "pressure_crit_mix": {'method': None},
+                "temperature_crit_mix": {"method": "_mixture_critical_properties"},
+                "pressure_crit_mix": {"method": "_mixture_critical_properties"},
                 "therm_cond_phase": {"method": "_therm_cond_phase"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
                 "vol_mol_phase": {"method": "_vol_mol_phase"},
@@ -1363,17 +1351,16 @@ class _GenericStateBlock(StateBlock):
 
         # Create solver
         opt = get_solver(solver, optarg)
-        opt.options['linear_solver'] = 'ma57'
 
         # ---------------------------------------------------------------------
         # Initialize temperature_crit_mix and pressure_crit_mix
         for k in blk.keys():
             p_config = blk[k].params.config
             
-            if p_config.supercritical:
+            if p_config.supercritical_extension:
                 blk[k].temperature_crit_mix.value = value(
                     sum(blk[k].mole_frac_comp[j] *
-                        blk[k].params.get_component(j).temperature_crit.value
+                        blk[k].params.get_component(j).temperature_crit
                         for j in blk[k].component_list))
     
                 p_crit = value(sum(blk[k].mole_frac_comp[j] *
@@ -1381,28 +1368,24 @@ class _GenericStateBlock(StateBlock):
                                    for j in blk[k].component_list))
                 v_crit = value(
                     sum(blk[k].mole_frac_comp[j] *
-                        p_config.components[j]['parameter_data']['volume_crit'][0]
+                        blk[k].params.get_component(j).volume_crit
                         for j in blk[k].component_list))
                 Z_crit = value(
                     sum(blk[k].mole_frac_comp[j] *
-                        p_config.components[j]['parameter_data']['compress_factor_crit'][0]
+                        blk[k].params.get_component(j).compress_factor_crit
                         for j in blk[k].component_list))
     
                 blk[k].pressure_crit_mix.value = value(
                     Z_crit * const.gas_constant * 
                     blk[k].temperature_crit_mix / v_crit)
     
-                # for ASU system:
-                # blk[k].temperature_crit_mix.value = 136.560995169
-                # blk[k].pressure_crit_mix.value = 3953826.947276
-                
                 for c in blk[k].component_objects(Constraint):
                     if c.local_name in ('A_crit', 'B_crit'):
                         c.activate()
                     else:
                         c.deactivate()
         
-        if p_config.supercritical:
+        if p_config.supercritical_extension:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
             init_log.info(
@@ -1413,16 +1396,14 @@ class _GenericStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Initialize P+, P- and pbar
         for k in blk.keys():
-            if blk[k].params.config.supercritical:
+            if blk[k].params.config.supercritical_extension:
                 if (blk[k].params.config.phases_in_equilibrium is not None and
                         (not blk[k].config.defined_state or blk[k].always_flash)):
                     for pp in blk[k].params._pe_pairs:
                         blk[k].params.config.phase_equilibrium_state[pp] \
                             .calculate_pbar(blk[k], pp)
-                        print(f"pressure = {blk[k].pressure.value}\n"
-                              f"pbar = {blk[k].pbar[pp].value}")
         
-        if blk[k].params.config.supercritical:
+        if blk[k].params.config.supercritical_extension:
             init_log.info("Pressure slacks initialization complete.")
 
         # ---------------------------------------------------------------------
@@ -1806,13 +1787,11 @@ class _GenericStateBlock(StateBlock):
                 Tbub0 = Tbub1
                 counter += 1
 
-            blk.temperature_bubble[pp].set_value(Tbub0)
-            blk.temperature_bubble[pp].fix()
+            blk.temperature_bubble[pp].fix(Tbub0)
 
             _mole_frac_tbub = {j: 0.0 for j in raoult_comps + henry_comps}
             for j in raoult_comps:
                 _mole_frac_tbub[j] = value(
-                # blk._mole_frac_tbub[pp, j].value = value(
                     blk.mole_frac_comp[j]
                     * get_method(blk, "pressure_sat_comp", j)(
                         blk, blk.params.get_component(j), Tbub0 * T_units
@@ -1826,7 +1805,6 @@ class _GenericStateBlock(StateBlock):
 
             for j in henry_comps:
                 _mole_frac_tbub[j] = value(
-                # blk._mole_frac_tbub[pp, j].value = value(
                     blk.mole_frac_comp[j]
                     * blk.params.get_component(j)
                     .config.henry_component[l_phase]["method"]
@@ -1940,13 +1918,11 @@ class _GenericStateBlock(StateBlock):
                 Tdew0 = Tdew1
                 counter += 1
 
-            blk.temperature_dew[pp].set_value(Tdew0)
-            blk.temperature_dew[pp].fix()
+            blk.temperature_dew[pp].fix(Tdew0)
 
             _mole_frac_tdew = {j: 0.0 for j in raoult_comps + henry_comps}
             for j in raoult_comps:
                 _mole_frac_tdew[j] = value(
-                # blk._mole_frac_tdew[pp, j].value = value(
                     blk.mole_frac_comp[j]
                     * blk.pressure
                     / get_method(blk, "pressure_sat_comp", j)(
@@ -1958,7 +1934,6 @@ class _GenericStateBlock(StateBlock):
                         log(_mole_frac_tdew[j])
                     )
             for j in henry_comps:
-                # blk._mole_frac_tdew[pp, j].value = value(
                 _mole_frac_tdew[j] = value(
                     blk.mole_frac_comp[j]
                     * blk.pressure
@@ -2092,8 +2067,7 @@ class GenericStateBlockData(StateBlockData):
             #     doc='Pressure for calculating phase equilibrium',
             #     units=p_units,
             # )
-        
-        
+
 
         # Create common components for each property package
         for p in self.phase_list:
@@ -2648,21 +2622,24 @@ class GenericStateBlockData(StateBlockData):
     # -------------------------------------------------------------------------
     # Critical Properties
     def _mixture_critical_properties(b):
-        t_units = b.params.get_metadata().default_units["temperature"]
-        p_units = pyunits.Pa
         try:
-            b.temperature_crit_mix = Var(
-                    doc="Critical temperature of mixture",
-                    bounds=(b.temperature.lb, None),
-                    units=t_units)
-
-            b.pressure_crit_mix = Var(
-                    doc="Critical pressure of mixture",
-                    bounds=(b.pressure.lb, None),
-                    units=p_units)
-
-            # Mixing rule
-            b.params.config.critical_properties.build_critical_properties(b)
+            def rule_mixture_critical_properties(b, p):
+                t_units = b.params.get_metadata().default_units["temperature"]
+                p_units = pyunits.Pa
+                b.temperature_crit_mix = Var(
+                        doc="Critical temperature of mixture",
+                        bounds=(b.temperature.lb, None),
+                        units=t_units)
+    
+                b.pressure_crit_mix = Var(
+                        doc="Critical pressure of mixture",
+                        bounds=(b.pressure.lb, None),
+                        units=p_units)
+    
+                # Mixing rule
+                p_config = b.params.get_phase(p).config
+                p_config.equation_of_state.build_critical_properties(b, p)
+                # b.params.config.critical_properties.build_critical_properties(b)
 
         except AttributeError:
             b.del_component(b.temperature_crit_mix)
