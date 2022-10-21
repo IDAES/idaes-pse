@@ -191,6 +191,11 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
+        obj.add_properties(
+            {
+                "enth_mol": {"method": None},
+            }
+        )
         obj.add_default_units(
             {
                 "time": units.s,

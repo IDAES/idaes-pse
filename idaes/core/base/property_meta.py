@@ -357,8 +357,7 @@ class PropertyClassMetadata(object):
     def __init__(self):
         # TODO: Deprecate in favour of common units property
         self._default_units = None
-        # TODO: Make this None
-        self._properties = {}
+        self._properties = PropertySet()
         self._required_properties = {}
 
     @property
@@ -418,13 +417,16 @@ class PropertyClassMetadata(object):
         Returns:
             None
         """
-        # for k, v in p.items():
-        #     if not isinstance(v, PropertyMetadata):
-        #         v = PropertyMetadata(name=k, **v)
-        #     self._properties[k] = v
-        self._properties = PropertySet(**p)
+        for k, v in p.items():
+            try:
+                prop = getattr(self._properties, k).update_property(**v)
+            except AttributeError:
+                # TODO: Deprecate this and make it raise an exception if an unknown property is encountered?
+                # Force users to explicitly declare new/custom properties
+                self._properties.define_property(name=k, **v)
 
     def add_required_properties(self, p):
+        # TODO: Update doc string
         """Add required properties to the metadata.
 
         For each property, the value should be the expected units of
@@ -436,19 +438,18 @@ class PropertyClassMetadata(object):
         Returns:
             None
         """
-        # Using the same PropertyMetadata class as for units, but 'method'
-        # will always be none
         for k, v in p.items():
-            if not isinstance(v, PropertyMetadata):
-                v = PropertyMetadata(name=k, units=v)
-            self._required_properties[k] = v
+            try:
+                self._properties[k].set_required(True)
+            except KeyError:
+                self._properties.define_property(name=k, supported=False, required=True)
 
     def get_derived_units(self, units):
         # TODO: Deprecate in favour of common units property
         return self.derived_units[units]
 
 
-class PropertyMetadata(dict):
+class PropertyMetadata(object):
     """Container for property parameter metadata.
 
     Instances of this class are exactly dictionaries, with the
@@ -456,16 +457,68 @@ class PropertyMetadata(dict):
     dictionary from the constructor.
     """
 
-    def __init__(self, name=None, method=None, units=None):
+    # TODO: Add optional doc string to metadata objects
+    def __init__(
+        self, name=None, method=None, units=None, supported=False, required=False
+    ):
         if name is None:
             raise TypeError('"name" is required')
-        d = {"name": name, "method": method}
-        if units is not None:
-            d["units"] = units
+        self._name = name  # TODO: What is "name" in this context compared to attribute name? Replace with doc string?
+        self._method = method
+        self._supported = supported
+        self._required = required
+        self._units = units  # TODO: Validate units are from UnitSet or dimensionless
+
+    def __getitem__(self, key):
+        try:
+            return getattr(self, "_" + key)
+        except AttributeError:
+            # TODO: Real error message - needs to be a KeyError to work with getattr elsewhere
+            raise KeyError()
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def method(self):
+        return self._method
+
+    @property
+    def units(self):
+        return self._units
+
+    @property
+    def supported(self):
+        return self._supported
+
+    @property
+    def required(self):
+        return self._required
+
+    def set_method(self, meth):
+        # TODO: Validate that meth is callable?
+        self._method = meth
+
+    def set_supported(self, supported=True):
+        # TODO: Validate that supported is bool
+        self._supported = supported
+
+    def set_required(self, required=True):
+        # TODO: Validate that required is bool
+        self._required = required
+
+    def update_property(self, dict):
+        if "method" in dict:
+            self.set_method(dict["method"])
+        if "required" in dict:
+            self.set_required(dict["required"])
+        if "supported" in dict:
+            self.set_supported(dict["supported"])
         else:
-            # Adding a default "null" unit in case it is not provided by user
-            d["units"] = "-"
-        super(PropertyMetadata, self).__init__(d)
+            # Assume supported if not explicitly stated
+            # TODO: Reconsider in the future, for now do this for backwards compatibility
+            self.set_supported(True)
 
 
 class PropertySet(object):
@@ -473,6 +526,9 @@ class PropertySet(object):
 
     def __init__(self, **kwargs):
         for p, v in kwargs.items():
+            if "supported" not in v:
+                # Assume that if a property is declared but not marked as supported that it is supported
+                v["supported"] = True
             setattr(self, "_" + p, PropertyMetadata(name=p, **v))
 
     def __getitem__(self, key):
@@ -481,3 +537,42 @@ class PropertySet(object):
         except AttributeError:
             # TODO: Real error message - needs to be a KeyError to work with getattr elsewhere
             raise KeyError()
+
+    def __iter__(self):
+        for a in dir(self):
+            aobj = getattr(self, a)
+            if isinstance(aobj, PropertyMetadata):
+                yield aobj
+
+    def define_property(
+        self, name=None, method=None, supported=True, required=False, units=None
+    ):
+        # Method to define new, custom properties
+        setattr(
+            self,
+            "_" + name,
+            PropertyMetadata(
+                name=name,
+                method=method,
+                supported=supported,
+                required=required,
+                units=units,
+            ),
+        )
+
+    def check_required_properties(self, other):
+        # Check that other package supports properties this package requires
+        unsupported = []
+        for a in dir(self):
+            aobj = getattr(self, a)
+            if isinstance(aobj, PropertyMetadata) and aobj.required:
+                try:
+                    if not other[aobj.name].supported:
+                        unsupported.append(aobj.name)
+                except KeyError:
+                    unsupported.append(aobj.name)
+
+        return unsupported
+
+    # TODO: Define standard properties
+    # TODO: Link units to UnitSet

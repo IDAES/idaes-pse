@@ -1258,7 +1258,7 @@ class TestGenericStateBlock(object):
 
         # Call all properties in metadata and assert they exist.
         for p in frame.params.get_metadata().properties:
-            if p.endswith(("apparent", "true")):
+            if p.name.endswith(("apparent", "true")):
                 # True and apparent properties require electrolytes, which are
                 # not tested here
                 # Check that method exists and continue

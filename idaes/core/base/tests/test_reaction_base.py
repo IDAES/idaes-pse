@@ -41,7 +41,10 @@ class _PropertyParameterBlock(PhysicalParameterBlock):
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties(
-            {"prop1": {"method": None, "units": "m"}, "prop3": {"method": False}}
+            {
+                "prop1": {"method": None, "units": "m"},
+                "prop3": {"method": False, "supported": False},
+            }
         )
         obj.add_default_units(
             {
@@ -195,17 +198,6 @@ class _ReactionParameterBlock5(ReactionParameterBlock):
             }
         )
         obj.add_required_properties({"prop1": "km"})
-
-
-@pytest.mark.unit
-def test_validate_state_block_req_prop_wrong_units():
-    # Test validation of associated PropertyParameterBlock
-    m = ConcreteModel()
-    m.p = PropertyParameterBlock()
-    m.r = ReactionParameterBlock5(property_package=m.p)
-
-    with pytest.raises(PropertyPackageError):
-        m.r._validate_property_parameter_properties()
 
 
 @declare_process_block_class("ReactionParameterBlock6")

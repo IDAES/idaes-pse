@@ -227,36 +227,17 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         Checks that the property parameter block associated with the
         reaction block supports the necessary properties with correct units.
         """
-        req_props = self.get_metadata().required_properties
-        supp_props = self.config.property_package.get_metadata().properties
+        unsupported = self.get_metadata().properties.check_required_properties(
+            self.config.property_package.get_metadata().properties
+        )
 
-        for p in req_props:
-            if p not in supp_props:
-                raise PropertyPackageError(
-                    "{} the property package associated with this "
-                    "reaction package does not support the necessary "
-                    "property, {}. Please choose a property package "
-                    "which supports all required properties.".format(self.name, p)
-                )
-            elif supp_props[p]["method"] is False:
-                raise PropertyPackageError(
-                    "{} the property package associated with this "
-                    "reaction package does not support the necessary "
-                    "property, {}. Please choose a property package "
-                    "which supports all required properties.".format(self.name, p)
-                )
-
-            # Check property units
-            if req_props[p]["units"] != supp_props[p]["units"]:
-                raise PropertyPackageError(
-                    "{} the units associated with property {} in this "
-                    "reaction package ({}) do not match with the units "
-                    "used in the assoicated property package ({}). Please "
-                    "choose a property package which used the same "
-                    "units for all properties.".format(
-                        self.name, p, req_props[p]["units"], supp_props[p]["units"]
-                    )
-                )
+        if len(unsupported) > 0:
+            raise PropertyPackageError(
+                f"{self.name} the property package associated with this "
+                "reaction package does not support the following necessary "
+                "properties, {unsupported}. Please choose a property package "
+                "which supports all required properties."
+            )
 
 
 class ReactionBlockBase(ProcessBlock):
