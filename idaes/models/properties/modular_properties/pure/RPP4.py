@@ -67,7 +67,7 @@ class RPP4(object):
             )
 
             units = b.params.get_metadata().derived_units
-            return pyunits.convert(cp, units["heat_capacity_mole"])
+            return pyunits.convert(cp, units.HEAT_CAPACITY_MOLE)
 
     class enth_mol_ig_comp:
         @staticmethod
@@ -80,7 +80,7 @@ class RPP4(object):
 
                 cobj.enth_mol_form_vap_comp_ref = Var(
                     doc="Vapor phase molar heat of formation @ Tref",
-                    units=units["energy_mole"],
+                    units=units.ENERGY_MOLE,
                 )
                 set_param_from_config(cobj, param="enth_mol_form_vap_comp_ref")
 
@@ -95,7 +95,7 @@ class RPP4(object):
             h_form = (
                 cobj.enth_mol_form_vap_comp_ref
                 if b.params.config.include_enthalpy_of_formation
-                else 0 * units["energy_mole"]
+                else 0 * units.ENERGY_MOLE
             )
 
             h = (
@@ -104,7 +104,7 @@ class RPP4(object):
                     + (cobj.cp_mol_ig_comp_coeff_C / 3) * (T**3 - Tr**3)
                     + (cobj.cp_mol_ig_comp_coeff_B / 2) * (T**2 - Tr**2)
                     + cobj.cp_mol_ig_comp_coeff_A * (T - Tr),
-                    units["energy_mole"],
+                    units.ENERGY_MOLE,
                 )
                 + h_form
             )
@@ -121,7 +121,7 @@ class RPP4(object):
 
             cobj.entr_mol_form_vap_comp_ref = Var(
                 doc="Vapor phase molar entropy of formation @ Tref",
-                units=units["entropy_mole"],
+                units=units.ENTROPY_MOLE,
             )
             set_param_from_config(cobj, param="entr_mol_form_vap_comp_ref")
 
@@ -139,7 +139,7 @@ class RPP4(object):
                     + (cobj.cp_mol_ig_comp_coeff_C / 2) * (T**2 - Tr**2)
                     + cobj.cp_mol_ig_comp_coeff_B * (T - Tr)
                     + cobj.cp_mol_ig_comp_coeff_A * log(T / Tr),
-                    units["entropy_mole"],
+                    units.ENTROPY_MOLE,
                 )
                 + cobj.entr_mol_form_vap_comp_ref
             )

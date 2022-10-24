@@ -126,7 +126,7 @@ class CpMolSolvent:
         )
 
         units = b.params.get_metadata().derived_units
-        return pyunits.convert(cp, units["heat_capacity_mole"])
+        return pyunits.convert(cp, units.HEAT_CAPACITY_MOLE)
 
 
 class EnthMolCO2:
@@ -177,7 +177,7 @@ class EnthMolSolvent:
                     + (cobj.cp_mass_liq_comp_coeff_2 / 2) * (T**2 - Tr**2)
                     + cobj.cp_mass_liq_comp_coeff_1 * (T - Tr)
                 ),
-                units["energy_mole"],
+                units.ENERGY_MOLE,
             )
             - cobj.dh_vap
         )
@@ -325,7 +325,7 @@ class VolMolSolvent:
 
         units = b.params.get_metadata().derived_units
 
-        return pyunits.convert(vol_mol, units["volume"] / units["amount"])
+        return pyunits.convert(vol_mol, units.VOLUME / units.AMOUNT)
 
 
 class VolMolCO2:
@@ -379,7 +379,7 @@ class VolMolCO2:
 
         units = b.params.get_metadata().derived_units
 
-        return pyunits.convert(vol_mol, units["volume"] / units["amount"])
+        return pyunits.convert(vol_mol, units.VOLUME / units.AMOUNT)
 
 
 # -----------------------------------------------------------------------------
