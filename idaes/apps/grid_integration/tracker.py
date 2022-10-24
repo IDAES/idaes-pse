@@ -312,7 +312,7 @@ class Tracker:
         self._pass_market_dispatch(market_dispatch)
 
         # solve the model
-        self.solver.solve(self.model, tee=True)
+        self.solver.solve(self.model, tee=False)
 
         self.record_results(date=date, hour=hour)
 

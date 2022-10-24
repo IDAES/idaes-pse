@@ -934,7 +934,9 @@ class SelfScheduler(StochasticProgramBidder):
 
         """
         This methods extract the bids out of the stochastic programming model and
-        organize them.
+        organize them into self-schedule bids.
+
+        For thermal generators, startup times and costs are set to 0. And the bid price for power outside of p_min and p_max are 0.
 
         Arguments:
             model: bidding model

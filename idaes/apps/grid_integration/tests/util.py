@@ -286,7 +286,7 @@ class TestingForecaster(AbstractPrescientPriceForecaster):
         return da_forecast, rt_forecast
 
     def forecast_real_time_prices(self, date, hour, bus, horizon, n_samples):
-        return self._forecast(horizon, n_samples, 0)
+        return self._forecast(horizon, n_samples, self.prediction)
 
     def forecast_day_ahead_prices(self, date, hour, bus, horizon, n_samples):
         return self._forecast(horizon, n_samples, self.prediction)
