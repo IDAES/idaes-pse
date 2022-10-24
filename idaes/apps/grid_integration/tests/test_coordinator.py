@@ -22,7 +22,7 @@ from idaes.apps.grid_integration.tests.util import (
     testing_model_data,
     testing_renewable_data,
     renewable_generator_params,
-    testing_generator_params
+    testing_generator_params,
 )
 from pyomo.common import unittest as pyo_unittest
 
@@ -41,7 +41,7 @@ def coordinator_object(request):
 
     ## create trackers
     # make a tracker
-    if request.param == 'thermal':
+    if request.param == "thermal":
         model_data = testing_model_data
     else:
         model_data = testing_renewable_data
@@ -87,7 +87,10 @@ def coordinator_object(request):
 
 @pytest.mark.unit
 def test_static_params(coordinator_object):
-    if coordinator_object.bidder.bidding_model_object.model_data.generator_type == "thermal":
+    if (
+        coordinator_object.bidder.bidding_model_object.model_data.generator_type
+        == "thermal"
+    ):
         gen_dict = testing_generator_params
         testing_generator_params.pop("initial_status")
         testing_generator_params.pop("initial_p_output")

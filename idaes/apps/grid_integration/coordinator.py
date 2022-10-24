@@ -391,7 +391,7 @@ class DoubleLoopCoordinator:
         """
         Update static parameters in the Prescient generator parameter data dictionary depending on generator type.
 
-        For a thermal generator, the p_cost data will be via ( MWh, $ ) pairs. 
+        For a thermal generator, the p_cost data will be via ( MWh, $ ) pairs.
         For a renewable generator, the p_cost is a single cost.
 
         Args:
@@ -422,7 +422,9 @@ class DoubleLoopCoordinator:
                 elif is_renewable:
                     gen_dict[param] = value
                 else:
-                    raise NotImplementedError("generator_type must be either 'thermal' or 'renewable'")
+                    raise NotImplementedError(
+                        "generator_type must be either 'thermal' or 'renewable'"
+                    )
 
                 if "p_fuel" in gen_dict:
                     gen_dict.pop("p_fuel")

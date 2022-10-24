@@ -268,9 +268,12 @@ def test_compute_RT_bids(bidder_object):
     shift = 1
     fixed_forecast = marginal_cost - shift
     bidder_object.forecaster.prediction = fixed_forecast
-    bids = bidder_object.compute_real_time_bids(date=date, hour=0, 
-                                                realized_day_ahead_prices=realized_day_ahead_prices, 
-                                                realized_day_ahead_dispatches=realized_day_ahead_dispatches)
+    bids = bidder_object.compute_real_time_bids(
+        date=date,
+        hour=0,
+        realized_day_ahead_prices=realized_day_ahead_prices,
+        realized_day_ahead_dispatches=realized_day_ahead_dispatches,
+    )
 
     expected_bids = {
         t: {
@@ -293,9 +296,12 @@ def test_compute_RT_bids(bidder_object):
     shift = 1
     fixed_forecast = marginal_cost + shift
     bidder_object.forecaster.prediction = fixed_forecast
-    bids = bidder_object.compute_real_time_bids(date=date, hour=0, 
-                                                realized_day_ahead_prices=realized_day_ahead_prices, 
-                                                realized_day_ahead_dispatches=realized_day_ahead_dispatches)
+    bids = bidder_object.compute_real_time_bids(
+        date=date,
+        hour=0,
+        realized_day_ahead_prices=realized_day_ahead_prices,
+        realized_day_ahead_dispatches=realized_day_ahead_dispatches,
+    )
 
     expected_bids = {}
     for t in range(horizon):

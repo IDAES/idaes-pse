@@ -20,7 +20,7 @@ from idaes.apps.grid_integration.forecaster import AbstractPrescientPriceForecas
 from idaes.apps.grid_integration.model_data import (
     GeneratorModelData,
     ThermalGeneratorModelData,
-    RenewableGeneratorModelData
+    RenewableGeneratorModelData,
 )
 
 
@@ -328,13 +328,13 @@ testing_generator_params = {
 testing_model_data = ThermalGeneratorModelData(**testing_generator_params)
 
 renewable_generator_params = {
-        "gen_name": "Testing_Renewable_Generator",
-        "bus": "bus5",
-        "p_min": 0,
-        "p_max": 200,
-        "p_cost": 0,
-        "fixed_commitment": None,
-    }
+    "gen_name": "Testing_Renewable_Generator",
+    "bus": "bus5",
+    "p_min": 0,
+    "p_max": 200,
+    "p_cost": 0,
+    "fixed_commitment": None,
+}
 testing_renewable_data = RenewableGeneratorModelData(**renewable_generator_params)
 tracking_horizon = 4
 day_ahead_bidding_horizon = 48
