@@ -50,7 +50,7 @@ Selection of parametric basis functions increase the flexibility of the radial b
 
 Basic Usage
 ------------
-To generate an RBF model with PySMO, the  *pysmo_surrogate.PysmoRBFTrainer* trainer is instantiated and initialized with the desired configuration arguments, and the the training function ``train_surrogate`` is called:
+To generate an RBF model with PySMO, the  *pysmo_surrogate.PysmoRBFTrainer* trainer is instantiated and initialized with the desired configuration arguments, and the training function ``train_surrogate`` is called:
 
 .. code:: python
 
