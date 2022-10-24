@@ -190,7 +190,7 @@ def test_categorize_simple_model():
             pyo.Reference(m.conc_in[:, "B"]),
         ],
     )
-    t1 = m.time[2]
+    t1 = m.time.at(2)
     # Expected variables:
     expected_vars = {
         VC.DIFFERENTIAL: ComponentSet([m.conc[t1, "A"], m.conc[t1, "B"]]),
@@ -281,7 +281,7 @@ def test_categorize_simple_model_with_constraints():
         input_cons=[m.pwc_input],
         active_inequalities=[m.performance],
     )
-    t1 = m.time[2]
+    t1 = m.time.at(2)
     # Expected variables:
     expected_vars = {
         VC.DIFFERENTIAL: ComponentSet([m.conc[t1, "B"]]),
@@ -391,7 +391,7 @@ def test_space_indexed_model():
         input_vars=[pyo.Reference(m.u[:, 0])],
     )
 
-    t1 = m.time[2]
+    t1 = m.time.at(2)
     # Expected variables:
     expected_vars = {
         VC.DIFFERENTIAL: ComponentSet([m.v[t1, x] for x in m.space if x != 0]),

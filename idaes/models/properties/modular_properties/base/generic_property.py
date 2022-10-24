@@ -637,8 +637,8 @@ class GenericParameterData(PhysicalParameterBlock):
                 "your property parameter definition to include this.".format(self.name)
             )
         else:
-            self.pressure_ref = Param(mutable=True, units=units["pressure"])
-            set_param_value(self, "pressure_ref", units["pressure"])
+            self.pressure_ref = Param(mutable=True, units=units.PRESSURE)
+            set_param_value(self, "pressure_ref", units.PRESSURE)
 
         if self.config.temperature_ref is None:
             raise ConfigurationError(
@@ -647,8 +647,8 @@ class GenericParameterData(PhysicalParameterBlock):
                 "your property parameter definition to include this.".format(self.name)
             )
         else:
-            self.temperature_ref = Param(mutable=True, units=units["temperature"])
-            set_param_value(self, "temperature_ref", units["temperature"])
+            self.temperature_ref = Param(mutable=True, units=units.TEMPERATURE)
+            set_param_value(self, "temperature_ref", units.TEMPERATURE)
 
         # Validate equations of state
         for p in self.phase_list:
@@ -1321,7 +1321,7 @@ class _GenericStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations
         for k in blk.keys():
-            T_units = blk[k].params.get_metadata().default_units["temperature"]
+            T_units = blk[k].params.get_metadata().default_units.TEMPERATURE
             # Bubble temperature initialization
             if hasattr(blk[k], "_mole_frac_tbub"):
                 blk._init_Tbub(blk[k], T_units)
@@ -1977,7 +1977,7 @@ class GenericStateBlockData(StateBlockData):
             not self.config.defined_state or self.always_flash
         ):
 
-            t_units = self.params.get_metadata().default_units["temperature"]
+            t_units = self.params.get_metadata().default_units.TEMPERATURE
             self._teq = Var(
                 self.params._pe_pairs,
                 initialize=value(self.temperature),
@@ -4379,12 +4379,12 @@ def _temperature_pressure_bubble_dew(b, name):
     if splt[0] == "temperature":
         abbrv = "t" + abbrv
         bounds = (b.temperature.lb, b.temperature.ub)
-        units = b.params.get_metadata().default_units["temperature"]
+        units = b.params.get_metadata().default_units.TEMPERATURE
     elif splt[0] == "pressure":
         abbrv = "p" + abbrv
         bounds = (b.pressure.lb, b.pressure.ub)
         units_meta = b.params.get_metadata().derived_units
-        units = units_meta["pressure"]
+        units = units_meta.PRESSURE
     else:
         _raise_dev_burnt_toast()
 

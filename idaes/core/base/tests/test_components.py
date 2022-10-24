@@ -38,7 +38,7 @@ from idaes.core.base.phases import (
     AqueousPhase,
 )
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
-from idaes.core.base.property_meta import PropertyClassMetadata
+from idaes.core.base.property_meta import PropertyClassMetadata, UnitSet
 
 
 class TestComponent:
@@ -47,14 +47,12 @@ class TestComponent:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units = UnitSet(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -176,11 +174,13 @@ class TestComponent:
             return m.meta_object
 
         m.get_metadata = types.MethodType(get_metadata, m)
-        m.get_metadata().default_units["amount"] = pyunits.mol
-        m.get_metadata().default_units["mass"] = pyunits.kg
-        m.get_metadata().default_units["time"] = pyunits.s
-        m.get_metadata().default_units["length"] = pyunits.m
-        m.get_metadata().default_units["temperature"] = pyunits.K
+        m.meta_object._default_units = UnitSet(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
+        )
 
         m.comp = Component(
             parameter_data={
@@ -209,11 +209,13 @@ class TestComponent:
             return m.meta_object
 
         m.get_metadata = types.MethodType(get_metadata, m)
-        m.get_metadata().default_units["amount"] = pyunits.mol
-        m.get_metadata().default_units["mass"] = pyunits.kg
-        m.get_metadata().default_units["time"] = pyunits.s
-        m.get_metadata().default_units["length"] = pyunits.m
-        m.get_metadata().default_units["temperature"] = pyunits.K
+        m.meta_object._default_units = UnitSet(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
+        )
 
         m.comp = Component(
             parameter_data={
@@ -239,14 +241,12 @@ class TestSolute:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units = UnitSet(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -353,14 +353,12 @@ class TestSovent:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units = UnitSet(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -486,14 +484,12 @@ class TestIon:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units = UnitSet(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -514,14 +510,12 @@ class TestAnion:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units = UnitSet(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -540,14 +534,12 @@ class TestAnion:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units = UnitSet(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -645,14 +637,12 @@ class TestCation:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units = UnitSet(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -733,14 +723,12 @@ class TestApparent:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units = UnitSet(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -759,14 +747,12 @@ class TestApparent:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units = UnitSet(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -788,14 +774,12 @@ class TestApparent:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units = UnitSet(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
