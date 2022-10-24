@@ -3,6 +3,8 @@ PySMO: Python-based Surrogate Modeling Objects
 
 The PySMO toolbox provides tools for generating different conventional types of reduced order models with minimal tuning. It provides IDAES users with a set of surrogate modeling tools which supports flowsheeting and direct integration into an equation-oriented modeling framework.
 
+.. rubric:: Sampling
+
 PySMO provides tools necessary for sampling and surrogate model generation. For more information about its sampling tools, see :ref:`Sampling<explanations/modeling_extensions/surrogate/sampling/index:Sampling>`.
 
 Surrogate Generation Tools
