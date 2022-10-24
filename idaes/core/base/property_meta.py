@@ -120,7 +120,16 @@ class UnitSet(object):
         "TIME": units.seconds,
     }
 
-    def __init__(
+    def __init__(self):
+        self._time = units.seconds
+        self._length = units.meter
+        self._mass = units.kilogram
+        self._amount = units.mole
+        self._temperature = units.kelvin
+        self._current = units.watts
+        self._luminous_intensity = units.candela
+
+    def set_units(
         self,
         amount: _PyomoUnit = units.mol,
         current: _PyomoUnit = units.watt,
@@ -338,117 +347,6 @@ class UnitSet(object):
         return self._mass * self._length * self._time**-3 * self._temperature**-1
 
 
-class PropertyClassMetadata(object):
-    """Container for metadata about the property class, which includes
-       default units and properties.
-
-    Example usage::
-
-            foo = PropertyClassMetadata()
-            foo.add_default_units(time = pyo.units.fortnights,
-                                  mass = pyo.units.stones)
-            foo.add_properties({'under_sea': {'units': 'leagues'},
-                                'tentacle_size': {'units': 'yards'}})
-            foo.add_required_properties({'under_sea': 'leagues',
-                                        'tentacle_size': 'yards'})
-
-    """
-
-    def __init__(self):
-        # TODO: Deprecate in favour of common units property
-        self._default_units = None
-        self._properties = PropertySet()
-        self._required_properties = {}
-
-    @property
-    def default_units(self):
-        # TODO: Deprecate in favour of common units property
-        return self._default_units
-
-    @property
-    def derived_units(self):
-        # TODO: Deprecate in favour of common units property
-        return self._default_units
-
-    @property
-    def properties(self):
-        return self._properties
-
-    @property
-    def required_properties(self):
-        return self._required_properties
-
-    def add_default_units(self, u):
-        """Add a dict with keys for the base quantities used in the
-        property package (as strings) and values of their default units as Pyomo unit objects.
-
-        If units are not provided for a quantity, it will be assumed to use base SI unites.
-
-        Args:
-            u (dict): Key=property, Value=units
-
-        Returns:
-            None
-        """
-        # TODO: Could look at replacing dict with defined arguments
-        # This would be a big API change
-        try:
-            self._default_units = UnitSet(**u)
-        except TypeError:
-            raise TypeError(
-                f"Unexpected argument for base quantities found when creating UnitSet. "
-                "Please ensure that units are only defined for the seven base quantities."
-            )
-
-    def add_properties(self, p):
-        """Add properties to the metadata.
-
-        For each property, the value should be another dict which may contain
-        the following keys:
-
-        - 'method': (required) the name of a method to construct the
-                    property as a str, or None if the property will be
-                    constructed by default.
-        - 'units': (optional) units of measurement for the property.
-
-        Args:
-            p (dict): Key=property, Value=PropertyMetadata or equiv. dict
-
-        Returns:
-            None
-        """
-        for k, v in p.items():
-            try:
-                prop = getattr(self._properties, k).update_property(**v)
-            except AttributeError:
-                # TODO: Deprecate this and make it raise an exception if an unknown property is encountered?
-                # Force users to explicitly declare new/custom properties
-                self._properties.define_property(name=k, **v)
-
-    def add_required_properties(self, p):
-        # TODO: Update doc string
-        """Add required properties to the metadata.
-
-        For each property, the value should be the expected units of
-        measurement for the property.
-
-        Args:
-            p (dict): Key=property, Value=units
-
-        Returns:
-            None
-        """
-        for k, v in p.items():
-            try:
-                self._properties[k].set_required(True)
-            except KeyError:
-                self._properties.define_property(name=k, supported=False, required=True)
-
-    def get_derived_units(self, units):
-        # TODO: Deprecate in favour of common units property
-        return self.derived_units[units]
-
-
 class PropertyMetadata(object):
     """Container for property parameter metadata.
 
@@ -463,11 +361,13 @@ class PropertyMetadata(object):
     ):
         if name is None:
             raise TypeError('"name" is required')
-        self._name = name  # TODO: What is "name" in this context compared to attribute name? Replace with doc string?
+        self._name = name
         self._method = method
         self._supported = supported
         self._required = required
         self._units = units  # TODO: Validate units are from UnitSet or dimensionless
+        # TODO: For future, this would be the place to store default scaling information, etc.
+        # TODO: Could also define default bounds, nominal values, etc.
 
     def __getitem__(self, key):
         try:
@@ -524,12 +424,10 @@ class PropertyMetadata(object):
 class PropertySet(object):
     # TODO: Add doc string
 
-    def __init__(self, **kwargs):
-        for p, v in kwargs.items():
-            if "supported" not in v:
-                # Assume that if a property is declared but not marked as supported that it is supported
-                v["supported"] = True
-            setattr(self, "_" + p, PropertyMetadata(name=p, **v))
+    def __init__(self, parent):
+        self.__parent_block = parent
+
+        self._define_standard_properties()
 
     def __getitem__(self, key):
         try:
@@ -576,3 +474,272 @@ class PropertySet(object):
 
     # TODO: Define standard properties
     # TODO: Link units to UnitSet
+
+    @property
+    def unitset(self):
+        return self.__parent_block._default_units
+
+    def _define_standard_properties(self):
+        # Concrete definition of all the standard IDAES properties
+        # TODO: Should we separate thermophysical and reaction properties?
+        # AL: I am inclined to say no - define all of them, and state which are supported
+        # This would allow for hybrid packages in the future
+        self.define_property(
+            name="flow_mol",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.FLOW_MOLE,
+        )
+        # "flow_mol": {"method": "_flow_mol"},
+        # "flow_vol": {"method": "_flow_vol"},
+        # "flow_mass": {"method": "_flow_mass"},
+        # "flow_mass_phase": {"method": "_flow_mass_phase"},
+        # "flow_vol_phase": {"method": "_flow_vol_phase"},
+        # "flow_mol_phase": {"method": "_flow_mol_phase"},
+        # "flow_mass_comp": {"method": "_flow_mass_comp"},
+        # "flow_mol_comp": {"method": "_flow_mol_comp"},
+        # "flow_mass_phase_comp": {"method": "_flow_mass_phase_comp"},
+        # "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
+        # "mole_frac_comp": {"method": "_mole_frac_comp"},
+        # "mole_frac_phase_comp": {"method": None},
+        # "phase_frac": {"method": None},
+        # "temperature": {"method": None},
+        # "pressure": {"method": None},
+        # "act_phase_comp": {"method": "_act_phase_comp"},
+        # "act_phase_comp_true": {"method": "_act_phase_comp_true"},
+        # "act_phase_comp_apparent": {"method": "_act_phase_comp_apparent"},
+        # "act_coeff_phase_comp": {"method": "_act_coeff_phase_comp"},
+        # "act_coeff_phase_comp_true": {"method": "_act_coeff_phase_comp_true"},
+        # "act_coeff_phase_comp_apparent": {
+        #     "method": "_act_coeff_phase_comp_apparent"
+        # },
+        # "compress_fact_phase": {"method": "_compress_fact_phase"},
+        # "conc_mol_comp": {"method": "_conc_mol_comp"},
+        # "conc_mol_phase_comp": {"method": "_conc_mol_phase_comp"},
+        # "conc_mol_phase_comp_apparent": {
+        #     "method": "_conc_mol_phase_comp_apparent"
+        # },
+        # "conc_mol_phase_comp_true": {"method": "_conc_mol_phase_comp_true"},
+        # "cp_mol": {"method": "_cp_mol"},
+        # "cp_mol_phase": {"method": "_cp_mol_phase"},
+        # "cp_mol_phase_comp": {"method": "_cp_mol_phase_comp"},
+        # "cv_mol": {"method": "_cv_mol"},
+        # "cv_mol_phase": {"method": "_cv_mol_phase"},
+        # "cv_mol_phase_comp": {"method": "_cv_mol_phase_comp"},
+        # "diffus_phase_comp": {"method": "_diffus_phase_comp"},
+        # "diffus_phase_comp_apparent": {"method": "_diffus_phase_comp_apparent"},
+        # "diffus_phase_comp_true": {"method": "_diffus_phase_comp_true"},
+        # "heat_capacity_ratio_phase": {"method": "_heat_capacity_ratio_phase"},
+        # "dens_mass": {"method": "_dens_mass"},
+        # "dens_mass_phase": {"method": "_dens_mass_phase"},
+        # "dens_mol": {"method": "_dens_mol"},
+        # "dens_mol_phase": {"method": "_dens_mol_phase"},
+        # "energy_internal_mol": {"method": "_energy_internal_mol"},
+        # "energy_internal_mol_phase": {"method": "_energy_internal_mol_phase"},
+        # "energy_internal_mol_phase_comp": {
+        #     "method": "_energy_internal_mol_phase_comp"
+        # },
+        # "enth_mol": {"method": "_enth_mol"},
+        # "enth_mol_phase": {"method": "_enth_mol_phase"},
+        # "enth_mol_phase_comp": {"method": "_enth_mol_phase_comp"},
+        # "entr_mol": {"method": "_entr_mol"},
+        # "entr_mol_phase": {"method": "_entr_mol_phase"},
+        # "entr_mol_phase_comp": {"method": "_entr_mol_phase_comp"},
+        # "fug_phase_comp": {"method": "_fug_phase_comp"},
+        # "fug_coeff_phase_comp": {"method": "_fug_coeff_phase_comp"},
+        # "gibbs_mol": {"method": "_gibbs_mol"},
+        # "gibbs_mol_phase": {"method": "_gibbs_mol_phase"},
+        # "gibbs_mol_phase_comp": {"method": "_gibbs_mol_phase_comp"},
+        # "isentropic_speed_sound_phase": {
+        #     "method": "_isentropic_speed_sound_phase"
+        # },
+        # "isothermal_speed_sound_phase": {
+        #     "method": "_isothermal_speed_sound_phase"
+        # },
+        # "henry": {"method": "_henry"},
+        # "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
+        # "mass_frac_phase_comp_apparent": {
+        #     "method": "_mass_frac_phase_comp_apparent"
+        # },
+        # "mass_frac_phase_comp_true": {"method": "_mass_frac_phase_comp_true"},
+        # "molality_phase_comp": {"method": "_molality_phase_comp"},
+        # "molality_phase_comp_apparent": {
+        #     "method": "_molality_phase_comp_apparent"
+        # },
+        # "molality_phase_comp_true": {"method": "_molality_phase_comp_true"},
+        # "mw": {"method": "_mw"},
+        # "mw_comp": {"method": "_mw_comp"},
+        # "mw_phase": {"method": "_mw_phase"},
+        # "pressure_phase_comp": {"method": "_pressure_phase_comp"},
+        # "pressure_phase_comp_true": {"method": "_pressure_phase_comp_true"},
+        # "pressure_phase_comp_apparent": {
+        #     "method": "_pressure_phase_comp_apparent"
+        # },
+        # "pressure_bubble": {"method": "_pressure_bubble"},
+        # "pressure_dew": {"method": "_pressure_dew"},
+        # "pressure_osm_phase": {"method": "_pressure_osm_phase"},
+        # "pressure_sat_comp": {"method": "_pressure_sat_comp"},
+        # "surf_tens_phase": {"method": "_surf_tens_phase"},
+        # "temperature_bubble": {"method": "_temperature_bubble"},
+        # "temperature_dew": {"method": "_temperature_dew"},
+        # "therm_cond_phase": {"method": "_therm_cond_phase"},
+        # "visc_d_phase": {"method": "_visc_d_phase"},
+        # "vol_mol_phase": {"method": "_vol_mol_phase"},
+        # "vol_mol_phase_comp": {"method": "_vol_mol_phase_comp"},
+        # "dh_rxn": {"method": "_dh_rxn"},
+        # "log_act_phase_comp": {"method": "_log_act_phase_comp"},
+        # "log_act_phase_solvents": {"method": "_log_act_phase_solvents"},
+        # "log_act_phase_comp_true": {"method": "_log_act_phase_comp_true"},
+        # "log_act_phase_comp_apparent": {
+        #     "method": "_log_act_phase_comp_apparent"
+        # },
+        # "log_conc_mol_phase_comp": {"method": "_log_conc_mol_phase_comp"},
+        # "log_conc_mol_phase_comp_true": {
+        #     "method": "_log_conc_mol_phase_comp_true"
+        # },
+        # "log_mass_frac_phase_comp": {"method": "_log_mass_frac_phase_comp"},
+        # "log_mass_frac_phase_comp_apparent": {
+        #     "method": "_log_mass_frac_phase_comp_apparent"
+        # },
+        # "log_mass_frac_phase_comp_true": {
+        #     "method": "_log_mass_frac_phase_comp_true"
+        # },
+        # "log_molality_phase_comp": {"method": "_log_molality_phase_comp"},
+        # "log_molality_phase_comp_apparent": {
+        #     "method": "_log_molality_phase_comp_apparent"
+        # },
+        # "log_molality_phase_comp_true": {
+        #     "method": "_log_molality_phase_comp_true"
+        # },
+        # "log_mole_frac_comp": {"method": "_log_mole_frac_comp"},
+        # "log_mole_frac_tbub": {"method": "_log_mole_frac_tbub"},
+        # "log_mole_frac_tdew": {"method": "_log_mole_frac_tdew"},
+        # "log_mole_frac_pbub": {"method": "_log_mole_frac_pbub"},
+        # "log_mole_frac_pdew": {"method": "_log_mole_frac_pdew"},
+        # "log_mole_frac_phase_comp": {"method": "_log_mole_frac_phase_comp"},
+        # "log_mole_frac_phase_comp_apparent": {
+        #     "method": "_log_mole_frac_phase_comp_apparent"
+        # },
+        # "log_mole_frac_phase_comp_true": {
+        #     "method": "_log_mole_frac_phase_comp_true"
+        # },
+        # "log_pressure_phase_comp": {"method": "_log_pressure_phase_comp"},
+        # "log_pressure_phase_comp_apparent": {
+        #     "method": "_log_pressure_phase_comp_apparent"
+        # },
+        # "log_pressure_phase_comp_true": {
+        #     "method": "_log_pressure_phase_comp_true"
+        # },
+        # "log_k_eq": {"method": "_log_k_eq"},
+
+
+class PropertyClassMetadata(object):
+    """Container for metadata about the property class, which includes
+       default units and properties.
+
+    Example usage::
+
+            foo = PropertyClassMetadata()
+            foo.add_default_units(time = pyo.units.fortnights,
+                                  mass = pyo.units.stones)
+            foo.add_properties({'under_sea': {'units': 'leagues'},
+                                'tentacle_size': {'units': 'yards'}})
+            foo.add_required_properties({'under_sea': 'leagues',
+                                        'tentacle_size': 'yards'})
+
+    """
+
+    def __init__(self):
+        # TODO: Deprecate in favour of common units property
+        self._default_units = UnitSet()
+        self._properties = PropertySet(parent=self)
+        self._required_properties = {}
+
+    @property
+    def default_units(self):
+        # TODO: Deprecate in favour of common units property
+        return self._default_units
+
+    @property
+    def derived_units(self):
+        # TODO: Deprecate in favour of common units property
+        return self._default_units
+
+    @property
+    def properties(self):
+        return self._properties
+
+    @property
+    def required_properties(self):
+        return self._required_properties
+
+    def add_default_units(self, u):
+        """Add a dict with keys for the base quantities used in the
+        property package (as strings) and values of their default units as Pyomo unit objects.
+
+        If units are not provided for a quantity, it will be assumed to use base SI unites.
+
+        Args:
+            u (dict): Key=property, Value=units
+
+        Returns:
+            None
+        """
+        # TODO: Could look at replacing dict with defined arguments
+        # This would be a big API change
+        try:
+            self._default_units.set_units(**u)
+        except TypeError:
+            raise TypeError(
+                f"Unexpected argument for base quantities found when creating UnitSet. "
+                "Please ensure that units are only defined for the seven base quantities."
+            )
+
+    def add_properties(self, p):
+        """Add properties to the metadata.
+
+        For each property, the value should be another dict which may contain
+        the following keys:
+
+        - 'method': (required) the name of a method to construct the
+                    property as a str, or None if the property will be
+                    constructed by default.
+        - 'units': (optional) units of measurement for the property.
+
+        Args:
+            p (dict): Key=property, Value=PropertyMetadata or equiv. dict
+
+        Returns:
+            None
+        """
+        for k, v in p.items():
+            try:
+                prop = getattr(self._properties, k).update_property(**v)
+            except AttributeError:
+                # TODO: Deprecate this and make it raise an exception if an unknown property is encountered?
+                # Force users to explicitly declare new/custom properties
+                self._properties.define_property(name=k, **v)
+
+    def add_required_properties(self, p):
+        # TODO: Update doc string
+        """Add required properties to the metadata.
+
+        For each property, the value should be the expected units of
+        measurement for the property.
+
+        Args:
+            p (dict): Key=property, Value=units
+
+        Returns:
+            None
+        """
+        for k, v in p.items():
+            try:
+                self._properties[k].set_required(True)
+            except KeyError:
+                self._properties.define_property(name=k, supported=False, required=True)
+
+    def get_derived_units(self, units):
+        # TODO: Deprecate in favour of common units property
+        return self.derived_units[units]

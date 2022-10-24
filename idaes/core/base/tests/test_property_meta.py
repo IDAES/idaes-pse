@@ -30,7 +30,8 @@ def test_invalid_require_base_quantity():
         PropertyPackageError,
         match="Unrecognized units of measurement for quantity TIME \(foo\)",
     ):
-        UnitSet(time="foo")
+        us = UnitSet()
+        us.set_units(time="foo")
 
 
 @pytest.mark.unit
@@ -40,7 +41,8 @@ def test_mismatched_length_units():
         match="Invalid units of measurement for quantity LENGTH \(s\). "
         "Please ensure units provided are valid for this quantity.",
     ):
-        UnitSet(length=units.s)
+        us = UnitSet()
+        us.set_units(length=units.s)
 
 
 @pytest.mark.unit
@@ -50,7 +52,8 @@ def test_mismatched_mass_units():
         match="Invalid units of measurement for quantity MASS \(m\). "
         "Please ensure units provided are valid for this quantity.",
     ):
-        UnitSet(mass=units.m)
+        us = UnitSet()
+        us.set_units(mass=units.m)
 
 
 @pytest.mark.unit
@@ -60,7 +63,8 @@ def test_mismatched_amount_units():
         match="Invalid units of measurement for quantity AMOUNT \(m\). "
         "Please ensure units provided are valid for this quantity.",
     ):
-        UnitSet(amount=units.m)
+        us = UnitSet()
+        us.set_units(amount=units.m)
 
 
 @pytest.mark.unit
@@ -70,7 +74,8 @@ def test_mismatched_temperature_units():
         match="Invalid units of measurement for quantity TEMPERATURE \(m\). "
         "Please ensure units provided are valid for this quantity.",
     ):
-        UnitSet(temperature=units.m)
+        us = UnitSet()
+        us.set_units(temperature=units.m)
 
 
 @pytest.mark.unit
@@ -80,7 +85,8 @@ def test_mismatched_current_units():
         match="Invalid units of measurement for quantity CURRENT \(m\). "
         "Please ensure units provided are valid for this quantity.",
     ):
-        UnitSet(current=units.m)
+        us = UnitSet()
+        us.set_units(current=units.m)
 
 
 @pytest.mark.unit
@@ -90,7 +96,8 @@ def test_mismatched_luminous_intensity_units():
         match="Invalid units of measurement for quantity LUMINOUS_INTENSITY \(m\). "
         "Please ensure units provided are valid for this quantity.",
     ):
-        UnitSet(luminous_intensity=units.m)
+        us = UnitSet()
+        us.set_units(luminous_intensity=units.m)
 
 
 @pytest.mark.unit
@@ -100,12 +107,14 @@ def test_mismatched_time_units():
         match="Invalid units of measurement for quantity TIME \(m\). "
         "Please ensure units provided are valid for this quantity.",
     ):
-        UnitSet(time=units.m)
+        us = UnitSet()
+        us.set_units(time=units.m)
 
 
 @pytest.fixture(scope="module")
 def unit_set():
-    return UnitSet(
+    us = UnitSet()
+    us.set_units(
         time=units.s,
         length=units.m,
         mass=units.kg,
@@ -114,6 +123,7 @@ def unit_set():
         current=units.W,
         luminous_intensity=units.candela,
     )
+    return us
 
 
 @pytest.mark.unit
