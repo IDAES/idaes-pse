@@ -192,6 +192,12 @@ class GeneratorModelData:
 
 class ThermalGeneratorModelData(GeneratorModelData):
 
+    """
+    Adds run time, ramping, shutdown and startup information for thermal generators.
+    Requires as initial status and power production.
+    Bids are in ( MWh, $ ) pairs
+    """
+
     min_down_time = RealValueValidator(min_val=0)
     min_up_time = RealValueValidator(min_val=0)
     ramp_up_60min = RealValueValidator(min_val=0)
@@ -384,6 +390,10 @@ class ThermalGeneratorModelData(GeneratorModelData):
 
 
 class RenewableGeneratorModelData(GeneratorModelData):
+
+    """
+    Adds a single production cost for renewable generators.
+    """
 
     p_cost = RealValueValidator(min_val=0)
 

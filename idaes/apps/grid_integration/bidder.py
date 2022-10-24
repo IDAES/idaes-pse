@@ -1164,7 +1164,7 @@ class Bidder(StochasticProgramBidder):
 
         """
         This methods extract the bids out of the stochastic programming model and
-        organize them.
+        organize them into ( MWh, $ ) pairs.
 
         Arguments:
             model: bidding model
