@@ -30,7 +30,7 @@ class Constant(object):
             units = cobj.parent_block().get_metadata().derived_units
             cobj.cp_mol_liq_comp_coeff = Var(
                 doc="Parameter for liquid phase molar heat capacity",
-                units=units["heat_capacity_mole"],
+                units=units.HEAT_CAPACITY_MOLE,
             )
             set_param_from_config(cobj, param="cp_mol_liq_comp_coeff")
 
@@ -50,7 +50,7 @@ class Constant(object):
 
                 cobj.enth_mol_form_liq_comp_ref = Var(
                     doc="Liquid phase molar heat of formation @ Tref",
-                    units=units["energy_mole"],
+                    units=units.ENERGY_MOLE,
                 )
                 set_param_from_config(cobj, param="enth_mol_form_liq_comp_ref")
 
@@ -63,7 +63,7 @@ class Constant(object):
             h_form = (
                 cobj.enth_mol_form_liq_comp_ref
                 if b.params.config.include_enthalpy_of_formation
-                else 0 * units["energy_mole"]
+                else 0 * units.ENERGY_MOLE
             )
 
             return cobj.cp_mol_liq_comp_coeff * (T - Tr) + h_form
@@ -78,7 +78,7 @@ class Constant(object):
 
             cobj.entr_mol_form_liq_comp_ref = Var(
                 doc="Liquid phase molar entropy of formation @ Tref",
-                units=units["entropy_mole"],
+                units=units.ENTROPY_MOLE,
             )
             set_param_from_config(cobj, param="entr_mol_form_liq_comp_ref")
 
@@ -98,7 +98,7 @@ class Constant(object):
             units = cobj.parent_block().get_metadata().derived_units
             cobj.dens_mol_liq_comp_coeff = Var(
                 doc="Parameter for liquid phase molar density",
-                units=units["density_mole"],
+                units=units.DENSITY_MOLE,
             )
             set_param_from_config(cobj, param="dens_mol_liq_comp_coeff")
 
@@ -114,7 +114,7 @@ class Constant(object):
             units = cobj.parent_block().get_metadata().derived_units
             cobj.cp_mol_ig_comp_coeff = Var(
                 doc="Parameter for ideal gas molar heat capacity",
-                units=units["heat_capacity_mole"],
+                units=units.HEAT_CAPACITY_MOLE,
             )
             set_param_from_config(cobj, param="cp_mol_ig_comp_coeff")
 
@@ -134,7 +134,7 @@ class Constant(object):
 
                 cobj.enth_mol_form_ig_comp_ref = Var(
                     doc="Ideal gas molar heat of formation @ Tref",
-                    units=units["energy_mole"],
+                    units=units.ENERGY_MOLE,
                 )
                 set_param_from_config(cobj, param="enth_mol_form_ig_comp_ref")
 
@@ -147,7 +147,7 @@ class Constant(object):
             h_form = (
                 cobj.enth_mol_form_ig_comp_ref
                 if b.params.config.include_enthalpy_of_formation
-                else 0 * units["energy_mole"]
+                else 0 * units.ENERGY_MOLE
             )
 
             return cobj.cp_mol_ig_comp_coeff * (T - Tr) + h_form
@@ -162,7 +162,7 @@ class Constant(object):
 
             cobj.entr_mol_form_ig_comp_ref = Var(
                 doc="Ideal gas molar entropy of formation @ Tref",
-                units=units["entropy_mole"],
+                units=units.ENTROPY_MOLE,
             )
             set_param_from_config(cobj, param="entr_mol_form_ig_comp_ref")
 
@@ -182,7 +182,7 @@ class Constant(object):
             units = cobj.parent_block().get_metadata().derived_units
             cobj.cp_mol_sol_comp_coeff = Var(
                 doc="Parameter for solid phase molar heat capacity",
-                units=units["heat_capacity_mole"],
+                units=units.HEAT_CAPACITY_MOLE,
             )
             set_param_from_config(cobj, param="cp_mol_sol_comp_coeff")
 
@@ -203,7 +203,7 @@ class Constant(object):
 
                 cobj.enth_mol_form_sol_comp_ref = Var(
                     doc="Solid phase molar heat of formation @ Tref",
-                    units=units["energy_mole"],
+                    units=units.ENERGY_MOLE,
                 )
                 set_param_from_config(cobj, param="enth_mol_form_sol_comp_ref")
 
@@ -216,7 +216,7 @@ class Constant(object):
             h_form = (
                 cobj.enth_mol_form_sol_comp_ref
                 if b.params.config.include_enthalpy_of_formation
-                else 0 * units["energy_mole"]
+                else 0 * units.ENERGY_MOLE
             )
 
             return cobj.cp_mol_sol_comp_coeff * (T - Tr) + h_form
@@ -231,7 +231,7 @@ class Constant(object):
 
             cobj.entr_mol_form_sol_comp_ref = Var(
                 doc="Solid phase molar entropy of formation @ Tref",
-                units=units["entropy_mole"],
+                units=units.ENTROPY_MOLE,
             )
             set_param_from_config(cobj, param="entr_mol_form_sol_comp_ref")
 
@@ -251,7 +251,7 @@ class Constant(object):
             units = cobj.parent_block().get_metadata().derived_units
             cobj.dens_mol_sol_comp_coeff = Var(
                 doc="Parameter for solid phase molar density",
-                units=units["density_mole"],
+                units=units.DENSITY_MOLE,
             )
             set_param_from_config(cobj, param="dens_mol_sol_comp_coeff")
 
