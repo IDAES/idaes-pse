@@ -356,7 +356,7 @@ There are currently no estimates for the total plant cost components, so bare er
 Fixed Operating & Maintenance Costs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The Fixed O&M costing function adds constraints to calculate correlations associated with labor, maintenance, support, taxes and other fixed costs. The method takes the following arguments: 
+The Fixed O&M costing function adds constraints to estimate the labor, maintenance, support, taxes and other fixed costs. The method takes the following arguments: 
 
 * b : Pyomo concrete model or flowsheet block
 * net_power: production rate of the plant in MW, if provided will enable additional production-related cost calculations but not required to use method
