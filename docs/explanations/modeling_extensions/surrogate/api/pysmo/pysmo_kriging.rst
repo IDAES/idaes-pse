@@ -27,7 +27,7 @@ are selected such that the concentrated log likelihood function is maximized.
 
 Basic Usage
 ------------
-To generate a Kriging model with PySMO, the  *pysmo_surrogate.PysmoKrigingTrainer* trainer is instantiated and initialized with the desired optional arguments, and the the training function ``train_surrogate`` is called:
+To generate a Kriging model with PySMO, the  *pysmo_surrogate.PysmoKrigingTrainer* trainer is instantiated and initialized with the desired optional arguments, and the training function ``train_surrogate`` is called:
 
 .. code:: python
 

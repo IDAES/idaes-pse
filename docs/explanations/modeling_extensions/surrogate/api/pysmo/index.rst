@@ -42,7 +42,7 @@ Data can be read in or simulated using available Python packages. The main argum
 
   pysmo_surr = PysmoSurrogate(pysmo_surr_expr, input_labels, output_labels, input_bounds)
 
-where [PySMO Kriging Option] is a valid keyword argument that can be passed to the PySMO Kriging Python function to customize the model. Each PySMO model type requires takes different optional arguments; a list of arguments for each PySMO model may be found on its personalized page.
+where [PySMO Kriging Option] is a valid keyword argument that can be passed to the PySMO Kriging Python function to customize the model. Each PySMO model type requires takes different optional arguments; a list of arguments for each PySMO model type (Polynomial Regression, Radial Basis Functions or Kriging) may be found on its personalized page.
 
 Saving and Loading PySMO models
 --------------------------------
