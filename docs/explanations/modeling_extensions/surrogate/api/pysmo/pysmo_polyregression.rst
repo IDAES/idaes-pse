@@ -102,7 +102,7 @@ The result of the ``pysmo_surrogate.PysmoPolyTrainer`` method is a python object
 
 Confidence intervals for *PysmoPolyTrainer* models
 --------------------------------------------------------------------
-**[Needs to be moved over to new interface ---coming soon]**
+**Coming soon**
 
 The confidence intervals for the regression paramaters may be viewed using the method ``confint_regression``.
 

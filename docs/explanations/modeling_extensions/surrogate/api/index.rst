@@ -52,7 +52,7 @@ Once the training data is defined, users call the desired trainer method (`Alamo
 
     trainer = AlamoTrainer(input_labels=input_labels, output_labels=output_labels, training_dataframe=data_training)
 
-Similarly, a PySMO RBF `PySMORBFTrainer` object would be created as:
+Similarly, a PySMO RBF `PysmoRBFTrainer` object would be created as below:
 
 .. code-block:: python
 
