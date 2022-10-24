@@ -47,7 +47,7 @@ The following code snippet shows basic usage of the package for selecting sample
    >>> samples = space_init.sample_points()
 
 .. note::
-  In the above case, it is assumed that there is only one output variable AND it is in the last column of the dataset. When there are multiple output columns, the xlabels and ylabels options must be specifiec (see below example).
+  In the above case, it is assumed that there is only one output variable AND it is in the last column of the dataset. When there are multiple output columns, the xlabels and ylabels options must be specified (see below example).
 
 
 The following code snippet shows basic usage of the package for sub-sampling a dataset with multiple output variables:
