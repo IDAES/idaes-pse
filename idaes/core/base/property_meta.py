@@ -139,6 +139,21 @@ class UnitSet(object):
         temperature: _PyomoUnit = units.kelvin,
         time: _PyomoUnit = units.seconds,
     ):
+        """
+        Set desired units of measurement for the seven base quantities.
+
+        Args:
+            amount: units for amount (default = moles)
+            current: units for current (default = Watts)
+            length: units for length (default = meters)
+            luminous_intensity: units for luminous intensity (default = candela)
+            mass: units for mass (default = kilograms)
+            temperature: units for temperature (default = Kelvins)
+            time: units for time (default = seconds)
+
+        Returns:
+            None
+        """
         self._time = time
         self._length = length
         self._mass = mass
@@ -179,6 +194,16 @@ class UnitSet(object):
             )
 
     def unitset_is_consistent(self, other):
+        """
+        Checks that defined units of measurement for base quantities are consistent with those
+        in other UnitSet.
+
+        Args:
+            other: UnitSet to check for consistency with
+
+        Returns:
+            Bool indicating whether units are consistent
+        """
         return all(getattr(self, q) is getattr(other, q) for q in self._base_quantities)
 
     @property
@@ -218,6 +243,10 @@ class UnitSet(object):
     def VOLUME(self):
         return self._length**3
 
+    @property
+    def MOLAR_VOLUME(self):
+        return self._length**3 * self._amount**-1
+
     # Flows
     @property
     def FLOW_MASS(self):
@@ -243,7 +272,7 @@ class UnitSet(object):
     def FLUX_ENERGY(self):
         return self._mass * self._time**-3
 
-    # Velocity and Acceleration
+    # Velocity, Acceleration and Force
     @property
     def VELOCITY(self):
         return self._length * self._time**-1
@@ -251,6 +280,10 @@ class UnitSet(object):
     @property
     def ACCELERATION(self):
         return self._length * self._time**-2
+
+    @property
+    def FORCE(self):
+        return self._length * self._mass * self._time**-2
 
     # Pressures
     @property
@@ -267,7 +300,7 @@ class UnitSet(object):
             * self._amount**-1
         )
 
-    # Densities
+    # Densities & Concentrations
     @property
     def DENSITY_MASS(self):
         return self._mass * self._length**-3
@@ -275,6 +308,10 @@ class UnitSet(object):
     @property
     def DENSITY_MOLE(self):
         return self._amount * self._length**-3
+
+    @property
+    def MOLALITY(self):
+        return self._amount * self._mass
 
     @property
     def MOLECULAR_WEIGHT(self):
@@ -339,8 +376,16 @@ class UnitSet(object):
 
     # Transport Properties
     @property
+    def DIFFUSIVITY(self):
+        return self._length**2 * self._time**-1
+
+    @property
     def DYNAMIC_VISCOSITY(self):
         return self._mass * self._length**-1 * self._time**-1
+
+    @property
+    def SURFACE_TENSION(self):
+        return self._mass * self._time**-2
 
     @property
     def THERMAL_CONDUCTIVITY(self):
@@ -348,11 +393,16 @@ class UnitSet(object):
 
 
 class PropertyMetadata(object):
-    """Container for property parameter metadata.
+    """
+    Metadata object for defining a property.
 
-    Instances of this class are exactly dictionaries, with the
-    only difference being some guidance on the values expected in the
-    dictionary from the constructor.
+    This object stores all the metadata associated with a single property, including:
+
+        - standard name
+        - units of measurement for this property (defined via associated UnitSet)
+        - method that constructs this property and associated constraints (if build-on-demand)
+        - whether property is supported by this package
+        - whether this package expects this property to be provided by another package
     """
 
     # TODO: Add optional doc string to metadata objects
@@ -378,37 +428,98 @@ class PropertyMetadata(object):
 
     @property
     def name(self):
+        """
+        Standard name for property
+        """
         return self._name
 
     @property
     def method(self):
+        """
+        Reference to method that can be called to construct this property and associated
+        constraints if using build-on-demand approach.
+        """
         return self._method
 
     @property
     def units(self):
+        """
+        Units of measurement for this property. This should be a reference to a quantity defined
+        in the UnitSet associated with this property package.
+        """
         return self._units
 
     @property
     def supported(self):
+        """
+        Bool indicating whether this property package supports calculation of this property.
+        """
         return self._supported
 
     @property
     def required(self):
+        """
+        Bool indicating whether this property package requires calculation of this property
+        by another property package.
+
+        This is most commonly used by reaction packages which rely of thermophysical property
+        packages to define other properties.
+        """
         return self._required
 
     def set_method(self, meth):
+        """
+        Set method attribute of property.
+
+        Args:
+            meth: reference to method required to construct this property
+
+        Returns:
+            None
+        """
         # TODO: Validate that meth is callable?
         self._method = meth
 
     def set_supported(self, supported=True):
+        """
+        Set supported attribute of property
+
+        Args:
+            supported: bool indicating whether package supports this property
+
+        Returns:
+            None
+        """
         # TODO: Validate that supported is bool
         self._supported = supported
 
     def set_required(self, required=True):
+        """
+        Set required attribute of property
+
+        Args:
+            required: bool indicating whether package requires this property be defined by
+            another property package
+
+        Returns:
+            None
+        """
         # TODO: Validate that required is bool
         self._required = required
 
     def update_property(self, dict):
+        """
+        Update attributes of this property.
+
+        Args:
+            dict: containing desired attributes for this property. Supported keys are 'method',
+            'required' and 'supported'.
+
+        Returns:
+            None
+
+        Note that if not provided a value, 'supported` is assumed to be True.
+        """
         if "method" in dict:
             self.set_method(dict["method"])
         if "required" in dict:
@@ -422,6 +533,13 @@ class PropertyMetadata(object):
 
 
 class PropertySet(object):
+    """
+    Metadata object which defines all the properties associated with a given property package.
+
+    This object defines all the standard properties supported by IDAES, and also allows for
+    definition of new properties if required.
+    """
+
     # TODO: Add doc string
 
     def __init__(self, parent):
@@ -431,7 +549,7 @@ class PropertySet(object):
 
     def __getitem__(self, key):
         try:
-            return getattr(self, "_" + key)
+            return getattr(self, key)
         except AttributeError:
             # TODO: Real error message - needs to be a KeyError to work with getattr elsewhere
             raise KeyError()
@@ -445,10 +563,22 @@ class PropertySet(object):
     def define_property(
         self, name=None, method=None, supported=True, required=False, units=None
     ):
-        # Method to define new, custom properties
+        """
+        Define a new property called `name`.
+
+        Args:
+            name: name of new property (required)
+            method: reference to build-on-demand method for property (optional, default=None)
+            supported: bool indicating if package supports this property (optional, default=True)
+            required: bool indicating if package requires this property from another package (optional, default=False)
+            units: quantity defined in associated UnitSet defining the units of measurement for property
+
+        Returns:
+            None
+        """
         setattr(
             self,
-            "_" + name,
+            name,
             PropertyMetadata(
                 name=name,
                 method=method,
@@ -459,7 +589,15 @@ class PropertySet(object):
         )
 
     def check_required_properties(self, other):
-        # Check that other package supports properties this package requires
+        """
+        Check that other property package supports all properties marked as required by this package.
+
+        Args:
+            other: PropertySet to check for supported properties
+
+        Returns:
+            list of properties required by this package which are not supported by other package
+        """
         unsupported = []
         for a in dir(self):
             aobj = getattr(self, a)
@@ -475,8 +613,50 @@ class PropertySet(object):
     # TODO: Define standard properties
     # TODO: Link units to UnitSet
 
+    def list_supported_properties(self):
+        """
+        Return a list of properties supported by this package
+
+        Returns:
+            list
+        """
+        list = []
+        for p in self:
+            if p.supported:
+                list.append(p)
+        return list
+
+    def list_unsupported_properties(self):
+        """
+        Return a list of properties not supported by this package
+
+        Returns:
+            list
+        """
+        list = []
+        for p in self:
+            if not p.supported:
+                list.append(p)
+        return list
+
+    def list_required_properties(self):
+        """
+        Return a list of properties required by this package
+
+        Returns:
+            list
+        """
+        list = []
+        for p in self:
+            if p.required:
+                list.append(p)
+        return list
+
     @property
     def unitset(self):
+        """
+        UnitSet associated with this PropertySet (via the parent metadata object).
+        """
         return self.__parent_block._default_units
 
     def _define_standard_properties(self):
@@ -485,153 +665,989 @@ class PropertySet(object):
         # AL: I am inclined to say no - define all of them, and state which are supported
         # This would allow for hybrid packages in the future
         self.define_property(
+            name="act_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="act_phase_comp_apparent",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="act_phase_comp_true",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="act_coeff_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="act_coeff_phase_comp_apparent",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="act_coeff_phase_comp_true",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="compress_fact_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="conc_mass_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DENSITY_MASS,
+        )
+        self.define_property(
+            name="conc_mass_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DENSITY_MASS,
+        )
+        self.define_property(
+            name="conc_mass_phase_comp_apparent",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DENSITY_MASS,
+        )
+        self.define_property(
+            name="conc_mass_phase_comp_true",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DENSITY_MASS,
+        )
+        self.define_property(
+            name="conc_mole_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DENSITY_MOLE,
+        )
+        self.define_property(
+            name="conc_mole_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DENSITY_MOLE,
+        )
+        self.define_property(
+            name="conc_mole_phase_comp_apparent",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DENSITY_MOLE,
+        )
+        self.define_property(
+            name="conc_mole_phase_comp_true",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DENSITY_MOLE,
+        )
+
+        self.define_property(
+            name="cp_mass",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.HEAT_CAPACITY_MASS,
+        )
+        self.define_property(
+            name="cp_mass_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.HEAT_CAPACITY_MASS,
+        )
+        self.define_property(
+            name="cp_mass_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.HEAT_CAPACITY_MASS,
+        )
+        self.define_property(
+            name="cp_mol",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.HEAT_CAPACITY_MOLE,
+        )
+        self.define_property(
+            name="cp_mol_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.HEAT_CAPACITY_MOLE,
+        )
+        self.define_property(
+            name="cp_mol_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.HEAT_CAPACITY_MOLE,
+        )
+
+        self.define_property(
+            name="cv_mass",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.HEAT_CAPACITY_MASS,
+        )
+        self.define_property(
+            name="cv_mass_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.HEAT_CAPACITY_MASS,
+        )
+        self.define_property(
+            name="cv_mass_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.HEAT_CAPACITY_MASS,
+        )
+        self.define_property(
+            name="cv_mol",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.HEAT_CAPACITY_MOLE,
+        )
+        self.define_property(
+            name="cv_mol_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.HEAT_CAPACITY_MOLE,
+        )
+        self.define_property(
+            name="cv_mol_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.HEAT_CAPACITY_MOLE,
+        )
+
+        self.define_property(
+            name="dens_mass",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DENSITY_MASS,
+        )
+        self.define_property(
+            name="dens_mass_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DENSITY_MASS,
+        )
+        self.define_property(
+            name="dens_mol",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DENSITY_MOLE,
+        )
+        self.define_property(
+            name="dens_mol_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DENSITY_MOLE,
+        )
+
+        self.define_property(
+            name="diffus_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DIFFUSIVITY,
+        )
+        self.define_property(
+            name="diffus_phase_comp_apparent",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DIFFUSIVITY,
+        )
+        self.define_property(
+            name="diffus_phase_comp_true",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DIFFUSIVITY,
+        )
+
+        self.define_property(
+            name="energy_internal_mass",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MASS,
+        )
+        self.define_property(
+            name="energy_internal_mass_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MASS,
+        )
+        self.define_property(
+            name="energy_internal_mass_phase_como",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MASS,
+        )
+        self.define_property(
+            name="energy_internal_mol",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MOLE,
+        )
+        self.define_property(
+            name="energy_internal_mol_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MOLE,
+        )
+        self.define_property(
+            name="energy_internal_mol_phase_como",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MOLE,
+        )
+
+        self.define_property(
+            name="enth_mass",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MASS,
+        )
+        self.define_property(
+            name="enth_mass_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MASS,
+        )
+        self.define_property(
+            name="enth_mass_phase_como",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MASS,
+        )
+        self.define_property(
+            name="enth_mol",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MOLE,
+        )
+        self.define_property(
+            name="enth_mol_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MOLE,
+        )
+        self.define_property(
+            name="enth_mol_phase_como",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MOLE,
+        )
+
+        self.define_property(
+            name="entr_mass",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MASS,
+        )
+        self.define_property(
+            name="entr_mass_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MASS,
+        )
+        self.define_property(
+            name="entr_mass_phase_como",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MASS,
+        )
+        self.define_property(
+            name="entr_mol",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MOLE,
+        )
+        self.define_property(
+            name="entr_mol_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MOLE,
+        )
+        self.define_property(
+            name="entr_mol_phase_como",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MOLE,
+        )
+
+        self.define_property(
+            name="flow_mass",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.FLOW_MASS,
+        )
+        self.define_property(
+            name="flow_mass_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.FLOW_MASS,
+        )
+        self.define_property(
+            name="flow_mass_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.FLOW_MASS,
+        )
+        self.define_property(
+            name="flow_mass_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.FLOW_MASS,
+        )
+        self.define_property(
             name="flow_mol",
             method=None,
             supported=False,
             required=False,
             units=self.unitset.FLOW_MOLE,
         )
-        # "flow_mol": {"method": "_flow_mol"},
-        # "flow_vol": {"method": "_flow_vol"},
-        # "flow_mass": {"method": "_flow_mass"},
-        # "flow_mass_phase": {"method": "_flow_mass_phase"},
-        # "flow_vol_phase": {"method": "_flow_vol_phase"},
-        # "flow_mol_phase": {"method": "_flow_mol_phase"},
-        # "flow_mass_comp": {"method": "_flow_mass_comp"},
-        # "flow_mol_comp": {"method": "_flow_mol_comp"},
-        # "flow_mass_phase_comp": {"method": "_flow_mass_phase_comp"},
-        # "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
-        # "mole_frac_comp": {"method": "_mole_frac_comp"},
-        # "mole_frac_phase_comp": {"method": None},
-        # "phase_frac": {"method": None},
-        # "temperature": {"method": None},
-        # "pressure": {"method": None},
-        # "act_phase_comp": {"method": "_act_phase_comp"},
-        # "act_phase_comp_true": {"method": "_act_phase_comp_true"},
-        # "act_phase_comp_apparent": {"method": "_act_phase_comp_apparent"},
-        # "act_coeff_phase_comp": {"method": "_act_coeff_phase_comp"},
-        # "act_coeff_phase_comp_true": {"method": "_act_coeff_phase_comp_true"},
-        # "act_coeff_phase_comp_apparent": {
-        #     "method": "_act_coeff_phase_comp_apparent"
-        # },
-        # "compress_fact_phase": {"method": "_compress_fact_phase"},
-        # "conc_mol_comp": {"method": "_conc_mol_comp"},
-        # "conc_mol_phase_comp": {"method": "_conc_mol_phase_comp"},
-        # "conc_mol_phase_comp_apparent": {
-        #     "method": "_conc_mol_phase_comp_apparent"
-        # },
-        # "conc_mol_phase_comp_true": {"method": "_conc_mol_phase_comp_true"},
-        # "cp_mol": {"method": "_cp_mol"},
-        # "cp_mol_phase": {"method": "_cp_mol_phase"},
-        # "cp_mol_phase_comp": {"method": "_cp_mol_phase_comp"},
-        # "cv_mol": {"method": "_cv_mol"},
-        # "cv_mol_phase": {"method": "_cv_mol_phase"},
-        # "cv_mol_phase_comp": {"method": "_cv_mol_phase_comp"},
-        # "diffus_phase_comp": {"method": "_diffus_phase_comp"},
-        # "diffus_phase_comp_apparent": {"method": "_diffus_phase_comp_apparent"},
-        # "diffus_phase_comp_true": {"method": "_diffus_phase_comp_true"},
-        # "heat_capacity_ratio_phase": {"method": "_heat_capacity_ratio_phase"},
-        # "dens_mass": {"method": "_dens_mass"},
-        # "dens_mass_phase": {"method": "_dens_mass_phase"},
-        # "dens_mol": {"method": "_dens_mol"},
-        # "dens_mol_phase": {"method": "_dens_mol_phase"},
-        # "energy_internal_mol": {"method": "_energy_internal_mol"},
-        # "energy_internal_mol_phase": {"method": "_energy_internal_mol_phase"},
-        # "energy_internal_mol_phase_comp": {
-        #     "method": "_energy_internal_mol_phase_comp"
-        # },
-        # "enth_mol": {"method": "_enth_mol"},
-        # "enth_mol_phase": {"method": "_enth_mol_phase"},
-        # "enth_mol_phase_comp": {"method": "_enth_mol_phase_comp"},
-        # "entr_mol": {"method": "_entr_mol"},
-        # "entr_mol_phase": {"method": "_entr_mol_phase"},
-        # "entr_mol_phase_comp": {"method": "_entr_mol_phase_comp"},
-        # "fug_phase_comp": {"method": "_fug_phase_comp"},
-        # "fug_coeff_phase_comp": {"method": "_fug_coeff_phase_comp"},
-        # "gibbs_mol": {"method": "_gibbs_mol"},
-        # "gibbs_mol_phase": {"method": "_gibbs_mol_phase"},
-        # "gibbs_mol_phase_comp": {"method": "_gibbs_mol_phase_comp"},
-        # "isentropic_speed_sound_phase": {
-        #     "method": "_isentropic_speed_sound_phase"
-        # },
-        # "isothermal_speed_sound_phase": {
-        #     "method": "_isothermal_speed_sound_phase"
-        # },
-        # "henry": {"method": "_henry"},
-        # "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
-        # "mass_frac_phase_comp_apparent": {
-        #     "method": "_mass_frac_phase_comp_apparent"
-        # },
-        # "mass_frac_phase_comp_true": {"method": "_mass_frac_phase_comp_true"},
-        # "molality_phase_comp": {"method": "_molality_phase_comp"},
-        # "molality_phase_comp_apparent": {
-        #     "method": "_molality_phase_comp_apparent"
-        # },
-        # "molality_phase_comp_true": {"method": "_molality_phase_comp_true"},
-        # "mw": {"method": "_mw"},
-        # "mw_comp": {"method": "_mw_comp"},
-        # "mw_phase": {"method": "_mw_phase"},
-        # "pressure_phase_comp": {"method": "_pressure_phase_comp"},
-        # "pressure_phase_comp_true": {"method": "_pressure_phase_comp_true"},
-        # "pressure_phase_comp_apparent": {
-        #     "method": "_pressure_phase_comp_apparent"
-        # },
-        # "pressure_bubble": {"method": "_pressure_bubble"},
-        # "pressure_dew": {"method": "_pressure_dew"},
-        # "pressure_osm_phase": {"method": "_pressure_osm_phase"},
-        # "pressure_sat_comp": {"method": "_pressure_sat_comp"},
-        # "surf_tens_phase": {"method": "_surf_tens_phase"},
-        # "temperature_bubble": {"method": "_temperature_bubble"},
-        # "temperature_dew": {"method": "_temperature_dew"},
-        # "therm_cond_phase": {"method": "_therm_cond_phase"},
-        # "visc_d_phase": {"method": "_visc_d_phase"},
-        # "vol_mol_phase": {"method": "_vol_mol_phase"},
-        # "vol_mol_phase_comp": {"method": "_vol_mol_phase_comp"},
-        # "dh_rxn": {"method": "_dh_rxn"},
-        # "log_act_phase_comp": {"method": "_log_act_phase_comp"},
-        # "log_act_phase_solvents": {"method": "_log_act_phase_solvents"},
-        # "log_act_phase_comp_true": {"method": "_log_act_phase_comp_true"},
-        # "log_act_phase_comp_apparent": {
-        #     "method": "_log_act_phase_comp_apparent"
-        # },
-        # "log_conc_mol_phase_comp": {"method": "_log_conc_mol_phase_comp"},
-        # "log_conc_mol_phase_comp_true": {
-        #     "method": "_log_conc_mol_phase_comp_true"
-        # },
-        # "log_mass_frac_phase_comp": {"method": "_log_mass_frac_phase_comp"},
-        # "log_mass_frac_phase_comp_apparent": {
-        #     "method": "_log_mass_frac_phase_comp_apparent"
-        # },
-        # "log_mass_frac_phase_comp_true": {
-        #     "method": "_log_mass_frac_phase_comp_true"
-        # },
-        # "log_molality_phase_comp": {"method": "_log_molality_phase_comp"},
-        # "log_molality_phase_comp_apparent": {
-        #     "method": "_log_molality_phase_comp_apparent"
-        # },
-        # "log_molality_phase_comp_true": {
-        #     "method": "_log_molality_phase_comp_true"
-        # },
-        # "log_mole_frac_comp": {"method": "_log_mole_frac_comp"},
-        # "log_mole_frac_tbub": {"method": "_log_mole_frac_tbub"},
-        # "log_mole_frac_tdew": {"method": "_log_mole_frac_tdew"},
-        # "log_mole_frac_pbub": {"method": "_log_mole_frac_pbub"},
-        # "log_mole_frac_pdew": {"method": "_log_mole_frac_pdew"},
-        # "log_mole_frac_phase_comp": {"method": "_log_mole_frac_phase_comp"},
-        # "log_mole_frac_phase_comp_apparent": {
-        #     "method": "_log_mole_frac_phase_comp_apparent"
-        # },
-        # "log_mole_frac_phase_comp_true": {
-        #     "method": "_log_mole_frac_phase_comp_true"
-        # },
-        # "log_pressure_phase_comp": {"method": "_log_pressure_phase_comp"},
-        # "log_pressure_phase_comp_apparent": {
-        #     "method": "_log_pressure_phase_comp_apparent"
-        # },
-        # "log_pressure_phase_comp_true": {
-        #     "method": "_log_pressure_phase_comp_true"
-        # },
-        # "log_k_eq": {"method": "_log_k_eq"},
+        self.define_property(
+            name="flow_mol_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.FLOW_MOLE,
+        )
+        self.define_property(
+            name="flow_mol_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.FLOW_MOLE,
+        )
+        self.define_property(
+            name="flow_mol_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.FLOW_MOLE,
+        )
+        self.define_property(
+            name="flow_vol",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.FLOW_VOL,
+        )
+        self.define_property(
+            name="flow_vol_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.FLOW_VOL,
+        )
+        self.define_property(
+            name="flow_vol_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.FLOW_VOL,
+        )
+        self.define_property(
+            name="flow_vol_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.FLOW_VOL,
+        )
+
+        self.define_property(
+            name="fug_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.PRESSURE,
+        )
+        self.define_property(
+            name="fug_coeff_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+
+        self.define_property(
+            name="heat_capacity_ratio_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+
+        self.define_property(
+            name="gibbs_mass",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MASS,
+        )
+        self.define_property(
+            name="gibbs_mass_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MASS,
+        )
+        self.define_property(
+            name="gibbs_mass_phase_como",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MASS,
+        )
+        self.define_property(
+            name="gibbs_mol",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MOLE,
+        )
+        self.define_property(
+            name="gibbs_mol_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MOLE,
+        )
+        self.define_property(
+            name="gibbs_mol_phase_como",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MOLE,
+        )
+
+        self.define_property(
+            name="isentropic_speed_sound_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.VELOCITY,
+        )
+        self.define_property(
+            name="isothermal_speed_sound_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.VELOCITY,
+        )
+
+        self.define_property(
+            name="henry",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+            # TODO: Units are an issue here, as there are multiple ways to define this
+        )
+
+        self.define_property(
+            name="mass_frac_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="mass_frac_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="mass_frac_phase_comp_apparent",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="mass_frac_phase_comp_true",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+
+        self.define_property(
+            name="mole_frac_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="mole_frac_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="mole_frac_phase_comp_apparent",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="mole_frac_phase_comp_true",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+
+        self.define_property(
+            name="molality_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.MOLALITY,
+        )
+        self.define_property(
+            name="molality_phase_comp_apparent",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.MOLALITY,
+        )
+        self.define_property(
+            name="molality_phase_comp_true",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.MOLALITY,
+        )
+
+        self.define_property(
+            name="mw",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.MOLECULAR_WEIGHT,
+        )
+        self.define_property(
+            name="mw_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.MOLECULAR_WEIGHT,
+        )
+        self.define_property(
+            name="mw_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.MOLECULAR_WEIGHT,
+        )
+        self.define_property(
+            name="mw_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.MOLECULAR_WEIGHT,
+        )
+
+        self.define_property(
+            name="phase_frac",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="pressure",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.PRESSURE,
+        )
+        self.define_property(
+            name="pressure_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.PRESSURE,
+        )
+        self.define_property(
+            name="pressure_phase_comp_apparent",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.PRESSURE,
+        )
+        self.define_property(
+            name="pressure_phase_comp_true",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.PRESSURE,
+        )
+        self.define_property(
+            name="pressure_bubble",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.PRESSURE,
+        )
+        self.define_property(
+            name="pressure_dew",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.PRESSURE,
+        )
+        self.define_property(
+            name="pressure_osm_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.PRESSURE,
+        )
+        self.define_property(
+            name="pressure_sat_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.PRESSURE,
+        )
+        self.define_property(
+            name="surf_tens_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.SURFACE_TENSION,
+        )
+
+        self.define_property(
+            name="temperature",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.TEMPERATURE,
+        )
+        self.define_property(
+            name="temperature_bubble",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.TEMPERATURE,
+        )
+        self.define_property(
+            name="temperature_dew",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.TEMPERATURE,
+        )
+
+        self.define_property(
+            name="visc_d_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DYNAMIC_VISCOSITY,
+        )
+
+        self.define_property(
+            name="vol_mol_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.MOLAR_VOLUME,
+        )
+
+        self.define_property(
+            name="vol_mol_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.MOLAR_VOLUME,
+        )
+
+        # Log terms
+        self.define_property(
+            name="log_act_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_act_solvents",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_act_phase_comp_apparent",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_act_phase_comp_true",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_conc_mol_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_conc_mol_phase_comp_apparent",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_conc_mol_phase_comp_true",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+
+        self.define_property(
+            name="log_mass_frac_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_mass_frac_phase_comp_apparent",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_mass_frac_phase_comp_true",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+
+        self.define_property(
+            name="log_molality_frac_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_molality_frac_phase_comp_apparent",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_molality_frac_phase_comp_true",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+
+        self.define_property(
+            name="log_mole_frac_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_mole_frac_pbub",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_mole_frac_pdew",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_mole_frac_pbub",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_mole_frac_pdew",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_mole_frac_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_mole_frac_phase_comp_apparent",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_mole_frac_phase_comp_true",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+
+        self.define_property(
+            name="log_pressure_phase_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_pressure_phase_comp_apparent",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_pressure_phase_comp_true",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+
+        # Reaction Properties
+        # TODO: Units are also problematic here - no single definition
+        self.define_property(
+            name="dh_rxn",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MOLE,
+        )
+        self.define_property(
+            name="k_eq",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="log_k_eq",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="k_rxn",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="reaction_rate",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
 
 
 class PropertyClassMetadata(object):
@@ -654,7 +1670,6 @@ class PropertyClassMetadata(object):
         # TODO: Deprecate in favour of common units property
         self._default_units = UnitSet()
         self._properties = PropertySet(parent=self)
-        self._required_properties = {}
 
     @property
     def default_units(self):
@@ -670,21 +1685,21 @@ class PropertyClassMetadata(object):
     def properties(self):
         return self._properties
 
-    @property
-    def required_properties(self):
-        return self._required_properties
-
     def add_default_units(self, u):
-        """Add a dict with keys for the base quantities used in the
-        property package (as strings) and values of their default units as Pyomo unit objects.
-
-        If units are not provided for a quantity, it will be assumed to use base SI unites.
+        """
+        Set units of measurement for base quantities used in this property package. Units
+        should be provided as a dict with keys being the seven base quantities and values
+        being Pyomo unit expressions. These will be used to update the UnitSet associated
+        with this property package.
 
         Args:
             u (dict): Key=property, Value=units
 
         Returns:
             None
+
+        Raises:
+            TypeError if definitions for unexpected quantities are found
         """
         # TODO: Could look at replacing dict with defined arguments
         # This would be a big API change
@@ -706,16 +1721,20 @@ class PropertyClassMetadata(object):
                     property as a str, or None if the property will be
                     constructed by default.
         - 'units': (optional) units of measurement for the property.
+        - 'supported': (optional, default = True) bool indicating if this property is
+                       supported by this package.
+        - 'required': (optional, default = False) bool indicating if this property is
+                      required by this package.
 
         Args:
-            p (dict): Key=property, Value=PropertyMetadata or equiv. dict
+            p (dict): Key=property, Value=dict
 
         Returns:
             None
         """
         for k, v in p.items():
             try:
-                prop = getattr(self._properties, k).update_property(**v)
+                getattr(self._properties, k).update_property(v)
             except AttributeError:
                 # TODO: Deprecate this and make it raise an exception if an unknown property is encountered?
                 # Force users to explicitly declare new/custom properties
@@ -725,11 +1744,11 @@ class PropertyClassMetadata(object):
         # TODO: Update doc string
         """Add required properties to the metadata.
 
-        For each property, the value should be the expected units of
-        measurement for the property.
+        Update 'required' attribute of specified properties.
+        Note that argument must be a dict for backwards compatibility.
 
         Args:
-            p (dict): Key=property, Value=units
+            p (dict): Key=property, Value=(ignored)
 
         Returns:
             None

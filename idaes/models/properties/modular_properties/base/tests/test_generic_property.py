@@ -1262,33 +1262,38 @@ class TestGenericStateBlock(object):
                 # True and apparent properties require electrolytes, which are
                 # not tested here
                 # Check that method exists and continue
-                assert hasattr(
-                    frame.props[1],
-                    frame.params.get_metadata().properties[p.name]["method"],
-                )
+                if frame.params.get_metadata().properties[p.name].method is not None:
+                    assert hasattr(
+                        frame.props[1],
+                        frame.params.get_metadata().properties[p.name].method,
+                    )
                 continue
             elif p.name.endswith(("bubble", "bub", "dew")):
                 # Bubble and dew properties require phase equilibria, which are
                 # not tested here
                 # Check that method exists and continue
-                assert hasattr(
-                    frame.props[1],
-                    frame.params.get_metadata().properties[p.name]["method"],
-                )
+                if frame.params.get_metadata().properties[p.name].method is not None:
+                    assert hasattr(
+                        frame.props[1],
+                        frame.params.get_metadata().properties[p.name].method,
+                    )
                 continue
             elif p.name in ["dh_rxn", "log_k_eq"]:
                 # Not testing inherent reactions here either
                 # Check that method exists and continue
-                assert hasattr(
-                    frame.props[1],
-                    frame.params.get_metadata().properties[p.name]["method"],
-                )
+                if frame.params.get_metadata().properties[p.name].method is not None:
+                    assert hasattr(
+                        frame.props[1],
+                        frame.params.get_metadata().properties[p.name].method,
+                    )
                 continue
             elif p.name in ["diffus_phase_comp"]:
                 # phase indexed properties - these will be tested separately.
                 continue
-            else:
+            elif p.supported:
                 assert hasattr(frame.props[1], p.name)
+            else:
+                assert not hasattr(frame.props[1], p.name)
 
     @pytest.mark.unit
     def test_flows(self, frame):

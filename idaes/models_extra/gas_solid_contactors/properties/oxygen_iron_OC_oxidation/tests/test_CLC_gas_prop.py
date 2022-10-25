@@ -367,8 +367,9 @@ def test_state_vars():
 
     for name, var in m.fs.state.define_state_vars().items():
         # State vars should be included in the metadata with no method
-        assert name in m.fs.properties._metadata._properties
-        assert m.fs.properties._metadata._properties[name]["method"] is None
+        meta = getattr(m.fs.properties._metadata._properties, name)
+        assert meta.method is None
+        assert meta.supported
 
 
 @pytest.mark.unit
@@ -391,8 +392,9 @@ def test_indexed_state_block():
 
         for name, var in state.define_state_vars().items():
             # State vars should be included in the metadata with no method
-            assert name in m.fs.properties._metadata._properties
-            assert m.fs.properties._metadata._properties[name]["method"] is None
+            meta = getattr(m.fs.properties._metadata._properties, name)
+            assert meta.method is None
+            assert meta.supported
 
 
 @pytest.mark.unit
@@ -433,7 +435,7 @@ def test_property_construction_ordered():
     # Make sure the matching captures all the non-state vars.
     state_vars = m.fs.state.define_state_vars()
     n_state_vars = len(state_vars)
-    n_vars = len(m.fs.properties._metadata._properties)
+    n_vars = len(m.fs.properties._metadata.properties.list_supported_properties())
     assert len(matching) == n_vars - n_state_vars
 
     # Make sure we can add constraints one at a time, and only

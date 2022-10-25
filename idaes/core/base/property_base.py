@@ -924,7 +924,14 @@ should be constructed in this state block,
 
         # Get method name from resulting properties
         try:
-            if meta["method"] is None:
+            if not meta.supported:
+                # If method is False, package does not support property
+                # Raise NotImplementedError
+                clear_call_list(self, attr)
+                raise PropertyNotSupportedError(
+                    f"{self.name} {attr} is not supported by property package."
+                )
+            elif meta.method is None:
                 # If method is none, property should be constructed
                 # by property package, so raise PropertyPackageError
                 clear_call_list(self, attr)
@@ -933,15 +940,6 @@ should be constructed in this state block,
                     "by property package, but is not present. "
                     "This can be caused by methods being called "
                     "out of order.".format(self.name, attr)
-                )
-            elif meta["method"] is False:
-                # If method is False, package does not support property
-                # Raise NotImplementedError
-                clear_call_list(self, attr)
-                raise PropertyNotSupportedError(
-                    "{} {} is not supported by property package "
-                    "(property method is listed as False in "
-                    "package property metadata).".format(self.name, attr)
                 )
             elif isinstance(meta["method"], str):
                 # Try to get method name in from PropertyBlock object
