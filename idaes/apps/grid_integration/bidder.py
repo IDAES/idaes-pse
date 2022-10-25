@@ -275,6 +275,8 @@ class StochasticProgramBidder(AbstractBidder):
 
             forecaster: an initialized LMP forecaster object
 
+            real_time_underbid_penalty: penalty for RT power bid that's less than DA power bid, non-negative
+
         Returns:
             None
         """
@@ -1077,6 +1079,8 @@ class Bidder(StochasticProgramBidder):
             solver: a Pyomo mathematical programming solver object
 
             forecaster: an initialized LMP forecaster object
+
+            real_time_underbid_penalty: penalty for RT power bid that's less than DA power bid, non-negative
 
         Returns:
             None
