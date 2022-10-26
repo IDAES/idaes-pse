@@ -382,6 +382,12 @@ def state_initialization(b):
     henry_comps = []
     init_VLE = False
     for pp in _pe_pairs:
+        # Calculate states at subcritical pressure
+        if b.params.config.supercritical_extension == True:
+            pressure = b._pbar[pp]
+        else:
+            pressure = b.pressure
+
         # Look for a VLE pair with this phase - should only be 1
         if (
             b.params.get_phase(pp[0]).is_liquid_phase()
@@ -457,7 +463,7 @@ def state_initialization(b):
                     get_method(b, "pressure_sat_comp", j)(
                         b, b.params.get_component(j), b.temperature
                     )
-                    / b.pressure
+                    / pressure
                 )
             except GenericPropertyPackageError:
                 # No method for calculating Psat, use default values

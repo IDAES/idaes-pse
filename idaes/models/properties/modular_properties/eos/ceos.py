@@ -407,10 +407,15 @@ class Cubic(EoSBase):
             )
 
             def rule_A_eq(m, p1, p2, p3):
+                if b.params.config.supercritical_extension == True:
+                    pressure = b._pbar[p1, p2]
+                else:
+                    pressure = b.pressure
+
                 am_eq = getattr(m, "_" + cname + "_am_eq")
                 return (
                     am_eq[p1, p2, p3]
-                    * m.pressure
+                    * pressure
                     / (Cubic.gas_constant(b) * m._tbar[p1, p2]) ** 2
                 )
 
@@ -420,8 +425,13 @@ class Cubic(EoSBase):
             )
 
             def rule_B_eq(m, p1, p2, p3):
+                if b.params.config.supercritical_extension == True:
+                    pressure = b._pbar[p1, p2]
+                else:
+                    pressure = b.pressure
+
                 bm = getattr(m, cname + "_bm")
-                return bm[p3] * m.pressure / (Cubic.gas_constant(b) * m._tbar[p1, p2])
+                return bm[p3] * pressure / (Cubic.gas_constant(b) * m._tbar[p1, p2])
 
             b.add_component(
                 "_" + cname + "_B_eq",

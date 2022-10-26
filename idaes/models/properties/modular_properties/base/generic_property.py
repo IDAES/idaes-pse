@@ -1370,7 +1370,7 @@ class _GenericStateBlock(StateBlock):
             )
 
         # ---------------------------------------------------------------------
-        # Initialize P+, P- and pbar
+        # Initialize supercritical extension variables: pp, pn, _pbar
         for k in blk.keys():
             if blk[k].params.config.supercritical_extension:
                 if (blk[k].params.config.phases_in_equilibrium is not None and
@@ -1392,13 +1392,13 @@ class _GenericStateBlock(StateBlock):
             # Dew temperature initialization
             blk._init_Tdew(blk[k], T_units)
 
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        init_log.info(
-            "Dew and bubble point initialization: {}.".format(
-                idaeslog.condition(res)
-            )
-        )
+        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        #     res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+        # init_log.info(
+        #     "Dew and bubble point initialization: {}.".format(
+        #         idaeslog.condition(res)
+        #     )
+        # )
         
         # ---------------------------------------------------------------------
         # Calculate _tbar
@@ -1544,12 +1544,9 @@ class _GenericStateBlock(StateBlock):
                             c.activate()
 
                 for pp in blk[k].params._pe_pairs:
-                    # Activate formulation specific constraints
-                    blk[k].params.config.phase_equilibrium_state[
-                        pp
-                    ].phase_equil_initialization(blk[k], pp)
-                    blk[k].params.config.phase_equilibrium_state[pp] \
-                        .fix_tbar(blk[k], pp)
+                    blk[k]._tbar[pp].fix()
+                    if blk[k].params.config.supercritical_extension:
+                        blk[k]._pbar[pp].fix()
             
             n_cons += number_activated_constraints(blk[k])
             dof += degrees_of_freedom(blk[k])
@@ -1616,10 +1613,11 @@ class _GenericStateBlock(StateBlock):
                         lc = log(c)
                         v.set_value(value(lc))
 
-            # Unfix _tbar
+            # Unfix _tbar and _pbar
             for pp in blk[k].params._pe_pairs:
-                blk[k].params.config.phase_equilibrium_state[pp] \
-                    .unfix_tbar(blk[k], pp)
+                blk[k]._tbar[pp].unfix()
+                if blk[k].params.config.supercritical_extension:
+                        blk[k]._pbar[pp].fix()
 
         n_cons = 0
         dof = 0
@@ -1696,6 +1694,12 @@ class _GenericStateBlock(StateBlock):
                     l_phase = pp[0]
                 else:
                     l_phase = pp[1]
+            
+            # Calculate bubble point at subcritical pressure
+            if blk.params.config.supercritical_extension == True:
+                pressure = blk._pbar[pp]
+            else:
+                pressure = blk.pressure
 
             # Use lowest component temperature_crit as starting point
             # Starting high and moving down generally works better,
@@ -1732,7 +1736,7 @@ class _GenericStateBlock(StateBlock):
                         .return_expression(blk, l_phase, j, Tbub0 * T_units)
                         for j in henry_comps
                     )
-                    - blk.pressure
+                    - pressure
                 )
                 df = value(
                     sum(
@@ -1772,7 +1776,7 @@ class _GenericStateBlock(StateBlock):
                     * get_method(blk, "pressure_sat_comp", j)(
                         blk, blk.params.get_component(j), Tbub0 * T_units
                     )
-                    / blk.pressure
+                    / pressure
                 )
                 if blk.is_property_constructed("log_mole_frac_tbub"):
                     blk.log_mole_frac_tbub[pp, j].value = value(
@@ -1785,7 +1789,7 @@ class _GenericStateBlock(StateBlock):
                     * blk.params.get_component(j)
                     .config.henry_component[l_phase]["method"]
                     .return_expression(blk, l_phase, j, Tbub0 * T_units)
-                    / blk.pressure
+                    / pressure
                 )
                 if blk.is_property_constructed("log_mole_frac_tbub"):
                     blk.log_mole_frac_tbub[pp, j].value = value(
@@ -1804,6 +1808,11 @@ class _GenericStateBlock(StateBlock):
                     l_phase = pp[0]
                 else:
                     l_phase = pp[1]
+
+            if blk.params.config.supercritical_extension == True:
+                pressure = blk._pbar[pp]
+            else:
+                pressure = blk.pressure
 
             if (
                 hasattr(blk, "_mole_frac_tbub")
@@ -1832,7 +1841,7 @@ class _GenericStateBlock(StateBlock):
             # Iteration limit of 30
             while err > 1e-1 and counter < 30:
                 f = value(
-                    blk.pressure
+                    pressure
                     * (
                         sum(
                             blk.mole_frac_comp[j]
@@ -1852,7 +1861,7 @@ class _GenericStateBlock(StateBlock):
                     - 1
                 )
                 df = -value(
-                    blk.pressure
+                    pressure
                     * (
                         sum(
                             blk.mole_frac_comp[j]
@@ -1900,7 +1909,7 @@ class _GenericStateBlock(StateBlock):
             for j in raoult_comps:
                 _mole_frac_tdew[j] = value(
                     blk.mole_frac_comp[j]
-                    * blk.pressure
+                    * pressure
                     / get_method(blk, "pressure_sat_comp", j)(
                         blk, blk.params.get_component(j), Tdew0 * T_units
                     )
@@ -1912,7 +1921,7 @@ class _GenericStateBlock(StateBlock):
             for j in henry_comps:
                 _mole_frac_tdew[j] = value(
                     blk.mole_frac_comp[j]
-                    * blk.pressure
+                    * pressure
                     / blk.params.get_component(j)
                     .config.henry_component[l_phase]["method"]
                     .return_expression(blk, l_phase, j, Tdew0 * T_units)
@@ -2036,14 +2045,13 @@ class GenericStateBlockData(StateBlockData):
                 units=t_units,
             )
             
-            # p_units = pyunits.Pa
-            # self.pbar = Var(
-            #     self.params._pe_pairs,
-            #     initialize=value(self.pressure),
-            #     doc='Pressure for calculating phase equilibrium',
-            #     units=p_units,
-            # )
-
+            p_units = pyunits.Pa
+            self._pbar = Var(
+                self.params._pe_pairs,
+                initialize=value(self.pressure),
+                doc='Pressure for calculating phase equilibrium',
+                units=p_units,
+            )
 
         # Create common components for each property package
         for p in self.phase_list:

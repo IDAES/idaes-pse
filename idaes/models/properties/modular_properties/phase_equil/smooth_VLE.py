@@ -162,10 +162,10 @@ def phase_equil(b, phase_pair):
     
         def rule_pbar(b):
             """
-            pbar = P - Pc * Pm - eps_4 / 4
+            _pbar = P - Pc * Pm - eps_4 / 4
             """
-            return b.pbar[phase_pair] == b.pressure - pp - eps / 4
-        b.add_component("pbar_constraint" + suffix, Constraint(rule=rule_pbar))
+            return b._pbar[phase_pair] == b.pressure - pp - eps / 4
+        b.add_component("_pbar_constraint" + suffix, Constraint(rule=rule_pbar))
 
         # Rule P+
         def rule_pressure_comparison_1(b):
@@ -237,7 +237,7 @@ def calculate_tbar(b, phase_pair):
 
 
 def calculate_pbar(b, phase_pair):
-    if hasattr(b, "pbar"):
+    if hasattr(b, "_pbar"):
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
         
         pp = getattr(b, "pp" + suffix)
@@ -246,18 +246,7 @@ def calculate_pbar(b, phase_pair):
         
         pp.value = max(0, value(b.pressure - b.pressure_crit_mix))
         pn.value = max(0, value(b.pressure_crit_mix - b.pressure))
-        b.pbar[phase_pair].value = value(b.pressure - pp - eps / 4)
-
-
-
-def fix_tbar(b, phase_pair):
-    suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
-    b._tbar[phase_pair].fix()
-
-
-def unfix_tbar(b, phase_pair):
-    suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
-    b._tbar[phase_pair].unfix()
+        b._pbar[phase_pair].value = value(b.pressure - pp - eps / 4)
 
 
 def calculate_temperature_slacks(b, phase_pair):
@@ -327,8 +316,6 @@ class SmoothVLE(object):
     phase_equil_initialization = phase_equil_initialization
     calculate_tbar = calculate_tbar
     calculate_pbar = calculate_pbar
-    fix_tbar = fix_tbar
-    unfix_tbar = unfix_tbar
     calculate_temperature_slacks = calculate_temperature_slacks
     calculate_ceos_derivative_slacks = calculate_ceos_derivative_slacks
     calculate_scaling_factors = calculate_scaling_factors
