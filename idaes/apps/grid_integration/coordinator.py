@@ -241,6 +241,8 @@ class DoubleLoopCoordinator:
             "p_cost": _update_p_cost,
             "p_max": _update_time_series_params,
             "p_min": _update_time_series_params,
+            "p_min_agc": _update_time_series_params,
+            "p_max_agc": _update_time_series_params,
             "fixed_commitment": _update_time_series_params,
             "min_up_time": _update_non_time_series_params,
             "min_down_time": _update_non_time_series_params,
