@@ -943,7 +943,7 @@ class PropertySet(object):
             units=self.unitset.ENERGY_MOLE,
         )
         self.define_property(
-            name="energy_internal_mol_phase_como",
+            name="energy_internal_mol_phase_comp",
             method=None,
             supported=False,
             required=False,
@@ -965,7 +965,7 @@ class PropertySet(object):
             units=self.unitset.ENERGY_MASS,
         )
         self.define_property(
-            name="enth_mass_phase_como",
+            name="enth_mass_phase_comp",
             method=None,
             supported=False,
             required=False,
@@ -986,7 +986,7 @@ class PropertySet(object):
             units=self.unitset.ENERGY_MOLE,
         )
         self.define_property(
-            name="enth_mol_phase_como",
+            name="enth_mol_phase_comp",
             method=None,
             supported=False,
             required=False,
@@ -1008,7 +1008,7 @@ class PropertySet(object):
             units=self.unitset.ENERGY_MASS,
         )
         self.define_property(
-            name="entr_mass_phase_como",
+            name="entr_mass_phase_comp",
             method=None,
             supported=False,
             required=False,
@@ -1029,7 +1029,7 @@ class PropertySet(object):
             units=self.unitset.ENERGY_MOLE,
         )
         self.define_property(
-            name="entr_mol_phase_como",
+            name="entr_mol_phase_comp",
             method=None,
             supported=False,
             required=False,
@@ -1159,7 +1159,7 @@ class PropertySet(object):
             units=self.unitset.ENERGY_MASS,
         )
         self.define_property(
-            name="gibbs_mass_phase_como",
+            name="gibbs_mass_phase_comp",
             method=None,
             supported=False,
             required=False,
@@ -1180,7 +1180,7 @@ class PropertySet(object):
             units=self.unitset.ENERGY_MOLE,
         )
         self.define_property(
-            name="gibbs_mol_phase_como",
+            name="gibbs_mol_phase_comp",
             method=None,
             supported=False,
             required=False,
@@ -1737,8 +1737,36 @@ class PropertyClassMetadata(object):
                 getattr(self._properties, k).update_property(v)
             except AttributeError:
                 # TODO: Deprecate this and make it raise an exception if an unknown property is encountered?
-                # Force users to explicitly declare new/custom properties
-                self._properties.define_property(name=k, **v)
+                # # Force users to explicitly declare new/custom properties
+                # self._properties.define_property(name=k, **v)
+                raise PropertyPackageError(
+                    f"Encountered metadata for unknown property {k}. If you are trying to create a custom "
+                    "property please use the define_custom_properties method instead."
+                )
+
+    def define_custom_properties(self, p):
+        """Add custom properties to the metadata.
+
+        For each property, the value should be another dict which may contain
+        the following keys:
+
+        - 'method': (required) the name of a method to construct the
+                    property as a str, or None if the property will be
+                    constructed by default.
+        - 'units': (optional) units of measurement for the property.
+        - 'supported': (optional, default = True) bool indicating if this property is
+                       supported by this package.
+        - 'required': (optional, default = False) bool indicating if this property is
+                      required by this package.
+
+        Args:
+            p (dict): Key=property, Value=dict
+
+        Returns:
+            None
+        """
+        for k, v in p.items():
+            self._properties.define_property(name=k, **v)
 
     def add_required_properties(self, p):
         # TODO: Update doc string
