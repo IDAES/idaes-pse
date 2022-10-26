@@ -30,6 +30,7 @@ from pyomo.environ import (
     sqrt,
     Var,
     units as pyunits,
+    value,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core import LiquidPhase, VaporPhase
@@ -51,6 +52,8 @@ from idaes.models.properties.modular_properties.eos.ceos_common import (
     CubicThermoExpressions,
     CubicType,
 )
+from idaes.core.util.constants import Constants as const
+from idaes.core.solvers import get_solver
 
 # pylint: disable=invalid-name
 
@@ -112,6 +115,7 @@ CubicConfig.declare(
 
 
 class Cubic(EoSBase):
+
     @staticmethod
     def common(b, pobj):
         # TODO: determine if Henry's Law applies to Cubic EoS systems
@@ -480,6 +484,7 @@ class Cubic(EoSBase):
                                                    b.phase_list,
                                                    rule=second_derivative)
 
+
     @staticmethod
     def build_critical_properties(b, p):
         if p == 'Vap':
@@ -552,6 +557,38 @@ class Cubic(EoSBase):
                     (bm_crit * m.pressure_crit_mix /
                       (Cubic.gas_constant(b) * m.temperature_crit_mix))
             b.add_component('B_crit', Constraint(rule=rule_B_crit))
+
+    @staticmethod
+    def initialize_critical_properties(b, p):
+        if p == 'Vap':
+            return None
+        else:
+            if b.params.config.supercritical_extension:
+                b.temperature_crit_mix.value = value(
+                    sum(b.mole_frac_comp[j] *
+                        b.params.get_component(j).temperature_crit
+                        for j in b.component_list))
+        
+                v_crit = value(
+                    sum(b.mole_frac_comp[j] *
+                        b.params.get_component(j).volume_crit
+                        for j in b.component_list))
+                Z_crit = value(
+                    sum(b.mole_frac_comp[j] *
+                        b.params.get_component(j).compress_factor_crit
+                        for j in b.component_list))
+        
+                b.pressure_crit_mix.value = value(
+                    Z_crit * const.gas_constant * 
+                    b.temperature_crit_mix / v_crit)
+        
+                for c in b.component_objects(Constraint):
+                    if c.local_name in ('A_crit', 'B_crit'):
+                        c.activate()
+                    else:
+                        c.deactivate()
+
+            return None
 
     @staticmethod
     def calculate_scaling_factors(b, pobj):

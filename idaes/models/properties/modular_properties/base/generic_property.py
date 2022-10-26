@@ -1355,37 +1355,13 @@ class _GenericStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Initialize temperature_crit_mix and pressure_crit_mix
         for k in blk.keys():
-            p_config = blk[k].params.config
-            
-            if p_config.supercritical_extension:
-                blk[k].temperature_crit_mix.value = value(
-                    sum(blk[k].mole_frac_comp[j] *
-                        blk[k].params.get_component(j).temperature_crit
-                        for j in blk[k].component_list))
-    
-                p_crit = value(sum(blk[k].mole_frac_comp[j] *
-                                   blk[k].params.get_component(j).pressure_crit
-                                   for j in blk[k].component_list))
-                v_crit = value(
-                    sum(blk[k].mole_frac_comp[j] *
-                        blk[k].params.get_component(j).volume_crit
-                        for j in blk[k].component_list))
-                Z_crit = value(
-                    sum(blk[k].mole_frac_comp[j] *
-                        blk[k].params.get_component(j).compress_factor_crit
-                        for j in blk[k].component_list))
-    
-                blk[k].pressure_crit_mix.value = value(
-                    Z_crit * const.gas_constant * 
-                    blk[k].temperature_crit_mix / v_crit)
-    
-                for c in blk[k].component_objects(Constraint):
-                    if c.local_name in ('A_crit', 'B_crit'):
-                        c.activate()
-                    else:
-                        c.deactivate()
-        
-        if p_config.supercritical_extension:
+            reference_phase = 'Liq'
+            p_config = blk[k].params.get_phase(reference_phase).config
+            p_config.equation_of_state.initialize_critical_properties(
+                blk[k], reference_phase
+            )
+                    
+        if blk[k].params.config.supercritical_extension:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
             init_log.info(
@@ -2622,24 +2598,23 @@ class GenericStateBlockData(StateBlockData):
     # -------------------------------------------------------------------------
     # Critical Properties
     def _mixture_critical_properties(b):
+        reference_phase = 'Liq'
         try:
-            def rule_mixture_critical_properties(b, p):
-                t_units = b.params.get_metadata().default_units["temperature"]
-                p_units = pyunits.Pa
-                b.temperature_crit_mix = Var(
-                        doc="Critical temperature of mixture",
-                        bounds=(b.temperature.lb, None),
-                        units=t_units)
-    
-                b.pressure_crit_mix = Var(
-                        doc="Critical pressure of mixture",
-                        bounds=(b.pressure.lb, None),
-                        units=p_units)
-    
-                # Mixing rule
-                p_config = b.params.get_phase(p).config
-                p_config.equation_of_state.build_critical_properties(b, p)
-                # b.params.config.critical_properties.build_critical_properties(b)
+            t_units = b.params.get_metadata().default_units["temperature"]
+            p_units = pyunits.Pa
+            b.temperature_crit_mix = Var(
+                    doc="Critical temperature of mixture",
+                    bounds=(b.temperature.lb, None),
+                    units=t_units)
+
+            b.pressure_crit_mix = Var(
+                    doc="Critical pressure of mixture",
+                    bounds=(b.pressure.lb, None),
+                    units=p_units)
+
+            p_config = b.params.get_phase(reference_phase).config
+            p_config.equation_of_state.build_critical_properties(b, reference_phase)
+            # b.params.config.critical_properties.build_critical_properties(b)
 
         except AttributeError:
             b.del_component(b.temperature_crit_mix)
