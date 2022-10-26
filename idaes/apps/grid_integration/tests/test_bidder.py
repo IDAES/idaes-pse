@@ -200,6 +200,8 @@ def test_compute_DA_bids(bidder_object):
             gen: {
                 "p_min": pmin,
                 "p_max": pmax,
+                "p_min_agc": pmin,
+                "p_max_agc": pmax,
                 "startup_capacity": pmin,
                 "shutdown_capacity": pmin,
                 "p_cost": [
@@ -225,6 +227,8 @@ def test_compute_DA_bids(bidder_object):
         expected_bids[t][gen] = {
             "p_min": pmin,
             "p_max": pmax,
+            "p_min_agc": pmin,
+            "p_max_agc": pmax,
             "startup_capacity": pmin,
             "shutdown_capacity": pmin,
         }
@@ -280,6 +284,8 @@ def test_compute_RT_bids(bidder_object):
             gen: {
                 "p_min": pmin,
                 "p_max": pmax,
+                "p_min_agc": pmin,
+                "p_max_agc": pmax,
                 "startup_capacity": pmin,
                 "shutdown_capacity": pmin,
                 "p_cost": [(p, (p - pmin) * marginal_cost) for p, _ in default_bids],
