@@ -53,15 +53,12 @@ def phase_equil(b, phase_pair):
     # Definition of equilibrium temperature slack variables for smooth VLE
     t_units = b.params.get_metadata().default_units["temperature"]
     if v_only_comps == []:
-        b.add_component(
-            "s" + suffix,
-            Var(b.params.phase_list,
+        s = Var(b.params.phase_list,
                 initialize=0.0,
                 bounds=(0, None),
                 doc='Slack variable for equilibrium temperature',
-                units=t_units),
-        )
-        s = getattr(b, "s" + suffix)
+                units=t_units)
+        b.add_component("s" + suffix, s)
 
         # Equilibrium temperature
         def rule_tbar(b):
@@ -72,34 +69,25 @@ def phase_equil(b, phase_pair):
     else:
         b._tbar[phase_pair] = b.temperature
 
-    b.add_component(
-        "eps" + suffix,
-        Param(default=1e-04,
-              mutable=True,
-              doc='Smoothing parameter for complementarities',
-              units=t_units),
-    )
-    eps = getattr(b, "eps" + suffix)
+    eps = Param(default=1e-04,
+                mutable=True,
+                doc='Smoothing parameter for complementarities',
+                units=t_units)
+    b.add_component("eps" + suffix, eps)
     
-    b.add_component(
-        "gp" + suffix,
-        Var(b.params.phase_list,
-            initialize=0.0,
-            bounds=(0, None),
-            doc='Slack variable for cubic second derivative for phase p',
-            units=pyunits.dimensionless),
-    )
-    gp = getattr(b, "gp" + suffix)
+    gp = Var(b.params.phase_list,
+             initialize=0.0,
+             bounds=(0, None),
+             doc='Slack variable for cubic second derivative for phase p',
+             units=pyunits.dimensionless)
+    b.add_component("gp" + suffix, gp)
     
-    b.add_component(
-        "gn" + suffix,
-        Var(b.params.phase_list,
-            initialize=0.0,
-            bounds=(0, None),
-            doc='Slack variable for cubic second derivative for phase p',
-            units=pyunits.dimensionless),
-    )
-    gn = getattr(b, "gn" + suffix)
+    gn = Var(b.params.phase_list,
+             initialize=0.0,
+             bounds=(0, None),
+             doc='Slack variable for cubic second derivative for phase p',
+             units=pyunits.dimensionless)
+    b.add_component("gn" + suffix, gn)
 
     def rule_temperature_slack_complementarity(b, p):
         flow_phase = b.flow_mol_phase[p]
@@ -141,28 +129,21 @@ def phase_equil(b, phase_pair):
     )
 
     if b.params.config.supercritical_extension:
-        b.add_component(
-        "pp" + suffix,
-        Var(initialize=0.0,
-            bounds=(0, None),
-            doc="Artificial pressure variable to check if P > Pc",
-            units=pyunits.dimensionless)
-        )
-        pp = getattr(b, "pp" + suffix)
+        pp = Var(initialize=0.0,
+                 bounds=(0, None),
+                 doc="Artificial pressure variable to check if P > Pc",
+                 units=pyunits.dimensionless)
+        b.add_component("pp" + suffix, pp)
         
-        b.add_component(
-        "pn" + suffix,
-        Var(initialize=0.0,
-            bounds=(0, None),
-            doc="Artificial pressure variable to check if P < Pc",
-            units=pyunits.dimensionless)
-        )
-        pn = getattr(b, "pn" + suffix)
-    
-    
+        pn = Var(initialize=0.0,
+                 bounds=(0, None),
+                 doc="Artificial pressure variable to check if P < Pc",
+                 units=pyunits.dimensionless)
+        b.add_component("pn" + suffix, pn)
+
         def rule_pbar(b):
             """
-            _pbar = P - Pc * Pm - eps_4 / 4
+            _pbar = P - Pc * Pm - eps / 4
             """
             return b._pbar[phase_pair] == b.pressure - pp - eps / 4
         b.add_component("_pbar_constraint" + suffix, Constraint(rule=rule_pbar))
@@ -188,7 +169,7 @@ def phase_equil(b, phase_pair):
             "eq_pressure_comparison_2" + suffix,
             Constraint(rule=rule_pressure_comparison_2),
         )
-    
+
         def rule_vapor_flow_complementarity(b):
             """
             0 <= P+ _|_ V >= 0
