@@ -20,6 +20,9 @@ from idaes.apps.grid_integration.tests.util import (
     TestingModel,
     TestingForecaster,
     testing_model_data,
+    testing_renewable_data,
+    renewable_generator_params,
+    testing_generator_params,
 )
 from pyomo.common import unittest as pyo_unittest
 
@@ -30,15 +33,20 @@ n_scenario = 3
 n_tracking_hour = 1
 
 
-@pytest.fixture
-def coordinator_object():
+@pytest.fixture(params=["thermal", "renewable"])
+def coordinator_object(request):
 
     # create solver
     solver = pyo.SolverFactory("cbc")
 
     ## create trackers
     # make a tracker
-    tracking_model_object = TestingModel(model_data=testing_model_data)
+    if request.param == "thermal":
+        model_data = testing_model_data
+    else:
+        model_data = testing_renewable_data
+
+    tracking_model_object = TestingModel(model_data=model_data)
     thermal_tracker = Tracker(
         tracking_model_object=tracking_model_object,
         tracking_horizon=tracking_horizon,
@@ -47,7 +55,7 @@ def coordinator_object():
     )
 
     # make a projection tracker
-    projection_tracking_model_object = TestingModel(model_data=testing_model_data)
+    projection_tracking_model_object = TestingModel(model_data=model_data)
     thermal_projection_tracker = Tracker(
         tracking_model_object=projection_tracking_model_object,
         tracking_horizon=tracking_horizon,
@@ -57,7 +65,7 @@ def coordinator_object():
 
     ## create a bidder
     forecaster = TestingForecaster(prediction=30)
-    bidding_model_object = TestingModel(model_data=testing_model_data)
+    bidding_model_object = TestingModel(model_data=model_data)
     thermal_bidder = Bidder(
         bidding_model_object=bidding_model_object,
         day_ahead_horizon=day_ahead_bidding_horizon,
@@ -75,6 +83,20 @@ def coordinator_object():
     )
 
     return coordinator_object
+
+
+@pytest.mark.unit
+def test_static_params(coordinator_object):
+    if (
+        coordinator_object.bidder.bidding_model_object.model_data.generator_type
+        == "thermal"
+    ):
+        gen_dict = testing_generator_params
+        testing_generator_params.pop("initial_status")
+        testing_generator_params.pop("initial_p_output")
+    else:
+        gen_dict = renewable_generator_params
+    coordinator_object._update_static_params(gen_dict)
 
 
 @pytest.mark.unit

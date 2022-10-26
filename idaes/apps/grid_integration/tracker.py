@@ -210,7 +210,19 @@ class Tracker:
             self.time_set, initialize=0, within=pyo.Reals, mutable=True
         )
 
-        self.model.deviation_penalty = pyo.Param(initialize=10000, mutable=False)
+        large_penalty = 10000
+        penalty_init = {}
+        for t in self.time_set:
+            if t < self.n_tracking_hour:
+                penalty_init[t] = large_penalty
+            else:
+                penalty_init[t] = large_penalty / (
+                    self.tracking_horizon - self.n_tracking_hour
+                )
+        self.model.deviation_penalty = pyo.Param(
+            self.time_set, initialize=penalty_init, mutable=False
+        )
+
         return
 
     def _add_tracking_constraints(self):
@@ -260,9 +272,9 @@ class Tracker:
         weight = self.tracking_model_object.total_cost[1]
 
         for t in self.time_set:
-            self.model.obj.expr += weight * cost[t] + self.model.deviation_penalty * (
-                self.model.power_underdelivered[t] + self.model.power_overdelivered[t]
-            )
+            self.model.obj.expr += weight * cost[t] + self.model.deviation_penalty[
+                t
+            ] * (self.model.power_underdelivered[t] + self.model.power_overdelivered[t])
 
         return
 
@@ -300,7 +312,7 @@ class Tracker:
         self._pass_market_dispatch(market_dispatch)
 
         # solve the model
-        self.solver.solve(self.model, tee=True)
+        self.solver.solve(self.model, tee=False)
 
         self.record_results(date=date, hour=hour)
 
