@@ -40,7 +40,7 @@ class _PropertyParameterBlock(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties(
+        obj.define_custom_properties(
             {
                 "prop1": {"method": None, "units": "m"},
                 "prop3": {"method": False, "supported": False},
@@ -187,7 +187,12 @@ class _ReactionParameterBlock5(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties({"rxn1": {"method": None}})
+        obj.define_custom_properties(
+            {
+                "rxn1": {"method": None},
+                "prop1": {"required": True},
+            }
+        )
         obj.add_default_units(
             {
                 "time": pyunits.s,
@@ -197,7 +202,6 @@ class _ReactionParameterBlock5(ReactionParameterBlock):
                 "temperature": pyunits.K,
             }
         )
-        obj.add_required_properties({"prop1": "km"})
 
 
 @declare_process_block_class("ReactionParameterBlock6")
@@ -207,7 +211,12 @@ class _ReactionParameterBlock6(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties({"rxn1": {"method": None}})
+        obj.define_custom_properties(
+            {
+                "rxn1": {"method": None},
+                "prop1": {"required": True},
+            }
+        )
         obj.add_default_units(
             {
                 "time": pyunits.s,
@@ -217,7 +226,6 @@ class _ReactionParameterBlock6(ReactionParameterBlock):
                 "temperature": pyunits.K,
             }
         )
-        obj.add_required_properties({"prop1": "m"})
 
 
 @pytest.mark.unit
@@ -340,7 +348,7 @@ class _Parameters(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties(
+        obj.define_custom_properties(
             {
                 "a": {"method": "a_method"},
                 "recursion1": {"method": "_recursion1"},

@@ -384,6 +384,10 @@ class UnitSet(object):
         return self._mass * self._length**-1 * self._time**-1
 
     @property
+    def KINEMATIC_VISCOSITY(self):
+        return self._length**2 * self._time**-1
+
+    @property
     def SURFACE_TENSION(self):
         return self._mass * self._time**-2
 
@@ -576,6 +580,12 @@ class PropertySet(object):
         Returns:
             None
         """
+        if hasattr(self, name):
+            raise PropertyPackageError(
+                f"A property with the name {name} already exists. Please use update_property "
+                "method if you wish to update an existing property's metadata."
+            )
+
         setattr(
             self,
             name,
@@ -707,6 +717,13 @@ class PropertySet(object):
             units=units.dimensionless,
         )
         self.define_property(
+            name="compress_fact",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
             name="compress_fact_phase",
             method=None,
             supported=False,
@@ -742,28 +759,28 @@ class PropertySet(object):
             units=self.unitset.DENSITY_MASS,
         )
         self.define_property(
-            name="conc_mole_comp",
+            name="conc_mol_comp",
             method=None,
             supported=False,
             required=False,
             units=self.unitset.DENSITY_MOLE,
         )
         self.define_property(
-            name="conc_mole_phase_comp",
+            name="conc_mol_phase_comp",
             method=None,
             supported=False,
             required=False,
             units=self.unitset.DENSITY_MOLE,
         )
         self.define_property(
-            name="conc_mole_phase_comp_apparent",
+            name="conc_mol_phase_comp_apparent",
             method=None,
             supported=False,
             required=False,
             units=self.unitset.DENSITY_MOLE,
         )
         self.define_property(
-            name="conc_mole_phase_comp_true",
+            name="conc_mol_phase_comp_true",
             method=None,
             supported=False,
             required=False,
@@ -772,6 +789,13 @@ class PropertySet(object):
 
         self.define_property(
             name="cp_mass",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.HEAT_CAPACITY_MASS,
+        )
+        self.define_property(
+            name="cp_mass_comp",
             method=None,
             supported=False,
             required=False,
@@ -793,6 +817,13 @@ class PropertySet(object):
         )
         self.define_property(
             name="cp_mol",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.HEAT_CAPACITY_MOLE,
+        )
+        self.define_property(
+            name="cp_mol_comp",
             method=None,
             supported=False,
             required=False,
@@ -821,6 +852,13 @@ class PropertySet(object):
             units=self.unitset.HEAT_CAPACITY_MASS,
         )
         self.define_property(
+            name="cv_mass_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.HEAT_CAPACITY_MASS,
+        )
+        self.define_property(
             name="cv_mass_phase",
             method=None,
             supported=False,
@@ -836,6 +874,13 @@ class PropertySet(object):
         )
         self.define_property(
             name="cv_mol",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.HEAT_CAPACITY_MOLE,
+        )
+        self.define_property(
+            name="cv_mol_comp",
             method=None,
             supported=False,
             required=False,
@@ -864,6 +909,20 @@ class PropertySet(object):
             units=self.unitset.DENSITY_MASS,
         )
         self.define_property(
+            name="dens_mass_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DENSITY_MASS,
+        )
+        self.define_property(
+            name="dens_mass_crit",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DENSITY_MASS,
+        )
+        self.define_property(
             name="dens_mass_phase",
             method=None,
             supported=False,
@@ -878,6 +937,20 @@ class PropertySet(object):
             units=self.unitset.DENSITY_MOLE,
         )
         self.define_property(
+            name="dens_mol_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DENSITY_MOLE,
+        )
+        self.define_property(
+            name="dens_mol_crit",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DENSITY_MOLE,
+        )
+        self.define_property(
             name="dens_mol_phase",
             method=None,
             supported=False,
@@ -885,6 +958,13 @@ class PropertySet(object):
             units=self.unitset.DENSITY_MOLE,
         )
 
+        self.define_property(
+            name="diffus_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DIFFUSIVITY,
+        )
         self.define_property(
             name="diffus_phase_comp",
             method=None,
@@ -979,6 +1059,13 @@ class PropertySet(object):
             units=self.unitset.ENERGY_MOLE,
         )
         self.define_property(
+            name="enth_mol_comp",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MOLE,
+        )
+        self.define_property(
             name="enth_mol_phase",
             method=None,
             supported=False,
@@ -1016,6 +1103,13 @@ class PropertySet(object):
         )
         self.define_property(
             name="entr_mol",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.ENERGY_MOLE,
+        )
+        self.define_property(
+            name="entr_mol_comp",
             method=None,
             supported=False,
             required=False,
@@ -1136,6 +1230,13 @@ class PropertySet(object):
             units=units.dimensionless,
         )
 
+        self.define_property(
+            name="heat_capacity_ratio",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
         self.define_property(
             name="heat_capacity_ratio_phase",
             method=None,
@@ -1363,6 +1464,13 @@ class PropertySet(object):
             units=self.unitset.PRESSURE,
         )
         self.define_property(
+            name="pressure_crit",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.PRESSURE,
+        )
+        self.define_property(
             name="pressure_dew",
             method=None,
             supported=False,
@@ -1371,6 +1479,20 @@ class PropertySet(object):
         )
         self.define_property(
             name="pressure_osm_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.PRESSURE,
+        )
+        self.define_property(
+            name="pressure_red",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="pressure_sat",  # TODO: Deprecate in favour of pressure_sat
             method=None,
             supported=False,
             required=False,
@@ -1406,7 +1528,28 @@ class PropertySet(object):
             units=self.unitset.TEMPERATURE,
         )
         self.define_property(
+            name="temperature_crit",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.TEMPERATURE,
+        )
+        self.define_property(
             name="temperature_dew",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.TEMPERATURE,
+        )
+        self.define_property(
+            name="temperature_red",
+            method=None,
+            supported=False,
+            required=False,
+            units=units.dimensionless,
+        )
+        self.define_property(
+            name="temperature_sat",  # TODO: Deprecate in favour of temperature_sat_comp?
             method=None,
             supported=False,
             required=False,
@@ -1414,11 +1557,47 @@ class PropertySet(object):
         )
 
         self.define_property(
+            name="therm_cond",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.THERMAL_CONDUCTIVITY,
+        )
+        self.define_property(
+            name="therm_cond_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.THERMAL_CONDUCTIVITY,
+        )
+
+        self.define_property(
+            name="visc_d",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.DYNAMIC_VISCOSITY,
+        )
+        self.define_property(
             name="visc_d_phase",
             method=None,
             supported=False,
             required=False,
             units=self.unitset.DYNAMIC_VISCOSITY,
+        )
+        self.define_property(
+            name="visc_k_phase",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.KINEMATIC_VISCOSITY,
+        )
+        self.define_property(
+            name="visc_k",
+            method=None,
+            supported=False,
+            required=False,
+            units=self.unitset.KINEMATIC_VISCOSITY,
         )
 
         self.define_property(
@@ -1446,7 +1625,7 @@ class PropertySet(object):
             units=units.dimensionless,
         )
         self.define_property(
-            name="log_act_solvents",
+            name="log_act_phase_solvents",
             method=None,
             supported=False,
             required=False,
@@ -1511,21 +1690,21 @@ class PropertySet(object):
         )
 
         self.define_property(
-            name="log_molality_frac_phase_comp",
+            name="log_molality_phase_comp",
             method=None,
             supported=False,
             required=False,
             units=units.dimensionless,
         )
         self.define_property(
-            name="log_molality_frac_phase_comp_apparent",
+            name="log_molality_phase_comp_apparent",
             method=None,
             supported=False,
             required=False,
             units=units.dimensionless,
         )
         self.define_property(
-            name="log_molality_frac_phase_comp_true",
+            name="log_molality_phase_comp_true",
             method=None,
             supported=False,
             required=False,
@@ -1554,14 +1733,14 @@ class PropertySet(object):
             units=units.dimensionless,
         )
         self.define_property(
-            name="log_mole_frac_pbub",
+            name="log_mole_frac_tbub",
             method=None,
             supported=False,
             required=False,
             units=units.dimensionless,
         )
         self.define_property(
-            name="log_mole_frac_pdew",
+            name="log_mole_frac_tdew",
             method=None,
             supported=False,
             required=False,
@@ -1736,7 +1915,7 @@ class PropertyClassMetadata(object):
             try:
                 getattr(self._properties, k).update_property(v)
             except AttributeError:
-                # TODO: Deprecate this and make it raise an exception if an unknown property is encountered?
+                # TODO: Deprecate this and make it raise an exception if an unknown property is encountered
                 # # Force users to explicitly declare new/custom properties
                 # self._properties.define_property(name=k, **v)
                 raise PropertyPackageError(
