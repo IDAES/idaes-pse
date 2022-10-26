@@ -282,9 +282,7 @@ def test_compute_RT_bids(bidder_object):
                 "p_max": pmax,
                 "startup_capacity": pmin,
                 "shutdown_capacity": pmin,
-                "p_cost": [
-                    (p, (p - pmin) * marginal_cost) for p, _ in default_bids
-                ],
+                "p_cost": [(p, (p - pmin) * marginal_cost) for p, _ in default_bids],
             }
         }
         for t in range(horizon)
