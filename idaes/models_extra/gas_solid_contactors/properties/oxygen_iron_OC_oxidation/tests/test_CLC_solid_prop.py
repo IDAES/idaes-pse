@@ -308,7 +308,9 @@ def test_state_vars():
     assert len(list(m.component_data_objects(Constraint))) == 1
 
     for name, var in m.fs.state.define_state_vars().items():
-        assert hasattr(m.fs.properties._metadata._properties, name)
+        assert hasattr(m.fs.properties._metadata._properties, name) or hasattr(
+            m.fs.properties._metadata._properties, "_" + name
+        )
 
 
 @pytest.mark.unit

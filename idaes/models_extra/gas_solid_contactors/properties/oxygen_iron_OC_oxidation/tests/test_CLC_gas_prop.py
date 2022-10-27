@@ -367,7 +367,7 @@ def test_state_vars():
 
     for name, var in m.fs.state.define_state_vars().items():
         # State vars should be included in the metadata with no method
-        meta = getattr(m.fs.properties._metadata._properties, name)
+        meta = m.fs.properties._metadata._properties[name]
         assert meta.method is None
         assert meta.supported
 
@@ -392,7 +392,7 @@ def test_indexed_state_block():
 
         for name, var in state.define_state_vars().items():
             # State vars should be included in the metadata with no method
-            meta = getattr(m.fs.properties._metadata._properties, name)
+            meta = m.fs.properties._metadata._properties[name]
             assert meta.method is None
             assert meta.supported
 
