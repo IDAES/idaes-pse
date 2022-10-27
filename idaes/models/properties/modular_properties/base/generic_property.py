@@ -1617,7 +1617,7 @@ class _GenericStateBlock(StateBlock):
             for pp in blk[k].params._pe_pairs:
                 blk[k]._tbar[pp].unfix()
                 if blk[k].params.config.supercritical_extension:
-                        blk[k]._pbar[pp].fix()
+                        blk[k]._pbar[pp].unfix()
 
         n_cons = 0
         dof = 0
