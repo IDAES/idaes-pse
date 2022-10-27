@@ -860,7 +860,7 @@ discretizing length domain (default=3)""",
                 return (
                     2
                     * (b.radial_domain.at(2) - b.radial_domain.at(1))
-                    / (b.radial_domain[b.rindex[r].value] ** 2 - b.drum_ri**2)
+                    / (b.radial_domain.at(b.rindex[r].value) ** 2 - b.drum_ri**2)
                     * (
                         sum(
                             0.5
