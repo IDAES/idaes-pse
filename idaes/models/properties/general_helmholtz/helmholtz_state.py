@@ -40,6 +40,9 @@ from idaes.models.properties.general_helmholtz.helmholtz_functions import (
     PhaseType,
     StateVars,
 )
+from idaes.models.properties.general_helmholtz.components import (
+    components as supported_components,
+)
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -928,6 +931,34 @@ class HelmholtzStateBlockData(StateBlockData):
             pub_phlist, component_list, rule=rule_mole_frac_phase_comp
         )
 
+        # Phase Thermal conductiviy
+        def rule_tc(b, p):
+            return supported_components[cmp]._thermal_conductivity(
+                self, delta[p], tau, on_blk=self
+            )
+
+        self.therm_cond_phase = pyo.Expression(
+            phlist, rule=rule_tc, doc="Thermal conductivity"
+        )
+
+        # Phase dynamic viscosity
+        def rule_mu(b, p):
+            return supported_components[cmp]._viscosity(
+                self, delta[p], tau, on_blk=self
+            )
+
+        self.visc_d_phase = pyo.Expression(
+            phlist, rule=rule_mu, doc="Viscosity (dynamic)"
+        )
+
+        # Phase kinimatic viscosity
+        def rule_nu(b, p):
+            return self.visc_d_phase[p] / self.dens_mass_phase[p]
+
+        self.visc_k_phase = pyo.Expression(
+            phlist, rule=rule_nu, doc="Kinematic viscosity"
+        )
+
         # Define some expressions for the balance terms returned by functions
         # This is just to allow assigning scale factors to the expressions
         # returned
@@ -1037,7 +1068,7 @@ class HelmholtzStateBlockData(StateBlockData):
                 "P": self.pressure,
                 "Vapor Fraction": self.vapor_frac,
                 "Molar Enthalpy": self.enth_mol,
-                "Molar Entropy": self.entr_mol,
+                # "Molar Entropy": self.entr_mol,
             }
         else:
             return {
@@ -1047,7 +1078,7 @@ class HelmholtzStateBlockData(StateBlockData):
                 "P": self.pressure,
                 "Vapor Fraction": self.vapor_frac,
                 "Mass Enthalpy": self.enth_mass,
-                "Mass Entropy": self.entr_mass,
+                # "Mass Entropy": self.entr_mass,
             }
 
     def extensive_state_vars(self):

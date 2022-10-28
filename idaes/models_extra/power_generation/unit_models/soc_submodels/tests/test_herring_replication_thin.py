@@ -508,7 +508,7 @@ def kazempoor_braun_replication(model):
         N_H2 = cccm_to_mps(df["sccm_H2"][case])
 
         # IAPWS95 returns psat in kPa
-        p_H2O = 1e3 * pyo.value(m.fs.prop_Iapws95.func_p_sat(647.096 / T_dew))
+        p_H2O = 1e3 * pyo.value(m.fs.prop_Iapws95.p_sat_func("H2O", 647.096 / T_dew))
         y_H2O = p_H2O / P
         N_H2O = (N_N2 + N_H2) * y_H2O / (1 - y_H2O)
 

@@ -26,4 +26,8 @@ components = {
     "co2": co2,
     "r134a": r134a,
     "r1234ze": r1234ze,
+    "H2O": h2o,
+    "CO2": co2,
+    "R134A": r134a,
+    "R1234ZE": r1234ze,
 }

@@ -798,6 +798,13 @@ class HelmholtzThermoExpressions(object):
             return cv * self.param.uc["kJ/kg/K to J/mol/K"]
         return cv * self.param.uc["kJ/kg/K to J/kg/K"]
 
+    def cv_mol_liq(self, **kwargs):
+        """Backward Compatability; Return liquid phase molar cv expression"""
+        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["cv_func"])
+        cv = blk.cv_func(c, delta_liq, tau)
+        return cv * self.param.uc["kJ/kg/K to J/mol/K"]
+
     def cv_vap(self, **kwargs):
         """Return vapor phase constant volume heat capacity expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
@@ -806,6 +813,13 @@ class HelmholtzThermoExpressions(object):
         if self.amount_basis == AmountBasis.MOLE:
             return cv * self.param.uc["kJ/kg/K to J/mol/K"]
         return cv * self.param.uc["kJ/kg/K to J/kg/K"]
+
+    def cv_mol_vap(self, **kwargs):
+        """Backward Compatability; Return vapor phase molar cv expression"""
+        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["cv_func"])
+        cv = blk.cv_func(c, delta_vap, tau)
+        return cv * self.param.uc["kJ/kg/K to J/mol/K"]
 
     def cp_liq(self, **kwargs):
         """Return liquid phase constant volume heat capacity expression"""
@@ -816,6 +830,13 @@ class HelmholtzThermoExpressions(object):
             return cp * self.param.uc["kJ/kg/K to J/mol/K"]
         return cp * self.param.uc["kJ/kg/K to J/kg/K"]
 
+    def cp_mol_liq(self, **kwargs):
+        """Backward Compatability; Return liquid phase molar cp expression"""
+        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["cp_func"])
+        cp = blk.cp_func(c, delta_liq, tau)
+        return cp * self.param.uc["kJ/kg/K to J/mol/K"]
+
     def cp_vap(self, **kwargs):
         """Return vapor phase constant volume heat capacity expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
@@ -824,6 +845,13 @@ class HelmholtzThermoExpressions(object):
         if self.amount_basis == AmountBasis.MOLE:
             return cp * self.param.uc["kJ/kg/K to J/mol/K"]
         return cp * self.param.uc["kJ/kg/K to J/kg/K"]
+
+    def cp_mol_vap(self, **kwargs):
+        """Backward Compatability; Return liquid phase molar cp expression"""
+        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["cp_func"])
+        cp = blk.cp_func(c, delta_vap, tau)
+        return cp * self.param.uc["kJ/kg/K to J/mol/K"]
 
     def w(self, **kwargs):
         """Return speed of sound expression, this may not make sense
