@@ -20,7 +20,6 @@ __author__ = "Jinliang Ma"
 import pyomo.environ as pyo
 from pyomo.environ import units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue
-from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData

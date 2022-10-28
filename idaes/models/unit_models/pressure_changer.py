@@ -30,7 +30,6 @@ from pyomo.environ import (
     Reals,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
