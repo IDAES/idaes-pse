@@ -357,9 +357,7 @@ class TestIAPWS(object):
                     "T": getattr(pyunits.pint_registry, "K"),
                     "P": getattr(pyunits.pint_registry, "Pa"),
                     "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
-                    "Molar Enthalpy": getattr(
-                        pyunits.pint_registry, "J/mole"
-                    ),
+                    "Molar Enthalpy": getattr(pyunits.pint_registry, "J/mole"),
                 },
                 "Inlet": {
                     "Molar Flow": 100,

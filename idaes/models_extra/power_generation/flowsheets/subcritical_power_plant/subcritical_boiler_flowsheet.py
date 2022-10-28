@@ -685,7 +685,9 @@ def initialize(m):
     outlvl = idaeslog.INFO_LOW
     _log = idaeslog.getLogger(fs.name, outlvl, tag="unit")
     solve_log = idaeslog.getSolveLogger(fs.name, outlvl, tag="unit")
-    solver = get_solver(options={"linear_solver":"ma57", "OF_ma57_automatic_scaling":"yes"})
+    solver = get_solver(
+        options={"linear_solver": "ma57", "OF_ma57_automatic_scaling": "yes"}
+    )
 
     # set initial condition to steady-state condition for dynamic flowsheet
     if m.dynamic is True:
@@ -962,7 +964,7 @@ def initialize(m):
 
     if m.dynamic is False:
         _log.info("Solving boiler steady-state problem...")
-        #with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
         res = solver.solve(fs, tee=True)
         _log.info(
             "Solving boiler steady-state problem: {}".format(idaeslog.condition(res))
