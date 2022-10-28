@@ -9,4 +9,4 @@ The IDAES Process Modeling Framework contains a library of models specifically d
     unit_models/index
     properties/index
     flowsheets/index
-    costing/power_plant_costing
+    costing/index
