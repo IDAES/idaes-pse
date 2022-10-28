@@ -33,7 +33,6 @@ from idaes.models.unit_models.heater import (
     _make_heater_control_volume,
 )
 from idaes.models.unit_models.heat_exchanger import hx_process_config, add_hx_references
-import idaes.core.util.unit_costing as costing
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -354,18 +353,6 @@ class HelmNtuCondenserData(UnitModelBlockData):
             },
             time_point=time_point,
         )
-
-    @deprecated(
-        "The get_costing method is being deprecated in favor of the new "
-        "FlowsheetCostingBlock tools.",
-        version="TBD",
-    )
-    def get_costing(self, module=costing):
-        if not hasattr(self.flowsheet(), "costing"):
-            self.flowsheet().get_costing()
-        self.costing = pyo.Block()
-
-        module.hx_costing(self.costing)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

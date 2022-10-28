@@ -77,7 +77,7 @@ The first time a 'get costing' function is called for a unit operation within a 
 on the flowsheet object (i.e. `flowsheet.costing`) in order to hold any global parameters relating to costing. The most
 common of these paramters is the CE index parameter. The CE index will be set to the base year of the method called.
 
-.. note:: The global paramters are created when the first instance of `get_costing` is called and use the values provided there for initialization. Subsequent `get_costing` calls use the existing paramters, and do not change the initialized values. i.e. any "year" argument provided to a `get_costing` call after the first will be ignored.
+.. note:: The global parameters are created when the first instance of `get_costing` is called and use the values provided there for initialization. Subsequent `get_costing` calls use the existing paramters, and do not change the initialized values. i.e. any "year" argument provided to a `get_costing` call after the first will be ignored.
 
 To manually set the dollar year the user must call m.fs.get_costing(year=2019) before any calls to a 'get costing' function are made.
 
