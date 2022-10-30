@@ -1144,6 +1144,8 @@ class GenericParameterData(PhysicalParameterBlock):
                 "pressure_osm_phase": {"method": "_pressure_osm_phase"},
                 "pressure_sat_comp": {"method": "_pressure_sat_comp"},
                 "surf_tens_phase": {"method": "_surf_tens_phase"},
+                "temperature_bubble": {"method": "_temperature_bubble"},
+                "temperature_dew": {"method": "_temperature_dew"},
                 "temperature_crit_mix": {"method": "_mixture_critical_properties"},
                 "pressure_crit_mix": {"method": "_mixture_critical_properties"},
                 "therm_cond_phase": {"method": "_therm_cond_phase"},
@@ -2068,6 +2070,8 @@ class GenericStateBlockData(StateBlockData):
                 pe_form_config[pp].phase_equil(self, pp)
             
             # Add bubble and dew temperatures
+            # _temperature_bubble(self)
+            # _temperature_dew(self)
             for pp in self.params._pe_pairs:
                 pe_form_config[pp].bubble_dew_method(self)
 
@@ -2553,7 +2557,6 @@ class GenericStateBlockData(StateBlockData):
 
     # def _bubble_dew_method(b):
     #     t_units = b.params.get_metadata().default_units["temperature"]
-    #     p_units = pyunits.Pa
     #     try:
     #         b.temperature_bubble = Var(
     #             b.params._pe_pairs,
@@ -2562,6 +2565,15 @@ class GenericStateBlockData(StateBlockData):
     #             bounds=(b.temperature.lb, b.temperature.ub),
     #             units=t_units,
     #         )
+    #         b._mole_frac_tbub = Var(
+    #             b.params._pe_pairs,
+    #             b.component_list,
+    #             initialize=1/len(b.component_list),
+    #             bounds=(0, None),
+    #             doc="Vapor mole fractions at bubble temperature",
+    #             units=None,
+    #         )
+
     #         b.temperature_dew = Var(
     #             b.params._pe_pairs,
     #             initialize=b.temperature,
@@ -2569,39 +2581,47 @@ class GenericStateBlockData(StateBlockData):
     #             bounds=(b.temperature.lb, b.temperature.ub),
     #             units=t_units,
     #         )
+    #         b._mole_frac_tdew = Var(
+    #             b.params._pe_pairs,
+    #             b.component_list,
+    #             initialize=1/len(b.component_list),
+    #             bounds=(0, None),
+    #             doc="Liquid mole fractions at dew temperature",
+    #             units=None,
+    #         )
             
-    #         for pp in b.params._pe_pairs:
-    #             b.temperature_bubble[pp].fix()
-    #             b.temperature_dew[pp].fix()
+    #         # for pp in b.params._pe_pairs:
+    #         #     b.temperature_bubble[pp].fix()
+    #         #     b.temperature_dew[pp].fix()
                 
     #     except AttributeError:
     #         b.del_component(b.temperature_bubble)
     #         b.del_component(b.temperature_dew)
     #         raise
 
-    # def _temperature_bubble(b):
-    #     _temperature_pressure_bubble_dew(b, "temperature_bubble")
+    def _temperature_bubble(b):
+        _temperature_pressure_bubble_dew(b, "temperature_bubble")
 
-    # def _log_mole_frac_tbub(b):
-    #     _log_mole_frac_bubble_dew(b, "log_mole_frac_tbub")
+    def _log_mole_frac_tbub(b):
+        _log_mole_frac_bubble_dew(b, "log_mole_frac_tbub")
 
-    # def _temperature_dew(b):
-    #     _temperature_pressure_bubble_dew(b, "temperature_dew")
+    def _temperature_dew(b):
+        _temperature_pressure_bubble_dew(b, "temperature_dew")
 
-    # def _log_mole_frac_tdew(b):
-    #     _log_mole_frac_bubble_dew(b, "log_mole_frac_tdew")
+    def _log_mole_frac_tdew(b):
+        _log_mole_frac_bubble_dew(b, "log_mole_frac_tdew")
 
-    # def _pressure_bubble(b):
-    #     _temperature_pressure_bubble_dew(b, "pressure_bubble")
+    def _pressure_bubble(b):
+        _temperature_pressure_bubble_dew(b, "pressure_bubble")
 
-    # def _log_mole_frac_pbub(b):
-    #     _log_mole_frac_bubble_dew(b, "log_mole_frac_pbub")
+    def _log_mole_frac_pbub(b):
+        _log_mole_frac_bubble_dew(b, "log_mole_frac_pbub")
 
-    # def _pressure_dew(b):
-    #     _temperature_pressure_bubble_dew(b, "pressure_dew")
+    def _pressure_dew(b):
+        _temperature_pressure_bubble_dew(b, "pressure_dew")
 
-    # def _log_mole_frac_pdew(b):
-    #     _log_mole_frac_bubble_dew(b, "log_mole_frac_pdew")
+    def _log_mole_frac_pdew(b):
+        _log_mole_frac_bubble_dew(b, "log_mole_frac_pdew")
 
     # -------------------------------------------------------------------------
     # Critical Properties

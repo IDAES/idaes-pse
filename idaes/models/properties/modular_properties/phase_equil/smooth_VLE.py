@@ -263,7 +263,6 @@ def calculate_ceos_derivative_slacks(b, phase_pair):
 
 def bubble_dew_method(b):
     t_units = b.params.get_metadata().default_units["temperature"]
-    p_units = pyunits.Pa
     try:
         b.temperature_bubble = Var(
             b.params._pe_pairs,
@@ -272,6 +271,15 @@ def bubble_dew_method(b):
             bounds=(b.temperature.lb, b.temperature.ub),
             units=t_units,
         )
+        b._mole_frac_tbub = Var(
+            b.params._pe_pairs,
+            b.component_list,
+            initialize=1/len(b.component_list),
+            bounds=(0, None),
+            doc="Vapor mole fractions at bubble temperature",
+            units=None,
+        )
+
         b.temperature_dew = Var(
             b.params._pe_pairs,
             initialize=b.temperature,
@@ -279,11 +287,32 @@ def bubble_dew_method(b):
             bounds=(b.temperature.lb, b.temperature.ub),
             units=t_units,
         )
-        
+        b._mole_frac_tdew = Var(
+            b.params._pe_pairs,
+            b.component_list,
+            initialize=1/len(b.component_list),
+            bounds=(0, None),
+            doc="Liquid mole fractions at dew temperature",
+            units=None,
+        )
         for pp in b.params._pe_pairs:
             b.temperature_bubble[pp].fix()
             b.temperature_dew[pp].fix()
-            
+        
+        # for name in ("temperature_bubble", "temperature_dew"):
+        #     tmp = getattr(b.params.config.bubble_dew_method, name)
+        #     tmp(b)
+        
+        # for pp in b.params._pe_pairs:
+        #     for j in b.params.component_list:
+        #         b.eq_temperature_bubble[pp, j].deactivate()
+        #         b.eq_temperature_dew[pp, j].deactivate()
+        #         b.log_mole_frac_tbub_eqn[pp, j].deactivate()
+        #         b.log_mole_frac_tdew_eqn[pp, j].deactivate()
+        #     b.eq_mole_frac_tbub[pp].deactivate()
+        #     b.eq_mole_frac_tdew[pp].deactivate()
+        
+        
     except AttributeError:
         b.del_component(b.temperature_bubble)
         b.del_component(b.temperature_dew)
