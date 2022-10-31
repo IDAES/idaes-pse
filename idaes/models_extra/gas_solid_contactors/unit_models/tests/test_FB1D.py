@@ -520,12 +520,12 @@ class TestIronOC(object):
     @pytest.mark.component
     def test_solve(self, iron_oc):
         with idaes.temporary_config_ctx():
-            optarg = {
+            solver.options = {
                 "tol": 1e-5,
                 "bound_push": 1e-22,
                 "nlp_scaling_method": "user-scaling",
             }
-            results = solver.solve(iron_oc, optarg=optarg)
+            results = solver.solve(iron_oc)
 
             # Check for optimal solution
             assert_optimal_termination(results)
