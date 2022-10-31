@@ -84,7 +84,7 @@ In addition to **maximum_polynomial_order**, ``PysmoPolyTrainer`` takes the foll
 Custom Basis Functions
 ----------------------
 
-PySMO has advanced capabilities that allows the user to supply custom basis functions to be parts of the regression process. Custom basis functions can be added to the built-in functions to expand the functional forms available. This custom basis function feature allow the user to incorporate _a priori_ knowledge or physics-based information about the system into the regression model. 
+PySMO has advanced capabilities that allows the user to supply custom basis functions to be parts of the regression process. Custom basis functions can be added to the built-in functions to expand the functional forms available. This custom basis function feature allow the user to incorporate *a priori* knowledge or physics-based information about the system into the regression model. 
 
 The custom basis functions may be simple multivariate relationships (e.g. :math:`x_{1}/x_{2}`), trigonometric terms (e.g. :math:`sin(x_{1})`) or logarithmic terms (e.g. :math:`log(x_{2})`).
 
