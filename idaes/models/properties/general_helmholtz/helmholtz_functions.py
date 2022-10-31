@@ -44,6 +44,7 @@ from idaes.models.properties.general_helmholtz.components import (
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
+
 _data_dir = os.path.join(idaes.bin_directory, "helm_data")
 _data_dir = os.path.join(_data_dir, "")
 
@@ -60,8 +61,15 @@ def helmholtz_available():
     """Returns True if the shared library is installed and loads propertly
     otherwise returns False
     """
-    return _flib is not None
+    if _flib is None:
+        _log.error("Shared library 'general_helmholtz_external' not found.")
+        return False
+    if not os.path.exists(_data_dir):
+        _log.error(f"The Helmholtz EoS data directory {_data_dir} does not exist.")
+        return False
+    return True
 
+helmholtz_data_dir = _data_dir
 
 class StateVars(enum.Enum):
     """
