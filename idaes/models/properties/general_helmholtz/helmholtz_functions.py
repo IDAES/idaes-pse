@@ -69,7 +69,9 @@ def helmholtz_available():
         return False
     return True
 
+
 helmholtz_data_dir = _data_dir
+
 
 class StateVars(enum.Enum):
     """
