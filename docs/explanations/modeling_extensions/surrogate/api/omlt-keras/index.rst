@@ -1,8 +1,6 @@
 OMLT: Optimization and Machine Learning Toolkit
 ===============================================
 
-THIS DOCUMENT WILL HAVE MORE CONTENT
-
 Keras is a deep learning framework that integrates with TensorFlow's structure for
 building and training artificial neural networks, and minimizes the number of user
 actions required to construct accurate networks. OMLT (Optimization and Machine
