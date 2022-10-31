@@ -77,6 +77,7 @@ Module                      Base Year
 Power Plant Costing         2018
 sCO2 Costing                2017     
 ASU                         2011
+
 =========================== ====================== 
 
 When a `costing` block is created 
