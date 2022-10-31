@@ -54,7 +54,7 @@ class SmoothVLE(object):
             )
 
         # Definition of equilibrium temperature for smooth VLE
-        t_units = b.params.get_metadata().default_units["temperature"]
+        t_units = b.params.get_metadata().default_units.TEMPERATURE
         if v_only_comps == []:
             b.add_component(
                 "_t1" + suffix,

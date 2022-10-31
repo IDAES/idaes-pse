@@ -35,10 +35,10 @@ class DoubleLoopCoordinator:
         Arguments:
             bidder: an initialized bidder object
 
-            tracker: an initialized bidder object
+            tracker: an initialized tracker object
 
-            projection_tracker: an initialized bidder object, this object is
-                                mimicking the behaviro of the projection SCED in
+            projection_tracker: an initialized tracker object, this object is
+                                mimicking the behaviror of the projection SCED in
                                 Prescient and to projecting the system states
                                 and updating bidder model.
 
@@ -241,6 +241,8 @@ class DoubleLoopCoordinator:
             "p_cost": _update_p_cost,
             "p_max": _update_time_series_params,
             "p_min": _update_time_series_params,
+            "p_min_agc": _update_time_series_params,
+            "p_max_agc": _update_time_series_params,
             "fixed_commitment": _update_time_series_params,
             "min_up_time": _update_non_time_series_params,
             "min_down_time": _update_non_time_series_params,
@@ -285,7 +287,7 @@ class DoubleLoopCoordinator:
 
         """
         This function assembles the signals for the tracking model to estimate the
-        state of the bidding model at the begining of next RUC.
+        state of the bidding model at the beginning of next RUC.
 
         Arguments:
             options: Prescient options from prescient.simulator.config.
@@ -389,7 +391,10 @@ class DoubleLoopCoordinator:
     def _update_static_params(self, gen_dict):
 
         """
-        Update static parameters in the Prescient generator parameter data dictionary.
+        Update static parameters in the Prescient generator parameter data dictionary depending on generator type.
+
+        For a thermal generator, the p_cost data will be via ( MWh, $ ) pairs.
+        For a renewable generator, the p_cost is a single cost.
 
         Args:
             gen_dict: Prescient generator parameter data dictionary.
@@ -398,18 +403,36 @@ class DoubleLoopCoordinator:
             None
         """
 
+        is_thermal = (
+            self.bidder.bidding_model_object.model_data.generator_type == "thermal"
+        )
+        is_renewable = (
+            self.bidder.bidding_model_object.model_data.generator_type == "renewable"
+        )
+
         for param, value in self.bidder.bidding_model_object.model_data:
             if param == "gen_name" or value is None:
                 continue
             elif param == "p_cost":
-                curve_value = convert_marginal_costs_to_actual_costs(value)
-                gen_dict[param] = {
-                    "data_type": "cost_curve",
-                    "cost_curve_type": "piecewise",
-                    "values": curve_value,
-                }
+                if is_thermal:
+                    curve_value = convert_marginal_costs_to_actual_costs(value)
+                    gen_dict[param] = {
+                        "data_type": "cost_curve",
+                        "cost_curve_type": "piecewise",
+                        "values": curve_value,
+                    }
+                elif is_renewable:
+                    gen_dict[param] = value
+                else:
+                    raise NotImplementedError(
+                        "generator_type must be either 'thermal' or 'renewable'"
+                    )
+
                 if "p_fuel" in gen_dict:
                     gen_dict.pop("p_fuel")
+            elif param == "initial_status" or param == "initial_p_output":
+                if param not in gen_dict:
+                    gen_dict[param] = value
             else:
                 gen_dict[param] = value
 

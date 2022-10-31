@@ -48,7 +48,6 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.math import smooth_min, smooth_max
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
-import idaes.core.util.unit_costing as costing
 import idaes.logger as idaeslog
 
 __author__ = "Paul Akula, Andrew Lee"

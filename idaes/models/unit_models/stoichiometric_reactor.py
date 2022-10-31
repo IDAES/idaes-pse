@@ -32,7 +32,6 @@ from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
 )
-import idaes.core.util.unit_costing as costing
 
 __author__ = "Chinedu Okoli, Andrew Lee"
 

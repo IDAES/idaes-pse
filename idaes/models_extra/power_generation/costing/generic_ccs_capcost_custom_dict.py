@@ -654,9 +654,14 @@ def load_generic_ccs_costing_dictionary(path=None):
                 ):  # check if CCS = A, for indexing
                     accounts_dict = generic_ccs_costing_data[tech][ccs]  # shorter alias
                     for account in accounts_dict.keys():  # do one account at a time
-                        accounts_dict[account][
-                            "BEC_units"
-                        ] = "K$2016"  # add BEC units as thousands of 2016 USD
+                        if account == "5.1.a.epri":
+                            accounts_dict[account][
+                                "BEC_units"
+                            ] = "K$2018"  # add BEC units as thousands of 2018 USD
+                        else:
+                            accounts_dict[account][
+                                "BEC_units"
+                            ] = "K$2016"  # add BEC units as thousands of 2016 USD
                         for accountkey in generic_ccs_costing_exponents[tech][
                             account
                         ].keys():  # get one " exponents"account property at a time

@@ -96,7 +96,7 @@ class NIST(object):
             units = cobj.parent_block().get_metadata().derived_units
             cobj.enth_mol_form_vap_comp_ref = Expression(
                 expr=pyunits.convert(
-                    cobj.cp_mol_ig_comp_coeff_H, to_units=units["energy_mole"]
+                    cobj.cp_mol_ig_comp_coeff_H, to_units=units.ENERGY_MOLE
                 ),
                 doc="Vapor phase molar heat of formation @ Tref",
             )
@@ -114,7 +114,7 @@ class NIST(object):
             )
 
             units = b.params.get_metadata().derived_units
-            return pyunits.convert(cp, units["heat_capacity_mole"])
+            return pyunits.convert(cp, units.HEAT_CAPACITY_MOLE)
 
     class enth_mol_ig_comp:
         @staticmethod
@@ -145,7 +145,7 @@ class NIST(object):
             )
 
             units = b.params.get_metadata().derived_units
-            return pyunits.convert(h, units["energy_mole"])
+            return pyunits.convert(h, units.ENERGY_MOLE)
 
     class entr_mol_ig_comp:
         @staticmethod
@@ -168,7 +168,7 @@ class NIST(object):
             )
 
             units = b.params.get_metadata().derived_units
-            return pyunits.convert(s, units["entropy_mole"])
+            return pyunits.convert(s, units.ENTROPY_MOLE)
 
     # -----------------------------------------------------------------------------
     # Antoine equation for saturation pressure
@@ -209,7 +209,7 @@ class NIST(object):
             )
 
             units = b.params.get_metadata().derived_units
-            return pyunits.convert(psat, to_units=units["pressure"])
+            return pyunits.convert(psat, to_units=units.PRESSURE)
 
         @staticmethod
         def dT_expression(b, cobj, T):
@@ -225,5 +225,5 @@ class NIST(object):
             )
 
             units = b.params.get_metadata().derived_units
-            dp_units = units["pressure"] / units["temperature"]
+            dp_units = units.PRESSURE / units.TEMPERATURE
             return pyunits.convert(p_sat_dT, to_units=dp_units)
