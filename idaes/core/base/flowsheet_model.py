@@ -20,7 +20,6 @@ from pyomo.dae import ContinuousSet
 from pyomo.network import Arc
 from pyomo.common.config import ConfigValue, ListOf
 from pyomo.core.base.units_container import _PyomoUnit
-from pyomo.common.deprecation import deprecated
 
 from idaes.core import (
     ProcessBlockData,
@@ -38,7 +37,6 @@ from idaes.core.util.exceptions import DynamicError, ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.ui.fsvis.fsvis import visualize
 
-from idaes.core.util import unit_costing as costing
 import idaes.logger as idaeslog
 
 # Some more information about this module
@@ -238,32 +236,6 @@ within this flowsheet if not otherwise specified,
             None
         """
         visualize(self, model_name, **kwargs)
-
-    @deprecated(
-        "The get_costing method is being deprecated in favor of the new "
-        "FlowsheetCostingBlock tools.",
-        version="TBD",
-    )
-    def get_costing(self, module=costing, year=None, integer_n_units=False):
-        """
-        Creates a new block called 'costing' at the flowsheet level. This block
-        builds global parameters used in costing methods (power plant costing
-        and generic costing).
-
-        Args:
-            self - idaes flowsheet
-            year : used to build parameter CE_index (Chemical Engineering),
-            this parameter is the same for all costing blocks in the flowsheet
-            integer_n_units : flag to define variable domain (True: domain is
-            within Integer numbers, False: domain is NonNegativeReals).
-        Returns:
-            None
-        """
-        self.costing = pe.Block()
-
-        module.global_costing_parameters(
-            self.costing, year=year, integer_n_units=integer_n_units
-        )
 
     def _get_stream_table_contents(self, time_point=0):
         """
