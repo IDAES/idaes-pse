@@ -6,6 +6,14 @@ This page lists in more detail the ALAMOPY options and the relation of ALAMO and
 .. contents::
     :depth: 3
 
+Installing ALAMO
+----------------
+
+ALAMO (Automatic Learning of Algebraic MOdels) is an optional dependency developed and licensed by The Optimization Firm: https://www.minlp.com/alamo-modeling-tool. The provided link include further information on obtaining a license, installing the tool, obtaining the Baron (Branch-And-Reduce Optimization Navigator) solver which ALAMO leverages, and specific examples through a user manual and installation guide. Alternatively, users may directly access the user guide here: https://minlp.com/downloads/docs/alamo%20manual.pdf.
+
+During installations, it is recommended that users Windows 10 users check that the ALAMO path is set. Additionally, users must place the ALAMO license file in the folder where it is installed.
+
+More details on ALAMO options may be found in the user guide documentation linked above. If users encounter specific error codes while running the ALAMOPy tool in IDAES, the user guide contains detailed descriptions of each termination condition and error message.
 
 Basic ALAMOPY.ALAMO options
 ---------------------------

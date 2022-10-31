@@ -34,6 +34,11 @@ models with algebraic high-fidelity process models within an single IDAES flowsh
 :ref:`OMLT: Optimization and Machine Learning Toolkit<explanations/modeling_extensions/surrogate/api/omlt-keras/index:OMLT: Optimization and Machine Learning Toolkit>`
 provides tools for generating machine learning, neural network and gradient-boosted tree models with the Pyomo optimization environment. It provides IDAES users optimization formulations for ML models (e.g. full-space, reduced-space, MILP) and an interface to import Sequential Keras and general ONNX models.
 
+
+.. note::
+    OMLT is an external tool that requires additional dependencies. See the OMLT documentation for details on installation and usage.
+
+
 .. image:: /images/omlt-keras-logo.png
     :width: 500px
     :align: center
@@ -43,6 +48,11 @@ provides tools for generating machine learning, neural network and gradient-boos
 :ref:`ALAMOPY: ALAMO Python<explanations/modeling_extensions/surrogate/api/alamopy/index:ALAMOPY: ALAMO Python>`
 provides a wrapper for the software ALAMO which generates algebraic surrogate models of 
 black-box systems for which a simulator or experimental setup is available.
+
+
+.. note::
+    ALAMO is an external tool to needs to be installed separately. See the ALAMOPy documentation for details on ALAMO installation and usage.
+
 
 .. rubric:: RIPE: Reaction Identification and Parameter Estimation
 
