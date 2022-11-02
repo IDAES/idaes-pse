@@ -328,7 +328,6 @@ class PysmoPolyTrainer(PysmoTrainer):
     def _get_metrics(self, model):
         return {"RMSE": model.errors["MSE"] ** 0.5, "R2": model.errors["R2"]}
 
-
     def get_confidence_intervals(self, model, confidence=0.95):
         """
         Compute confidence intervals for the regression patamaters.

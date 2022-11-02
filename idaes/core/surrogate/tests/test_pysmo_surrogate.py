@@ -1633,9 +1633,11 @@ class TestPysmoSurrogate:
             "outputs[z2] - (-12.523574144487087 - 2.1308935361219556*inputs[x1] + 4.1308935361216435*inputs[x2] + 3.6347869158959156e-12*(inputs[x1]/inputs[x2]))"
         )
 
-    @pytest.mark.parametrize("confidence_dict", [{0.99: 3.2498355440153697}, {0.90: 1.8331129326536335}])
+    @pytest.mark.parametrize(
+        "confidence_dict", [{0.99: 3.2498355440153697}, {0.90: 1.8331129326536335}]
+    )
     @pytest.mark.unit
-    def test_confit_default(self, confidence_dict):    
+    def test_confint_default(self, confidence_dict):
         training_data = {
             "x1": [1, 2, 3, 4, 5],
             "x2": [5, 6, 7, 8, 9],
@@ -1672,8 +1674,24 @@ class TestPysmoSurrogate:
 
         output = pysmo_trainer.get_confidence_intervals(a2_poly, confidence)
 
-        reg_coeffs = {'z1': np.array([-75.26111111111476, - 8.815277777775934, 18.81527777777826, -2.2556956302821618e-13]),
-        'z2': np.array([-3.0033074724377813, 0.2491731318906352, 1.7508268681094337, 6.786238238021269e-15])}
+        reg_coeffs = {
+            "z1": np.array(
+                [
+                    -75.26111111111476,
+                    -8.815277777775934,
+                    18.81527777777826,
+                    -2.2556956302821618e-13,
+                ]
+            ),
+            "z2": np.array(
+                [
+                    -3.0033074724377813,
+                    0.2491731318906352,
+                    1.7508268681094337,
+                    6.786238238021269e-15,
+                ]
+            ),
+        }
 
         for i in output_labels:
             assert pytest.approx(output[i]["Conf. int. lower"].values, abs=1e-9) == (
@@ -1681,7 +1699,7 @@ class TestPysmoSurrogate:
             )
             assert pytest.approx(output[i]["Conf. int. upper"].values, abs=1e-9) == (
                 reg_coeffs[i] + tval * output[i]["Std. error"].values
-            )                 
+            )
 
     @pytest.mark.unit
     def test_evaluate_unisurrogate_rbf(self, pysmo_surr5_rbf):
