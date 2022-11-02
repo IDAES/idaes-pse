@@ -32,7 +32,6 @@ from idaes.core.util.config import (
     is_reaction_parameter_block,
 )
 from idaes.core.util.misc import add_object_reference
-import idaes.core.util.unit_costing as costing
 from idaes.core.util.constants import Constants as const
 
 __author__ = "Andrew Lee, John Eslick"

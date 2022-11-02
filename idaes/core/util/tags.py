@@ -17,7 +17,6 @@ import xml.dom.minidom
 import collections
 
 import pyomo.environ as pyo
-from pyomo.common.deprecation import deprecation_warning
 from pyomo.core.base.indexed_component_slice import IndexedComponent_slice
 
 import idaes.logger as idaeslog
