@@ -1633,6 +1633,56 @@ class TestPysmoSurrogate:
             "outputs[z2] - (-12.523574144487087 - 2.1308935361219556*inputs[x1] + 4.1308935361216435*inputs[x2] + 3.6347869158959156e-12*(inputs[x1]/inputs[x2]))"
         )
 
+    @pytest.mark.parametrize("confidence_dict", [{0.99: 3.2498355440153697}, {0.90: 1.8331129326536335}])
+    @pytest.mark.unit
+    def test_confit_default(self, confidence_dict):    
+        training_data = {
+            "x1": [1, 2, 3, 4, 5],
+            "x2": [5, 6, 7, 8, 9],
+            "z1": [10, 20, 30, 40, 50],
+            "z2": [6, 8, 10, 12, 14],
+        }
+        training_data = pd.DataFrame(training_data)
+        validation_data = {
+            "x1": [1, 2, 3, 4],
+            "x2": [5, 6, 7, 8],
+            "z1": [10, 20, 30, 40],
+            "z2": [6, 8, 10, 12],
+        }
+        validation_data = pd.DataFrame(validation_data)
+        input_labels = ["x1", "x2"]
+        output_labels = ["z1", "z2"]
+        bnds = {"x1": (0, 5), "x2": (0, 10)}
+
+        pysmo_trainer = PysmoPolyTrainer(
+            input_labels=input_labels,
+            output_labels=output_labels,
+            input_bounds=bnds,
+            training_dataframe=training_data,
+            validation_dataframe=validation_data,
+            maximum_polynomial_order=1,
+            multinomials=True,
+            number_of_crossvalidations=3,
+        )
+
+        a2_poly = pysmo_trainer.train_surrogate()
+        for k in confidence_dict.keys():
+            confidence = k
+            tval = confidence_dict[k]
+
+        output = pysmo_trainer.get_confidence_intervals(a2_poly, confidence)
+
+        reg_coeffs = {'z1': np.array([-75.26111111111476, - 8.815277777775934, 18.81527777777826, -2.2556956302821618e-13]),
+        'z2': np.array([-3.0033074724377813, 0.2491731318906352, 1.7508268681094337, 6.786238238021269e-15])}
+
+        for i in output_labels:
+            assert pytest.approx(output[i]["Conf. int. lower"].values, abs=1e-9) == (
+                reg_coeffs[i] - tval * output[i]["Std. error"].values
+            )
+            assert pytest.approx(output[i]["Conf. int. upper"].values, abs=1e-9) == (
+                reg_coeffs[i] + tval * output[i]["Std. error"].values
+            )                 
+
     @pytest.mark.unit
     def test_evaluate_unisurrogate_rbf(self, pysmo_surr5_rbf):
         # Test ``evaluate_surrogate`` for RBF with one input/output
