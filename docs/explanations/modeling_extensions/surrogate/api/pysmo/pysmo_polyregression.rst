@@ -109,7 +109,7 @@ PySMO provides the user with the capability to compute confidence intervals for 
   
   >>> conf_int = pr_trainer.get_confidence_intervals(poly_train, confidence=0.99)
 
-The resulting object ```conf_int`` is a dictionary containing upper and lower confidence bounds as well as the estimated standard errors for all of the regression parameters of the trained models in ``poly_train``. 
+The resulting object ```conf_int`` is a dictionary containing upper and lower confidence bounds as well as the estimated standard errors for all of the regression parameters of the trained models in ``poly_train``. The dictionary keys correspond to the output variable list supplied in ``output labels``. 
 
 Surrogate Visualization
 ------------------------

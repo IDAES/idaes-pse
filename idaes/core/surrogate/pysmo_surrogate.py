@@ -335,6 +335,9 @@ class PysmoPolyTrainer(PysmoTrainer):
         Args:
             model           : Trained PysmoPolyTrainer object
             confidence      : Required confidence interval level, default = 0.95 (95%)
+
+        Returns:
+            dict(<dict>)    : Dictionary object containing confidence intervals for all regressed parameters.
         """
         confint_dict = {}
         for i in model.output_labels:
