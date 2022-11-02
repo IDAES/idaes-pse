@@ -1638,6 +1638,7 @@ class TestPysmoSurrogate:
     )
     @pytest.mark.unit
     def test_confint_default(self, confidence_dict):
+        # Test that the ``get_confidence_intervals`` function returns the correct upper and lower confidence interval bounds.
         training_data = {
             "x1": [1, 2, 3, 4, 5],
             "x2": [5, 6, 7, 8, 9],
@@ -1693,10 +1694,14 @@ class TestPysmoSurrogate:
             ),
         }
 
+        # Test that output has the right number of dictionary entries
+        assert len(output) == len(output_labels)
         for i in output_labels:
+            # Test that the lower confidence bounds are correctly calculated.
             assert pytest.approx(output[i]["Conf. int. lower"].values, abs=1e-9) == (
                 reg_coeffs[i] - tval * output[i]["Std. error"].values
             )
+            # Test that the upper confidence bounds are correctly calculated.
             assert pytest.approx(output[i]["Conf. int. upper"].values, abs=1e-9) == (
                 reg_coeffs[i] + tval * output[i]["Std. error"].values
             )
