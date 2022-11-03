@@ -28,6 +28,7 @@ _components = {
     "r1234ze": r1234ze,
 }
 
+
 def get_component_module(comp_str):
     comp_str = comp_str.lower()
     return _components.get(comp_str, None)
