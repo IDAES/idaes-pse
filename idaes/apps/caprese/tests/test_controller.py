@@ -261,7 +261,7 @@ class TestControllerBlock(object):
         for v in controller.component_objects(InputVar):
             for t in sample_points:
                 i_prev = time.find_nearest_index(t - sample_time, tolerance=1e-8)
-                t_prev = time[i_prev]
+                t_prev = time.at(i_prev)
                 pred_obj[1] += (v[t] - v.setpoint) ** 2
                 pred_obj[2] += (v[t] - v[t_prev]) ** 2
                 pred_obj[3] += (v[t] - v[t_prev]) ** 2

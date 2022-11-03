@@ -519,10 +519,13 @@ see reaction package for documentation.}""",
                 iscale.constraint_scaling_transform(c, sf1 * sf2, overwrite=False)
 
         if hasattr(self, "sum_component_constraint"):
+            # Get a single representative value in component list
+            for j in self.config.solid_property_package.component_list:
+                break
             for t, c in self.sum_component_constraint.items():
                 iscale.constraint_scaling_transform(
                     c,
-                    iscale.get_scaling_factor(self.solids[t].mass_frac_comp["Fe2O3"]),
+                    iscale.get_scaling_factor(self.solids[t].mass_frac_comp[j]),
                     overwrite=False,
                 )
 
