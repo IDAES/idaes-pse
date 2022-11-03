@@ -63,6 +63,11 @@ class PerformanceBaseClass:
         TypeError is derived class does not inherit from unittest.TestCase.
     """
 
+    # Add flag for skipping unit consistency tests
+    # This is required for DAE models for the time being
+    # TODO: Fix this once the Pyomo bug is resolved
+    TEST_UNITS = True
+
     def __init_subclass__(cls):
         if not issubclass(cls, unittest.TestCase):
             raise TypeError(
@@ -151,10 +156,11 @@ class PerformanceBaseClass:
         assert degrees_of_freedom(model) == 0
 
         # Check unit consistency and record execution time
-        gc.collect()
-        timer.tic(None)
-        assert_units_consistent(model)
-        self.recordData("unit consistency", timer.toc("unit consistency"))
+        if self.TEST_UNITS:
+            gc.collect()
+            timer.tic(None)
+            assert_units_consistent(model)
+            self.recordData("unit consistency", timer.toc("unit consistency"))
 
         # Initialize model and record execution time
         gc.collect()

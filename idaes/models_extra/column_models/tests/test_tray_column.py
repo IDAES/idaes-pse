@@ -18,6 +18,7 @@ Author: Jaffer Ghouse
 import pytest
 from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from pyomo.util.check_units import assert_units_consistent
+import pyomo.common.unittest as unittest
 
 from idaes.core import FlowsheetBlock
 from idaes.models_extra.column_models import TrayColumn
@@ -29,6 +30,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
+from idaes.core.util.performance import PerformanceBaseClass
 
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
@@ -69,39 +71,52 @@ def test_config():
     assert hasattr(m.fs.unit, "stripping_section")
 
 
+def build_model_btx_ftpz():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(
+        valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
+    )
+
+    m.fs.unit = TrayColumn(
+        number_of_trays=10,
+        feed_tray_location=5,
+        condenser_type=CondenserType.totalCondenser,
+        condenser_temperature_spec=TemperatureSpec.atBubblePoint,
+        property_package=m.fs.properties,
+        has_heat_transfer=False,
+        has_pressure_change=False,
+    )
+
+    # Inlet feed conditions
+    m.fs.unit.feed.flow_mol.fix(40)
+    m.fs.unit.feed.temperature.fix(368)
+    m.fs.unit.feed.pressure.fix(101325)
+    m.fs.unit.feed.mole_frac_comp[0, "benzene"].fix(0.5)
+    m.fs.unit.feed.mole_frac_comp[0, "toluene"].fix(0.5)
+
+    # unit level inputs
+    m.fs.unit.condenser.reflux_ratio.fix(1.4)
+    m.fs.unit.condenser.condenser_pressure.fix(101325)
+
+    m.fs.unit.reboiler.boilup_ratio.fix(1.3)
+
+    return m
+
+
+@pytest.mark.performance
+class Test_TrayColumn_Performance(PerformanceBaseClass, unittest.TestCase):
+    def build_model(self):
+        return build_model_btx_ftpz()
+
+    def initialize_model(self, model):
+        model.fs.unit.initialize()
+
+
 class TestBTXIdeal:
     @pytest.fixture(scope="class")
     def btx_ftpz(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
-        m.fs.properties = BTXParameterBlock(
-            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
-        )
-
-        m.fs.unit = TrayColumn(
-            number_of_trays=10,
-            feed_tray_location=5,
-            condenser_type=CondenserType.totalCondenser,
-            condenser_temperature_spec=TemperatureSpec.atBubblePoint,
-            property_package=m.fs.properties,
-            has_heat_transfer=False,
-            has_pressure_change=False,
-        )
-
-        # Inlet feed conditions
-        m.fs.unit.feed.flow_mol.fix(40)
-        m.fs.unit.feed.temperature.fix(368)
-        m.fs.unit.feed.pressure.fix(101325)
-        m.fs.unit.feed.mole_frac_comp[0, "benzene"].fix(0.5)
-        m.fs.unit.feed.mole_frac_comp[0, "toluene"].fix(0.5)
-
-        # unit level inputs
-        m.fs.unit.condenser.reflux_ratio.fix(1.4)
-        m.fs.unit.condenser.condenser_pressure.fix(101325)
-
-        m.fs.unit.reboiler.boilup_ratio.fix(1.3)
-
-        return m
+        return build_model_btx_ftpz()
 
     @pytest.fixture(scope="class")
     def btx_fctp(self):
