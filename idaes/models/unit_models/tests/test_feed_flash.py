@@ -271,7 +271,7 @@ class TestIAPWS(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, iapws):
-        results = solver.solve(iapws, tee=True)
+        results = solver.solve(iapws)
 
         # Check for optimal solution
         assert check_optimal_termination(results)

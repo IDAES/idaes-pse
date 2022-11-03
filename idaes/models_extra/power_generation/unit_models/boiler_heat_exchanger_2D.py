@@ -3171,12 +3171,7 @@ tube side flows from 1 to 0""",
             blk.head_hin_eqn.deactivate()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(
-                blk,
-                tee=slc.tee,
-                options={"halt_on_ampl_error": "yes"},
-                symbolic_solver_labels=True,
-            )
+            res = opt.solve(blk, tee=slc.tee)
         init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
 
         # In Step 3, unfix fluid state variables

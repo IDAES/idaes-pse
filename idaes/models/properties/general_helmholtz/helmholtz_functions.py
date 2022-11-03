@@ -39,7 +39,7 @@ from idaes.core import (
     Component,
 )
 from idaes.models.properties.general_helmholtz.components import (
-    components as supported_components,
+    get_component_module,
 )
 import idaes.logger as idaeslog
 
@@ -900,21 +900,21 @@ class HelmholtzThermoExpressions(object):
 
     def viscosity_liq(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return supported_components[c]._viscosity(self.param, delta_liq, tau, blk)
+        return get_component_module(c)._viscosity(self.param, delta_liq, tau, blk)
 
     def viscosity_vap(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return supported_components[c]._viscosity(self.param, delta_vap, tau, blk)
+        return get_component_module(c)._viscosity(self.param, delta_vap, tau, blk)
 
     def thermal_conductivity_liq(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return supported_components[c]._thermal_conductivity(
+        return get_component_module(c)._thermal_conductivity(
             self.param, delta_liq, tau, blk
         )
 
     def thermal_conductivity_vap(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return supported_components[c]._thermal_conductivity(
+        return get_component_module(c)._thermal_conductivity(
             self.param, delta_vap, tau, blk
         )
 
@@ -1287,7 +1287,7 @@ change.
     def build(self):
         super().build()
         # Check if the specified compoent is supported
-        if self.config.pure_component not in supported_components:
+        if get_component_module(self.config.pure_component) is None:
             raise RuntimeError(f"Component {self.config.pure_component} not supported.")
         # This is imported here to avoid a circular import
         from idaes.models.properties.general_helmholtz.helmholtz_state import (

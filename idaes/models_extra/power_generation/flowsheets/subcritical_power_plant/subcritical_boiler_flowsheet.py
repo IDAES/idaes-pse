@@ -964,8 +964,8 @@ def initialize(m):
 
     if m.dynamic is False:
         _log.info("Solving boiler steady-state problem...")
-        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        res = solver.solve(fs, tee=True)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(fs, tee=slc.tee)
         _log.info(
             "Solving boiler steady-state problem: {}".format(idaeslog.condition(res))
         )

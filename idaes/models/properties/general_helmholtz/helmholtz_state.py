@@ -42,7 +42,7 @@ from idaes.models.properties.general_helmholtz.helmholtz_functions import (
     _data_dir,
 )
 from idaes.models.properties.general_helmholtz.components import (
-    components as supported_components,
+    get_component_module,
 )
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -973,7 +973,7 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase Thermal conductiviy
         def rule_tc(b, p):
-            return supported_components[cmp]._thermal_conductivity(
+            return get_component_module(cmp)._thermal_conductivity(
                 self, delta[p], tau, on_blk=self
             )
 
@@ -983,7 +983,7 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase dynamic viscosity
         def rule_mu(b, p):
-            return supported_components[cmp]._viscosity(
+            return get_component_module(cmp)._viscosity(
                 self, delta[p], tau, on_blk=self
             )
 
