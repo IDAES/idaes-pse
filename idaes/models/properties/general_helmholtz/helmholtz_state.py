@@ -1108,7 +1108,6 @@ class HelmholtzStateBlockData(StateBlockData):
                 "P": self.pressure,
                 "Vapor Fraction": self.vapor_frac,
                 "Molar Enthalpy": self.enth_mol,
-                # "Molar Entropy": self.entr_mol,
             }
         else:
             return {
@@ -1118,7 +1117,6 @@ class HelmholtzStateBlockData(StateBlockData):
                 "P": self.pressure,
                 "Vapor Fraction": self.vapor_frac,
                 "Mass Enthalpy": self.enth_mass,
-                # "Mass Entropy": self.entr_mass,
             }
 
     def extensive_state_vars(self):
