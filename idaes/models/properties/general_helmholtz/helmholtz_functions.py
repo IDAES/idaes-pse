@@ -1288,7 +1288,9 @@ change.
         super().build()
         # Check if the specified compoent is supported
         if get_component_module(self.config.pure_component) is None:
-            raise ConfigurationError(f"Component {self.config.pure_component} not supported.")
+            raise ConfigurationError(
+                f"Component {self.config.pure_component} not supported."
+            )
         # This is imported here to avoid a circular import
         from idaes.models.properties.general_helmholtz.helmholtz_state import (
             HelmholtzStateBlock,
