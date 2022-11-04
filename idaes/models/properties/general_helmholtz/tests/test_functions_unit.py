@@ -26,6 +26,7 @@ from idaes.models.properties.general_helmholtz import (
 )
 from idaes.core.util.exceptions import ConfigurationError
 
+
 @pytest.mark.unit
 def test_available():
     assert available()
