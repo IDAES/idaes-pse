@@ -784,7 +784,7 @@ def initialize(m):
     fs.aECON.shell_inlet.temperature[:].value = 861.3
     fs.aECON.shell_inlet.pressure[:].value = 100000
     if m.dynamic is False:
-        fs.aECON.initialize(outlvl=idaeslog.DEBUG)
+        fs.aECON.initialize(outlvl=outlvl)
         _log.info("Completed economizer initialization")
     if m.dynamic is False:
         _set_port(fs.aPipe.inlet, fs.aECON.tube_outlet)
