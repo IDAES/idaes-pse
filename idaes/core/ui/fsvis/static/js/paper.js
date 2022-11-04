@@ -1,4 +1,22 @@
+/**
+ * The Institute for the Design of Advanced Energy Systems Integrated Platform
+ * Framework (IDAES IP) was produced under the DOE Institute for the
+ * Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+ * by the software owners: The Regents of the University of California, through
+ * Lawrence Berkeley National Laboratory,  National Technology & Engineering
+ * Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+ * Research Corporation, et al.  All rights reserved.
+ *
+ * Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+ * license information.
+ */
 
+
+/**
+ * This is the main class for the visualizer paper that displays jointjs
+ * elements. The graph and its events and event handlers are built in this
+ * class.
+ */
 export class Paper {
     constructor(app) {
         this._app = app;
@@ -13,6 +31,7 @@ export class Paper {
         this._highlightLinkStroke = "#0B79BD";
         this._highlightLinkStrokeWidth = 4;
 
+        // jointjs objects
         this._graph = new joint.dia.Graph([], { cellNamespace: { standard } });
         this._paper = new joint.dia.Paper({
             model: this._graph,
@@ -37,7 +56,6 @@ export class Paper {
         this._selection = new joint.ui.Selection({
             paper: this._paper
         });
-
         this._selection.removeHandle('remove');
         this._selection.removeHandle('rotate');
         this._selection.removeHandle('resize');
@@ -277,7 +295,8 @@ export class Paper {
     }
 
     /**
-     * Setup the graph model
+     * Setup the graph model. The jointjs graph loads the model as Json object
+     * and then this setup() function registers the post setup events.
      */
     setup(model) {
         this._graph.fromJSON(model);
