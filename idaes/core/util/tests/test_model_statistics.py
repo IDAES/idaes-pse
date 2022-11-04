@@ -60,8 +60,8 @@ def m():
     m.b1.sb.v2 = Var(m.s, initialize=1)
     m.b1.sb.v1.fix(1)
     m.b1.sb.e1 = Expression(expr=m.b1.sb.v1)
-    m.b1.sb.o1 = Objective(expr=1 <= m.b1.sb.v1)
-    m.b1.sb.o2 = Objective(expr=1 <= m.b1.sb.v1)
+    m.b1.sb.o1 = Objective(expr=m.b1.sb.v1)
+    m.b1.sb.o2 = Objective(expr=m.b1.sb.v1)
     m.b1.sb.o2.deactivate()
     m.b1.sb.c1 = Constraint(expr=1 == m.b1.sb.v1)
     m.b1.sb.c2 = Constraint(expr=1 >= m.b1.sb.v1)
@@ -78,8 +78,8 @@ def m():
         m.b2[i].c2 = Constraint(expr=2 <= m.b2[i].v1)
 
         if i == "a":
-            m.b2[i].o1 = Objective(expr=1 <= m.b2[i].v1)
-            m.b2[i].o2 = Objective(expr=1 <= m.b2[i].v1)
+            m.b2[i].o1 = Objective(expr=m.b2[i].v1)
+            m.b2[i].o2 = Objective(expr=m.b2[i].v1)
             m.b2[i].o2.deactivate()
             m.b2[i].c1.deactivate()
             m.b2[i].c2.deactivate()
