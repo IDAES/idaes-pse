@@ -526,14 +526,19 @@ Must be True if dynamic = True,
             c.deactivate()
 
         # Remember to collect flags for fixed vars
-        flags = blk.initialize_build(*args, **kwargs)
+        try:
+            flags = blk.initialize_build(*args, **kwargs)
+        except InitializationError:
+            raise
+        finally:
+            # In case the InitializationError is caught,
+            # leave the unit unmodified
+            # If costing block exists, activate and initialize
+            for c in init_order:
+                c.activate()
 
-        # If costing block exists, activate and initialize
-        for c in init_order:
-            c.activate()
-
-            if hasattr(c, "initialize"):
-                c.initialize(**cost_args)
+                if hasattr(c, "initialize"):
+                    c.initialize(**cost_args)
 
         # Return any flags returned by initialize_build
         return flags
