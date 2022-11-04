@@ -245,6 +245,7 @@ def set_scaling_factor(c, v, data_objects=True, overwrite=True):
                     pass
             suf[cdat] = v
 
+
 def get_scaling_factor(c, default=None, warning=False, exception=False, hint=None):
     """Get a component scale factor.
 
@@ -302,7 +303,9 @@ def set_and_get_scaling_factor(c, default, warning=False, exception=False, hint=
         scaling factor (float)
     """
     if c.is_indexed():
-        raise AttributeError(f"Ambiguous which scaling factor to return for indexed component {c.name}.")
+        raise AttributeError(
+            f"Ambiguous which scaling factor to return for indexed component {c.name}."
+        )
     sf = get_scaling_factor(c, warning=warning, exception=exception, hint=hint)
     if sf is None:
         sf = default

@@ -449,6 +449,7 @@ def test_set_get_unset(caplog):
     for i in range(1, 5):
         assert sc.get_scaling_factor(m.z[i]) is None
 
+
 @pytest.mark.unit
 def test_set_and_get_scaling_factor():
     m = pyo.ConcreteModel()
@@ -465,13 +466,19 @@ def test_set_and_get_scaling_factor():
     # Make sure exception is raised for indexed components regardless of whether they have scaling factors set
     with pytest.raises(AttributeError) as exception:
         sc.set_and_get_scaling_factor(m.z, 10)
-    assert exception.value.args[0] == "Ambiguous which scaling factor to return for indexed component z."
+    assert (
+        exception.value.args[0]
+        == "Ambiguous which scaling factor to return for indexed component z."
+    )
 
     sc.set_scaling_factor(m.z, 11)
 
     with pytest.raises(AttributeError) as exception:
         sc.set_and_get_scaling_factor(m.z, 10)
-    assert exception.value.args[0] == "Ambiguous which scaling factor to return for indexed component z."
+    assert (
+        exception.value.args[0]
+        == "Ambiguous which scaling factor to return for indexed component z."
+    )
 
     for j in range(1, 5):
         assert sc.set_and_get_scaling_factor(m.z[j], 10) == 11
@@ -497,8 +504,6 @@ def test_set_and_get_scaling_factor():
     sc.unset_scaling_factor(m.ex)
     assert sc.set_and_get_scaling_factor(m.ex, 29) == 29
     assert sc.get_scaling_factor(m.ex) == 29
-
-
 
 
 @pytest.mark.unit
