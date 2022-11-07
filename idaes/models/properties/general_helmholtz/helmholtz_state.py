@@ -544,6 +544,11 @@ class HelmholtzStateBlockData(StateBlockData):
         component_list = params.component_list
         phase_set = params.config.phase_presentation
         self.phase_equilibrium_list = params.phase_equilibrium_list
+        # Add component mole fraction for standardization
+        def mole_frac_comp_rule(b, i):
+            return 1.0
+
+        self.mole_frac_comp = pyo.Expression(component_list, rule=mole_frac_comp_rule)
         # Expressions that link to some parameters in the param block, which
         # are commonly needed, this lets you get the parameters with scale
         # factors directly from the state block
