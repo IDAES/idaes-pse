@@ -20,9 +20,6 @@ import pyomo.common.unittest as unittest
 import pytest
 from io import StringIO
 
-from pyomo.repn.plugins import nl_writer
-nl_writer._activate_nl_writer_version(2)
-
 from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
@@ -52,29 +49,11 @@ from idaes.models_extra.power_generation.properties.natural_gas_PR import (
     get_prop,
     EosType,
 )
-from idaes.models.properties import iapws95
+from idaes.models.properties.modular_properties.pure.ChungPure import ChungViscosityPure
 
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    number_variables,
-    number_total_constraints,
-    number_unused_variables,
-)
-from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
+
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
-
-# Imports to assemble BT-PR with different units
-from idaes.core import LiquidPhase, VaporPhase, Component
-from idaes.models.properties.modular_properties.state_definitions import FTPx
-from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
-from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
-    LogBubbleDew,
-)
-from idaes.models.properties.modular_properties.phase_equil.forms import log_fugacity
-import idaes.models.properties.modular_properties.pure.RPP4 as RPP
 
 from idaes.core.util.performance import PerformanceBaseClass
 
@@ -84,12 +63,30 @@ solver = get_solver()
 
 # -----------------------------------------------------------------------------
 
-def build_model(eos):
+def build_model(eos, visc_d_phase_comp=None):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
+    comp_set = {"N2", "O2", "Ar", "H2O", "CO2"}
+    config_dict = get_prop(comp_set, {"Vap"}, eos=eos)
+
+    if visc_d_phase_comp is not None:
+        # Wolfram Alpha
+        dens_mass_crit_comp = {"N2": 313.3, "O2": 436.1, "Ar": 535.6, "H2O": 322.0, "CO2": 467.6}
+        for comp in comp_set:
+            config_dict["components"][comp]["visc_d_phase_comp"]["Vap"] = visc_d_phase_comp
+            config_dict["components"][comp]["parameter_data"]["dipole_moment"] = (0.0, pyunits.debye)
+            config_dict["components"][comp]["parameter_data"]["association_factor_chung"] = 0.0
+            config_dict["components"][comp]["parameter_data"]["dens_mol_crit"] = (
+                dens_mass_crit_comp[comp] / config_dict["components"][comp]["parameter_data"]["mw"][0],
+                pyunits.mol/pyunits.m**3
+            )
+        # From WolframAlpha
+        config_dict["components"]["H2O"]["parameter_data"]["dipole_moment"] = (1.8546, pyunits.debye)
+        # From Table 9-1 Properties of Gases and Liquids 6th Ed.
+        config_dict["components"]["H2O"]["parameter_data"]["association_factor_chung"] = 0.076
 
     m.fs.properties = GenericParameterBlock(
-        **get_prop({"N2", "O2", "Ar", "H2O", "CO2"}, {"Vap"}, eos=eos),
+        **config_dict,
         doc="Air property parameters",
     )
     m.fs.properties.set_default_scaling("enth_mol_phase", 1e-1)
@@ -341,6 +338,78 @@ class Test_transport_properties_ideal(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+class Test_transport_properties_ideal_chung(object):
+    @pytest.fixture(scope="class")
+    def hx(self):
+        return build_model(eos=EosType.IDEAL, visc_d_phase_comp=ChungViscosityPure)
+
+    @pytest.mark.component
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_initialize(self, hx):
+        results = initialize_model(hx)
+        assert check_optimal_termination(results)
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, hx):
+        hx.fs.unit.temperature_wall.display()
+        assert pytest.approx(5, rel=1e-5) == value(
+            hx.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(313.338, rel=1e-5) == value(
+            hx.fs.unit.hot_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            hx.fs.unit.hot_side_outlet.pressure[0]
+        )
+
+        assert pytest.approx(10, rel=1e-5) == value(
+            hx.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(325.793, rel=1e-5) == value(
+            hx.fs.unit.cold_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            hx.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, hx):
+        assert (
+            abs(
+                value(
+                    hx.fs.unit.hot_side_inlet.flow_mol[0]
+                    - hx.fs.unit.hot_side_outlet.flow_mol[0]
+                )
+            )
+            <= 1e-6
+        )
+        assert (
+            abs(
+                value(
+                    hx.fs.unit.cold_side_inlet.flow_mol[0]
+                    - hx.fs.unit.cold_side_outlet.flow_mol[0]
+                )
+            )
+            <= 1e-6
+        )
+
+        hot_side = value(
+            hx.fs.unit.hot_side_outlet.flow_mol[0]
+            * (
+                hx.fs.unit.hot_side.properties[0, 0].enth_mol_phase["Vap"]
+                - hx.fs.unit.hot_side.properties[0, 1].enth_mol_phase["Vap"]
+            )
+        )
+        cold_side = value(
+            hx.fs.unit.cold_side_outlet.flow_mol[0]
+            * (
+                hx.fs.unit.cold_side.properties[0, 1].enth_mol_phase["Vap"]
+                - hx.fs.unit.cold_side.properties[0, 0].enth_mol_phase["Vap"]
+            )
+        )
+        assert abs(hot_side + cold_side) <= 1e-6
 
 # -----------------------------------------------------------------------------
 class Test_transport_properties_PR(object):
@@ -423,3 +492,7 @@ class TestCubicTransportPerformance(PerformanceBaseClass, unittest.TestCase):
 
     def initialize_model(self, model):
         initialize_model(model)
+
+if __name__ == "__main__":
+    m = build_model(EosType.IDEAL, visc_d_phase_comp=ChungViscosityPure)
+    initialize_model(m)

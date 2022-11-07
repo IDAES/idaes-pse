@@ -112,7 +112,7 @@ class UnitSet(object):
 
     _base_quantities = {
         "AMOUNT": units.mol,
-        "CURRENT": units.watt,
+        "CURRENT": units.ampere,
         "LENGTH": units.meter,
         "LUMINOUS_INTENSITY": units.candela,
         "MASS": units.kilogram,
@@ -123,7 +123,7 @@ class UnitSet(object):
     def __init__(
         self,
         amount: _PyomoUnit = units.mol,
-        current: _PyomoUnit = units.watt,
+        current: _PyomoUnit = units.ampere,
         length: _PyomoUnit = units.meter,
         luminous_intensity: _PyomoUnit = units.candela,
         mass: _PyomoUnit = units.kilogram,

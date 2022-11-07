@@ -3869,8 +3869,7 @@ class GenericStateBlockData(StateBlockData):
                 try:
                     return get_phase_method(b, "visc_d_phase", p)(b, p)
                 except GenericPropertyPackageError:
-
-                    # Handle case where viscosity isn't definedfor a phase
+                    # Handle case where viscosity isn't defined for a phase
                     return Expression.Skip
 
             self.visc_d_phase = Expression(

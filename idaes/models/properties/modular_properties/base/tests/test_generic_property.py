@@ -105,7 +105,7 @@ class TestGenericParameterBlock(object):
         assert_units_equivalent(default_units.MASS, pyunits.kg)
         assert_units_equivalent(default_units.AMOUNT, pyunits.mol)
         assert_units_equivalent(default_units.TEMPERATURE, pyunits.K)
-        assert_units_equivalent(default_units.CURRENT, pyunits.W)
+        assert_units_equivalent(default_units.CURRENT, pyunits.ampere)
         assert_units_equivalent(default_units.LUMINOUS_INTENSITY, pyunits.candela)
 
         assert isinstance(m.params.component_list, Set)
@@ -1354,6 +1354,12 @@ class TestGenericStateBlock(object):
     class dummy_prop:
         def return_expression(*args, **kwargs):
             return 4
+        class visc_d_phase_comp(object):
+            def return_expression(*args, **kwargs):
+                return 5
+        class therm_cond_phase_comp(object):
+            def return_expression(*args, **kwargs):
+                return 7
 
     @pytest.mark.unit
     def test_diffus_phase_comp(self, frame):
@@ -1390,10 +1396,10 @@ class TestGenericStateBlock(object):
 
         # There should be two skipped indices, so length should be 4
         assert len(frame.props[1].visc_d_phase_comp) == 4
-        assert value(frame.props[1].visc_d_phase_comp["p1", "a"]) == 4
-        assert value(frame.props[1].visc_d_phase_comp["p2", "a"]) == 4
-        assert value(frame.props[1].visc_d_phase_comp["p2", "b"]) == 4
-        assert value(frame.props[1].visc_d_phase_comp["p1", "c"]) == 4
+        assert value(frame.props[1].visc_d_phase_comp["p1", "a"]) == 5
+        assert value(frame.props[1].visc_d_phase_comp["p2", "a"]) == 5
+        assert value(frame.props[1].visc_d_phase_comp["p2", "b"]) == 5
+        assert value(frame.props[1].visc_d_phase_comp["p1", "c"]) == 5
 
     @pytest.mark.unit
     def test_therm_cond_phase_comp(self, frame):
@@ -1410,10 +1416,10 @@ class TestGenericStateBlock(object):
 
         # There should be two skipped indices, so length should be 4
         assert len(frame.props[1].therm_cond_phase_comp) == 4
-        assert value(frame.props[1].therm_cond_phase_comp["p1", "a"]) == 4
-        assert value(frame.props[1].therm_cond_phase_comp["p2", "a"]) == 4
-        assert value(frame.props[1].therm_cond_phase_comp["p2", "b"]) == 4
-        assert value(frame.props[1].therm_cond_phase_comp["p1", "c"]) == 4
+        assert value(frame.props[1].therm_cond_phase_comp["p1", "a"]) == 7
+        assert value(frame.props[1].therm_cond_phase_comp["p2", "a"]) == 7
+        assert value(frame.props[1].therm_cond_phase_comp["p2", "b"]) == 7
+        assert value(frame.props[1].therm_cond_phase_comp["p1", "c"]) == 7
 
     @pytest.mark.unit
     def test_surf_tens_phase(self, frame):

@@ -35,7 +35,7 @@ from idaes.models.properties.modular_properties.pure.ChapmanEnskog import (
     collision_integral_neufeld_callback,
 )
 from idaes.core.util.misc import add_object_reference
-from idaes.core.base.property_meta import PropertyClassMetadata
+from idaes.core.base.property_meta import PropertyClassMetadata, UnitSet
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
@@ -55,12 +55,14 @@ def test_visc_vap_comp_sulfur_dioxide():
     }
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object.default_units["temperature"] = pyunits.K
-    m.meta_object.default_units["mass"] = pyunits.kg
-    m.meta_object.default_units["length"] = pyunits.m
-    m.meta_object.default_units["time"] = pyunits.s
-    m.meta_object.default_units["amount"] = pyunits.mol
-    m.meta_object.default_units["current"] = pyunits.ampere
+    m.meta_object._default_units = UnitSet(
+        temperature=pyunits.K,
+        mass=pyunits.kg,
+        length=pyunits.m,
+        time=pyunits.s,
+        amount=pyunits.mol,
+        current=pyunits.ampere,
+    )
 
     def get_metadata(self):
         return m.meta_object
@@ -140,12 +142,14 @@ def test_visc_vap_comp_methanol():
     }
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object.default_units["temperature"] = pyunits.K
-    m.meta_object.default_units["mass"] = pyunits.kg
-    m.meta_object.default_units["length"] = pyunits.m
-    m.meta_object.default_units["time"] = pyunits.s
-    m.meta_object.default_units["amount"] = pyunits.mol
-    m.meta_object.default_units["current"] = pyunits.ampere
+    m.meta_object._default_units = UnitSet(
+        temperature=pyunits.K,
+        mass=pyunits.kg,
+        length=pyunits.m,
+        time=pyunits.s,
+        amount=pyunits.mol,
+        current=pyunits.ampere,
+    )
 
     def get_metadata(self):
         return m.meta_object
@@ -222,12 +226,14 @@ def test_visc_vap_comp_ethane():
     }
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object.default_units["temperature"] = pyunits.K
-    m.meta_object.default_units["mass"] = pyunits.kg
-    m.meta_object.default_units["length"] = pyunits.m
-    m.meta_object.default_units["time"] = pyunits.s
-    m.meta_object.default_units["amount"] = pyunits.mol
-    m.meta_object.default_units["current"] = pyunits.ampere
+    m.meta_object._default_units = UnitSet(
+        temperature=pyunits.K,
+        mass=pyunits.kg,
+        length=pyunits.m,
+        time=pyunits.s,
+        amount=pyunits.mol,
+        current=pyunits.ampere,
+    )
 
     def get_metadata(self):
         return m.meta_object
