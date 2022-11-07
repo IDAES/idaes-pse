@@ -50,9 +50,6 @@ class ChapmanEnskogLennardJones(object):
     class visc_d_phase_comp(object):
         @staticmethod
         def build_parameters(cobj, p):
-            # pobj = cobj.parent_block().get_phase(p)
-            # if not pobj.is_vapor_phase:
-            #     raise ConfigurationError(f"The Chapman-Enskog works only for vapor phases, not phase {p}")
             ChapmanEnskogLennardJones.build_lennard_jones_parameters(cobj)
             if not hasattr(cobj, "viscosity_collision_integral_callback"):
                 cobj.viscosity_collision_integral_callback = (

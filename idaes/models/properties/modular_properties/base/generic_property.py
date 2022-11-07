@@ -1126,7 +1126,7 @@ class GenericParameterData(PhysicalParameterBlock):
                 "mw": {"method": "_mw"},
                 "mw_comp": {"method": "_mw_comp"},
                 "mw_phase": {"method": "_mw_phase"},
-                "number_prandtl_phase": {"method": "_number_prandtl_phase"},
+                "prandtl_number_phase": {"method": "_prandtl_number_phase"},
                 "pressure_phase_comp": {"method": "_pressure_phase_comp"},
                 "pressure_phase_comp_true": {"method": "_pressure_phase_comp_true"},
                 "pressure_phase_comp_apparent": {
@@ -3688,19 +3688,19 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.mw_phase)
             raise
 
-    def _number_prandtl_phase(self):
+    def _prandtl_number_phase(self):
         try:
 
-            def rule_number_prandtl_phase(b, p):
+            def rule_prandtl_number_phase(b, p):
                 return b.cp_mass_phase[p] * b.visc_d_phase[p] / b.therm_cond_phase[p]
 
-            self.number_prandtl_phase = Expression(
+            self.prandtl_number_phase = Expression(
                 self.phase_list,
-                rule=rule_number_prandtl_phase,
+                rule=rule_prandtl_number_phase,
                 doc="Prandtl number by phase",
             )
         except AttributeError:
-            self.del_component(self.number_prandtl_phase)
+            self.del_component(self.prandtl_number_phase)
             raise
 
     def _pressure_phase_comp(self):

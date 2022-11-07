@@ -1287,11 +1287,15 @@ class TestGenericStateBlock(object):
                     frame.props[1], frame.params.get_metadata().properties[p]["method"]
                 )
                 continue
-            elif p in ["diffus_phase_comp", "visc_d_phase_comp"]:
+            elif p in [
+                "diffus_phase_comp",
+                "visc_d_phase_comp",
+                "therm_cond_phase_comp",
+            ]:
                 # phase indexed properties - these will be tested separately.
                 continue
             else:
-                hasattr(frame.props[1], p)
+                assert hasattr(frame.props[1], p)
 
     @pytest.mark.unit
     def test_flows(self, frame):

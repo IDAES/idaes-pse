@@ -156,7 +156,7 @@ def build_model(eos, visc_d_phase_comp=None):
             * b.cold_side.properties[t, x].therm_cond_phase["Vap"]
             / b.tube_inner_diameter
             * b.tube_reynolds_number[t, x] ** 0.8
-            * b.cold_side.properties[t, x].number_prandtl_phase["Vap"] ** (1 / 3)
+            * b.cold_side.properties[t, x].prandtl_number_phase["Vap"] ** (1 / 3)
         )
 
     m.fs.unit.shell_reynolds_number = pyo.Var(
@@ -184,7 +184,7 @@ def build_model(eos, visc_d_phase_comp=None):
             * b.hot_side.properties[t, x].therm_cond_phase["Vap"]
             / b.tube_outer_diameter
             * b.shell_reynolds_number[t, x] ** 0.632
-            * b.hot_side.properties[t, x].number_prandtl_phase["Vap"] ** (1 / 3)
+            * b.hot_side.properties[t, x].prandtl_number_phase["Vap"] ** (1 / 3)
         )
 
     m.fs.unit.length.fix(4.85)
@@ -194,8 +194,6 @@ def build_model(eos, visc_d_phase_comp=None):
     m.fs.unit.tube_inner_diameter.fix(0.01067)
     m.fs.unit.number_of_tubes.fix(100)
     m.fs.unit.length.fix(4.85)
-    # m.fs.unit.hot_side_heat_transfer_coefficient.fix(2000)
-    # m.fs.unit.cold_side_heat_transfer_coefficient.fix(51000)
 
     m.fs.unit.hot_side_inlet.flow_mol[0].fix(5)  # mol/s
     m.fs.unit.hot_side_inlet.temperature[0].fix(365)  # K

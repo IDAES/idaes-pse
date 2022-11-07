@@ -32,10 +32,6 @@ class Eucken(object):
     class therm_cond_phase_comp(object):
         @staticmethod
         def build_parameters(cobj, p):
-            # pobj = cobj.parent_block().get_phase(p)
-            # if not pobj.is_vapor_phase:
-            #     raise ConfigurationError(f"The Eucken method works only for vapor phases, not phase {p}")
-
             # Properties of Gases and Liquids 10-3-1: Three common values for f_int: f_int=1, which is Eucken
             # classic, f_int=1.32, which is "Modified Eucken", and f_int=1.15, which is a compromise suggested by
             # Stiel, L. I., and G. Thodos:AIChE J., 10: 26 (1964)
