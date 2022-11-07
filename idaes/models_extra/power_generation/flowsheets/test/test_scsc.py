@@ -32,6 +32,7 @@ from idaes.core.util.model_statistics import (
 from idaes.models.properties import iapws95
 from idaes.core.util.tables import create_stream_table_dataframe  # as Pandas DataFrame
 
+
 @pytest.fixture(scope="module")
 def model():
     m, solver = main()
@@ -71,4 +72,3 @@ def test_valve_change(model):
     model.fs.turb.throttle_valve[1].valve_opening[:].value = 0.25
     model.solver.solve(model, tee=True)
     assert gross_power_mw(model) == pytest.approx(594.66, abs=1e-2)
-
