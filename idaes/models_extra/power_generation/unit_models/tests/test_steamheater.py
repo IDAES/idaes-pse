@@ -127,7 +127,7 @@ def test_solve_unit(build_unit):
     )
 
     # pressure drop
-    assert pytest.approx(-282158.4020, abs=1e-3) == pyo.value(m.fs.unit.deltaP[0])
+    assert pytest.approx(-282158.4020, rel=1e-5) == pyo.value(m.fs.unit.deltaP[0])
     # check energy balance
     assert (
         pytest.approx(
