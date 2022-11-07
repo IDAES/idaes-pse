@@ -1354,9 +1354,11 @@ class TestGenericStateBlock(object):
     class dummy_prop:
         def return_expression(*args, **kwargs):
             return 4
+
         class visc_d_phase_comp(object):
             def return_expression(*args, **kwargs):
                 return 5
+
         class therm_cond_phase_comp(object):
             def return_expression(*args, **kwargs):
                 return 7

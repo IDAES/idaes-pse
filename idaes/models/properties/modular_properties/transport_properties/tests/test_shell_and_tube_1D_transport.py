@@ -11,7 +11,8 @@
 # license information.
 #################################################################################
 """
-Tests for Shell and Tube 1D unit model.
+Test in which viscosity and thermal conductivity are put to use in a heat transfer problem.
+Chiefly tests that the properties are appearing on modular state blocks as expected.
 
 Author: Douglas Allan, Jaffer Ghouse
 """
@@ -63,6 +64,7 @@ solver = get_solver()
 
 # -----------------------------------------------------------------------------
 
+
 def build_model(eos, visc_d_phase_comp=None):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -71,19 +73,38 @@ def build_model(eos, visc_d_phase_comp=None):
 
     if visc_d_phase_comp is not None:
         # Wolfram Alpha
-        dens_mass_crit_comp = {"N2": 313.3, "O2": 436.1, "Ar": 535.6, "H2O": 322.0, "CO2": 467.6}
+        dens_mass_crit_comp = {
+            "N2": 313.3,
+            "O2": 436.1,
+            "Ar": 535.6,
+            "H2O": 322.0,
+            "CO2": 467.6,
+        }
         for comp in comp_set:
-            config_dict["components"][comp]["visc_d_phase_comp"]["Vap"] = visc_d_phase_comp
-            config_dict["components"][comp]["parameter_data"]["dipole_moment"] = (0.0, pyunits.debye)
-            config_dict["components"][comp]["parameter_data"]["association_factor_chung"] = 0.0
+            config_dict["components"][comp]["visc_d_phase_comp"][
+                "Vap"
+            ] = visc_d_phase_comp
+            config_dict["components"][comp]["parameter_data"]["dipole_moment"] = (
+                0.0,
+                pyunits.debye,
+            )
+            config_dict["components"][comp]["parameter_data"][
+                "association_factor_chung"
+            ] = 0.0
             config_dict["components"][comp]["parameter_data"]["dens_mol_crit"] = (
-                dens_mass_crit_comp[comp] / config_dict["components"][comp]["parameter_data"]["mw"][0],
-                pyunits.mol/pyunits.m**3
+                dens_mass_crit_comp[comp]
+                / config_dict["components"][comp]["parameter_data"]["mw"][0],
+                pyunits.mol / pyunits.m**3,
             )
         # From WolframAlpha
-        config_dict["components"]["H2O"]["parameter_data"]["dipole_moment"] = (1.8546, pyunits.debye)
+        config_dict["components"]["H2O"]["parameter_data"]["dipole_moment"] = (
+            1.8546,
+            pyunits.debye,
+        )
         # From Table 9-1 Properties of Gases and Liquids 6th Ed.
-        config_dict["components"]["H2O"]["parameter_data"]["association_factor_chung"] = 0.076
+        config_dict["components"]["H2O"]["parameter_data"][
+            "association_factor_chung"
+        ] = 0.076
 
     m.fs.properties = GenericParameterBlock(
         **config_dict,
@@ -121,21 +142,21 @@ def build_model(eos, visc_d_phase_comp=None):
     @m.fs.unit.Constraint(m.fs.time, m.fs.unit.cold_side.length_domain)
     def tube_reynolds_number_eqn(b, t, x):
         return (
-                b.tube_reynolds_number[t, x]
-                == b.cold_side.properties[t, x].flow_mass_phase["Vap"]
-                * b.tube_inner_diameter
-                / b.cold_side.properties[t, x].visc_d_phase["Vap"]
-                / b.cold_side.area
+            b.tube_reynolds_number[t, x]
+            == b.cold_side.properties[t, x].flow_mass_phase["Vap"]
+            * b.tube_inner_diameter
+            / b.cold_side.properties[t, x].visc_d_phase["Vap"]
+            / b.cold_side.area
         )
 
     @m.fs.unit.Constraint(m.fs.time, m.fs.unit.cold_side.length_domain)
     def tube_heat_transfer_coeff_eqn(b, t, x):
         return b.cold_side_heat_transfer_coefficient[t, x] == (
-                0.027
-                * b.cold_side.properties[t, x].therm_cond_phase["Vap"]
-                / b.tube_inner_diameter
-                * b.tube_reynolds_number[t, x] ** 0.8
-                * b.cold_side.properties[t, x].number_prandtl_phase["Vap"] ** (1 / 3)
+            0.027
+            * b.cold_side.properties[t, x].therm_cond_phase["Vap"]
+            / b.tube_inner_diameter
+            * b.tube_reynolds_number[t, x] ** 0.8
+            * b.cold_side.properties[t, x].number_prandtl_phase["Vap"] ** (1 / 3)
         )
 
     m.fs.unit.shell_reynolds_number = pyo.Var(
@@ -148,22 +169,22 @@ def build_model(eos, visc_d_phase_comp=None):
     @m.fs.unit.Constraint(m.fs.time, m.fs.unit.hot_side.length_domain)
     def shell_reynolds_number_eqn(b, t, x):
         return (
-                b.shell_reynolds_number[t, x]
-                == b.hot_side.properties[t, x].flow_mass_phase["Vap"]
-                * b.tube_outer_diameter
-                / b.hot_side.area
-                / b.hot_side.properties[t, x].visc_d_phase["Vap"]
+            b.shell_reynolds_number[t, x]
+            == b.hot_side.properties[t, x].flow_mass_phase["Vap"]
+            * b.tube_outer_diameter
+            / b.hot_side.area
+            / b.hot_side.properties[t, x].visc_d_phase["Vap"]
         )
 
     @m.fs.unit.Constraint(m.fs.time, m.fs.unit.hot_side.length_domain)
     def shell_heat_transfer_coeff_eqn(b, t, x):
         return b.hot_side_heat_transfer_coefficient[t, x] == (
-                0.6
-                * 0.254
-                * b.hot_side.properties[t, x].therm_cond_phase["Vap"]
-                / b.tube_outer_diameter
-                * b.shell_reynolds_number[t, x] ** 0.632
-                * b.hot_side.properties[t, x].number_prandtl_phase["Vap"] ** (1 / 3)
+            0.6
+            * 0.254
+            * b.hot_side.properties[t, x].therm_cond_phase["Vap"]
+            / b.tube_outer_diameter
+            * b.shell_reynolds_number[t, x] ** 0.632
+            * b.hot_side.properties[t, x].number_prandtl_phase["Vap"] ** (1 / 3)
         )
 
     m.fs.unit.length.fix(4.85)
@@ -224,6 +245,7 @@ def build_model(eos, visc_d_phase_comp=None):
 
     return m
 
+
 def initialize_model(m):
     m.fs.unit.cold_side_heat_transfer_coefficient.fix(51000)
     m.fs.unit.tube_reynolds_number.fix()
@@ -264,6 +286,7 @@ def initialize_model(m):
                 m.fs.unit.shell_heat_transfer_coeff_eqn[t, x],
             )
     return solver.solve(m, tee=True)
+
 
 class Test_transport_properties_ideal(object):
     @pytest.fixture(scope="class")
@@ -338,6 +361,7 @@ class Test_transport_properties_ideal(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+
 class Test_transport_properties_ideal_chung(object):
     @pytest.fixture(scope="class")
     def hx(self):
@@ -411,12 +435,14 @@ class Test_transport_properties_ideal_chung(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+
 # -----------------------------------------------------------------------------
 class Test_transport_properties_PR(object):
     @pytest.fixture(scope="class")
     def hx(self):
         return build_model(eos=EosType.PR)
 
+    # TODO These tests can become component tests when the new NL writer comes--Doug, Nov. 2022
     @pytest.mark.integration
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, hx):
@@ -485,6 +511,7 @@ class Test_transport_properties_PR(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+
 @pytest.mark.performance
 class TestCubicTransportPerformance(PerformanceBaseClass, unittest.TestCase):
     def build_model(self):
@@ -492,6 +519,7 @@ class TestCubicTransportPerformance(PerformanceBaseClass, unittest.TestCase):
 
     def initialize_model(self, model):
         initialize_model(model)
+
 
 if __name__ == "__main__":
     m = build_model(EosType.IDEAL, visc_d_phase_comp=ChungViscosityPure)
