@@ -167,13 +167,13 @@ def henry_equilibrium_ratio(b, p, j):
 # Define units for Henry's constant
 def henry_units(henry_type, units):
     if henry_type == HenryType.Hcp:
-        h_units = units["density_mole"] / units["pressure"]
+        h_units = units.DENSITY_MOLE / units.PRESSURE
     elif henry_type == HenryType.Kpc:
-        h_units = units["pressure"] / units["density_mole"]
+        h_units = units.PRESSURE / units.DENSITY_MOLE
     elif henry_type == HenryType.Hxp:
-        h_units = units["pressure"] ** -1
+        h_units = units.PRESSURE**-1
     elif henry_type == HenryType.Kpx:
-        h_units = units["pressure"]
+        h_units = units.PRESSURE
     else:
         _raise_henry_type_error(henry_type)
 

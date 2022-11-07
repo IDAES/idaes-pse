@@ -232,7 +232,7 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
         assert isinstance(frame.props[1].total_flow_balance, Constraint)
         assert len(frame.props[1].total_flow_balance) == 1
         assert str(frame.props[1].total_flow_balance.body) == str(
-            frame.props[1].flow_mol_phase[frame.params.phase_list[1]]
+            frame.props[1].flow_mol_phase[frame.params.phase_list.at(1)]
             - frame.props[1].flow_mol
         )
 
@@ -242,7 +242,7 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
             assert i in frame.props[1].params.component_list
             assert str(frame.props[1].component_flow_balances[i].body) == str(
                 frame.props[1].mole_frac_comp[i]
-                - frame.props[1].mole_frac_phase_comp[frame.params.phase_list[1], i]
+                - frame.props[1].mole_frac_phase_comp[frame.params.phase_list.at(1), i]
             )
 
         assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
@@ -376,7 +376,7 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         assert isinstance(frame.props[1].total_flow_balance, Constraint)
         assert len(frame.props[1].total_flow_balance) == 1
         assert str(frame.props[1].total_flow_balance.body) == str(
-            frame.props[1].flow_mol_phase[frame.params.phase_list[1]]
+            frame.props[1].flow_mol_phase[frame.params.phase_list.at(1)]
             - frame.props[1].flow_mol
         )
 
@@ -386,7 +386,7 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
             assert i in frame.props[1].params.component_list
             assert str(frame.props[1].component_flow_balances[i].body) == str(
                 frame.props[1].mole_frac_comp[i]
-                - frame.props[1].mole_frac_phase_comp[frame.params.phase_list[1], i]
+                - frame.props[1].mole_frac_phase_comp[frame.params.phase_list.at(1), i]
             )
 
         assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
@@ -542,13 +542,13 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
         assert str(frame.props[1].sum_mole_frac.body) == str(
             sum(
                 frame.props[1].mole_frac_phase_comp[
-                    frame.props[1].params.phase_list[1], i
+                    frame.props[1].params.phase_list.at(1), i
                 ]
                 for i in frame.props[1].params.component_list
             )
             - sum(
                 frame.props[1].mole_frac_phase_comp[
-                    frame.props[1].params.phase_list[2], i
+                    frame.props[1].params.phase_list.at(2), i
                 ]
                 for i in frame.props[1].params.component_list
             )
@@ -722,13 +722,13 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
         assert str(frame.props[1].sum_mole_frac.body) == str(
             sum(
                 frame.props[1].mole_frac_phase_comp[
-                    frame.props[1].params.phase_list[1], i
+                    frame.props[1].params.phase_list.at(1), i
                 ]
                 for i in frame.props[1].params.component_list
             )
             - sum(
                 frame.props[1].mole_frac_phase_comp[
-                    frame.props[1].params.phase_list[2], i
+                    frame.props[1].params.phase_list.at(2), i
                 ]
                 for i in frame.props[1].params.component_list
             )

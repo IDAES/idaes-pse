@@ -30,7 +30,7 @@ from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.models.properties.modular_properties.pure.ConstantProperties import *
 from idaes.core.util.misc import add_object_reference
-from idaes.core.base.property_meta import PropertyClassMetadata
+from idaes.core.base.property_meta import PropertyClassMetadata, UnitSet
 
 
 @pytest.fixture()
@@ -66,11 +66,13 @@ def frame():
     m.config.include_enthalpy_of_formation = True
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object.default_units["temperature"] = pyunits.K
-    m.meta_object.default_units["mass"] = pyunits.kg
-    m.meta_object.default_units["length"] = pyunits.m
-    m.meta_object.default_units["time"] = pyunits.s
-    m.meta_object.default_units["amount"] = pyunits.mol
+    m.meta_object._default_units = UnitSet(
+        temperature=pyunits.K,
+        mass=pyunits.kg,
+        length=pyunits.m,
+        time=pyunits.s,
+        amount=pyunits.mol,
+    )
 
     def get_metadata(self):
         return m.meta_object

@@ -84,9 +84,9 @@ def define_state(b):
                 )
 
     # Get bounds and initial values from config args
-    f_bounds, f_init = get_bounds_from_config(b, "flow_mol", units["flow_mole"])
-    t_bounds, t_init = get_bounds_from_config(b, "temperature", units["temperature"])
-    p_bounds, p_init = get_bounds_from_config(b, "pressure", units["pressure"])
+    f_bounds, f_init = get_bounds_from_config(b, "flow_mol", units.FLOW_MOLE)
+    t_bounds, t_init = get_bounds_from_config(b, "temperature", units.TEMPERATURE)
+    p_bounds, p_init = get_bounds_from_config(b, "pressure", units.PRESSURE)
 
     # Add state variables
     b.flow_mol = Var(
@@ -94,28 +94,28 @@ def define_state(b):
         domain=NonNegativeReals,
         bounds=f_bounds,
         doc=" Total molar flowrate",
-        units=units["flow_mole"],
+        units=units.FLOW_MOLE,
     )
     b.mole_frac_comp = Var(
         b.component_list,
         bounds=(1e-20, 1.001),
         initialize=1 / len(b.component_list),
         doc="Mixture mole fractions",
-        units=None,
+        units=pyunits.dimensionless,
     )
     b.pressure = Var(
         initialize=p_init,
         domain=NonNegativeReals,
         bounds=p_bounds,
         doc="State pressure",
-        units=units["pressure"],
+        units=units.PRESSURE,
     )
     b.temperature = Var(
         initialize=t_init,
         domain=NonNegativeReals,
         bounds=t_bounds,
         doc="State temperature",
-        units=units["temperature"],
+        units=units.TEMPERATURE,
     )
 
     # Add supporting variables
@@ -130,7 +130,7 @@ def define_state(b):
         domain=NonNegativeReals,
         bounds=f_bounds,
         doc="Phase molar flow rates",
-        units=units["flow_mole"],
+        units=units.FLOW_MOLE,
     )
 
     b.mole_frac_phase_comp = Var(
@@ -138,7 +138,7 @@ def define_state(b):
         initialize=1 / len(b.component_list),
         bounds=(1e-20, 1.001),
         doc="Phase mole fractions",
-        units=None,
+        units=pyunits.dimensionless,
     )
 
     def Fpc_expr(b, p, j):
@@ -153,7 +153,7 @@ def define_state(b):
         initialize=1 / len(b.phase_list),
         bounds=(0, None),
         doc="Phase fractions",
-        units=None,
+        units=pyunits.dimensionless,
     )
 
     # Add electrolye state vars if required
@@ -595,7 +595,7 @@ def define_default_scaling_factors(b):
         f_bounds = state_bounds["flow_mol"]
         if len(f_bounds) == 4:
             f_init = pyunits.convert_value(
-                f_bounds[1], from_units=f_bounds[3], to_units=units["flow_mole"]
+                f_bounds[1], from_units=f_bounds[3], to_units=units.FLOW_MOLE
             )
         else:
             f_init = f_bounds[1]
@@ -606,7 +606,7 @@ def define_default_scaling_factors(b):
         p_bounds = state_bounds["pressure"]
         if len(p_bounds) == 4:
             p_init = pyunits.convert_value(
-                p_bounds[1], from_units=p_bounds[3], to_units=units["pressure"]
+                p_bounds[1], from_units=p_bounds[3], to_units=units.PRESSURE
             )
         else:
             p_init = p_bounds[1]
@@ -617,7 +617,7 @@ def define_default_scaling_factors(b):
         t_bounds = state_bounds["temperature"]
         if len(t_bounds) == 4:
             t_init = pyunits.convert_value(
-                t_bounds[1], from_units=t_bounds[3], to_units=units["temperature"]
+                t_bounds[1], from_units=t_bounds[3], to_units=units.TEMPERATURE
             )
         else:
             t_init = t_bounds[1]

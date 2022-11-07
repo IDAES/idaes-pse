@@ -1278,7 +1278,7 @@ see reaction package for documentation.}""",
             )
             def isobaric_gas_emulsion(b, t, x):
                 return (
-                    b.gas_emulsion.properties[t, x].pressure == b.gas_inlet.pressure[0]
+                    b.gas_emulsion.properties[t, x].pressure == b.gas_inlet.pressure[t]
                 )
 
         # ---------------------------------------------------------------------

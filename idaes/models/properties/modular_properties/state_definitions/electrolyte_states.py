@@ -64,7 +64,7 @@ def _apparent_species_state(b):
 
     # Get units and bounds for true species state
     units = b.params.get_metadata().derived_units
-    f_bounds, f_init = get_bounds_from_config(b, "flow_mol", units["flow_mole"])
+    f_bounds, f_init = get_bounds_from_config(b, "flow_mol", units.FLOW_MOLE)
 
     # Create true species state vars
     b.flow_mol_phase_comp_true = Var(
@@ -73,7 +73,7 @@ def _apparent_species_state(b):
         domain=NonNegativeReals,
         bounds=f_bounds,
         doc="Phase-component molar flowrates of true species",
-        units=units["flow_mole"],
+        units=units.FLOW_MOLE,
     )
 
     b.mole_frac_phase_comp_true = Var(
@@ -89,7 +89,7 @@ def _apparent_species_state(b):
         b.apparent_inherent_reaction_extent = Var(
             b.params.inherent_reaction_idx,
             initialize=0,
-            units=units["flow_mole"],
+            units=units.FLOW_MOLE,
             doc="Apparent extent of inherent reactions",
         )
 
@@ -171,7 +171,7 @@ def _true_species_state(b):
 
     # Get units and bounds for apparent species state
     units = b.params.get_metadata().derived_units
-    f_bounds, f_init = get_bounds_from_config(b, "flow_mol", units["flow_mole"])
+    f_bounds, f_init = get_bounds_from_config(b, "flow_mol", units.FLOW_MOLE)
 
     # Create apparent species state vars
     b.flow_mol_phase_comp_apparent = Var(
@@ -180,7 +180,7 @@ def _true_species_state(b):
         domain=NonNegativeReals,
         bounds=f_bounds,
         doc="Phase-component molar flowrates of apparent species",
-        units=units["flow_mole"],
+        units=units.FLOW_MOLE,
     )
 
     b.mole_frac_phase_comp_apparent = Var(

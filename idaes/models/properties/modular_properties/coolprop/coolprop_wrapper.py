@@ -196,7 +196,7 @@ class CoolPropWrapper:
             )
 
             units = b.params.get_metadata().derived_units
-            return pyunits.convert(h, units["energy_mole"])
+            return pyunits.convert(h, units.ENERGY_MOLE)
 
     class enth_mol_ig_comp:
         """
@@ -228,7 +228,7 @@ class CoolPropWrapper:
             ) + CoolPropWrapper.enth_mol_liq_comp.return_expression(b, cobj, T)
 
             units = b.params.get_metadata().derived_units
-            return pyunits.convert(h, units["energy_mole"])
+            return pyunits.convert(h, units.ENERGY_MOLE)
 
     class entr_mol_liq_comp:
         """
@@ -269,7 +269,7 @@ class CoolPropWrapper:
             )
 
             units = b.params.get_metadata().derived_units
-            return pyunits.convert(s, units["entropy_mole"])
+            return pyunits.convert(s, units.ENTROPY_MOLE)
 
     class entr_mol_ig_comp:
         """
@@ -305,7 +305,7 @@ class CoolPropWrapper:
             ) + CoolPropWrapper.entr_mol_liq_comp.return_expression(b, cobj, T)
 
             units = b.params.get_metadata().derived_units
-            return pyunits.convert(s, units["entropy_mole"])
+            return pyunits.convert(s, units.ENTROPY_MOLE)
 
     class pressure_sat_comp:
         """

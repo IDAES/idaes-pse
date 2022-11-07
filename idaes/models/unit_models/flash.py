@@ -39,7 +39,6 @@ from idaes.models.unit_models.separator import (
 )
 
 from idaes.core.util.config import is_physical_parameter_block
-import idaes.core.util.unit_costing as costing
 from idaes.core.util.units_of_measurement import report_quantity
 
 

@@ -76,7 +76,7 @@ class RPP5(object):
             ) * const.gas_constant
 
             units = b.params.get_metadata().derived_units
-            return pyunits.convert(cp, units["heat_capacity_mole"])
+            return pyunits.convert(cp, units.HEAT_CAPACITY_MOLE)
 
     class enth_mol_ig_comp:
         @staticmethod
@@ -89,7 +89,7 @@ class RPP5(object):
 
                 cobj.enth_mol_form_vap_comp_ref = Var(
                     doc="Vapor phase molar heat of formation @ Tref",
-                    units=units["energy_mole"],
+                    units=units.ENERGY_MOLE,
                 )
                 set_param_from_config(cobj, param="enth_mol_form_vap_comp_ref")
 
@@ -111,7 +111,7 @@ class RPP5(object):
                         + cobj.cp_mol_ig_comp_coeff_a0 * (T - Tr)
                     )
                     * const.gas_constant,
-                    units["energy_mole"],
+                    units.ENERGY_MOLE,
                 )
                 + cobj.enth_mol_form_vap_comp_ref
             )
@@ -128,7 +128,7 @@ class RPP5(object):
 
             cobj.entr_mol_form_vap_comp_ref = Var(
                 doc="Vapor phase molar entropy of formation @ Tref",
-                units=units["entropy_mole"],
+                units=units.ENTROPY_MOLE,
             )
             set_param_from_config(cobj, param="entr_mol_form_vap_comp_ref")
 
@@ -150,7 +150,7 @@ class RPP5(object):
                         + cobj.cp_mol_ig_comp_coeff_a0 * log(T / Tr)
                     )
                     * const.gas_constant,
-                    units["entropy_mole"],
+                    units.ENTROPY_MOLE,
                 )
                 + cobj.entr_mol_form_vap_comp_ref
             )
@@ -196,11 +196,7 @@ class RPP5(object):
             )
 
             base_units = b.params.get_metadata().default_units
-            p_units = (
-                base_units["mass"]
-                * base_units["length"] ** -1
-                * base_units["time"] ** -2
-            )
+            p_units = base_units.PRESSURE
             return pyunits.convert(psat, to_units=p_units)
 
         @staticmethod
@@ -213,10 +209,5 @@ class RPP5(object):
             )
 
             base_units = b.params.get_metadata().default_units
-            dp_units = (
-                base_units["mass"]
-                * base_units["length"] ** -1
-                * base_units["time"] ** -2
-                * base_units["temperature"] ** -1
-            )
+            dp_units = base_units.PRESSURE * base_units.TEMPERATURE**-1
             return pyunits.convert(p_sat_dT, to_units=dp_units)
