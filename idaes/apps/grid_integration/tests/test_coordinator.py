@@ -92,11 +92,9 @@ def test_static_params(coordinator_object):
         == "thermal"
     ):
         gen_dict = testing_generator_params
-        testing_generator_params.pop("initial_status")
-        testing_generator_params.pop("initial_p_output")
     else:
         gen_dict = renewable_generator_params
-    coordinator_object._update_static_params(gen_dict)
+    coordinator_object._update_static_params(gen_dict, first_ruc=False)
 
 
 @pytest.mark.unit
