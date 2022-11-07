@@ -547,6 +547,7 @@ class HelmholtzStateBlockData(StateBlockData):
         # Add component mole fraction for standardization
         def mole_frac_comp_rule(b, i):
             return 1.0
+
         self.mole_frac_comp = pyo.Expression(component_list, rule=mole_frac_comp_rule)
         # Expressions that link to some parameters in the param block, which
         # are commonly needed, this lets you get the parameters with scale
