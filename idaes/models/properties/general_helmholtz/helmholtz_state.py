@@ -39,6 +39,10 @@ from idaes.models.properties.general_helmholtz.helmholtz_functions import (
     AmountBasis,
     PhaseType,
     StateVars,
+    _data_dir,
+)
+from idaes.models.properties.general_helmholtz.components import (
+    get_component_module,
 )
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -286,12 +290,12 @@ class HelmholtzStateBlockData(StateBlockData):
             )
             h_mass = self.enth_mol * params.uc["J/mol to kJ/kg"]
             self.temperature = pyo.Expression(
-                expr=self.temperature_star / self.tau_func(cmp, h_mass, P),
+                expr=self.temperature_star / self.tau_func(cmp, h_mass, P, _data_dir),
                 doc="Temperature",
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vf_func(cmp, h_mass, P),
+                    expr=self.vf_func(cmp, h_mass, P, _data_dir),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -310,12 +314,12 @@ class HelmholtzStateBlockData(StateBlockData):
             )
             h_mass = self.enth_mass * params.uc["J/kg to kJ/kg"]
             self.temperature = pyo.Expression(
-                expr=self.temperature_star / self.tau_func(cmp, h_mass, P),
+                expr=self.temperature_star / self.tau_func(cmp, h_mass, P, _data_dir),
                 doc="Temperature",
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vf_func(cmp, h_mass, P),
+                    expr=self.vf_func(cmp, h_mass, P, _data_dir),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -334,12 +338,12 @@ class HelmholtzStateBlockData(StateBlockData):
             )
             s_mass = self.entr_mol * params.uc["J/mol/K to kJ/kg/K"]
             self.temperature = pyo.Expression(
-                expr=self.temperature_star / self.taus_func(cmp, s_mass, P),
+                expr=self.temperature_star / self.taus_func(cmp, s_mass, P, _data_dir),
                 doc="Temperature",
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vfs_func(cmp, s_mass, P),
+                    expr=self.vfs_func(cmp, s_mass, P, _data_dir),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -358,12 +362,12 @@ class HelmholtzStateBlockData(StateBlockData):
             )
             s_mass = self.entr_mass * params.uc["J/kg/K to kJ/kg/K"]
             self.temperature = pyo.Expression(
-                expr=self.temperature_star / self.taus_func(cmp, s_mass, P),
+                expr=self.temperature_star / self.taus_func(cmp, s_mass, P, _data_dir),
                 doc="Temperature",
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vfs_func(cmp, s_mass, P),
+                    expr=self.vfs_func(cmp, s_mass, P, _data_dir),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -382,12 +386,12 @@ class HelmholtzStateBlockData(StateBlockData):
             )
             u_mass = self.energy_internal_mol * params.uc["J/mol to kJ/kg"]
             self.temperature = pyo.Expression(
-                expr=self.temperature_star / self.tauu_func(cmp, u_mass, P),
+                expr=self.temperature_star / self.tauu_func(cmp, u_mass, P, _data_dir),
                 doc="Temperature",
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vfu_func(cmp, u_mass, P),
+                    expr=self.vfu_func(cmp, u_mass, P, _data_dir),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -406,12 +410,12 @@ class HelmholtzStateBlockData(StateBlockData):
             )
             u_mass = self.energy_internal_mass * params.uc["J/kg to kJ/kg"]
             self.temperature = pyo.Expression(
-                expr=self.temperature_star / self.tauu_func(cmp, u_mass, P),
+                expr=self.temperature_star / self.tauu_func(cmp, u_mass, P, _data_dir),
                 doc="Temperature",
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vfu_func(cmp, u_mass, P),
+                    expr=self.vfu_func(cmp, u_mass, P, _data_dir),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -488,9 +492,13 @@ class HelmholtzStateBlockData(StateBlockData):
         # density will be calculated at the saturation or critical pressure
         def rule_dens_mass(b, p):
             if p == "Liq":
-                return rho_star * self.delta_liq_func(cmp, P + self._P_under_sat, tau)
+                return rho_star * self.delta_liq_func(
+                    cmp, P + self._P_under_sat, tau, _data_dir
+                )
             else:
-                return rho_star * self.delta_vap_func(cmp, P - self._P_over_sat, tau)
+                return rho_star * self.delta_vap_func(
+                    cmp, P - self._P_over_sat, tau, _data_dir
+                )
 
         self.dens_mass_phase = pyo.Expression(priv_plist, rule=rule_dens_mass)
         # Reduced Density (no _mass_ identifier because mass or mol is same)
@@ -536,6 +544,11 @@ class HelmholtzStateBlockData(StateBlockData):
         component_list = params.component_list
         phase_set = params.config.phase_presentation
         self.phase_equilibrium_list = params.phase_equilibrium_list
+        # Add component mole fraction for standardization
+        def mole_frac_comp_rule(b, i):
+            return 1.0
+
+        self.mole_frac_comp = pyo.Expression(component_list, rule=mole_frac_comp_rule)
         # Expressions that link to some parameters in the param block, which
         # are commonly needed, this lets you get the parameters with scale
         # factors directly from the state block
@@ -575,10 +588,11 @@ class HelmholtzStateBlockData(StateBlockData):
         vf = self.vapor_frac
         # Saturation temperature expression
         self.temperature_sat = pyo.Expression(
-            expr=T_star / self.tau_sat_func(cmp, P), doc="Stauration temperature"
+            expr=T_star / self.tau_sat_func(cmp, P, _data_dir),
+            doc="Stauration temperature",
         )
         # Saturation tau (tau = T_star/T)
-        self.tau_sat = pyo.Expression(expr=self.tau_sat_func(cmp, P))
+        self.tau_sat = pyo.Expression(expr=self.tau_sat_func(cmp, P, _data_dir))
         # Reduced temperature
         self.temperature_red = pyo.Expression(
             expr=T / T_star, doc="reduced temperature T/T_star"
@@ -587,7 +601,7 @@ class HelmholtzStateBlockData(StateBlockData):
         tau = self.tau
         # Saturation pressure
         self.pressure_sat = pyo.Expression(
-            expr=self.p_sat_func(cmp, tau) * params.uc["kPa to Pa"],
+            expr=self.p_sat_func(cmp, tau, _data_dir) * params.uc["kPa to Pa"],
             doc="Saturation pressure",
         )
 
@@ -597,9 +611,9 @@ class HelmholtzStateBlockData(StateBlockData):
             # phase TPX
             def rule_dens_mass(b, p):
                 if p == "Liq":
-                    return rho_star * self.delta_liq_func(cmp, P, tau)
+                    return rho_star * self.delta_liq_func(cmp, P, tau, _data_dir)
                 else:
-                    return rho_star * self.delta_vap_func(cmp, P, tau)
+                    return rho_star * self.delta_vap_func(cmp, P, tau, _data_dir)
 
             self.dens_mass_phase = pyo.Expression(
                 phlist, rule=rule_dens_mass, doc="Mass density by phase"
@@ -621,11 +635,13 @@ class HelmholtzStateBlockData(StateBlockData):
         def rule_enth_mol_sat_phase(b, p):
             if p == "Liq":
                 return (
-                    self.hlpt_func(cmp, P, self.tau_sat) * params.uc["kJ/kg to J/mol"]
+                    self.hlpt_func(cmp, P, self.tau_sat, _data_dir)
+                    * params.uc["kJ/kg to J/mol"]
                 )
             else:
                 return (
-                    self.hvpt_func(cmp, P, self.tau_sat) * params.uc["kJ/kg to J/mol"]
+                    self.hvpt_func(cmp, P, self.tau_sat, _data_dir)
+                    * params.uc["kJ/kg to J/mol"]
                 )
 
         self.enth_mol_sat_phase = pyo.Expression(
@@ -636,9 +652,15 @@ class HelmholtzStateBlockData(StateBlockData):
         # Saturated Enthalpy mass
         def rule_enth_mass_sat_phase(b, p):
             if p == "Liq":
-                return self.hlpt_func(cmp, P, self.tau_sat) * params.uc["kJ/kg to J/kg"]
+                return (
+                    self.hlpt_func(cmp, P, self.tau_sat, _data_dir)
+                    * params.uc["kJ/kg to J/kg"]
+                )
             else:
-                return self.hvpt_func(cmp, P, self.tau_sat) * params.uc["kJ/kg to J/kg"]
+                return (
+                    self.hvpt_func(cmp, P, self.tau_sat, _data_dir)
+                    * params.uc["kJ/kg to J/kg"]
+                )
 
         self.enth_mass_sat_phase = pyo.Expression(
             phlist,
@@ -650,12 +672,12 @@ class HelmholtzStateBlockData(StateBlockData):
         def rule_entr_mol_sat_phase(b, p):
             if p == "Liq":
                 return (
-                    self.slpt_func(cmp, P, self.tau_sat)
+                    self.slpt_func(cmp, P, self.tau_sat, _data_dir)
                     * params.uc["kJ/kg/K to J/mol/K"]
                 )
             else:
                 return (
-                    self.svpt_func(cmp, P, self.tau_sat)
+                    self.svpt_func(cmp, P, self.tau_sat, _data_dir)
                     * params.uc["kJ/kg/K to J/mol/K"]
                 )
 
@@ -668,12 +690,12 @@ class HelmholtzStateBlockData(StateBlockData):
         def rule_entr_mass_sat_phase(b, p):
             if p == "Liq":
                 return (
-                    self.slpt_func(cmp, P, self.tau_sat)
+                    self.slpt_func(cmp, P, self.tau_sat, _data_dir)
                     * params.uc["kJ/kg/K to J/kg/K"]
                 )
             else:
                 return (
-                    self.svpt_func(cmp, P, self.tau_sat)
+                    self.svpt_func(cmp, P, self.tau_sat, _data_dir)
                     * params.uc["kJ/kg/K to J/kg/K"]
                 )
 
@@ -721,7 +743,9 @@ class HelmholtzStateBlockData(StateBlockData):
         )
         # Phase Internal Energy
         def rule_energy_internal_mol_phase(b, p):
-            return self.u_func(cmp, delta[p], tau) * params.uc["kJ/kg to J/mol"]
+            return (
+                self.u_func(cmp, delta[p], tau, _data_dir) * params.uc["kJ/kg to J/mol"]
+            )
 
         self.energy_internal_mol_phase = pyo.Expression(
             phlist,
@@ -730,7 +754,9 @@ class HelmholtzStateBlockData(StateBlockData):
         )
 
         def rule_energy_internal_mass_phase(b, p):
-            return self.u_func(cmp, delta[p], tau) * params.uc["kJ/kg to J/kg"]
+            return (
+                self.u_func(cmp, delta[p], tau, _data_dir) * params.uc["kJ/kg to J/kg"]
+            )
 
         self.energy_internal_mass_phase = pyo.Expression(
             phlist,
@@ -739,7 +765,9 @@ class HelmholtzStateBlockData(StateBlockData):
         )
         # Phase Enthalpy
         def rule_enth_mol_phase(b, p):
-            return self.h_func(cmp, delta[p], tau) * params.uc["kJ/kg to J/mol"]
+            return (
+                self.h_func(cmp, delta[p], tau, _data_dir) * params.uc["kJ/kg to J/mol"]
+            )
 
         self.enth_mol_phase = pyo.Expression(
             phlist,
@@ -748,7 +776,9 @@ class HelmholtzStateBlockData(StateBlockData):
         )
 
         def rule_enth_mass_phase(b, p):
-            return self.h_func(cmp, delta[p], tau) * params.uc["kJ/kg to J/kg"]
+            return (
+                self.h_func(cmp, delta[p], tau, _data_dir) * params.uc["kJ/kg to J/kg"]
+            )
 
         self.enth_mass_phase = pyo.Expression(
             phlist,
@@ -757,7 +787,10 @@ class HelmholtzStateBlockData(StateBlockData):
         )
         # Phase Entropy
         def rule_entr_mol_phase(b, p):
-            return self.s_func(cmp, delta[p], tau) * params.uc["kJ/kg/K to J/mol/K"]
+            return (
+                self.s_func(cmp, delta[p], tau, _data_dir)
+                * params.uc["kJ/kg/K to J/mol/K"]
+            )
 
         self.entr_mol_phase = pyo.Expression(
             phlist,
@@ -766,7 +799,10 @@ class HelmholtzStateBlockData(StateBlockData):
         )
 
         def rule_entr_mass_phase(b, p):
-            return self.s_func(cmp, delta[p], tau) * params.uc["kJ/kg/K to J/kg/K"]
+            return (
+                self.s_func(cmp, delta[p], tau, _data_dir)
+                * params.uc["kJ/kg/K to J/kg/K"]
+            )
 
         self.entr_mass_phase = pyo.Expression(
             phlist,
@@ -775,7 +811,10 @@ class HelmholtzStateBlockData(StateBlockData):
         )
         # Phase constant pressure heat capacity, cp
         def rule_cp_mol_phase(b, p):
-            return self.cp_func(cmp, delta[p], tau) * params.uc["kJ/kg/K to J/mol/K"]
+            return (
+                self.cp_func(cmp, delta[p], tau, _data_dir)
+                * params.uc["kJ/kg/K to J/mol/K"]
+            )
 
         self.cp_mol_phase = pyo.Expression(
             phlist,
@@ -784,7 +823,10 @@ class HelmholtzStateBlockData(StateBlockData):
         )
 
         def rule_cp_mass_phase(b, p):
-            return self.cp_func(cmp, delta[p], tau) * params.uc["kJ/kg/K to J/kg/K"]
+            return (
+                self.cp_func(cmp, delta[p], tau, _data_dir)
+                * params.uc["kJ/kg/K to J/kg/K"]
+            )
 
         self.cp_mass_phase = pyo.Expression(
             phlist,
@@ -793,7 +835,10 @@ class HelmholtzStateBlockData(StateBlockData):
         )
         # Phase constant volume heat capacity, cv
         def rule_cv_mol_phase(b, p):
-            return self.cv_func(cmp, delta[p], tau) * params.uc["kJ/kg/K to J/mol/K"]
+            return (
+                self.cv_func(cmp, delta[p], tau, _data_dir)
+                * params.uc["kJ/kg/K to J/mol/K"]
+            )
 
         self.cv_mol_phase = pyo.Expression(
             phlist,
@@ -802,7 +847,10 @@ class HelmholtzStateBlockData(StateBlockData):
         )
 
         def rule_cv_mass_phase(b, p):
-            return self.cv_func(cmp, delta[p], tau) * params.uc["kJ/kg/K to J/kg/K"]
+            return (
+                self.cv_func(cmp, delta[p], tau, _data_dir)
+                * params.uc["kJ/kg/K to J/kg/K"]
+            )
 
         self.cv_mass_phase = pyo.Expression(
             phlist,
@@ -811,7 +859,7 @@ class HelmholtzStateBlockData(StateBlockData):
         )
         # Phase speed of sound
         def rule_speed_sound_phase(b, p):
-            return self.w_func(cmp, delta[p], tau)
+            return self.w_func(cmp, delta[p], tau, _data_dir)
 
         self.speed_sound_phase = pyo.Expression(
             phlist,
@@ -928,6 +976,34 @@ class HelmholtzStateBlockData(StateBlockData):
             pub_phlist, component_list, rule=rule_mole_frac_phase_comp
         )
 
+        # Phase Thermal conductiviy
+        def rule_tc(b, p):
+            return get_component_module(cmp)._thermal_conductivity(
+                self, delta[p], tau, on_blk=self
+            )
+
+        self.therm_cond_phase = pyo.Expression(
+            phlist, rule=rule_tc, doc="Thermal conductivity"
+        )
+
+        # Phase dynamic viscosity
+        def rule_mu(b, p):
+            return get_component_module(cmp)._viscosity(
+                self, delta[p], tau, on_blk=self
+            )
+
+        self.visc_d_phase = pyo.Expression(
+            phlist, rule=rule_mu, doc="Viscosity (dynamic)"
+        )
+
+        # Phase kinimatic viscosity
+        def rule_nu(b, p):
+            return self.visc_d_phase[p] / self.dens_mass_phase[p]
+
+        self.visc_k_phase = pyo.Expression(
+            phlist, rule=rule_nu, doc="Kinematic viscosity"
+        )
+
         # Define some expressions for the balance terms returned by functions
         # This is just to allow assigning scale factors to the expressions
         # returned
@@ -1037,7 +1113,6 @@ class HelmholtzStateBlockData(StateBlockData):
                 "P": self.pressure,
                 "Vapor Fraction": self.vapor_frac,
                 "Molar Enthalpy": self.enth_mol,
-                "Molar Entropy": self.entr_mol,
             }
         else:
             return {
@@ -1047,7 +1122,6 @@ class HelmholtzStateBlockData(StateBlockData):
                 "P": self.pressure,
                 "Vapor Fraction": self.vapor_frac,
                 "Mass Enthalpy": self.enth_mass,
-                "Mass Entropy": self.entr_mass,
             }
 
     def extensive_state_vars(self):
