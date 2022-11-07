@@ -59,6 +59,7 @@ def test_heater_ph_mixed_byphase():
     assert value(prop_out.phase_frac["Liq"]) == pytest.approx(0.5953219, rel=1e-5)
     assert value(prop_in.phase_frac["Vap"]) == pytest.approx(0, abs=1e-6)
     assert value(prop_out.phase_frac["Vap"]) == pytest.approx(0.4046781, rel=1e-4)
+    assert value(prop_out.mole_frac_comp["h2o"]) ==  pytest.approx(1.0, rel=1e-4)
 
 
 @pytest.mark.integration
