@@ -78,6 +78,12 @@ class HasPropertyClassMetadata(object):
             pcm = PropertyClassMetadata()
             cls.define_metadata(pcm)
             cls._metadata = pcm
+
+            # Check that the metadata was actually populated
+            if pcm._properties is None or pcm._default_units is None:
+                raise PropertyPackageError(
+                    "Property package did not populate all expected metadata."
+                )
         return cls._metadata
 
     @classmethod
@@ -2528,6 +2534,8 @@ class PropertyClassMetadata(object):
     def __init__(self):
         # TODO: Deprecate in favour of common units property
         self._default_units = UnitSet()
+        # Assume a default PropertySet to begin with. Property packages can replace this
+        # with more specialized forms if required
         self._properties = PropertySet(parent=self)
 
     @property
