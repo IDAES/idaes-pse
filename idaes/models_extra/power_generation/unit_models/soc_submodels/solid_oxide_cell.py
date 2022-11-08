@@ -957,13 +957,14 @@ class SolidOxideCellData(UnitModelBlockData):
                     ].value = pyo.value(
                         self.fuel_triple_phase_boundary.conc_mol_comp[t, iz, j] / denom
                     )
-                    self.fuel_triple_phase_boundary.log_mole_frac_comp[
-                        t, iz, j
-                    ].value = pyo.value(
-                        pyo.log(
-                            self.fuel_triple_phase_boundary.mole_frac_comp[t, iz, j]
+                    if j in self.fuel_triple_phase_boundary.reacting_gas_list:
+                        self.fuel_triple_phase_boundary.log_mole_frac_comp[
+                            t, iz, j
+                        ].value = pyo.value(
+                            pyo.log(
+                                self.fuel_triple_phase_boundary.mole_frac_comp[t, iz, j]
+                            )
                         )
-                    )
 
         common._init_solve_block(self.fuel_triple_phase_boundary, solver_obj, solve_log)
 
@@ -991,13 +992,14 @@ class SolidOxideCellData(UnitModelBlockData):
                         self.oxygen_triple_phase_boundary.conc_mol_comp[t, iz, j]
                         / denom
                     )
-                    self.oxygen_triple_phase_boundary.log_mole_frac_comp[
-                        t, iz, j
-                    ].value = pyo.value(
-                        pyo.log(
-                            self.oxygen_triple_phase_boundary.mole_frac_comp[t, iz, j]
+                    if j in self.oxygen_triple_phase_boundary.reacting_gas_list:
+                        self.oxygen_triple_phase_boundary.log_mole_frac_comp[
+                            t, iz, j
+                        ].value = pyo.value(
+                            pyo.log(
+                                self.oxygen_triple_phase_boundary.mole_frac_comp[t, iz, j]
+                            )
                         )
-                    )
 
         common._init_solve_block(
             self.oxygen_triple_phase_boundary, solver_obj, solve_log

@@ -215,7 +215,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         self.log_mole_frac_comp = pyo.Var(
             tset,
             iznodes,
-            comps,
+            self.reacting_gas_list,
             initialize=-1,
             units=pyo.units.dimensionless,
             bounds=(None, 0),
@@ -273,7 +273,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                 b.conc_mol_comp[t, iz, i] for i in comps
             )
 
-        @self.Constraint(tset, iznodes, comps)
+        @self.Constraint(tset, iznodes, self.reacting_gas_list)
         def log_mole_frac_comp_eqn(b, t, iz, j):
             return b.mole_frac_comp[t, iz, j] == pyo.exp(b.log_mole_frac_comp[t, iz, j])
 
@@ -421,9 +421,10 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                     self.mole_frac_comp[t, iz, j].value = pyo.value(
                         self.conc_mol_comp[t, iz, j] / denom
                     )
-                    self.log_mole_frac_comp[t, iz, j].value = pyo.value(
-                        pyo.log(self.mole_frac_comp[t, iz, j])
-                    )
+                    if j in self.reacting_gas_list:
+                        self.log_mole_frac_comp[t, iz, j].value = pyo.value(
+                            pyo.log(self.mole_frac_comp[t, iz, j])
+                        )
 
         solver_obj = get_solver(solver, optarg)
         common._init_solve_block(self, solver_obj, solve_log)
@@ -474,12 +475,14 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                     sqx1 = sgsf(self.heat_flux_x1[t, iz], 1e-2)
                 sqx = min(sqx0, sqx1)
                 cst(self.heat_flux_x_eqn[t, iz], sqx)
+
                 for j in self.component_list:
                     # TODO Come back with good formulation for trace components
                     # and scale DConc and Cref
                     sy = sgsf(self.mole_frac_comp[t, iz, j], sy_def)
-                    ssf(self.log_mole_frac_comp[t, iz, j], 1)
                     cst(self.mole_frac_comp_eqn[t, iz, j], sy)
-                    cst(self.log_mole_frac_comp_eqn[t, iz, j], sy)
                     smaterial_flux_x = sgsf(self.material_flux_x[t, iz, j], 1e-2)
                     cst(self.material_flux_x_eqn[t, iz, j], smaterial_flux_x)
+                    if j in self.reacting_gas_list:
+                        ssf(self.log_mole_frac_comp[t, iz, j], 1)
+                        cst(self.log_mole_frac_comp_eqn[t, iz, j], sy)
