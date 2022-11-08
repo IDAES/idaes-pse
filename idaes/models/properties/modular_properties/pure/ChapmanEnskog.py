@@ -11,8 +11,11 @@
 # license information.
 #################################################################################
 """
-Method to set constant pure component properties:
-
+Gas viscosity at low pressures from Chapman Enskog theory using Lennard Jones paramters.
+Note that LJ parameters are underdetermined when estimated from viscosity data (see
+The Indeterminacy of the Values of Potential Parameters as Derived from Transport and
+Virial Coefficient by Reichenberg D., 1973 for more information) so it's important to
+use LJ parameters from the same source.
 """
 from pyomo.environ import log, Var, units as pyunits
 import pyomo.environ as pyo
@@ -22,12 +25,6 @@ from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError
 
 
-# ------------------------------------------------------------------------------------
-# Gas viscosity at low pressures from Lennard Jones paramters. Note that LJ parameters
-# are underdetermined when estimated from viscosity data (see The Indeterminacy of
-# the Values of Potential Parameters as Derived from Transport and Virial Coefficient
-# by Reichenberg D., 1973 for more information) so it's important to use LJ parameters
-# from the same source.
 class ChapmanEnskogLennardJones(object):
     @staticmethod
     def build_lennard_jones_parameters(cobj):
@@ -46,7 +43,6 @@ class ChapmanEnskogLennardJones(object):
             )
             set_param_from_config(cobj, param="lennard_jones_epsilon_reduced")
 
-    # Ideal liquid properties methods
     class visc_d_phase_comp(object):
         @staticmethod
         def build_parameters(cobj, p):

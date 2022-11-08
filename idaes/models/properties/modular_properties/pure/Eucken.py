@@ -11,23 +11,18 @@
 # license information.
 #################################################################################
 """
-Method to set constant pure component properties:
-
+Eucken correlation to calculate low pressure pure component gas thermal conductivity,
+(therm_cond_phase_comp) as outlined in The Properties of Gases and Liquids, 5th Ed.,
+Section 10-3-1. Not particularly accurate, with errors up to 30% reported, especially
+for polar compounds. The component-specific parameter f_int_eucken allows the user to
+adjust the correlation on a component-by-component basis.
 """
 from pyomo.environ import log, Var, units as pyunits
-import pyomo.environ as pyo
-from idaes.models.properties.modular_properties.base.utility import get_method
 from idaes.core.util.misc import set_param_from_config
 from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import ConfigurationError
 
 
-# ------------------------------------------------------------------------------------
-# Gas viscosity at low pressures from Lennard Jones paramters. Note that LJ parameters
-# are underdetermined when estimated from viscosity data (see The Indeterminacy of
-# the Values of Potential Parameters as Derived from Transport and Virial Coefficient
-# by Reichenberg D., 1973 for more information) so it's important to use LJ parameters
-# from the same source.
 class Eucken(object):
     class therm_cond_phase_comp(object):
         @staticmethod

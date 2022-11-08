@@ -3829,6 +3829,7 @@ class GenericStateBlockData(StateBlockData):
 
             self.therm_cond_phase = Expression(
                 self.phase_list,
+                doc="Thermal conductivity for each phase",
                 rule=rule_therm_cond_phase,
             )
         except AttributeError:
@@ -3853,8 +3854,7 @@ class GenericStateBlockData(StateBlockData):
                     return Expression.Skip
 
             self.therm_cond_phase_comp = Expression(
-                self.phase_list,
-                self.component_list,
+                self.phase_component_set,
                 doc="Pure component thermal conductivity for each phase-component pair",
                 rule=rule_therm_cond_phase_comp,
             )
@@ -3900,8 +3900,7 @@ class GenericStateBlockData(StateBlockData):
                     return Expression.Skip
 
             self.visc_d_phase_comp = Expression(
-                self.phase_list,
-                self.component_list,
+                self.phase_component_set,
                 doc="Pure component dynamic viscosity for each phase-component pair",
                 rule=rule_visc_d_phase_comp,
             )

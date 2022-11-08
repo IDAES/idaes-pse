@@ -11,8 +11,14 @@
 # license information.
 #################################################################################
 """
-Method to set constant pure component properties:
-
+Wilke rules to obtain mixture viscosity of a low pressure gas from pure component
+viscosities given by visc_d_phase_comp. See Section 9-5-2 of The Properties of
+Gases and Liquids, 5th Ed., for a detailed description of the method. Table 9-4
+shows this method producing mixture viscosity within 5% of true viscosity, with
+the notable exception of hydrogen-containing systems which have some errors up
+to 12%. Those error figures are using experimentally-determined pure component
+viscosity; additional error can accumulate when those viscosities must be
+estimated.
 """
 from pyomo.environ import log, Var, units as pyunits
 import pyomo.environ as pyo
@@ -22,8 +28,6 @@ from idaes.core.util.constants import Constants
 from idaes.models.properties.modular_properties.base.utility import get_component_object
 
 
-# ---------------------------------------------------------------------------------------
-# Rule to obtain mixture viscosity of a low pressure gas from pure component viscosities.
 class ViscosityWilke(object):
     @staticmethod
     def build_parameters(pobj):
