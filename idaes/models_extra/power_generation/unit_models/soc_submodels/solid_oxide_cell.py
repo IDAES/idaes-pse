@@ -307,6 +307,14 @@ class SolidOxideCellData(UnitModelBlockData):
             "x direction in thermodynamic equations",
         ),
     )
+    CONFIG.declare(
+        "voltage_drop_custom",
+        ConfigValue(
+            domain=Bool,
+            default=False,
+            description="If True, add voltage_drop_custom Var to be connected to degradation models",
+        ),
+    )
 
     def build(self):
         super().build()
@@ -497,6 +505,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 heat_flux_x0=fuel_electrode_heat_flux_x0,
                 current_density=self.current_density,
                 include_temperature_x_thermo=include_temp_x_thermo,
+                voltage_drop_custom=self.config.voltage_drop_custom,
             )
             # Technically I could use fuel_electrode.temperature_deviation_x, but I want to avoid
             # references to references
@@ -526,6 +535,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 temperature_deviation_x0=self.fuel_channel.temperature_deviation_x1,
                 current_density=self.current_density,
                 include_temperature_x_thermo=include_temp_x_thermo,
+                voltage_drop_custom=self.config.voltage_drop_custom,
             )
             fuel_electrode_temperature_deviation_x1 = (
                 self.fuel_electrode.temperature_deviation_x1
@@ -551,6 +561,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 heat_flux_x1=oxygen_electrode_heat_flux_x1,
                 current_density=self.current_density,
                 include_temperature_x_thermo=include_temp_x_thermo,
+                voltage_drop_custom=self.config.voltage_drop_custom,
             )
             # Technically I could use oxygen_electrode.temperature_deviation_x, but I want to avoid
             # references to references
@@ -580,6 +591,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 temperature_deviation_x1=self.oxygen_channel.temperature_deviation_x0,
                 current_density=self.current_density,
                 include_temperature_x_thermo=include_temp_x_thermo,
+                voltage_drop_custom=self.config.voltage_drop_custom,
             )
             oxygen_electrode_temperature_deviation_x0 = (
                 self.oxygen_electrode.temperature_deviation_x0
@@ -607,6 +619,7 @@ class SolidOxideCellData(UnitModelBlockData):
             material_flux_x=fuel_electrode_material_flux_x1,
             include_temperature_x_thermo=include_temp_x_thermo,
             below_electrolyte=True,
+            voltage_drop_custom=self.config.voltage_drop_custom,
         )
         self.oxygen_triple_phase_boundary = soc.SocTriplePhaseBoundary(
             has_holdup=False,
@@ -626,6 +639,7 @@ class SolidOxideCellData(UnitModelBlockData):
             material_flux_x=oxygen_electrode_material_flux_x0,
             include_temperature_x_thermo=include_temp_x_thermo,
             below_electrolyte=False,
+            voltage_drop_custom=self.config.voltage_drop_custom,
         )
         if self.config.thin_electrolyte:
             if self.config.control_volume_xfaces_electrolyte is not None:
@@ -644,6 +658,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 heat_flux_x1=self.oxygen_triple_phase_boundary.heat_flux_x0,
                 current_density=self.current_density,
                 include_temperature_x_thermo=include_temp_x_thermo,
+                voltage_drop_custom=self.config.voltage_drop_custom,
             )
 
             @self.Constraint(tset, iznodes)
@@ -668,6 +683,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 heat_flux_x0=self.fuel_triple_phase_boundary.heat_flux_x1,
                 heat_flux_x1=self.oxygen_triple_phase_boundary.heat_flux_x0,
                 include_temperature_x_thermo=include_temp_x_thermo,
+                voltage_drop_custom=self.config.voltage_drop_custom,
             )
 
         self.state_vars = {"flow_mol", "mole_frac_comp", "temperature", "pressure"}
@@ -711,6 +727,7 @@ class SolidOxideCellData(UnitModelBlockData):
                     heat_flux_x1=interconnect_heat_flux_x1,
                     current_density=self.current_density,
                     include_temperature_x_thermo=include_temp_x_thermo,
+                    voltage_drop_custom=self.config.voltage_drop_custom,
                 )
 
                 @self.Constraint(tset, iznodes)
@@ -735,6 +752,7 @@ class SolidOxideCellData(UnitModelBlockData):
                     heat_flux_x0=interconnect_heat_flux_x0,
                     heat_flux_x1=interconnect_heat_flux_x1,
                     include_temperature_x_thermo=include_temp_x_thermo,
+                    voltage_drop_custom=self.config.voltage_drop_custom,
                 )
         else:
             interconnect_heat_flux_x0.value = 0

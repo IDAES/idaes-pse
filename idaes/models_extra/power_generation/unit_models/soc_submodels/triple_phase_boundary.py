@@ -119,6 +119,14 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             "above the electrolyte. This flag determines the sign of material_flux_x.",
         ),
     )
+    CONFIG.declare(
+        "voltage_drop_custom",
+        ConfigValue(
+            domain=Bool,
+            default=False,
+            description="If True, add voltage_drop_custom Var to be connected to degradation models",
+        ),
+    )
 
     common._submodel_boilerplate_config(CONFIG)
     common._thermal_boundary_conditions_config(CONFIG, thin=True)
@@ -252,6 +260,13 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         self.exchange_current_activation_energy = pyo.Var(
             initialize=0, units=pyo.units.J / pyo.units.mol, bounds=(0, None)
         )
+        if self.config.voltage_drop_custom:
+            self.voltage_drop_custom = pyo.Var(
+                tset,
+                iznodes,
+                units=pyo.units.volts,
+                doc="Custom voltage drop term for degradation modeling",
+            )
 
         @self.Expression(tset, iznodes, comps)
         def conc_mol_comp(b, t, iz, j):
@@ -369,7 +384,10 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         # Put this expression in to prepare for a contact resistance term
         @self.Expression(tset, iznodes)
         def voltage_drop_total(b, t, iz):
-            return b.activation_potential[t, iz]
+            if self.config.voltage_drop_custom:
+                return b.activation_potential[t, iz] + b.voltage_drop_custom[t, iz]
+            else:
+                return b.activation_potential[t, iz]
 
         @self.Constraint(tset, iznodes)
         def heat_flux_x_eqn(b, t, iz):

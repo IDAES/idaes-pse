@@ -113,6 +113,14 @@ class PorousConductiveSlabData(UnitModelBlockData):
             "component concentration in the bulk channel",
         ),
     )
+    CONFIG.declare(
+        "voltage_drop_custom",
+        ConfigValue(
+            domain=Bool,
+            default=False,
+            description="If True, add voltage_drop_custom Var to be connected to degradation models",
+        ),
+    )
     common._submodel_boilerplate_config(CONFIG)
     common._thermal_boundary_conditions_config(CONFIG, thin=False)
     common._material_boundary_conditions_config(CONFIG, thin=False)
@@ -288,12 +296,20 @@ class PorousConductiveSlabData(UnitModelBlockData):
             units=pyo.units.m**2 / pyo.units.s,
         )
         self.resistivity_log_preexponential_factor = pyo.Var(
-            doc="Logarithm of resistivity preexponential factor " "in units of ohm*m",
+            doc="Logarithm of resistivity preexponential factor in units of ohm*m",
             units=pyo.units.dimensionless,
         )
         self.resistivity_thermal_exponent_dividend = pyo.Var(
             doc="Parameter divided by temperature in exponential", units=pyo.units.K
         )
+        if self.config.voltage_drop_custom:
+            self.voltage_drop_custom = pyo.Var(
+                tset,
+                ixnodes,
+                iznodes,
+                units=pyo.units.volts,
+                doc="Custom voltage drop term for degradation modeling",
+            )
 
         # Parameters
         self.solid_heat_capacity = pyo.Var(
@@ -681,7 +697,13 @@ class PorousConductiveSlabData(UnitModelBlockData):
 
         @self.Expression(tset, ixnodes, iznodes)
         def voltage_drop(b, t, ix, iz):
-            return b.current[t, iz] * b.resistance[t, ix, iz]
+            if self.config.voltage_drop_custom:
+                return (
+                    b.current[t, iz] * b.resistance[t, ix, iz]
+                    + b.voltage_drop_custom[t, ix, iz]
+                )
+            else:
+                return b.current[t, iz] * b.resistance[t, ix, iz]
 
         @self.Expression(tset, iznodes)
         def resistance_total(b, t, iz):
