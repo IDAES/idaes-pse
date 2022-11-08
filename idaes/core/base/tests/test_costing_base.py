@@ -15,7 +15,15 @@ Tests for costing base classes
 """
 import pytest
 
-from pyomo.environ import ConcreteModel, Constraint, Set, units as pyunits, Var, Param
+from pyomo.environ import (
+    ConcreteModel,
+    Constraint,
+    Set,
+    units as pyunits,
+    Var,
+    Param,
+    value,
+)
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import declare_process_block_class, UnitModelBlockData
@@ -238,9 +246,10 @@ class TestFlowsheetCostingBlock:
         }
 
         # Check that test_flow_1 was properly defined
-        assert isinstance(costing.costing.test_flow_1_cost, Var)
-        assert costing.costing.test_flow_1_cost.value == 0.2
-        assert_units_equivalent(costing.costing.test_flow_1_cost.get_units(), pyunits.J)
+        assert value(costing.costing.test_flow_1_cost) == 0.2
+        assert_units_equivalent(
+            pyunits.get_units(costing.costing.test_flow_1_cost), pyunits.J
+        )
 
         assert isinstance(costing.costing.test_flow_2_cost, Param)
 
@@ -253,10 +262,10 @@ class TestFlowsheetCostingBlock:
             "test_flow", 42 * pyunits.USD_test / pyunits.mol
         )
 
-        assert isinstance(costing.costing.test_flow_cost, Var)
-        assert costing.costing.test_flow_cost.value == 42
+        assert value(costing.costing.test_flow_cost) == 42
         assert_units_equivalent(
-            costing.costing.test_flow_cost.get_units(), pyunits.USD_test / pyunits.mol
+            pyunits.get_units(costing.costing.test_flow_cost),
+            pyunits.USD_test / pyunits.mol,
         )
         assert "test_flow" in costing.costing.flow_types
 

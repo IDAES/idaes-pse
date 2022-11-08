@@ -330,8 +330,8 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         """
         This method allows users to register new material and utility flows
         with the FlowsheetCostingBlock for use when costing flows.
-        This method creates a new `Var` on the FlowsheetCostingBlock named
-        f`{flow_type}_cost` whose value is fixed to `cost`.
+        This method creates a reference on the FlowsheetCostingBlock named
+        f`{flow_type}_cost` to `cost`.
 
         If a component named f`{flow_type}_cost` already exists on the
         FlowsheetCostingBlock, then an error is raised unless f`{flow_type}_cost`
@@ -345,7 +345,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         self.flow_types.add(flow_type)
 
         name = f"{flow_type}_cost"
-        current_component = self.component(name)
+        current_component = getattr(self, name, None)
         if current_component is not None:
             if current_component is not cost:
                 raise RuntimeError(
@@ -353,14 +353,16 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                 )
             # now self.{flow_type}_cost is cost, so just use it
         else:
-            # Create a Var to hold the cost
-            # Units will be different between flows, so have to use scalar Vars
-            fvar = pyo.Var(
-                units=pyo.units.get_units(cost),
-                doc=f"Cost parameter for {flow_type} flow",
-            )
-            self.add_component(name, fvar)
-            fvar.fix(cost)
+            add_object_reference(self, name, cost)
+
+        if not pyo.is_fixed(cost):
+            try:
+                cost.fix()
+                _log.warn(f"fixing flow cost for flow {flow_type}")
+            except:
+                raise RuntimeError(
+                    f"Flow cost {cost} for flow {flow_type} is not fixed"
+                )
 
         self._registered_flows[flow_type] = []
 
