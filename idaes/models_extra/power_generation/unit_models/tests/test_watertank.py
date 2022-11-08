@@ -221,7 +221,7 @@ def test_run_watertank(tank_models):
             - m.fs.unit.outlet.flow_mol[0] * m.fs.unit.outlet.enth_mol[0]
         )
         # pressure drop
-        assert pytest.approx(4410.081, abs=1e-3) == pyo.value(m.fs.unit.deltaP[0])
+        assert pytest.approx(4410.081, rel=1e-3) == pyo.value(m.fs.unit.deltaP[0])
 
         # volume
         assert pytest.approx(

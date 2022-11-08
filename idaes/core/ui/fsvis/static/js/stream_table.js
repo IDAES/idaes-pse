@@ -1,3 +1,22 @@
+/**
+ * The Institute for the Design of Advanced Energy Systems Integrated Platform
+ * Framework (IDAES IP) was produced under the DOE Institute for the
+ * Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+ * by the software owners: The Regents of the University of California, through
+ * Lawrence Berkeley National Laboratory,  National Technology & Engineering
+ * Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+ * Research Corporation, et al.  All rights reserved.
+ *
+ * Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+ * license information.
+ */
+
+
+/**
+ * StreamTable class is responsible to handle creating the Stream Table for
+ * the flowsheet that is displayed on the Idaes paper graph. This class does
+ * the data filling and data styling for each cell in the grid.
+ */
 export class StreamTable {
     // Variable Types
     UNFIXED = 'unfixed';
@@ -37,15 +56,19 @@ export class StreamTable {
         $("#stream-table-data").empty();
     }
 
+    /**
+     * Clear list of existing variable types
+     */
     emptyVarTypesPanel () {
-        // Clear list of existing variable types
         this.existing_var_types = new Set();
         const var_types_panel = document.querySelector('#existing-variable-types');
         var_types_panel.innerHTML = "";
     }
 
+    /**
+     * Create a panel for each variable type that exists in the Stream Table
+     */
     fillVarTypesPanel() {
-        /** Create a panel for each variable type that exists in the Stream Table */
         const var_types_panel = document.querySelector('#existing-variable-types');
         const stream_table_class = 'streamtable-vartype-element';
 
@@ -88,9 +111,10 @@ export class StreamTable {
         });
     }
 
+    /**
+     * This method fills the table with the streams and information from the model
+     */
     fillTable(model) {
-        // This method fills the table with the streams and information from the model
-
         // Get the stream table data from the html
         let stream_table_data = model["model"]["stream_table"];
 
@@ -210,7 +234,8 @@ export class StreamTable {
         this._gridOptions.columnApi.autoSizeAllColumns();
     };
 
-    /** Define event handlers and save them as objects to be able
+    /**
+     * Define event handlers and save them as objects to be able
      * to remove these events later if a column in the Stream Table is removed
      */
     defineTableBrushingFns() {
@@ -220,6 +245,7 @@ export class StreamTable {
         let streamTable = document.querySelector('#stream-table-data');
         let idaesCanvas = document.querySelector('#idaes-canvas');
 
+        // Function to highlight a stream table column
         this.highlightFn = (event) => {
             var streamGridCells = streamTable.querySelectorAll(
                 `[col-id=${event.detail.streamId}]`
@@ -237,6 +263,7 @@ export class StreamTable {
             });
         }
 
+        // Function to undo the highlighting of a stream table column
         this.removeHighlightFn = (event) => {
             var streamGridCells = streamTable.querySelectorAll(
                 `[col-id=${event.detail.streamId}]`
@@ -248,6 +275,8 @@ export class StreamTable {
             });
         }
 
+        // Function to trigger the right highlighting events when the mouse is
+        // hovering over a cell in the stream table
         this.gridCellMouseEnterFn = (event) => {
             if (document.querySelector("#view-stream-highlight-btn").checked) {
                 const highlightStreamEvent = new CustomEvent(
@@ -263,6 +292,8 @@ export class StreamTable {
             }
         }
 
+        // Function to trigger undoing the highlighting events when the mouse
+        // leaves the hovered upon cell in the stream table
         this.gridCellMouseLeaveFn = (event) => {
             const removeHighlightStreamEvent = new CustomEvent(
                 'RemoveHighlightStream',
@@ -277,7 +308,9 @@ export class StreamTable {
         }
     }
 
-    /** Register Stream Brushing when hovering over a grid cell */
+    /**
+     * Register Stream Brushing when hovering over a grid cell
+     */
     registerTableBrushing() {
         // Getting the main elements for the idaes canvas and the stream table
         // to be able to dispatch highlighting events to the streams existing
@@ -321,9 +354,10 @@ export class StreamTable {
         });
     }
 
+    /**
+     * This method sets up the event listeners for the table
+     */
     setupEvents() {
-        // This method sets up the event listeners for the table
-
         // Set up the show/hide checkboxes for the Hide Field dropdown in the nav bar
         let hide_fields_list = document.querySelector("#hide-fields-list")
         let checkboxes = hide_fields_list.querySelectorAll("input[type=checkbox]");

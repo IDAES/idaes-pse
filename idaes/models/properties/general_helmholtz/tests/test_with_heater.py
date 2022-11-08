@@ -18,7 +18,7 @@ Author: John Eslick
 """
 import pytest
 
-from pyomo.environ import ConcreteModel, value
+from pyomo.environ import ConcreteModel, value, Expression
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import Heater
@@ -59,6 +59,7 @@ def test_heater_ph_mixed_byphase():
     assert value(prop_out.phase_frac["Liq"]) == pytest.approx(0.5953219, rel=1e-5)
     assert value(prop_in.phase_frac["Vap"]) == pytest.approx(0, abs=1e-6)
     assert value(prop_out.phase_frac["Vap"]) == pytest.approx(0.4046781, rel=1e-4)
+    assert value(prop_out.mole_frac_comp["h2o"]) == pytest.approx(1.0, rel=1e-4)
 
 
 @pytest.mark.integration
@@ -322,7 +323,7 @@ def test_heater_tpx_lg_total_2():
     prop_out = m.fs.heater.control_volume.properties_out[0]
     prop_out.temperature = 600
     prop_out.vapor_frac = 0.9
-    m.fs.heater.initialize(outlvl=5)
+    m.fs.heater.initialize()
     assert degrees_of_freedom(m) == 0
     solver.solve(m, tee=True)
     assert abs(value(prop_out.temperature) - 534.6889772922356) <= 1e-3

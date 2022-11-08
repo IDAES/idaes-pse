@@ -17,6 +17,7 @@ __author__ = "John Eslick"
 import enum
 import ctypes
 import math
+import os
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -38,20 +39,14 @@ from idaes.core import (
     Component,
 )
 from idaes.models.properties.general_helmholtz.components import (
-    components as supported_components,
+    get_component_module,
 )
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
-# make sure the required shared libraries load
-try:
-    _flib_ad = find_library("libadolc")
-    if _flib_ad is None:
-        _flib_ad = find_library("libadolc-2")
-    ctypes.cdll.LoadLibrary(_flib_ad)
-except:
-    _flib_ad = None
+_data_dir = os.path.join(idaes.bin_directory, "helm_data")
+_data_dir = os.path.join(_data_dir, "")
 
 try:
     # When compling these, I don't bother changing the extension based on OS,
@@ -66,7 +61,16 @@ def helmholtz_available():
     """Returns True if the shared library is installed and loads propertly
     otherwise returns False
     """
-    return (_flib is not None) and (_flib_ad is not None)
+    if _flib is None:
+        _log.error("Shared library 'general_helmholtz_external' not found.")
+        return False
+    if not os.path.exists(_data_dir):
+        _log.error(f"The Helmholtz EoS data directory {_data_dir} does not exist.")
+        return False
+    return True
+
+
+helmholtz_data_dir = _data_dir
 
 
 class StateVars(enum.Enum):
@@ -520,32 +524,32 @@ class HelmholtzThermoExpressions(object):
         if h is not None and p is not None:
             # h, p
             self.add_funcs(names=["tau_func", "vf_func"])
-            tau = blk.tau_func(c, h, p)
+            tau = blk.tau_func(c, h, p, _data_dir)
             if x is None:
-                x = blk.vf_func(c, h, p)
+                x = blk.vf_func(c, h, p, _data_dir)
         elif s is not None and p is not None:
             # s, p
             self.add_funcs(names=["taus_func", "vfs_func"])
-            tau = blk.taus_func(c, s, p)
+            tau = blk.taus_func(c, s, p, _data_dir)
             if x is None:
-                x = blk.vfs_func(c, s, p)
+                x = blk.vfs_func(c, s, p, _data_dir)
         elif u is not None and p is not None:
             # u, p
             self.add_funcs(names=["tauu_func", "vfu_func"])
-            tau = blk.tauu_func(c, u, p)
+            tau = blk.tauu_func(c, u, p, _data_dir)
             if x is None:
-                x = blk.vfu_func(c, u, p)
+                x = blk.vfu_func(c, u, p, _data_dir)
         elif x is not None and T is not None and p is not None:
             # T, P, x (okay, but I hope you know what you're doing)
             pass
         elif x is not None and p is not None:
             # x, p
             self.add_funcs(names=["tau_sat_func"])
-            tau = blk.tau_sat_func(c, p)
+            tau = blk.tau_sat_func(c, p, _data_dir)
         elif x is not None and T is not None:
             # x, T
             self.add_funcs(names=["p_sat_func"])
-            p = blk.p_sat_func(c, tau)
+            p = blk.p_sat_func(c, tau, _data_dir)
         else:
             m = "This choice of state variables ({}) is not yet supported.".format(
                 self._sv_str(h=h, s=s, p=p, T=T, u=u, x=x)
@@ -555,8 +559,8 @@ class HelmholtzThermoExpressions(object):
 
         # 4.) Calculate density
         self.add_funcs(names=["delta_liq_func", "delta_vap_func"])
-        delta_liq = blk.delta_liq_func(c, p, tau)
-        delta_vap = blk.delta_vap_func(c, p, tau)
+        delta_liq = blk.delta_liq_func(c, p, tau, _data_dir)
+        delta_vap = blk.delta_vap_func(c, p, tau, _data_dir)
         # 5.) From here its straight forward to calculate any property
         return blk, delta_liq, delta_vap, tau, x, c
 
@@ -564,7 +568,10 @@ class HelmholtzThermoExpressions(object):
         """Mixed phase entropy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["s_func"])
-        s = blk.s_func(c, delta_liq, tau) * (1 - x) + blk.s_func(c, delta_vap, tau) * x
+        s = (
+            blk.s_func(c, delta_liq, tau, _data_dir) * (1 - x)
+            + blk.s_func(c, delta_vap, tau, _data_dir) * x
+        )
         if self.amount_basis == AmountBasis.MOLE:
             return s * self.param.uc["kJ/kg/K to J/mol/K"]
         return s * self.param.uc["kJ/kg/K to J/kg/K"]
@@ -573,7 +580,7 @@ class HelmholtzThermoExpressions(object):
         """Liquid phase entropy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["s_func"])
-        s = blk.s_func(c, delta_liq, tau)
+        s = blk.s_func(c, delta_liq, tau, _data_dir)
         if self.amount_basis == AmountBasis.MOLE:
             return s * self.param.uc["kJ/kg/K to J/mol/K"]
         return s * self.param.uc["kJ/kg/K to J/kg/K"]
@@ -582,7 +589,7 @@ class HelmholtzThermoExpressions(object):
         """Vapor phase entropy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["s_func"])
-        s = blk.s_func(c, delta_vap, tau)
+        s = blk.s_func(c, delta_vap, tau, _data_dir)
         if self.amount_basis == AmountBasis.MOLE:
             return s * self.param.uc["kJ/kg/K to J/mol/K"]
         return s * self.param.uc["kJ/kg/K to J/kg/K"]
@@ -591,7 +598,10 @@ class HelmholtzThermoExpressions(object):
         """Mixed phase enthalpy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["h_func"])
-        h = blk.h_func(c, delta_liq, tau) * (1 - x) + blk.h_func(c, delta_vap, tau) * x
+        h = (
+            blk.h_func(c, delta_liq, tau, _data_dir) * (1 - x)
+            + blk.h_func(c, delta_vap, tau, _data_dir) * x
+        )
         if self.amount_basis == AmountBasis.MOLE:
             return h * self.param.uc["kJ/kg to J/mol"]
         return h * self.param.uc["kJ/kg to J/kg"]
@@ -600,7 +610,7 @@ class HelmholtzThermoExpressions(object):
         """Liquid phase enthalpy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["h_func"])
-        h = blk.h_func(c, delta_liq, tau)
+        h = blk.h_func(c, delta_liq, tau, _data_dir)
         if self.amount_basis == AmountBasis.MOLE:
             return h * self.param.uc["kJ/kg to J/mol"]
         return h * self.param.uc["kJ/kg to J/kg"]
@@ -609,7 +619,7 @@ class HelmholtzThermoExpressions(object):
         """Vapor phase enthalpy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["h_func"])
-        h = blk.h_func(c, delta_vap, tau)
+        h = blk.h_func(c, delta_vap, tau, _data_dir)
         if self.amount_basis == AmountBasis.MOLE:
             return h * self.param.uc["kJ/kg to J/mol"]
         return h * self.param.uc["kJ/kg to J/kg"]
@@ -618,7 +628,10 @@ class HelmholtzThermoExpressions(object):
         """Mixed phase internal energy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["u_func"])
-        u = blk.u_func(c, delta_liq, tau) * (1 - x) + blk.u_func(c, delta_vap, tau) * x
+        u = (
+            blk.u_func(c, delta_liq, tau, _data_dir) * (1 - x)
+            + blk.u_func(c, delta_vap, tau, _data_dir) * x
+        )
         if self.amount_basis == AmountBasis.MOLE:
             return u * self.param.uc["kJ/kg to J/mol"]
         return u * self.param.uc["kJ/kg to J/kg"]
@@ -627,7 +640,7 @@ class HelmholtzThermoExpressions(object):
         """Liquid phase internal energy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["u_func"])
-        u = blk.u_func(c, delta_liq, tau)
+        u = blk.u_func(c, delta_liq, tau, _data_dir)
         if self.amount_basis == AmountBasis.MOLE:
             return u * self.param.uc["kJ/kg to J/mol"]
         return u * self.param.uc["kJ/kg to J/kg"]
@@ -636,7 +649,7 @@ class HelmholtzThermoExpressions(object):
         """Vapor phase internal energy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["u_func"])
-        u = blk.u_func(c, delta_vap, tau)
+        u = blk.u_func(c, delta_vap, tau, _data_dir)
         if self.amount_basis == AmountBasis.MOLE:
             return u * self.param.uc["kJ/kg to J/mol"]
         return u * self.param.uc["kJ/kg to J/kg"]
@@ -645,7 +658,10 @@ class HelmholtzThermoExpressions(object):
         """Mixed phase Gibb's free energy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["g_func"])
-        g = blk.g_func(c, delta_liq, tau) * (1 - x) + blk.g_func(c, delta_vap, tau) * x
+        g = (
+            blk.g_func(c, delta_liq, tau, _data_dir) * (1 - x)
+            + blk.g_func(c, delta_vap, tau, _data_dir) * x
+        )
         if self.amount_basis == AmountBasis.MOLE:
             return g * self.param.uc["kJ/kg to J/mol"]
         return g * self.param.uc["kJ/kg to J/kg"]
@@ -654,7 +670,7 @@ class HelmholtzThermoExpressions(object):
         """Liquid phase Gibb's free energy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["g_func"])
-        g = blk.g_func(c, delta_liq, tau)
+        g = blk.g_func(c, delta_liq, tau, _data_dir)
         if self.amount_basis == AmountBasis.MOLE:
             return g * self.param.uc["kJ/kg to J/mol"]
         return g * self.param.uc["kJ/kg to J/kg"]
@@ -663,7 +679,7 @@ class HelmholtzThermoExpressions(object):
         """Vapor phase Gibb's free energy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["g_func"])
-        g = blk.g_func(c, delta_vap, tau)
+        g = blk.g_func(c, delta_vap, tau, _data_dir)
         if self.amount_basis == AmountBasis.MOLE:
             return g * self.param.uc["kJ/kg to J/mol"]
         return g * self.param.uc["kJ/kg to J/kg"]
@@ -672,7 +688,10 @@ class HelmholtzThermoExpressions(object):
         """Mixed phase Helmholtz free energy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["f_func"])
-        f = blk.f_func(c, delta_liq, tau) * (1 - x) + blk.f_func(c, delta_vap, tau) * x
+        f = (
+            blk.f_func(c, delta_liq, tau, _data_dir) * (1 - x)
+            + blk.f_func(c, delta_vap, tau, _data_dir) * x
+        )
         if self.amount_basis == AmountBasis.MOLE:
             return f * self.param.uc["kJ/kg to J/mol"]
         return f * self.param.uc["kJ/kg to J/kg"]
@@ -681,7 +700,7 @@ class HelmholtzThermoExpressions(object):
         """Liquid phase Helmholtz free energy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["f_func"])
-        f = blk.f_func(c, delta_liq, tau)
+        f = blk.f_func(c, delta_liq, tau, _data_dir)
         if self.amount_basis == AmountBasis.MOLE:
             return f * self.param.uc["kJ/kg to J/mol"]
         return f * self.param.uc["kJ/kg to J/kg"]
@@ -690,7 +709,7 @@ class HelmholtzThermoExpressions(object):
         """Vapor phase Helmholtz free energy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["f_func"])
-        f = blk.f_func(c, delta_vap, tau)
+        f = blk.f_func(c, delta_vap, tau, _data_dir)
         if self.amount_basis == AmountBasis.MOLE:
             return f * self.param.uc["kJ/kg to J/mol"]
         return f * self.param.uc["kJ/kg to J/kg"]
@@ -701,7 +720,10 @@ class HelmholtzThermoExpressions(object):
         self.add_funcs(names=["p_func"])
         # The following line looks a bit weird, but it is okay.  When in the
         # two-phase region the pressure for both phases is the same
-        p = blk.p_func(c, delta_liq, tau) * (1 - x) + blk.p_func(c, delta_vap, tau) * x
+        p = (
+            blk.p_func(c, delta_liq, tau, _data_dir) * (1 - x)
+            + blk.p_func(c, delta_vap, tau, _data_dir) * x
+        )
         return p * self.param.uc["kPa to Pa"]
 
     def v_mol(self, **kwargs):
@@ -793,37 +815,65 @@ class HelmholtzThermoExpressions(object):
         """Return liquid phase constant volume heat capacity expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["cv_func"])
-        cv = blk.cv_func(c, delta_liq, tau)
+        cv = blk.cv_func(c, delta_liq, tau, _data_dir)
         if self.amount_basis == AmountBasis.MOLE:
             return cv * self.param.uc["kJ/kg/K to J/mol/K"]
         return cv * self.param.uc["kJ/kg/K to J/kg/K"]
+
+    def cv_mol_liq(self, **kwargs):
+        """Backward Compatability; Return liquid phase molar cv expression"""
+        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["cv_func"])
+        cv = blk.cv_func(c, delta_liq, tau, _data_dir)
+        return cv * self.param.uc["kJ/kg/K to J/mol/K"]
 
     def cv_vap(self, **kwargs):
         """Return vapor phase constant volume heat capacity expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["cv_func"])
-        cv = blk.cv_func(c, delta_vap, tau)
+        cv = blk.cv_func(c, delta_vap, tau, _data_dir)
         if self.amount_basis == AmountBasis.MOLE:
             return cv * self.param.uc["kJ/kg/K to J/mol/K"]
         return cv * self.param.uc["kJ/kg/K to J/kg/K"]
+
+    def cv_mol_vap(self, **kwargs):
+        """Backward Compatability; Return vapor phase molar cv expression"""
+        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["cv_func"])
+        cv = blk.cv_func(c, delta_vap, tau, _data_dir)
+        return cv * self.param.uc["kJ/kg/K to J/mol/K"]
 
     def cp_liq(self, **kwargs):
         """Return liquid phase constant volume heat capacity expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["cp_func"])
-        cp = blk.cp_func(c, delta_liq, tau)
+        cp = blk.cp_func(c, delta_liq, tau, _data_dir)
         if self.amount_basis == AmountBasis.MOLE:
             return cp * self.param.uc["kJ/kg/K to J/mol/K"]
         return cp * self.param.uc["kJ/kg/K to J/kg/K"]
+
+    def cp_mol_liq(self, **kwargs):
+        """Backward Compatability; Return liquid phase molar cp expression"""
+        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["cp_func"])
+        cp = blk.cp_func(c, delta_liq, tau, _data_dir)
+        return cp * self.param.uc["kJ/kg/K to J/mol/K"]
 
     def cp_vap(self, **kwargs):
         """Return vapor phase constant volume heat capacity expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["cp_func"])
-        cp = blk.cp_func(c, delta_vap, tau)
+        cp = blk.cp_func(c, delta_vap, tau, _data_dir)
         if self.amount_basis == AmountBasis.MOLE:
             return cp * self.param.uc["kJ/kg/K to J/mol/K"]
         return cp * self.param.uc["kJ/kg/K to J/kg/K"]
+
+    def cp_mol_vap(self, **kwargs):
+        """Backward Compatability; Return liquid phase molar cp expression"""
+        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["cp_func"])
+        cp = blk.cp_func(c, delta_vap, tau, _data_dir)
+        return cp * self.param.uc["kJ/kg/K to J/mol/K"]
 
     def w(self, **kwargs):
         """Return speed of sound expression, this may not make sense
@@ -832,38 +882,39 @@ class HelmholtzThermoExpressions(object):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["w_func"])
         return (
-            blk.w_func(c, delta_liq, tau) * (1 - x) + blk.w_func(c, delta_vap, tau) * x
+            blk.w_func(c, delta_liq, tau, _data_dir) * (1 - x)
+            + blk.w_func(c, delta_vap, tau, _data_dir) * x
         )
 
     def w_liq(self, **kwargs):
         """Return liquid phase speed of sound expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["w_func"])
-        return blk.w_func(c, delta_liq, tau)
+        return blk.w_func(c, delta_liq, tau, _data_dir)
 
     def w_vap(self, **kwargs):
         """Return vapor phase speed of sound expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["w_func"])
-        return blk.w_func(c, delta_vap, tau)
+        return blk.w_func(c, delta_vap, tau, _data_dir)
 
     def viscosity_liq(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return supported_components[c]._viscosity(self.param, delta_liq, tau, blk)
+        return get_component_module(c)._viscosity(self.param, delta_liq, tau, blk)
 
     def viscosity_vap(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return supported_components[c]._viscosity(self.param, delta_vap, tau, blk)
+        return get_component_module(c)._viscosity(self.param, delta_vap, tau, blk)
 
     def thermal_conductivity_liq(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return supported_components[c]._thermal_conductivity(
+        return get_component_module(c)._thermal_conductivity(
             self.param, delta_liq, tau, blk
         )
 
     def thermal_conductivity_vap(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return supported_components[c]._thermal_conductivity(
+        return get_component_module(c)._thermal_conductivity(
             self.param, delta_vap, tau, blk
         )
 
@@ -877,7 +928,7 @@ class HelmholtzThermoExpressions(object):
             raise RuntimeError("p_sat expression requires either T or tau arg")
         self.add_funcs(names=["p_sat_func"])
         return (
-            self.blk.p_sat_func(self.param.pure_component, tau)
+            self.blk.p_sat_func(self.param.pure_component, tau, _data_dir)
             * self.param.uc["kPa to Pa"]
         )
 
@@ -890,7 +941,7 @@ class HelmholtzThermoExpressions(object):
         else:
             raise RuntimeError("delta_liq_sat expression requires either T or tau arg")
         self.add_funcs(names=["delta_sat_l_func"])
-        return self.blk.delta_sat_l_func(self.param.pure_component, tau)
+        return self.blk.delta_sat_l_func(self.param.pure_component, tau, _data_dir)
 
     def delta_vap_sat(self, T=None, tau=None):
         """Return saturation pressure as a function of T or tau"""
@@ -901,21 +952,21 @@ class HelmholtzThermoExpressions(object):
         else:
             raise RuntimeError("delta_vap_sat expression requires either T or tau arg")
         self.add_funcs(names=["delta_sat_v_func"])
-        return self.blk.delta_sat_v_func(self.param.pure_component, tau)
+        return self.blk.delta_sat_v_func(self.param.pure_component, tau, _data_dir)
 
     def T_sat(self, p):
         """Return saturation temperature as a function of p"""
         p *= self.param.uc["Pa to kPa"]
         self.add_funcs(names=["tau_sat_func"])
         return self.param.temperature_star / self.blk.tau_sat_func(
-            self.param.pure_component, p
+            self.param.pure_component, p, _data_dir
         )
 
     def tau_sat(self, p):
         """Return saturation tau as a function of p"""
         p *= self.param.uc["Pa to kPa"]
         self.add_funcs(names=["tau_sat_func"])
-        return self.blk.tau_sat_func(self.param.pure_component, p)
+        return self.blk.tau_sat_func(self.param.pure_component, p, _data_dir)
 
 
 @declare_process_block_class("HelmholtzParameterBlock")
@@ -1236,8 +1287,10 @@ change.
     def build(self):
         super().build()
         # Check if the specified compoent is supported
-        if self.config.pure_component not in supported_components:
-            raise RuntimeError(f"Component {self.config.pure_component} not supported.")
+        if get_component_module(self.config.pure_component) is None:
+            raise ConfigurationError(
+                f"Component {self.config.pure_component} not supported."
+            )
         # This is imported here to avoid a circular import
         from idaes.models.properties.general_helmholtz.helmholtz_state import (
             HelmholtzStateBlock,
@@ -1302,11 +1355,11 @@ change.
         cmp = self.pure_component
         self.add_param(
             "mw",
-            pu.convert(self.mw_func(cmp), pu.kg / pu.mol),
+            pu.convert(self.mw_func(cmp, _data_dir), pu.kg / pu.mol),
         )
         self.add_param(
             "sgc",
-            pyo.units.convert(self.sgc_func(cmp), pu.J / pu.kg / pu.K),
+            pyo.units.convert(self.sgc_func(cmp, _data_dir), pu.J / pu.kg / pu.K),
         )
         self.add_param(
             "sgc_mol",
@@ -1314,19 +1367,19 @@ change.
         )
         self.add_param(
             "pressure_crit",
-            pu.convert(self.pc_func(cmp), pu.Pa),
+            pu.convert(self.pc_func(cmp, _data_dir), pu.Pa),
         )
         self.add_param(
             "pressure_trip",
-            pu.convert(self.pt_func(cmp), pu.Pa),
+            pu.convert(self.pt_func(cmp, _data_dir), pu.Pa),
         )
         self.add_param(
             "pressure_min",
-            pu.convert(self.pmin_func(cmp), pu.Pa),
+            pu.convert(self.pmin_func(cmp, _data_dir), pu.Pa),
         )
         self.add_param(
             "pressure_max",
-            pu.convert(self.pmax_func(cmp), pu.Pa),
+            pu.convert(self.pmax_func(cmp, _data_dir), pu.Pa),
         )
         self.add_param(
             "default_pressure_value",
@@ -1335,23 +1388,23 @@ change.
         self.default_pressure_bounds = (self.pressure_min, self.pressure_max)
         self.add_param(
             "temperature_star",
-            pu.convert(self.t_star_func(cmp), pu.K),
+            pu.convert(self.t_star_func(cmp, _data_dir), pu.K),
         )
         self.add_param(
             "temperature_crit",
-            pu.convert(self.tc_func(cmp), pu.K),
+            pu.convert(self.tc_func(cmp, _data_dir), pu.K),
         )
         self.add_param(
             "temperature_trip",
-            pu.convert(self.tt_func(cmp), pu.K),
+            pu.convert(self.tt_func(cmp, _data_dir), pu.K),
         )
         self.add_param(
             "temperature_min",
-            pu.convert(self.tmin_func(cmp), pu.K),
+            pu.convert(self.tmin_func(cmp, _data_dir), pu.K),
         )
         self.add_param(
             "temperature_max",
-            pu.convert(self.tmax_func(cmp), pu.K),
+            pu.convert(self.tmax_func(cmp, _data_dir), pu.K),
         )
         self.add_param(
             "default_temperature_value",
@@ -1360,7 +1413,7 @@ change.
         self.default_temperature_bounds = (self.temperature_min, self.temperature_max)
         self.add_param(
             "dens_mass_star",
-            pu.convert(self.rho_star_func(cmp), pu.kg / pu.m**3),
+            pu.convert(self.rho_star_func(cmp, _data_dir), pu.kg / pu.m**3),
         )
         self.add_param(
             "dens_mol_star",
@@ -1368,7 +1421,7 @@ change.
         )
         self.add_param(
             "dens_mass_crit",
-            pu.convert(self.rhoc_func(cmp), pu.kg / pu.m**3),
+            pu.convert(self.rhoc_func(cmp, _data_dir), pu.kg / pu.m**3),
         )
         self.add_param(
             "dens_mol_crit",
@@ -1395,6 +1448,7 @@ change.
                 cmp,
                 self.pressure_trip * self.uc["Pa to kPa"],
                 self.temperature_star / self.temperature_trip,
+                _data_dir,
             )
             * self.uc["kJ/kg to J/mol"],
         )
@@ -1404,6 +1458,7 @@ change.
                 cmp,
                 self.pressure_trip * self.uc["Pa to kPa"],
                 self.temperature_star / self.temperature_trip,
+                _data_dir,
             )
             * self.uc["kJ/kg to J/kg"],
         )
@@ -1413,6 +1468,7 @@ change.
                 cmp,
                 self.pressure_max * self.uc["Pa to kPa"],
                 self.temperature_star / self.temperature_max,
+                _data_dir,
             )
             * self.uc["kJ/kg to J/mol"],
         )
@@ -1422,6 +1478,7 @@ change.
                 cmp,
                 self.pressure_max * self.uc["Pa to kPa"],
                 self.temperature_star / self.temperature_max,
+                _data_dir,
             )
             * self.uc["kJ/kg to J/kg"],
         )
@@ -1441,6 +1498,7 @@ change.
                 cmp,
                 self.pressure_trip * self.uc["Pa to kPa"],
                 self.temperature_star / self.temperature_trip,
+                _data_dir,
             )
             * self.uc["kJ/kg/K to J/mol/K"],
         )
@@ -1450,6 +1508,7 @@ change.
                 cmp,
                 self.pressure_trip * self.uc["Pa to kPa"],
                 self.temperature_star / self.temperature_trip,
+                _data_dir,
             )
             * self.uc["kJ/kg/K to J/kg/K"],
         )
@@ -1459,6 +1518,7 @@ change.
                 cmp,
                 self.pressure_max * self.uc["Pa to kPa"],
                 self.temperature_star / self.temperature_max,
+                _data_dir,
             )
             * self.uc["kJ/kg/K to J/mol/K"],
         )
@@ -1468,6 +1528,7 @@ change.
                 cmp,
                 self.pressure_max * self.uc["Pa to kPa"],
                 self.temperature_star / self.temperature_max,
+                _data_dir,
             )
             * self.uc["kJ/kg/K to J/kg/K"],
         )
@@ -1487,6 +1548,7 @@ change.
                 cmp,
                 self.pressure_trip * self.uc["Pa to kPa"],
                 self.temperature_star / self.temperature_trip,
+                _data_dir,
             )
             * self.uc["kJ/kg to J/mol"],
         )
@@ -1496,6 +1558,7 @@ change.
                 cmp,
                 self.pressure_trip * self.uc["Pa to kPa"],
                 self.temperature_star / self.temperature_trip,
+                _data_dir,
             )
             * self.uc["kJ/kg to J/kg"],
         )
@@ -1505,6 +1568,7 @@ change.
                 cmp,
                 self.pressure_max * self.uc["Pa to kPa"],
                 self.temperature_star / self.temperature_max,
+                _data_dir,
             )
             * self.uc["kJ/kg to J/mol"],
         )
@@ -1514,6 +1578,7 @@ change.
                 cmp,
                 self.pressure_max * self.uc["Pa to kPa"],
                 self.temperature_star / self.temperature_max,
+                _data_dir,
             )
             * self.uc["kJ/kg to J/kg"],
         )
@@ -1554,6 +1619,7 @@ change.
             pyo.Param(
                 initialize=pyo.value(expr),
                 units=pyo.units.get_units(expr),
+                domain=pyo.Reals,
             ),
         )
 
@@ -1618,7 +1684,7 @@ change.
         p_vec = [
             pyo.value(
                 pyo.units.convert(
-                    self.p_sat_func(self.pure_component, tau), pressure_unit
+                    self.p_sat_func(self.pure_component, tau, _data_dir), pressure_unit
                 )
             )
             for tau in tau_vec
@@ -1627,20 +1693,20 @@ change.
         # Get the reduced density vector for the liquid, from this and
         # tau we can clculate all the rest of the properties for sat liquid
         delta_sat_l_vec = [
-            pyo.value(self.delta_sat_l_func(self.pure_component, tau))
+            pyo.value(self.delta_sat_l_func(self.pure_component, tau, _data_dir))
             for tau in tau_vec
         ]
         # Get the reduced density vector for the liquid, from this and
         # tau we can clculate all the rest of the properties for sat liquid
         delta_sat_v_vec = [
-            pyo.value(self.delta_sat_v_func(self.pure_component, tau))
+            pyo.value(self.delta_sat_v_func(self.pure_component, tau, _data_dir))
             for tau in tau_vec
         ]
         if amount_basis == AmountBasis.MOLE:
             s_liq_vec = [
                 pyo.value(
                     pyo.units.convert(
-                        self.s_func(self.pure_component, delta, tau)
+                        self.s_func(self.pure_component, delta, tau, _data_dir)
                         * self.uc["kJ/kg/K to J/mol/K"],
                         energy_unit / mol_unit / pyo.units.K,
                     )
@@ -1650,7 +1716,7 @@ change.
             s_vap_vec = [
                 pyo.value(
                     pyo.units.convert(
-                        self.s_func(self.pure_component, delta, tau)
+                        self.s_func(self.pure_component, delta, tau, _data_dir)
                         * self.uc["kJ/kg/K to J/mol/K"],
                         energy_unit / mol_unit / pyo.units.K,
                     )
@@ -1660,7 +1726,7 @@ change.
             h_liq_vec = [
                 pyo.value(
                     pyo.units.convert(
-                        self.h_func(self.pure_component, delta, tau)
+                        self.h_func(self.pure_component, delta, tau, _data_dir)
                         * self.uc["kJ/kg to J/mol"],
                         energy_unit / mol_unit,
                     )
@@ -1670,7 +1736,7 @@ change.
             h_vap_vec = [
                 pyo.value(
                     pyo.units.convert(
-                        self.h_func(self.pure_component, delta, tau)
+                        self.h_func(self.pure_component, delta, tau, _data_dir)
                         * self.uc["kJ/kg to J/mol"],
                         energy_unit / mol_unit,
                     )
@@ -1681,7 +1747,7 @@ change.
             s_liq_vec = [
                 pyo.value(
                     pyo.units.convert(
-                        self.s_func(self.pure_component, delta, tau),
+                        self.s_func(self.pure_component, delta, tau, _data_dir),
                         energy_unit / mass_unit / pyo.units.K,
                     )
                 )
@@ -1690,7 +1756,7 @@ change.
             s_vap_vec = [
                 pyo.value(
                     pyo.units.convert(
-                        self.s_func(self.pure_component, delta, tau),
+                        self.s_func(self.pure_component, delta, tau, _data_dir),
                         energy_unit / mass_unit / pyo.units.K,
                     )
                 )
@@ -1699,7 +1765,7 @@ change.
             h_liq_vec = [
                 pyo.value(
                     pyo.units.convert(
-                        self.h_func(self.pure_component, delta, tau),
+                        self.h_func(self.pure_component, delta, tau, _data_dir),
                         energy_unit / mass_unit,
                     )
                 )
@@ -1708,7 +1774,7 @@ change.
             h_vap_vec = [
                 pyo.value(
                     pyo.units.convert(
-                        self.h_func(self.pure_component, delta, tau),
+                        self.h_func(self.pure_component, delta, tau, _data_dir),
                         energy_unit / mass_unit,
                     )
                 )
@@ -1765,24 +1831,38 @@ change.
                 p_vec = [p1] + vec + np.linspace(vec[-1], p2, 10).tolist()
             if phase == "liq" or phase == "sc":
                 delta = [
-                    pyo.value(self.delta_liq_func(self.pure_component, p, tau))
+                    pyo.value(
+                        self.delta_liq_func(self.pure_component, p, tau, _data_dir)
+                    )
                     for p in p_vec
                 ]
             elif phase == "vap":
                 delta = [
-                    pyo.value(self.delta_vap_func(self.pure_component, p, tau))
+                    pyo.value(
+                        self.delta_vap_func(self.pure_component, p, tau, _data_dir)
+                    )
                     for p in p_vec
                 ]
             else:  # sat
                 delta = [
-                    pyo.value(self.delta_liq_func(self.pure_component, p_vec[0], tau)),
-                    pyo.value(self.delta_vap_func(self.pure_component, p_vec[1], tau)),
+                    pyo.value(
+                        self.delta_liq_func(
+                            self.pure_component, p_vec[0], tau, _data_dir
+                        )
+                    ),
+                    pyo.value(
+                        self.delta_vap_func(
+                            self.pure_component, p_vec[1], tau, _data_dir
+                        )
+                    ),
                 ]
             h_vec = [
-                pyo.value(self.h_func(self.pure_component, dv, tau)) for dv in delta
+                pyo.value(self.h_func(self.pure_component, dv, tau, _data_dir))
+                for dv in delta
             ]
             s_vec = [
-                pyo.value(self.s_func(self.pure_component, dv, tau)) for dv in delta
+                pyo.value(self.s_func(self.pure_component, dv, tau, _data_dir))
+                for dv in delta
             ]
             d["p"] = p_vec
             d["delta"] = delta
@@ -1801,7 +1881,7 @@ change.
                 _pvec(d2["sc"], tau, pc, pmax, "sc")
                 _pvec(d2["vap"], tau, pc, pt, "vap")
             else:
-                p_sat = pyo.value(self.p_sat_func(self.pure_component, tau))
+                p_sat = pyo.value(self.p_sat_func(self.pure_component, tau, _data_dir))
                 _pvec(d2["liq"], tau, p_sat, pmax, "liq")
                 _pvec(d2["sat"], tau, p_sat, p_sat, "sat")
                 _pvec(d2["vap"], tau, p_sat, pt, "vap")
@@ -2006,12 +2086,14 @@ change.
         h_sat_l_vec = [None] * len(tau_sat_vec)
 
         for i, tau in enumerate(tau_sat_vec):
-            p_sat_vec[i] = pyo.value(self.p_sat_func(self.pure_component, tau))
+            p_sat_vec[i] = pyo.value(
+                self.p_sat_func(self.pure_component, tau, _data_dir)
+            )
             delta_sat_l_vec[i] = pyo.value(
-                self.delta_sat_l_func(self.pure_component, tau)
+                self.delta_sat_l_func(self.pure_component, tau, _data_dir)
             )
             delta_sat_v_vec[i] = pyo.value(
-                self.delta_sat_v_func(self.pure_component, tau)
+                self.delta_sat_v_func(self.pure_component, tau, _data_dir)
             )
 
         # plot saturaion curves use log scale for pressure
