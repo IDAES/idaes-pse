@@ -24,6 +24,7 @@ from idaes.models.properties.general_helmholtz import (
     add_helmholtz_external_functions,
     helmholtz_available as available,
 )
+from idaes.core.util.exceptions import ConfigurationError
 
 
 @pytest.mark.unit
@@ -1223,7 +1224,7 @@ def test_errors():
         te.delta_liq_sat()
     with pytest.raises(RuntimeError):
         te.delta_vap_sat()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ConfigurationError):
         m.err_param = HelmholtzParameterBlock(
             pure_component="not a real thing", amount_basis=AmountBasis.MASS
         )

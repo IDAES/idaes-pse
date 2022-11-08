@@ -1090,6 +1090,7 @@ class TestIAPWS(object):
 
         m.fs.unit.inlet_2.flow_mol[0].fix(100)
         m.fs.unit.inlet_2.enth_mol[0].fix(5000)
+        m.fs.unit.inlet_2.pressure[0].value = 1e5
 
         return m
 
@@ -1128,44 +1129,36 @@ class TestIAPWS(object):
         expected = pandas.DataFrame.from_dict(
             {
                 "Units": {
-                    "Molar Flow (mol/s)": getattr(pyunits.pint_registry, "mole/second"),
-                    "Mass Flow (kg/s)": getattr(pyunits.pint_registry, "kg/second"),
-                    "T (K)": getattr(pyunits.pint_registry, "K"),
-                    "P (Pa)": getattr(pyunits.pint_registry, "Pa"),
+                    "Molar Flow": getattr(pyunits.pint_registry, "mole/second"),
+                    "Mass Flow": getattr(pyunits.pint_registry, "kg/second"),
+                    "T": getattr(pyunits.pint_registry, "K"),
+                    "P": getattr(pyunits.pint_registry, "Pa"),
                     "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
-                    "Molar Enthalpy (J/mol) Vap": getattr(
-                        pyunits.pint_registry, "J/mole"
-                    ),
-                    "Molar Enthalpy (J/mol) Liq": getattr(
-                        pyunits.pint_registry, "J/mole"
-                    ),
+                    "Molar Enthalpy": getattr(pyunits.pint_registry, "J/mole"),
                 },
                 "inlet_1": {
-                    "Molar Flow (mol/s)": 100,
-                    "Mass Flow (kg/s)": 1.8015,
-                    "T (K)": 346.05,
-                    "P (Pa)": 101325,
+                    "Molar Flow": 100,
+                    "Mass Flow": 1.8015,
+                    "T": 346.05,
+                    "P": 101325,
                     "Vapor Fraction": 0,
-                    "Molar Enthalpy (J/mol) Vap": 47091,
-                    "Molar Enthalpy (J/mol) Liq": 5500,
+                    "Molar Enthalpy": 5500.0,
                 },
                 "inlet_2": {
-                    "Molar Flow (mol/s)": 100,
-                    "Mass Flow (kg/s)": 1.8015,
-                    "T (K)": 339.43,
-                    "P (Pa)": 1e5,
+                    "Molar Flow": 100,
+                    "Mass Flow": 1.8015,
+                    "T": 339.43,
+                    "P": 1e5,
                     "Vapor Fraction": 0,
-                    "Molar Enthalpy (J/mol) Vap": 46704,
-                    "Molar Enthalpy (J/mol) Liq": 5000,
+                    "Molar Enthalpy": 5000,
                 },
                 "Outlet": {
-                    "Molar Flow (mol/s)": 1,
-                    "Mass Flow (kg/s)": 1.8015e-2,
-                    "T (K)": 286.34,
-                    "P (Pa)": 1e5,
+                    "Molar Flow": 1,
+                    "Mass Flow": 1.8015e-2,
+                    "T": 270.4877112932641,
+                    "P": 11032305.8275,
                     "Vapor Fraction": 0,
-                    "Molar Enthalpy (J/mol) Vap": 2168.6,
-                    "Molar Enthalpy (J/mol) Liq": 1000,
+                    "Molar Enthalpy": 0.01102138712926277,
                 },
             }
         )
