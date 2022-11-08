@@ -548,9 +548,9 @@ def unfix_inlets(m):
 def pfd_result(outfile, m, df):
     tags = {}
     for i in df.index:
-        tags[i + "_F"] = df.loc[i, "Molar Flow (mol/s)"]
-        tags[i + "_T"] = df.loc[i, "T (K)"]
-        tags[i + "_P"] = df.loc[i, "P (Pa)"]
+        tags[i + "_F"] = df.loc[i, "Molar Flow"]
+        tags[i + "_T"] = df.loc[i, "T"]
+        tags[i + "_P"] = df.loc[i, "P"]
         tags[i + "_X"] = df.loc[i, "Vapor Fraction"]
 
     tags["FG_2_RH_Fm"] = value(m.fs.RH.side_2.properties_in[0].flow_mass)
