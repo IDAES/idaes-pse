@@ -50,6 +50,8 @@ class PropertyMetadata(object):
         self._method = method
         self._supported = supported
         self._required = required
+        if units is None:
+            raise TypeError('"units" is required')
         self._units = units  # TODO: Validate units are from UnitSet or dimensionless
         # TODO: For future, this would be the place to store default scaling information, etc.
         # TODO: Could also define default bounds, nominal values, etc.
@@ -142,25 +144,42 @@ class PropertyMetadata(object):
         # TODO: Validate that required is bool
         self._required = required
 
-    def update_property(self, dict):
+    def update_property(self, dict=None, method=None, required=None, supported=None):
         """
         Update attributes of this property.
 
         Args:
             dict: containing desired attributes for this property. Supported keys are 'method',
-            'required' and 'supported'.
+                'required' and 'supported'. If dict is provided, cannot provide other arguments
+            method: method name (str) to be assigned to construct property
+            required : bool indicating whether this property package requires this property to be
+                defined by another package
+            supported : bool indicating whether this property package supports this property
 
         Returns:
             None
 
         Note that if not provided a value, 'supported` is assumed to be True.
         """
-        if "method" in dict:
-            self.set_method(dict["method"])
-        if "required" in dict:
-            self.set_required(dict["required"])
-        if "supported" in dict:
-            self.set_supported(dict["supported"])
+        # TODO: Consider deprecating dict option in future
+        if dict is not None:
+            if not all(v is None for v in [method, required, supported]):
+                raise ValueError(
+                    "If dict is provided, cannot provide values for method, required and supported"
+                )
+            if "method" in dict:
+                method = dict["method"]
+            if "required" in dict:
+                required = dict["required"]
+            if "supported" in dict:
+                supported = dict["supported"]
+
+        if method is not None:
+            self.set_method(method)
+        if required is not None:
+            self.set_required(required)
+        if supported is not None:
+            self.set_supported(supported)
         else:
             # Assume supported if not explicitly stated
             # TODO: Reconsider in the future, for now do this for backwards compatibility
@@ -175,7 +194,7 @@ class PropertySetBase(object):
     """
 
     def __init__(self, parent):
-        self.__parent_block = parent
+        self._parent_block = parent
 
     def __getitem__(self, key):
         try:
@@ -333,7 +352,7 @@ class PropertySetBase(object):
         """
         Reference to UnitSet associated with this PropertySet (via the parent metadata object).
         """
-        return self.__parent_block._default_units
+        return self._parent_block.default_units
 
 
 class StandardPropertySet(PropertySetBase):
