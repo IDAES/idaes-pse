@@ -13,13 +13,13 @@
 """
 Example property package for the VLE calucations for a Benzene-Toluene-o-Xylene
 system. If using the activity coefficient models (NRTL or Wilson), the user is
-expected to provide the paramters necessary for these models. Please note that
+expected to provide the parameters necessary for these models. Please note that
 these parameters are declared as variables here to allow for use in a parameter
 estimation problem if the VLE data is available.
 """
 
 # Import Pyomo libraries
-from pyomo.environ import Param, NonNegativeReals, Set, units as pyunits
+from pyomo.environ import Param, NonNegativeReals, value, Set, units as pyunits
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, Component
@@ -28,6 +28,7 @@ from idaes.core.util.misc import extract_data
 from idaes.models.properties.activity_coeff_models.activity_coeff_prop_pack import (
     ActivityCoeffParameterData,
 )
+import idaes.core.util.scaling as iscale
 from idaes.logger import getIdaesLogger
 
 # Some more inforation about this module
@@ -313,3 +314,77 @@ class BTXParameterData(ActivityCoeffParameterData):
             doc="Standard entropy of formation [J/mol.K]",
             units=pyunits.J / pyunits.mol / pyunits.K,
         )
+
+    def calculate_scaling_factors(self):
+        # Get default scale factors and do calculations from base classes
+        super().calculate_scaling_factors()
+
+        phases = self.params.config.valid_phase
+        is_two_phase = len(phases) == 2  # possibly {Liq}, {Vap}, or {Liq, Vap}
+        sf_flow = iscale.get_scaling_factor(self.flow_mol, default=1, warning=True)
+        sf_T = iscale.get_scaling_factor(
+            self.temperature_reference, default=1, warning=True
+        )
+        sf_P = iscale.get_scaling_factor(
+            self.pressure_reference, default=1, warning=True
+        )
+
+        for j, v in self.mw_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(self.mw_comp[j], value(v) ** -1)
+
+        if self.is_property_constructed("pressure_critical"):
+            sf = iscale.set_scaling_factor(self.pressure_critical, sf_P)
+            iscale.constraint_scaling_transform(
+                self.pressure_critical, sf, overwrite=False
+            )
+
+        if self.is_property_constructed("temperature_critical"):
+            sf = iscale.set_scaling_factor(self.temperature_critical, sf_T)
+            iscale.constraint_scaling_transform(
+                self.temperature_critical, sf, overwrite=False
+            )
+
+        if self.is_property_constructed("cp_mol_liq_comp_coeff_A"):
+            sf = iscale.set_scaling_factor(self.cp_mol_liq_comp_coeff_A, 1e-4)
+            iscale.constraint_scaling_transform(
+                self.cp_mol_liq_comp_coeff_A, sf, overwrite=False
+            )
+
+        if self.is_property_constructed("cp_mol_liq_comp_coeff_B"):
+            sf = iscale.set_scaling_factor(self.cp_mol_liq_comp_coeff_B, 1e-2)
+            iscale.constraint_scaling_transform(
+                self.cp_mol_liq_comp_coeff_B, sf, overwrite=False
+            )
+
+        if self.is_property_constructed("cp_mol_liq_comp_coeff_C"):
+            sf = iscale.set_scaling_factor(self.cp_mol_liq_comp_coeff_C, 1e1)
+            iscale.constraint_scaling_transform(
+                self.cp_mol_liq_comp_coeff_C, sf, overwrite=False
+            )
+
+        if self.is_property_constructed("cp_mol_liq_comp_coeff_D"):
+            sf = iscale.set_scaling_factor(self.cp_mol_liq_comp_coeff_D, 1e3)
+            iscale.constraint_scaling_transform(
+                self.cp_mol_liq_comp_coeff_D, sf, overwrite=False
+            )
+
+        if self.is_property_constructed("cp_mol_liq_comp_coeff_E"):
+            sf = iscale.set_scaling_factor(self.cp_mol_liq_comp_coeff_E, 1)
+            iscale.constraint_scaling_transform(
+                self.cp_mol_liq_comp_coeff_E, sf, overwrite=False
+            )
+
+        if self.is_property_constructed("pressure_sat_coeff"):
+            sf = iscale.set_scaling_factor(self.pressure_sat_coeff, 1)
+            iscale.constraint_scaling_transform(
+                self.pressure_sat_coeff, sf, overwrite=False
+            )
+
+        if self.is_property_constructed("dh_form"):
+            sf = iscale.set_scaling_factor(self.dh_form, 1e-3)
+            iscale.constraint_scaling_transform(self.dh_form, sf, overwrite=False)
+
+        if self.is_property_constructed("ds_form"):
+            sf = iscale.set_scaling_factor(self.ds_form, 1e-2)
+            iscale.constraint_scaling_transform(self.ds_form, sf, overwrite=False)
