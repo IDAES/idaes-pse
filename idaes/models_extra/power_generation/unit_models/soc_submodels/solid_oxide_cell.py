@@ -997,7 +997,9 @@ class SolidOxideCellData(UnitModelBlockData):
                             t, iz, j
                         ].value = pyo.value(
                             pyo.log(
-                                self.oxygen_triple_phase_boundary.mole_frac_comp[t, iz, j]
+                                self.oxygen_triple_phase_boundary.mole_frac_comp[
+                                    t, iz, j
+                                ]
                             )
                         )
 
