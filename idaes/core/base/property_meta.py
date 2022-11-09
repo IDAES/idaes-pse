@@ -503,13 +503,15 @@ class PropertyClassMetadata(object):
         Returns:
             None
         """
+        # TODO: Deprecate in favour of directly updating or adding metadata
         for k, v in p.items():
+            units = v.pop("units", None)
             try:
-                getattr(self._properties, "_" + k).update_property(v)
+                getattr(self._properties, "_" + k).update_property(**v)
             except AttributeError:
                 # TODO: Deprecate this and make it raise an exception if an unknown property is encountered
                 # # Force users to explicitly declare new/custom properties
-                self._properties.define_property(name=k, **v)
+                self._properties.define_property(name=k, **v, units=units)
 
     def define_custom_properties(self, p):
         """Add custom properties to the metadata.

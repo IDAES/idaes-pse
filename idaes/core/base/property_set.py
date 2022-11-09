@@ -50,9 +50,7 @@ class PropertyMetadata(object):
         self._method = method
         self._supported = supported
         self._required = required
-        if units is None:
-            raise TypeError('"units" is required')
-        self._units = units  # TODO: Validate units are from UnitSet or dimensionless
+        self._units = units  # TODO: Validate units are from UnitSet or dimensionless - needs deprecation
         # TODO: For future, this would be the place to store default scaling information, etc.
         # TODO: Could also define default bounds, nominal values, etc.
 
@@ -144,13 +142,11 @@ class PropertyMetadata(object):
         # TODO: Validate that required is bool
         self._required = required
 
-    def update_property(self, dict=None, method=None, required=None, supported=None):
+    def update_property(self, method=None, required=None, supported=None):
         """
         Update attributes of this property.
 
         Args:
-            dict: containing desired attributes for this property. Supported keys are 'method',
-                'required' and 'supported'. If dict is provided, cannot provide other arguments
             method: method name (str) to be assigned to construct property
             required : bool indicating whether this property package requires this property to be
                 defined by another package
@@ -159,21 +155,8 @@ class PropertyMetadata(object):
         Returns:
             None
 
-        Note that if not provided a value, 'supported` is assumed to be True.
+        Note that if not provided a value, 'supported' is assumed to be True.
         """
-        # TODO: Consider deprecating dict option in future
-        if dict is not None:
-            if not all(v is None for v in [method, required, supported]):
-                raise ValueError(
-                    "If dict is provided, cannot provide values for method, required and supported"
-                )
-            if "method" in dict:
-                method = dict["method"]
-            if "required" in dict:
-                required = dict["required"]
-            if "supported" in dict:
-                supported = dict["supported"]
-
         if method is not None:
             self.set_method(method)
         if required is not None:
@@ -226,9 +209,9 @@ class PropertySetBase(object):
         """
         Internal method for creating property metadata objects
         """
-        if hasattr(self, name):
+        if hasattr(self, local_name):
             raise PropertyPackageError(
-                f"A property with the name {name} already exists. Please use update_property "
+                f"A property with the name {local_name} already exists. Please use update_property "
                 "method if you wish to update an existing property's metadata."
             )
 
