@@ -340,12 +340,15 @@ class PysmoPolyTrainer(PysmoTrainer):
 
         Returns:
             dict(<dict>)    : Dictionary object containing confidence intervals for all regressed parameters.
+                              
                               The dictionary keys are the output variables originally supplied during model training.
+                              
                               The dictionary values are dataframes containing four columns:
-                               - Regression coeff.  : The regression coefficients for the trained model
-                               - Std. errors        : The standard error on the estimated coefficient
-                               - Conf. int. lower   : Lower confidence bounds for the estimated regression parameters
-                               - Conf. int. upper   : Upper confidence bounds for the estimated regression parameters
+
+                                - Regression coeff.  : The regression coefficients for the trained model
+                                - Std. errors        : The standard error on the estimated coefficient
+                                - Conf. int. lower   : Lower confidence bounds for the estimated regression parameters
+                                - Conf. int. upper   : Upper confidence bounds for the estimated regression parameters
         """
         confint_dict = {}
         for i in model.output_labels:
