@@ -107,7 +107,12 @@ class PhysicalParameterData(PhysicalParameterBlock):
         )
 
         # Std. heat of formation of comp. - units = kJ/(mol comp) - ref: NIST
-        enth_mol_form_comp_dict = {"O2": 0, "N2": 0, "CO2": -393.5224e3, "H2O": -241.8264e3}
+        enth_mol_form_comp_dict = {
+            "O2": 0,
+            "N2": 0,
+            "CO2": -393.5224e3,
+            "H2O": -241.8264e3,
+        }
         self.enth_mol_form_comp = Param(
             self.component_list,
             mutable=False,
@@ -600,7 +605,7 @@ class GasPhaseStateBlockData(StateBlockData):
             initialize=1.0,
             domain=Reals,
             doc="Component molar flowrate",
-            units=units_meta["flow_mole"],
+            units=units_meta.FLOW_MOLE,
         )
         self.mole_frac_comp = Var(
             self._params.component_list,
@@ -613,13 +618,13 @@ class GasPhaseStateBlockData(StateBlockData):
             initialize=1.01325e5,
             domain=Reals,
             doc="State pressure",
-            units=units_meta["pressure"],
+            units=units_meta.PRESSURE,
         )
         self.temperature = Var(
             initialize=298.15,
             domain=Reals,
             doc="State temperature",
-            units=units_meta["temperature"],
+            units=units_meta.TEMPERATURE,
         )
 
         # Create standard constraints
@@ -627,9 +632,7 @@ class GasPhaseStateBlockData(StateBlockData):
         if self.config.defined_state is False:
 
             def sum_component_eqn(b):
-                return 1 == sum(
-                    b.mole_frac_comp[j] for j in b._params.component_list
-                )
+                return 1 == sum(b.mole_frac_comp[j] for j in b._params.component_list)
 
             self.sum_component_eqn = Constraint(rule=sum_component_eqn)
 
@@ -640,7 +643,7 @@ class GasPhaseStateBlockData(StateBlockData):
             domain=Reals,
             initialize=1.0,
             doc="Molecular weight of gas mixture",
-            units=units_meta["molecular_weight"],
+            units=units_meta.MOLECULAR_WEIGHT,
         )
 
         def mw_eqn(b):
@@ -665,7 +668,7 @@ class GasPhaseStateBlockData(StateBlockData):
             domain=Reals,
             initialize=1.0,
             doc="Molar density or concentration",
-            units=units_meta["density_mole"],
+            units=units_meta.DENSITY_MOLE,
         )
 
         def ideal_gas(b):
@@ -696,7 +699,7 @@ class GasPhaseStateBlockData(StateBlockData):
             domain=Reals,
             initialize=1.0,
             doc="Component molar concentration",
-            units=units_meta["density_mole"],
+            units=units_meta.DENSITY_MOLE,
         )
 
         def comp_conc_eqn(b, j):
@@ -720,7 +723,7 @@ class GasPhaseStateBlockData(StateBlockData):
             domain=Reals,
             initialize=1.0,
             doc="Mass density",
-            units=units_meta["density_mass"],
+            units=units_meta.DENSITY_MASS,
         )
 
         def dens_mass_basis(b):
@@ -742,7 +745,7 @@ class GasPhaseStateBlockData(StateBlockData):
             domain=Reals,
             initialize=1e-5,
             doc="Mixture dynamic viscosity",
-            units=units_meta["dynamic_viscosity"],
+            units=units_meta.DYNAMIC_VISCOSITY,
         )
 
         def visc_d_comp(i):
@@ -862,9 +865,7 @@ class GasPhaseStateBlockData(StateBlockData):
     def _therm_cond(self):
         # Thermal conductivity of gas
         units_meta = self._params.get_metadata().derived_units
-        units_therm_cond = (
-            units_meta["thermal_conductivity"]
-        )
+        units_therm_cond = units_meta.THERMAL_CONDUCTIVITY
         self.therm_cond = Var(
             domain=Reals,
             initialize=1e-5,
@@ -922,7 +923,7 @@ class GasPhaseStateBlockData(StateBlockData):
     def _cp_mol_comp(self):
         # Pure component vapour heat capacities
         units_meta = self._params.get_metadata().derived_units
-        units_cp_mol = units_meta["heat_capacity_mole"]
+        units_cp_mol = units_meta.HEAT_CAPACITY_MOLE
         self.cp_mol_comp = Var(
             self._params.component_list,
             domain=Reals,
@@ -958,7 +959,7 @@ class GasPhaseStateBlockData(StateBlockData):
     def _cp_mol(self):
         # Mixture heat capacities
         units_meta = self._params.get_metadata().derived_units
-        units_cp_mol = units_meta["heat_capacity_mole"]
+        units_cp_mol = units_meta.HEAT_CAPACITY_MOLE
         self.cp_mol = Var(
             domain=Reals,
             initialize=1.0,
@@ -983,7 +984,7 @@ class GasPhaseStateBlockData(StateBlockData):
     def _cp_mass(self):
         # Mixture heat capacities
         units_meta = self._params.get_metadata().derived_units
-        units_cp_mass = units_meta["heat_capacity_mass"]
+        units_cp_mass = units_meta.HEAT_CAPACITY_MASS
         self.cp_mass = Var(
             domain=Reals,
             initialize=1.0,
@@ -1006,7 +1007,7 @@ class GasPhaseStateBlockData(StateBlockData):
     def _enth_mol_comp(self):
         # Pure component vapour enthalpies
         units_meta = self._params.get_metadata().derived_units
-        units_enth_mol = units_meta["energy_mole"]
+        units_enth_mol = units_meta.ENERGY_MOLE
         self.enth_mol_comp = Var(
             self._params.component_list,
             domain=Reals,
@@ -1046,7 +1047,7 @@ class GasPhaseStateBlockData(StateBlockData):
     def _enth_mol(self):
         # Mixture molar enthalpy
         units_meta = self._params.get_metadata().derived_units
-        units_enth_mol = units_meta["energy_mole"]
+        units_enth_mol = units_meta.ENERGY_MOLE
         self.enth_mol = Var(
             domain=Reals,
             initialize=1.0,
@@ -1072,7 +1073,7 @@ class GasPhaseStateBlockData(StateBlockData):
 
     def _entr_mol(self):
         units_meta = self._params.get_metadata().derived_units
-        units_entr_mol = units_meta["entropy_mole"]
+        units_entr_mol = units_meta.ENTROPY_MOLE
         self.entr_mol = Var(
             doc="Specific Entropy",
             initialize=1.0,

@@ -31,7 +31,7 @@ from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.models.properties.modular_properties.pure.NIST import *
 from idaes.core.util.misc import add_object_reference
-from idaes.core.base.property_meta import PropertyClassMetadata
+from idaes.core.base.property_meta import PropertyClassMetadata, UnitSet
 
 
 @pytest.fixture()
@@ -62,11 +62,13 @@ def frame():
     m.params.config.include_enthalpy_of_formation = True
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object.default_units["temperature"] = pyunits.K
-    m.meta_object.default_units["mass"] = pyunits.kg
-    m.meta_object.default_units["length"] = pyunits.m
-    m.meta_object.default_units["time"] = pyunits.s
-    m.meta_object.default_units["amount"] = pyunits.mol
+    m.meta_object._default_units = UnitSet(
+        temperature=pyunits.K,
+        mass=pyunits.kg,
+        length=pyunits.m,
+        time=pyunits.s,
+        amount=pyunits.mol,
+    )
 
     def get_metadata(self):
         return m.meta_object
@@ -90,7 +92,7 @@ def frame():
 
 @pytest.mark.unit
 def test_cp_mol_ig_comp(frame):
-    cp_mol_ig_comp.build_parameters(frame.params)
+    NIST.cp_mol_ig_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.cp_mol_ig_comp_coeff_A, Var)
     assert value(frame.params.cp_mol_ig_comp_coeff_A) == 30.09200
@@ -112,7 +114,7 @@ def test_cp_mol_ig_comp(frame):
     assert isinstance(frame.params.enth_mol_form_vap_comp_ref, Expression)
     assert value(frame.params.enth_mol_form_vap_comp_ref) == -241.8264 * 1e3
 
-    expr = cp_mol_ig_comp.return_expression(
+    expr = NIST.cp_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == pytest.approx(35.22, abs=1e-2)  # value from NIST
@@ -125,9 +127,9 @@ def test_cp_mol_ig_comp(frame):
 
 @pytest.mark.unit
 def test_enth_mol_ig_comp(frame):
-    enth_mol_ig_comp.build_parameters(frame.params)
+    NIST.enth_mol_ig_comp.build_parameters(frame.params)
 
-    expr = enth_mol_ig_comp.return_expression(
+    expr = NIST.enth_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == pytest.approx(6.92e3 - 241826.4, rel=1e-3)  # value from NIST
@@ -140,10 +142,10 @@ def test_enth_mol_ig_comp(frame):
 
 @pytest.mark.unit
 def test_enth_mol_ig_comp_no_formation(frame):
-    enth_mol_ig_comp.build_parameters(frame.params)
+    NIST.enth_mol_ig_comp.build_parameters(frame.params)
     frame.params.config.include_enthalpy_of_formation = False
 
-    expr = enth_mol_ig_comp.return_expression(
+    expr = NIST.enth_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == pytest.approx(6.92e3, rel=1e-3)  # value from NIST
@@ -156,10 +158,10 @@ def test_enth_mol_ig_comp_no_formation(frame):
 
 @pytest.mark.unit
 def test_entr_mol_ig_comp_no_formation(frame):
-    entr_mol_ig_comp.build_parameters(frame.params)
+    NIST.entr_mol_ig_comp.build_parameters(frame.params)
     frame.params.config.include_entropy_of_formation = False
 
-    expr = entr_mol_ig_comp.return_expression(
+    expr = NIST.entr_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == pytest.approx(206.5, rel=1e-3)
@@ -172,7 +174,7 @@ def test_entr_mol_ig_comp_no_formation(frame):
 
 @pytest.mark.unit
 def test_pressure_sat_comp(frame):
-    pressure_sat_comp.build_parameters(frame.params)
+    NIST.pressure_sat_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.pressure_sat_comp_coeff_A, Var)
     assert value(frame.params.pressure_sat_comp_coeff_A) == 3.55959
@@ -181,7 +183,7 @@ def test_pressure_sat_comp(frame):
     assert isinstance(frame.params.pressure_sat_comp_coeff_C, Var)
     assert value(frame.params.pressure_sat_comp_coeff_C) == -198.043
 
-    expr = pressure_sat_comp.return_expression(
+    expr = NIST.pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == pytest.approx(2677137, rel=1e-4)
@@ -194,17 +196,17 @@ def test_pressure_sat_comp(frame):
 
 @pytest.mark.unit
 def test_pressure_sat_comp_dT(frame):
-    pressure_sat_comp.build_parameters(frame.params)
+    NIST.pressure_sat_comp.build_parameters(frame.params)
 
-    expr = pressure_sat_comp.dT_expression(
+    expr = NIST.pressure_sat_comp.dT_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
 
     delta = 1e-4 * pyunits.K
-    val = pressure_sat_comp.return_expression(
+    val = NIST.pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
-    val_p = pressure_sat_comp.return_expression(
+    val_p = NIST.pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature + delta
     )
 
@@ -214,10 +216,10 @@ def test_pressure_sat_comp_dT(frame):
 
     frame.props[1].temperature.value = 373.15
 
-    val = pressure_sat_comp.return_expression(
+    val = NIST.pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
-    val_p = pressure_sat_comp.return_expression(
+    val_p = NIST.pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature + delta
     )
 

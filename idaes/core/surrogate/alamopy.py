@@ -779,12 +779,14 @@ class AlamoTrainer(SurrogateTrainer):
             if " " in i:
                 raise ValueError(
                     f"ALAMO does not support the presence of spaces in variable names. "
-                    f"Found space in input names: {i}.")
+                    f"Found space in input names: {i}."
+                )
         for o in self._output_labels:
             if " " in o:
                 raise ValueError(
                     f"ALAMO does not support the presence of spaces in variable names. "
-                    f"Found space in output names: {o}.")
+                    f"Found space in output names: {o}."
+                )
 
     def _write_alm_to_stream(
         self, stream, trace_fname=None, training_data=None, validation_data=None
@@ -1031,7 +1033,8 @@ class AlamoTrainer(SurrogateTrainer):
             raise FileNotFoundError(
                 "Error occured when trying to read the ALAMO trace file - this probably "
                 "indicates that a trace file was not created by the ALAMO executable. "
-                "Please check the ALAMO output logs.")
+                "Please check the ALAMO output logs."
+            )
 
         output_labels = self.output_labels()
 

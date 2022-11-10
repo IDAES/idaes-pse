@@ -20,80 +20,52 @@
 # This software is distributed under the 3-clause BSD License
 # ______________________________________________________________________________
 from pyomo.environ import (
-        Param,
-        Var,
-        Block,
-        ComponentMap,
-        Objective,
-        Constraint,
-        ConstraintList,
-        Suffix,
-        value,
-        ComponentUID,
-        )
+    Param,
+    Var,
+    Block,
+    ComponentMap,
+    Objective,
+    Constraint,
+    ConstraintList,
+    Suffix,
+    value,
+    ComponentUID,
+)
 from pyomo.common.sorting import sorted_robust
 from pyomo.core.expr.current import ExpressionReplacementVisitor
 
 from pyomo.common.modeling import unique_component_name
-from pyomo.common.deprecation import deprecated
 from pyomo.opt import SolverFactory, SolverStatus
 import logging
 import os
 import shutil
-from pyomo.common.dependencies import (
-    numpy as np, numpy_available
-    )
+from pyomo.common.dependencies import numpy as np, numpy_available
 from scipy import sparse
 
-logger = logging.getLogger('pyomo.contrib.sensitivity_toolbox')
+logger = logging.getLogger("pyomo.contrib.sensitivity_toolbox")
 
-@deprecated("""The sipopt function has been deprecated. Use the
-            sensitivity_calculation() function with method='sipopt'
-            to access this functionality.""",
-            logger='pyomo.contrib.sensitivity_toolbox',
-            version='TBD')
-def sipopt(instance, paramSubList, perturbList,
-           cloneModel=True, tee=False, keepfiles=False,
-           streamSoln=False):
-    m = sensitivity_calculation('sipopt', instance, paramSubList, perturbList,
-         cloneModel, tee, keepfiles, solver_options=None)
-
-    return m
-
-@deprecated("""The kaug function has been deprecated.
-            Use the sensitivity_calculation() function
-            with method='kaug' to access this functionality.""",
-            logger='pyomo.contrib.sensitivity_toolbox',
-            version='TBD')
-def kaug(instance, paramSubList, perturbList,
-         cloneModel=True, tee=False, keepfiles=False, solver_options=None,
-         streamSoln=False):
-    m = sensitivity_calculation('kaug', instance, paramSubList, perturbList,
-         cloneModel, tee, keepfiles, solver_options)
-
-    return m
 
 _SIPOPT_SUFFIXES = {
-        'sens_state_0': Suffix.EXPORT,
-        # ^ Not sure what this suffix does -RBP
-        'sens_state_1': Suffix.EXPORT,
-        'sens_state_value_1': Suffix.EXPORT,
-        'sens_init_constr': Suffix.EXPORT,
-
-        'sens_sol_state_1': Suffix.IMPORT,
-        'sens_sol_state_1_z_L': Suffix.IMPORT,
-        'sens_sol_state_1_z_U': Suffix.IMPORT,
-        }
+    "sens_state_0": Suffix.EXPORT,
+    # ^ Not sure what this suffix does -RBP
+    "sens_state_1": Suffix.EXPORT,
+    "sens_state_value_1": Suffix.EXPORT,
+    "sens_init_constr": Suffix.EXPORT,
+    "sens_sol_state_1": Suffix.IMPORT,
+    "sens_sol_state_1_z_L": Suffix.IMPORT,
+    "sens_sol_state_1_z_U": Suffix.IMPORT,
+}
 
 _K_AUG_SUFFIXES = {
-        'ipopt_zL_out': Suffix.IMPORT,
-        'ipopt_zU_out': Suffix.IMPORT,
-        'ipopt_zL_in': Suffix.EXPORT,
-        'ipopt_zU_in': Suffix.EXPORT,
-        'dual': Suffix.IMPORT_EXPORT,
-        'dcdp': Suffix.EXPORT,
-        'DeltaP': Suffix.EXPORT,
-        }
+    "ipopt_zL_out": Suffix.IMPORT,
+    "ipopt_zU_out": Suffix.IMPORT,
+    "ipopt_zL_in": Suffix.EXPORT,
+    "ipopt_zU_in": Suffix.EXPORT,
+    "dual": Suffix.IMPORT_EXPORT,
+    "dcdp": Suffix.EXPORT,
+    "DeltaP": Suffix.EXPORT,
+}
+
 
 def _add_sensitivity_suffixes(block):
     suffix_dict = {}
@@ -106,8 +78,10 @@ def _add_sensitivity_suffixes(block):
             # assume it is the proper suffix and move on.
             block.add_component(name, Suffix(direction=direction))
 
+
 class _NotAnIndex(object):
     pass
+
 
 def _generate_component_items(components):
     if type(components) not in {list, tuple}:
@@ -119,8 +93,17 @@ def _generate_component_items(components):
         else:
             yield _NotAnIndex, comp
 
-def sensitivity_calculation(method, instance, paramList, perturbList,
-         cloneModel=True, tee=False, keepfiles=False, solver_options=None):
+
+def sensitivity_calculation(
+    method,
+    instance,
+    paramList,
+    perturbList,
+    cloneModel=True,
+    tee=False,
+    keepfiles=False,
+    solver_options=None,
+):
     """This function accepts a Pyomo ConcreteModel, a list of parameters, along
     with their corresponding perterbation list. The model is then converted
     into the design structure required to call sipopt or k_aug to get an
@@ -168,30 +151,29 @@ def sensitivity_calculation(method, instance, paramList, perturbList,
 
     m = sens.model_instance
 
-    if method == 'kaug':
-        kaug = SolverFactory('k_aug', solver_io='nl')
-        dotsens = SolverFactory('dot_sens', solver_io='nl')
-        ipopt = SolverFactory('ipopt', solver_io='nl')
+    if method == "kaug":
+        kaug = SolverFactory("k_aug", solver_io="nl")
+        dotsens = SolverFactory("dot_sens", solver_io="nl")
+        ipopt = SolverFactory("ipopt", solver_io="nl")
 
         ipopt.solve(m, tee=tee)
         m.ipopt_zL_in.update(m.ipopt_zL_out)  #: important!
         m.ipopt_zU_in.update(m.ipopt_zU_out)  #: important!
 
-        kaug.options['dsdp_mode'] = ""  #: sensitivity mode!
+        kaug.options["dsdp_mode"] = ""  #: sensitivity mode!
         kaug.solve(m, tee=tee)
-        m.write('col_row.nl', format='nl',
-                io_options={'symbolic_solver_labels':True})
+        m.write("col_row.nl", format="nl", io_options={"symbolic_solver_labels": True})
 
     sens.perturb_parameters(perturbList)
 
-    if method == 'sipopt':
-        ipopt_sens = SolverFactory('ipopt_sens', solver_io='nl')
-        ipopt_sens.options['run_sens'] = 'yes'
+    if method == "sipopt":
+        ipopt_sens = SolverFactory("ipopt_sens", solver_io="nl")
+        ipopt_sens.options["run_sens"] = "yes"
 
         # Send the model to the ipopt_sens and collect the solution
         results = ipopt_sens.solve(m, keepfiles=keepfiles, tee=tee)
 
-    elif method == 'kaug':
+    elif method == "kaug":
         dotsens.options["dsdp_mode"] = ""
         dotsens.solve(m, tee=tee)
         try:
@@ -200,13 +182,13 @@ def sensitivity_calculation(method, instance, paramList, perturbList,
             # directory already exists
             pass
         try:
-            shutil.move("dsdp_in_.in","./dsdp/")
-            shutil.move("col_row.nl","./dsdp/")
-            shutil.move("col_row.col","./dsdp/")
-            shutil.move("col_row.row","./dsdp/")
-            shutil.move("conorder.txt","./dsdp/")
-            shutil.move("delta_p.out","./dsdp/")
-            shutil.move("dot_out.out","./dsdp/")
+            shutil.move("dsdp_in_.in", "./dsdp/")
+            shutil.move("col_row.nl", "./dsdp/")
+            shutil.move("col_row.col", "./dsdp/")
+            shutil.move("col_row.row", "./dsdp/")
+            shutil.move("conorder.txt", "./dsdp/")
+            shutil.move("delta_p.out", "./dsdp/")
+            shutil.move("dot_out.out", "./dsdp/")
             shutil.move("timings_dot_driver_dsdp.txt", "./dsdp/")
             shutil.move("timings_k_aug_dsdp.txt", "./dsdp/")
         except OSError:
@@ -214,8 +196,8 @@ def sensitivity_calculation(method, instance, paramList, perturbList,
 
     return m
 
-def get_dsdp(model, theta_names, theta, var_dic={},
-             tee=False, solver_options=None):
+
+def get_dsdp(model, theta_names, theta, var_dic={}, tee=False, solver_options=None):
     """This function calculates gradient vector of the (decision variables,
     parameters) with respect to the paramerters (theta_names).
 
@@ -272,7 +254,7 @@ def get_dsdp(model, theta_names, theta, var_dic={},
     if var_dic == {}:
         for i in theta_names:
             var_dic[i] = i
-    '''
+    """
     for v in theta_names:
         v_tmp = str(kk)
         original_param_object = Param(initialize=theta[v], mutable=True)
@@ -286,44 +268,45 @@ def get_dsdp(model, theta_names, theta, var_dic={},
     m_kaug_dsdp = sensitivity_calculation('kaug',m,original_Param,
                                           perturbed_Param, tee)
 
-    '''
+    """
     for i, name in enumerate(theta_names):
         orig_param = Param(initialize=theta[name], mutable=True)
         ptb_param = Param(initialize=theta[name])
         m.add_component("original_%s" % i, orig_param)
-        m.add_component("perturbed_%s" % i,ptb_param)
+        m.add_component("perturbed_%s" % i, ptb_param)
         cuid = ComponentUID(name)
         var = cuid.find_component_on(m)
         m.extra.add(var - orig_param == 0)
         original_Param.append(orig_param)
         perturbed_Param.append(ptb_param)
 
-    m_kaug_dsdp = sensitivity_calculation('kaug',m,original_Param,
-                                          perturbed_Param, tee)
+    m_kaug_dsdp = sensitivity_calculation(
+        "kaug", m, original_Param, perturbed_Param, tee
+    )
     try:
-        with open ("./dsdp/col_row.col", "r") as myfile:
+        with open("./dsdp/col_row.col", "r") as myfile:
             col = myfile.read().splitlines()
-        with open ("./dsdp/col_row.row", "r") as myfile:
+        with open("./dsdp/col_row.row", "r") as myfile:
             row = myfile.read().splitlines()
         dsdp = np.loadtxt("./dsdp/dsdp_in_.in")
     except Exception as e:
-        print('File not found.')
-    dsdp = dsdp.reshape((len(theta_names), int(len(dsdp)/len(theta_names))))
-    dsdp = dsdp[:len(theta_names), :len(col)]
+        print("File not found.")
+    dsdp = dsdp.reshape((len(theta_names), int(len(dsdp) / len(theta_names))))
+    dsdp = dsdp[: len(theta_names), : len(col)]
     try:
-        shutil.rmtree('dsdp', ignore_errors=True)
+        shutil.rmtree("dsdp", ignore_errors=True)
     except OSError:
         pass
-    col = [i for i in col
-           if SensitivityInterface.get_default_block_name() not in i]
-    dsdp_out = np.zeros((len(theta_names),len(col)))
+    col = [i for i in col if SensitivityInterface.get_default_block_name() not in i]
+    dsdp_out = np.zeros((len(theta_names), len(col)))
     # e.g) k_aug dsdp returns -dx1/dx1 = -1.0
     for i in range(len(theta_names)):
         for j in range(len(col)):
             if SensitivityInterface.get_default_block_name() not in col[j]:
-                dsdp_out[i,j] =  -dsdp[i, j]
+                dsdp_out[i, j] = -dsdp[i, j]
 
     return sparse.csr_matrix(dsdp_out), col
+
 
 def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
     """This function calculates gradient vector of the objective function
@@ -382,18 +365,18 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
     Exception
         When ipopt fails
     """
-    #Create the solver plugin using the ASL interface
-    ipopt = SolverFactory('ipopt',solver_io='nl')
+    # Create the solver plugin using the ASL interface
+    ipopt = SolverFactory("ipopt", solver_io="nl")
     if solver_options is not None:
         ipopt.options = solver_options
-    kaug = SolverFactory('k_aug',solver_io='nl')
-    dotsens = SolverFactory('dot_sens',solver_io='nl')
+    kaug = SolverFactory("k_aug", solver_io="nl")
+    dotsens = SolverFactory("dot_sens", solver_io="nl")
     if not ipopt.available(False):
-        raise RuntimeError('ipopt is not available')
+        raise RuntimeError("ipopt is not available")
     if not kaug.available(False):
-        raise RuntimeError('k_aug is not available')
+        raise RuntimeError("k_aug is not available")
     if not dotsens.available(False):
-        raise RuntimeError('dotsens is not available')
+        raise RuntimeError("dotsens is not available")
 
     # Declare Suffixes
     _add_sensitivity_suffixes(model)
@@ -402,10 +385,10 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
     model.dof_v = Suffix(direction=Suffix.EXPORT)  #: SUFFIX FOR K_AUG
     model.rh_name = Suffix(direction=Suffix.IMPORT)  #: SUFFIX FOR K_AUG AS WELL
     kaug.options["print_kkt"] = ""
-    results = ipopt.solve(model,tee=tee)
+    results = ipopt.solve(model, tee=tee)
 
     # Raise Exception if ipopt fails
-    if (results.solver.status == SolverStatus.warning):
+    if results.solver.status == SolverStatus.warning:
         raise Exception(results.solver.Message)
 
     for o in model.component_objects(Objective, active=True):
@@ -414,30 +397,28 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
     model.ipopt_zU_in.update(model.ipopt_zU_out)
     #: run k_aug
     kaug.solve(model, tee=tee)  #: always call k_aug AFTER ipopt.
-    model.write('col_row.nl', format='nl',
-                io_options={'symbolic_solver_labels':True})
+    model.write("col_row.nl", format="nl", io_options={"symbolic_solver_labels": True})
     # get the column numbers of theta
     line_dic = {}
     try:
         for v in theta_names:
-            line_dic[v] = line_num('col_row.col', v)
+            line_dic[v] = line_num("col_row.col", v)
         # load gradient of the objective function
         gradient_f = np.loadtxt("./GJH/gradient_f_print.txt")
-        with open ("col_row.col", "r") as myfile:
+        with open("col_row.col", "r") as myfile:
             col = myfile.read().splitlines()
-        col = [i for i in col
-               if SensitivityInterface.get_default_block_name() not in i]
-        with open ("col_row.row", "r") as myfile:
+        col = [i for i in col if SensitivityInterface.get_default_block_name() not in i]
+        with open("col_row.row", "r") as myfile:
             row = myfile.read().splitlines()
     except Exception as e:
-         print('File not found.')
-         raise e
+        print("File not found.")
+        raise e
     # load gradient of all constraints (sparse)
     # If no constraint exists, return []
-    num_constraints = len(list(model.component_data_objects(Constraint,
-                                                            active=True,
-                                                            descend_into=True)))
-    if num_constraints > 0 :
+    num_constraints = len(
+        list(model.component_data_objects(Constraint, active=True, descend_into=True))
+    )
+    if num_constraints > 0:
         try:
             # load text file from kaug
             gradient_c = np.loadtxt("./GJH/A_print.txt")
@@ -446,15 +427,16 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
             # gradient_c[:,1] are data index
             # gradient_c[:,1] are the matrix values
         except Exception as e:
-            print('kaug file ./GJH/A_print.txt not found.')
+            print("kaug file ./GJH/A_print.txt not found.")
 
         # Subtract 1 from row and column indices to convert from
         # start at 1 (kaug) to start at 0 (numpy)
-        row_idx = gradient_c[:,1]-1
-        col_idx = gradient_c[:,0]-1
-        data = gradient_c[:,2]
-        gradient_c = sparse.csr_matrix((data, (row_idx, col_idx)),
-                                       shape=(len(row)-1, len(col)))
+        row_idx = gradient_c[:, 1] - 1
+        col_idx = gradient_c[:, 0] - 1
+        data = gradient_c[:, 2]
+        gradient_c = sparse.csr_matrix(
+            (data, (row_idx, col_idx)), shape=(len(row) - 1, len(col))
+        )
     else:
         gradient_c = np.array([])
     # remove all generated files
@@ -462,9 +444,10 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
     shutil.move("col_row.nl", "./GJH/")
     shutil.move("col_row.col", "./GJH/")
     shutil.move("col_row.row", "./GJH/")
-    shutil.rmtree('GJH', ignore_errors=True)
+    shutil.rmtree("GJH", ignore_errors=True)
 
-    return gradient_f, gradient_c, col,row, line_dic
+    return gradient_f, gradient_c, col, row, line_dic
+
 
 def line_num(file_name, target):
     """This function returns the line inumber contain 'target' in the file_name.
@@ -492,12 +475,12 @@ def line_num(file_name, target):
             if line.strip() == target:
                 return int(count)
             count += 1
-    raise Exception(file_name + " does not include "+target)
+    raise Exception(file_name + " does not include " + target)
+
 
 class SensitivityInterface(object):
-
     def __init__(self, instance, clone_model=True):
-        """ Constructor clones model if necessary and attaches
+        """Constructor clones model if necessary and attaches
         to this object.
         """
         self._original_model = instance
@@ -511,16 +494,16 @@ class SensitivityInterface(object):
 
     @classmethod
     def get_default_block_name(self):
-        return '_SENSITIVITY_TOOLBOX_DATA'
+        return "_SENSITIVITY_TOOLBOX_DATA"
 
     @staticmethod
     def get_default_var_name(name):
-        #return '_'.join(('sens_var', name))
+        # return '_'.join(('sens_var', name))
         return name
 
     @staticmethod
     def get_default_param_name(name):
-        #return '_'.join(('sens_param', name))
+        # return '_'.join(('sens_param', name))
         return name
 
     def _process_param_list(self, paramList):
@@ -532,7 +515,7 @@ class SensitivityInterface(object):
             paramList = list(
                 ComponentUID(param, context=orig).find_component_on(instance)
                 for param in paramList
-                )
+            )
         return paramList
 
     def _add_data_block(self, existing_block=None):
@@ -544,18 +527,21 @@ class SensitivityInterface(object):
         # the constructor once, then perform multiple sensitivity
         # calculations with the same model instance.
         if existing_block is not None:
-            if (hasattr(existing_block, '_has_replaced_expressions') and
-                    not existing_block._has_replaced_expressions):
+            if (
+                hasattr(existing_block, "_has_replaced_expressions")
+                and not existing_block._has_replaced_expressions
+            ):
                 for var, _, _, _ in existing_block._sens_data_list:
                     # Re-fix variables that the previous block was
                     # treating as parameters.
                     var.fix()
                 self.model_instance.del_component(existing_block)
             else:
-                msg = ("Re-using sensitivity interface is not supported "
-                        "when calculating sensitivity for mutable parameters. "
-                        "Used fixed vars instead if you want to do this."
-                        )
+                msg = (
+                    "Re-using sensitivity interface is not supported "
+                    "when calculating sensitivity for mutable parameters. "
+                    "Used fixed vars instead if you want to do this."
+                )
                 raise RuntimeError(msg)
 
         # Add a block to keep track of model components necessary for this
@@ -597,9 +583,9 @@ class SensitivityInterface(object):
                 parent = comp.parent_component()
                 if not parent.mutable:
                     raise ValueError(
-                            "Parameters within paramList must be mutable. "
-                            "Got %s, which is not mutable." % comp.name
-                            )
+                        "Parameters within paramList must be mutable. "
+                        "Got %s, which is not mutable." % comp.name
+                    )
                 # Add a Var:
                 if comp.is_indexed():
                     d = {k: value(comp[k]) for k in comp.index_set()}
@@ -613,9 +599,9 @@ class SensitivityInterface(object):
 
                 if comp.is_indexed():
                     sens_data_list.extend(
-                            (var[idx], param, i, idx)
-                            for idx, param in _generate_component_items(comp)
-                            )
+                        (var[idx], param, i, idx)
+                        for idx, param in _generate_component_items(comp)
+                    )
                 else:
                     sens_data_list.append((var, comp, i, _NotAnIndex))
 
@@ -624,10 +610,9 @@ class SensitivityInterface(object):
                 for _, data in _generate_component_items(comp):
                     if not data.fixed:
                         raise ValueError(
-                                "Specified \"parameter\" variables must be "
-                                "fixed. Got %s, which is not fixed."
-                                % comp.name
-                                )
+                            'Specified "parameter" variables must be '
+                            "fixed. Got %s, which is not fixed." % comp.name
+                        )
                 # Add a Param:
                 if comp.is_indexed():
                     d = {k: value(comp[k]) for k in comp.index_set()}
@@ -641,9 +626,9 @@ class SensitivityInterface(object):
 
                 if comp.is_indexed():
                     sens_data_list.extend(
-                            (var, param[idx], i, idx)
-                            for idx, var in _generate_component_items(comp)
-                            )
+                        (var, param[idx], i, idx)
+                        for idx, var in _generate_component_items(comp)
+                    )
                 else:
                     sens_data_list.append((comp, param, i, _NotAnIndex))
 
@@ -653,9 +638,9 @@ class SensitivityInterface(object):
         # Visitor that we will use to replace user-provided parameters
         # in the objective and the constraints.
         param_replacer = ExpressionReplacementVisitor(
-                substitute=variableSubMap,
-                remove_named_expressions=True,
-                )
+            substitute=variableSubMap,
+            remove_named_expressions=True,
+        )
         # TODO: Flag to ExpressionReplacementVisitor to only replace
         # named expressions if a node has been replaced within that
         # expression.
@@ -663,11 +648,11 @@ class SensitivityInterface(object):
         new_old_comp_map = ComponentMap()
 
         # clone Objective, add to Block, and update any Expressions
-        for obj in list(instance.component_data_objects(Objective,
-                                                active=True,
-                                                descend_into=True)):
+        for obj in list(
+            instance.component_data_objects(Objective, active=True, descend_into=True)
+        ):
             tempName = unique_component_name(block, obj.local_name)
-            new_expr = param_replacer.dfs_postorder_stack(obj.expr)
+            new_expr = param_replacer.walk_expression(obj.expr)
             block.add_component(tempName, Objective(expr=new_expr))
             new_old_comp_map[block.component(tempName)] = obj
             obj.deactivate()
@@ -677,12 +662,13 @@ class SensitivityInterface(object):
         # Unfortunate that this deactivates and replaces constraints
         # even if they don't contain the parameters.
         #
-        old_con_list = list(instance.component_data_objects(Constraint,
-            active=True, descend_into=True))
+        old_con_list = list(
+            instance.component_data_objects(Constraint, active=True, descend_into=True)
+        )
         last_idx = 0
         for con in old_con_list:
-            if (con.equality or con.lower is None or con.upper is None):
-                new_expr = param_replacer.dfs_postorder_stack(con.expr)
+            if con.equality or con.lower is None or con.upper is None:
+                new_expr = param_replacer.walk_expression(con.expr)
                 block.constList.add(expr=new_expr)
                 last_idx += 1
                 new_old_comp_map[block.constList[last_idx]] = con
@@ -707,8 +693,7 @@ class SensitivityInterface(object):
         return new_old_comp_map
 
     def setup_sensitivity(self, paramList):
-        """
-        """
+        """ """
         instance = self.model_instance
         paramList = self._process_param_list(paramList)
 
@@ -725,9 +710,11 @@ class SensitivityInterface(object):
             var.unfix()
 
         # Map used to replace user-provided parameters.
-        variableSubMap = dict((id(param), var)
-                for var, param, list_idx, _ in sens_data_list
-                if paramList[list_idx].ctype is Param)
+        variableSubMap = dict(
+            (id(param), var)
+            for var, param, list_idx, _ in sens_data_list
+            if paramList[list_idx].ctype is Param
+        )
 
         if variableSubMap:
             # We now replace the provided parameters in the user's
@@ -740,7 +727,7 @@ class SensitivityInterface(object):
 
         block.paramConst = ConstraintList()
         for var, param, _, _ in sens_data_list:
-            #block.paramConst.add(param - var == 0)
+            # block.paramConst.add(param - var == 0)
             block.paramConst.add(var - param == 0)
 
         # Declare Suffixes
@@ -758,10 +745,8 @@ class SensitivityInterface(object):
             # k_aug
             instance.dcdp[con] = idx
 
-
     def perturb_parameters(self, perturbList):
-        """
-        """
+        """ """
         # Note that entries of perturbList need not be components
         # of the cloned model. All we need are the values.
         instance = self.model_instance
@@ -770,11 +755,11 @@ class SensitivityInterface(object):
 
         if len(self.block._paramList) != len(perturbList):
             raise ValueError(
-                    "Length of paramList argument does not equal "
-                    "length of perturbList")
+                "Length of paramList argument does not equal " "length of perturbList"
+            )
 
         for i, (var, param, list_idx, comp_idx) in enumerate(sens_data_list):
-            con = paramConst[i+1]
+            con = paramConst[i + 1]
             if comp_idx is _NotAnIndex:
                 ptb = value(perturbList[list_idx])
             else:
@@ -789,7 +774,7 @@ class SensitivityInterface(object):
             instance.sens_state_value_1[var] = ptb
 
             # k_aug
-            #instance.DeltaP[con] = value(ptb - var)
+            # instance.DeltaP[con] = value(ptb - var)
             instance.DeltaP[con] = value(var - ptb)
             # FIXME: ^ This is incorrect. DeltaP should be (ptb - current).
             # But at least one test doesn't pass unless I use (current - ptb).

@@ -23,14 +23,20 @@ class Tracker:
     with the DoubleLoopCoordinator.
     """
 
-    def __init__(self, tracking_model_object, n_tracking_hour, solver):
+    def __init__(
+        self, tracking_model_object, tracking_horizon, n_tracking_hour, solver
+    ):
 
         """
         Initializes the tracker object.
 
         Arguments:
-            tracking_model_class: the model object class for tracking
+            tracking_model_object: the model object for tracking
+
+            tracking_horizon: number of time periods in the tracking problem
+
             n_tracking_hour: number of implemented hours after each solve
+
             solver: a Pyomo mathematical programming solver object
 
         Returns:
@@ -39,6 +45,7 @@ class Tracker:
 
         # copy and check model object
         self.tracking_model_object = tracking_model_object
+        self.tracking_horizon = tracking_horizon
         self.n_tracking_hour = n_tracking_hour
         self.solver = solver
         self._check_inputs()
@@ -46,7 +53,7 @@ class Tracker:
         # add flowsheet to model
         self.model = pyo.ConcreteModel()
         self.model.fs = pyo.Block()
-        self.tracking_model_object.populate_model(self.model.fs)
+        self.tracking_model_object.populate_model(self.model.fs, self.tracking_horizon)
 
         # get the power output
         power_output_name = self.tracking_model_object.power_output
@@ -203,7 +210,19 @@ class Tracker:
             self.time_set, initialize=0, within=pyo.Reals, mutable=True
         )
 
-        self.model.deviation_penalty = pyo.Param(initialize=10000, mutable=False)
+        large_penalty = 10000
+        penalty_init = {}
+        for t in self.time_set:
+            if t < self.n_tracking_hour:
+                penalty_init[t] = large_penalty
+            else:
+                penalty_init[t] = large_penalty / (
+                    self.tracking_horizon - self.n_tracking_hour
+                )
+        self.model.deviation_penalty = pyo.Param(
+            self.time_set, initialize=penalty_init, mutable=False
+        )
+
         return
 
     def _add_tracking_constraints(self):
@@ -219,29 +238,16 @@ class Tracker:
             None
         """
 
-        self._add_tracking_dispatch_constraints()
-        return
-
-    def _add_tracking_dispatch_constraints(self):
-
-        """
-        Add tracking constraints to the model, i.e., power output needs
-        to follow market dispatch signals.
-
-        Arguments:
-            None
-
-        Returns:
-            None
-        """
-
         # declare a constraint list
-        self.model.tracking_dispatch_constraints = pyo.ConstraintList()
-        for t in self.time_set:
-            self.model.tracking_dispatch_constraints.add(
+        def tracking_dispatch_constraint_rule(m, t):
+            return (
                 self.power_output[t] + self.model.power_underdelivered[t]
                 == self.model.power_dispatch[t] + self.model.power_overdelivered[t]
             )
+
+        self.model.tracking_dispatch_constraints = pyo.Constraint(
+            self.time_set, rule=tracking_dispatch_constraint_rule
+        )
 
         return
 
@@ -266,11 +272,25 @@ class Tracker:
         weight = self.tracking_model_object.total_cost[1]
 
         for t in self.time_set:
-            self.model.obj.expr += weight * cost[t] + self.model.deviation_penalty * (
-                self.model.power_underdelivered[t] + self.model.power_overdelivered[t]
-            )
+            self.model.obj.expr += weight * cost[t] + self.model.deviation_penalty[
+                t
+            ] * (self.model.power_underdelivered[t] + self.model.power_overdelivered[t])
 
         return
+
+    def update_model(self, **profiles):
+
+        """
+        This method updates the parameters in the model based on the implemented profiles.
+
+        Arguments:
+            profiles: the newly implemented stats. {stat_name: [...]}
+
+        Returns:
+            None
+        """
+
+        self.tracking_model_object.update_model(self.model.fs, **profiles)
 
     def track_market_dispatch(self, market_dispatch, date, hour):
 
@@ -279,8 +299,7 @@ class Tracker:
         record the results from the solve and update the model.
 
         Arguments:
-            market_dispatch: a dictionary that contains the market dispatch
-            signals that we want to track.
+            market_dispatch: a list that contains the market dispatch signals
 
             date: current simulation date
 
@@ -293,7 +312,7 @@ class Tracker:
         self._pass_market_dispatch(market_dispatch)
 
         # solve the model
-        self.solver.solve(self.model, tee=True)
+        self.solver.solve(self.model, tee=False)
 
         self.record_results(date=date, hour=hour)
 
@@ -301,9 +320,10 @@ class Tracker:
         profiles = self.tracking_model_object.get_implemented_profile(
             b=self.model.fs, last_implemented_time_step=self.n_tracking_hour - 1
         )
-        self.tracking_model_object.update_model(self.model.fs, **profiles)
 
         self._record_daily_stats(profiles)
+
+        return profiles
 
     def _record_daily_stats(self, profiles):
 
@@ -335,14 +355,21 @@ class Tracker:
         Pass the received market signals into model parameters.
 
         Arguments:
-            market_dispatch: a dictionary that contains the market dispatch signals that we want to track.
+            market_dispatch: a list that contains the market dispatch signals
 
         Returns:
             None
         """
 
-        for t, dipsatch in zip(self.time_set, market_dispatch):
-            self.model.power_dispatch[t] = dipsatch
+        for t in self.time_set:
+
+            try:
+                dispatch = market_dispatch[t]
+            except IndexError as ex:
+                self.model.tracking_dispatch_constraints[t].deactivate()
+            else:
+                self.model.power_dispatch[t] = dispatch
+                self.model.tracking_dispatch_constraints[t].activate()
 
         return
 

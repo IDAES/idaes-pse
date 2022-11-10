@@ -17,7 +17,12 @@ Authors: Andrew Lee
 
 import pytest
 
-from pyomo.environ import check_optimal_termination, ConcreteModel, value, units as pyunits
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    value,
+    units as pyunits,
+)
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.models.unit_models.feed_flash import FeedFlash, FlashType
 from idaes.models.properties import iapws95
@@ -44,11 +49,11 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = FeedFlash(default={"property_package": m.fs.properties})
+    m.fs.unit = FeedFlash(property_package=m.fs.properties)
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 6
@@ -65,13 +70,13 @@ class TestBTXIdeal(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = BTXParameterBlock(
-            default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "Ideal"}
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
         )
 
-        m.fs.unit = FeedFlash(default={"property_package": m.fs.properties})
+        m.fs.unit = FeedFlash(property_package=m.fs.properties)
 
         m.fs.unit.flow_mol.fix(1)
         m.fs.unit.temperature.fix(368)
@@ -123,18 +128,25 @@ class TestBTXIdeal(object):
         stable = btx.fs.unit._get_stream_table_contents()
 
         expected = {
-            'Units': {
-                'flow_mol': getattr(pyunits.pint_registry, "mole/second"),
-                'mole_frac_comp benzene': getattr(pyunits.pint_registry, "dimensionless"),
-                'mole_frac_comp toluene': getattr(pyunits.pint_registry, "dimensionless"),
-                'temperature': getattr(pyunits.pint_registry, "kelvin"),
-                'pressure': getattr(pyunits.pint_registry, "Pa")},
-            'Outlet': {
-                'flow_mol': pytest.approx(1.0, rel=1e-4),
-                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
-                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
-                'temperature': pytest.approx(298.15, rel=1e-4),
-                'pressure': pytest.approx(101325.0, rel=1e-4)}}
+            "Units": {
+                "flow_mol": getattr(pyunits.pint_registry, "mole/second"),
+                "mole_frac_comp benzene": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "mole_frac_comp toluene": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "temperature": getattr(pyunits.pint_registry, "kelvin"),
+                "pressure": getattr(pyunits.pint_registry, "Pa"),
+            },
+            "Outlet": {
+                "flow_mol": pytest.approx(1.0, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(298.15, rel=1e-4),
+                "pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+        }
 
         assert stable.to_dict() == expected
 
@@ -174,17 +186,14 @@ class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = iapws95.Iapws95ParameterBlock(
-            default={"phase_presentation": iapws95.PhaseType.LG}
+            phase_presentation=iapws95.PhaseType.LG
         )
 
         m.fs.unit = FeedFlash(
-            default={
-                "property_package": m.fs.properties,
-                "flash_type": FlashType.isenthalpic,
-            }
+            property_package=m.fs.properties, flash_type=FlashType.isenthalpic
         )
 
         m.fs.unit.flow_mol.fix(100)
@@ -232,22 +241,23 @@ class TestIAPWS(object):
         stable = iapws.fs.unit._get_stream_table_contents()
 
         expected = {
-            'Units': {
-                'Molar Flow (mol/s)': getattr(pyunits.pint_registry, "mole/second"),
-                'Mass Flow (kg/s)': getattr(pyunits.pint_registry, "kg/second"),
-                'T (K)': getattr(pyunits.pint_registry, "K"),
-                'P (Pa)': getattr(pyunits.pint_registry, "Pa"),
-                'Vapor Fraction': getattr(pyunits.pint_registry, "dimensionless"),
-                'Molar Enthalpy (J/mol) Vap': getattr(pyunits.pint_registry, "J/mole"),
-                'Molar Enthalpy (J/mol) Liq': getattr(pyunits.pint_registry, "J/mole")},
-            'Outlet': {
-                'Molar Flow (mol/s)': pytest.approx(1, rel=1e-4),
-                'Mass Flow (kg/s)': pytest.approx(1.8015e-2, rel=1e-4),
-                'T (K)': pytest.approx(286.34, rel=1e-4),
-                'P (Pa)': pytest.approx(1e5, rel=1e-4),
-                'Vapor Fraction': pytest.approx(0, abs=1e-4),
-                'Molar Enthalpy (J/mol) Vap': pytest.approx(2168.6, rel=1e-4),
-                'Molar Enthalpy (J/mol) Liq': pytest.approx(1000, rel=1e-4)}}
+            "Units": {
+                "Molar Flow": getattr(pyunits.pint_registry, "mole/second"),
+                "Mass Flow": getattr(pyunits.pint_registry, "kg/second"),
+                "T": getattr(pyunits.pint_registry, "K"),
+                "P": getattr(pyunits.pint_registry, "Pa"),
+                "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
+                "Molar Enthalpy": getattr(pyunits.pint_registry, "J/mole"),
+            },
+            "Outlet": {
+                "Molar Flow": pytest.approx(1, rel=1e-4),
+                "Mass Flow": pytest.approx(1.8015e-2, rel=1e-4),
+                "T": pytest.approx(270.4877112932641, rel=1e-4),
+                "P": pytest.approx(11032305.8275, rel=1e-4),
+                "Vapor Fraction": pytest.approx(0, abs=1e-4),
+                "Molar Enthalpy": pytest.approx(0.01102138712926277, rel=1e-4),
+            },
+        }
 
         assert stable.to_dict() == expected
 

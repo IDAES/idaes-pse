@@ -30,18 +30,14 @@ from pyomo.network import Arc
 def model():
     m = pe.ConcreteModel()
     m.fs = idaes.core.FlowsheetBlock()
-    m.fs.properties = \
-        idaes.models.properties.swco2.SWCO2ParameterBlock()
-    m.fs.heater = idaes.models.unit_models.Heater(default={
-        'dynamic': False,
-        'property_package': m.fs.properties,
-        'has_pressure_change': True})
-    m.fs.heater2 = idaes.models.unit_models.Heater(default={
-        'dynamic': False,
-        'property_package': m.fs.properties,
-        'has_pressure_change': True})
-    m.fs.stream = Arc(source=m.fs.heater.outlet,
-                      destination=m.fs.heater2.inlet)
+    m.fs.properties = idaes.models.properties.swco2.SWCO2ParameterBlock()
+    m.fs.heater = idaes.models.unit_models.Heater(
+        dynamic=False, property_package=m.fs.properties, has_pressure_change=True
+    )
+    m.fs.heater2 = idaes.models.unit_models.Heater(
+        dynamic=False, property_package=m.fs.properties, has_pressure_change=True
+    )
+    m.fs.stream = Arc(source=m.fs.heater.outlet, destination=m.fs.heater2.inlet)
 
     return m
 
@@ -65,7 +61,7 @@ def test_expand_arcs_and_clone(model):
 
     assert model.fs.stream._expanded_block is None
 
-    m2 = pe.TransformationFactory('network.expand_arcs').create_using(model)
+    m2 = pe.TransformationFactory("network.expand_arcs").create_using(model)
 
     # Check that Arcs were expanded
     assert isinstance(m2.fs.stream._expanded_block, pe.Block)
@@ -75,13 +71,17 @@ def test_expand_arcs_and_clone(model):
 @pytest.mark.unit
 def test_clone(model):
     m2 = model.clone()
-    assert (m2.fs.heater.inlet.flow_mol[0] is
-            m2.fs.heater.control_volume.properties_in[0].flow_mol)
+    assert (
+        m2.fs.heater.inlet.flow_mol[0]
+        is m2.fs.heater.control_volume.properties_in[0].flow_mol
+    )
 
-    assert not (m2.fs.heater.inlet.flow_mol[0] is
-                model.fs.heater.control_volume.properties_in[0].flow_mol)
+    assert not (
+        m2.fs.heater.inlet.flow_mol[0]
+        is model.fs.heater.control_volume.properties_in[0].flow_mol
+    )
 
-    pe.TransformationFactory('network.expand_arcs').apply_to(m2)
+    pe.TransformationFactory("network.expand_arcs").apply_to(m2)
 
     # Check that Arcs were expanded
     assert isinstance(m2.fs.stream._expanded_block, pe.Block)

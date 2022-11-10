@@ -46,11 +46,11 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = Feed(default={"property_package": m.fs.properties})
+    m.fs.unit = Feed(property_package=m.fs.properties)
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 4
@@ -65,11 +65,11 @@ class TestSaponification(object):
     @pytest.fixture(scope="class")
     def sapon(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = SaponificationParameterBlock()
 
-        m.fs.unit = Feed(default={"property_package": m.fs.properties})
+        m.fs.unit = Feed(property_package=m.fs.properties)
 
         m.fs.unit.flow_vol.fix(1.0e-03)
         m.fs.unit.conc_mol_comp[0, "H2O"].fix(55388.0)
@@ -124,24 +124,33 @@ class TestSaponification(object):
         stable = sapon.fs.unit._get_stream_table_contents()
 
         expected = {
-            'Units': {
-                'Volumetric Flowrate': getattr(pyunits.pint_registry, "m**3/second"),
-                'Molar Concentration H2O': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Molar Concentration NaOH': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Molar Concentration EthylAcetate': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Molar Concentration SodiumAcetate': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Molar Concentration Ethanol': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Temperature': getattr(pyunits.pint_registry, "K"),
-                'Pressure': getattr(pyunits.pint_registry, "Pa")},
-            'Outlet': {
-                'Volumetric Flowrate': pytest.approx(1e-3, rel=1e-4),
-                'Molar Concentration H2O': pytest.approx(55388, rel=1e-4),
-                'Molar Concentration NaOH': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration EthylAcetate': pytest.approx(100.00, rel=1e-4),
-                'Molar Concentration SodiumAcetate': pytest.approx(0, abs=1e-4),
-                'Molar Concentration Ethanol': pytest.approx(0, abs=1e-4),
-                'Temperature': pytest.approx(303.15, rel=1e-4),
-                'Pressure': pytest.approx(1.0132e+05, rel=1e-4)}}
+            "Units": {
+                "Volumetric Flowrate": getattr(pyunits.pint_registry, "m**3/second"),
+                "Molar Concentration H2O": getattr(pyunits.pint_registry, "mole/m**3"),
+                "Molar Concentration NaOH": getattr(pyunits.pint_registry, "mole/m**3"),
+                "Molar Concentration EthylAcetate": getattr(
+                    pyunits.pint_registry, "mole/m**3"
+                ),
+                "Molar Concentration SodiumAcetate": getattr(
+                    pyunits.pint_registry, "mole/m**3"
+                ),
+                "Molar Concentration Ethanol": getattr(
+                    pyunits.pint_registry, "mole/m**3"
+                ),
+                "Temperature": getattr(pyunits.pint_registry, "K"),
+                "Pressure": getattr(pyunits.pint_registry, "Pa"),
+            },
+            "Outlet": {
+                "Volumetric Flowrate": pytest.approx(1e-3, rel=1e-4),
+                "Molar Concentration H2O": pytest.approx(55388, rel=1e-4),
+                "Molar Concentration NaOH": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration EthylAcetate": pytest.approx(100.00, rel=1e-4),
+                "Molar Concentration SodiumAcetate": pytest.approx(0, abs=1e-4),
+                "Molar Concentration Ethanol": pytest.approx(0, abs=1e-4),
+                "Temperature": pytest.approx(303.15, rel=1e-4),
+                "Pressure": pytest.approx(1.0132e05, rel=1e-4),
+            },
+        }
 
         assert stable.to_dict() == expected
 
@@ -188,13 +197,13 @@ class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = iapws95.Iapws95ParameterBlock(
-            default={"phase_presentation": iapws95.PhaseType.LG}
+            phase_presentation=iapws95.PhaseType.LG
         )
 
-        m.fs.unit = Feed(default={"property_package": m.fs.properties})
+        m.fs.unit = Feed(property_package=m.fs.properties)
 
         m.fs.unit.flow_mol.fix(100)
         m.fs.unit.enth_mol.fix(24000)
@@ -240,22 +249,25 @@ class TestIAPWS(object):
         stable = iapws.fs.unit._get_stream_table_contents()
 
         expected = {
-            'Units': {
-                'Molar Flow (mol/s)': getattr(pyunits.pint_registry, "mole/second"),
-                'Mass Flow (kg/s)': getattr(pyunits.pint_registry, "kg/second"),
-                'T (K)': getattr(pyunits.pint_registry, "K"),
-                'P (Pa)': getattr(pyunits.pint_registry, "Pa"),
-                'Vapor Fraction': getattr(pyunits.pint_registry, "dimensionless"),
-                'Molar Enthalpy (J/mol) Vap': getattr(pyunits.pint_registry, "J/mole"),
-                'Molar Enthalpy (J/mol) Liq': getattr(pyunits.pint_registry, "J/mole")},
-            'Outlet': {
-                'Molar Flow (mol/s)': pytest.approx(100, rel=1e-4),
-                'Mass Flow (kg/s)': pytest.approx(1.8015, rel=1e-4),
-                'T (K)': pytest.approx(373.13, rel=1e-4),
-                'P (Pa)': pytest.approx(101325, rel=1e-4),
-                'Vapor Fraction': pytest.approx(0.40467, abs=1e-4),
-                'Molar Enthalpy (J/mol) Vap': pytest.approx(48201, rel=1e-4),
-                'Molar Enthalpy (J/mol) Liq': pytest.approx(7549.7, rel=1e-4)}}
+            "Units": {
+                "Molar Flow": getattr(pyunits.pint_registry, "mole/second"),
+                "Mass Flow": getattr(pyunits.pint_registry, "kg/second"),
+                "T": getattr(pyunits.pint_registry, "K"),
+                "P": getattr(pyunits.pint_registry, "Pa"),
+                "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
+                "Molar Enthalpy": getattr(pyunits.pint_registry, "J/mole"),
+            },
+            "Outlet": {
+                "Molar Flow": pytest.approx(100, rel=1e-3),
+                "Mass Flow": pytest.approx(1.8015, rel=1e-3),
+                "T": pytest.approx(373.13, rel=1e-3),
+                "P": pytest.approx(101325, rel=1e-3),
+                "Vapor Fraction": pytest.approx(0.40467, abs=1e-3),
+                "Molar Enthalpy": pytest.approx(
+                    48201 * 0.4046 + (1 - 0.4046) * 7549.7, rel=1e-3
+                ),
+            },
+        }
 
         assert stable.to_dict() == expected
 

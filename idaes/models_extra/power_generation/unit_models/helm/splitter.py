@@ -179,7 +179,7 @@ from 1 to num_outlets).}""",
         self.mixed_state = self.config.property_package.build_state_block(
             self.flowsheet().time,
             doc="Material properties of mixed (inlet) stream",
-            default=tmp_dict,
+            **tmp_dict
         )
         self.add_port(name="inlet", block=self.mixed_state, doc="Inlet Port")
 
@@ -236,9 +236,7 @@ from 1 to num_outlets).}""",
         # Create an instance of StateBlock for all outlets
         for o in self.outlet_list:
             o_obj = self.config.property_package.build_state_block(
-                self.flowsheet().time,
-                doc="Material properties at outlet",
-                default=tmp_dict,
+                self.flowsheet().time, doc="Material properties at outlet", **tmp_dict
             )
             setattr(self, o + "_state", o_obj)
             self.outlet_blocks[o] = o_obj

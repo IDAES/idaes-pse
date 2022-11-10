@@ -31,21 +31,19 @@ import sys
 ####
 
 
-REQUIRED_MARKERS = {"unit", "component", "integration"}
+REQUIRED_MARKERS = {"unit", "component", "integration", "performance"}
 ALL_PLATFORMS = {"darwin", "linux", "win32"}
 
 
 @pytest.hookimpl
 def pytest_runtest_setup(item):
     _validate_required_markers(
-        item,
-        required_markers=REQUIRED_MARKERS,
-        expected_count=1
+        item, required_markers=REQUIRED_MARKERS, expected_count=1
     )
     _skip_for_unsupported_platforms(
         item,
         all_platforms=ALL_PLATFORMS,
-        negate_tag=(lambda tag: f'no{tag}'),
+        negate_tag=(lambda tag: f"no{tag}"),
     )
 
 
@@ -73,15 +71,18 @@ def _skip_for_unsupported_platforms(item, all_platforms=None, negate_tag=None):
 
     all_platforms = set(all_platforms or [])
     if negate_tag is None:
+
         def negate_tag(tag):
-            return f'no{tag}'
+            return f"no{tag}"
+
     all_negated_platforms = {negate_tag(tag) for tag in all_platforms}
     item_markers = {marker.name for marker in item.iter_markers()}
     supported_platforms = all_platforms & item_markers
     excluded_platforms = all_negated_platforms & item_markers
     plat = sys.platform
-    if ((excluded_platforms and negate_tag(plat) in excluded_platforms) or
-        (supported_platforms and plat not in supported_platforms)):
+    if (excluded_platforms and negate_tag(plat) in excluded_platforms) or (
+        supported_platforms and plat not in supported_platforms
+    ):
         pytest.skip("cannot run on platform {}".format(plat))
 
 
@@ -92,16 +93,40 @@ def _validate_required_markers(item, required_markers=None, expected_count=1):
     required_count = len(required_markers_on_item)
     reason_to_fail = None
     if required_count < expected_count:
-        reason_to_fail = 'Too few required markers'
+        reason_to_fail = "Too few required markers"
     if required_count > expected_count:
-        reason_to_fail = 'Too many required markers'
+        reason_to_fail = "Too many required markers"
     if reason_to_fail:
         msg = (
             f'{reason_to_fail} for test function "{item.name}". '
-            f'Expected: {expected_count} of {required_markers}; '
-            f'found: {required_markers_on_item or required_count}'
+            f"Expected: {expected_count} of {required_markers}; "
+            f"found: {required_markers_on_item or required_count}"
         )
         pytest.fail(msg)
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--performance",
+        action="store_true",
+        dest="performance",
+        default=False,
+        help="enable performance decorated tests",
+    )
+
+
+def pytest_configure(config):
+    if not config.option.performance:
+        if len(config.option.markexpr) > 0:
+            setattr(
+                config.option,
+                "markexpr",
+                f"{config.option.markexpr} and not performance",
+            )
+        else:
+            setattr(config.option, "markexpr", "not performance")
+    else:
+        setattr(config.option, "markexpr", "performance")
 
 
 ####

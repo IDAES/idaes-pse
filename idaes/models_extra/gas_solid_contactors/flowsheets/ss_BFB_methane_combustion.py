@@ -59,31 +59,27 @@ def main():
     m = ConcreteModel()
 
     # Create a steady-state flowsheet
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # Set up thermo-physical and reaction properties
     m.fs.gas_properties = GasPhaseParameterBlock()
     m.fs.solid_properties = SolidPhaseParameterBlock()
 
     m.fs.hetero_reactions = HeteroReactionParameterBlock(
-        default={
-            "solid_property_package": m.fs.solid_properties,
-            "gas_property_package": m.fs.gas_properties,
-        }
+        solid_property_package=m.fs.solid_properties,
+        gas_property_package=m.fs.gas_properties,
     )
 
     # Build the BFB in the flowsheet
     m.fs.BFB = BubblingFluidizedBed(
-        default={
-            "flow_type": "co_current",
-            "finite_elements": 5,
-            "transformation_method": "dae.collocation",
-            "gas_phase_config": {"property_package": m.fs.gas_properties},
-            "solid_phase_config": {
-                "property_package": m.fs.solid_properties,
-                "reaction_package": m.fs.hetero_reactions,
-            },
-        }
+        flow_type="co_current",
+        finite_elements=5,
+        transformation_method="dae.collocation",
+        gas_phase_config={"property_package": m.fs.gas_properties},
+        solid_phase_config={
+            "property_package": m.fs.solid_properties,
+            "reaction_package": m.fs.hetero_reactions,
+        },
     )
 
     # ---------------------------------------------------------------------

@@ -55,44 +55,48 @@ class Test5Bus:
     def prescient_options(self, data_path: Path, output_dir: Path) -> PrescientOptions:
         return {
             "data_path": str(data_path),
-            "input_format":"rts-gmlc",
-            "simulate_out_of_sample":True,
-            "run_sced_with_persistent_forecast_errors":True,
+            "input_format": "rts-gmlc",
+            "simulate_out_of_sample": True,
+            "run_sced_with_persistent_forecast_errors": True,
             "output_directory": str(output_dir),
-            "start_date":"07-10-2020",
-            "num_days":2,
-            "sced_horizon":1,
-            "ruc_mipgap":0.01,
-            "reserve_factor":0.1,
-            "deterministic_ruc_solver":"cbc",
-            "deterministic_ruc_solver_options":{"feas":"off", "DivingF":"on",},
-            "sced_solver":"cbc",
-            "sced_frequency_minutes":60,
-            "ruc_horizon":36,
-            "compute_market_settlements":True,
-            "monitor_all_contingencies":False,
-            "output_solver_logs":False,
-            "price_threshold":1000,
-            "contingency_price_threshold":100,
-            "reserve_price_threshold":5,
+            "start_date": "07-10-2020",
+            "num_days": 2,
+            "sced_horizon": 1,
+            "ruc_mipgap": 0.01,
+            "reserve_factor": 0.1,
+            "deterministic_ruc_solver": "cbc",
+            "deterministic_ruc_solver_options": {
+                "feas": "off",
+                "DivingF": "on",
+            },
+            "sced_solver": "cbc",
+            "sced_frequency_minutes": 60,
+            "ruc_horizon": 36,
+            "compute_market_settlements": True,
+            "monitor_all_contingencies": False,
+            "output_solver_logs": False,
+            "price_threshold": 1000,
+            "contingency_price_threshold": 100,
+            "reserve_price_threshold": 5,
         }
 
     @pytest.fixture
     def run_simulator(self, prescient_options: PrescientOptions) -> None:
-        Prescient = pytest.importorskip(
-            "prescient.simulator.Prescient", 
-            reason="Prescient (optional dependency) not available")
+        prescient_simulator = pytest.importorskip(
+            "prescient.simulator",
+            reason="Prescient (optional dependency) not available",
+        )
 
-        sim = Prescient()
+        sim = prescient_simulator.Prescient()
         sim.simulate(**prescient_options)
 
     @pytest.fixture
     def simulation_results_table(
-            self,
-            run_simulator,
-            output_dir: Path,
-            name: str = "overall_simulation_output.csv"
-        ) -> pd.DataFrame:
+        self,
+        run_simulator,
+        output_dir: Path,
+        name: str = "overall_simulation_output.csv",
+    ) -> pd.DataFrame:
 
         path = output_dir / name
         return pd.read_csv(path)

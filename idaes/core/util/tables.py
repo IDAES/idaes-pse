@@ -127,92 +127,6 @@ def stream_states_dict(streams, time_point=0):
     return stream_dict
 
 
-def tag_state_quantities(blocks, attributes, labels, exception=False):
-    """Take a stream states dictionary, and return a tag dictionary for stream
-    quantities.  This takes a dictionary (blk) that has state block labels as
-    keys and state blocks as values.  The attributes are a list of attributes to
-    tag.  If an element of the attribute list is list-like, the fist element is
-    the attribute and the remaining elements are indexes.  Lables provides a list
-    of attribute lables to be used to create the tag.  Tags are blk_key + label
-    for the attribute.
-
-    Args:
-        blocks (dict): Dictionary of state blocks.  The key is the block label to
-            be used in the tag, and the value is a state block.
-        attributes (list-like): A list of attriutes to tag.  It is okay if a
-            particular attribute does not exist in a state bock.  This allows
-            you to mix state blocks with differnt sets of attributes. If an
-            attribute is indexed, the attribute can be specified as a list or
-            tuple where the first element is the attribute and the remaining
-            elements are indexes.
-        labels (list-like): These are attribute lables.  The order corresponds to the
-            attribute list.  They are used to create the tags.  Tags are in the
-            form blk.key + label.
-        exception (bool): If True, raise exceptions releated to invalid or
-            missing indexes. If false missing or bad indexes are ignored and
-            None is used for the table value.  Setting this to False allows
-            tables where some state blocks have the same attributes with differnt
-            indexing. (default is True)
-
-    Return:
-        (dict): Dictionary where the keys are tags and the values are model
-            attributes, usually Pyomo component data objects.
-    """
-
-    tags = {}
-    if labels is None:
-        lables = attributes
-        for a in attributes:
-            if isinstance(a, (tuple, list)):
-                if len(a) == 2:
-                    # in case there are multiple indexes and user gives tuple
-                    label = f"{a[0]}[{a[1]}]"
-                if len(a) > 2:
-                    label = f"{a[0]}[{a[1:]}]"
-                else:
-                    label = a[0]
-
-    for key, s in blocks.items():
-        for i, a in enumerate(attributes):
-            j = None
-            if isinstance(a, (list, tuple)):
-                # if a is list or tuple, the first element should be the
-                # attribute and the remaining elements should be indexes.
-                if len(a) == 2:
-                    j = a[1]  # catch user supplying list-like of indexes
-                if len(a) > 2:
-                    j = a[1:]
-                # if len(a) == 1, we'll say that's fine here.  Don't know why you
-                # would put the attribute in a list-like if not indexed, but I'll
-                # allow it.
-                a = a[0]
-            v = getattr(s, a, None)
-            if j is not None and v is not None:
-                try:
-                    v = v[j]
-                except KeyError:
-                    if not exception:
-                        v = None
-                    else:
-                        _log.error(f"{j} is not a valid index of {a}")
-                        raise KeyError(f"{j} is not a valid index of {a}")
-            try:
-                value(v, exception=False)
-            except TypeError:
-                if not exception:
-                    v = None
-                else:
-                    _log.error(f"Cannot calculate value of {a} (may be subscriptable)")
-                    raise TypeError(
-                        f"Cannot calculate value of {a} (may be subscriptable)"
-                    )
-            except ZeroDivisionError:
-                pass  # this one is okay
-            if v is not None:
-                tags[f"{key}{labels[i]}"] = v
-    return tags
-
-
 def create_stream_table_dataframe(
     streams, true_state=False, time_point=0, orient="columns"
 ):
@@ -336,7 +250,10 @@ def create_stream_table_ui(
                     var_type = VariableTypes.EXPRESSION
 
                 quant = report_quantity(disp_dict[k][i])
-                stream_attributes[key][stream_key] = (round(quant.m, precision), var_type)
+                stream_attributes[key][stream_key] = (
+                    round(quant.m, precision),
+                    var_type,
+                )
                 if row == 0 or stream_key not in stream_attributes["Units"]:
                     stream_attributes["Units"][stream_key] = quant.u
 

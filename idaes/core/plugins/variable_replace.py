@@ -92,7 +92,7 @@ class ReplaceVariables(NonIsomorphicTransformation):
         for c in instance.component_data_objects(
             (Constraint, Expression, Objective), descend_into=True, active=True
         ):
-            c.set_value(expr=vis.dfs_postorder_stack(c.expr))
+            c.set_value(expr=vis.walk_expression(c.expr))
 
     def _apply_to(self, instance, **kwds):
         """

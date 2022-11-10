@@ -50,6 +50,7 @@ from idaes.models.unit_models import (
     StoichiometricReactor,
     Turbine,
 )
+from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
 from idaes.core.util.testing import (
     PhysicalParameterTestBlock,
     ReactionParameterTestBlock,
@@ -79,6 +80,9 @@ from idaes.models.costing.SSLW import (
     BlowerMaterial,
 )
 
+import logging
+from io import StringIO
+from pyomo.common.log import LoggingIntercept
 
 # Some more information about this module
 __author__ = "Andrew Lee"
@@ -114,15 +118,13 @@ def test_cost_heat_exchanger(model, material, hxtype, tube_length):
     )
 
     model.fs.unit.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": model.fs.costing,
-            "costing_method": SSLWCostingData.cost_heat_exchanger,
-            "costing_method_arguments": {
-                "hx_type": hxtype,
-                "material_type": material,
-                "tube_length": tube_length,
-            },
-        }
+        flowsheet_costing_block=model.fs.costing,
+        costing_method=SSLWCostingData.cost_heat_exchanger,
+        costing_method_arguments={
+            "hx_type": hxtype,
+            "material_type": material,
+            "tube_length": tube_length,
+        },
     )
 
     assert isinstance(model.fs.unit.costing.base_cost_per_unit, Var)
@@ -177,17 +179,15 @@ def test_cost_vessel(
     model.fs.unit.diameter = Param(initialize=2, units=pyunits.m)
 
     model.fs.unit.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": model.fs.costing,
-            "costing_method": SSLWCostingData.cost_vessel,
-            "costing_method_arguments": {
-                "vertical": True,
-                "material_type": material_type,
-                "weight_limit": weight_limit,
-                "aspect_ratio_range": aspect_ratio_range,
-                "include_platforms_ladders": include_pl,
-            },
-        }
+        flowsheet_costing_block=model.fs.costing,
+        costing_method=SSLWCostingData.cost_vessel,
+        costing_method_arguments={
+            "vertical": True,
+            "material_type": material_type,
+            "weight_limit": weight_limit,
+            "aspect_ratio_range": aspect_ratio_range,
+            "include_platforms_ladders": include_pl,
+        },
     )
 
     assert isinstance(model.fs.unit.costing.shell_thickness, Param)
@@ -237,16 +237,14 @@ def test_cost_vessel_trays(model, tray_material, tray_type):
     model.fs.unit.diameter = Param(initialize=2, units=pyunits.m)
 
     model.fs.unit.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": model.fs.costing,
-            "costing_method": SSLWCostingData.cost_vessel,
-            "costing_method_arguments": {
-                "vertical": True,
-                "number_of_trays": 10,
-                "tray_material": tray_material,
-                "tray_type": tray_type,
-            },
-        }
+        flowsheet_costing_block=model.fs.costing,
+        costing_method=SSLWCostingData.cost_vessel,
+        costing_method_arguments={
+            "vertical": True,
+            "number_of_trays": 10,
+            "tray_material": tray_material,
+            "tray_type": tray_type,
+        },
     )
 
     assert isinstance(model.fs.unit.costing.shell_thickness, Param)
@@ -292,16 +290,14 @@ def test_cost_vessel_horizontal(model, material_type):
     model.fs.unit.diameter = Param(initialize=2, units=pyunits.m)
 
     model.fs.unit.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": model.fs.costing,
-            "costing_method": SSLWCostingData.cost_vessel,
-            "costing_method_arguments": {
-                "vertical": False,
-                "material_type": material_type,
-                "weight_limit": 1,
-                "include_platforms_ladders": False,
-            },
-        }
+        flowsheet_costing_block=model.fs.costing,
+        costing_method=SSLWCostingData.cost_vessel,
+        costing_method_arguments={
+            "vertical": False,
+            "material_type": material_type,
+            "weight_limit": 1,
+            "include_platforms_ladders": False,
+        },
     )
 
     assert isinstance(model.fs.unit.costing.shell_thickness, Param)
@@ -336,14 +332,12 @@ def test_cost_fired_heater(model, material_type, heat_source):
     )
 
     model.fs.unit.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": model.fs.costing,
-            "costing_method": SSLWCostingData.cost_fired_heater,
-            "costing_method_arguments": {
-                "material_type": material_type,
-                "heat_source": heat_source,
-            },
-        }
+        flowsheet_costing_block=model.fs.costing,
+        costing_method=SSLWCostingData.cost_fired_heater,
+        costing_method_arguments={
+            "material_type": material_type,
+            "heat_source": heat_source,
+        },
     )
 
     assert isinstance(model.fs.unit.costing.pressure_factor, Var)
@@ -370,10 +364,8 @@ def test_cost_turbine(model):
     )
 
     model.fs.unit.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": model.fs.costing,
-            "costing_method": SSLWCostingData.cost_turbine,
-        }
+        flowsheet_costing_block=model.fs.costing,
+        costing_method=SSLWCostingData.cost_turbine,
     )
 
     assert isinstance(model.fs.unit.costing.capital_cost, Var)
@@ -423,16 +415,14 @@ def test_cost_pump_centrifugal(model, material_type, pump_type_factor, motor_typ
     )
 
     model.fs.unit.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": model.fs.costing,
-            "costing_method": SSLWCostingData.cost_pump,
-            "costing_method_arguments": {
-                "pump_type": PumpType.Centrifugal,
-                "material_type": material_type,
-                "pump_type_factor": pump_type_factor,
-                "motor_type": motor_type,
-            },
-        }
+        flowsheet_costing_block=model.fs.costing,
+        costing_method=SSLWCostingData.cost_pump,
+        costing_method_arguments={
+            "pump_type": PumpType.Centrifugal,
+            "material_type": material_type,
+            "pump_type_factor": pump_type_factor,
+            "motor_type": motor_type,
+        },
     )
 
     assert isinstance(model.fs.unit.costing.capital_cost, Var)
@@ -506,15 +496,13 @@ def test_cost_pump_ExternalGear(model, material_type, motor_type):
     )
 
     model.fs.unit.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": model.fs.costing,
-            "costing_method": SSLWCostingData.cost_pump,
-            "costing_method_arguments": {
-                "pump_type": PumpType.ExternalGear,
-                "material_type": material_type,
-                "motor_type": motor_type,
-            },
-        }
+        flowsheet_costing_block=model.fs.costing,
+        costing_method=SSLWCostingData.cost_pump,
+        costing_method_arguments={
+            "pump_type": PumpType.ExternalGear,
+            "material_type": material_type,
+            "motor_type": motor_type,
+        },
     )
 
     assert isinstance(model.fs.unit.costing.capital_cost, Var)
@@ -571,15 +559,13 @@ def test_cost_pump_reciprocating(model, material_type, motor_type):
     )
 
     model.fs.unit.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": model.fs.costing,
-            "costing_method": SSLWCostingData.cost_pump,
-            "costing_method_arguments": {
-                "pump_type": PumpType.Reciprocating,
-                "material_type": material_type,
-                "motor_type": motor_type,
-            },
-        }
+        flowsheet_costing_block=model.fs.costing,
+        costing_method=SSLWCostingData.cost_pump,
+        costing_method_arguments={
+            "pump_type": PumpType.Reciprocating,
+            "material_type": material_type,
+            "motor_type": motor_type,
+        },
     )
 
     assert isinstance(model.fs.unit.costing.capital_cost, Var)
@@ -615,20 +601,23 @@ def test_cost_pump_reciprocating(model, material_type, motor_type):
 @pytest.mark.parametrize("material_type", CompressorMaterial)
 def test_cost_compressor(model, compressor_type, drive_type, material_type):
     model.fs.unit.config.declare("compressor", ConfigValue(default=True))
+    model.fs.unit.config.declare(
+        "thermodynamic_assumption",
+        ConfigValue(default=ThermodynamicAssumption.isothermal),
+    )
+    model.fs.unit.config.thermodynamic_assumption = ThermodynamicAssumption.isentropic
     model.fs.unit.work_mechanical = Param(
         [0], initialize=101410.4, units=pyunits.J / pyunits.s
     )
 
     model.fs.unit.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": model.fs.costing,
-            "costing_method": SSLWCostingData.cost_compressor,
-            "costing_method_arguments": {
-                "compressor_type": compressor_type,
-                "drive_type": drive_type,
-                "material_type": material_type,
-            },
-        }
+        flowsheet_costing_block=model.fs.costing,
+        costing_method=SSLWCostingData.cost_compressor,
+        costing_method_arguments={
+            "compressor_type": compressor_type,
+            "drive_type": drive_type,
+            "material_type": material_type,
+        },
     )
 
     assert isinstance(model.fs.unit.costing.capital_cost, Var)
@@ -655,6 +644,42 @@ def test_cost_compressor(model, compressor_type, drive_type, material_type):
 
 
 @pytest.mark.component
+@pytest.mark.parametrize("compressor_type", CompressorType)
+@pytest.mark.parametrize("drive_type", CompressorDriveType)
+@pytest.mark.parametrize("material_type", CompressorMaterial)
+def test_not_compressor(model, compressor_type, drive_type, material_type):
+    # Test exception for non-supported compressor flags
+    model.fs.unit.config.declare("compressor", ConfigValue(default=False))
+    model.fs.unit.config.declare(
+        "thermodynamic_assumption",
+        ConfigValue(default=ThermodynamicAssumption.isentropic),
+    )
+    model.fs.unit.work_mechanical = Param(
+        [0], initialize=101410.4, units=pyunits.J / pyunits.s
+    )
+
+    expected_string = (
+        "cost_compressor method is only appropriate for "
+        "pressure changers with the compressor argument "
+        "equal to True."
+    )
+
+    stream = StringIO()
+    with LoggingIntercept(stream, "idaes", logging.WARNING):
+        model.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=model.fs.costing,
+            costing_method=SSLWCostingData.cost_compressor,
+            costing_method_arguments={
+                "compressor_type": compressor_type,
+                "drive_type": drive_type,
+                "material_type": material_type,
+            },
+        )
+
+    assert expected_string in str(stream.getvalue())
+
+
+@pytest.mark.component
 @pytest.mark.parametrize("fan_type", FanType)
 @pytest.mark.parametrize("material_type", FanMaterial)
 def test_cost_fan(model, fan_type, material_type):
@@ -666,14 +691,9 @@ def test_cost_fan(model, fan_type, material_type):
     )
 
     model.fs.unit.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": model.fs.costing,
-            "costing_method": SSLWCostingData.cost_fan,
-            "costing_method_arguments": {
-                "fan_type": fan_type,
-                "material_type": material_type,
-            },
-        }
+        flowsheet_costing_block=model.fs.costing,
+        costing_method=SSLWCostingData.cost_fan,
+        costing_method_arguments={"fan_type": fan_type, "material_type": material_type},
     )
 
     assert isinstance(model.fs.unit.costing.capital_cost, Var)
@@ -706,14 +726,12 @@ def test_cost_blower(model, blower_type, material_type):
     )
 
     model.fs.unit.costing = UnitModelCostingBlock(
-        default={
-            "flowsheet_costing_block": model.fs.costing,
-            "costing_method": SSLWCostingData.cost_blower,
-            "costing_method_arguments": {
-                "blower_type": blower_type,
-                "material_type": material_type,
-            },
-        }
+        flowsheet_costing_block=model.fs.costing,
+        costing_method=SSLWCostingData.cost_blower,
+        costing_method_arguments={
+            "blower_type": blower_type,
+            "material_type": material_type,
+        },
     )
 
     assert isinstance(model.fs.unit.costing.capital_cost, Var)
@@ -744,9 +762,7 @@ class TestMapping:
         m.fs = FlowsheetBlock()
 
         m.fs.pparams = PhysicalParameterTestBlock()
-        m.fs.rparams = ReactionParameterTestBlock(
-            default={"property_package": m.fs.pparams}
-        )
+        m.fs.rparams = ReactionParameterTestBlock(property_package=m.fs.pparams)
 
         m.fs.costing = SSLWCosting()
 
@@ -754,45 +770,42 @@ class TestMapping:
 
     def test_compressor(self, model):
         # Add examples of supported unit models and add costing
-        model.fs.C101 = Compressor(default={"property_package": model.fs.pparams})
+        model.fs.C101 = Compressor(property_package=model.fs.pparams)
         model.fs.C101.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": model.fs.costing}
+            flowsheet_costing_block=model.fs.costing
         )
         assert model.fs.C101.costing.drive_factor.value == 1
         assert model.fs.C101.costing.material_factor.value == 2.5
 
     def test_cstr(self, model):
         model.fs.R102 = CSTR(
-            default={
-                "property_package": model.fs.pparams,
-                "reaction_package": model.fs.rparams,
-            }
+            property_package=model.fs.pparams, reaction_package=model.fs.rparams
         )
         # Add length and diameter to CSTR
         model.fs.R102.length = 1 * pyunits.m
         model.fs.R102.diameter = 1 * pyunits.m
         model.fs.R102.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": model.fs.costing}
+            flowsheet_costing_block=model.fs.costing
         )
         assert model.fs.R102.costing.material_factor.value == 1
         assert model.fs.R102.costing.material_density.value == 0.284
 
     def test_flash(self, model):
-        model.fs.F103 = Flash(default={"property_package": model.fs.pparams})
+        model.fs.F103 = Flash(property_package=model.fs.pparams)
         # Add length and diameter to Flash
         model.fs.F103.length = 1 * pyunits.m
         model.fs.F103.diameter = 1 * pyunits.m
         model.fs.F103.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": model.fs.costing}
+            flowsheet_costing_block=model.fs.costing
         )
         assert model.fs.F103.costing.material_factor.value == 1
         assert model.fs.F103.costing.material_density.value == 0.284
 
     def test_heater(self, model):
         # Add examples of supported unit models and add costing
-        model.fs.unit = Heater(default={"property_package": model.fs.pparams})
+        model.fs.unit = Heater(property_package=model.fs.pparams)
         model.fs.unit.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": model.fs.costing}
+            flowsheet_costing_block=model.fs.costing
         )
         assert model.fs.unit.costing.pressure_factor.value == 1.1
         assert model.fs.unit.costing.material_factor.value == 1
@@ -800,13 +813,11 @@ class TestMapping:
     def test_hx0D(self, model):
         # Add examples of supported unit models and add costing
         model.fs.unit = HeatExchanger(
-            default={
-                "shell": {"property_package": model.fs.pparams},
-                "tube": {"property_package": model.fs.pparams},
-            }
+            hot_side={"property_package": model.fs.pparams},
+            cold_side={"property_package": model.fs.pparams},
         )
         model.fs.unit.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": model.fs.costing}
+            flowsheet_costing_block=model.fs.costing
         )
         assert model.fs.unit.costing.length_factor.value == 1.12
 
@@ -823,40 +834,96 @@ class TestMapping:
         m.fs.costing = SSLWCosting()
         # Add examples of supported unit models and add costing
         m.fs.unit = HeatExchangerNTU(
-            default={
-                "hot_side": {"property_package": m.fs.pparams},
-                "cold_side": {"property_package": m.fs.pparams},
-            }
+            hot_side={"property_package": m.fs.pparams},
+            cold_side={"property_package": m.fs.pparams},
         )
-        m.fs.unit.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": m.fs.costing}
-        )
+        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         assert m.fs.unit.costing.length_factor.value == 1.12
 
     def test_pfr(self, model):
         model.fs.unit = PFR(
-            default={
-                "property_package": model.fs.pparams,
-                "reaction_package": model.fs.rparams,
-            }
+            property_package=model.fs.pparams, reaction_package=model.fs.rparams
         )
         # Add length and diameter to PFR
         model.fs.unit.length = 1 * pyunits.m
         model.fs.unit.diameter = 1 * pyunits.m
         model.fs.unit.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": model.fs.costing}
+            flowsheet_costing_block=model.fs.costing
         )
         assert model.fs.unit.costing.material_factor.value == 1
         assert model.fs.unit.costing.material_density.value == 0.284
 
     def test_pressure_changer(self, model):
         # Add examples of supported unit models and add costing
-        model.fs.unit = PressureChanger(default={"property_package": model.fs.pparams})
+        model.fs.unit = PressureChanger(
+            property_package=model.fs.pparams,
+            thermodynamic_assumption=ThermodynamicAssumption.isentropic,
+        )
         model.fs.unit.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": model.fs.costing}
+            flowsheet_costing_block=model.fs.costing
         )
         assert model.fs.unit.costing.drive_factor.value == 1
         assert model.fs.unit.costing.material_factor.value == 2.5
+
+    def test_pump_compressor(self, model):
+        # Test exception for non-supported compressor flags
+        model.fs.unit = Compressor(
+            property_package=model.fs.pparams,
+            thermodynamic_assumption=ThermodynamicAssumption.pump,
+        )
+
+        expected_string = (
+            "fs.unit - pressure changers with the pump "
+            "assumption should use the cost_pump method."
+        )
+
+        stream = StringIO()
+        with LoggingIntercept(stream, "idaes", logging.WARNING):
+            model.fs.unit.costing = UnitModelCostingBlock(
+                flowsheet_costing_block=model.fs.costing
+            )
+
+        assert expected_string in str(stream.getvalue())
+
+    def test_isothermal_compressor(self, model):
+        # Test exception for non-supported compressor flags
+        model.fs.unit = Compressor(
+            property_package=model.fs.pparams,
+            thermodynamic_assumption=ThermodynamicAssumption.isothermal,
+        )
+
+        expected_string = (
+            "fs.unit - pressure changers without isentropic "
+            "assumption are too simple to be costed."
+        )
+
+        stream = StringIO()
+        with LoggingIntercept(stream, "idaes", logging.WARNING):
+            model.fs.unit.costing = UnitModelCostingBlock(
+                flowsheet_costing_block=model.fs.costing
+            )
+
+        assert expected_string in str(stream.getvalue())
+
+    def test_adiabatic_compressor(self, model):
+        # Test exception for non-supported compressor flags
+        model.fs.unit = Compressor(
+            property_package=model.fs.pparams,
+            thermodynamic_assumption=ThermodynamicAssumption.adiabatic,
+        )
+
+        expected_string = (
+            "fs.unit - pressure changers without isentropic "
+            "assumption are too simple to be costed."
+        )
+
+        stream = StringIO()
+        with LoggingIntercept(stream, "idaes", logging.WARNING):
+            model.fs.unit.costing = UnitModelCostingBlock(
+                flowsheet_costing_block=model.fs.costing
+            )
+
+        assert expected_string in str(stream.getvalue())
 
     def test_pump(self):
         # Need a different property package here
@@ -869,33 +936,28 @@ class TestMapping:
         m.fs.costing = SSLWCosting()
 
         # Add examples of supported unit models and add costing
-        m.fs.unit = Pump(default={"property_package": m.fs.pparams})
-        m.fs.unit.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": m.fs.costing}
-        )
+        m.fs.unit = Pump(property_package=m.fs.pparams)
+        m.fs.unit.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         assert hasattr(m.fs.unit.costing, "pump_head")
 
     def test_rstoich(self, model):
         model.fs.unit = StoichiometricReactor(
-            default={
-                "property_package": model.fs.pparams,
-                "reaction_package": model.fs.rparams,
-            }
+            property_package=model.fs.pparams, reaction_package=model.fs.rparams
         )
         # Add length and diameter to reactor
         model.fs.unit.length = 1 * pyunits.m
         model.fs.unit.diameter = 1 * pyunits.m
         model.fs.unit.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": model.fs.costing}
+            flowsheet_costing_block=model.fs.costing
         )
         assert model.fs.unit.costing.material_factor.value == 1
         assert model.fs.unit.costing.material_density.value == 0.284
 
     def test_turbine(self, model):
         # Add examples of supported unit models and add costing
-        model.fs.unit = Turbine(default={"property_package": model.fs.pparams})
+        model.fs.unit = Turbine(property_package=model.fs.pparams)
         model.fs.unit.costing = UnitModelCostingBlock(
-            default={"flowsheet_costing_block": model.fs.costing}
+            flowsheet_costing_block=model.fs.costing
         )
         assert hasattr(model.fs.unit.costing, "capital_cost")
         assert not hasattr(model.fs.unit.costing, "material_factor")

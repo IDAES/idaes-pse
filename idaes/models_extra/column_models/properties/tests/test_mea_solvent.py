@@ -40,11 +40,9 @@ class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration)
+        model.params = GenericParameterBlock(**configuration)
 
-        model.props = model.params.build_state_block(
-            [1], default={"defined_state": True}
-        )
+        model.props = model.params.build_state_block([1], defined_state=True)
 
         model.props[1].calculate_scaling_factors()
 
@@ -168,4 +166,13 @@ class TestStateBlock(object):
         )
         assert pytest.approx(2.17984326e-09, rel=1e-8) == value(
             model.props[1].diffus_phase_comp_true["Liq", "MEA_+"]
+        )
+        assert pytest.approx(-41250.348, rel=1e-8) == value(
+            model.props[1].enth_mol_phase_comp["Liq", "MEA"]
+        )
+        assert pytest.approx(-36850.713, rel=1e-8) == value(
+            model.props[1].enth_mol_phase_comp["Liq", "H2O"]
+        )
+        assert pytest.approx(-83998.005, rel=1e-8) == value(
+            model.props[1].enth_mol_phase_comp["Liq", "CO2"]
         )

@@ -126,7 +126,7 @@ logistic function to enforce bounds.
                 ]
             ),
             description="Control type",
-            doc="""Controller type. The **deafult** = ControllerType.PI and the
+            doc="""Controller type. The **default** = ControllerType.PI and the
 options are: **ControllerType.P** Proportional, **ControllerType.PI**
 proportional and integral, **ControllerType.PD** proportional and derivative, and
 **ControllerType.PID** proportional, integral, and derivative
@@ -260,14 +260,14 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
                 time_set,
                 initialize=0,
                 doc="Integral term calculated from de_i(t)/dt = e(t)",
-                units=pv_units * time_units
+                units=pv_units * time_units,
             )
             self.integral_of_error_dot = pyodae.DerivativeVar(
                 self.integral_of_error,
                 wrt=time_set,
                 initialize=0,
                 units=pv_units,
-                doc="de_i(t)/dt"
+                doc="de_i(t)/dt",
             )
 
             @self.Constraint(time_set, doc="de_i(t)/dt = e(t)")
@@ -276,6 +276,7 @@ proportional and integral, **ControllerType.PD** proportional and derivative, an
 
             if self.config.calculate_initial_integral:
                 t0 = time_set.first()
+
                 @self.Constraint(doc="Calculate initial e_i based on output")
                 def initial_integral_error_eqn(b):
                     if self.config.type == ControllerType.PI:

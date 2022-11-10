@@ -240,16 +240,14 @@ and used when constructing these
             populate vapor control volume"""
 
         self.vapor_phase = ControlVolume1DBlock(
-            default={
-                "transformation_method": "dae.finite_difference",
-                "transformation_scheme": "BACKWARD",
-                "finite_elements": self.config.finite_elements,
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "area_definition": DistributedVars.variant,
-                "property_package": self.config.vapor_phase.property_package,
-                "property_package_args": self.config.vapor_phase.property_package_args,
-            }
+            transformation_method="dae.finite_difference",
+            transformation_scheme="BACKWARD",
+            finite_elements=self.config.finite_elements,
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            area_definition=DistributedVars.variant,
+            property_package=self.config.vapor_phase.property_package,
+            property_package_args=self.config.vapor_phase.property_package_args,
         )
 
         self.vapor_phase.add_geometry(
@@ -287,16 +285,14 @@ and used when constructing these
 
         """
         self.liquid_phase = ControlVolume1DBlock(
-            default={
-                "transformation_method": "dae.finite_difference",
-                "transformation_scheme": "FORWARD",
-                "finite_elements": self.config.finite_elements,
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "area_definition": DistributedVars.variant,
-                "property_package": self.config.liquid_phase.property_package,
-                "property_package_args": self.config.liquid_phase.property_package_args,
-            }
+            transformation_method="dae.finite_difference",
+            transformation_scheme="FORWARD",
+            finite_elements=self.config.finite_elements,
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            area_definition=DistributedVars.variant,
+            property_package=self.config.liquid_phase.property_package,
+            property_package_args=self.config.liquid_phase.property_package_args,
         )
 
         self.liquid_phase.add_geometry(
@@ -397,7 +393,7 @@ and used when constructing these
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             initialize=0.9,
-            units=(pyunits.m)**2 / (pyunits.m)**3,
+            units=(pyunits.m) ** 2 / (pyunits.m) ** 3,
             doc="Specific interfacial area",
         )
 
@@ -433,8 +429,7 @@ and used when constructing these
         )
         def vapor_phase_area(blk, t, x):
             if x == self.vapor_phase.length_domain.first():
-                return blk.vapor_phase.area[t, x] == (
-                    blk.eps_ref * blk.area_column)
+                return blk.vapor_phase.area[t, x] == (blk.eps_ref * blk.area_column)
             else:
                 return blk.vapor_phase.area[t, x] == (
                     blk.area_column * blk.holdup_vap[t, x]
@@ -447,8 +442,7 @@ and used when constructing these
         )
         def liquid_phase_area(blk, t, x):
             if x == self.liquid_phase.length_domain.last():
-                return blk.liquid_phase.area[t, x] == (
-                    blk.eps_ref * blk.area_column)
+                return blk.liquid_phase.area[t, x] == (blk.eps_ref * blk.area_column)
             else:
                 return blk.liquid_phase.area[t, x] == (
                     blk.area_column * blk.holdup_liq[t, x]
@@ -633,14 +627,13 @@ and used when constructing these
             if x == self.vapor_phase.length_domain.first():
                 return Constraint.Skip
             else:
-                zb = self.liquid_phase.length_domain.prev(x)
-                return blk.vapor_phase.enthalpy_transfer[t, x] == -(
+                return blk.vapor_phase.enthalpy_transfer[t, x] == (
                     (
                         sum(
-                            blk.liquid_phase.properties[t, zb].enth_mol_phase_comp[
-                                "Liq", j
+                            blk.vapor_phase.properties[t, x].enth_mol_phase_comp[
+                                "Vap", j
                             ]
-                            * blk.liquid_phase.mass_transfer_term[t, zb, "Liq", j]
+                            * blk.vapor_phase.mass_transfer_term[t, x, "Vap", j]
                             for j in equilibrium_comp
                         )
                     )

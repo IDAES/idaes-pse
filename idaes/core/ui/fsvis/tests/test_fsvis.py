@@ -39,17 +39,13 @@ from idaes.core.ui.flowsheet import validate_flowsheet
 def flash_model():
     """Flash unit model. Use '.fs' attribute to get the flowsheet."""
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     # Flash properties
     m.fs.properties = BTXParameterBlock(
-        default={
-            "valid_phase": ("Liq", "Vap"),
-            "activity_coeff_model": "Ideal",
-            "state_vars": "FTPz",
-        }
+        valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal", state_vars="FTPz"
     )
     # Flash unit
-    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    m.fs.flash = Flash(property_package=m.fs.properties)
     m.fs.flash.inlet.flow_mol.fix(1)
     m.fs.flash.inlet.temperature.fix(368)
     m.fs.flash.inlet.pressure.fix(101325)
@@ -95,7 +91,7 @@ def test_visualize(flash_model, tmp_path):
             "arcs": {},
         },
         "cells": [],
-        "routing_config": {}
+        "routing_config": {},
     }
     assert data == expected
 
@@ -170,8 +166,8 @@ def test_mock_webbrowser(flash_model):
 
 
 class MockWB:
-    """Use this instead of a real web browser.
-    """
+    """Use this instead of a real web browser."""
+
     def __init__(self, ok):
         self.ok = ok
 
@@ -205,8 +201,12 @@ def test_visualize_save_versions(flash_model, save_files_prefix):
         save_arg = (True, None)[i % 2]  # try both kinds of 'use default' values
         if i < 3:
             result = fsvis.visualize(
-                flowsheet, fs_name, save_dir=work_dir, browser=False, save=save_arg,
-                load_from_saved=False
+                flowsheet,
+                fs_name,
+                save_dir=work_dir,
+                browser=False,
+                save=save_arg,
+                load_from_saved=False,
             )
             if i == 0:
                 assert re.search(f"{path.name}.json", result.store.filename)
@@ -215,8 +215,13 @@ def test_visualize_save_versions(flash_model, save_files_prefix):
         else:
             msv, fsvis.MAX_SAVED_VERSIONS = fsvis.MAX_SAVED_VERSIONS, i - 1
             with pytest.raises(RuntimeError):
-                fsvis.visualize(flowsheet, fs_name, save_dir=work_dir, browser=False,
-                                load_from_saved=False)
+                fsvis.visualize(
+                    flowsheet,
+                    fs_name,
+                    save_dir=work_dir,
+                    browser=False,
+                    load_from_saved=False,
+                )
             fsvis.MAX_SAVED_VERSIONS = msv
 
 
@@ -253,8 +258,12 @@ def test_visualize_save_overwrite(flash_model, save_files_prefix):
     howdy.open("w").write("howdy")
     howdy_stat = os.stat(howdy)
     result = fsvis.visualize(
-        flowsheet, "flowsheet", save=howdy, overwrite=True, browser=False,
-        load_from_saved=False
+        flowsheet,
+        "flowsheet",
+        save=howdy,
+        overwrite=True,
+        browser=False,
+        load_from_saved=False,
     )
     howdy_stat2 = os.stat(result.store.filename)
     assert (
@@ -268,22 +277,17 @@ def test_visualize_save_loadfromsaved(flash_model, save_files_prefix):
     name = "flash_tvslfs"
     save_dir = Path(save_files_prefix).parent
     # save initial
-    result = fsvis.visualize(
-        flowsheet, name, save_dir=save_dir, browser=False
-    )
+    result = fsvis.visualize(flowsheet, name, save_dir=save_dir, browser=False)
     path_base = save_dir / (name + ".json")
     assert path_base.exists()
     # this time, should use loaded one
     # there should still be only one file
-    result = fsvis.visualize(
-        flowsheet, name, save_dir=save_dir, browser=False
-    )
+    result = fsvis.visualize(flowsheet, name, save_dir=save_dir, browser=False)
     path_v1 = save_dir / (name + "-1.json")
     assert not path_v1.exists()
     # same behavior with explicit flag
     result = fsvis.visualize(
-        flowsheet, name, save_dir=save_dir, browser=False,
-        load_from_saved=True
+        flowsheet, name, save_dir=save_dir, browser=False, load_from_saved=True
     )
     assert not path_v1.exists()
 
@@ -291,6 +295,7 @@ def test_visualize_save_loadfromsaved(flash_model, save_files_prefix):
 @pytest.mark.unit
 def test_pick_default_save_location():
     from idaes.core.ui.fsvis.fsvis import _pick_default_save_location as pdsl
+
     p = pdsl("foo", None)
     assert str(p).endswith("foo.json")
     p = pdsl("foo", Path("/a"))
@@ -300,6 +305,7 @@ def test_pick_default_save_location():
 @pytest.mark.unit
 def test_existing_save_path(tmp_path):
     from idaes.core.ui.fsvis.fsvis import _handle_existing_save_path as hesp
+
     name = "foo"
     save_path = tmp_path / (name + ".json")
     # not there
@@ -328,6 +334,7 @@ def test_existing_save_path(tmp_path):
 @pytest.mark.component
 def test_loop_forever():
     from threading import Thread
+
     for quietness in (True, False):
         thr = Thread(target=fsvis._loop_forever, args=(quietness,))
         thr.setDaemon(True)

@@ -133,12 +133,12 @@ def _set_prop_pack(hxcfg, fwhcfg):
     # this sets the property pack for the hot and cold side, but if the user
     # provides a specific property package using the tube and shell names it
     # will override this.  I think this behavior is fine, and what we'd want.
-    if hxcfg.hot_side_config.property_package == useDefault:
-        hxcfg.hot_side_config.property_package = fwhcfg.property_package
-        hxcfg.hot_side_config.property_package_args = fwhcfg.property_package_args
-    if hxcfg.cold_side_config.property_package == useDefault:
-        hxcfg.cold_side_config.property_package = fwhcfg.property_package
-        hxcfg.cold_side_config.property_package_args = fwhcfg.property_package_args
+    if hxcfg.hot_side.property_package == useDefault:
+        hxcfg.hot_side.property_package = fwhcfg.property_package
+        hxcfg.hot_side.property_package_args = fwhcfg.property_package_args
+    if hxcfg.cold_side.property_package == useDefault:
+        hxcfg.cold_side.property_package = fwhcfg.property_package
+        hxcfg.cold_side.property_package_args = fwhcfg.property_package_args
 
 
 @declare_process_block_class(
@@ -151,7 +151,7 @@ of shell is a saturated liquid.""",
 class FWHCondensing0DData(HeatExchangerData):
     def build(self):
         super().build()
-        units_meta = self.shell.config.property_package.get_metadata()
+        units_meta = self.hot_side.config.property_package.get_metadata()
         self.enth_sub = Var(
             self.flowsheet().time,
             initialize=0,
@@ -165,8 +165,8 @@ class FWHCondensing0DData(HeatExchangerData):
         )
         def extraction_rate_constraint(b, t):
             return (
-                b.shell.properties_out[t].enth_mol - b.enth_sub[t]
-                == b.shell.properties_out[t].enth_mol_sat_phase["Liq"]
+                b.hot_side.properties_out[t].enth_mol - b.enth_sub[t]
+                == b.hot_side.properties_out[t].enth_mol_sat_phase["Liq"]
             )
 
     def initialize_build(self, *args, **kwargs):
@@ -187,15 +187,15 @@ class FWHCondensing0DData(HeatExchangerData):
         self.extraction_rate_constraint.deactivate()
         self.area.fix()
         self.overall_heat_transfer_coefficient.fix()
-        self.inlet_1.fix()
-        self.inlet_2.fix()
-        self.outlet_1.unfix()
-        self.outlet_2.unfix()
+        self.hot_side_inlet.fix()
+        self.cold_side_inlet.fix()
+        self.hot_side_outlet.unfix()
+        self.cold_side_outlet.unfix()
 
         # Do regular heat exchanger intialization
         super().initialize_build(*args, **kwargs)
         self.extraction_rate_constraint.activate()
-        self.inlet_1.flow_mol.unfix()
+        self.hot_side_inlet.flow_mol.unfix()
 
         # Create solver
         opt = get_solver(solver, optarg)
@@ -231,7 +231,7 @@ class FWH0DData(UnitModelBlockData):
 
         # All feedwater heaters have a condensing section
         _set_prop_pack(config.condense, config)
-        self.condense = FWHCondensing0D(default=config.condense)
+        self.condense = FWHCondensing0D(**config.condense)
 
         # Add a mixer to add the drain stream from another feedwater heater
         if config.has_drain_mixer:
@@ -244,7 +244,7 @@ class FWH0DData(UnitModelBlockData):
                 "material_balance_type": MaterialBalanceType.componentTotal,
                 "inlet_list": ["steam", "drain"],
             }
-            self.drain_mix = Mixer(default=mix_cfg)
+            self.drain_mix = Mixer(**mix_cfg)
 
             @self.drain_mix.Constraint(self.drain_mix.flowsheet().time)
             def mixer_pressure_constraint(b, t):
@@ -257,40 +257,45 @@ class FWH0DData(UnitModelBlockData):
 
             # Connect the mixer to the condensing section inlet
             self.SMX = Arc(
-                source=self.drain_mix.outlet, destination=self.condense.inlet_1
+                source=self.drain_mix.outlet, destination=self.condense.hot_side_inlet
             )
 
         # Add a desuperheat section before the condensing section
         if config.has_desuperheat:
             _set_prop_pack(config.desuperheat, config)
-            self.desuperheat = HeatExchanger(default=config.desuperheat)
+            self.desuperheat = HeatExchanger(**config.desuperheat)
             # set default area less than condensing section area, this will
             # almost always be overridden by the user fixing an area later
             self.desuperheat.area.value = 10
             if config.has_drain_mixer:
                 self.SDS = Arc(
-                    source=self.desuperheat.outlet_1, destination=self.drain_mix.steam
+                    source=self.desuperheat.hot_side_outlet,
+                    destination=self.drain_mix.steam,
                 )
             else:
                 self.SDS = Arc(
-                    source=self.desuperheat.outlet_1, destination=self.condense.inlet_1
+                    source=self.desuperheat.hot_side_outlet,
+                    destination=self.condense.hot_side_inlet,
                 )
             self.FW2 = Arc(
-                source=self.condense.outlet_2, destination=self.desuperheat.inlet_2
+                source=self.condense.cold_side_outlet,
+                destination=self.desuperheat.cold_side_inlet,
             )
 
         # Add a drain cooling section after the condensing section
         if config.has_drain_cooling:
             _set_prop_pack(config.cooling, config)
-            self.cooling = HeatExchanger(default=config.cooling)
+            self.cooling = HeatExchanger(**config.cooling)
             # set default area less than condensing section area, this will
             # almost always be overridden by the user fixing an area later
             self.cooling.area.value = 10
             self.FW1 = Arc(
-                source=self.cooling.outlet_2, destination=self.condense.inlet_2
+                source=self.cooling.cold_side_outlet,
+                destination=self.condense.cold_side_inlet,
             )
             self.SC = Arc(
-                source=self.condense.outlet_1, destination=self.cooling.inlet_1
+                source=self.condense.hot_side_outlet,
+                destination=self.cooling.hot_side_inlet,
             )
 
         TransformationFactory("network.expand_arcs").apply_to(self)
@@ -315,41 +320,47 @@ class FWH0DData(UnitModelBlockData):
         # initialize desuperheat if include
         if config.has_desuperheat:
             if config.has_drain_cooling:
-                _set_port(self.desuperheat.inlet_2, self.cooling.inlet_2)
+                _set_port(
+                    self.desuperheat.cold_side_inlet, self.cooling.cold_side_inlet
+                )
             else:
-                _set_port(self.desuperheat.inlet_2, self.condense.inlet_2)
+                _set_port(
+                    self.desuperheat.cold_side_inlet, self.condense.cold_side_inlet
+                )
             self.desuperheat.initialize(*args, **kwargs)
-            self.desuperheat.inlet_1.flow_mol.unfix()
+            self.desuperheat.hot_side_inlet.flow_mol.unfix()
             if config.has_drain_mixer:
-                _set_port(self.drain_mix.steam, self.desuperheat.outlet_1)
+                _set_port(self.drain_mix.steam, self.desuperheat.hot_side_outlet)
             else:
-                _set_port(self.condense.inlet_1, self.desuperheat.outlet_1)
+                _set_port(
+                    self.condense.hot_side_inlet, self.desuperheat.hot_side_outlet
+                )
             # fix the steam and fwh inlet for init
-            self.desuperheat.inlet_1.fix()
-            self.desuperheat.inlet_1.flow_mol.unfix()  # unfix for extract calc
+            self.desuperheat.hot_side_inlet.fix()
+            self.desuperheat.hot_side_inlet.flow_mol.unfix()  # unfix for extract calc
         # initialize mixer if included
         if config.has_drain_mixer:
             self.drain_mix.steam.fix()
             self.drain_mix.drain.fix()
             self.drain_mix.outlet.unfix()
             self.drain_mix.initialize(*args, **kwargs)
-            _set_port(self.condense.inlet_1, self.drain_mix.outlet)
+            _set_port(self.condense.hot_side_inlet, self.drain_mix.outlet)
             if config.has_desuperheat:
                 self.drain_mix.steam.unfix()
             else:
                 self.drain_mix.steam.flow_mol.unfix()
         # Initialize condense section
         if config.has_drain_cooling:
-            _set_port(self.condense.inlet_2, self.cooling.inlet_2)
-            self.cooling.inlet_2.fix()
+            _set_port(self.condense.cold_side_inlet, self.cooling.cold_side_inlet)
+            self.cooling.cold_side_inlet.fix()
         else:
-            self.condense.inlet_2.fix()
+            self.condense.cold_side_inlet.fix()
         if not config.has_drain_mixer and not config.has_desuperheat:
-            self.condense.inlet_1.fix()
-            self.condense.inlet_1.flow_mol.unfix()
+            self.condense.hot_side_inlet.fix()
+            self.condense.hot_side_inlet.flow_mol.unfix()
 
-        tempsat = value(self.condense.shell.properties_in[0].temperature_sat)
-        temp = value(self.condense.tube.properties_in[0].temperature)
+        tempsat = value(self.condense.hot_side.properties_in[0].temperature_sat)
+        temp = value(self.condense.cold_side.properties_in[0].temperature)
         if tempsat - temp < 30:
             init_log.warning(
                 "The steam sat. temperature ({}) is near the feedwater"
@@ -359,7 +370,7 @@ class FWH0DData(UnitModelBlockData):
         self.condense.initialize(*args, **kwargs)
         # Initialize drain cooling if included
         if config.has_drain_cooling:
-            _set_port(self.cooling.inlet_1, self.condense.outlet_1)
+            _set_port(self.cooling.hot_side_inlet, self.condense.hot_side_outlet)
             self.cooling.initialize(*args, **kwargs)
 
         # Solve all together
@@ -369,17 +380,17 @@ class FWH0DData(UnitModelBlockData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
         init_log.info(
-            "Condensing shell inlet delta T = {}".format(
+            "Condensing hot side inlet delta T = {}".format(
                 value(self.condense.delta_temperature_in[0])
             )
         )
         init_log.info(
-            "Condensing Shell outlet delta T = {}".format(
+            "Condensing hot side outlet delta T = {}".format(
                 value(self.condense.delta_temperature_out[0])
             )
         )
         init_log.info(
-            "Steam Flow = {}".format(value(self.condense.inlet_1.flow_mol[0]))
+            "Steam Flow = {}".format(value(self.condense.hot_side_inlet.flow_mol[0]))
         )
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 

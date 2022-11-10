@@ -25,7 +25,7 @@ from idaes.models.properties.modular_properties.reactions.dh_rxn import *
 
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.misc import add_object_reference
-from idaes.core.base.property_meta import PropertyClassMetadata
+from idaes.core.base.property_meta import PropertyClassMetadata, UnitSet
 from idaes.core import MaterialFlowBasis
 
 
@@ -61,11 +61,13 @@ def model():
     m.rparams.reaction_e1 = Block()
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object.default_units["temperature"] = pyunits.K
-    m.meta_object.default_units["mass"] = pyunits.kg
-    m.meta_object.default_units["length"] = pyunits.m
-    m.meta_object.default_units["time"] = pyunits.s
-    m.meta_object.default_units["amount"] = pyunits.mol
+    m.meta_object._default_units = UnitSet(
+        temperature=pyunits.K,
+        mass=pyunits.kg,
+        length=pyunits.m,
+        time=pyunits.s,
+        amount=pyunits.mol,
+    )
 
     def get_metadata(self):
         return m.meta_object

@@ -16,7 +16,14 @@ Author: Jaffer Ghouse
 """
 import pytest
 
-from pyomo.environ import check_optimal_termination, ConcreteModel, value, units, Var, units as pyunits
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    value,
+    units,
+    Var,
+    units as pyunits,
+)
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import (
@@ -50,11 +57,11 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = Flash(default={"property_package": m.fs.properties})
+    m.fs.unit = Flash(property_package=m.fs.properties)
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 11
@@ -75,9 +82,9 @@ def test_config():
 @pytest.mark.unit
 def test_calc_scale():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
-    m.fs.unit = Flash(default={"property_package": m.fs.properties})
+    m.fs.unit = Flash(property_package=m.fs.properties)
     iscale.calculate_scaling_factors(m)
 
 
@@ -86,13 +93,13 @@ class TestBTXIdeal(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = BTXParameterBlock(
-            default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "Ideal"}
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
         )
 
-        m.fs.unit = Flash(default={"property_package": m.fs.properties})
+        m.fs.unit = Flash(property_package=m.fs.properties)
 
         m.fs.unit.inlet.flow_mol.fix(1)
         m.fs.unit.inlet.temperature.fix(368)
@@ -153,7 +160,9 @@ class TestBTXIdeal(object):
         assert perf_dict == {
             "vars": {
                 "Heat Duty": btx.fs.unit.heat_duty[0],
-                "Pressure Change": btx.fs.unit.deltaP[0]}}
+                "Pressure Change": btx.fs.unit.deltaP[0],
+            }
+        }
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -161,30 +170,39 @@ class TestBTXIdeal(object):
         stable = btx.fs.unit._get_stream_table_contents()
 
         expected = {
-            'Units': {
-                'flow_mol': getattr(pyunits.pint_registry, "mole/s"),
-                'mole_frac_comp benzene': getattr(pyunits.pint_registry, "dimensionless"),
-                'mole_frac_comp toluene': getattr(pyunits.pint_registry, "dimensionless"),
-                'temperature': getattr(pyunits.pint_registry, "K"),
-                'pressure': getattr(pyunits.pint_registry, "Pa")},
-            'Inlet': {
-                'flow_mol': pytest.approx(1.00, rel=1e-4),
-                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
-                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
-                'temperature': pytest.approx(368, rel=1e-4),
-                'pressure': pytest.approx(101325, rel=1e-4)},
-            'Vapor Outlet': {
-                'flow_mol': pytest.approx(0.5, rel=1e-4),
-                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
-                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
-                'temperature': pytest.approx(298.15, rel=1e-4),
-                'pressure': pytest.approx(101325.0, rel=1e-4)},
-            'Liquid Outlet': {
-                'flow_mol': pytest.approx(0.5, rel=1e-4),
-                'mole_frac_comp benzene': pytest.approx(0.5, rel=1e-4),
-                'mole_frac_comp toluene': pytest.approx(0.5, rel=1e-4),
-                'temperature': pytest.approx(298.15, rel=1e-4),
-                'pressure': pytest.approx(101325.0, rel=1e-4)}}
+            "Units": {
+                "flow_mol": getattr(pyunits.pint_registry, "mole/s"),
+                "mole_frac_comp benzene": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "mole_frac_comp toluene": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "temperature": getattr(pyunits.pint_registry, "K"),
+                "pressure": getattr(pyunits.pint_registry, "Pa"),
+            },
+            "Inlet": {
+                "flow_mol": pytest.approx(1.00, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(368, rel=1e-4),
+                "pressure": pytest.approx(101325, rel=1e-4),
+            },
+            "Vapor Outlet": {
+                "flow_mol": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(298.15, rel=1e-4),
+                "pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+            "Liquid Outlet": {
+                "flow_mol": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(298.15, rel=1e-4),
+                "pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+        }
 
         assert stable.to_dict() == expected
 
@@ -258,18 +276,16 @@ class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = iapws95.Iapws95ParameterBlock(
-            default={"phase_presentation": iapws95.PhaseType.LG}
+            phase_presentation=iapws95.PhaseType.LG
         )
 
         m.fs.unit = Flash(
-            default={
-                "property_package": m.fs.properties,
-                "ideal_separation": False,
-                "energy_split_basis": EnergySplittingType.enthalpy_split,
-            }
+            property_package=m.fs.properties,
+            ideal_separation=False,
+            energy_split_basis=EnergySplittingType.enthalpy_split,
         )
 
         m.fs.unit.inlet.flow_mol.fix(100)
@@ -327,7 +343,9 @@ class TestIAPWS(object):
         assert perf_dict == {
             "vars": {
                 "Heat Duty": iapws.fs.unit.heat_duty[0],
-                "Pressure Change": iapws.fs.unit.deltaP[0]}}
+                "Pressure Change": iapws.fs.unit.deltaP[0],
+            }
+        }
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -335,38 +353,39 @@ class TestIAPWS(object):
         stable = iapws.fs.unit._get_stream_table_contents()
 
         expected = {
-            'Units': {
-                'Molar Flow (mol/s)': getattr(pyunits.pint_registry, "mole/second"),
-                'Mass Flow (kg/s)': getattr(pyunits.pint_registry, "kg/second"),
-                'T (K)': getattr(pyunits.pint_registry, "K"),
-                'P (Pa)': getattr(pyunits.pint_registry, "Pa"),
-                'Vapor Fraction': getattr(pyunits.pint_registry, "dimensionless"),
-                'Molar Enthalpy (J/mol) Vap': getattr(pyunits.pint_registry, "J/mole"),
-                'Molar Enthalpy (J/mol) Liq': getattr(pyunits.pint_registry, "J/mole")},
-            'Inlet': {
-                'Molar Flow (mol/s)': pytest.approx(100, rel=1e-4),
-                'Mass Flow (kg/s)': pytest.approx(1.8015, rel=1e-4),
-                'T (K)': pytest.approx(373.13, rel=1e-4),
-                'P (Pa)': pytest.approx(101325, rel=1e-4),
-                'Vapor Fraction': pytest.approx(0.40467, abs=1e-4),
-                'Molar Enthalpy (J/mol) Vap': pytest.approx(48201, rel=1e-4),
-                'Molar Enthalpy (J/mol) Liq': pytest.approx(7549.7, rel=1e-4)},
-            'Vapor Outlet': {
-                'Molar Flow (mol/s)': pytest.approx(1, rel=1e-4),
-                'Mass Flow (kg/s)': pytest.approx(1.8015e-2, rel=1e-4),
-                'T (K)': pytest.approx(286.34, rel=1e-4),
-                'P (Pa)': pytest.approx(1e5, rel=1e-4),
-                'Vapor Fraction': pytest.approx(0, abs=1e-4),
-                'Molar Enthalpy (J/mol) Vap': pytest.approx(2168.6, rel=1e-4),
-                'Molar Enthalpy (J/mol) Liq': pytest.approx(1000, rel=1e-4)},
-            'Liquid Outlet': {
-                'Molar Flow (mol/s)': pytest.approx(1, rel=1e-4),
-                'Mass Flow (kg/s)': pytest.approx(1.8015e-2, rel=1e-4),
-                'T (K)': pytest.approx(286.34, rel=1e-4),
-                'P (Pa)': pytest.approx(1e5, rel=1e-4),
-                'Vapor Fraction': pytest.approx(0, abs=1e-4),
-                'Molar Enthalpy (J/mol) Vap': pytest.approx(2168.6, rel=1e-4),
-                'Molar Enthalpy (J/mol) Liq': pytest.approx(1000, rel=1e-4)}}
+            "Units": {
+                "Molar Flow": getattr(pyunits.pint_registry, "mole/second"),
+                "Mass Flow": getattr(pyunits.pint_registry, "kg/second"),
+                "T": getattr(pyunits.pint_registry, "K"),
+                "P": getattr(pyunits.pint_registry, "Pa"),
+                "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
+                "Molar Enthalpy": getattr(pyunits.pint_registry, "J/mole"),
+            },
+            "Inlet": {
+                "Molar Flow": pytest.approx(100, rel=1e-4),
+                "Mass Flow": pytest.approx(1.8015, rel=1e-4),
+                "T": pytest.approx(373.12429584768876, rel=1e-4),
+                "P": pytest.approx(101325.0, rel=1e-4),
+                "Vapor Fraction": pytest.approx(0.40467852502291135, abs=1e-4),
+                "Molar Enthalpy": pytest.approx(24000.0, rel=1e-4),
+            },
+            "Vapor Outlet": {
+                "Molar Flow": pytest.approx(1, rel=1e-4),
+                "Mass Flow": pytest.approx(1.8015e-2, rel=1e-4),
+                "T": pytest.approx(270.4877112932641, rel=1e-4),
+                "P": pytest.approx(11032305.8275, rel=1e-4),
+                "Vapor Fraction": pytest.approx(0, abs=1e-4),
+                "Molar Enthalpy": pytest.approx(0.01102138712926277, rel=1e-4),
+            },
+            "Liquid Outlet": {
+                "Molar Flow": pytest.approx(1, rel=1e-4),
+                "Mass Flow": pytest.approx(1.8015e-2, rel=1e-4),
+                "T": pytest.approx(270.4877112932641, rel=1e-4),
+                "P": pytest.approx(11032305.8275, rel=1e-4),
+                "Vapor Fraction": pytest.approx(0, abs=1e-4),
+                "Molar Enthalpy": pytest.approx(0.01102138712926277, rel=1e-4),
+            },
+        }
 
         assert stable.to_dict() == expected
 
@@ -451,30 +470,3 @@ class TestIAPWS(object):
             )
             <= 1e-6
         )
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_costing(self, iapws):
-        iapws.fs.unit.get_costing()
-        assert isinstance(iapws.fs.unit.costing.purchase_cost, Var)
-        iapws.fs.unit.diameter.fix(2)
-        iapws.fs.unit.length.fix(4)
-        # initialize unit with costing block
-        iapws.fs.unit.initialize()
-        # check costing initialized correct
-        assert pytest.approx(86957.195, abs=1e-3) == value(
-            iapws.fs.unit.costing.purchase_cost
-        )
-
-        results = solver.solve(iapws)
-        # Check for optimal solution
-        assert check_optimal_termination(results)
-        assert pytest.approx(63787.06525, abs=1e3) == value(
-            iapws.fs.unit.costing.base_cost
-        )
-        assert pytest.approx(97660.6169, abs=1e3) == value(
-            iapws.fs.unit.costing.purchase_cost
-        )
-
-        assert_units_consistent(iapws.fs.unit.costing)

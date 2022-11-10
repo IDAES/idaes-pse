@@ -79,7 +79,9 @@ from idaes.core.util.testing import (
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
-from idaes.power_generation.properties.natural_gas_PR import get_prop
+
+# TODO: Should have a test for this that does not requrie models_extra
+from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 
@@ -100,10 +102,10 @@ class TestMixer(object):
     @pytest.fixture(scope="function")
     def mixer_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.mix = MixerFrame(default={"property_package": m.fs.pp})
+        m.fs.mix = MixerFrame(property_package=m.fs.pp)
 
         return m
 
@@ -271,7 +273,7 @@ class TestMixer(object):
     @pytest.mark.unit
     def test_get_mixed_state_block(self, mixer_frame):
         mixer_frame.fs.sb = TestStateBlock(
-            mixer_frame.fs.time, default={"parameters": mixer_frame.fs.pp}
+            mixer_frame.fs.time, parameters=mixer_frame.fs.pp
         )
 
         mixer_frame.fs.mix.config.mixed_state_block = mixer_frame.fs.sb
@@ -294,7 +296,7 @@ class TestMixer(object):
     @pytest.mark.unit
     def test_get_mixed_state_block_mismatch(self, mixer_frame):
         mixer_frame.fs.sb = TestStateBlock(
-            mixer_frame.fs.time, default={"parameters": mixer_frame.fs.pp}
+            mixer_frame.fs.time, parameters=mixer_frame.fs.pp
         )
 
         # Change parameters arg to create mismatch
@@ -511,7 +513,7 @@ class TestMixer(object):
             inlet_blocks, mixed_block
         )
 
-        assert mixer_frame.fs.mix.inlet_idx.type() is RangeSet
+        assert mixer_frame.fs.mix.inlet_idx.ctype is RangeSet
         assert isinstance(mixer_frame.fs.mix.minimum_pressure, Var)
         assert len(mixer_frame.fs.mix.minimum_pressure) == 2
         assert isinstance(mixer_frame.fs.mix.eps_pressure, Param)
@@ -573,10 +575,10 @@ class TestMixer(object):
     @pytest.mark.unit
     def test_build_default(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.mix = Mixer(default={"property_package": m.fs.pp})
+        m.fs.mix = Mixer(property_package=m.fs.pp)
 
         assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
         assert len(m.fs.mix.material_mixing_equations) == 4
@@ -585,7 +587,7 @@ class TestMixer(object):
         assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
         assert len(m.fs.mix.enthalpy_mixing_equations) == 1
 
-        assert m.fs.mix.inlet_idx.type() is RangeSet
+        assert m.fs.mix.inlet_idx.ctype is RangeSet
         assert isinstance(m.fs.mix.minimum_pressure, Var)
         assert len(m.fs.mix.minimum_pressure) == 2
         assert isinstance(m.fs.mix.eps_pressure, Param)
@@ -601,12 +603,10 @@ class TestMixer(object):
     @pytest.mark.unit
     def test_build_phase_equilibrium(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
-        m.fs.mix = Mixer(
-            default={"property_package": m.fs.pp, "has_phase_equilibrium": True}
-        )
+        m.fs.mix = Mixer(property_package=m.fs.pp, has_phase_equilibrium=True)
 
         assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
         assert len(m.fs.mix.material_mixing_equations) == 4
@@ -615,7 +615,7 @@ class TestMixer(object):
         assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
         assert len(m.fs.mix.enthalpy_mixing_equations) == 1
 
-        assert m.fs.mix.inlet_idx.type() is RangeSet
+        assert m.fs.mix.inlet_idx.ctype is RangeSet
         assert isinstance(m.fs.mix.minimum_pressure, Var)
         assert len(m.fs.mix.minimum_pressure) == 2
         assert isinstance(m.fs.mix.eps_pressure, Param)
@@ -631,14 +631,11 @@ class TestMixer(object):
     @pytest.mark.unit
     def test_build_phase_pressure_equality(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
         m.fs.mix = Mixer(
-            default={
-                "property_package": m.fs.pp,
-                "momentum_mixing_type": MomentumMixingType.equality,
-            }
+            property_package=m.fs.pp, momentum_mixing_type=MomentumMixingType.equality
         )
 
         assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
@@ -659,14 +656,11 @@ class TestMixer(object):
     @pytest.mark.unit
     def test_model_checks(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
 
         m.fs.mix = Mixer(
-            default={
-                "property_package": m.fs.pp,
-                "momentum_mixing_type": MomentumMixingType.equality,
-            }
+            property_package=m.fs.pp, momentum_mixing_type=MomentumMixingType.equality
         )
 
         m.fs.mix.model_check()
@@ -679,58 +673,70 @@ class TestMixer(object):
     @pytest.mark.unit
     def test_get_stream_table_contents(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
-        m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+        m.fs.sb = TestStateBlock(m.fs.time, parameters=m.fs.pp)
 
-        m.fs.mix = Mixer(default={"property_package": m.fs.pp})
+        m.fs.mix = Mixer(property_package=m.fs.pp)
 
         stable = m.fs.mix._get_stream_table_contents()
 
-        expected = pandas.DataFrame.from_dict({
-            'Units': {
-                "component_flow_phase ('p1', 'c1')": getattr(pyunits.pint_registry, "mole/second"),
-                "component_flow_phase ('p1', 'c2')": getattr(pyunits.pint_registry, "mole/second"),
-                "component_flow_phase ('p2', 'c1')": getattr(pyunits.pint_registry, "mole/second"),
-                "component_flow_phase ('p2', 'c2')": getattr(pyunits.pint_registry, "mole/second"),
-                'temperature': getattr(pyunits.pint_registry, "K"),
-                'pressure': getattr(pyunits.pint_registry, "Pa")},
-            'inlet_1': {
-                "component_flow_phase ('p1', 'c1')": 2.00,
-                "component_flow_phase ('p1', 'c2')": 2.00,
-                "component_flow_phase ('p2', 'c1')": 2.00,
-                "component_flow_phase ('p2', 'c2')": 2.00,
-                'temperature': 300,
-                'pressure': 1e5},
-            'inlet_2': {
-                "component_flow_phase ('p1', 'c1')": 2.00,
-                "component_flow_phase ('p1', 'c2')": 2.00,
-                "component_flow_phase ('p2', 'c1')": 2.00,
-                "component_flow_phase ('p2', 'c2')": 2.00,
-                'temperature': 300,
-                'pressure': 1e5},
-            'Outlet': {
-                "component_flow_phase ('p1', 'c1')": 2.00,
-                "component_flow_phase ('p1', 'c2')": 2.00,
-                "component_flow_phase ('p2', 'c1')": 2.00,
-                "component_flow_phase ('p2', 'c2')": 2.00,
-                'temperature': 300,
-                'pressure': 1e5}})
+        expected = pandas.DataFrame.from_dict(
+            {
+                "Units": {
+                    "component_flow_phase ('p1', 'c1')": getattr(
+                        pyunits.pint_registry, "mole/second"
+                    ),
+                    "component_flow_phase ('p1', 'c2')": getattr(
+                        pyunits.pint_registry, "mole/second"
+                    ),
+                    "component_flow_phase ('p2', 'c1')": getattr(
+                        pyunits.pint_registry, "mole/second"
+                    ),
+                    "component_flow_phase ('p2', 'c2')": getattr(
+                        pyunits.pint_registry, "mole/second"
+                    ),
+                    "temperature": getattr(pyunits.pint_registry, "K"),
+                    "pressure": getattr(pyunits.pint_registry, "Pa"),
+                },
+                "inlet_1": {
+                    "component_flow_phase ('p1', 'c1')": 2.00,
+                    "component_flow_phase ('p1', 'c2')": 2.00,
+                    "component_flow_phase ('p2', 'c1')": 2.00,
+                    "component_flow_phase ('p2', 'c2')": 2.00,
+                    "temperature": 300,
+                    "pressure": 1e5,
+                },
+                "inlet_2": {
+                    "component_flow_phase ('p1', 'c1')": 2.00,
+                    "component_flow_phase ('p1', 'c2')": 2.00,
+                    "component_flow_phase ('p2', 'c1')": 2.00,
+                    "component_flow_phase ('p2', 'c2')": 2.00,
+                    "temperature": 300,
+                    "pressure": 1e5,
+                },
+                "Outlet": {
+                    "component_flow_phase ('p1', 'c1')": 2.00,
+                    "component_flow_phase ('p1', 'c2')": 2.00,
+                    "component_flow_phase ('p2', 'c1')": 2.00,
+                    "component_flow_phase ('p2', 'c2')": 2.00,
+                    "temperature": 300,
+                    "pressure": 1e5,
+                },
+            }
+        )
 
-        pandas.testing.assert_frame_equal(
-            stable, expected, rtol=1e-4, atol=1e-4)
+        pandas.testing.assert_frame_equal(stable, expected, rtol=1e-4, atol=1e-4)
 
     @pytest.mark.initialization
     @pytest.mark.component
     def test_initialize(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
-        m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+        m.fs.sb = TestStateBlock(m.fs.time, parameters=m.fs.pp)
 
-        m.fs.mix = Mixer(
-            default={"property_package": m.fs.pp, "mixed_state_block": m.fs.sb}
-        )
+        m.fs.mix = Mixer(property_package=m.fs.pp, mixed_state_block=m.fs.sb)
 
         # Change one inlet pressure to check initialization calculations
         m.fs.mix.inlet_1_state[0].pressure = 8e4
@@ -765,11 +771,11 @@ class TestBTX(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = BTXParameterBlock(default={"valid_phase": "Liq"})
+        m.fs.properties = BTXParameterBlock(valid_phase="Liq")
 
-        m.fs.unit = Mixer(default={"property_package": m.fs.properties})
+        m.fs.unit = Mixer(property_package=m.fs.properties)
 
         m.fs.unit.inlet_1.flow_mol[0].fix(5)  # mol/s
         m.fs.unit.inlet_1.temperature[0].fix(365)  # K
@@ -826,34 +832,44 @@ class TestBTX(object):
     def test_get_stream_table_contents(self, btx):
         stable = btx.fs.unit._get_stream_table_contents()
 
-        expected = pandas.DataFrame.from_dict({
-            'Units': {
-                'flow_mol': getattr(pyunits.pint_registry, "mole/second"),
-                'mole_frac_comp benzene': getattr(pyunits.pint_registry, "dimensionless"),
-                'mole_frac_comp toluene': getattr(pyunits.pint_registry, "dimensionless"),
-                'temperature': getattr(pyunits.pint_registry, "kelvin"),
-                'pressure': getattr(pyunits.pint_registry, "Pa")},
-            'inlet_1': {
-                'flow_mol': 5.0,
-                'mole_frac_comp benzene': 0.5,
-                'mole_frac_comp toluene': 0.5,
-                'temperature': 365,
-                'pressure': 2e5},
-            'inlet_2': {
-                'flow_mol': 1.0,
-                'mole_frac_comp benzene': 0.5,
-                'mole_frac_comp toluene': 0.5,
-                'temperature': 300,
-                'pressure': 101325.0},
-            'Outlet': {
-                'flow_mol': 1.0,
-                'mole_frac_comp benzene': 0.5,
-                'mole_frac_comp toluene': 0.5,
-                'temperature': 298.15,
-                'pressure': 101325.0}})
+        expected = pandas.DataFrame.from_dict(
+            {
+                "Units": {
+                    "flow_mol": getattr(pyunits.pint_registry, "mole/second"),
+                    "mole_frac_comp benzene": getattr(
+                        pyunits.pint_registry, "dimensionless"
+                    ),
+                    "mole_frac_comp toluene": getattr(
+                        pyunits.pint_registry, "dimensionless"
+                    ),
+                    "temperature": getattr(pyunits.pint_registry, "kelvin"),
+                    "pressure": getattr(pyunits.pint_registry, "Pa"),
+                },
+                "inlet_1": {
+                    "flow_mol": 5.0,
+                    "mole_frac_comp benzene": 0.5,
+                    "mole_frac_comp toluene": 0.5,
+                    "temperature": 365,
+                    "pressure": 2e5,
+                },
+                "inlet_2": {
+                    "flow_mol": 1.0,
+                    "mole_frac_comp benzene": 0.5,
+                    "mole_frac_comp toluene": 0.5,
+                    "temperature": 300,
+                    "pressure": 101325.0,
+                },
+                "Outlet": {
+                    "flow_mol": 1.0,
+                    "mole_frac_comp benzene": 0.5,
+                    "mole_frac_comp toluene": 0.5,
+                    "temperature": 298.15,
+                    "pressure": 101325.0,
+                },
+            }
+        )
 
-        pandas.testing.assert_frame_equal(
-            stable, expected, rtol=1e-4, atol=1e-4)
+        pandas.testing.assert_frame_equal(stable, expected, rtol=1e-4, atol=1e-4)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -978,7 +994,7 @@ class TestMixer_NoPressure(object):
     @pytest.mark.unit
     def test_pressure_minimization_unsupported(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = NoPressureTestBlock()
 
         with pytest.raises(
@@ -990,18 +1006,16 @@ class TestMixer_NoPressure(object):
             "supports pressure.",
         ):
             m.fs.mix = Mixer(
-                default={
-                    "property_package": m.fs.pp,
-                    "momentum_mixing_type": MomentumMixingType.minimize,
-                    "construct_ports": False,
-                }
+                property_package=m.fs.pp,
+                momentum_mixing_type=MomentumMixingType.minimize,
+                construct_ports=False,
             )
 
     @pytest.mark.build
     @pytest.mark.unit
     def test_pressure_equal_unsupported(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = NoPressureTestBlock()
 
         with pytest.raises(
@@ -1013,18 +1027,16 @@ class TestMixer_NoPressure(object):
             "supports pressure.",
         ):
             m.fs.mix = Mixer(
-                default={
-                    "property_package": m.fs.pp,
-                    "momentum_mixing_type": MomentumMixingType.equality,
-                    "construct_ports": False,
-                }
+                property_package=m.fs.pp,
+                momentum_mixing_type=MomentumMixingType.equality,
+                construct_ports=False,
             )
 
     @pytest.mark.build
     @pytest.mark.unit
     def test_pressure_equal_and_min_unsupported(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = NoPressureTestBlock()
 
         with pytest.raises(
@@ -1036,26 +1048,22 @@ class TestMixer_NoPressure(object):
             "supports pressure.",
         ):
             m.fs.mix = Mixer(
-                default={
-                    "property_package": m.fs.pp,
-                    "momentum_mixing_type": MomentumMixingType.minimize_and_equality,
-                    "construct_ports": False,
-                }
+                property_package=m.fs.pp,
+                momentum_mixing_type=MomentumMixingType.minimize_and_equality,
+                construct_ports=False,
             )
 
     @pytest.mark.build
     @pytest.mark.unit
     def test_pressure_none_unsupported(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = NoPressureTestBlock()
 
         m.fs.mix = Mixer(
-            default={
-                "property_package": m.fs.pp,
-                "momentum_mixing_type": MomentumMixingType.none,
-                "construct_ports": False,
-            }
+            property_package=m.fs.pp,
+            momentum_mixing_type=MomentumMixingType.none,
+            construct_ports=False,
         )
 
 
@@ -1066,16 +1074,14 @@ class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = iapws95.Iapws95ParameterBlock()
 
         m.fs.unit = Mixer(
-            default={
-                "property_package": m.fs.properties,
-                "material_balance_type": MaterialBalanceType.componentTotal,
-                "momentum_mixing_type": MomentumMixingType.equality,
-            }
+            property_package=m.fs.properties,
+            material_balance_type=MaterialBalanceType.componentTotal,
+            momentum_mixing_type=MomentumMixingType.equality,
         )
 
         m.fs.unit.inlet_1.flow_mol[0].fix(100)
@@ -1084,6 +1090,7 @@ class TestIAPWS(object):
 
         m.fs.unit.inlet_2.flow_mol[0].fix(100)
         m.fs.unit.inlet_2.enth_mol[0].fix(5000)
+        m.fs.unit.inlet_2.pressure[0].value = 1e5
 
         return m
 
@@ -1119,42 +1126,44 @@ class TestIAPWS(object):
     def test_get_stream_table_contents(self, iapws):
         stable = iapws.fs.unit._get_stream_table_contents()
 
-        expected = pandas.DataFrame.from_dict({
-            'Units': {
-                'Molar Flow (mol/s)': getattr(pyunits.pint_registry, "mole/second"),
-                'Mass Flow (kg/s)': getattr(pyunits.pint_registry, "kg/second"),
-                'T (K)': getattr(pyunits.pint_registry, "K"),
-                'P (Pa)': getattr(pyunits.pint_registry, "Pa"),
-                'Vapor Fraction': getattr(pyunits.pint_registry, "dimensionless"),
-                'Molar Enthalpy (J/mol) Vap': getattr(pyunits.pint_registry, "J/mole"),
-                'Molar Enthalpy (J/mol) Liq': getattr(pyunits.pint_registry, "J/mole")},
-            'inlet_1': {
-                'Molar Flow (mol/s)': 100,
-                'Mass Flow (kg/s)': 1.8015,
-                'T (K)': 346.05,
-                'P (Pa)': 101325,
-                'Vapor Fraction': 0,
-                'Molar Enthalpy (J/mol) Vap': 47091,
-                'Molar Enthalpy (J/mol) Liq': 5500},
-            'inlet_2': {
-                'Molar Flow (mol/s)': 100,
-                'Mass Flow (kg/s)': 1.8015,
-                'T (K)': 339.43,
-                'P (Pa)': 1e5,
-                'Vapor Fraction': 0,
-                'Molar Enthalpy (J/mol) Vap': 46704,
-                'Molar Enthalpy (J/mol) Liq': 5000},
-            'Outlet': {
-                'Molar Flow (mol/s)': 1,
-                'Mass Flow (kg/s)': 1.8015e-2,
-                'T (K)': 286.34,
-                'P (Pa)': 1e5,
-                'Vapor Fraction': 0,
-                'Molar Enthalpy (J/mol) Vap': 2168.6,
-                'Molar Enthalpy (J/mol) Liq': 1000}})
+        expected = pandas.DataFrame.from_dict(
+            {
+                "Units": {
+                    "Molar Flow": getattr(pyunits.pint_registry, "mole/second"),
+                    "Mass Flow": getattr(pyunits.pint_registry, "kg/second"),
+                    "T": getattr(pyunits.pint_registry, "K"),
+                    "P": getattr(pyunits.pint_registry, "Pa"),
+                    "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
+                    "Molar Enthalpy": getattr(pyunits.pint_registry, "J/mole"),
+                },
+                "inlet_1": {
+                    "Molar Flow": 100,
+                    "Mass Flow": 1.8015,
+                    "T": 346.05,
+                    "P": 101325,
+                    "Vapor Fraction": 0,
+                    "Molar Enthalpy": 5500.0,
+                },
+                "inlet_2": {
+                    "Molar Flow": 100,
+                    "Mass Flow": 1.8015,
+                    "T": 339.43,
+                    "P": 1e5,
+                    "Vapor Fraction": 0,
+                    "Molar Enthalpy": 5000,
+                },
+                "Outlet": {
+                    "Molar Flow": 1,
+                    "Mass Flow": 1.8015e-2,
+                    "T": 270.4877112932641,
+                    "P": 11032305.8275,
+                    "Vapor Fraction": 0,
+                    "Molar Enthalpy": 0.01102138712926277,
+                },
+            }
+        )
 
-        pandas.testing.assert_frame_equal(
-            stable, expected, rtol=1e-4, atol=1e-4)
+        pandas.testing.assert_frame_equal(stable, expected, rtol=1e-4, atol=1e-4)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -1216,11 +1225,11 @@ class TestSaponification(object):
     @pytest.fixture(scope="class")
     def sapon(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = SaponificationParameterBlock()
 
-        m.fs.unit = Mixer(default={"property_package": m.fs.properties})
+        m.fs.unit = Mixer(property_package=m.fs.properties)
 
         m.fs.unit.inlet_1.flow_vol[0].fix(1e-3)
         m.fs.unit.inlet_1.temperature[0].fix(320)
@@ -1280,46 +1289,64 @@ class TestSaponification(object):
     def test_get_stream_table_contents(self, sapon):
         stable = sapon.fs.unit._get_stream_table_contents()
 
-        expected = pandas.DataFrame.from_dict({
-            'Units': {
-                'Volumetric Flowrate': getattr(pyunits.pint_registry, "m**3/second"),
-                'Molar Concentration H2O': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Molar Concentration NaOH': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Molar Concentration EthylAcetate': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Molar Concentration SodiumAcetate': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Molar Concentration Ethanol': getattr(pyunits.pint_registry, "mole/m**3"),
-                'Temperature': getattr(pyunits.pint_registry, "K"),
-                'Pressure': getattr(pyunits.pint_registry, "Pa")},
-            'inlet_1': {
-                'Volumetric Flowrate': 1e-3,
-                'Molar Concentration H2O': 55388,
-                'Molar Concentration NaOH': 100.00,
-                'Molar Concentration EthylAcetate': 100.00,
-                'Molar Concentration SodiumAcetate': 0,
-                'Molar Concentration Ethanol': 0,
-                'Temperature': 320,
-                'Pressure': 1.0132e+05},
-            'inlet_2': {
-                'Volumetric Flowrate': 1e-3,
-                'Molar Concentration H2O': 55388,
-                'Molar Concentration NaOH': 100.00,
-                'Molar Concentration EthylAcetate': 100.00,
-                'Molar Concentration SodiumAcetate': 0,
-                'Molar Concentration Ethanol': 0,
-                'Temperature': 300,
-                'Pressure': 1.0132e+05},
-            'Outlet': {
-                'Volumetric Flowrate': 1.00,
-                'Molar Concentration H2O': 100.00,
-                'Molar Concentration NaOH': 100.0,
-                'Molar Concentration EthylAcetate': 100.00,
-                'Molar Concentration SodiumAcetate': 100.00,
-                'Molar Concentration Ethanol': 100.00,
-                'Temperature': 298.15,
-                'Pressure': 1.0132e+05}})
+        expected = pandas.DataFrame.from_dict(
+            {
+                "Units": {
+                    "Volumetric Flowrate": getattr(
+                        pyunits.pint_registry, "m**3/second"
+                    ),
+                    "Molar Concentration H2O": getattr(
+                        pyunits.pint_registry, "mole/m**3"
+                    ),
+                    "Molar Concentration NaOH": getattr(
+                        pyunits.pint_registry, "mole/m**3"
+                    ),
+                    "Molar Concentration EthylAcetate": getattr(
+                        pyunits.pint_registry, "mole/m**3"
+                    ),
+                    "Molar Concentration SodiumAcetate": getattr(
+                        pyunits.pint_registry, "mole/m**3"
+                    ),
+                    "Molar Concentration Ethanol": getattr(
+                        pyunits.pint_registry, "mole/m**3"
+                    ),
+                    "Temperature": getattr(pyunits.pint_registry, "K"),
+                    "Pressure": getattr(pyunits.pint_registry, "Pa"),
+                },
+                "inlet_1": {
+                    "Volumetric Flowrate": 1e-3,
+                    "Molar Concentration H2O": 55388,
+                    "Molar Concentration NaOH": 100.00,
+                    "Molar Concentration EthylAcetate": 100.00,
+                    "Molar Concentration SodiumAcetate": 0,
+                    "Molar Concentration Ethanol": 0,
+                    "Temperature": 320,
+                    "Pressure": 1.0132e05,
+                },
+                "inlet_2": {
+                    "Volumetric Flowrate": 1e-3,
+                    "Molar Concentration H2O": 55388,
+                    "Molar Concentration NaOH": 100.00,
+                    "Molar Concentration EthylAcetate": 100.00,
+                    "Molar Concentration SodiumAcetate": 0,
+                    "Molar Concentration Ethanol": 0,
+                    "Temperature": 300,
+                    "Pressure": 1.0132e05,
+                },
+                "Outlet": {
+                    "Volumetric Flowrate": 1.00,
+                    "Molar Concentration H2O": 100.00,
+                    "Molar Concentration NaOH": 100.0,
+                    "Molar Concentration EthylAcetate": 100.00,
+                    "Molar Concentration SodiumAcetate": 100.00,
+                    "Molar Concentration Ethanol": 100.00,
+                    "Temperature": 298.15,
+                    "Pressure": 1.0132e05,
+                },
+            }
+        )
 
-        pandas.testing.assert_frame_equal(
-            stable, expected, rtol=1e-4, atol=1e-4)
+        pandas.testing.assert_frame_equal(stable, expected, rtol=1e-4, atol=1e-4)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -1416,15 +1443,11 @@ class TestSaponification(object):
 def test_construction_component_not_in_phase():
     m = ConcreteModel()
     m.fs = FlowsheetBlock()
-    m.fs.prop_params = GenericParameterBlock(
-        default=get_prop(["H2O", "H2"], ["Liq", "Vap"])
-    )
+    m.fs.prop_params = GenericParameterBlock(**get_prop(["H2O", "H2"], ["Liq", "Vap"]))
     m.fs.inject1 = Mixer(
-        default={
-            "property_package": m.fs.prop_params,
-            "inlet_list": ["in1", "in2"],
-            "momentum_mixing_type": MomentumMixingType.none,
-        }
+        property_package=m.fs.prop_params,
+        inlet_list=["in1", "in2"],
+        momentum_mixing_type=MomentumMixingType.none,
     )
     iscale.calculate_scaling_factors(m)
 
@@ -1432,10 +1455,10 @@ def test_construction_component_not_in_phase():
 @pytest.mark.unit
 def test_initialization_error():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.mix = Mixer(default={"property_package": m.fs.pp})
+    m.fs.mix = Mixer(property_package=m.fs.pp)
 
     m.fs.mix.inlet_1_state[0].material_flow_mol.fix(10)
     m.fs.mix.inlet_2_state[0].material_flow_mol.fix(10)

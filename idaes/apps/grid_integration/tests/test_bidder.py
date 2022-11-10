@@ -19,7 +19,6 @@ from idaes.apps.grid_integration.tests.util import (
     testing_model_data,
 )
 from pyomo.common import unittest as pyo_unittest
-
 from idaes.apps.grid_integration.coordinator import prescient_avail
 
 
@@ -57,12 +56,15 @@ class TestMissingModel:
 horizon = 4
 n_scenario = 3
 
+day_ahead_horizon = horizon
+real_time_horizon = horizon
+
 
 @pytest.mark.unit
 def test_model_object_missing_methods():
 
     solver = pyo.SolverFactory("cbc")
-    forecaster = TestingForecaster(horizon=horizon, n_sample=n_scenario)
+    forecaster = TestingForecaster(prediction=30)
 
     # By definition, the model object should contain these methods
     method_list = ["populate_model", "update_model"]
@@ -73,6 +75,8 @@ def test_model_object_missing_methods():
         with pytest.raises(AttributeError, match=r".*{}().*".format(m)):
             bidder_object = Bidder(
                 bidding_model_object=bidding_model_object,
+                day_ahead_horizon=day_ahead_horizon,
+                real_time_horizon=real_time_horizon,
                 n_scenario=n_scenario,
                 solver=solver,
                 forecaster=forecaster,
@@ -83,7 +87,7 @@ def test_model_object_missing_methods():
 def test_model_object_missing_attr():
 
     solver = pyo.SolverFactory("cbc")
-    forecaster = TestingForecaster(horizon=horizon, n_sample=n_scenario)
+    forecaster = TestingForecaster(prediction=30)
 
     # By definition, the model object should contain these attributes
     attr_list = ["power_output", "total_cost", "model_data"]
@@ -94,6 +98,8 @@ def test_model_object_missing_attr():
         with pytest.raises(AttributeError, match=r".*{}().*".format(attr)):
             bidder_object = Bidder(
                 bidding_model_object=bidding_model_object,
+                day_ahead_horizon=day_ahead_horizon,
+                real_time_horizon=real_time_horizon,
                 n_scenario=n_scenario,
                 solver=solver,
                 forecaster=forecaster,
@@ -104,13 +110,15 @@ def test_model_object_missing_attr():
 def test_n_scenario_checker():
 
     solver = pyo.SolverFactory("cbc")
-    forecaster = TestingForecaster(horizon=horizon, n_sample=n_scenario)
-    bidding_model_object = TestingModel(model_data=testing_model_data, horizon=horizon)
+    forecaster = TestingForecaster(prediction=30)
+    bidding_model_object = TestingModel(model_data=testing_model_data)
 
     # test if bidder raise error when negative number of scenario is given
     with pytest.raises(ValueError, match=r".*greater than zero.*"):
         bidder_object = Bidder(
             bidding_model_object=bidding_model_object,
+            day_ahead_horizon=day_ahead_horizon,
+            real_time_horizon=real_time_horizon,
             n_scenario=-1,
             solver=solver,
             forecaster=forecaster,
@@ -120,6 +128,8 @@ def test_n_scenario_checker():
     with pytest.raises(TypeError, match=r".*should be an integer.*"):
         bidder_object = Bidder(
             bidding_model_object=bidding_model_object,
+            day_ahead_horizon=day_ahead_horizon,
+            real_time_horizon=real_time_horizon,
             n_scenario=3.0,
             solver=solver,
             forecaster=forecaster,
@@ -129,8 +139,8 @@ def test_n_scenario_checker():
 @pytest.mark.unit
 def test_solver_checker():
 
-    forecaster = TestingForecaster(horizon=horizon, n_sample=n_scenario)
-    bidding_model_object = TestingModel(model_data=testing_model_data, horizon=horizon)
+    forecaster = TestingForecaster(prediction=30)
+    bidding_model_object = TestingModel(model_data=testing_model_data)
 
     # test if bidder raise error when invalid solver is provided
     invalid_solvers = [5, "cbc", "ipopt"]
@@ -138,6 +148,8 @@ def test_solver_checker():
         with pytest.raises(TypeError, match=r".*not a valid Pyomo solver.*"):
             bidder_object = Bidder(
                 bidding_model_object=bidding_model_object,
+                day_ahead_horizon=day_ahead_horizon,
+                real_time_horizon=real_time_horizon,
                 n_scenario=n_scenario,
                 solver=s,
                 forecaster=forecaster,
@@ -148,12 +160,14 @@ def test_solver_checker():
 def bidder_object():
 
     solver = pyo.SolverFactory("cbc")
-    forecaster = TestingForecaster(horizon=horizon, n_sample=n_scenario)
+    forecaster = TestingForecaster(prediction=30)
 
     # create a bidder model
-    bidding_model_object = TestingModel(model_data=testing_model_data, horizon=horizon)
+    bidding_model_object = TestingModel(model_data=testing_model_data)
     bidder_object = Bidder(
         bidding_model_object=bidding_model_object,
+        day_ahead_horizon=day_ahead_horizon,
+        real_time_horizon=real_time_horizon,
         n_scenario=n_scenario,
         solver=solver,
         forecaster=forecaster,
@@ -165,7 +179,7 @@ def bidder_object():
 @pytest.mark.skipif(
     not prescient_avail, reason="Prescient (optional dependency) not available"
 )
-def test_compute_bids(bidder_object):
+def test_compute_DA_bids(bidder_object):
 
     marginal_cost = bidder_object.bidding_model_object.marginal_cost
     gen = bidder_object.generator
@@ -178,13 +192,16 @@ def test_compute_bids(bidder_object):
     # expect default bids
     shift = 1
     fixed_forecast = marginal_cost - shift
-    bids = bidder_object.compute_bids(date=date, hour=None, prediction=fixed_forecast)
+    bidder_object.forecaster.prediction = fixed_forecast
+    bids = bidder_object.compute_day_ahead_bids(date=date, hour=0)
 
     expected_bids = {
         t: {
             gen: {
                 "p_min": pmin,
                 "p_max": pmax,
+                "p_min_agc": pmin,
+                "p_max_agc": pmax,
                 "startup_capacity": pmin,
                 "shutdown_capacity": pmin,
                 "p_cost": [
@@ -200,7 +217,8 @@ def test_compute_bids(bidder_object):
     # test bidding when price forecast higher than marginal cost
     shift = 1
     fixed_forecast = marginal_cost + shift
-    bids = bidder_object.compute_bids(date=date, hour=None, prediction=fixed_forecast)
+    bidder_object.forecaster.prediction = fixed_forecast
+    bids = bidder_object.compute_day_ahead_bids(date=date, hour=0)
 
     expected_bids = {}
     for t in range(horizon):
@@ -209,6 +227,8 @@ def test_compute_bids(bidder_object):
         expected_bids[t][gen] = {
             "p_min": pmin,
             "p_max": pmax,
+            "p_min_agc": pmin,
+            "p_max_agc": pmax,
             "startup_capacity": pmin,
             "shutdown_capacity": pmin,
         }
@@ -229,5 +249,49 @@ def test_compute_bids(bidder_object):
             pre_cost = p_cost[-1][1]
 
         expected_bids[t][gen]["p_cost"] = p_cost
+
+    pyo_unittest.assertStructuredAlmostEqual(first=expected_bids, second=bids)
+
+
+@pytest.mark.component
+@pytest.mark.skipif(
+    not prescient_avail, reason="Prescient (optional dependency) not available"
+)
+def test_compute_RT_bids(bidder_object):
+    marginal_cost = bidder_object.bidding_model_object.marginal_cost
+    gen = bidder_object.generator
+    default_bids = bidder_object.bidding_model_object.model_data.p_cost
+    pmin = bidder_object.bidding_model_object.pmin
+    pmax = bidder_object.bidding_model_object.pmax
+    date = "2021-08-20"
+
+    # test bidding when price forecast lower than marginal cost
+    # expect default bids
+    realized_day_ahead_prices = [29] * bidder_object.real_time_horizon
+    realized_day_ahead_dispatches = [0] * bidder_object.real_time_horizon
+    shift = 1
+    fixed_forecast = marginal_cost - shift
+    bidder_object.forecaster.prediction = fixed_forecast
+    bids = bidder_object.compute_real_time_bids(
+        date=date,
+        hour=0,
+        realized_day_ahead_prices=realized_day_ahead_prices,
+        realized_day_ahead_dispatches=realized_day_ahead_dispatches,
+    )
+
+    expected_bids = {
+        t: {
+            gen: {
+                "p_min": pmin,
+                "p_max": pmax,
+                "p_min_agc": pmin,
+                "p_max_agc": pmax,
+                "startup_capacity": pmin,
+                "shutdown_capacity": pmin,
+                "p_cost": [(p, (p - pmin) * marginal_cost) for p, _ in default_bids],
+            }
+        }
+        for t in range(horizon)
+    }
 
     pyo_unittest.assertStructuredAlmostEqual(first=expected_bids, second=bids)

@@ -32,7 +32,7 @@ from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.models.properties.modular_properties.pure.RPP5 import *
 from idaes.core.util.misc import add_object_reference
-from idaes.core.base.property_meta import PropertyClassMetadata
+from idaes.core.base.property_meta import PropertyClassMetadata, UnitSet
 
 
 @pytest.fixture()
@@ -62,11 +62,13 @@ def frame():
     m.config.include_enthalpy_of_formation = True
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object.default_units["temperature"] = pyunits.K
-    m.meta_object.default_units["mass"] = pyunits.kg
-    m.meta_object.default_units["length"] = pyunits.m
-    m.meta_object.default_units["time"] = pyunits.s
-    m.meta_object.default_units["amount"] = pyunits.mol
+    m.meta_object._default_units = UnitSet(
+        temperature=pyunits.K,
+        mass=pyunits.kg,
+        length=pyunits.m,
+        time=pyunits.s,
+        amount=pyunits.mol,
+    )
 
     def get_metadata(self):
         return m.meta_object
@@ -93,7 +95,7 @@ def frame():
 
 @pytest.mark.unit
 def test_cp_mol_ig_comp(frame):
-    cp_mol_ig_comp.build_parameters(frame.params)
+    RPP5.cp_mol_ig_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.cp_mol_ig_comp_coeff_a0, Var)
     assert value(frame.params.cp_mol_ig_comp_coeff_a0) == 4.395
@@ -106,7 +108,7 @@ def test_cp_mol_ig_comp(frame):
     assert isinstance(frame.params.cp_mol_ig_comp_coeff_a4, Var)
     assert value(frame.params.cp_mol_ig_comp_coeff_a4) == 0.632e-11
 
-    expr = cp_mol_ig_comp.return_expression(
+    expr = RPP5.cp_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == pytest.approx(33.518, abs=1e-3)
@@ -119,12 +121,12 @@ def test_cp_mol_ig_comp(frame):
 
 @pytest.mark.unit
 def test_enth_mol_ig_comp(frame):
-    enth_mol_ig_comp.build_parameters(frame.params)
+    RPP5.enth_mol_ig_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.enth_mol_form_vap_comp_ref, Var)
     assert value(frame.params.enth_mol_form_vap_comp_ref) == -241.81e3
 
-    expr = enth_mol_ig_comp.return_expression(
+    expr = RPP5.enth_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == pytest.approx(-240973.683, abs=1e-3)
@@ -137,12 +139,12 @@ def test_enth_mol_ig_comp(frame):
 
 @pytest.mark.unit
 def test_entr_mol_ig_comp(frame):
-    entr_mol_ig_comp.build_parameters(frame.params)
+    RPP5.entr_mol_ig_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.entr_mol_form_vap_comp_ref, Var)
     assert value(frame.params.entr_mol_form_vap_comp_ref) == 188.84
 
-    expr = entr_mol_ig_comp.return_expression(
+    expr = RPP5.entr_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == pytest.approx(191.769, abs=1e-3)
@@ -155,7 +157,7 @@ def test_entr_mol_ig_comp(frame):
 
 @pytest.mark.unit
 def test_pressure_sat_comp(frame):
-    pressure_sat_comp.build_parameters(frame.params)
+    RPP5.pressure_sat_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.pressure_sat_comp_coeff_A, Var)
     assert value(frame.params.pressure_sat_comp_coeff_A) == 5.11564
@@ -164,7 +166,7 @@ def test_pressure_sat_comp(frame):
     assert isinstance(frame.params.pressure_sat_comp_coeff_C, Var)
     assert value(frame.params.pressure_sat_comp_coeff_C) == 230.14
 
-    expr = pressure_sat_comp.return_expression(
+    expr = RPP5.pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == pytest.approx(3173.066, abs=1e-3)
@@ -177,17 +179,17 @@ def test_pressure_sat_comp(frame):
 
 @pytest.mark.unit
 def test_pressure_sat_comp_dT(frame):
-    pressure_sat_comp.build_parameters(frame.params)
+    RPP5.pressure_sat_comp.build_parameters(frame.params)
 
-    expr = pressure_sat_comp.dT_expression(
+    expr = RPP5.pressure_sat_comp.dT_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
 
     delta = 1e-4 * pyunits.K
-    val = pressure_sat_comp.return_expression(
+    val = RPP5.pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
-    val_p = pressure_sat_comp.return_expression(
+    val_p = RPP5.pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature + delta
     )
 
@@ -197,10 +199,10 @@ def test_pressure_sat_comp_dT(frame):
 
     frame.props[1].temperature.value = 373.15
 
-    val = pressure_sat_comp.return_expression(
+    val = RPP5.pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
-    val_p = pressure_sat_comp.return_expression(
+    val_p = RPP5.pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature + delta
     )
 

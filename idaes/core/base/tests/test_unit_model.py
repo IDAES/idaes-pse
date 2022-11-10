@@ -25,7 +25,9 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
     ControlVolume0DBlock,
+    ControlVolume1DBlock,
     MaterialBalanceType,
+    FlowDirection,
 )
 from idaes.core.util.exceptions import (
     BalanceTypeNotSupportedError,
@@ -61,7 +63,7 @@ def test_config_block():
 def test_config_args():
     m = ConcreteModel()
 
-    m.u = Unit(default={"dynamic": True})
+    m.u = Unit(dynamic=True)
 
     assert m.u.config.dynamic is True
 
@@ -95,7 +97,7 @@ def test_setup_dynamics1():
     # Test that _setup_dynamics gets argument from parent
     m = ConcreteModel()
 
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
 
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
@@ -123,9 +125,9 @@ def test_setup_dynamics_dynamic_in_steady_state():
     # steady-state parent
     m = ConcreteModel()
 
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
 
-    m.fs.u = Unit(default={"dynamic": True})
+    m.fs.u = Unit(dynamic=True)
     with pytest.raises(DynamicError):
         m.fs.u._setup_dynamics()
 
@@ -135,7 +137,7 @@ def test_setup_dynamics_get_time():
     # Test that time domain is collected correctly
     m = ConcreteModel()
 
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(dynamic=False)
 
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
@@ -146,7 +148,7 @@ def test_setup_dynamics_has_holdup():
     # Test that has_holdup argument is True when dynamic is True
     m = ConcreteModel()
 
-    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
+    m.fs = Flowsheet(dynamic=True, time_units=units.s)
 
     m.fs.u = Unit()
     m.fs.u.config.has_holdup = False
@@ -190,7 +192,11 @@ def test_add_port_invalid_block():
 
     m.fs.u.prop = m.fs.pp.build_state_block(m.fs.time)
 
-    with pytest.raises(ConfigurationError):
+    with pytest.raises(
+        ConfigurationError,
+        match="fs.u block object provided to add_port method is not an "
+        "instance of a StateBlock object \(does not have a build_port method\).",
+    ):
         m.fs.u.add_port(name="test_port", block=m.fs.u)
 
 
@@ -202,33 +208,98 @@ def test_add_inlet_port_CV0D():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.control_volume = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+    m.fs.u.control_volume = ControlVolume0DBlock(property_package=m.fs.pp)
 
     m.fs.u.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
     p_obj = m.fs.u.add_inlet_port()
 
     assert isinstance(p_obj, Port)
-    assert hasattr(m.fs.u, "inlet")
+    assert m.fs.u.inlet is p_obj
     assert len(m.fs.u.inlet) == 1
-
-    # Set new inlet conditions to differentiate from outlet
-    m.fs.u.control_volume.properties_in[0].component_flow_phase = 10
-    m.fs.u.control_volume.properties_in[0].pressure = 20
-    m.fs.u.control_volume.properties_in[0].temperature = 30
 
     for p in m.fs.pp.phase_list:
         for j in m.fs.pp.component_list:
-            assert m.fs.u.inlet.component_flow_phase[0, p, j].value == (
-                m.fs.u.control_volume.properties_in[0].flow_mol_phase_comp[p, j].value
+            assert (
+                m.fs.u.inlet.component_flow_phase[0, p, j]
+                is m.fs.u.control_volume.properties_in[0].flow_mol_phase_comp[p, j]
             )
+    assert m.fs.u.inlet.pressure[0] is m.fs.u.control_volume.properties_in[0].pressure
     assert (
-        m.fs.u.inlet.pressure[0].value
-        == m.fs.u.control_volume.properties_in[0].pressure.value
+        m.fs.u.inlet.temperature[0]
+        is m.fs.u.control_volume.properties_in[0].temperature
     )
+
+
+@pytest.mark.unit
+def test_add_inlet_port_CV1D():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.control_volume = ControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+    )
+
+    m.fs.u.control_volume.add_geometry()
+    m.fs.u.control_volume.add_state_blocks(has_phase_equilibrium=False)
+
+    p_obj = m.fs.u.add_inlet_port()
+
+    assert isinstance(p_obj, Port)
+    assert m.fs.u.inlet is p_obj
+    assert len(m.fs.u.inlet) == 1
+
+    for p in m.fs.pp.phase_list:
+        for j in m.fs.pp.component_list:
+            assert (
+                m.fs.u.inlet.component_flow_phase[0, p, j]
+                is m.fs.u.control_volume.properties[0, 0].flow_mol_phase_comp[p, j]
+            )
+    assert m.fs.u.inlet.pressure[0] is m.fs.u.control_volume.properties[0, 0].pressure
     assert (
-        m.fs.u.inlet.temperature[0].value
-        == m.fs.u.control_volume.properties_in[0].temperature.value
+        m.fs.u.inlet.temperature[0]
+        is m.fs.u.control_volume.properties[0, 0].temperature
+    )
+
+
+@pytest.mark.unit
+def test_add_inlet_port_CV1D_backward():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.control_volume = ControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+    )
+
+    m.fs.u.control_volume.add_geometry(flow_direction=FlowDirection.backward)
+    m.fs.u.control_volume.add_state_blocks(has_phase_equilibrium=False)
+
+    p_obj = m.fs.u.add_inlet_port()
+
+    assert isinstance(p_obj, Port)
+    assert m.fs.u.inlet is p_obj
+    assert len(m.fs.u.inlet) == 1
+
+    for p in m.fs.pp.phase_list:
+        for j in m.fs.pp.component_list:
+            assert (
+                m.fs.u.inlet.component_flow_phase[0, p, j]
+                is m.fs.u.control_volume.properties[0, 1].flow_mol_phase_comp[p, j]
+            )
+    assert m.fs.u.inlet.pressure[0] is m.fs.u.control_volume.properties[0, 1].pressure
+    assert (
+        m.fs.u.inlet.temperature[0]
+        is m.fs.u.control_volume.properties[0, 1].temperature
     )
 
 
@@ -240,9 +311,14 @@ def test_add_inlet_port_CV0D_no_default_block():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+    m.fs.u.cv = ControlVolume0DBlock(property_package=m.fs.pp)
 
-    with pytest.raises(ConfigurationError):
+    with pytest.raises(
+        ConfigurationError,
+        match="fs.u add_inlet_port was called without a block argument"
+        " but no default ControlVolume exists \(control_volume\). "
+        "Please provide block to which the Port should be associated.",
+    ):
         m.fs.u.add_inlet_port()
 
 
@@ -254,7 +330,7 @@ def test_add_inlet_port_CV0D_full_args():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+    m.fs.u.cv = ControlVolume0DBlock(property_package=m.fs.pp)
 
     m.fs.u.cv.add_state_blocks(has_phase_equilibrium=False)
 
@@ -291,15 +367,44 @@ def test_add_inlet_port_CV0D_part_args():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+    m.fs.u.cv = ControlVolume0DBlock(property_package=m.fs.pp)
 
     m.fs.u.cv.add_state_blocks(has_phase_equilibrium=False)
 
-    with pytest.raises(ConfigurationError):
+    with pytest.raises(
+        ConfigurationError,
+        match="fs.u add_inlet_port was called with a block argument, "
+        "but a name argument was not provided. Either both "
+        "a name and a block must be provided or neither.",
+    ):
         m.fs.u.add_inlet_port(block=m.fs.u.cv)
 
-    with pytest.raises(ConfigurationError):
+    with pytest.raises(
+        ConfigurationError,
+        match="fs.u add_inlet_port was called without a block "
+        "argument but a name argument was provided. Either "
+        "both a name and a block must be provided or neither.",
+    ):
         m.fs.u.add_inlet_port(name="foo")
+
+
+@pytest.mark.unit
+def test_add_inlet_port_CV0D_no_state_blocks():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.control_volume = ControlVolume0DBlock(property_package=m.fs.pp)
+
+    with pytest.raises(
+        ConfigurationError,
+        match="fs.u - control volume does not have expected "
+        "names for StateBlocks. Please check that the control "
+        "volume was constructed correctly.",
+    ):
+        m.fs.u.add_inlet_port()
 
 
 @pytest.mark.unit
@@ -310,33 +415,98 @@ def test_add_outlet_port_CV0D():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.control_volume = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+    m.fs.u.control_volume = ControlVolume0DBlock(property_package=m.fs.pp)
 
     m.fs.u.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
     p_obj = m.fs.u.add_outlet_port()
 
     assert isinstance(p_obj, Port)
-    assert hasattr(m.fs.u, "outlet")
+    assert m.fs.u.outlet is p_obj
     assert len(m.fs.u.outlet) == 1
-
-    # Set new outlet conditions to differentiate from intlet
-    m.fs.u.control_volume.properties_out[0].a = 10
-    m.fs.u.control_volume.properties_out[0].b = 20
-    m.fs.u.control_volume.properties_out[0].c = 30
 
     for p in m.fs.pp.phase_list:
         for j in m.fs.pp.component_list:
-            assert m.fs.u.outlet.component_flow_phase[0, p, j].value == (
-                m.fs.u.control_volume.properties_out[0].flow_mol_phase_comp[p, j].value
+            assert (
+                m.fs.u.outlet.component_flow_phase[0, p, j]
+                is m.fs.u.control_volume.properties_out[0].flow_mol_phase_comp[p, j]
             )
+    assert m.fs.u.outlet.pressure[0] is m.fs.u.control_volume.properties_out[0].pressure
     assert (
-        m.fs.u.outlet.pressure[0].value
-        == m.fs.u.control_volume.properties_out[0].pressure.value
+        m.fs.u.outlet.temperature[0]
+        is m.fs.u.control_volume.properties_out[0].temperature
     )
+
+
+@pytest.mark.unit
+def test_add_outlet_port_CV1D():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.control_volume = ControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+    )
+
+    m.fs.u.control_volume.add_geometry()
+    m.fs.u.control_volume.add_state_blocks(has_phase_equilibrium=False)
+
+    p_obj = m.fs.u.add_outlet_port()
+
+    assert isinstance(p_obj, Port)
+    assert m.fs.u.outlet is p_obj
+    assert len(m.fs.u.outlet) == 1
+
+    for p in m.fs.pp.phase_list:
+        for j in m.fs.pp.component_list:
+            assert (
+                m.fs.u.outlet.component_flow_phase[0, p, j]
+                is m.fs.u.control_volume.properties[0, 1].flow_mol_phase_comp[p, j]
+            )
+    assert m.fs.u.outlet.pressure[0] is m.fs.u.control_volume.properties[0, 1].pressure
     assert (
-        m.fs.u.outlet.temperature[0].value
-        == m.fs.u.control_volume.properties_out[0].temperature.value
+        m.fs.u.outlet.temperature[0]
+        is m.fs.u.control_volume.properties[0, 1].temperature
+    )
+
+
+@pytest.mark.unit
+def test_add_outlet_port_CV1D_backward():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.control_volume = ControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+    )
+
+    m.fs.u.control_volume.add_geometry(flow_direction=FlowDirection.backward)
+    m.fs.u.control_volume.add_state_blocks(has_phase_equilibrium=False)
+
+    p_obj = m.fs.u.add_outlet_port()
+
+    assert isinstance(p_obj, Port)
+    assert m.fs.u.outlet is p_obj
+    assert len(m.fs.u.outlet) == 1
+
+    for p in m.fs.pp.phase_list:
+        for j in m.fs.pp.component_list:
+            assert (
+                m.fs.u.outlet.component_flow_phase[0, p, j]
+                is m.fs.u.control_volume.properties[0, 0].flow_mol_phase_comp[p, j]
+            )
+    assert m.fs.u.outlet.pressure[0] is m.fs.u.control_volume.properties[0, 0].pressure
+    assert (
+        m.fs.u.outlet.temperature[0]
+        is m.fs.u.control_volume.properties[0, 0].temperature
     )
 
 
@@ -348,9 +518,15 @@ def test_add_outlet_port_CV0D_no_default_block():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+    m.fs.u.cv = ControlVolume0DBlock(property_package=m.fs.pp)
 
-    with pytest.raises(ConfigurationError):
+    with pytest.raises(
+        ConfigurationError,
+        match="fs.u add_outlet_port was called without a block "
+        "argument but no default ControlVolume exists "
+        "\(control_volume\). Please provide block to which the "
+        "Port should be associated.",
+    ):
         m.fs.u.add_outlet_port()
 
 
@@ -362,7 +538,7 @@ def test_add_outlet_port_CV0D_full_args():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+    m.fs.u.cv = ControlVolume0DBlock(property_package=m.fs.pp)
 
     m.fs.u.cv.add_state_blocks(has_phase_equilibrium=False)
 
@@ -399,23 +575,49 @@ def test_add_outlet_port_CV0D_part_args():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+    m.fs.u.cv = ControlVolume0DBlock(property_package=m.fs.pp)
 
     m.fs.u.cv.add_state_blocks(has_phase_equilibrium=False)
 
-    with pytest.raises(ConfigurationError):
+    with pytest.raises(
+        ConfigurationError,
+        match="fs.u add_outlet_port was called with a block argument, "
+        "but a name argument was not provided. Either both "
+        "a name and a block must be provided or neither.",
+    ):
         m.fs.u.add_outlet_port(block=m.fs.u.cv)
 
-    with pytest.raises(ConfigurationError):
+    with pytest.raises(
+        ConfigurationError,
+        match="fs.u add_outlet_port was called without a block "
+        "argument but a name argument was provided. Either "
+        "both a name and a block must be provided or neither.",
+    ):
         m.fs.u.add_outlet_port(name="foo")
 
 
 @pytest.mark.unit
+def test_add_outlet_port_CV0D_no_state_blocks():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.control_volume = ControlVolume0DBlock(property_package=m.fs.pp)
+
+    with pytest.raises(
+        ConfigurationError,
+        match="fs.u - control volume does not have expected "
+        "names for StateBlocks. Please check that the control "
+        "volume was constructed correctly.",
+    ):
+        m.fs.u.add_outlet_port()
+
+
+@pytest.mark.unit
 def test_fix_unfix_initial_conditions():
-    fs = Flowsheet(
-        default={"dynamic": True, "time_set": [0, 1, 2], "time_units": units.s},
-        concrete=True,
-    )
+    fs = Flowsheet(dynamic=True, time_set=[0, 1, 2], time_units=units.s, concrete=True)
     fs._setup_dynamics()
 
     fs.b = Unit()
@@ -454,7 +656,7 @@ def test_get_stream_table_contents_CV0D():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.control_volume = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+    m.fs.u.control_volume = ControlVolume0DBlock(property_package=m.fs.pp)
 
     m.fs.u.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
@@ -486,7 +688,7 @@ def test_get_stream_table_contents_CV0D_missing_default_port():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.control_volume = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+    m.fs.u.control_volume = ControlVolume0DBlock(property_package=m.fs.pp)
 
     m.fs.u.control_volume.add_state_blocks(has_phase_equilibrium=False)
 

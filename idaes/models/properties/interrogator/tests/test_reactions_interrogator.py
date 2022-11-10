@@ -32,12 +32,10 @@ from idaes.models.properties.interrogator import (
 @pytest.mark.unit
 def test_interrogator_parameter_block():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
-        default={"property_package": m.fs.params}
-    )
+    m.fs.rxn_params = ReactionInterrogatorBlock(property_package=m.fs.params)
 
     # Check that parameter block has expected attributes
     assert isinstance(m.fs.rxn_params.required_properties, dict)
@@ -47,17 +45,13 @@ def test_interrogator_parameter_block():
 @pytest.mark.unit
 def test_interrogator_rxn_block_unindexed_call():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
-        default={"property_package": m.fs.params}
-    )
+    m.fs.rxn_params = ReactionInterrogatorBlock(property_package=m.fs.params)
 
     m.fs.props = m.fs.params.build_state_block([0])
-    m.fs.rxns = m.fs.rxn_params.build_reaction_block(
-        [0], default={"state_block": m.fs.props}
-    )
+    m.fs.rxns = m.fs.rxn_params.build_reaction_block([0], state_block=m.fs.props)
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.rxns[0].prop_unindexed is m.fs.rxns[0]._dummy_var
@@ -72,17 +66,13 @@ def test_interrogator_rxn_block_unindexed_call():
 @pytest.mark.unit
 def test_interrogator_rxn_block_phase_call():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
-        default={"property_package": m.fs.params}
-    )
+    m.fs.rxn_params = ReactionInterrogatorBlock(property_package=m.fs.params)
 
     m.fs.props = m.fs.params.build_state_block([0])
-    m.fs.rxns = m.fs.rxn_params.build_reaction_block(
-        [0], default={"state_block": m.fs.props}
-    )
+    m.fs.rxns = m.fs.rxn_params.build_reaction_block([0], state_block=m.fs.props)
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.rxns[0].prop_phase["Liq"] is m.fs.rxns[0]._dummy_var_phase["Liq"]
@@ -95,17 +85,13 @@ def test_interrogator_rxn_block_phase_call():
 @pytest.mark.unit
 def test_interrogator_rxn_block_comp_call():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
-        default={"property_package": m.fs.params}
-    )
+    m.fs.rxn_params = ReactionInterrogatorBlock(property_package=m.fs.params)
 
     m.fs.props = m.fs.params.build_state_block([0])
-    m.fs.rxns = m.fs.rxn_params.build_reaction_block(
-        [0], default={"state_block": m.fs.props}
-    )
+    m.fs.rxns = m.fs.rxn_params.build_reaction_block([0], state_block=m.fs.props)
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.rxns[0].prop_comp["A"] is m.fs.rxns[0]._dummy_var_comp["A"]
@@ -118,17 +104,13 @@ def test_interrogator_rxn_block_comp_call():
 @pytest.mark.unit
 def test_interrogator_rxn_block_phase_comp_call():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
-        default={"property_package": m.fs.params}
-    )
+    m.fs.rxn_params = ReactionInterrogatorBlock(property_package=m.fs.params)
 
     m.fs.props = m.fs.params.build_state_block([0])
-    m.fs.rxns = m.fs.rxn_params.build_reaction_block(
-        [0], default={"state_block": m.fs.props}
-    )
+    m.fs.rxns = m.fs.rxn_params.build_reaction_block([0], state_block=m.fs.props)
 
     # Check get_term methods return an unindexed dummy var
     assert (
@@ -147,17 +129,13 @@ def test_interrogator_rxn_block_phase_comp_call():
 @pytest.mark.unit
 def test_interrogator_rxn_block_reaction_rate_call():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
-        default={"property_package": m.fs.params}
-    )
+    m.fs.rxn_params = ReactionInterrogatorBlock(property_package=m.fs.params)
 
     m.fs.props = m.fs.params.build_state_block([0])
-    m.fs.rxns = m.fs.rxn_params.build_reaction_block(
-        [0], default={"state_block": m.fs.props}
-    )
+    m.fs.rxns = m.fs.rxn_params.build_reaction_block([0], state_block=m.fs.props)
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.rxns[0].reaction_rate["R1"] is m.fs.rxns[0]._dummy_reaction_idx["R1"]
@@ -170,17 +148,13 @@ def test_interrogator_rxn_block_reaction_rate_call():
 @pytest.mark.unit
 def test_interrogator_rxn_block_dh_rxn_call():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
-        default={"property_package": m.fs.params}
-    )
+    m.fs.rxn_params = ReactionInterrogatorBlock(property_package=m.fs.params)
 
     m.fs.props = m.fs.params.build_state_block([0])
-    m.fs.rxns = m.fs.rxn_params.build_reaction_block(
-        [0], default={"state_block": m.fs.props}
-    )
+    m.fs.rxns = m.fs.rxn_params.build_reaction_block([0], state_block=m.fs.props)
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.rxns[0].dh_rxn["R1"] is m.fs.rxns[0]._dummy_reaction_idx["R1"]
@@ -194,17 +168,13 @@ def test_interrogator_rxn_block_dh_rxn_call():
 def test_interrogator_initialize_method():
     # Initialize method should return an TypeError
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
-        default={"property_package": m.fs.params}
-    )
+    m.fs.rxn_params = ReactionInterrogatorBlock(property_package=m.fs.params)
 
     m.fs.props = m.fs.params.build_state_block([0])
-    m.fs.rxns = m.fs.rxn_params.build_reaction_block(
-        [0], default={"state_block": m.fs.props}
-    )
+    m.fs.rxns = m.fs.rxn_params.build_reaction_block([0], state_block=m.fs.props)
 
     with pytest.raises(
         TypeError,
@@ -219,24 +189,18 @@ def test_interrogator_initialize_method():
 @pytest.fixture(scope="module")
 def model():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyunits.s})
+    m.fs = FlowsheetBlock(dynamic=True, time_units=pyunits.s)
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
-        default={"property_package": m.fs.params}
-    )
+    m.fs.rxn_params = ReactionInterrogatorBlock(property_package=m.fs.params)
 
     m.fs.R01 = CSTR(
-        default={
-            "property_package": m.fs.params,
-            "reaction_package": m.fs.rxn_params,
-            "has_heat_of_reaction": True,
-        }
+        property_package=m.fs.params,
+        reaction_package=m.fs.rxn_params,
+        has_heat_of_reaction=True,
     )
 
-    m.fs.R02 = PFR(
-        default={"property_package": m.fs.params, "reaction_package": m.fs.rxn_params}
-    )
+    m.fs.R02 = PFR(property_package=m.fs.params, reaction_package=m.fs.rxn_params)
 
     return m
 
@@ -371,22 +335,16 @@ The following reaction properties are required by model fs.R01:
 @pytest.mark.unit
 def test_interrogator_rxn_block_unindexed_call_custom_phase_comp():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.params = PropertyInterrogatorBlock(
-        default={
-            "phase_list": {"P1": LiquidPhase, "P2": None},
-            "component_list": {"c1": Solute, "c2": None},
-        }
+        phase_list={"P1": LiquidPhase, "P2": None},
+        component_list={"c1": Solute, "c2": None},
     )
-    m.fs.rxn_params = ReactionInterrogatorBlock(
-        default={"property_package": m.fs.params}
-    )
+    m.fs.rxn_params = ReactionInterrogatorBlock(property_package=m.fs.params)
 
     m.fs.props = m.fs.params.build_state_block([0])
-    m.fs.rxns = m.fs.rxn_params.build_reaction_block(
-        [0], default={"state_block": m.fs.props}
-    )
+    m.fs.rxns = m.fs.rxn_params.build_reaction_block([0], state_block=m.fs.props)
 
     # Check phase and component lists
     assert m.fs.rxn_params.phase_list == ["P1", "P2"]

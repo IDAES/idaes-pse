@@ -98,17 +98,17 @@ see property package for documentation.}""",
         super(WaterFlashData, self).build()
 
         self.mixed_state = self.config.property_package.build_state_block(
-            self.flowsheet().time, default=self.config.property_package_args
+            self.flowsheet().time, **self.config.property_package_args
         )
 
         self.add_port("inlet", self.mixed_state)
 
         self.vap_state = self.config.property_package.build_state_block(
-            self.flowsheet().time, default=self.config.property_package_args
+            self.flowsheet().time, **self.config.property_package_args
         )
 
         self.liq_state = self.config.property_package.build_state_block(
-            self.flowsheet().time, default=self.config.property_package_args
+            self.flowsheet().time, **self.config.property_package_args
         )
 
         self.add_port("vap_outlet", self.vap_state)

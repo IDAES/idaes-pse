@@ -54,11 +54,11 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties})
+    m.fs.unit = GibbsReactor(property_package=m.fs.properties)
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 9
@@ -81,13 +81,11 @@ def test_config():
 @pytest.mark.unit
 def test_inerts():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = GibbsReactor(
-        default={"property_package": m.fs.properties, "inert_species": ["c1"]}
-    )
+    m.fs.unit = GibbsReactor(property_package=m.fs.properties, inert_species=["c1"])
 
     assert isinstance(m.fs.unit.inert_species_balance, Constraint)
     assert len(m.fs.unit.inert_species_balance) == 2
@@ -101,7 +99,7 @@ def test_inerts():
 @pytest.mark.unit
 def test_inerts_dependent_w_multi_phase():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
     # Change elemental composition to introduce dependency
@@ -110,9 +108,7 @@ def test_inerts_dependent_w_multi_phase():
         "c2": {"H": 4, "He": 5, "Li": 0},
     }
 
-    m.fs.unit = GibbsReactor(
-        default={"property_package": m.fs.properties, "inert_species": ["c1"]}
-    )
+    m.fs.unit = GibbsReactor(property_package=m.fs.properties, inert_species=["c1"])
 
     assert isinstance(m.fs.unit.inert_species_balance, Constraint)
     assert len(m.fs.unit.inert_species_balance) == 2
@@ -126,7 +122,7 @@ def test_inerts_dependent_w_multi_phase():
 @pytest.mark.unit
 def test_inerts_dependent_w_single_phase():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
     # Set phase list to only have 1 phase
@@ -137,9 +133,7 @@ def test_inerts_dependent_w_single_phase():
         "c2": {"H": 4, "He": 5, "Li": 0},
     }
 
-    m.fs.unit = GibbsReactor(
-        default={"property_package": m.fs.properties, "inert_species": ["c1"]}
-    )
+    m.fs.unit = GibbsReactor(property_package=m.fs.properties, inert_species=["c1"])
 
     assert isinstance(m.fs.unit.inert_species_balance, Constraint)
     assert len(m.fs.unit.inert_species_balance) == 0
@@ -152,7 +146,7 @@ def test_inerts_dependent_w_single_phase():
 @pytest.mark.unit
 def test_invalid_inert():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
 
@@ -163,7 +157,7 @@ def test_invalid_inert():
         "component list.",
     ):
         m.fs.unit = GibbsReactor(
-            default={"property_package": m.fs.properties, "inert_species": ["foo"]}
+            property_package=m.fs.properties, inert_species=["foo"]
         )
 
 
@@ -172,16 +166,14 @@ class TestMethane(object):
     @pytest.fixture(scope="class")
     def methane(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = MethaneCombustionParameterBlock()
 
         m.fs.unit = GibbsReactor(
-            default={
-                "property_package": m.fs.properties,
-                "has_heat_transfer": True,
-                "has_pressure_change": True,
-            }
+            property_package=m.fs.properties,
+            has_heat_transfer=True,
+            has_pressure_change=True,
         )
 
         m.fs.unit.inlet.flow_mol[0].fix(230.0)
@@ -446,4 +438,6 @@ class TestMethane(object):
         assert perf_dict == {
             "vars": {
                 "Heat Duty": methane.fs.unit.heat_duty[0],
-                "Pressure Change": methane.fs.unit.deltaP[0]}}
+                "Pressure Change": methane.fs.unit.deltaP[0],
+            }
+        }

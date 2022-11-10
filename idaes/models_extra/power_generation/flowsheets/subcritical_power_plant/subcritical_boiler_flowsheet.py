@@ -20,7 +20,7 @@ from pyomo.network import Arc
 
 # Import IDAES core
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util import copy_port_values as _set_port
+from idaes.core.util.initialization import propagate_state as _set_port
 from idaes.core.solvers import get_solver
 from idaes.core import FlowsheetBlock
 import idaes.logger as idaeslog
@@ -76,185 +76,157 @@ def add_unit_models(m):
 
     # Unit model for boiler fire side based on surrogate
     fs.aBoiler = BoilerFireside(
-        default={
-            "dynamic": False,
-            "property_package": prop_gas,
-            "calculate_PA_SA_flows": True,
-            "number_of_zones": 12,
-            "has_platen_superheater": True,
-            "has_roof_superheater": True,
-            "surrogate_dictionary": data_dic,
-        }
+        dynamic=False,
+        property_package=prop_gas,
+        calculate_PA_SA_flows=True,
+        number_of_zones=12,
+        has_platen_superheater=True,
+        has_roof_superheater=True,
+        surrogate_dictionary=data_dic,
     )
 
     # Unit model for boiler drum
     fs.aDrum = Drum1D(
-        default={
-            "property_package": prop_water,
-            "has_holdup": True,
-            "has_heat_transfer": True,
-            "has_pressure_change": True,
-            "finite_elements": 4,
-            "drum_inner_diameter": 1.8,
-            "drum_thickness": 0.13,
-        }
+        property_package=prop_water,
+        has_holdup=True,
+        has_heat_transfer=True,
+        has_pressure_change=True,
+        finite_elements=4,
+        drum_inner_diameter=1.8,
+        drum_thickness=0.13,
     )
 
     # Unit model for splitter from drum to downcomers and blowdown
     fs.blowdown_split = HelmSplitter(
-        default={
-            "dynamic": False,
-            "property_package": prop_water,
-            "outlet_list": ["FW_Downcomer", "FW_Blowdown"],
-        }
+        dynamic=False,
+        property_package=prop_water,
+        outlet_list=["FW_Downcomer", "FW_Blowdown"],
     )
 
     # Unit model for downcomer
     fs.aDowncomer = Downcomer(
-        default={
-            "dynamic": False,
-            "property_package": prop_water,
-            "has_holdup": True,
-            "has_heat_transfer": True,
-        }
+        dynamic=False,
+        property_package=prop_water,
+        has_holdup=True,
+        has_heat_transfer=True,
     )
 
     # Unit models for 12 waterwall sections
     fs.Waterwalls = WaterwallSection(
         fs.ww_zones,
-        default={
-            "has_holdup": True,
-            "property_package": prop_water,
-            "has_heat_transfer": True,
-            "has_pressure_change": True,
-        },
+        has_holdup=True,
+        property_package=prop_water,
+        has_heat_transfer=True,
+        has_pressure_change=True,
     )
 
     # Unit model for roof superheater
     fs.aRoof = SteamHeater(
-        default={
-            "dynamic": False,
-            "property_package": prop_water,
-            "has_holdup": True,
-            "has_heat_transfer": True,
-            "has_pressure_change": True,
-            "single_side_only": True,
-        }
+        dynamic=False,
+        property_package=prop_water,
+        has_holdup=True,
+        has_heat_transfer=True,
+        has_pressure_change=True,
+        single_side_only=True,
     )
 
     # Unit model for platen superheater
     fs.aPlaten = SteamHeater(
-        default={
-            "dynamic": False,
-            "property_package": prop_water,
-            "has_holdup": True,
-            "has_heat_transfer": True,
-            "has_pressure_change": True,
-            "single_side_only": False,
-        }
+        dynamic=False,
+        property_package=prop_water,
+        has_holdup=True,
+        has_heat_transfer=True,
+        has_pressure_change=True,
+        single_side_only=False,
     )
 
     # Unit model for 1st reheater
     fs.aRH1 = HeatExchangerCrossFlow2D_Header(
-        default={
-            "tube_side": {"property_package": prop_water, "has_pressure_change": True},
-            "shell_side": {"property_package": prop_gas, "has_pressure_change": True},
-            "finite_elements": 4,
-            "flow_type": "counter_current",
-            "tube_arrangement": "in-line",
-            "tube_side_water_phase": "Vap",
-            "has_radiation": True,
-            "radial_elements": 5,
-            "tube_inner_diameter": 2.25 * 0.0254,
-            "tube_thickness": 0.15 * 0.0254,
-            "has_header": False,
-        }
+        tube_side={"property_package": prop_water, "has_pressure_change": True},
+        shell_side={"property_package": prop_gas, "has_pressure_change": True},
+        finite_elements=4,
+        flow_type="counter_current",
+        tube_arrangement="in-line",
+        tube_side_water_phase="Vap",
+        has_radiation=True,
+        radial_elements=5,
+        tube_inner_diameter=2.25 * 0.0254,
+        tube_thickness=0.15 * 0.0254,
+        has_header=False,
     )
 
     # Unit model for 2nd reheater
     fs.aRH2 = HeatExchangerCrossFlow2D_Header(
-        default={
-            "tube_side": {"property_package": prop_water, "has_pressure_change": True},
-            "shell_side": {"property_package": prop_gas, "has_pressure_change": True},
-            "finite_elements": 2,
-            "flow_type": "counter_current",
-            "tube_arrangement": "in-line",
-            "tube_side_water_phase": "Vap",
-            "has_radiation": True,
-            "radial_elements": 5,
-            "tube_inner_diameter": 2.25 * 0.0254,
-            "tube_thickness": 0.15 * 0.0254,
-            "has_header": False,
-        }
+        tube_side={"property_package": prop_water, "has_pressure_change": True},
+        shell_side={"property_package": prop_gas, "has_pressure_change": True},
+        finite_elements=2,
+        flow_type="counter_current",
+        tube_arrangement="in-line",
+        tube_side_water_phase="Vap",
+        has_radiation=True,
+        radial_elements=5,
+        tube_inner_diameter=2.25 * 0.0254,
+        tube_thickness=0.15 * 0.0254,
+        has_header=False,
     )
 
     # Unit model for primary superheater with header
     fs.aPSH = HeatExchangerCrossFlow2D_Header(
-        default={
-            "tube_side": {"property_package": prop_water, "has_pressure_change": True},
-            "shell_side": {"property_package": prop_gas, "has_pressure_change": True},
-            "finite_elements": 6,
-            "flow_type": "counter_current",
-            "tube_arrangement": "in-line",
-            "tube_side_water_phase": "Vap",
-            "has_radiation": True,
-            "radial_elements": 5,
-            "tube_inner_diameter": 1.5 * 0.0254,
-            "tube_thickness": 0.16 * 0.0254,
-            "header_radial_elements": 5,
-            "header_inner_diameter": 12 * 0.0254,
-            "header_wall_thickness": 1.35 * 0.0254,
-        }
+        tube_side={"property_package": prop_water, "has_pressure_change": True},
+        shell_side={"property_package": prop_gas, "has_pressure_change": True},
+        finite_elements=6,
+        flow_type="counter_current",
+        tube_arrangement="in-line",
+        tube_side_water_phase="Vap",
+        has_radiation=True,
+        radial_elements=5,
+        tube_inner_diameter=1.5 * 0.0254,
+        tube_thickness=0.16 * 0.0254,
+        header_radial_elements=5,
+        header_inner_diameter=12 * 0.0254,
+        header_wall_thickness=1.35 * 0.0254,
     )
 
     # Unit model for economizer
     fs.aECON = HeatExchangerCrossFlow2D_Header(
-        default={
-            "tube_side": {"property_package": prop_water, "has_pressure_change": True},
-            "shell_side": {"property_package": prop_gas, "has_pressure_change": True},
-            "finite_elements": 5,
-            "flow_type": "counter_current",
-            "tube_arrangement": "in-line",
-            "tube_side_water_phase": "Liq",
-            "has_radiation": False,
-            "radial_elements": 5,
-            "tube_inner_diameter": 1.5 * 0.0254,
-            "tube_thickness": 0.15 * 0.0254,
-            "has_header": False,
-        }
+        tube_side={"property_package": prop_water, "has_pressure_change": True},
+        shell_side={"property_package": prop_gas, "has_pressure_change": True},
+        finite_elements=5,
+        flow_type="counter_current",
+        tube_arrangement="in-line",
+        tube_side_water_phase="Liq",
+        has_radiation=False,
+        radial_elements=5,
+        tube_inner_diameter=1.5 * 0.0254,
+        tube_thickness=0.15 * 0.0254,
+        has_header=False,
     )
 
     # Unit model for water pipe from economizer outlet to drum
     fs.aPipe = WaterPipe(
-        default={
-            "dynamic": False,
-            "property_package": prop_water,
-            "has_holdup": True,
-            "has_heat_transfer": False,
-            "has_pressure_change": True,
-            "water_phase": "Liq",
-            "contraction_expansion_at_end": "None",
-        }
+        dynamic=False,
+        property_package=prop_water,
+        has_holdup=True,
+        has_heat_transfer=False,
+        has_pressure_change=True,
+        water_phase="Liq",
+        contraction_expansion_at_end="None",
     )
 
     # Unit model for a mixer to mix hot primary air with tempering air
     fs.Mixer_PA = Mixer(
-        default={
-            "dynamic": False,
-            "property_package": prop_gas,
-            "momentum_mixing_type": MomentumMixingType.equality,
-            "inlet_list": ["PA_inlet", "TA_inlet"],
-        }
+        dynamic=False,
+        property_package=prop_gas,
+        momentum_mixing_type=MomentumMixingType.equality,
+        inlet_list=["PA_inlet", "TA_inlet"],
     )
 
     # Unit model for attemperator for main steam before platen SH
     fs.Attemp = HelmMixer(
-        default={
-            "dynamic": False,
-            "property_package": prop_water,
-            "momentum_mixing_type": MomentumMixingType.equality,
-            "inlet_list": ["Steam_inlet", "Water_inlet"],
-        }
+        dynamic=False,
+        property_package=prop_water,
+        momentum_mixing_type=MomentumMixingType.equality,
+        inlet_list=["Steam_inlet", "Water_inlet"],
     )
 
     # Unit model for air preheater as three-stream heat exchanger
@@ -263,17 +235,15 @@ def add_unit_models(m):
     # side_2: priamry air
     # side_3: secondry air
     fs.aAPH = HeatExchangerWith3Streams(
-        default={
-            "dynamic": False,
-            "side_1_property_package": prop_gas,
-            "side_2_property_package": prop_gas,
-            "side_3_property_package": prop_gas,
-            "has_heat_transfer": True,
-            "has_pressure_change": True,
-            "has_holdup": False,
-            "flow_type_side_2": "counter-current",
-            "flow_type_side_3": "counter-current",
-        }
+        dynamic=False,
+        side_1_property_package=prop_gas,
+        side_2_property_package=prop_gas,
+        side_3_property_package=prop_gas,
+        has_heat_transfer=True,
+        has_pressure_change=True,
+        has_holdup=False,
+        flow_type_side_2="counter-current",
+        flow_type_side_3="counter-current",
     )
     return m
 
@@ -715,7 +685,9 @@ def initialize(m):
     outlvl = idaeslog.INFO_LOW
     _log = idaeslog.getLogger(fs.name, outlvl, tag="unit")
     solve_log = idaeslog.getSolveLogger(fs.name, outlvl, tag="unit")
-    solver = get_solver()
+    solver = get_solver(
+        options={"linear_solver": "ma57", "OF_ma57_automatic_scaling": "yes"}
+    )
 
     # set initial condition to steady-state condition for dynamic flowsheet
     if m.dynamic is True:
@@ -814,7 +786,6 @@ def initialize(m):
     if m.dynamic is False:
         fs.aECON.initialize(outlvl=outlvl)
         _log.info("Completed economizer initialization")
-
     if m.dynamic is False:
         _set_port(fs.aPipe.inlet, fs.aECON.tube_outlet)
         fs.aPipe.initialize(outlvl=outlvl)
@@ -1096,6 +1067,8 @@ def set_scaling_factors(m):
     iscale.set_scaling_factor(fs.aECON.tube._enthalpy_flow, 1e-8)
     iscale.set_scaling_factor(fs.aECON.shell.enthalpy_flow_dx, 1e-7)
     iscale.set_scaling_factor(fs.aECON.tube.enthalpy_flow_dx, 1e-7)
+    iscale.set_scaling_factor(fs.aECON.shell.heat, 1e-7)
+    iscale.set_scaling_factor(fs.aECON.tube.heat, 1e-7)
     for t, c in fs.aECON.shell.enthalpy_flow_dx_disc_eq.items():
         iscale.constraint_scaling_transform(c, 1e-7)
     for t, c in fs.aECON.tube.enthalpy_flow_dx_disc_eq.items():
@@ -1235,14 +1208,14 @@ def get_model(dynamic=True, init=True):
     m.init_dyn = False
     if m.dynamic:
         m.fs_main = FlowsheetBlock(
-            default={"dynamic": True, "time_set": [0, 60], "time_units": pyo.units.s}
+            dynamic=True, time_set=[0, 60], time_units=pyo.units.s
         )
     else:
-        m.fs_main = FlowsheetBlock(default={"dynamic": False})
+        m.fs_main = FlowsheetBlock(dynamic=False)
     # Add property packages to flowsheet library
     m.fs_main.prop_water = iapws95.Iapws95ParameterBlock()
     m.fs_main.prop_gas = FlueGasParameterBlock()
-    m.fs_main.fs_blr = FlowsheetBlock(default={"time_units": pyo.units.s})
+    m.fs_main.fs_blr = FlowsheetBlock(time_units=pyo.units.s)
     m = add_unit_models(m)
     if m.dynamic:
         m.discretizer = pyo.TransformationFactory("dae.finite_difference")

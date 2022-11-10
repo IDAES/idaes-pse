@@ -1,3 +1,24 @@
+/**
+ * The Institute for the Design of Advanced Energy Systems Integrated Platform
+ * Framework (IDAES IP) was produced under the DOE Institute for the
+ * Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+ * by the software owners: The Regents of the University of California, through
+ * Lawrence Berkeley National Laboratory,  National Technology & Engineering
+ * Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+ * Research Corporation, et al.  All rights reserved.
+ *
+ * Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+ * license information.
+ */
+
+
+/**
+ * This class is responsible for all the two toolbars that exist in the page.
+ * 
+ * The first toolbar is the one that is seen in the page's header. And the
+ * second toolbar is seen on the top right corner of the visualizer paper
+ * graph.
+ */
 export class Toolbar { 
     constructor(app, paper, stream_table) {
         this._app = app;
@@ -74,13 +95,52 @@ export class Toolbar {
         // Refresh event listener
         document.querySelector("#refresh-btn").addEventListener("click", () => {
             this._app.refreshModel(url, this._paper)
-            this._app.saveModel(url, this._paper.graph)
+        });
+
+        // Flowsheet to PNG export event listener
+        document.querySelector("#export-flowsheet-png-btn").addEventListener("click", () => {
+            let p = this._paper.paper;
+            // Make sure to hide all of the vertices and bars on the links
+            // so they don't show up in the PNG
+            p.hideTools();
+            p.toPNG(function(png) {
+                new joint.ui.Lightbox({
+                    image: png,
+                    downloadable: true,
+                    fileName: model_id.concat(".png")
+                }).open();
+            }, {
+                preserveDimensions: true,
+                convertImagesToDataUris: true,
+                useComputedStyles: true,
+                stylesheet: '.scalable * { vector-effect: non-scaling-stroke }'
+            });
+        });
+
+        // Flowsheet to JPEG export event listener
+        document.querySelector("#export-flowsheet-jpg-btn").addEventListener("click", () => {
+            let p = this._paper.paper;
+            // Make sure to hide all of the vertices and bars on the links
+            // so they don't show up in the JPEG
+            p.hideTools();
+            p.toJPEG(function(jpeg) {
+                new joint.ui.Lightbox({
+                    image: jpeg,
+                    downloadable: true,
+                    fileName: model_id.concat(".jpeg")
+                }).open();
+            }, {
+                preserveDimensions: true,
+                convertImagesToDataUris: true,
+                useComputedStyles: true,
+                stylesheet: '.scalable * { vector-effect: non-scaling-stroke }'
+            });
         });
 
         // Flowsheet to SVG export event listener
-        document.querySelector("#export-flowsheet-btn").addEventListener("click", () => {
+        document.querySelector("#export-flowsheet-svg-btn").addEventListener("click", () => {
             let p = this._paper.paper;
-            // Make sure to hide all of the vertices and bars on the links 
+            // Make sure to hide all of the vertices and bars on the links
             // so they don't show up in the SVG
             p.hideTools();
             p.toSVG(function(svg) {

@@ -63,7 +63,7 @@ class TestParamBlock(object):
     def test_build(self):
         model = ConcreteModel()
 
-        model.param = GenericParameterBlock(default=configuration)
+        model.param = GenericParameterBlock(**configuration)
 
         assert isinstance(model.param.phase_list, Set)
         assert len(model.param.phase_list) == 2
@@ -129,13 +129,11 @@ class TestStateBlock(object):
     def model(self):
         model = ConcreteModel()
 
-        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs = FlowsheetBlock(dynamic=False)
 
-        model.fs.param = GenericParameterBlock(default=configuration)
+        model.fs.param = GenericParameterBlock(**configuration)
 
-        model.fs.props = model.fs.param.build_state_block(
-            [1], default={"defined_state": True}
-        )
+        model.fs.props = model.fs.param.build_state_block([1], defined_state=True)
 
         # Fix state
         model.fs.props[1].flow_mol.fix(1)
@@ -302,16 +300,14 @@ class TestFlashIntegration(object):
     def model(self):
         model = ConcreteModel()
 
-        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs = FlowsheetBlock(dynamic=False)
 
-        model.fs.param = GenericParameterBlock(default=configuration)
+        model.fs.param = GenericParameterBlock(**configuration)
 
         model.fs.unit = Flash(
-            default={
-                "property_package": model.fs.param,
-                "has_heat_transfer": False,
-                "has_pressure_change": False,
-            }
+            property_package=model.fs.param,
+            has_heat_transfer=False,
+            has_pressure_change=False,
         )
         # Fix state
         model.fs.unit.inlet.flow_mol.fix(1)

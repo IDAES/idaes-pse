@@ -35,10 +35,10 @@ class DoubleLoopCoordinator:
         Arguments:
             bidder: an initialized bidder object
 
-            tracker: an initialized bidder object
+            tracker: an initialized tracker object
 
-            projection_tracker: an initialized bidder object, this object is
-                                mimicking the behaviro of the projection SCED in
+            projection_tracker: an initialized tracker object, this object is
+                                mimicking the behaviror of the projection SCED in
                                 Prescient and to projecting the system states
                                 and updating bidder model.
 
@@ -50,12 +50,7 @@ class DoubleLoopCoordinator:
         self.tracker = tracker
         self.projection_tracker = projection_tracker
 
-    def register_plugins(
-        self,
-        context,
-        options,
-        plugin_config,
-    ):
+    def register_plugins(self, context, options, plugin_config):
 
         """
         Register functionalities in Prescient's plugin system.
@@ -74,13 +69,19 @@ class DoubleLoopCoordinator:
         self.plugin_config = plugin_config
 
         context.register_initialization_callback(self.initialize_customized_results)
+        context.register_for_hourly_stats(self.push_hourly_stats_to_forecaster)
         context.register_before_ruc_solve_callback(self.pass_static_params_to_DA)
         context.register_before_ruc_solve_callback(self.bid_into_DAM)
+        context.register_after_ruc_generation_callback(self.fetch_DA_prices)
+        context.register_after_ruc_generation_callback(self.fetch_DA_dispatches)
+        context.register_after_ruc_generation_callback(
+            self.push_day_ahead_stats_to_forecaster
+        )
         context.register_before_operations_solve_callback(self.pass_static_params_to_RT)
         context.register_before_operations_solve_callback(self.bid_into_RTM)
         context.register_after_operations_callback(self.track_sced_signal)
         context.register_update_operations_stats_callback(self.update_observed_dispatch)
-        context.register_after_ruc_activation_callback(self.activate_DA_bids)
+        context.register_after_ruc_activation_callback(self.activate_pending_DA_data)
         context.register_finalization_callback(self.write_plugin_results)
 
         return
@@ -129,6 +130,47 @@ class DoubleLoopCoordinator:
         customized_results["Power Output"] = []
 
         return
+
+    def push_hourly_stats_to_forecaster(self, prescient_hourly_stats):
+
+        """
+        This method pushes the hourly stats from Prescient to the price forecaster
+        once the hourly stats are published.
+
+        Arguments:
+            prescient_hourly_stats: Prescient HourlyStats object.
+
+        Returns:
+            None
+        """
+
+        self.bidder.forecaster.fetch_hourly_stats_from_prescient(prescient_hourly_stats)
+
+    def push_day_ahead_stats_to_forecaster(
+        self, options, simulator, day_ahead_result, uc_date, uc_hour
+    ):
+        """
+        This method pushes the day-ahead market to the price forecaster after the
+        UC is solved.
+
+        Arguments:
+            options: Prescient options from prescient.simulator.config.
+
+            simulator: Prescient simulator.
+
+            day_ahead_result: a Prescient RucPlan object.
+
+            ruc_date: the date of the day-ahead market we bid into.
+
+            ruc_hour: the hour the RUC is being solved in the day before.
+
+        Returns:
+            None
+        """
+
+        self.bidder.forecaster.fetch_day_ahead_stats_from_prescient(
+            uc_date, uc_hour, day_ahead_result
+        )
 
     def _update_bids(self, gen_dict, bids, start_hour, horizon):
 
@@ -191,7 +233,7 @@ class DoubleLoopCoordinator:
             gen_dict, bids, param_name, start_hour, horizon
         ):
             if param_name in gen_dict:
-                gen_dict[param_name] = bids[0][gen_name].get(param_name, None)
+                gen_dict[param_name] = bids[start_hour][gen_name].get(param_name, None)
 
             return
 
@@ -199,6 +241,8 @@ class DoubleLoopCoordinator:
             "p_cost": _update_p_cost,
             "p_max": _update_time_series_params,
             "p_min": _update_time_series_params,
+            "p_min_agc": _update_time_series_params,
+            "p_max_agc": _update_time_series_params,
             "fixed_commitment": _update_time_series_params,
             "min_up_time": _update_non_time_series_params,
             "min_down_time": _update_non_time_series_params,
@@ -208,7 +252,7 @@ class DoubleLoopCoordinator:
             "startup_cost": _update_non_time_series_params,
         }
 
-        for param_name in bids[0][gen_name].keys():
+        for param_name in bids[start_hour][gen_name].keys():
             update_func = param_update_func_map[param_name]
             update_func(gen_dict, bids, param_name, start_hour, horizon)
 
@@ -243,7 +287,7 @@ class DoubleLoopCoordinator:
 
         """
         This function assembles the signals for the tracking model to estimate the
-        state of the bidding model at the begining of next RUC.
+        state of the bidding model at the beginning of next RUC.
 
         Arguments:
             options: Prescient options from prescient.simulator.config.
@@ -256,24 +300,12 @@ class DoubleLoopCoordinator:
             market_signals: the market signals to be tracked.
         """
 
-        gen_name = self.bidder.bidding_model_object.model_data.gen_name
-
-        # store the dictionaries that have the current ruc signals
-        current_ruc_dispatch_dicts = [
-            simulator.data_manager.ruc_market_active.thermal_gen_cleared_DA,
-            simulator.data_manager.ruc_market_active.renewable_gen_cleared_DA,
-            simulator.data_manager.ruc_market_active.virtual_gen_cleared_DA,
-        ]
-
         tracking_horizon = len(self.projection_tracker.time_set)
 
         market_signals = self._assemble_sced_tracking_market_signals(
-            gen_name=gen_name,
             hour=hour,
             sced_dispatch=None,
             tracking_horizon=tracking_horizon,
-            current_ruc_dispatch_dicts=current_ruc_dispatch_dicts,
-            next_ruc_dispatch_dicts=None,
         )
         return market_signals
 
@@ -356,36 +388,57 @@ class DoubleLoopCoordinator:
 
         return
 
-    def _update_static_params(self, gen_dict):
+    def _update_static_params(self, gen_dict, first_ruc):
 
         """
-        Update static parameters in the Prescient generator parameter data dictionary.
+        Update static parameters in the Prescient generator parameter data dictionary depending on generator type.
+
+        For a thermal generator, the p_cost data will be via ( MWh, $ ) pairs.
+        For a renewable generator, the p_cost is a single cost.
 
         Args:
             gen_dict: Prescient generator parameter data dictionary.
+            first_ruc: Is this the very first unit commitment problem
 
         Returns:
             None
         """
 
+        is_thermal = (
+            self.bidder.bidding_model_object.model_data.generator_type == "thermal"
+        )
+        is_renewable = (
+            self.bidder.bidding_model_object.model_data.generator_type == "renewable"
+        )
+
         for param, value in self.bidder.bidding_model_object.model_data:
             if param == "gen_name" or value is None:
                 continue
             elif param == "p_cost":
-                curve_value = convert_marginal_costs_to_actual_costs(value)
-                gen_dict[param] = {
-                    "data_type": "cost_curve",
-                    "cost_curve_type": "piecewise",
-                    "values": curve_value,
-                }
+                if is_thermal:
+                    curve_value = convert_marginal_costs_to_actual_costs(value)
+                    gen_dict[param] = {
+                        "data_type": "cost_curve",
+                        "cost_curve_type": "piecewise",
+                        "values": curve_value,
+                    }
+                elif is_renewable:
+                    gen_dict[param] = value
+                else:
+                    raise NotImplementedError(
+                        "generator_type must be either 'thermal' or 'renewable'"
+                    )
+
                 if "p_fuel" in gen_dict:
                     gen_dict.pop("p_fuel")
+            elif param == "initial_status" or param == "initial_p_output":
+                if first_ruc:
+                    gen_dict[param] = value
             else:
-                # update generator parameters with value
                 gen_dict[param] = value
 
-                if param == "startup_cost" and "startup_fuel" in gen_dict:
-                    gen_dict.pop("startup_fuel")
+            if param == "startup_cost" and "startup_fuel" in gen_dict:
+                gen_dict.pop("startup_fuel")
 
     def pass_static_params_to_DA(
         self, options, simulator, ruc_instance, ruc_date, ruc_hour
@@ -411,7 +464,12 @@ class DoubleLoopCoordinator:
 
         gen_name = self.bidder.bidding_model_object.model_data.gen_name
         gen_dict = ruc_instance.data["elements"]["generator"][gen_name]
-        self._update_static_params(gen_dict)
+        first_ruc = (
+            simulator.time_manager.current_time is None
+            or simulator.time_manager.current_time
+            == simulator.time_manager.get_first_time_step()
+        )
+        self._update_static_params(gen_dict, first_ruc=first_ruc)
 
         return
 
@@ -446,10 +504,10 @@ class DoubleLoopCoordinator:
                 options, simulator, options.ruc_execution_hour
             )
             # update the bidding model
-            self.bidder.update_model(**full_projected_trajectory)
+            self.bidder.update_day_ahead_model(**full_projected_trajectory)
 
         # generate bids
-        bids = self.bidder.compute_bids(date=ruc_date)
+        bids = self.bidder.compute_day_ahead_bids(date=ruc_date)
 
         if is_first_day:
             self.current_bids = bids
@@ -459,6 +517,83 @@ class DoubleLoopCoordinator:
         self._pass_DA_bid_to_prescient(options, ruc_instance, bids)
 
         return
+
+    def fetch_DA_prices(self, options, simulator, result, uc_date, uc_hour):
+
+        """
+        This method fetches the day-ahead market prices from unit commitment results,
+        and save it as a coordinator attribute.
+
+        Arguments:
+            options: Prescient options from prescient.simulator.config.
+
+            simulator: Prescient simulator.
+
+            result: a Prescient RucPlan object.
+
+            ruc_date: the date of the day-ahead market we bid into.
+
+            ruc_hour: the hour the RUC is being solved in the day before.
+
+        Returns:
+            None
+        """
+
+        current_bus = self.bidder.bidding_model_object.model_data.bus
+        is_first_day = simulator.time_manager.current_time is None
+
+        DA_prices = [
+            result.ruc_market.day_ahead_prices.get((current_bus, t)) for t in range(24)
+        ]
+
+        if is_first_day:
+            self.current_avail_DA_prices = DA_prices
+        else:
+            self.current_avail_DA_prices = self.current_DA_prices + DA_prices
+        self.next_DA_prices = DA_prices
+
+    def fetch_DA_dispatches(self, options, simulator, result, uc_date, uc_hour):
+
+        """
+        This method fetches the day-ahead dispatches from unit commitment results,
+        and save it as a coordinator attribute.
+
+        Arguments:
+            options: Prescient options from prescient.simulator.config.
+
+            simulator: Prescient simulator.
+
+            result: a Prescient RucPlan object.
+
+            ruc_date: the date of the day-ahead market we bid into.
+
+            ruc_hour: the hour the RUC is being solved in the day before.
+
+        Returns:
+            None
+        """
+
+        is_first_day = simulator.time_manager.current_time is None
+        gen_name = self.bidder.bidding_model_object.model_data.gen_name
+        gen_type = self.bidder.bidding_model_object.model_data.generator_type
+
+        gen_type_dispatch_mapping = {
+            "thermal": result.ruc_market.thermal_gen_cleared_DA,
+            "renewable": result.ruc_market.renewable_gen_cleared_DA,
+            "virtual": result.ruc_market.virtual_gen_cleared_DA,
+        }
+
+        dispatch_dict = gen_type_dispatch_mapping[gen_type]
+        DA_dispatches = [dispatch_dict.get((gen_name, t)) for t in range(24)]
+
+        if is_first_day:
+            # self.current_DA_dispatches = DA_dispatches
+            self.current_avail_DA_dispatches = DA_dispatches
+        else:
+            self.current_avail_DA_dispatches = (
+                self.current_DA_dispatches + DA_dispatches
+            )
+        self.next_DA_dispatches = DA_dispatches
 
     def _pass_RT_bid_to_prescient(self, options, simulator, sced_instance, bids, hour):
 
@@ -509,7 +644,7 @@ class DoubleLoopCoordinator:
 
         gen_name = self.bidder.bidding_model_object.model_data.gen_name
         gen_dict = sced_instance.data["elements"]["generator"][gen_name]
-        self._update_static_params(gen_dict)
+        self._update_static_params(gen_dict, first_ruc=False)
 
         return
 
@@ -531,8 +666,15 @@ class DoubleLoopCoordinator:
         """
 
         # fetch the bids
+        date = simulator.time_manager.current_time.date
         hour = simulator.time_manager.current_time.hour
-        bids = self.current_bids
+
+        bids = self.bidder.compute_real_time_bids(
+            date=date,
+            hour=hour,
+            realized_day_ahead_prices=self.current_avail_DA_prices,
+            realized_day_ahead_dispatches=self.current_avail_DA_dispatches,
+        )
 
         # pass bids into sced model
         self._pass_RT_bid_to_prescient(options, simulator, sced_instance, bids, hour)
@@ -567,49 +709,22 @@ class DoubleLoopCoordinator:
         ]
         tracking_horizon = len(self.tracker.time_set)
 
-        # store the dictionaries that have the current ruc signals
-        current_ruc_dispatch_dicts = [
-            simulator.data_manager.ruc_market_active.thermal_gen_cleared_DA,
-            simulator.data_manager.ruc_market_active.renewable_gen_cleared_DA,
-            simulator.data_manager.ruc_market_active.virtual_gen_cleared_DA,
-        ]
-
-        if simulator.data_manager.ruc_market_pending is not None:
-            next_ruc_dispatch_dicts = [
-                simulator.data_manager.ruc_market_pending.thermal_gen_cleared_DA,
-                simulator.data_manager.ruc_market_pending.renewable_gen_cleared_DA,
-                simulator.data_manager.ruc_market_pending.virtual_gen_cleared_DA,
-            ]
-
-        else:
-            next_ruc_dispatch_dicts = None
-
         market_signals = self._assemble_sced_tracking_market_signals(
-            gen_name=gen_name,
             hour=hour,
             sced_dispatch=sced_dispatch,
             tracking_horizon=tracking_horizon,
-            current_ruc_dispatch_dicts=current_ruc_dispatch_dicts,
-            next_ruc_dispatch_dicts=next_ruc_dispatch_dicts,
         )
 
         return market_signals
 
-    @staticmethod
     def _assemble_sced_tracking_market_signals(
-        gen_name,
-        hour,
-        sced_dispatch,
-        tracking_horizon,
-        current_ruc_dispatch_dicts,
-        next_ruc_dispatch_dicts=None,
+        self, hour, sced_dispatch, tracking_horizon
     ):
 
         """
         This function assembles the signals for the tracking model.
 
         Arguments:
-            gen_name: the generator's name
 
             hour: the simulation hour
 
@@ -617,60 +732,24 @@ class DoubleLoopCoordinator:
 
             tracking_horizon: length of the tracking horizon
 
-            current_ruc_dispatch_dicts: current day's unit commiment dispatch
-            dictionaries, including profiles for thermal, renewable and etc.
-
-            next_ruc_dispatch_dicts: next day's unit commiment dispatch
-            dictionaries, including profiles for thermal, renewable and etc.
-
 
         Returns:
             market_signals: the market signals to be tracked.
         """
 
-        def get_signals(gen_name, t, ruc_dispatch_dicts, market_signals):
-
-            dispatch = None
-            for ruc_dispatch in ruc_dispatch_dicts:
-                dispatch = ruc_dispatch.get((gen_name, t), None)
-                if dispatch is not None:
-                    break
-
-            if dispatch is None and len(market_signals) > 0:
-                dispatch = market_signals[-1]
-            elif dispatch is None:
-                raise ValueError(
-                    f"No SCED/RUC signal has been found for generator {gen_name} at hour {t}. No previous signal is available for repeating."
-                )
-
-            return dispatch
-
         market_signals = []
+
         # append the sced dispatch
         if sced_dispatch is None:
-            dispatch = get_signals(
-                gen_name, hour, current_ruc_dispatch_dicts, market_signals
-            )
+            dispatch = self.current_DA_dispatches[hour]
         else:
             dispatch = sced_dispatch[0]
         market_signals.append(dispatch)
 
         # append corresponding RUC dispatch
         for t in range(hour + 1, hour + tracking_horizon):
-
-            # next ruc is available: fetch the signal from next ruc
-            if t > 23 and next_ruc_dispatch_dicts:
-                t = t % 24
-                dispatch = get_signals(
-                    gen_name, t, next_ruc_dispatch_dicts, market_signals
-                )
-
-            # fetch from the current ruc
-            else:
-                dispatch = get_signals(
-                    gen_name, t, current_ruc_dispatch_dicts, market_signals
-                )
-            market_signals.append(dispatch)
+            if t < len(self.current_avail_DA_dispatches):
+                market_signals.append(self.current_avail_DA_dispatches[t])
 
         return market_signals
 
@@ -706,9 +785,13 @@ class DoubleLoopCoordinator:
         )
 
         # actual tracking
-        self.tracker.track_market_dispatch(
+        implemented_profiles = self.tracker.track_market_dispatch(
             market_dispatch=market_signals, date=current_date, hour=current_hour
         )
+
+        # update models
+        self.tracker.update_model(**implemented_profiles)
+        self.bidder.update_real_time_model(**implemented_profiles)
 
         return
 
@@ -745,11 +828,11 @@ class DoubleLoopCoordinator:
 
         return
 
-    def activate_DA_bids(self, options, simulator):
+    def activate_pending_DA_data(self, options, simulator):
 
         """
-        This function puts the day-ahead bids computed in the day before into effect,
-        i.e. the bids for the next day become the bids for the current day.
+        This function puts the day-ahead data computed in the day before into effect,
+        i.e. the data for the next day become the data for the current day.
 
         Arguments:
             options: Prescient options from prescient.simulator.config.
@@ -760,11 +843,16 @@ class DoubleLoopCoordinator:
             None
         """
 
-        # change bids
-        self.current_bids = self.next_bids
-        self.next_bids = None
+        self.current_bids, self.next_bids = self.next_bids, None
+        self.current_DA_prices, self.next_DA_prices = self.next_DA_prices, None
+        self.current_DA_dispatches, self.next_DA_dispatches = (
+            self.next_DA_dispatches,
+            None,
+        )
 
-        return
+        # update the available DA signals
+        self.current_avail_DA_prices = self.current_DA_prices
+        self.current_avail_DA_dispatches = self.current_DA_dispatches
 
     def write_plugin_results(self, options, simulator):
 

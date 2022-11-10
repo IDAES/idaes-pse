@@ -55,32 +55,30 @@ def frame():
 
     # Create a dummy parameter block
     m.params = GenericParameterBlock(
-        default={
-            "components": {
-                "H2O": {
-                    "parameter_data": {"temperature_crit": 647.3},
-                    "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
-                }
-            },
-            "phases": {
-                "Liq": {"equation_of_state": DummyEoS},
-                "Vap": {"equation_of_state": DummyEoS},
-            },
-            "state_definition": FTPx,
-            "pressure_ref": 1e5,
-            "temperature_ref": 300,
-            "base_units": {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            },
-        }
+        components={
+            "H2O": {
+                "parameter_data": {"temperature_crit": 647.3},
+                "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
+            }
+        },
+        phases={
+            "Liq": {"equation_of_state": DummyEoS},
+            "Vap": {"equation_of_state": DummyEoS},
+        },
+        state_definition=FTPx,
+        pressure_ref=100000.0,
+        temperature_ref=300,
+        base_units={
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        },
     )
 
     # Create a dummy state block
-    m.props = m.params.state_block_class([1], default={"parameters": m.params})
+    m.props = m.params.state_block_class([1], parameters=m.params)
 
     m.props[1].temperature_bubble = Var([("Liq", "Vap")], initialize=300)
     m.props[1].temperature_dew = Var([("Liq", "Vap")], initialize=300)
@@ -143,32 +141,30 @@ def test_non_VLE_pair():
 
     # Create a dummy parameter block
     m.params = GenericParameterBlock(
-        default={
-            "components": {
-                "H2O": {
-                    "parameter_data": {"temperature_crit": 647.3},
-                    "phase_equilibrium_form": {("Sol", "Liq"): fugacity},
-                }
-            },
-            "phases": {
-                "Sol": {"equation_of_state": DummyEoS},
-                "Liq": {"equation_of_state": DummyEoS},
-            },
-            "state_definition": FTPx,
-            "pressure_ref": 1e5,
-            "temperature_ref": 300,
-            "base_units": {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            },
-        }
+        components={
+            "H2O": {
+                "parameter_data": {"temperature_crit": 647.3},
+                "phase_equilibrium_form": {("Sol", "Liq"): fugacity},
+            }
+        },
+        phases={
+            "Sol": {"equation_of_state": DummyEoS},
+            "Liq": {"equation_of_state": DummyEoS},
+        },
+        state_definition=FTPx,
+        pressure_ref=100000.0,
+        temperature_ref=300,
+        base_units={
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        },
     )
 
     # Create a dummy state block
-    m.props = m.params.state_block_class([1], default={"parameters": m.params})
+    m.props = m.params.state_block_class([1], parameters=m.params)
 
     with pytest.raises(
         ConfigurationError,

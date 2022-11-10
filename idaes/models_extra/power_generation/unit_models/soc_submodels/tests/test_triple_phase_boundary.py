@@ -105,27 +105,20 @@ def modelFuel():
         tset, iznodes, initialize=0, units=pyo.units.W / pyo.units.m**2
     )
     m.fs.fuel_triple_phase_boundary = soc.SocTriplePhaseBoundary(
-        default={
-            "control_volume_zfaces": zfaces,
-            "length_z": m.fs.length_z,
-            "length_y": m.fs.length_y,
-            "component_list": fuel_comps,
-            "reaction_stoichiometry": {
-                "H2": -0.5,
-                "H2O": 0.5,
-                "N2": 0,
-                "e^-": 1.0,
-            },
-            "inert_species": ["N2"],
-            "below_electrolyte": True,
-            "current_density": m.fs.current_density,
-            "temperature_z": m.fs.temperature_z,
-            "temperature_deviation_x": m.fs.temperature_deviation_x,
-            "heat_flux_x0": m.fs.heat_flux_x0,
-            "conc_mol_comp_ref": m.fs.conc_mol_comp_ref,
-            "conc_mol_comp_deviation_x": m.fs.conc_mol_comp_deviation_x,
-            "material_flux_x": m.fs.material_flux_x,
-        }
+        control_volume_zfaces=zfaces,
+        length_z=m.fs.length_z,
+        length_y=m.fs.length_y,
+        component_list=fuel_comps,
+        reaction_stoichiometry={"H2": -0.5, "H2O": 0.5, "N2": 0, "e^-": 1.0},
+        inert_species=["N2"],
+        below_electrolyte=True,
+        current_density=m.fs.current_density,
+        temperature_z=m.fs.temperature_z,
+        temperature_deviation_x=m.fs.temperature_deviation_x,
+        heat_flux_x0=m.fs.heat_flux_x0,
+        conc_mol_comp_ref=m.fs.conc_mol_comp_ref,
+        conc_mol_comp_deviation_x=m.fs.conc_mol_comp_deviation_x,
+        material_flux_x=m.fs.material_flux_x,
     )
     m.fs.temperature_deviation_x.fix(0)
     m.fs.heat_flux_x0.fix(0)
@@ -151,20 +144,12 @@ def modelOxygen():
     zfaces = np.linspace(0, 1, 8).tolist()
     o2_comps = ["O2", "N2"]
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(
-        default={
-            "dynamic": False,
-            "time_set": time_set,
-            "time_units": pyo.units.s,
-        }
-    )
+    m.fs = FlowsheetBlock(dynamic=False, time_set=time_set, time_units=pyo.units.s)
     m.fs.oxygen_triple_phase_boundary = soc.SocTriplePhaseBoundary(
-        default={
-            "control_volume_zfaces": zfaces,
-            "component_list": o2_comps,
-            "reaction_stoichiometry": {"O2": -0.25, "e^-": -1.0},
-            "inert_species": ["N2"],
-        }
+        control_volume_zfaces=zfaces,
+        component_list=o2_comps,
+        reaction_stoichiometry={"O2": -0.25, "e^-": -1.0},
+        inert_species=["N2"],
     )
     m.fs.oxygen_triple_phase_boundary.temperature_z.fix(0)
     m.fs.oxygen_triple_phase_boundary.current_density.fix(0)
@@ -243,30 +228,17 @@ def test_extra_inert():
     zfaces = np.linspace(0, 1, 8).tolist()
     o2_comps = ["O2", "N2"]
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(
-        default={
-            "dynamic": False,
-            "time_set": time_set,
-            "time_units": pyo.units.s,
-        }
-    )
+    m.fs = FlowsheetBlock(dynamic=False, time_set=time_set, time_units=pyo.units.s)
     with pytest.raises(
         ConfigurationError,
         match="fs.oxygen_triple_phase_boundary invalid component in inert_species "
         "argument. H2O is not in the provided component list.",
     ):
         m.fs.oxygen_triple_phase_boundary = soc.SocTriplePhaseBoundary(
-            default={
-                "control_volume_zfaces": zfaces,
-                "component_list": o2_comps,
-                "reaction_stoichiometry": {
-                    "O2": -0.25,
-                    "Vac": -0.5,
-                    "O^2-": 0.5,
-                    "e^-": -1.0,
-                },
-                "inert_species": ["N2", "H2O"],
-            }
+            control_volume_zfaces=zfaces,
+            component_list=o2_comps,
+            reaction_stoichiometry={"O2": -0.25, "Vac": -0.5, "O^2-": 0.5, "e^-": -1.0},
+            inert_species=["N2", "H2O"],
         )
 
 
@@ -300,33 +272,29 @@ def modelFuelAndOxygen(include_solid_species):
         tset, iznodes, initialize=0, units=pyo.units.K
     )
     m.fs.fuel_triple_phase_boundary = soc.SocTriplePhaseBoundary(
-        default={
-            "control_volume_zfaces": zfaces,
-            "length_z": m.fs.length_z,
-            "length_y": m.fs.length_y,
-            "component_list": fuel_comps,
-            "reaction_stoichiometry": fuel_stoich,
-            "inert_species": ["N2"],
-            "below_electrolyte": True,
-            "current_density": m.fs.current_density,
-            "temperature_z": m.fs.temperature_z,
-            "temperature_deviation_x": m.fs.temperature_deviation_x,
-        }
+        control_volume_zfaces=zfaces,
+        length_z=m.fs.length_z,
+        length_y=m.fs.length_y,
+        component_list=fuel_comps,
+        reaction_stoichiometry=fuel_stoich,
+        inert_species=["N2"],
+        below_electrolyte=True,
+        current_density=m.fs.current_density,
+        temperature_z=m.fs.temperature_z,
+        temperature_deviation_x=m.fs.temperature_deviation_x,
     )
     m.fs.oxygen_triple_phase_boundary = soc.SocTriplePhaseBoundary(
-        default={
-            "control_volume_zfaces": zfaces,
-            "length_z": m.fs.length_z,
-            "length_y": m.fs.length_y,
-            "component_list": oxygen_comps,
-            "reaction_stoichiometry": oxygen_stoich,
-            "inert_species": ["N2"],
-            "below_electrolyte": False,
-            "current_density": m.fs.current_density,
-            "temperature_z": m.fs.temperature_z,
-            "temperature_deviation_x": m.fs.temperature_deviation_x,
-            "heat_flux_x0": m.fs.fuel_triple_phase_boundary.heat_flux_x1,
-        }
+        control_volume_zfaces=zfaces,
+        length_z=m.fs.length_z,
+        length_y=m.fs.length_y,
+        component_list=oxygen_comps,
+        reaction_stoichiometry=oxygen_stoich,
+        inert_species=["N2"],
+        below_electrolyte=False,
+        current_density=m.fs.current_density,
+        temperature_z=m.fs.temperature_z,
+        temperature_deviation_x=m.fs.temperature_deviation_x,
+        heat_flux_x0=m.fs.fuel_triple_phase_boundary.heat_flux_x1,
     )
 
     m.fs.fuel_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(

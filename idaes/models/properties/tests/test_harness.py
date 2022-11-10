@@ -70,12 +70,12 @@ class PropertyTestHarness(object):
         m = ConcreteModel()
         self.configure_class(m)
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.params = self.prop_pack(default=self.param_args)
+        m.fs.params = self.prop_pack(**self.param_args)
 
         m.fs.props = m.fs.params.build_state_block(
-            [1], default={"defined_state": True, **m.prop_args}
+            [1], defined_state=True, **m.prop_args
         )
 
         return m
@@ -332,9 +332,7 @@ class PropertyTestHarness(object):
 
     @pytest.mark.component
     def test_CV_integration(self, frame):
-        frame.fs.cv = ControlVolume0DBlock(
-            default={"property_package": frame.fs.params}
-        )
+        frame.fs.cv = ControlVolume0DBlock(property_package=frame.fs.params)
 
         frame.fs.cv.add_geometry()
 

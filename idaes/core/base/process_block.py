@@ -19,9 +19,11 @@ create modular process model blocks.
 
 import sys
 import logging
+import inspect
 
 from pyomo.common.config import ConfigBlock
 from pyomo.environ import Block
+from pyomo.common.pyomo_typing import get_overloads_for
 
 __author__ = "John Eslick"
 __all__ = ["ProcessBlock", "declare_process_block_class"]
@@ -67,12 +69,35 @@ _config_block_keys_docstring = """
 """
 
 
+def _get_pyomo_block_kwargs():
+    """This function gets the keyword argument names used by Pyomo Block.__init__
+    This list is generated when importing the module rather than a static list
+    to accomadate future Pyomo interface changes.
+    """
+    funcs = get_overloads_for(Block.__init__)
+    keywords = set()
+    for func in funcs:
+        keywords.update(inspect.getfullargspec(func).kwonlyargs)
+    return keywords
+
+
+# Get a list of init kwarg names reserved for the base Pyomo Block class
+_pyomo_block_keywords = _get_pyomo_block_kwargs()
+
+
 def _process_kwargs(o, kwargs):
     kwargs.setdefault("rule", _rule_default)
-    o._block_data_config_default = kwargs.pop("default", None)
     o._block_data_config_initialize = ConfigBlock(implicit=True)
     o._block_data_config_initialize.set_value(kwargs.pop("initialize", None))
     o._idx_map = kwargs.pop("idx_map", None)
+
+    _pyomo_kwargs = {}
+    for arg in _pyomo_block_keywords:
+        if arg in kwargs:
+            _pyomo_kwargs[arg] = kwargs.pop(arg)
+
+    o._block_data_config_default = kwargs
+    return _pyomo_kwargs
 
 
 class _IndexedProcessBlockMeta(type):
@@ -80,8 +105,8 @@ class _IndexedProcessBlockMeta(type):
 
     def __new__(meta, name, bases, dct):
         def __init__(self, *args, **kwargs):
-            _process_kwargs(self, kwargs)
-            bases[0].__init__(self, *args, **kwargs)
+            _pyomo_kwargs = _process_kwargs(self, kwargs)
+            bases[0].__init__(self, *args, **_pyomo_kwargs)
 
         dct["__init__"] = __init__
         dct["__process_block__"] = "indexed"
@@ -95,9 +120,9 @@ class _ScalarProcessBlockMeta(type):
 
     def __new__(meta, name, bases, dct):
         def __init__(self, *args, **kwargs):
-            _process_kwargs(self, kwargs)
+            _pyomo_kwargs = _process_kwargs(self, kwargs)
             bases[0].__init__(self, component=self)
-            bases[1].__init__(self, *args, **kwargs)
+            bases[1].__init__(self, *args, **_pyomo_kwargs)
 
         dct["__init__"] = __init__
         dct["__process_block__"] = "scalar"

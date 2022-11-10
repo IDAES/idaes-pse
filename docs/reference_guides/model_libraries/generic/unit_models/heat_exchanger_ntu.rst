@@ -7,6 +7,7 @@ Heat Exchanger using the NTU Method
 .. currentmodule:: idaes.models.unit_models.heat_exchanger_ntu
 
 The HeatExchangerNTU model can be imported from :code:`idaes.models.unit_models`, and models a heat exchanger using the effectiveness-NTU method.
+This model dervied from the
 
 Degrees of Freedom
 ------------------
@@ -27,12 +28,16 @@ Model Structure
 ---------------
 
 The ``HeatExchanger`` model contains two ``ControlVolume0DBlock`` blocks named ``hot_side`` and the ``cold side``.
+These names are configurable using the ``hot_side_name`` and ``cold_side_name`` configuration arguments, in which case
+aliases are assigned to the control volumes and associated Ports using the names provided (note that ``hot_side`` and
+``cold_side`` will always work).
 The sign convention is that duty is positive for heat flowing from the hot side to the cold
 side.  Aside from the sign convention there is no requirement that the hot side be hotter
 than the cold side.
 
-The ``HeatExchanger`` has two inlet ports and two outlet ports, named
-``hot_inlet``, ``cold_inlet``, ``hot_outlet``, and ``cold_outlet``.
+The ``HeatExchanger`` has two inlet ports and two outlet ports. By default these are
+``hot_side_inlet``, ``cold_side_inlet``, ``hot_side_outlet``, and ``cold_side_outlet``. If the user
+supplies different hot and cold side names the inlet and outlets are named accordingly.
 
 Variables
 ---------

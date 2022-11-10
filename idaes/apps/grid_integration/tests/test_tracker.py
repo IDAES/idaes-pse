@@ -50,6 +50,9 @@ class TestMissingModel:
                 setattr(self, a, self.attr_dict[a])
 
 
+horizon = 4
+
+
 @pytest.mark.unit
 def test_model_object_missing_methods():
 
@@ -72,6 +75,7 @@ def test_model_object_missing_methods():
         with pytest.raises(AttributeError, match=r".*{}().*".format(m)):
             tracker_object = Tracker(
                 tracking_model_object=tracking_model_object,
+                tracking_horizon=horizon,
                 n_tracking_hour=n_tracking_hour,
                 solver=solver,
             )
@@ -91,28 +95,24 @@ def test_model_object_missing_attr():
         with pytest.raises(AttributeError, match=r".*{}.*".format(a)):
             tracker_object = Tracker(
                 tracking_model_object=tracking_model_object,
+                tracking_horizon=horizon,
                 n_tracking_hour=n_tracking_hour,
                 solver=solver,
             )
-
-
-# declare a testing model class
-
-
-horizon = 4
 
 
 @pytest.mark.unit
 def test_n_tracking_hour_checker():
 
     solver = pyo.SolverFactory("cbc")
-    tracking_model_object = TestingModel(model_data=testing_model_data, horizon=horizon)
+    tracking_model_object = TestingModel(model_data=testing_model_data)
 
     # test if tracker raise error when negative number of hours is given
     n_tracking_hour = -1
     with pytest.raises(ValueError, match=r".*greater than zero.*"):
         tracker_object = Tracker(
             tracking_model_object=tracking_model_object,
+            tracking_horizon=horizon,
             n_tracking_hour=n_tracking_hour,
             solver=solver,
         )
@@ -122,6 +122,7 @@ def test_n_tracking_hour_checker():
     with pytest.raises(TypeError, match=r".*should be an integer.*"):
         tracker_object = Tracker(
             tracking_model_object=tracking_model_object,
+            tracking_horizon=horizon,
             n_tracking_hour=n_tracking_hour,
             solver=solver,
         )
@@ -131,7 +132,7 @@ def test_n_tracking_hour_checker():
 def test_solver_checker():
 
     n_tracking_hour = 1
-    tracking_model_object = TestingModel(model_data=testing_model_data, horizon=horizon)
+    tracking_model_object = TestingModel(model_data=testing_model_data)
 
     # test if bidder raise error when invalid solver is provided
     invalid_solvers = [5, "cbc", "ipopt"]
@@ -139,6 +140,7 @@ def test_solver_checker():
         with pytest.raises(TypeError, match=r".*not a valid Pyomo solver.*"):
             tracker_object = Tracker(
                 tracking_model_object=tracking_model_object,
+                tracking_horizon=horizon,
                 n_tracking_hour=n_tracking_hour,
                 solver=s,
             )
@@ -151,9 +153,10 @@ def tracker_object():
     solver = pyo.SolverFactory("cbc")
 
     # create a tracker model
-    tracking_model_object = TestingModel(model_data=testing_model_data, horizon=horizon)
+    tracking_model_object = TestingModel(model_data=testing_model_data)
     tracker_object = Tracker(
         tracking_model_object=tracking_model_object,
+        tracking_horizon=horizon,
         n_tracking_hour=n_tracking_hour,
         solver=solver,
     )
@@ -179,3 +182,18 @@ def test_track_market_dispatch(tracker_object):
         pytest.approx(tracker_object.get_last_delivered_power(), abs=1e-3)
         == last_delivered_power
     )
+
+
+@pytest.mark.component
+def test_track_deviation_penalty(tracker_object):
+
+    large_penalty = 10000
+
+    assert pytest.approx(large_penalty) == pyo.value(
+        tracker_object.model.deviation_penalty[0]
+    )
+
+    for t in range(1, horizon):
+        assert pytest.approx(
+            large_penalty / (horizon - tracker_object.n_tracking_hour)
+        ) == pyo.value(tracker_object.model.deviation_penalty[t])

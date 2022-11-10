@@ -46,8 +46,8 @@ Example::
         # do the work of the class.
 
 """
-
-from pyomo.core.base.units_container import _PyomoUnit
+from pyomo.environ import units
+from pyomo.core.base.units_container import _PyomoUnit, InconsistentUnitsError
 
 from idaes.core.util.exceptions import PropertyPackageError
 import idaes.logger as idaeslog
@@ -97,27 +97,245 @@ class HasPropertyClassMetadata(object):
         raise NotImplementedError()
 
 
-class UnitNames(object):
-    """Names for recognized units."""
+class UnitSet(object):
+    """
+    Object defining the set of recognised quantities in IDAES and their base units.
 
-    TM = TIME = "time"
-    LN = LENGTH = "length"
-    MA = MASS = "mass"
-    AM = AMOUNT = "amount"
-    TE = TEMPERATURE = "temperature"
-    CU = CURRENT = "current"
-    LI = LUMINOUS_INTENSITY = "luminous intensity"
+    Units of measurement are defined by setting units for the seven base SI quantities
+    (amount, current, length, luminous intensity, mass, temperature and time), from which units
+    for all other quantities are derived. The units of the seven base quantities must be provided
+    when instantiating the UnitSet, otherwise base SI units are assumed.
 
+    Units can be accesses by via either a property on the UnitSet (e.g., UnitSet.TIME) or
+    via an index on the UnitSet (e.g., UnitSet["time"]).
+    """
 
-_base_units = {
-    "time": None,
-    "length": None,
-    "mass": None,
-    "amount": None,
-    "temperature": None,
-    "current": None,
-    "luminous intensity": None,
-}
+    _base_quantities = {
+        "AMOUNT": units.mol,
+        "CURRENT": units.watt,
+        "LENGTH": units.meter,
+        "LUMINOUS_INTENSITY": units.candela,
+        "MASS": units.kilogram,
+        "TEMPERATURE": units.kelvin,
+        "TIME": units.seconds,
+    }
+
+    def __init__(
+        self,
+        amount: _PyomoUnit = units.mol,
+        current: _PyomoUnit = units.watt,
+        length: _PyomoUnit = units.meter,
+        luminous_intensity: _PyomoUnit = units.candela,
+        mass: _PyomoUnit = units.kilogram,
+        temperature: _PyomoUnit = units.kelvin,
+        time: _PyomoUnit = units.seconds,
+    ):
+        self._time = time
+        self._length = length
+        self._mass = mass
+        self._amount = amount
+        self._temperature = temperature
+        self._current = current
+        self._luminous_intensity = luminous_intensity
+
+        # Check that valid units were assigned
+        for q, expected_dim in self._base_quantities.items():
+            u = getattr(self, q)
+            if not isinstance(u, _PyomoUnit):
+                # Check for non-unit inputs from user
+                raise PropertyPackageError(
+                    f"Unrecognized units of measurement for quantity {q} ({u})"
+                )
+
+            # Check for expected dimensionality
+            try:
+                # Try to convert user-input to SI units of expected dimensions
+                units.convert(u, expected_dim)
+            except InconsistentUnitsError:
+                # An error indicates a mismatch in units or the units registry
+                raise PropertyPackageError(
+                    f"Invalid units of measurement for quantity {q} ({u}). "
+                    "Please ensure units provided are valid for this quantity and "
+                    "use the Pyomo unit registry."
+                )
+
+    def __getitem__(self, key):
+        try:
+            # Check to catch cases where luminous intensity has a space
+            return getattr(self, key.upper().replace(" ", "_"))
+        except AttributeError:
+            raise PropertyPackageError(
+                f"Unrecognised quantity {key}. Please check that this is a recognised quantity "
+                "defined in idaes.core.base.property_meta.UnitSet."
+            )
+
+    def unitset_is_consistent(self, other):
+        return all(getattr(self, q) is getattr(other, q) for q in self._base_quantities)
+
+    @property
+    def TIME(self):
+        return self._time
+
+    @property
+    def LENGTH(self):
+        return self._length
+
+    @property
+    def MASS(self):
+        return self._mass
+
+    @property
+    def AMOUNT(self):
+        return self._amount
+
+    @property
+    def TEMPERATURE(self):
+        return self._temperature
+
+    @property
+    def CURRENT(self):
+        return self._current
+
+    @property
+    def LUMINOUS_INTENSITY(self):
+        return self._luminous_intensity
+
+    # Length based
+    @property
+    def AREA(self):
+        return self._length**2
+
+    @property
+    def VOLUME(self):
+        return self._length**3
+
+    # Flows
+    @property
+    def FLOW_MASS(self):
+        return self._mass * self._time**-1
+
+    @property
+    def FLOW_MOLE(self):
+        return self._amount * self._time**-1
+
+    @property
+    def FLOW_VOL(self):
+        return self._length**3 * self._time**-1
+
+    @property
+    def FLUX_MASS(self):
+        return self._mass * self._time**-1 * self._length**-2
+
+    @property
+    def FLUX_MOLE(self):
+        return self._amount * self._time**-1 * self._length**-2
+
+    @property
+    def FLUX_ENERGY(self):
+        return self._mass * self._time**-3
+
+    # Velocity and Acceleration
+    @property
+    def VELOCITY(self):
+        return self._length * self._time**-1
+
+    @property
+    def ACCELERATION(self):
+        return self._length * self._time**-2
+
+    # Pressures
+    @property
+    def PRESSURE(self):
+        return self._mass * self._length**-1 * self._time**-2
+
+    @property
+    def GAS_CONSTANT(self):
+        return (
+            self._mass
+            * self._length**2
+            * self._time**-2
+            * self._temperature**-1
+            * self._amount**-1
+        )
+
+    # Densities
+    @property
+    def DENSITY_MASS(self):
+        return self._mass * self._length**-3
+
+    @property
+    def DENSITY_MOLE(self):
+        return self._amount * self._length**-3
+
+    @property
+    def MOLECULAR_WEIGHT(self):
+        return self._mass / self._amount
+
+    # Energy
+    @property
+    def ENERGY(self):
+        return self._mass * self._length**2 * self._time**-2
+
+    @property
+    def ENERGY_MASS(self):
+        return self._length**2 * self._time**-2
+
+    @property
+    def ENERGY_MOLE(self):
+        return self._mass * self._length**2 * self._time**-2 * self._amount**-1
+
+    @property
+    def POWER(self):
+        return self._mass * self._length**2 * self._time**-3
+
+    # Heat Related
+    @property
+    def HEAT_CAPACITY_MASS(self):
+        return self._length**2 * self._time**-2 * self._temperature**-1
+
+    @property
+    def HEAT_CAPACITY_MOLE(self):
+        return (
+            self._mass
+            * self._length**2
+            * self._time**-2
+            * self._temperature**-1
+            * self._amount**-1
+        )
+
+    @property
+    def HEAT_TRANSFER_COEFFICIENT(self):
+        return self._mass * self._time**-3 * self._temperature**-1
+
+    # Entropy
+    @property
+    def ENTROPY(self):
+        return (
+            self._mass * self._length**2 * self._time**-2 * self._temperature**-1
+        )
+
+    @property
+    def ENTROPY_MASS(self):
+        return self._length**2 * self._time**-2 * self._temperature**-1
+
+    @property
+    def ENTROPY_MOLE(self):
+        return (
+            self._mass
+            * self._length**2
+            * self._time**-2
+            * self._temperature**-1
+            * self._amount**-1
+        )
+
+    # Transport Properties
+    @property
+    def DYNAMIC_VISCOSITY(self):
+        return self._mass * self._length**-1 * self._time**-1
+
+    @property
+    def THERMAL_CONDUCTIVITY(self):
+        return self._mass * self._length * self._time**-3 * self._temperature**-1
 
 
 class PropertyClassMetadata(object):
@@ -127,8 +345,8 @@ class PropertyClassMetadata(object):
     Example usage::
 
             foo = PropertyClassMetadata()
-            foo.add_default_units({foo.U.TIME: 'fortnights',
-                                   foo.U.MASS: 'stones'})
+            foo.add_default_units(time = pyo.units.fortnights,
+                                  mass = pyo.units.stones)
             foo.add_properties({'under_sea': {'units': 'leagues'},
                                 'tentacle_size': {'units': 'yards'}})
             foo.add_required_properties({'under_sea': 'leagues',
@@ -136,26 +354,21 @@ class PropertyClassMetadata(object):
 
     """
 
-    #: Alias for class enumerating supported/known unit types
-    U = UnitNames
-
     def __init__(self):
-        self._default_units = _base_units.copy()
-        self._derived_units = None
+        # TODO: Deprecate in favour of common units property
+        self._default_units = None
         self._properties = {}
         self._required_properties = {}
 
     @property
     def default_units(self):
+        # TODO: Deprecate in favour of common units property
         return self._default_units
 
     @property
     def derived_units(self):
-        # this will return a PropertyPackageError if used on a property package
-        # which has not defined units.
-        if self._derived_units is None:
-            self._create_derived_units()
-        return self._derived_units
+        # TODO: Deprecate in favour of common units property
+        return self._default_units
 
     @property
     def properties(self):
@@ -166,13 +379,10 @@ class PropertyClassMetadata(object):
         return self._required_properties
 
     def add_default_units(self, u):
-        """Add a dict with keys for the
-        quantities used in the property package (as strings) and values of
-        their default units as unit objects or strings.
+        """Add a dict with keys for the base quantities used in the
+        property package (as strings) and values of their default units as Pyomo unit objects.
 
-        The quantities used by the framework are in constants
-        defined in :class:`UnitNames`, aliased here in the class
-        attribute `U`.
+        If units are not provided for a quantity, it will be assumed to use base SI unites.
 
         Args:
             u (dict): Key=property, Value=units
@@ -180,19 +390,15 @@ class PropertyClassMetadata(object):
         Returns:
             None
         """
-        self._default_units.update(u)
-
-        # Validate values. Pyomo units are all-or-nothing, so check to see that
-        # this is the case
-        for q, u in self._default_units.items():
-            if u is None and (q == "luminous intensity" or q == "current"):
-                # these units are infrequently used in PSE, so allow users
-                # to skip these
-                continue
-            elif not isinstance(u, _PyomoUnit):
-                raise PropertyPackageError(
-                    f"Unrecognized units of measurment for quantity {q} ({u})"
-                )
+        # TODO: Could look at replacing dict with defined arguments
+        # This would be a big API change
+        try:
+            self._default_units = UnitSet(**u)
+        except TypeError:
+            raise TypeError(
+                f"Unexpected argument for base quantities found when creating UnitSet. "
+                "Please ensure that units are only defined for the seven base quantities."
+            )
 
     def add_properties(self, p):
         """Add properties to the metadata.
@@ -236,146 +442,8 @@ class PropertyClassMetadata(object):
             self._required_properties[k] = v
 
     def get_derived_units(self, units):
-        base_units = self.default_units
-        if isinstance(base_units["mass"], str) or base_units["mass"] is None:
-            # If one entry is not a units object, then none will be
-            # Backwards compatability for pre-units property packages
-            return None
-        else:
-            return self.derived_units[units]
-
-    def _create_derived_units(self):
-        try:
-            self._derived_units = {
-                "time": self.default_units["time"],
-                "length": self.default_units["length"],
-                "mass": self.default_units["mass"],
-                "amount": self.default_units["amount"],
-                "temperature": self.default_units["temperature"],
-                "current": self.default_units["current"],
-                "luminous intensity": self.default_units["luminous intensity"],
-                "area": self.default_units["length"] ** 2,
-                "volume": self.default_units["length"] ** 3,
-                "flow_mass": (
-                    self.default_units["mass"] * self.default_units["time"] ** -1
-                ),
-                "flow_mole": (
-                    self.default_units["amount"] * self.default_units["time"] ** -1
-                ),
-                "flow_vol": (
-                    self.default_units["length"] ** 3 * self.default_units["time"] ** -1
-                ),
-                "flux_mass": (
-                    self.default_units["mass"]
-                    * self.default_units["time"] ** -1
-                    * self.default_units["length"] ** -2
-                ),
-                "flux_mole": (
-                    self.default_units["amount"]
-                    * self.default_units["time"] ** -1
-                    * self.default_units["length"] ** -2
-                ),
-                "flux_energy": (
-                    self.default_units["mass"] * self.default_units["time"] ** -3
-                ),
-                "velocity": (
-                    self.default_units["length"] * self.default_units["time"] ** -1
-                ),
-                "acceleration": (
-                    self.default_units["length"] * self.default_units["time"] ** -2
-                ),
-                "density_mass": (
-                    self.default_units["mass"] * self.default_units["length"] ** -3
-                ),
-                "density_mole": (
-                    self.default_units["amount"] * self.default_units["length"] ** -3
-                ),
-                "molecular_weight": (
-                    self.default_units["mass"] / self.default_units["amount"]
-                ),
-                "energy": (
-                    self.default_units["mass"]
-                    * self.default_units["length"] ** 2
-                    * self.default_units["time"] ** -2
-                ),
-                "energy_mass": (
-                    self.default_units["length"] ** 2 * self.default_units["time"] ** -2
-                ),
-                "energy_mole": (
-                    self.default_units["mass"]
-                    * self.default_units["length"] ** 2
-                    * self.default_units["time"] ** -2
-                    * self.default_units["amount"] ** -1
-                ),
-                "dynamic_viscosity": (
-                    self.default_units["mass"]
-                    * self.default_units["length"] ** -1
-                    * self.default_units["time"] ** -1
-                ),
-                "entropy": (
-                    self.default_units["mass"]
-                    * self.default_units["length"] ** 2
-                    * self.default_units["time"] ** -2
-                    * self.default_units["temperature"] ** -1
-                ),
-                "entropy_mass": (
-                    self.default_units["length"] ** 2
-                    * self.default_units["time"] ** -2
-                    * self.default_units["temperature"] ** -1
-                ),
-                "entropy_mole": (
-                    self.default_units["mass"]
-                    * self.default_units["length"] ** 2
-                    * self.default_units["time"] ** -2
-                    * self.default_units["temperature"] ** -1
-                    * self.default_units["amount"] ** -1
-                ),
-                "power": (
-                    self.default_units["mass"]
-                    * self.default_units["length"] ** 2
-                    * self.default_units["time"] ** -3
-                ),
-                "pressure": (
-                    self.default_units["mass"]
-                    * self.default_units["length"] ** -1
-                    * self.default_units["time"] ** -2
-                ),
-                "heat_capacity_mass": (
-                    self.default_units["length"] ** 2
-                    * self.default_units["time"] ** -2
-                    * self.default_units["temperature"] ** -1
-                ),
-                "heat_capacity_mole": (
-                    self.default_units["mass"]
-                    * self.default_units["length"] ** 2
-                    * self.default_units["time"] ** -2
-                    * self.default_units["temperature"] ** -1
-                    * self.default_units["amount"] ** -1
-                ),
-                "heat_transfer_coefficient": (
-                    self.default_units["mass"]
-                    * self.default_units["time"] ** -3
-                    * self.default_units["temperature"] ** -1
-                ),
-                "thermal_conductivity": (
-                    self.default_units["mass"]
-                    * self.default_units["length"]
-                    * self.default_units["time"] ** -3
-                    * self.default_units["temperature"] ** -1
-                ),
-                "gas_constant": (
-                    self.default_units["mass"]
-                    * self.default_units["length"] ** 2
-                    * self.default_units["time"] ** -2
-                    * self.default_units["temperature"] ** -1
-                    * self.default_units["amount"] ** -1
-                ),
-            }
-        except TypeError:
-            raise PropertyPackageError(
-                "{} cannot determine derived units, as property package has "
-                "not defined a set of base units.".format(str(self))
-            )
+        # TODO: Deprecate in favour of common units property
+        return self.derived_units[units]
 
 
 class PropertyMetadata(dict):

@@ -15,11 +15,13 @@ IDAES 0D Fixed Bed Reactor model.
 """
 
 # Import Pyomo libraries
-from pyomo.environ import (Constraint,
-                           Var,
-                           value,
-                           check_optimal_termination,
-                           units as pyunits)
+from pyomo.environ import (
+    Constraint,
+    Var,
+    value,
+    check_optimal_termination,
+    units as pyunits,
+)
 from pyomo.dae import DerivativeVar
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -185,10 +187,8 @@ see reaction package for documentation.}""",
         # the gas state block is deactivated.
         self.gas = self.config.gas_property_package.state_block_class(
             self.flowsheet().time,
-            default={
-                "parameters": self.config.gas_property_package,
-                "defined_state": True,
-            },
+            parameters=self.config.gas_property_package,
+            defined_state=True,
         )
 
         # Build Solid Phase StateBlock
@@ -201,10 +201,8 @@ see reaction package for documentation.}""",
         # unit model instead
         self.solids = self.config.solid_property_package.state_block_class(
             self.flowsheet().time,
-            default={
-                "parameters": self.config.solid_property_package,
-                "defined_state": True,
-            },
+            parameters=self.config.solid_property_package,
+            defined_state=True,
         )
 
         tmp_dict = dict(**self.config.reaction_package_args)
@@ -214,7 +212,7 @@ see reaction package for documentation.}""",
         self.reactions = self.config.reaction_package.reaction_block_class(
             self.flowsheet().time,
             doc="Reaction properties in control volume",
-            default=tmp_dict,
+            **tmp_dict,
         )
 
         # Volume of reactor
@@ -469,7 +467,7 @@ see reaction package for documentation.}""",
         # Get units meta data from property packages (only solid needed)
         units_meta_solid = (
             self.config.solid_property_package.get_metadata().get_derived_units
-            )
+        )
 
         # scale some variables
         if hasattr(self, "bed_diameter"):
@@ -484,8 +482,9 @@ see reaction package for documentation.}""",
 
         if hasattr(self, "volume_bed"):
             if iscale.get_scaling_factor(self.volume_bed) is None:
-                sf = 1 / value(constants.pi * self.bed_height *
-                               (0.5 * self.bed_diameter) ** 2)
+                sf = 1 / value(
+                    constants.pi * self.bed_height * (0.5 * self.bed_diameter) ** 2
+                )
                 iscale.set_scaling_factor(self.volume_bed, 1e-1 * sf)
 
         # Scale some constraints
@@ -505,30 +504,29 @@ see reaction package for documentation.}""",
             for (t, j), c in self.solids_material_holdup_constraints.items():
                 sf1 = iscale.get_scaling_factor(self.volume_bed)
                 sf2 = iscale.get_scaling_factor(self.solids[t].dens_mass_skeletal)
-                iscale.constraint_scaling_transform(
-                    c, sf1 * sf2, overwrite=False
-                )
+                iscale.constraint_scaling_transform(c, sf1 * sf2, overwrite=False)
 
         if hasattr(self, "solids_material_accumulation_constraints"):
             for (t, j), c in self.solids_material_accumulation_constraints.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.volume_bed),
-                    overwrite=False
+                    c, iscale.get_scaling_factor(self.volume_bed), overwrite=False
                 )
 
         if hasattr(self, "mass_solids_constraint"):
             for t, c in self.mass_solids_constraint.items():
                 sf1 = iscale.get_scaling_factor(self.volume_bed)
                 sf2 = iscale.get_scaling_factor(self.solids[t].dens_mass_skeletal)
-                iscale.constraint_scaling_transform(
-                    c, sf1 * sf2, overwrite=False
-                )
+                iscale.constraint_scaling_transform(c, sf1 * sf2, overwrite=False)
 
         if hasattr(self, "sum_component_constraint"):
+            # Get a single representative value in component list
+            for j in self.config.solid_property_package.component_list:
+                break
             for t, c in self.sum_component_constraint.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.solids[t].mass_frac_comp["Fe2O3"]),
-                    overwrite=False
+                    c,
+                    iscale.get_scaling_factor(self.solids[t].mass_frac_comp[j]),
+                    overwrite=False,
                 )
 
         if self.config.energy_balance_type != EnergyBalanceType.none:
@@ -537,23 +535,20 @@ see reaction package for documentation.}""",
                 for t, c in self.solids_energy_holdup_constraints.items():
                     sf1 = iscale.get_scaling_factor(self.volume_bed)
                     sf2 = iscale.get_scaling_factor(self.solids[t].enth_mass)
-                    iscale.constraint_scaling_transform(
-                        c, sf1 * sf2, overwrite=False
-                    )
+                    iscale.constraint_scaling_transform(c, sf1 * sf2, overwrite=False)
 
             if hasattr(self, "solids_energy_accumulation_constraints"):
                 for t, c in self.solids_energy_accumulation_constraints.items():
                     sf1 = iscale.get_scaling_factor(self.volume_bed)
                     sf2 = iscale.get_scaling_factor(self.solids[t].enth_mass)
-                    iscale.constraint_scaling_transform(
-                        c, sf1 * sf2, overwrite=False
-                    )
+                    iscale.constraint_scaling_transform(c, sf1 * sf2, overwrite=False)
 
         if self.config.energy_balance_type == EnergyBalanceType.none:
 
             if hasattr(self, "isothermal_solid_phase"):
                 for t, c in self.isothermal_solid_phase.items():
                     iscale.constraint_scaling_transform(
-                        c, iscale.get_scaling_factor(self.solids[t].temperature),
-                        overwrite=False
+                        c,
+                        iscale.get_scaling_factor(self.solids[t].temperature),
+                        overwrite=False,
                     )

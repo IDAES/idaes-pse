@@ -31,15 +31,7 @@ class EoSBase:
         # Utility method to convert gas constant to base units
         base_units = b.params.get_metadata().default_units
 
-        r_units = (
-            base_units["mass"]
-            * base_units["length"] ** 2
-            * base_units["temperature"] ** -1
-            * base_units["amount"] ** -1
-            * base_units["time"] ** -2
-        )
-
-        return pyunits.convert(const.gas_constant, to_units=r_units)
+        return pyunits.convert(const.gas_constant, to_units=base_units.GAS_CONSTANT)
 
     @staticmethod
     def common(b, pobj):
@@ -126,7 +118,7 @@ class EoSBase:
         # Method for calculating pure component ideal gas cv from cp
         # For ideal gases, cv = cp - R
         units = b.params.get_metadata().derived_units
-        R = pyunits.convert(const.gas_constant, to_units=units["heat_capacity_mole"])
+        R = pyunits.convert(const.gas_constant, to_units=units.HEAT_CAPACITY_MOLE)
         return get_method(b, "cp_mol_ig_comp", j)(b, cobj(b, j), b.temperature) - R
 
     @staticmethod
@@ -159,7 +151,7 @@ class EoSBase:
     def energy_internal_mol_ig_comp_pure(b, j):
         # Method for calculating pure component U from H for ideal gases
         units = b.params.get_metadata().derived_units
-        R = pyunits.convert(const.gas_constant, to_units=units["heat_capacity_mole"])
+        R = pyunits.convert(const.gas_constant, to_units=units.HEAT_CAPACITY_MOLE)
 
         if cobj(b, j).parent_block().config.include_enthalpy_of_formation:
             # First, need to determine correction between U_form and H_form
@@ -203,7 +195,7 @@ class EoSBase:
 
         # Method for calculating pure component U from H for liquids & solids
         units = b.params.get_metadata().derived_units
-        R = pyunits.convert(const.gas_constant, to_units=units["heat_capacity_mole"])
+        R = pyunits.convert(const.gas_constant, to_units=units.HEAT_CAPACITY_MOLE)
 
         if cobj(b, j).parent_block().config.include_enthalpy_of_formation:
             # First, need to determine correction between U_form and H_form
