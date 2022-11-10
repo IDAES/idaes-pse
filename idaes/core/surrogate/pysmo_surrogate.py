@@ -340,9 +340,9 @@ class PysmoPolyTrainer(PysmoTrainer):
 
         Returns:
             dict(<dict>)    : Dictionary object containing confidence intervals for all regressed parameters.
-                              
+
                               The dictionary keys are the output variables originally supplied during model training.
-                              
+
                               The dictionary values are dataframes containing four columns:
 
                                 - Regression coeff.  : The regression coefficients for the trained model
