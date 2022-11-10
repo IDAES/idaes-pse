@@ -404,18 +404,17 @@ class UnitSet(object):
 
 
 class PropertyClassMetadata(object):
-    """Container for metadata about the property class, which includes
-       default units and properties.
+    """
+    Container for metadata about the property class, which includes
+    default units and properties.
 
     Example usage::
 
-            foo = PropertyClassMetadata()
-            foo.add_default_units(time = pyo.units.fortnights,
-                                  mass = pyo.units.stones)
-            foo.add_properties({'under_sea': {'units': 'leagues'},
-                                'tentacle_size': {'units': 'yards'}})
-            foo.add_required_properties({'under_sea': 'leagues',
-                                        'tentacle_size': 'yards'})
+        foo = PropertyClassMetadata()
+        foo.add_default_units(time = pyo.units.fortnights,
+                              mass = pyo.units.stones)
+        foo.add_properties({'under_sea': {'method': 'submarine', 'units': 'leagues', 'required': False, 'supported': True},
+                            'tentacle_size': {'method': 'kraken', 'units': 'yards', 'required': True, 'supported': True}})
 
     """
 

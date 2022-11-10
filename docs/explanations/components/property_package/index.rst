@@ -31,13 +31,6 @@ framework provides a
 and :ref:`Generic Reaction Package Framework<explanations/components/property_package/general_reactions/index:Generic Reaction Package Framework>`
 to make it easier to create a package for common property and reaction models.
 
-Units of Measurement
---------------------
-
-One of the most important roles property packages play within the modeling framework is to define the units of measurement that will be used for those models which use the property packages. Any variable which is created in a unit model will derive its units of measurement from those defined in the associated property package in order to ensure consistency of units.
-
-Defining units of measurement in property packages is :ref:`discussed here<explanations/components/property_package/uom:Defining Units of Measurement>`.
-
 Physical properties
 -------------------
 
@@ -79,6 +72,13 @@ Reaction property packages consist of two parts:
 
 * :ref:`ReactionParameterBlocks<explanations/components/property_package/reaction_param:Reaction Parameter Block>`, which contain a set of parameters associated with the specific reaction(s) being modeled, and
 * :ref:`ReactionBlocks<explanations/components/property_package/reaction_block:Reaction Block>`, which contain the actual calculations of the reaction behavior.
+
+Property Metadata
+-----------------
+
+One of the goals of the IDAES CMF is to provide users with the maximum degree of flexibility when defining their models. One of the most important roles property packages play within the modeling framework is to define the units of measurement that will be used for those models which use the property packages. Any variable which is created in a unit model will derive its units of measurement from those defined in the associated property package in order to ensure consistency of units. Secondly, the IDAES CMF aims to allow users to only define calculations for those thermophysical properties that will actually be used in their process model, rather than needing to define a comprehensive set of calculations for all possible properties.
+
+In order to do this, each property package is expected to contain a set of metadata which defines the units of measurement used by that package and to list which thermophysical properties are supported by the package (and conversely, which properties are not supported). A discussion of how metadata is defined and handled can be :ref:`found here<reference_guides/core/property_metadata:Property Metadata Classes>`.
 
 Component and Phase Objects
 ---------------------------

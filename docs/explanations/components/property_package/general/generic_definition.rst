@@ -12,7 +12,7 @@ In order to create and use a property package using the IDAES Generic Property P
 Units of Measurement
 --------------------
 
-When defining a property package using the generic framework, users must define the base units for the property package (see :ref:`link<explanations/components/property_package/uom:Defining Units of Measurement>`). The approach for setting the base units depends on the approach used to define the property package, and is discussed in more detail in each section.
+When defining a property package using the generic framework, users must define the base units for the property package (see :ref:`link<reference_guides/core/uom:Unit Sets>`). The approach for setting the base units depends on the approach used to define the property package, and is discussed in more detail in each section.
 
 The Generic Property Package Framework includes the necessary code to convert between different units of measurement as required, allowing users to combine property methods with different sets of units into a single property package. In these cases, each property method is written in its natural units (including parameters), and the final result is automatically converted to the base units.
 

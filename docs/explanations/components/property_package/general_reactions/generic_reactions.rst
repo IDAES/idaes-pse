@@ -12,7 +12,7 @@ In order to create and use a property package using the IDAES Generic Reaction P
 Units of Measurement
 --------------------
 
-As with generic thermophysical property packages, when defining a reaction package using the generic framework users must define the base units for the reaction package (see :ref:`link<explanations/components/property_package/uom:Defining Units of Measurement>`). The approach for setting the base units and units for all parameters is the same as for thermophysical property packages and depends on the approach used to define the reaction package.
+As with generic thermophysical property packages, when defining a reaction package using the generic framework users must define the base units for the reaction package (see :ref:`link<reference_guides/core/uom:Unit Sets>`). The approach for setting the base units and units for all parameters is the same as for thermophysical property packages and depends on the approach used to define the reaction package.
 
 Config Dictionary
 -----------------
