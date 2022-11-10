@@ -314,7 +314,7 @@ testing_generator_params = {
     "shutdown_capacity": 30,
     "startup_capacity": 30,
     "initial_status": 9,
-    "initial_p_output": 30,
+    "initial_p_output": 42,
     "production_cost_bid_pairs": [
         (30, 30),
         (45.3, 30),
