@@ -328,7 +328,9 @@ class PysmoPolyTrainer(PysmoTrainer):
     def _get_metrics(self, model):
         return {"RMSE": model.errors["MSE"] ** 0.5, "R2": model.errors["R2"]}
 
-    def get_confidence_intervals(self, model: PysmoPolyTrainer, confidence: float = 0.95)-> Dict:
+    def get_confidence_intervals(
+        self, model: PysmoPolyTrainer, confidence: float = 0.95
+    ) -> Dict:
         """
         Compute confidence intervals for the regression patamaters.
 
@@ -338,6 +340,7 @@ class PysmoPolyTrainer(PysmoTrainer):
 
         Returns:
             dict(<dict>)    : Dictionary object containing confidence intervals for all regressed parameters.
+                              The dictionary keys are the output variables originally supplied during model training.
         """
         confint_dict = {}
         for i in model.output_labels:
