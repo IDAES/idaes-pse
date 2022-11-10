@@ -508,6 +508,8 @@ def petsc_dae_by_time_element(
         initial_variables = list(ivset | rvset)
 
     if not skip_initial:
+        if initial_solver_options is None:
+            initial_solver_options = {}
         # Nonlinear equation solver for initial conditions
         initial_solver_obj = pyo.SolverFactory(initial_solver, options=initial_solver_options)
         # list of constraints to add to the initial condition problem
