@@ -297,7 +297,7 @@ class IOToLogThread(threading.Thread):
         while True:
             self.log_value()
             self.stop.wait(self.sleep)
-            if self.stop.isSet():
+            if self.stop.is_set():
                 time.sleep(2)
                 self.log_value()
                 self.pos = 0
