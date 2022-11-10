@@ -95,8 +95,8 @@ class VesselMaterial(StrEnum):
     Carpenter20CB3 = "Carpenter20CB3"
     Nickel200 = "Nickel200"
     Monel400 = "Monel400"
-    Inconel600 = "inconel600"
-    Incoloy825 = "incoloy825"
+    Inconel600 = "Inconel600"
+    Incoloy825 = "Incoloy825"
     Titanium = "Titanium"
 
 
@@ -156,7 +156,7 @@ class PumpMaterial(StrEnum):
     StainlessSteel = "StainlessSteel"
     HastelloyC = "HastelloyC"
     Monel = "Monel"
-    Nickel = "Mickel"
+    Nickel = "Nickel"
     Titanium = "Titanium"
     NiAlBronze = "NiAlBronze"
     CarbonSteel = "CarbonSteel"
@@ -453,7 +453,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                 construction, default = VesselMaterial.CarbonSteel.
             shell_thickness: thickness of vessel shell, including pressure
                 allowance. Default = 1.25 inches.
-            weight_limi: 1: (default) 1000 to 920,000 lb, 2: 4200 to 1M lb.
+            weight_limit: 1: (default) 1000 to 920,000 lb, 2: 4200 to 1M lb.
                 Option 2 is only valid for vertical vessels.
             aspect_ratio_range: vertical vessels only, default = 1;
                 1: 3 < D < 21 ft, 12 < L < 40 ft, 2: 3 < D < 24 ft; 27 < L < 170 ft.

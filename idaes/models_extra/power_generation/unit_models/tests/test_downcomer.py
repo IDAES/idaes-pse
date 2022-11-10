@@ -46,14 +46,10 @@ solver = get_solver()
 @pytest.fixture(scope="module")
 def build_downcomer():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.unit = Downcomer(
-        default={
-            "property_package": m.fs.properties,
-            "has_holdup": False,
-            "has_heat_transfer": True,
-        }
+        property_package=m.fs.properties, has_holdup=False, has_heat_transfer=True
     )
     return m
 
@@ -123,7 +119,7 @@ def test_solve_unit(build_downcomer):
     )
 
     # pressure drop
-    assert pytest.approx(273583.120306, abs=1e-3) == pyo.value(m.fs.unit.deltaP[0])
+    assert pytest.approx(273583.120306, rel=1e-5) == pyo.value(m.fs.unit.deltaP[0])
     # check energy balance
     assert pytest.approx(
         pyo.value(m.fs.unit.control_volume.properties_in[0].enth_mol), abs=1e-3

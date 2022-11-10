@@ -16,8 +16,6 @@ This module contains miscellaneous utility functions for use in IDAES models.
 """
 from enum import Enum
 
-from pyomo.common.deprecation import deprecated, relocated_module_attribute
-
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock
 
@@ -25,17 +23,6 @@ import idaes.logger as idaeslog
 from idaes.core.util.tags import svg_tag as svg_tag_new
 
 _log = idaeslog.getLogger(__name__)
-
-
-relocated_module_attribute(
-    "get_solver", "idaes.core.solvers.get_solver", version="2.0.0.alpha0"
-)
-
-relocated_module_attribute(
-    "VarLikeExpression",
-    "idaes.core.base.var_like_expression.VarLikeExpression",
-    version="2.0.0.alpha0",
-)
 
 
 # Author: Andrew Lee
@@ -78,58 +65,6 @@ def extract_data(data_dict):
             return data_dict[args[0]]
 
     return _rule_initialize
-
-
-@deprecated(
-    "idaes.core.util.misc.TagReference will be removed in a future version",
-    version=1.12,
-)
-def TagReference(s, description=""):
-    """
-    Create a Pyomo reference with an added description string attribute to
-    describe the reference. The intended use for these references is to create
-    a time-indexed reference to variables in a model corresponding to plant
-    measurment tags.
-
-    Args:
-        s: Pyomo time slice of a variable or expression
-        description (str): A description the measurment
-
-    Returns:
-        A Pyomo Reference object with an added doc attribute
-    """
-    r = pyo.Reference(s)
-    r.description = description
-    return r
-
-
-def copy_port_values(destination=None, source=None, arc=None, direction="forward"):
-    """
-    Moved to idaes.core.util.initialization.propagate_state.
-    Leaving redirection function here for deprecation warning.
-    """
-    _log.warning(
-        "DEPRECATED: copy_port_values has been deprecated. "
-        "The same functionality can be found in "
-        "idaes.core.util.initialization.propagate_state."
-    )
-    from idaes.core.util.initialization import propagate_state
-
-    propagate_state(
-        destination=destination, source=source, arc=arc, direction=direction
-    )
-
-
-@deprecated(
-    "idaes.core.util.misc.svg_tag has moved to idaes.core.util.tags.svg_tag",
-    version=1.12,
-)
-def svg_tag(*args, **kwargs):
-    """
-    Moved to idaes.core.util.tags.svg_tag
-    Leaving redirection function here for deprecation warning.
-    """
-    return svg_tag_new(*args, **kwargs)
 
 
 def set_param_from_config(b, param, config=None, index=None):

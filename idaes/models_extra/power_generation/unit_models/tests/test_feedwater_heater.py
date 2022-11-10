@@ -29,31 +29,25 @@ solver = get_solver()
 def test_fwh_model():
     model = pyo.ConcreteModel()
     model.fs = FlowsheetBlock(
-        default={
-            "dynamic": False,
-            "default_property_package": iapws95.Iapws95ParameterBlock(),
-        }
+        dynamic=False, default_property_package=iapws95.Iapws95ParameterBlock()
     )
     model.fs.properties = model.fs.config.default_property_package
     model.fs.fwh = FWH0D(
-        default={
-            "has_desuperheat": True,
-            "has_drain_cooling": True,
-            "has_drain_mixer": True,
-            "property_package": model.fs.properties,
-        }
+        has_desuperheat=True,
+        has_drain_cooling=True,
+        has_drain_mixer=True,
+        property_package=model.fs.properties,
     )
 
-    model.fs.fwh.desuperheat.inlet_1.flow_mol.fix(100)
-    model.fs.fwh.desuperheat.inlet_1.flow_mol.unfix()
-    model.fs.fwh.desuperheat.inlet_1.pressure.fix(201325)
-    model.fs.fwh.desuperheat.inlet_1.enth_mol.fix(60000)
+    model.fs.fwh.desuperheat.hot_side_inlet.flow_mol[:].set_value(100)
+    model.fs.fwh.desuperheat.hot_side_inlet.pressure.fix(201325)
+    model.fs.fwh.desuperheat.hot_side_inlet.enth_mol.fix(60000)
     model.fs.fwh.drain_mix.drain.flow_mol.fix(1)
     model.fs.fwh.drain_mix.drain.pressure.fix(201325)
     model.fs.fwh.drain_mix.drain.enth_mol.fix(20000)
-    model.fs.fwh.cooling.inlet_2.flow_mol.fix(400)
-    model.fs.fwh.cooling.inlet_2.pressure.fix(101325)
-    model.fs.fwh.cooling.inlet_2.enth_mol.fix(3000)
+    model.fs.fwh.cooling.cold_side_inlet.flow_mol.fix(400)
+    model.fs.fwh.cooling.cold_side_inlet.pressure.fix(101325)
+    model.fs.fwh.cooling.cold_side_inlet.enth_mol.fix(3000)
     model.fs.fwh.condense.area.fix(1000)
     model.fs.fwh.condense.overall_heat_transfer_coefficient.fix(100)
     model.fs.fwh.desuperheat.area.fix(1000)
@@ -63,26 +57,24 @@ def test_fwh_model():
     model.fs.fwh.initialize(optarg={"max_iter": 50})
 
     assert degrees_of_freedom(model) == 0
-    assert abs(pyo.value(model.fs.fwh.desuperheat.inlet_1.flow_mol[0]) - 98.335) < 0.01
+    assert (
+        abs(pyo.value(model.fs.fwh.desuperheat.hot_side_inlet.flow_mol[0]) - 98.335)
+        < 0.01
+    )
 
 
 @pytest.mark.integration
 def test_fwh_units():
     model = pyo.ConcreteModel()
     model.fs = FlowsheetBlock(
-        default={
-            "dynamic": False,
-            "default_property_package": iapws95.Iapws95ParameterBlock(),
-        }
+        dynamic=False, default_property_package=iapws95.Iapws95ParameterBlock()
     )
     model.fs.properties = model.fs.config.default_property_package
     model.fs.fwh = FWH0D(
-        default={
-            "has_desuperheat": True,
-            "has_drain_cooling": True,
-            "has_drain_mixer": True,
-            "property_package": model.fs.properties,
-        }
+        has_desuperheat=True,
+        has_drain_cooling=True,
+        has_drain_mixer=True,
+        property_package=model.fs.properties,
     )
 
     assert_units_consistent(model)

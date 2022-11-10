@@ -31,7 +31,8 @@ from pyomo.network.port import Port
 
 # package
 from idaes import logger
-from idaes.core.ui.icons import UnitModelIcon
+from idaes.core.ui.icons.icons import UnitModelIcon
+from idaes.core.ui.icons.positioning import UnitModelsPositioning
 
 _log = logger.getLogger(__name__)
 
@@ -182,7 +183,8 @@ class FlowsheetSerializer:
         self.unit_models = {}  # {unit: {"name": unit.getname(), "type": str?}}
         self.streams = {}  # {Arc.getname(): Arc} or {Port.getname(): Port}
         self.ports = {}  # {Port: parent_unit}
-        self.edges = defaultdict(list)  # {name: {"source": unit, "dest": unit}}
+        self.edges = defaultdict(dict)  # {name: {"source": unit, "dest": unit}}
+        self.adj_list = defaultdict(set)  # {name: (neighbor1, neighbor2, ...)}
         self.orphaned_ports = {}
         self.labels = {}
         self._stream_table_df = None
@@ -198,6 +200,7 @@ class FlowsheetSerializer:
         self._logger = logger.getLogger(__name__)
         self.name = name
         self.flowsheet = flowsheet
+        self._positioning_model = None
         # serialize
         self._ingest_flowsheet()
         self._construct_output_json()
@@ -291,10 +294,13 @@ class FlowsheetSerializer:
         used_ports = set()
         for name, stream in self.streams.items():
             try:  # This is necessary because for internally-nested arcs we may not record ports
+                src = self.ports[stream.source]
+                dst = self.ports[stream.dest]
                 self.edges[name] = {
-                    "source": self.ports[stream.source],
-                    "dest": self.ports[stream.dest],
+                    "source": src,
+                    "dest": dst,
                 }
+                self.adj_list[src.getname()].add(dst.getname())
                 used_ports.add(stream.source)
                 used_ports.add(stream.dest)
             except KeyError as error:
@@ -464,6 +470,7 @@ class FlowsheetSerializer:
                 src = unit_port if type_ == self.FEED else self.ports[port]
                 dst = unit_port if type_ != self.FEED else self.ports[port]
                 self.edges[edge_name] = {"source": src, "dest": dst}
+                self.adj_list[src.getname()].add(dst.getname())
                 # Add label
                 self.labels[edge_name] = f"{type_} info"
                 # Check if we can add the port to the stream table
@@ -503,6 +510,7 @@ class FlowsheetSerializer:
         return f"{base_name}_{self._unit_name_used_count[base_name]}"
 
     def _construct_output_json(self):
+        self._positioning_model = UnitModelsPositioning(self.adj_list, self.unit_models)
         self._construct_model_json()
         self._construct_jointjs_json()
 
@@ -615,27 +623,11 @@ class FlowsheetSerializer:
                     default_icon.link_positions,
                 )
 
-        def adjust_image_position(x_pos, y_pos, y_starting_pos):
-            """Based on the position of the last added element, we calculate
-            the x,y position of the next element.
-            """
-            # If x_pos it greater than 700 then start another diagonal line
-            if x_pos >= 700:
-                x_pos = 100
-                y_pos = y_starting_pos
-                y_starting_pos += 100
-            else:
-                x_pos += 100
-                y_pos += 100
-
-            return x_pos, y_pos, y_starting_pos
-
         self._out_json["cells"] = []
 
         # Start out in the top left corner until we get a better inital layout
         x_pos = 10
         y_pos = 10
-        y_starting_pos = 10
 
         track_jointjs_elements = {}
 
@@ -656,20 +648,16 @@ class FlowsheetSerializer:
             dest_unit_icon = UnitModelIcon(dest_unit_type)
 
             if src_unit_name not in track_jointjs_elements:
+                x_pos, y_pos = self._positioning_model.get_position(src_unit_name)
                 cell_index = create_jointjs_image(
                     src_unit_icon, src_unit_name, src_unit_type, x_pos, y_pos
-                )
-                x_pos, y_pos, y_starting_pos = adjust_image_position(
-                    x_pos, y_pos, y_starting_pos
                 )
                 track_jointjs_elements[src_unit_name] = cell_index
 
             if dest_unit_name not in track_jointjs_elements:
+                x_pos, y_pos = self._positioning_model.get_position(dest_unit_name)
                 cell_index = create_jointjs_image(
                     dest_unit_icon, dest_unit_name, dest_unit_type, x_pos, y_pos
-                )
-                x_pos, y_pos, y_starting_pos = adjust_image_position(
-                    x_pos, y_pos, y_starting_pos
                 )
                 track_jointjs_elements[dest_unit_name] = cell_index
 
@@ -866,6 +854,8 @@ class FlowsheetDiff:
                 raise ValueError(f"invalid new_flowsheet value: {why}")
         self._old, self._new = old_flowsheet, new_flowsheet
         self._len = None
+        self._cell_indices = {}
+        self._compute_cell_indices()
         self._diff = self._compute_diff()
         self._layout = self._compute_layout() if self._diff else None
 
@@ -907,6 +897,16 @@ class FlowsheetDiff:
     def __str__(self):
         return json.dumps(self._diff, indent=2)
 
+    def _compute_cell_indices(self):
+        """Generate a mapping between the cell id and its index in the 'cells' Array.
+
+        Returns:
+            dict with structure: cell_id -> index. e.g. {'F101': 2} where 2 is
+            the cell index in the 'cells' array.
+        """
+        for i, cell in enumerate(self._new["cells"]):
+            self._cell_indices[cell["id"]] = i
+
     def _compute_diff(self) -> Dict:
         diff = {"add": {}, "remove": {}, "change": {}}
         old_model, new_model = self._old["model"], self._new["model"]
@@ -921,16 +921,6 @@ class FlowsheetDiff:
                     diff["add"][cls][key] = copy.deepcopy(new_data[key])
                     n += 1
                 elif old_data[key] != new_data[key]:
-                    if cls == "arcs":
-                        # Update source and destination unit models as well
-                        src_unit_model = old_data[key]["source"]
-                        dest_unit_model = old_data[key]["dest"]
-                        diff["change"]["unit_models"][src_unit_model] = copy.deepcopy(
-                            new_model["unit_models"][src_unit_model]
-                        )
-                        diff["change"]["unit_models"][dest_unit_model] = copy.deepcopy(
-                            new_model["unit_models"][dest_unit_model]
-                        )
                     diff["change"][cls][key] = copy.deepcopy(new_data[key])
                     n += 1
             # Remove
@@ -948,94 +938,59 @@ class FlowsheetDiff:
         Returns:
             New layout to put into the "cells" of the new flowsheet dict
         """
-        layout, x, y = [], 50, 50
-        # Add
-        for cls in self._diff["add"]:
-            for id_ in self._diff["add"][cls]:
-                values = self._diff["add"][cls][id_]
-                new_item = None
-                for cell in self._new["cells"]:
-                    if cell["id"] == id_:
-                        new_item = copy.deepcopy(cell)
-                if not new_item:
-                    if cls == "arcs":
-                        new_item = self._new_arc(id_, values)
-                    else:
-                        new_item = self._new_unit_model(id_, values, x, y)
-                        x, y = x + 100, y + 100
-                layout.append(new_item)
-        # Change, remove, and simply copy cells
+        layout = self._new["cells"]
+
+        # Go through each cell in the old model and copy the user changes to
+        # the new one
+        for cell in self._old["cells"]:
+            cell_id = cell["id"]
+            if cell_id in self._cell_indices:
+                # check if cell is an element (not link) and 'position',
+                # 'angle' & 'attrs.label' keys exist in cell
+                if "type" in cell and cell["type"] == "standard.Image":
+                    if "position" in cell:
+                        layout[self._cell_indices[cell_id]]["position"] = cell[
+                            "position"
+                        ]
+                    if "angle" in cell:
+                        layout[self._cell_indices[cell_id]]["angle"] = cell["angle"]
+                    if "attrs" in cell and "label" in cell["attrs"]:
+                        if "attrs" not in layout[self._cell_indices[cell_id]]:
+                            layout[self._cell_indices[cell_id]]["attrs"] = {}
+                        layout[self._cell_indices[cell_id]]["attrs"]["label"] = cell[
+                            "attrs"
+                        ]["label"]
+                # check if link and if it has 'vertices' & 'labels[1]'
+                # keys exist in cell
+                elif "type" in cell and cell["type"] == "standard.Link":
+                    if "vertices" in cell:
+                        layout[self._cell_indices[cell_id]]["vertices"] = cell[
+                            "vertices"
+                        ]
+                    # labels[0] is reserved for the variables info when labels
+                    # are enabled in the UI. We are just copying labels[1] as
+                    # it has the stream/link name. e.g. s10, s_liq_outlet, etc
+                    if "labels" in cell and len(cell["labels"]) >= 2:
+                        layout[self._cell_indices[cell_id]]["labels"][1] = cell[
+                            "labels"
+                        ][1]
+
+        # Update cells' labels or images
         for item in self._old["cells"]:
             id_ = item["id"]
             cls = "arcs" if "source" in item else "unit_models"
-            if id_ in self._diff["remove"][cls]:
-                continue
-            elif id_ in self._diff["change"][cls]:
+            if id_ in self._diff["change"][cls] and id_ in self._cell_indices:
                 values = self._diff["change"][cls][id_]
-                new_item = None
-                for cell in self._new["cells"]:
-                    if cell["id"] == id_:
-                        new_item = copy.deepcopy(cell)
-                        if cls == "unit_models" and "position" in item:
-                            # Make sure we copy the old position for the graph to be consistent position wise
-                            new_item["position"] = item["position"]
+                cell = layout[self._cell_indices[id_]]
                 if cls == "arcs":
-                    self._update_arc(new_item, values)
+                    self._update_arc(cell, values)
                 else:
-                    self._update_unit_model(new_item, values)
-                layout.append(new_item)
-            else:
-                layout.append(copy.deepcopy(item))
+                    self._update_unit_model(cell, values)
         return layout
-
-    @staticmethod
-    def _new_arc(name, values):
-        return {
-            "type": "standard.Link",
-            "source": {"id": values["source"]},
-            "target": {"id": values["dest"]},
-            "router": {"name": "orthogonal", "padding": 10},
-            "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}},
-            "id": name,
-            "labels": [
-                {
-                    "attrs": {
-                        "rect": {
-                            "fill": "#d7dce0",
-                            "stroke": "#FFFFFF",
-                            "stroke-width": 1,
-                        },
-                        "text": {
-                            "text": values["label"],
-                            "fill": "black",
-                            "text-anchor": "left",
-                        },
-                    },
-                    "position": {"distance": 0.66, "offset": -40},
-                }
-            ],
-            "z": 2,
-        }
 
     @staticmethod
     def _update_arc(item, values):
         item["labels"][0]["attrs"]["text"]["text"] = values["label"]
-
-    @staticmethod
-    def _new_unit_model(name, values, x, y):
-        return {
-            "type": "standard.Image",
-            "id": name,
-            "position": {"x": x, "y": y},
-            "size": {"width": 50, "height": 50},
-            "angle": 0,
-            "z": 1,
-            "attrs": {
-                "image": {"xlinkHref": values["image"]},
-                "label": {"text": name},
-                "root": {"title": values["type"]},
-            },
-        }
 
     @staticmethod
     def _update_unit_model(item, values):

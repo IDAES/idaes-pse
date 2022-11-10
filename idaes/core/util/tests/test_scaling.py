@@ -28,6 +28,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import number_activated_objectives
 import idaes.core.util.scaling as sc
 import logging
+from idaes.core.solvers.tests.test_petsc import dae_with_non_time_indexed_constraint
 
 __author__ = "John Eslick, Tim Bartholomew"
 
@@ -189,7 +190,7 @@ def test_map_scaling_factor(caplog):
 
 
 @pytest.mark.unit
-def test_propogate_indexed_scaling():
+def test_propagate_indexed_scaling():
     m = pyo.ConcreteModel()
     m.b = pyo.Block()
     m.a = pyo.Var()
@@ -212,7 +213,7 @@ def test_propogate_indexed_scaling():
     sc.set_scaling_factor(m.a, 104)
     sc.set_scaling_factor(m.b.c1, 14)
 
-    # Set sufix directly since set_scaling_factor also sets data objects
+    # Set suffix directly since set_scaling_factor also sets data objects
     m.scaling_factor[m.x] = 11
     m.scaling_factor[m.y] = 13
     m.b.scaling_factor[m.b.w] = 16
@@ -234,11 +235,11 @@ def test_propogate_indexed_scaling():
 
     sc.propagate_indexed_component_scaling_factors(m)
     for i in [1, 2, 3]:
-        assert sc.get_scaling_factor(m.x[i]) is 11
-        assert sc.get_scaling_factor(m.y[i]) is 13
+        assert sc.get_scaling_factor(m.x[i]) == 11
+        assert sc.get_scaling_factor(m.y[i]) == 13
         assert sc.get_scaling_factor(m.z[i]) is None
-        assert sc.get_scaling_factor(m.b.w[i]) is 16
-        assert sc.get_scaling_factor(m.c1[i]) is 14
+        assert sc.get_scaling_factor(m.b.w[i]) == 16
+        assert sc.get_scaling_factor(m.c1[i]) == 14
         assert sc.get_scaling_factor(m.c2[i]) is None
 
 
@@ -378,6 +379,76 @@ def test_set_get_unset(caplog):
     assert m.scaling_factor[m.c2[3]] == 4
     assert m.scaling_factor[m.c2[4]] == 4
 
+    # Test overwriting scaling factors
+    sc.set_scaling_factor(m.x, 13, overwrite=False)
+    sc.set_scaling_factor(m.ex, 17, overwrite=False)
+    # z doesn't have a scaling factor, make sure that 19 gets set as planned
+    # to everything besides z[1], whose factor is not overwritten
+    sc.set_scaling_factor(m.z[1], 29, overwrite=False)
+    sc.set_scaling_factor(m.z, 19, overwrite=False)
+    sc.set_scaling_factor(m.c1, 7, overwrite=False)
+    sc.set_scaling_factor(m.c2, 23, overwrite=False)
+
+    assert sc.get_scaling_factor(m.x) == 11
+    assert sc.get_scaling_factor(m.ex) == 2
+    assert sc.get_scaling_factor(m.z) == 19  # z was unset at the beginning of this
+    assert sc.get_scaling_factor(m.c1) == 3
+    assert sc.get_scaling_factor(m.c2) == 4
+
+    assert m.scaling_factor[m.x] == 11
+    assert m.scaling_factor[m.c1] == 3
+    assert m.scaling_factor[m.z] == 19
+    assert m.scaling_factor[m.c1] == 3
+    assert m.scaling_factor[m.c2] == 4
+
+    for i in range(1, 5):
+        if i == 1:
+            assert sc.get_scaling_factor(m.z[i]) == 29
+            assert m.scaling_factor[m.z[i]] == 29
+        else:
+            assert sc.get_scaling_factor(m.z[i]) == 19
+            assert m.scaling_factor[m.z[i]] == 19
+        assert sc.get_scaling_factor(m.c2[i]) == 4
+        assert m.scaling_factor[m.c2[i]] == 4
+
+    sc.set_scaling_factor(m.x, 13, overwrite=True)
+    sc.set_scaling_factor(m.ex, 17, overwrite=True)
+    sc.set_scaling_factor(m.c1, 7, overwrite=True)
+    # Make sure that overwrite properly overwrites subcomponents too
+    sc.set_scaling_factor(m.z, 31, overwrite=True)
+    sc.set_scaling_factor(m.c2, 23, overwrite=True)
+
+    assert sc.get_scaling_factor(m.x) == 13
+    assert sc.get_scaling_factor(m.ex) == 17
+    assert sc.get_scaling_factor(m.z) == 31
+    assert sc.get_scaling_factor(m.c1) == 7
+    assert sc.get_scaling_factor(m.c2) == 23
+
+    assert m.scaling_factor[m.x] == 13
+    assert m.scaling_factor[m.ex] == 17
+    assert m.scaling_factor[m.z] == 31
+    assert m.scaling_factor[m.c1] == 7
+    assert m.scaling_factor[m.c2] == 23
+
+    for i in range(1, 5):
+        assert sc.get_scaling_factor(m.z[i]) == 31
+        assert sc.get_scaling_factor(m.c2[i]) == 23
+
+        assert m.scaling_factor[m.z[i]] == 31
+        assert m.scaling_factor[m.c2[i]] == 23
+
+    # Test the ambiguous case where a parent component has a scaling factor, the subcomponents do not,
+    # and set_scaling_factor is called with data_objects=True and overwrite=False. In this case,
+    # avoid setting subcomponent scaling factors if the parent component has a scaling factor.
+    sc.unset_scaling_factor(m.z, data_objects=True)
+    sc.set_scaling_factor(m.z, 31, data_objects=False)
+    sc.set_scaling_factor(m.z, 37, data_objects=True, overwrite=False)
+
+    assert sc.get_scaling_factor(m.z) == 31
+    assert m.scaling_factor[m.z] == 31
+    for i in range(1, 5):
+        assert sc.get_scaling_factor(m.z[i]) is None
+
 
 @pytest.mark.unit
 def test_find_badly_scaled_vars():
@@ -495,14 +566,14 @@ class TestSingleConstraintScalingTransform:
         assert model.c2.lower.value == pytest.approx(1)
         assert model.c2.body() == pytest.approx(model.x.value / 1e3)
         assert model.c2.upper.value == pytest.approx(1)
-        assert sc.get_constraint_transform_applied_scaling_factor(model.c2) is 1e-3
+        assert sc.get_constraint_transform_applied_scaling_factor(model.c2) == 1e-3
 
         # Check overwrite protection
         sc.constraint_scaling_transform(model.c2, 5, overwrite=False)
         assert model.c2.lower.value == pytest.approx(1)
         assert model.c2.body() == pytest.approx(model.x.value / 1e3)
         assert model.c2.upper.value == pytest.approx(1)
-        assert sc.get_constraint_transform_applied_scaling_factor(model.c2) is 1e-3
+        assert sc.get_constraint_transform_applied_scaling_factor(model.c2) == 1e-3
 
         sc.constraint_scaling_transform_undo(model.c2)
         assert sc.get_constraint_transform_applied_scaling_factor(model.c2) is None
@@ -547,53 +618,6 @@ class TestScaleSingleConstraint:
         assert model.c3.lower.value == pytest.approx(1e3)
         assert model.c3.body is model.x
         assert model.c3.upper is None
-
-    @pytest.mark.unit
-    def test_not_constraint(self, model):
-        with pytest.raises(TypeError):
-            sc.scale_single_constraint(model.x)
-
-    @pytest.mark.unit
-    def test_less_than_constraint(self, model):
-        sc.scale_single_constraint(model.c1)
-        assert model.c1.lower is None
-        assert model.c1.body() == pytest.approx(model.x.value / 1e3)
-        assert model.c1.upper.value == pytest.approx(1)
-
-    @pytest.mark.unit
-    def test_equality_constraint(self, model):
-        sc.scale_single_constraint(model.c2)
-        assert model.c2.lower.value == pytest.approx(1)
-        assert model.c2.body() == pytest.approx(model.x.value / 1e3)
-        assert model.c2.upper.value == pytest.approx(1)
-
-    @pytest.mark.unit
-    def test_greater_than_constraint(self, model):
-        sc.scale_single_constraint(model.c3)
-        assert model.c3.lower.value == pytest.approx(1)
-        assert model.c3.body() == pytest.approx(model.x.value / 1e3)
-        assert model.c3.upper is None
-
-    @pytest.mark.unit
-    def test_scaling_factor_and_expression_replacement(self, model):
-        model.c4 = pyo.Constraint(expr=model.x <= 1e6)
-        model.scaling_factor[model.c4] = 1e-6
-        sc.scale_single_constraint(model.c4)
-        assert model.c4.upper.value == pytest.approx(1)
-        assert model.c4 not in model.scaling_factor
-
-    @pytest.fixture(scope="class")
-    def model2(self):
-        m = pyo.ConcreteModel()
-        m.y = pyo.Var()
-        m.c = pyo.Constraint(expr=m.y <= 1e3)
-        return m
-
-    @pytest.mark.unit
-    def test_no_scaling_factor(self, model2):
-        model2.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
-        sc.scale_single_constraint(model2.c)
-        assert model2.c.upper.value == pytest.approx(1e3)
 
 
 class TestScaleConstraintsPynumero:
@@ -831,27 +855,6 @@ class TestScaleConstraints:
         m.b1.b2.scaling_factor[m.b1.b2.c1] = 1e-12
 
         return m
-
-    @pytest.mark.unit
-    def test_scale_one_block(self, model):
-        sc.scale_constraints(model, descend_into=False)
-        # scaled
-        assert model.c1.lower.value == pytest.approx(1)
-        assert model.c1.body() == pytest.approx(model.x.value / 1e3)
-        assert model.c1.upper.value == pytest.approx(1)
-        assert model.c2.lower.value == pytest.approx(1)
-        assert model.c2.body() == pytest.approx(model.y.value / 1e6)
-        assert model.c2.upper.value == pytest.approx(1)
-        # unscaled
-        assert model.b1.c1.upper.value == pytest.approx(1e9)
-        assert model.b1.b2.c1.upper.value == pytest.approx(1e12)
-
-    @pytest.mark.unit
-    def test_scale_model(self, model):
-        sc.scale_constraints(model)
-        assert model.c1.upper.value == pytest.approx(1)
-        assert model.b1.c1.upper.value == pytest.approx(1)
-        assert model.b1.b2.c1.upper.value == pytest.approx(1)
 
 
 class TestCacheVars:
@@ -1134,3 +1137,181 @@ def test_extreme_jacobian_rows_and_columns():
 
     out = sc.extreme_jacobian_rows(m)
     assert len(out) == 0
+
+
+def discretization_tester(transformation_method, scheme, t_skip, continuity_eqns=False):
+    """Function to avoid repeated code in testing scaling different discretization methods.
+
+    Args:
+        transformation_method: Discretization method to use (presently "dae.finite_difference" or "dae.collocation")
+        scheme: Discretization scheme to use
+        t_skip: Times to skip in testing scaling of discretization and/or continuity equations
+        continuity_eqns: Whether to look for continuity equations while testing. Right now implementation is based on
+            the "LAGRANGE-LEGENDRE" scheme. If additional methods with continuity equations are added to Pyomo that
+            behave differently, this conditional might have to be updated
+
+    Returns:
+        None
+    """
+
+    def approx(expected):
+        return pytest.approx(expected, rel=1e-10)
+
+    m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint(
+        nfe=3, transformation_method=transformation_method, scheme=scheme
+    )
+
+    for t in m.t:
+        sc.set_scaling_factor(m.y[t, 1], 1)
+        sc.set_scaling_factor(m.y[t, 2], 10)
+        sc.set_scaling_factor(m.y[t, 3], 0.1)
+        sc.set_scaling_factor(m.y[t, 4], 1000)
+        sc.set_scaling_factor(m.y[t, 5], 13)
+        # Default scaling factor for y[6] is 1
+
+    sc.scale_time_discretization_equations(m, m.t, 1 / 7)
+
+    for t in m.t:
+        assert sc.get_scaling_factor(m.ydot[t, 1]) == approx(7)
+        assert sc.get_scaling_factor(m.ydot[t, 2]) == approx(70)
+        assert sc.get_scaling_factor(m.ydot[t, 3]) == approx(0.7)
+        assert sc.get_scaling_factor(m.ydot[t, 4]) == approx(7000)
+        assert sc.get_scaling_factor(m.ydot[t, 5]) == approx(7 * 13)
+        assert sc.get_scaling_factor(m.ydot[t, 6]) == approx(7)
+
+        # No discretization equations in t_skip
+        if t in t_skip:
+            continue
+        if not continuity_eqns:
+            assert sc.get_constraint_transform_applied_scaling_factor(
+                m.ydot_disc_eq[t, 1]
+            ) == approx(7)
+            assert sc.get_constraint_transform_applied_scaling_factor(
+                m.ydot_disc_eq[t, 2]
+            ) == approx(70)
+            assert sc.get_constraint_transform_applied_scaling_factor(
+                m.ydot_disc_eq[t, 3]
+            ) == approx(0.7)
+            assert sc.get_constraint_transform_applied_scaling_factor(
+                m.ydot_disc_eq[t, 4]
+            ) == approx(7000)
+            assert sc.get_constraint_transform_applied_scaling_factor(
+                m.ydot_disc_eq[t, 5]
+            ) == approx(7 * 13)
+            assert sc.get_constraint_transform_applied_scaling_factor(
+                m.ydot_disc_eq[t, 6]
+            ) == approx(7)
+        else:
+            # For Lagrange-Legendre, continuity equations exist only on boundaries of finite elements (except t=0)
+            # while discretization equations exist only in the interior of finite elements.
+            try:
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.ydot_disc_eq[t, 1]
+                ) == approx(7)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.ydot_disc_eq[t, 2]
+                ) == approx(70)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.ydot_disc_eq[t, 3]
+                ) == approx(0.7)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.ydot_disc_eq[t, 4]
+                ) == approx(7000)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.ydot_disc_eq[t, 5]
+                ) == approx(7 * 13)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.ydot_disc_eq[t, 6]
+                ) == approx(7)
+            except KeyError:
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.y_t_cont_eq[t, 1]
+                ) == approx(1)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.y_t_cont_eq[t, 2]
+                ) == approx(10)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.y_t_cont_eq[t, 3]
+                ) == approx(0.1)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.y_t_cont_eq[t, 4]
+                ) == approx(1000)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.y_t_cont_eq[t, 5]
+                ) == approx(13)
+                assert sc.get_constraint_transform_applied_scaling_factor(
+                    m.y_t_cont_eq[t, 6]
+                ) == approx(1)
+
+
+@pytest.mark.unit
+def test_scaling_discretization_equations_backward():
+    discretization_tester("dae.finite_difference", "BACKWARD", [0], False)
+
+
+@pytest.mark.unit
+def test_scaling_discretization_equations_forward():
+    discretization_tester("dae.finite_difference", "FORWARD", [180], False)
+
+
+@pytest.mark.unit
+def test_scaling_discretization_equations_lagrange_radau():
+    discretization_tester("dae.collocation", "LAGRANGE-RADAU", [0], False)
+
+
+@pytest.mark.unit
+def test_scaling_discretization_equations_lagrange_legendre():
+    discretization_tester("dae.collocation", "LAGRANGE-LEGENDRE", [0], True)
+
+
+@pytest.mark.unit
+def test_correct_set_identification():
+    # Suggested by Robby Parker. The original implementation of scale_time_discretization_equations
+    # used a Python function that tested for set equality instead of identity. As a result, trouble
+    # could happen if time and some other indexing set had the same members and time appeared later
+    # than that other indexing set.
+    def approx(x):
+        return pytest.approx(x, 1e-12)
+
+    m = pyo.ConcreteModel()
+    m.time = dae.ContinuousSet(initialize=[0, 1, 2])
+    m.space = dae.ContinuousSet(initialize=[0, 1, 2])
+
+    m.x = pyo.Var(m.space, m.time, initialize=0)
+    m.xdot = dae.DerivativeVar(m.x, wrt=m.time)
+
+    @m.Constraint(m.space, m.time)
+    def diff_eqn(b, z, t):
+        return b.xdot[z, t] == -b.x[z, t]
+
+    pyo.TransformationFactory("dae.finite_difference").apply_to(
+        m, nfe=2, wrt=m.time, scheme="BACKWARD"
+    )
+    for i in range(3):
+        sc.set_scaling_factor(m.x[0, i], 2)
+        sc.set_scaling_factor(m.x[1, i], 3)
+        sc.set_scaling_factor(m.x[2, i], 5)
+
+    sc.scale_time_discretization_equations(m, m.time, 10)
+
+    for i in range(3):
+        assert sc.get_scaling_factor(m.xdot[0, i]) == approx(0.2)
+        assert sc.get_scaling_factor(m.xdot[1, i]) == approx(0.3)
+        assert sc.get_scaling_factor(m.xdot[2, i]) == approx(0.5)
+
+    for i in range(1, 3):
+        assert sc.get_constraint_transform_applied_scaling_factor(
+            m.xdot_disc_eq[0, i]
+        ) == approx(0.2)
+        assert sc.get_constraint_transform_applied_scaling_factor(
+            m.xdot_disc_eq[1, i]
+        ) == approx(0.3)
+        assert sc.get_constraint_transform_applied_scaling_factor(
+            m.xdot_disc_eq[2, i]
+        ) == approx(0.5)
+
+
+@pytest.mark.unit
+def test_indexed_blocks():
+    m = pyo.ConcreteModel()
+    m.time = dae.ContinuousSet(initialize=[0, 1, 2])

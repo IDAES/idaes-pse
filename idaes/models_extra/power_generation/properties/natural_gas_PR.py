@@ -10,18 +10,6 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
-#
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
 """
 Natural gas property package for the vapor phase using Peng-Robinson equation
 of state.
@@ -437,7 +425,7 @@ _component_params = {
 
 
 # returns a configuration dictionary for the list of specified components
-def get_prop(components=None, phases="Vap", eos=EosType.PR):
+def get_prop(components=None, phases="Vap", eos=EosType.PR, scaled=False):
     if components is None:
         components = list(_component_params.keys())
     configuration = {
@@ -487,10 +475,16 @@ def get_prop(components=None, phases="Vap", eos=EosType.PR):
     # Fill the binary parameters with zeros.
     d = configuration["parameter_data"]
     d["PR_kappa"] = {(a, b): 0 for a in c for b in c}
+
+    # Change to scaled units if specified
+    if scaled:
+        configuration["base_units"]["mass"] = pyunits.Mg
+        configuration["base_units"]["amount"] = pyunits.kmol
+
     return configuration
 
 
-def get_rxn(property_package, reactions=None):
+def get_rxn(property_package, reactions=None, scaled=False):
     rxns = {
         "property_package": property_package,
         "base_units": {
@@ -637,6 +631,10 @@ def get_rxn(property_package, reactions=None):
             },
         },
     }
+    # Change to scaled units if specified
+    if scaled:
+        rxns["base_units"]["mass"] = pyunits.Mg
+        rxns["base_units"]["amount"] = pyunits.kmol
     if reactions is None:
         return rxns
     else:

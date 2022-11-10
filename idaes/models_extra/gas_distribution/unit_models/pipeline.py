@@ -146,7 +146,7 @@ argument).""",
         #
         # Anything not valid for CV config will have to be removed here.
         cv_config = config()
-        self.control_volume = ControlVolume1DBlock(default=cv_config)
+        self.control_volume = ControlVolume1DBlock(**cv_config)
         self.control_volume.add_geometry()
         self.control_volume.add_state_blocks(
             has_phase_equilibrium=False,

@@ -12,7 +12,7 @@
 #################################################################################
 import pyomo.environ as pyo
 import idaes.core as idaes_core
-from idaes.power_generation.unit_models.helm import HelmIsentropicTurbine
+from idaes.models_extra.power_generation.unit_models.helm import HelmIsentropicTurbine
 import idaes.core.util.convergence.convergence_base as cb
 from idaes.models.properties import iapws95
 from idaes.core.solvers import get_solver
@@ -22,9 +22,9 @@ import idaes
 
 def create_isentropic_turbine(f=1000, T_in=500, p_in=1e6, ratioP=0.7):
     m = pyo.ConcreteModel()
-    m.fs = idaes_core.FlowsheetBlock(default={"dynamic": False})
+    m.fs = idaes_core.FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.unit = HelmIsentropicTurbine(default={"property_package": m.fs.properties})
+    m.fs.unit = HelmIsentropicTurbine(property_package=m.fs.properties)
     hin = iapws95.htpx(T_in * pyunits.K, p_in * pyunits.Pa)  # J/mol
     m.fs.unit.inlet.flow_mol[0].fix(f)
     m.fs.unit.inlet.enth_mol[0].fix(hin)

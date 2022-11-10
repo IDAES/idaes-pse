@@ -95,11 +95,9 @@ see property package for documentation.}""",
         self.properties = self.config.property_package.build_state_block(
             self.flowsheet().time,
             doc="Material properties",
-            default={
-                "has_phase_equilibrium": False,
-                "defined_state": True,
-                **self.config.property_package_args,
-            },
+            has_phase_equilibrium=False,
+            defined_state=True,
+            **self.config.property_package_args
         )
 
         # Add Ports

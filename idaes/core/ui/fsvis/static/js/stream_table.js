@@ -1,3 +1,22 @@
+/**
+ * The Institute for the Design of Advanced Energy Systems Integrated Platform
+ * Framework (IDAES IP) was produced under the DOE Institute for the
+ * Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+ * by the software owners: The Regents of the University of California, through
+ * Lawrence Berkeley National Laboratory,  National Technology & Engineering
+ * Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+ * Research Corporation, et al.  All rights reserved.
+ *
+ * Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+ * license information.
+ */
+
+
+/**
+ * StreamTable class is responsible to handle creating the Stream Table for
+ * the flowsheet that is displayed on the Idaes paper graph. This class does
+ * the data filling and data styling for each cell in the grid.
+ */
 export class StreamTable {
     // Variable Types
     UNFIXED = 'unfixed';
@@ -5,9 +24,18 @@ export class StreamTable {
     PARAMETER = 'parameter';
     EXPRESSION = 'expression';
 
+    // Brushing Event handlers
+    highlightFn = null;
+    removeHighlightFn = null;
+    gridCellMouseEnterFn = null;
+    gridCellMouseLeaveFn = null;
+
 
     constructor(app, model) {
         this._app = app;
+        // Define brushing event handlers
+        this.defineTableBrushingFns();
+
         this.initTable(model);
 
         // Keeping track of existing variable types. e.g fixed, Parameter, Expression
@@ -28,15 +56,19 @@ export class StreamTable {
         $("#stream-table-data").empty();
     }
 
+    /**
+     * Clear list of existing variable types
+     */
     emptyVarTypesPanel () {
-        // Clear list of existing variable types
         this.existing_var_types = new Set();
         const var_types_panel = document.querySelector('#existing-variable-types');
         var_types_panel.innerHTML = "";
     }
 
+    /**
+     * Create a panel for each variable type that exists in the Stream Table
+     */
     fillVarTypesPanel() {
-        /** Create a panel for each variable type that exists in the Stream Table */
         const var_types_panel = document.querySelector('#existing-variable-types');
         const stream_table_class = 'streamtable-vartype-element';
 
@@ -79,9 +111,10 @@ export class StreamTable {
         });
     }
 
+    /**
+     * This method fills the table with the streams and information from the model
+     */
     fillTable(model) {
-        // This method fills the table with the streams and information from the model
-
         // Get the stream table data from the html
         let stream_table_data = model["model"]["stream_table"];
 
@@ -123,14 +156,14 @@ export class StreamTable {
                             return '<span class="streamtable-cell">' + params.value + '</span>';
                         }
                     });
+                    let list_item = document.createElement("li");
+                    let checkbox_item = document.createElement("div");
+                    checkbox_item.class = "checkbox";
+                    // checkbox_item.id = column_header + "-checkbox"
+                    checkbox_item.innerHTML = '<label class="fancy-checkbox"><input type="checkbox" value="' + column_header + '" id="' + column_header + '" checked><i class="fas fa-check checked"></i><i class="far fa-circle unchecked"></i>' + column_header + '</label>';
+                    list_item.appendChild(checkbox_item);
+                    hide_fields_list.appendChild(list_item);
                 }
-                let list_item = document.createElement("li");
-                let checkbox_item = document.createElement("div");
-                checkbox_item.class = "checkbox";
-                // checkbox_item.id = column_header + "-checkbox"
-                checkbox_item.innerHTML = '<label class="fancy-checkbox"><input type="checkbox" value="' + column_header + '" id="' + column_header + '" checked><i class="fas fa-check checked"></i><i class="far fa-circle unchecked"></i>' + column_header + '</label>';
-                list_item.appendChild(checkbox_item);
-                hide_fields_list.appendChild(list_item);
             };
         };
 
@@ -201,34 +234,19 @@ export class StreamTable {
         this._gridOptions.columnApi.autoSizeAllColumns();
     };
 
-    setupEvents() {
-        // This method sets up the event listeners for the table
-
-        // Set up the show/hide checkboxes for the Hide Field dropdown in the nav bar
-        let hide_fields_list = document.querySelector("#hide-fields-list")
-        let checkboxes = hide_fields_list.querySelectorAll("input[type=checkbox]");
-        // We need to save this to another variable temporarily to avoid collisions with this
-        let app = this
-        checkboxes.forEach(function(checkbox) {
-            checkbox.addEventListener('change', function() {
-                if (this.checked) {
-                    app._gridOptions.columnApi.setColumnVisible(this.id, true)
-                } 
-                else {
-                    app._gridOptions.columnApi.setColumnVisible(this.id, false)
-                };
-            });
-        });
-
+    /**
+     * Define event handlers and save them as objects to be able
+     * to remove these events later if a column in the Stream Table is removed
+     */
+    defineTableBrushingFns() {
         // Getting the main elements for the idaes canvas and the stream table
         // to be able to dispatch highlighting events to the streams existing
         // on paper and in the stream table
         let streamTable = document.querySelector('#stream-table-data');
         let idaesCanvas = document.querySelector('#idaes-canvas');
 
-        // Registering listeners to the stream table to highlight the correct
-        // streams in the stream table
-        streamTable.addEventListener('HighlightStream', (event) => {
+        // Function to highlight a stream table column
+        this.highlightFn = (event) => {
             var streamGridCells = streamTable.querySelectorAll(
                 `[col-id=${event.detail.streamId}]`
             );
@@ -243,11 +261,10 @@ export class StreamTable {
                     gridCell.classList.add('link-streamtable-hover');
                 }
             });
-        });
+        }
 
-        // Registering listeners to idaes-canvas to remove the highlight from
-        // the correct streams in the stream table
-        streamTable.addEventListener('RemoveHighlightStream', (event) => {
+        // Function to undo the highlighting of a stream table column
+        this.removeHighlightFn = (event) => {
             var streamGridCells = streamTable.querySelectorAll(
                 `[col-id=${event.detail.streamId}]`
             );
@@ -256,42 +273,108 @@ export class StreamTable {
                 gridCell.classList.remove('link-streamtable-hover-lastrow');
                 gridCell.classList.remove('link-streamtable-hover');
             });
-        });
+        }
 
-        let streamGridCells = document.querySelectorAll('[col-id]');
-        streamGridCells.forEach((gridCell) => {
-            // When the mouse hovers over a grid cell, the link as well as the
-            // stream column that represents the correct stream will be highlighted.
-            gridCell.addEventListener('mouseenter', function(event) {
-                if (document.querySelector("#view-stream-highlight-btn").checked) {
-                    const highlightStreamEvent = new CustomEvent(
-                        'HighlightStream',
-                        {
-                            detail: {
-                                streamId: event.target.attributes['col-id'].value
-                            }
-                        }
-                    );
-                    streamTable.dispatchEvent(highlightStreamEvent);
-                    idaesCanvas.dispatchEvent(highlightStreamEvent);
-                }
-            });
-
-            // When the mouse leaves a grid cell, the link as well as the
-            // stream column that represents the correct stream will remove
-            // the highlighting feature.
-            gridCell.addEventListener('mouseleave', function(event) {
-                const removeHighlightStreamEvent = new CustomEvent(
-                    'RemoveHighlightStream',
+        // Function to trigger the right highlighting events when the mouse is
+        // hovering over a cell in the stream table
+        this.gridCellMouseEnterFn = (event) => {
+            if (document.querySelector("#view-stream-highlight-btn").checked) {
+                const highlightStreamEvent = new CustomEvent(
+                    'HighlightStream',
                     {
                         detail: {
                             streamId: event.target.attributes['col-id'].value
                         }
                     }
                 );
-                streamTable.dispatchEvent(removeHighlightStreamEvent);
-                idaesCanvas.dispatchEvent(removeHighlightStreamEvent);
+                streamTable.dispatchEvent(highlightStreamEvent);
+                idaesCanvas.dispatchEvent(highlightStreamEvent);
+            }
+        }
+
+        // Function to trigger undoing the highlighting events when the mouse
+        // leaves the hovered upon cell in the stream table
+        this.gridCellMouseLeaveFn = (event) => {
+            const removeHighlightStreamEvent = new CustomEvent(
+                'RemoveHighlightStream',
+                {
+                    detail: {
+                        streamId: event.target.attributes['col-id'].value
+                    }
+                }
+            );
+            streamTable.dispatchEvent(removeHighlightStreamEvent);
+            idaesCanvas.dispatchEvent(removeHighlightStreamEvent);
+        }
+    }
+
+    /**
+     * Register Stream Brushing when hovering over a grid cell
+     */
+    registerTableBrushing() {
+        // Getting the main elements for the idaes canvas and the stream table
+        // to be able to dispatch highlighting events to the streams existing
+        // on paper and in the stream table
+        let streamTable = document.querySelector('#stream-table-data');
+        let idaesCanvas = document.querySelector('#idaes-canvas');
+
+        let streamGridCells = document.querySelectorAll('[col-id]');
+
+        // Cleaning up events
+        streamTable.removeEventListener('HighlightStream', this.highlightFn);
+        streamTable.removeEventListener('RemoveHighlightStream', this.removeHighlightFn);
+        streamGridCells.forEach((gridCell) => {
+            // When the mouse hovers over a grid cell, the link as well as the
+            // stream column that represents the correct stream will be highlighted.
+            gridCell.removeEventListener('mouseenter', this.gridCellMouseEnterFn);
+
+            // When the mouse leaves a grid cell, the link as well as the
+            // stream column that represents the correct stream will remove
+            // the highlighting feature.
+            gridCell.removeEventListener('mouseleave', this.gridCellMouseLeaveFn);
+        });
+
+        // Registering listeners to the stream table to highlight the correct
+        // streams in the stream table
+        streamTable.addEventListener('HighlightStream', this.highlightFn);
+
+        // Registering listeners to idaes-canvas to remove the highlight from
+        // the correct streams in the stream table
+        streamTable.addEventListener('RemoveHighlightStream', this.removeHighlightFn);
+
+        streamGridCells.forEach((gridCell) => {
+            // When the mouse hovers over a grid cell, the link as well as the
+            // stream column that represents the correct stream will be highlighted.
+            gridCell.addEventListener('mouseenter', this.gridCellMouseEnterFn);
+
+            // When the mouse leaves a grid cell, the link as well as the
+            // stream column that represents the correct stream will remove
+            // the highlighting feature.
+            gridCell.addEventListener('mouseleave', this.gridCellMouseLeaveFn);
+        });
+    }
+
+    /**
+     * This method sets up the event listeners for the table
+     */
+    setupEvents() {
+        // Set up the show/hide checkboxes for the Hide Field dropdown in the nav bar
+        let hide_fields_list = document.querySelector("#hide-fields-list")
+        let checkboxes = hide_fields_list.querySelectorAll("input[type=checkbox]");
+        // We need to save this to another variable temporarily to avoid collisions with this
+        let app = this
+        checkboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    app._gridOptions.columnApi.setColumnVisible(this.id, true)
+                    app.registerTableBrushing()
+                }
+                else {
+                    app._gridOptions.columnApi.setColumnVisible(this.id, false)
+                };
             });
         });
+
+        this.registerTableBrushing()
     };
 };

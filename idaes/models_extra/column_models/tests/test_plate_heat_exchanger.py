@@ -48,23 +48,21 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.hotside_properties = GenericParameterBlock(default=aqueous_mea)
-    m.fs.coldside_properties = GenericParameterBlock(default=aqueous_mea)
+    m.fs.hotside_properties = GenericParameterBlock(**aqueous_mea)
+    m.fs.coldside_properties = GenericParameterBlock(**aqueous_mea)
 
     m.fs.unit = PHE(
-        default={
-            "passes": 4,
-            "channels_per_pass": 12,
-            "number_of_divider_plates": 2,
-            "hot_side": {"property_package": m.fs.hotside_properties},
-            "cold_side": {"property_package": m.fs.coldside_properties},
-        }
+        passes=4,
+        channels_per_pass=12,
+        number_of_divider_plates=2,
+        hot_side={"property_package": m.fs.hotside_properties},
+        cold_side={"property_package": m.fs.coldside_properties},
     )
 
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 7
+    assert len(m.fs.unit.config) == 9
 
 
 # -----------------------------------------------------------------------------
@@ -72,36 +70,34 @@ class TestPHE(object):
     @pytest.fixture(scope="class")
     def phe(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.hotside_properties = GenericParameterBlock(default=aqueous_mea)
-        m.fs.coldside_properties = GenericParameterBlock(default=aqueous_mea)
+        m.fs.hotside_properties = GenericParameterBlock(**aqueous_mea)
+        m.fs.coldside_properties = GenericParameterBlock(**aqueous_mea)
 
         m.fs.unit = PHE(
-            default={
-                "passes": 4,
-                "channels_per_pass": 12,
-                "number_of_divider_plates": 2,
-                "hot_side": {"property_package": m.fs.hotside_properties},
-                "cold_side": {"property_package": m.fs.coldside_properties},
-            }
+            passes=4,
+            channels_per_pass=12,
+            number_of_divider_plates=2,
+            hot_side={"property_package": m.fs.hotside_properties},
+            cold_side={"property_package": m.fs.coldside_properties},
         )
 
         # hot fluid
-        m.fs.unit.hot_inlet.flow_mol[0].fix(60.54879)
-        m.fs.unit.hot_inlet.temperature[0].fix(392.23)
-        m.fs.unit.hot_inlet.pressure[0].fix(202650)
-        m.fs.unit.hot_inlet.mole_frac_comp[0, "CO2"].fix(0.0158)
-        m.fs.unit.hot_inlet.mole_frac_comp[0, "H2O"].fix(0.8747)
-        m.fs.unit.hot_inlet.mole_frac_comp[0, "MEA"].fix(0.1095)
+        m.fs.unit.hot_side_inlet.flow_mol[0].fix(60.54879)
+        m.fs.unit.hot_side_inlet.temperature[0].fix(392.23)
+        m.fs.unit.hot_side_inlet.pressure[0].fix(202650)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "CO2"].fix(0.0158)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "H2O"].fix(0.8747)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "MEA"].fix(0.1095)
 
         # cold fluid
-        m.fs.unit.cold_inlet.flow_mol[0].fix(63.01910)
-        m.fs.unit.cold_inlet.temperature[0].fix(326.36)
-        m.fs.unit.cold_inlet.pressure[0].fix(202650)
-        m.fs.unit.cold_inlet.mole_frac_comp[0, "CO2"].fix(0.0414)
-        m.fs.unit.cold_inlet.mole_frac_comp[0, "H2O"].fix(0.8509)
-        m.fs.unit.cold_inlet.mole_frac_comp[0, "MEA"].fix(0.1077)
+        m.fs.unit.cold_side_inlet.flow_mol[0].fix(63.01910)
+        m.fs.unit.cold_side_inlet.temperature[0].fix(326.36)
+        m.fs.unit.cold_side_inlet.pressure[0].fix(202650)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "CO2"].fix(0.0414)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "H2O"].fix(0.8509)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "MEA"].fix(0.1077)
 
         # Fix unit geometry - default values should be correct
         m.fs.unit.plate_length.fix()
@@ -118,33 +114,33 @@ class TestPHE(object):
     @pytest.mark.unit
     def test_build(self, phe):
 
-        assert hasattr(phe.fs.unit, "hot_inlet")
-        assert len(phe.fs.unit.hot_inlet.vars) == 4
-        assert hasattr(phe.fs.unit.hot_inlet, "flow_mol")
-        assert hasattr(phe.fs.unit.hot_inlet, "mole_frac_comp")
-        assert hasattr(phe.fs.unit.hot_inlet, "temperature")
-        assert hasattr(phe.fs.unit.hot_inlet, "pressure")
+        assert hasattr(phe.fs.unit, "hot_side_inlet")
+        assert len(phe.fs.unit.hot_side_inlet.vars) == 4
+        assert hasattr(phe.fs.unit.hot_side_inlet, "flow_mol")
+        assert hasattr(phe.fs.unit.hot_side_inlet, "mole_frac_comp")
+        assert hasattr(phe.fs.unit.hot_side_inlet, "temperature")
+        assert hasattr(phe.fs.unit.hot_side_inlet, "pressure")
 
-        assert hasattr(phe.fs.unit, "hot_outlet")
-        assert len(phe.fs.unit.hot_outlet.vars) == 4
-        assert hasattr(phe.fs.unit.hot_outlet, "flow_mol")
-        assert hasattr(phe.fs.unit.hot_outlet, "mole_frac_comp")
-        assert hasattr(phe.fs.unit.hot_outlet, "temperature")
-        assert hasattr(phe.fs.unit.hot_outlet, "pressure")
+        assert hasattr(phe.fs.unit, "hot_side_outlet")
+        assert len(phe.fs.unit.hot_side_outlet.vars) == 4
+        assert hasattr(phe.fs.unit.hot_side_outlet, "flow_mol")
+        assert hasattr(phe.fs.unit.hot_side_outlet, "mole_frac_comp")
+        assert hasattr(phe.fs.unit.hot_side_outlet, "temperature")
+        assert hasattr(phe.fs.unit.hot_side_outlet, "pressure")
 
-        assert hasattr(phe.fs.unit, "cold_inlet")
-        assert len(phe.fs.unit.cold_inlet.vars) == 4
-        assert hasattr(phe.fs.unit.cold_inlet, "flow_mol")
-        assert hasattr(phe.fs.unit.cold_inlet, "mole_frac_comp")
-        assert hasattr(phe.fs.unit.cold_inlet, "temperature")
-        assert hasattr(phe.fs.unit.cold_inlet, "pressure")
+        assert hasattr(phe.fs.unit, "cold_side_inlet")
+        assert len(phe.fs.unit.cold_side_inlet.vars) == 4
+        assert hasattr(phe.fs.unit.cold_side_inlet, "flow_mol")
+        assert hasattr(phe.fs.unit.cold_side_inlet, "mole_frac_comp")
+        assert hasattr(phe.fs.unit.cold_side_inlet, "temperature")
+        assert hasattr(phe.fs.unit.cold_side_inlet, "pressure")
 
-        assert hasattr(phe.fs.unit, "cold_outlet")
-        assert len(phe.fs.unit.cold_outlet.vars) == 4
-        assert hasattr(phe.fs.unit.cold_outlet, "flow_mol")
-        assert hasattr(phe.fs.unit.cold_outlet, "mole_frac_comp")
-        assert hasattr(phe.fs.unit.cold_outlet, "temperature")
-        assert hasattr(phe.fs.unit.cold_outlet, "pressure")
+        assert hasattr(phe.fs.unit, "cold_side_outlet")
+        assert len(phe.fs.unit.cold_side_outlet.vars) == 4
+        assert hasattr(phe.fs.unit.cold_side_outlet, "flow_mol")
+        assert hasattr(phe.fs.unit.cold_side_outlet, "mole_frac_comp")
+        assert hasattr(phe.fs.unit.cold_side_outlet, "temperature")
+        assert hasattr(phe.fs.unit.cold_side_outlet, "pressure")
 
         assert hasattr(phe.fs.unit.cold_side, "deltaP")
         assert hasattr(phe.fs.unit.hot_side, "deltaP")
@@ -185,10 +181,10 @@ class TestPHE(object):
     def test_solution(self, phe):
         # phe.fs.unit.display()
         assert pytest.approx(182244.65, rel=1e-5) == value(
-            phe.fs.unit.hot_outlet.pressure[0]
+            phe.fs.unit.hot_side_outlet.pressure[0]
         )
         assert pytest.approx(177366.53, rel=1e-5) == value(
-            phe.fs.unit.cold_outlet.pressure[0]
+            phe.fs.unit.cold_side_outlet.pressure[0]
         )
 
         assert pytest.approx(685.730, rel=1e-5) == value(phe.fs.unit.Re_hot[0])
@@ -211,11 +207,11 @@ class TestPHE(object):
 
         assert pytest.approx(244327, rel=1e-5) == value(phe.fs.unit.heat_duty[0])
 
-        assert pytest.approx(365.288, rel=1e-5) == value(
-            phe.fs.unit.hot_outlet.temperature[0]
+        assert pytest.approx(345.612, rel=1e-5) == value(
+            phe.fs.unit.hot_side_outlet.temperature[0]
         )
-        assert pytest.approx(356.952, rel=1e-5) == value(
-            phe.fs.unit.cold_outlet.temperature[0]
+        assert pytest.approx(372.776, rel=1e-5) == value(
+            phe.fs.unit.cold_side_outlet.temperature[0]
         )
 
     @pytest.mark.solver
@@ -226,8 +222,8 @@ class TestPHE(object):
         assert (
             abs(
                 value(
-                    phe.fs.unit.hot_inlet.flow_mol[0]
-                    - phe.fs.unit.hot_outlet.flow_mol[0]
+                    phe.fs.unit.hot_side_inlet.flow_mol[0]
+                    - phe.fs.unit.hot_side_outlet.flow_mol[0]
                 )
             )
             <= 1e-6
@@ -237,10 +233,10 @@ class TestPHE(object):
             assert (
                 abs(
                     value(
-                        phe.fs.unit.hot_inlet.flow_mol[0]
-                        * phe.fs.unit.hot_inlet.mole_frac_comp[0, j]
-                        - phe.fs.unit.hot_outlet.flow_mol[0]
-                        * phe.fs.unit.hot_outlet.mole_frac_comp[0, j]
+                        phe.fs.unit.hot_side_inlet.flow_mol[0]
+                        * phe.fs.unit.hot_side_inlet.mole_frac_comp[0, j]
+                        - phe.fs.unit.hot_side_outlet.flow_mol[0]
+                        * phe.fs.unit.hot_side_outlet.mole_frac_comp[0, j]
                     )
                 )
                 <= 1e-6
@@ -249,8 +245,8 @@ class TestPHE(object):
         assert (
             abs(
                 value(
-                    phe.fs.unit.cold_inlet.flow_mol[0]
-                    - phe.fs.unit.cold_outlet.flow_mol[0]
+                    phe.fs.unit.cold_side_inlet.flow_mol[0]
+                    - phe.fs.unit.cold_side_outlet.flow_mol[0]
                 )
             )
             <= 1e-6
@@ -260,10 +256,10 @@ class TestPHE(object):
             assert (
                 abs(
                     value(
-                        phe.fs.unit.cold_inlet.flow_mol[0]
-                        * phe.fs.unit.cold_inlet.mole_frac_comp[0, j]
-                        - phe.fs.unit.cold_outlet.flow_mol[0]
-                        * phe.fs.unit.cold_outlet.mole_frac_comp[0, j]
+                        phe.fs.unit.cold_side_inlet.flow_mol[0]
+                        * phe.fs.unit.cold_side_inlet.mole_frac_comp[0, j]
+                        - phe.fs.unit.cold_side_outlet.flow_mol[0]
+                        * phe.fs.unit.cold_side_outlet.mole_frac_comp[0, j]
                     )
                 )
                 <= 1e-6

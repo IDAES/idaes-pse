@@ -16,7 +16,7 @@ import pandas as pd
 from idaes.apps.grid_integration import Tracker
 from idaes.apps.grid_integration import Bidder
 from idaes.apps.grid_integration import PlaceHolderForecaster
-from idaes.apps.grid_integration.model_data import GeneratorModelData
+from idaes.apps.grid_integration.model_data import ThermalGeneratorModelData
 
 from pyomo.common.dependencies import attempt_import
 
@@ -34,13 +34,18 @@ class ThermalGenerator:
     # Using 4 segments to be consistent with models in RTS-GMLC dataset
     segment_number = 4
 
-    def __init__(self, rts_gmlc_dataframe, horizon=48, generator="102_STEAM_3"):
+    def __init__(
+        self,
+        rts_gmlc_generator_dataframe,
+        rts_gmlc_bus_dataframe,
+        generator="102_STEAM_3",
+    ):
 
         """
         Initializes the class object by building the thermal generator model.
 
         Arguments:
-            rts_gmlc_dataframe: the RTS-GMLC generator data in Pandas DataFrame
+            rts_gmlc_generator_dataframe: the RTS-GMLC generator data in Pandas DataFrame
             horizon: the length of the planning horizon of the model.
             generator: a generator in RTS-GMLC
 
@@ -49,9 +54,14 @@ class ThermalGenerator:
         """
 
         self.generator = generator
-        self.horizon = horizon
+        rts_gmlc_generator_dataframe = rts_gmlc_generator_dataframe.merge(
+            rts_gmlc_bus_dataframe[["Bus ID", "Bus Name"]],
+            how="left",
+            left_on="Bus ID",
+            right_on="Bus ID",
+        )
         self._model_data_dict = self.assemble_model_data(
-            generator_name=generator, gen_params=rts_gmlc_dataframe
+            generator_name=generator, gen_params=rts_gmlc_generator_dataframe
         )
         self.result_list = []
 
@@ -72,6 +82,7 @@ class ThermalGenerator:
 
         gen_params = gen_params.set_index("GEN UID", inplace=False)
         properties = [
+            "Bus Name",
             "PMin MW",
             "PMax MW",
             "Min Up Time Hr",
@@ -127,9 +138,9 @@ class ThermalGenerator:
                 model_data["Power Segments"][l]
             ] = model_data["Marginal Costs"][l]
 
-        self._model_data = GeneratorModelData(
+        self._model_data = ThermalGeneratorModelData(
             gen_name=generator_name,
-            generator_type="thermal",
+            bus=model_data["Bus Name"],
             p_min=model_data["PMin MW"],
             p_max=model_data["PMax MW"],
             min_down_time=model_data["Min Down Time Hr"],
@@ -138,6 +149,9 @@ class ThermalGenerator:
             ramp_down_60min=model_data["RD"],
             shutdown_capacity=model_data["SD"],
             startup_capacity=model_data["SU"],
+            initial_status=-1,
+            initial_p_output=0,
+            fixed_commitment=None,
             production_cost_bid_pairs=[
                 (
                     model_data["PMin MW"],
@@ -151,7 +165,6 @@ class ThermalGenerator:
             startup_cost_pairs=[
                 (model_data["Min Down Time Hr"], model_data["SU Cost"])
             ],
-            fixed_commitment=None,
         )
 
         return model_data
@@ -241,7 +254,7 @@ class ThermalGenerator:
 
         return
 
-    def populate_model(self, b):
+    def populate_model(self, b, horizon):
 
         """
         This function builds the model for a thermal generator.
@@ -256,7 +269,7 @@ class ThermalGenerator:
         model_data = self._model_data_dict
 
         ## define the sets
-        b.HOUR = pyo.Set(initialize=list(range(self.horizon)))
+        b.HOUR = pyo.Set(initialize=list(range(horizon)))
         b.SEGMENTS = pyo.Set(initialize=list(range(1, ThermalGenerator.segment_number)))
 
         ## define the parameters
@@ -332,7 +345,9 @@ class ThermalGenerator:
         b.shut_dw = pyo.Var(b.HOUR, initialize=False, within=pyo.Binary)
 
         # power produced in each segment
-        b.power_segment = pyo.Var(b.HOUR, b.SEGMENTS, within=pyo.NonNegativeReals)
+        b.power_segment = pyo.Var(
+            b.HOUR, b.SEGMENTS, initialize=0, within=pyo.NonNegativeReals
+        )
 
         ## Constraints
 
@@ -694,10 +709,18 @@ class ThermalGenerator:
 
 if __name__ == "__main__":
 
-    generator = "102_STEAM_3"
-    horizon = 4
+    from idaes.apps.grid_integration.examples.utils import (
+        rts_gmlc_generator_dataframe,
+        rts_gmlc_bus_dataframe,
+        prescient_5bus,
+        daily_da_price_means,
+        daily_rt_price_means,
+        daily_da_price_stds,
+        daily_rt_price_stds,
+    )
 
-    rts_gmlc_dataframe = pd.read_csv("gen.csv")
+    generator = "10_STEAM"
+    horizon = 4
     solver = pyo.SolverFactory("cbc")
 
     run_tracker = True
@@ -708,13 +731,14 @@ if __name__ == "__main__":
 
         # create a tracker model
         tracking_model_object = ThermalGenerator(
-            rts_gmlc_dataframe=rts_gmlc_dataframe,
-            horizon=horizon,
-            generator="102_STEAM_3",
+            rts_gmlc_generator_dataframe=rts_gmlc_generator_dataframe,
+            rts_gmlc_bus_dataframe=rts_gmlc_bus_dataframe,
+            generator=generator,
         )
         # make a tracker
         thermal_tracker = Tracker(
             tracking_model_object=tracking_model_object,
+            tracking_horizon=horizon,
             n_tracking_hour=1,
             solver=solver,
         )
@@ -730,35 +754,43 @@ if __name__ == "__main__":
 
         # create a tracker model
         bidding_model_object = ThermalGenerator(
-            rts_gmlc_dataframe=rts_gmlc_dataframe, horizon=48, generator="102_STEAM_3"
+            rts_gmlc_generator_dataframe=rts_gmlc_generator_dataframe,
+            rts_gmlc_bus_dataframe=rts_gmlc_bus_dataframe,
+            generator=generator,
         )
 
         # create forecaster
-        price_forecasts_df = pd.read_csv("lmp_forecasts_concat.csv")
-        forecaster = PlaceHolderForecaster(price_forecasts_df=price_forecasts_df)
+        forecaster = PlaceHolderForecaster(
+            daily_da_price_means=daily_da_price_means,
+            daily_rt_price_means=daily_rt_price_means,
+            daily_da_price_stds=daily_da_price_stds,
+            daily_rt_price_stds=daily_rt_price_stds,
+        )
 
         thermal_bidder = Bidder(
             bidding_model_object=bidding_model_object,
+            day_ahead_horizon=48,
+            real_time_horizon=4,
             n_scenario=10,
             solver=solver,
             forecaster=forecaster,
         )
 
         date = "2020-07-10"
-        hour = "13:00"
-        bids = thermal_bidder.compute_bids(date, hour)
+        hour = 13
+        bids = thermal_bidder.compute_day_ahead_bids(date, hour)
         thermal_bidder.write_results(path="./")
 
     if run_prescient and prescient_avail:
 
         options = {
-            "data_path": "/home/xgao1/DowlingLab/RTS-GMLC/RTS_Data/SourceData",
+            "data_path": prescient_5bus,
             "input_format": "rts-gmlc",
             "simulate_out_of_sample": True,
             "run_sced_with_persistent_forecast_errors": True,
             "output_directory": "bidding_plugin_test_thermal_generator",
             "start_date": "07-10-2020",
-            "num_days": 1,
+            "num_days": 2,
             "sced_horizon": 4,
             "compute_market_settlements": True,
             "day_ahead_pricing": "LMP",
@@ -770,7 +802,7 @@ if __name__ == "__main__":
             "plugin": {
                 "doubleloop": {
                     "module": "thermal_generator_prescient_plugin.py",
-                    "bidding_generator": "102_STEAM_3",
+                    "bidding_generator": generator,
                 }
             },
         }

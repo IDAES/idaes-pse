@@ -33,11 +33,12 @@ from idaes.models_extra.carbon_capture.co2_compressor import (
     ImpellerType,
 )
 
-from idaes.core.util.testing import get_default_solver, initialization_tester
+from idaes.core.solvers import get_solver
+from idaes.core.util.testing import initialization_tester
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 @pytest.fixture(scope="module")
@@ -45,16 +46,14 @@ def build_unit():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties_co2 = swco2.SWCO2ParameterBlock(
-        default={"phase_presentation": swco2.PhaseType.G}
+        phase_presentation=swco2.PhaseType.G
     )
     m.fs.unit = CompressionStage(
-        default={
-            "property_package": m.fs.properties_co2,
-            "impeller_type": ImpellerType.open_impeller,
-            "vane_diffuser_type": VaneDiffuserType.vane_diffuser,
-        }
+        property_package=m.fs.properties_co2,
+        impeller_type=ImpellerType.open_impeller,
+        vane_diffuser_type=VaneDiffuserType.vane_diffuser,
     )
 
     # Set the compressor inlet conditions and an initial flow guess

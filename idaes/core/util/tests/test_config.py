@@ -32,9 +32,6 @@ from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
     is_state_block,
-    list_of_floats,
-    list_of_strings,
-    list_of_phase_types,
     is_port,
     is_time_domain,
     is_transformation_method,
@@ -143,38 +140,6 @@ def test_is_state_block_fails():
 
 
 @pytest.mark.unit
-def test_list_of_strings():
-    # Test list_of_strings=returns correctly
-    assert list_of_strings(1) == ["1"]  # int
-    assert list_of_strings([1, 2, 3]) == ["1", "2", "3"]  # list of ints
-    assert list_of_strings(1.0) == ["1.0"]  # float
-    # list of floats
-    assert list_of_strings([1.0, 2.0, 3.0]) == ["1.0", "2.0", "3.0"]
-    assert list_of_strings("foo") == ["foo"]  # str
-    assert list_of_strings(["foo", "bar"]) == ["foo", "bar"]  # list of strs
-
-
-@pytest.mark.unit
-def test_list_of_floats():
-    # Test list_of_floats returns correctly
-    assert list_of_floats(1) == [1.0]  # int
-    assert list_of_floats([1, 2, 3]) == [1.0, 2.0, 3.0]  # list of ints
-    assert list_of_floats(1.0) == [1.0]  # float
-    assert list_of_floats([1.0, 2.0, 3.0]) == [1.0, 2.0, 3.0]  # list of floats
-
-
-@pytest.mark.unit
-def test_list_of_floats_errors():
-    # Test that list_of_floats fails correctly
-    with pytest.raises(ValueError):
-        list_of_floats("foo")  # str
-    with pytest.raises(ValueError):
-        list_of_floats(["foo", "bar"])  # list of strs
-    with pytest.raises(ValueError):
-        list_of_floats({"foo": "bar"})  # dict
-
-
-@pytest.mark.unit
 def test_is_port():
     # Test that is_port passes a valid port
     m = ConcreteModel()
@@ -246,18 +211,6 @@ def test_is_transformation_scheme():
 
     with pytest.raises(ConfigurationError):
         is_transformation_scheme("foo")
-
-
-@pytest.mark.unit
-def test_list_of_phase_types():
-    assert list_of_phase_types(PT.liquidPhase) == [PT.liquidPhase]
-    assert list_of_phase_types([PT.liquidPhase]) == [PT.liquidPhase]
-    assert list_of_phase_types([PT.liquidPhase, PT.vaporPhase]) == [
-        PT.liquidPhase,
-        PT.vaporPhase,
-    ]
-    with pytest.raises(ValueError):
-        list_of_phase_types("foo")
 
 
 @pytest.mark.unit

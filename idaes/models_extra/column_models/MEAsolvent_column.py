@@ -521,7 +521,7 @@ class MEAColumnData(PackedColumnData):
             self.flowsheet().time,
             self.liquid_phase.length_domain,
             rule=rule_rate_constant,
-            doc="Second order rate contant [m3/(mol^2.s)]",
+            doc="Second order rate contant [m3/(mol.s)]",
         )
 
         def rule_hatta_number(blk, t, x):

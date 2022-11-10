@@ -1,6 +1,6 @@
 .. index::
-    pair: idaes.core.flowsheet_model;FlowsheetBlockData
-    pair: idaes.core.flowsheet_model;FlowsheetBlock
+    pair: idaes.core.base.flowsheet_model;FlowsheetBlockData
+    pair: idaes.core.base.flowsheet_model;FlowsheetBlock
 
 Flowsheet Block
 ===============
@@ -24,7 +24,7 @@ Flowsheet blocks have three configuration arguments which are stored within a Co
 Flowsheet Classes
 -----------------
 
-.. module:: idaes.core.flowsheet_model
+.. module:: idaes.core.base.flowsheet_model
 
 .. autoclass:: FlowsheetBlockData
     :members:

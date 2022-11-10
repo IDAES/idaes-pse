@@ -63,30 +63,28 @@ def frame():
 
     # Dummy params block
     m.params = DummyParameterBlock(
-        default={
-            "components": {
-                "H2O": {"pressure_sat_comp": pressure_sat_comp},
-                "EtOH": {"pressure_sat_comp": pressure_sat_comp},
-            },
-            "phases": {
-                "Liq": {"equation_of_state": DummyEoS},
-                "Vap": {"equation_of_state": DummyEoS},
-            },
-            "state_definition": modules[__name__],
-            "pressure_ref": 1e5,
-            "temperature_ref": 300,
-            "base_units": {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            },
-        }
+        components={
+            "H2O": {"pressure_sat_comp": pressure_sat_comp},
+            "EtOH": {"pressure_sat_comp": pressure_sat_comp},
+        },
+        phases={
+            "Liq": {"equation_of_state": DummyEoS},
+            "Vap": {"equation_of_state": DummyEoS},
+        },
+        state_definition=modules[__name__],
+        pressure_ref=100000.0,
+        temperature_ref=300,
+        base_units={
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        },
     )
     m.params._pe_pairs = Set(initialize=[("Vap", "Liq")])
 
-    m.props = m.params.build_state_block([1], default={"defined_state": False})
+    m.props = m.params.build_state_block([1], defined_state=False)
 
     # Add common variables
     m.props[1].pressure = Var(initialize=101325)

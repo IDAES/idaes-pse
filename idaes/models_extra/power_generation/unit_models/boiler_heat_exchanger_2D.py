@@ -56,6 +56,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
+from idaes.core.util.math import smooth_max
 import idaes.logger as idaeslog
 
 __author__ = "Jinliang Ma, Q. M. Le, M. Zamarripa "
@@ -329,31 +330,25 @@ tube side flows from 1 to 0""",
         # Control volume 1D for shell and tube, set to steady-state
         # for fluid on both sides
         self.shell = ControlVolume1DBlock(
-            default={
-                # currently always set dynamic to False for fluid control volume
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.shell_side.property_package,
-                "property_package_args": self.config.shell_side.property_package_args,
-                "transformation_method": self.config.transformation_method,
-                "transformation_scheme": self.config.transformation_scheme,
-                "finite_elements": self.config.finite_elements,
-                "collocation_points": self.config.collocation_points,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.shell_side.property_package,
+            property_package_args=self.config.shell_side.property_package_args,
+            transformation_method=self.config.transformation_method,
+            transformation_scheme=self.config.transformation_scheme,
+            finite_elements=self.config.finite_elements,
+            collocation_points=self.config.collocation_points,
         )
 
         self.tube = ControlVolume1DBlock(
-            default={
-                # currently alway set dynamic to False for fluid control volume
-                "dynamic": False,
-                "has_holdup": False,
-                "property_package": self.config.tube_side.property_package,
-                "property_package_args": self.config.tube_side.property_package_args,
-                "transformation_method": self.config.transformation_method,
-                "transformation_scheme": self.config.transformation_scheme,
-                "finite_elements": self.config.finite_elements,
-                "collocation_points": self.config.collocation_points,
-            }
+            dynamic=False,
+            has_holdup=False,
+            property_package=self.config.tube_side.property_package,
+            property_package_args=self.config.tube_side.property_package_args,
+            transformation_method=self.config.transformation_method,
+            transformation_scheme=self.config.transformation_scheme,
+            finite_elements=self.config.finite_elements,
+            collocation_points=self.config.collocation_points,
         )
 
         self.shell.add_geometry(flow_direction=set_direction_shell)
@@ -1326,7 +1321,8 @@ tube side flows from 1 to 0""",
         )
         def friction_factor_tube_eqn(b, t, x):
             return (
-                b.tube_friction_factor[t, x] * b.tube_N_Re[t, x] ** 0.25
+                b.tube_friction_factor[t, x]
+                * smooth_max(b.tube_N_Re[t, x], 1, 1e-5) ** 0.25
                 == 0.3164 * b.fcorrection_dp_tube
             )
 
@@ -1401,7 +1397,9 @@ tube side flows from 1 to 0""",
         def N_Nu_tube_eqn(b, t, x):
             return (
                 b.tube_N_Nu[t, x]
-                == 0.023 * b.tube_N_Re[t, x] ** 0.8 * b.tube_N_Pr[t, x] ** 0.4
+                == 0.023
+                * smooth_max(b.tube_N_Re[t, x], 1, 1e-5) ** 0.8
+                * b.tube_N_Pr[t, x] ** 0.4
             )
 
         # Heat transfer coefficient
@@ -1511,7 +1509,8 @@ tube side flows from 1 to 0""",
             )
             def friction_factor_shell_eqn(b, t, x):
                 return (
-                    b.shell_friction_factor[t, x] * b.shell_N_Re[t, x] ** 0.15
+                    b.shell_friction_factor[t, x]
+                    * smooth_max(b.shell_N_Re[t, x], 1, 1e-5) ** 0.15
                     == (
                         0.044
                         + 0.08
@@ -1530,7 +1529,8 @@ tube side flows from 1 to 0""",
             )
             def friction_factor_shell_eqn(b, t, x):
                 return (
-                    b.shell_friction_factor[t, x] * b.shell_N_Re[t, x] ** 0.16
+                    b.shell_friction_factor[t, x]
+                    * smooth_max(b.shell_N_Re[t, x], 1, 1e-5) ** 0.16
                     == (0.25 + 0.118 / (b.pitch_y_to_do - 1.0) ** 1.08)
                     * b.fcorrection_dp_shell
                 )
@@ -1579,7 +1579,7 @@ tube side flows from 1 to 0""",
                 b.shell_N_Nu[t, x]
                 == b.f_arrangement
                 * 0.33
-                * b.shell_N_Re[t, x] ** 0.6
+                * smooth_max(b.shell_N_Re[t, x], 1, 1e-5) ** 0.6
                 * b.shell_N_Pr[t, x] ** 0.333333
             )
 
