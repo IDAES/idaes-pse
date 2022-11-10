@@ -570,6 +570,10 @@ class HelmholtzStateBlockData(StateBlockData):
         self.dens_mol_crit = pyo.Expression(
             expr=params.dens_mass_crit / params.mw, doc="critical mole density"
         )
+        self.dens_mol_star = pyo.Expression(
+            expr=params.dens_mass_star / params.mw,
+            doc="mole density for delta calculation",
+        )
         self.mw = pyo.Expression(expr=params.mw, doc="molecular weight")
         # create the appropriate state variables and expressions for anything
         # that could be a state variable (H, S, U, P, T, X) on a mass and mole

@@ -2123,6 +2123,7 @@ change.
                 "temperature_crit": {"method": None, "units": "K"},
                 "pressure_crit": {"method": None, "units": "Pa"},
                 "dens_mass_crit": {"method": None, "units": "kg/m^3"},
+                "dens_mol_crit": {"method": None, "units": "mol/m^3"},
                 "mw": {"method": None, "units": "kg/mol"},
                 "temperature_sat": {"method": "None", "units": "K"},
                 "flow_mol": {"method": None, "units": "mol/s"},
@@ -2175,6 +2176,10 @@ change.
                 "dens_mass_star": {
                     "method": None,
                     "units": obj.derived_units.DENSITY_MASS,
+                },
+                "dens_mol_star": {
+                    "method": None,
+                    "units": obj.derived_units.DENSITY_MOLE,
                 },
                 "specific_gas_constant": {
                     "method": None,
