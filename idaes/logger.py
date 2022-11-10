@@ -298,6 +298,7 @@ class IOToLogThread(threading.Thread):
             self.log_value()
             self.stop.wait(self.sleep)
             if self.stop.isSet():
+                time.sleep(2)
                 self.log_value()
                 self.pos = 0
                 return
@@ -318,7 +319,6 @@ def solver_log(logger, level=logging.ERROR):
     # thread is daemonic, so it will shut down with the main process even if it
     # stays around for some mysterious reason while the model is running.
     join_timeout = 3
-    sleep_period = 1
     tee = logger.isEnabledFor(level)
     if not solver_capture():
         yield SolverLogInfo(tee=tee)
@@ -329,13 +329,8 @@ def solver_log(logger, level=logging.ERROR):
             try:
                 yield SolverLogInfo(tee=tee, thread=lt)
             except:
-                # Need to wait a brief period to make sure solver output is captured on the logging thread
-                # before the exception is raised.
-                time.sleep(sleep_period)
                 lt.stop.set()
-                lt.join(timeout=join_timeout)
                 raise
         # thread should end when s is closed, but setting stop makes sure
         # the last of the output gets logged before closing s
         lt.stop.set()
-        lt.join(timeout=join_timeout)
