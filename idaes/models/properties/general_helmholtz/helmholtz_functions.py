@@ -2125,6 +2125,8 @@ change.
                 "pressure_crit": {"method": None, "units": "Pa"},
                 "dens_mass_crit": {"method": None, "units": "kg/m^3"},
                 "dens_mass_star": {"method": None, "units": "kg/m^3"},
+                "dens_mol_crit": {"method": None, "units": "mol/m^3"},
+                "dens_mol_star": {"method": None, "units": "mol/m^3"},
                 "specific_gas_constant": {"method": None, "units": "J/kg.K"},
                 "mw": {"method": None, "units": "kg/mol"},
                 "temperature_sat": {"method": "None", "units": "K"},
