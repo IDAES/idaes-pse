@@ -13,9 +13,9 @@
 """
 Ideal gas + Ideal/Non-ideal liquid property package.
 
-VLE calucations assuming an ideal gas for the gas phase. For the liquid phase,
+VLE calculations assuming an ideal gas for the gas phase. For the liquid phase,
 options include ideal liquid or non-ideal liquid using an activity
-coefficient model; options include Non Random Two Liquid Model (NRTL) or the
+coefficient model; options include Non-Random Two Liquid Model (NRTL) or the
 Wilson model to compute the activity coefficient. This property package
 supports the following combinations for gas-liquid mixtures:
 1. Ideal (vapor) - Ideal (liquid)
@@ -78,6 +78,7 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants as const
 from idaes.core.solvers import get_solver
+import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 
@@ -209,6 +210,31 @@ conditions, and thus corresponding constraints  should be included,
                     initialize=1.0,
                     doc="Binary interaction parameter for " "Wilson model",
                 )
+        self.set_default_scaling("flow_mol", 1e-3)
+        self.set_default_scaling("mole_frac_comp", 10)
+        self.set_default_scaling("temperature", 1e-1)
+        self.set_default_scaling("temperature_dew", 1e-1)
+        self.set_default_scaling("temperature_bubble", 1e-1)
+        self.set_default_scaling("flow_mol_phase", 1e-2)
+        self.set_default_scaling("density_mol", 1)
+        self.set_default_scaling("pressure", 1e-6)
+        self.set_default_scaling("pressure_sat", 1e-6)
+        self.set_default_scaling("pressure_dew", 1e-6)
+        self.set_default_scaling("pressure_bubble", 1e-6)
+        self.set_default_scaling("mole_frac_phase_comp", 10)
+        self.set_default_scaling("enth_mol_phase_comp", 1e-3, index="Liq")
+        self.set_default_scaling("enth_mol_phase_comp", 1e-4, index="Vap")
+        self.set_default_scaling("enth_mol_phase", 1e-3, index="Liq")
+        self.set_default_scaling("enth_mol_phase", 1e-4, index="Vap")
+        self.set_default_scaling("entr_mol_phase_comp", 1e-2)
+        self.set_default_scaling("entr_mol_phase", 1e-2)
+        self.set_default_scaling("mw", 100)
+        self.set_default_scaling("mw_phase", 100)
+        self.set_default_scaling("gibbs_mol_phase_comp", 1e-3)
+        # Check values for these 3
+        self.set_default_scaling("fug_vap", 1)
+        self.set_default_scaling("fug_liq", 1)
+        self.set_default_scaling("ds_form", 100)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -1800,3 +1826,86 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
+
+    def calculate_scaling_factors(self):
+        # Get default scale factors and do calculations from base classes
+        super().calculate_scaling_factors()
+
+        phases = self.parameters.config.valid_phase
+        is_two_phase = len(phases) == 2  # possibly {Liq}, {Vap}, or {Liq, Vap}
+        sf_flow = iscale.get_scaling_factor(self.flow_mol, default=1, warning=True)
+        sf_T = iscale.get_scaling_factor(self.temperature, default=1, warning=True)
+        sf_P = iscale.get_scaling_factor(self.pressure, default=1, warning=True)
+
+        if self.is_property_constructed("_teq"):
+            iscale.set_scaling_factor(self._teq, sf_T)
+        if self.is_property_constructed("_teq_constraint"):
+            iscale.constraint_scaling_transform(
+                self._teq_constraint, sf_T, overwrite=False
+            )
+
+        if self.is_property_constructed("_t1"):
+            iscale.set_scaling_factor(self._t1, sf_T)
+        if self.is_property_constructed("_t1_constraint"):
+            iscale.constraint_scaling_transform(
+                self._t1_constraint, sf_T, overwrite=False
+            )
+
+        if self.is_property_constructed("total_flow_balance"):
+            s = iscale.get_scaling_factor(self.flow_mol, default=1, warning=True)
+            iscale.constraint_scaling_transform(
+                self.total_flow_balance, s, overwrite=False
+            )
+
+        if self.is_property_constructed("component_flow_balances"):
+            for i, c in self.component_flow_balances.items():
+                if is_two_phase:
+                    s = iscale.get_scaling_factor(
+                        self.mole_frac_comp[i], default=1, warning=True
+                    )
+                    s *= sf_flow
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)
+                else:
+                    s = iscale.get_scaling_factor(
+                        self.mole_frac_comp[i], default=1, warning=True
+                    )
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+        if self.is_property_constructed("density_mol"):
+            for c in self.eq_density_mol.values():
+                iscale.constraint_scaling_transform(c, sf_P, overwrite=False)
+
+        if self.is_property_constructed("enth_mol_phase_comp"):
+            for p, c in self.eq_enth_mol_phase_comp.items():
+                sf = iscale.get_scaling_factor(
+                    self.enth_mol_phase_comp[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("enth_mol_phase"):
+            for p, c in self.eq_enth_mol_phase.items():
+                sf = iscale.get_scaling_factor(
+                    self.enth_mol_phase[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("entr_mol_phase_comp"):
+            for p, c in self.eq_entr_mol_phase_comp.items():
+                sf = iscale.get_scaling_factor(
+                    self.entr_mol_phase_comp[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("entr_mol_phase"):
+            for p, c in self.eq_entr_mol_phase.items():
+                sf = iscale.get_scaling_factor(
+                    self.entr_mol_phase[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("gibbs_mol_phase_comp"):
+            for p, c in self.eq_gibbs_mol_phase_comp.items():
+                sf = iscale.get_scaling_factor(
+                    self.gibbs_mol_phase_comp[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)

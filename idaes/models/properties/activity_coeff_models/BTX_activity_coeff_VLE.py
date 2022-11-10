@@ -319,9 +319,6 @@ class BTXParameterData(ActivityCoeffParameterData):
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
 
-        phases = self.params.config.valid_phase
-        is_two_phase = len(phases) == 2  # possibly {Liq}, {Vap}, or {Liq, Vap}
-        sf_flow = iscale.get_scaling_factor(self.flow_mol, default=1, warning=True)
         sf_T = iscale.get_scaling_factor(
             self.temperature_reference, default=1, warning=True
         )

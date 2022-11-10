@@ -29,7 +29,10 @@ from idaes.core.util.model_statistics import (
     fixed_variables_set,
     activated_constraints_set,
 )
+
 from idaes.core.solvers import get_solver
+import idaes.core.util.scaling as iscale
+
 
 solver = get_solver()
 
@@ -115,6 +118,8 @@ class TestFcTP_LV_inlet:
         assert value(
             model.fs.state_block_ideal_vl[0].flow_mol_phase_comp["Vap", "benzene"]
         ) == pytest.approx(0.2512, abs=1e-3)
+
+        iscale.calculate_scaling_factors(model.fs.state_block_ideal_vl[0])
 
 
 class TestFcTP_L_inlet:
@@ -361,6 +366,8 @@ class TestFcTP_LV_outlet:
         assert value(
             model.fs.state_block_ideal_vl[0].flow_mol_phase_comp["Vap", "benzene"]
         ) == pytest.approx(0.2512, abs=1e-3)
+
+        iscale.calculate_scaling_factors(model.fs.state_block_ideal_vl[0])
 
 
 class TestFcTP_L_outlet:
