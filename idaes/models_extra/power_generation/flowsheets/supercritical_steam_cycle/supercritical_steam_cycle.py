@@ -963,9 +963,10 @@ def pfd_result(m, df, svg):
     for t, v in tags.items():
         tag_group.add(t, v, format_string="{:.3f}")
     if svg is None:
-        svg = os.path.join(this_file_dir(), "supercritical_steam_cycle.svg")
-    with open(svg, "r") as f:
-        s = svg_tag(tag_group=tag_group, svg=f)
+        fname = os.path.join(this_file_dir(), "supercritical_steam_cycle.svg")
+        with open(fname, "r") as f:
+            svg = f.read()
+    s = svg_tag(tag_group=tag_group, svg=svg)
     return s
 
 
