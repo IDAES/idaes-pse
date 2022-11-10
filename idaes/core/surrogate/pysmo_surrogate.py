@@ -329,13 +329,13 @@ class PysmoPolyTrainer(PysmoTrainer):
         return {"RMSE": model.errors["MSE"] ** 0.5, "R2": model.errors["R2"]}
 
     def get_confidence_intervals(
-        self, model: PysmoPolyTrainer, confidence: float = 0.95
+        self, model: PysmoTrainedSurrogate, confidence: float = 0.95
     ) -> Dict:
         """
         Compute confidence intervals for the regression patamaters.
 
         Args:
-            model           : Trained PysmoPolyTrainer object
+            model           : A PysmoTrainedSurrogate object
             confidence      : Required confidence interval level, default = 0.95 (95%)
 
         Returns:
