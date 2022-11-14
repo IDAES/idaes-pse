@@ -451,6 +451,62 @@ def test_set_get_unset(caplog):
 
 
 @pytest.mark.unit
+def test_set_and_get_scaling_factor():
+    m = pyo.ConcreteModel()
+    m.x = pyo.Var()
+    m.z = pyo.Var([1, 2, 3, 4])
+    m.c1 = pyo.Constraint(expr=0 == m.x)
+
+    @m.Constraint([1, 2, 3, 4])
+    def c2(b, i):
+        return b.z[i] == 0
+
+    m.ex = pyo.Expression(expr=m.x)
+
+    # Make sure exception is raised for indexed components regardless of whether they have scaling factors set
+    with pytest.raises(AttributeError) as exception:
+        sc.set_and_get_scaling_factor(m.z, 10)
+    assert (
+        exception.value.args[0]
+        == "Ambiguous which scaling factor to return for indexed component z."
+    )
+
+    sc.set_scaling_factor(m.z, 11)
+
+    with pytest.raises(AttributeError) as exception:
+        sc.set_and_get_scaling_factor(m.z, 10)
+    assert (
+        exception.value.args[0]
+        == "Ambiguous which scaling factor to return for indexed component z."
+    )
+
+    for j in range(1, 5):
+        assert sc.set_and_get_scaling_factor(m.z[j], 10) == 11
+        assert sc.get_scaling_factor(m.z[j]) == 11
+
+    sc.unset_scaling_factor(m.z[1])
+    assert sc.set_and_get_scaling_factor(m.z[1], 10) == 10
+    assert sc.get_scaling_factor(m.z[1]) == 10
+
+    assert sc.set_and_get_scaling_factor(m.x, 7) == 7
+    assert sc.get_scaling_factor(m.x) == 7
+    assert sc.set_and_get_scaling_factor(m.x, 13) == 7
+    assert sc.get_scaling_factor(m.x) == 7
+
+    assert sc.set_and_get_scaling_factor(m.c1, 17) == 17
+    assert sc.get_scaling_factor(m.c1) == 17
+    assert sc.set_and_get_scaling_factor(m.c1, 19) == 17
+    assert sc.get_scaling_factor(m.c1) == 17
+
+    sc.set_scaling_factor(m.ex, 23)
+    assert sc.set_and_get_scaling_factor(m.ex, 29) == 23
+    assert sc.get_scaling_factor(m.ex) == 23
+    sc.unset_scaling_factor(m.ex)
+    assert sc.set_and_get_scaling_factor(m.ex, 29) == 29
+    assert sc.get_scaling_factor(m.ex) == 29
+
+
+@pytest.mark.unit
 def test_find_badly_scaled_vars():
     m = pyo.ConcreteModel()
     m.x = pyo.Var(initialize=1e6)
