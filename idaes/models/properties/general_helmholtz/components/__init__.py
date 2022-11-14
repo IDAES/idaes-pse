@@ -21,9 +21,14 @@ import idaes.models.properties.general_helmholtz.components.co2 as co2
 import idaes.models.properties.general_helmholtz.components.r134a as r134a
 import idaes.models.properties.general_helmholtz.components.r1234ze as r1234ze
 
-components = {
+_components = {
     "h2o": h2o,
     "co2": co2,
     "r134a": r134a,
     "r1234ze": r1234ze,
 }
+
+
+def get_component_module(comp_str):
+    comp_str = comp_str.lower()
+    return _components.get(comp_str, None)
