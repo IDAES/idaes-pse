@@ -119,7 +119,7 @@ class UnitSet(object):
 
     _base_quantities = {
         "AMOUNT": units.mol,
-        "CURRENT": units.watt,
+        "CURRENT": units.ampere,
         "LENGTH": units.meter,
         "LUMINOUS_INTENSITY": units.candela,
         "MASS": units.kilogram,
@@ -133,13 +133,13 @@ class UnitSet(object):
         self._mass = units.kilogram
         self._amount = units.mole
         self._temperature = units.kelvin
-        self._current = units.watts
+        self._current = units.ampere
         self._luminous_intensity = units.candela
 
     def set_units(
         self,
         amount: _PyomoUnit = units.mol,
-        current: _PyomoUnit = units.watt,
+        current: _PyomoUnit = units.ampere,
         length: _PyomoUnit = units.meter,
         luminous_intensity: _PyomoUnit = units.candela,
         mass: _PyomoUnit = units.kilogram,
@@ -151,7 +151,7 @@ class UnitSet(object):
 
         Args:
             amount: units for amount (default = moles)
-            current: units for current (default = Watts)
+            current: units for current (default = Amperes)
             length: units for length (default = meters)
             luminous_intensity: units for luminous intensity (default = candela)
             mass: units for mass (default = kilograms)
