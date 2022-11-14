@@ -411,7 +411,7 @@ def petsc_dae_by_time_element(
     initial_variables=None,
     detect_initial=True,
     skip_initial=False,
-    initial_solver="petsc-snes",
+    initial_solver="petsc_snes",
     initial_solver_options=None,
     ts_options=None,
     keepfiles=False,
@@ -537,7 +537,7 @@ def petsc_dae_by_time_element(
                 )
                 # set up the scaling factor suffix
                 _sub_problem_scaling_suffix(m, t_block)
-                #return t_block
+                # return t_block
                 with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
                     res = initial_solver_obj.solve(t_block, tee=slc.tee)
                 res_list.append(res)
