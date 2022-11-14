@@ -83,13 +83,12 @@ def _build_test_utility(block, comp_dict, references=None):
             if not len(comp) == length:
                 raise AssertionError(
                     f"{ctype} {comp.name} was not expected length in block "
-                    "{block.name}."
+                    f"{block.name}."
                 )
         for comp in block.component_data_objects(ctype=ctype, descend_into=False):
-            short_name = comp.name.split("[")[0]
-            short_name = short_name.split(".")[-1]
+            short_name = comp.local_name.split("[")[0]
             if not short_name in sub_dict.keys():
                 raise AssertionError(
                     f"Unexpected {ctype} {comp.name} encountered in block "
-                    "{block.name}."
+                    f"{block.name}."
                 )
