@@ -124,10 +124,9 @@ class TestPropertySetBase:
         assert pset._parent_block is p
 
     @pytest.mark.unit
-    def test_add_property_meta(self, pset):
-        pset._add_property_meta(
-            local_name="foo",
-            name="bar",
+    def test_define_property(self, pset):
+        pset.define_property(
+            name="foo",
             method="baz",
             supported=True,
             required=True,
@@ -135,17 +134,16 @@ class TestPropertySetBase:
         )
 
         assert isinstance(pset.foo, PropertyMetadata)
-        assert pset.foo.name == "bar"
+        assert pset.foo.name == "foo"
         assert pset.foo.method == "baz"
         assert pset.foo.supported
         assert pset.foo.required
         assert pset.foo.units is units.dimensionless
 
     @pytest.mark.unit
-    def test_add_property_meta_duplicate(self, pset):
-        pset._add_property_meta(
-            local_name="foo",
-            name="bar",
+    def test_define_property_duplicate(self, pset):
+        pset.define_property(
+            name="foo",
             method="baz",
             supported=True,
             required=True,
@@ -158,9 +156,8 @@ class TestPropertySetBase:
             "Please use update_property method if you wish to update "
             "an existing property's metadata.",
         ):
-            pset._add_property_meta(
-                local_name="foo",
-                name="bar",
+            pset.define_property(
+                name="foo",
                 method="baz",
                 supported=True,
                 required=True,
@@ -169,9 +166,8 @@ class TestPropertySetBase:
 
     @pytest.mark.unit
     def test_getitem(self, pset):
-        pset._add_property_meta(
-            local_name="FOO",
-            name="bar",
+        pset.define_property(
+            name="FOO",
             method="baz",
             supported=True,
             required=True,
@@ -191,17 +187,15 @@ class TestPropertySetBase:
 
     @pytest.mark.unit
     def test_iter(self, pset):
-        pset._add_property_meta(
-            local_name="FOO",
-            name="bar",
+        pset.define_property(
+            name="FOO",
             method="baz",
             supported=True,
             required=True,
             units=units.dimensionless,
         )
-        pset._add_property_meta(
-            local_name="_BAR",
-            name="bar",
+        pset.define_property(
+            name="_BAR",
             method="baz",
             supported=True,
             required=True,
@@ -213,52 +207,16 @@ class TestPropertySetBase:
             assert i is pset.FOO
 
     @pytest.mark.unit
-    def test_define_property(self, pset):
-        pset.define_property(
-            name="bar",
-            method="baz",
-            supported=True,
-            required=True,
-            units=units.dimensionless,
-        )
-
-        assert isinstance(pset.bar, PropertyMetadata)
-        assert pset.bar.name == "bar"
-        assert pset.bar.method == "baz"
-        assert pset.bar.supported
-        assert pset.bar.required
-        assert pset.bar.units is units.dimensionless
-
-    @pytest.mark.unit
-    def test_define_stanadrd_property(self, pset):
-        pset._define_standard_property(
-            name="bar",
-            method="baz",
-            supported=True,
-            required=True,
-            units=units.dimensionless,
-        )
-
-        assert isinstance(pset._bar, PropertyMetadata)
-        assert pset._bar.name == "bar"
-        assert pset._bar.method == "baz"
-        assert pset._bar.supported
-        assert pset._bar.required
-        assert pset._bar.units is units.dimensionless
-
-    @pytest.mark.unit
     def test_list_required_properties(self, pset):
-        pset._add_property_meta(
-            local_name="FOO",
-            name="bar",
+        pset.define_property(
+            name="FOO",
             method="baz",
             supported=True,
             required=True,
             units=units.dimensionless,
         )
-        pset._add_property_meta(
-            local_name="BAR",
-            name="bar",
+        pset.define_property(
+            name="BAR",
             method="baz",
             supported=True,
             required=False,
@@ -268,27 +226,24 @@ class TestPropertySetBase:
         assert pset.list_required_properties() == [pset.FOO]
 
     @pytest.mark.unit
-    def test_check_required_proeprties(self, pset):
+    def test_check_required_properties(self, pset):
         # ADd some required properties
-        pset._add_property_meta(
-            local_name="FOO",
-            name="foo",
+        pset.define_property(
+            name="FOO",
             method="baz",
             supported=True,
             required=True,
             units=units.dimensionless,
         )
-        pset._add_property_meta(
-            local_name="BAR",
-            name="bar",
+        pset.define_property(
+            name="BAR",
             method="baz",
             supported=True,
             required=True,
             units=units.dimensionless,
         )
-        pset._add_property_meta(
-            local_name="BAZ",
-            name="baz",
+        pset.define_property(
+            name="BAZ",
             method="baz",
             supported=True,
             required=True,
@@ -298,18 +253,16 @@ class TestPropertySetBase:
         # Create a second property set, which only supports some required properties
         pset2 = PropertySetBase(parent=pset._parent_block)
         # In metadata but explicitly not supported
-        pset2._add_property_meta(
-            local_name="FOO",
-            name="foo",
+        pset2.define_property(
+            name="FOO",
             method="baz",
             supported=False,
             required=True,
             units=units.dimensionless,
         )
         # In metadata and supported
-        pset2._add_property_meta(
-            local_name="BAR",
-            name="bar",
+        pset2.define_property(
+            name="BAR",
             method="baz",
             supported=True,
             required=True,
@@ -319,23 +272,21 @@ class TestPropertySetBase:
 
         # Check required properties should return FOO and BAZ
         unsupported = pset.check_required_properties(pset2)
-        assert "foo" in unsupported
-        assert "baz" in unsupported
+        assert "FOO" in unsupported
+        assert "BAZ" in unsupported
         assert len(unsupported) == 2
 
     @pytest.mark.unit
     def test_list_supported_properties(self, pset):
-        pset._add_property_meta(
-            local_name="FOO",
-            name="bar",
+        pset.define_property(
+            name="FOO",
             method="baz",
             supported=True,
             required=True,
             units=units.dimensionless,
         )
-        pset._add_property_meta(
-            local_name="BAR",
-            name="bar",
+        pset.define_property(
+            name="BAR",
             method="baz",
             supported=False,
             required=False,
@@ -346,17 +297,15 @@ class TestPropertySetBase:
 
     @pytest.mark.unit
     def test_list_unsupported_properties(self, pset):
-        pset._add_property_meta(
-            local_name="FOO",
-            name="bar",
+        pset.define_property(
+            name="FOO",
             method="baz",
             supported=True,
             required=True,
             units=units.dimensionless,
         )
-        pset._add_property_meta(
-            local_name="BAR",
-            name="bar",
+        pset.define_property(
+            name="BAR",
             method="baz",
             supported=False,
             required=False,
