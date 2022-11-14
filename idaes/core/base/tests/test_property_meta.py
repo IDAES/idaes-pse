@@ -120,7 +120,7 @@ def unit_set():
         mass=units.kg,
         amount=units.mol,
         temperature=units.K,
-        current=units.W,
+        current=units.ampere,
         luminous_intensity=units.candela,
     )
     return us
@@ -158,8 +158,8 @@ def test_temperature(unit_set):
 
 @pytest.mark.unit
 def test_current(unit_set):
-    assert unit_set.CURRENT == units.W
-    assert unit_set["current"] == units.W
+    assert unit_set.CURRENT == units.ampere
+    assert unit_set["current"] == units.ampere
 
 
 @pytest.mark.unit

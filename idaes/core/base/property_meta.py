@@ -190,7 +190,7 @@ class UnitSet(object):
                     "use the Pyomo unit registry."
                 )
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str):
         try:
             # Check to catch cases where luminous intensity has a space
             return getattr(self, key.upper().replace(" ", "_"))
@@ -200,7 +200,7 @@ class UnitSet(object):
                 "defined in idaes.core.base.property_meta.UnitSet."
             )
 
-    def unitset_is_consistent(self, other):
+    def unitset_is_consistent(self, other: "UnitSet"):
         """
         Checks that defined units of measurement for base quantities are consistent with those
         in other UnitSet.
@@ -425,12 +425,12 @@ class PropertyClassMetadata(object):
         # with more specialized forms if required
         self._properties = StandardPropertySet(parent=self)
 
-    def define_property_set(self, propset):
+    def define_property_set(self, propset: PropertySetBase):
         """
         Define the type of property set to use for this package.
 
         Args:
-            propset: PropertySet class (must derive from PropertySetBase
+            propset: PropertySet class (must derive from PropertySetBase)
 
         Returns:
             None
@@ -455,7 +455,7 @@ class PropertyClassMetadata(object):
     def properties(self):
         return self._properties
 
-    def add_default_units(self, u):
+    def add_default_units(self, u: dict):
         """
         Set units of measurement for base quantities used in this property package. Units
         should be provided as a dict with keys being the seven base quantities and values
@@ -481,7 +481,7 @@ class PropertyClassMetadata(object):
                 "Please ensure that units are only defined for the seven base quantities."
             )
 
-    def add_properties(self, p):
+    def add_properties(self, p: dict):
         """Add properties to the metadata.
 
         For each property, the value should be another dict which may contain
@@ -512,7 +512,7 @@ class PropertyClassMetadata(object):
                 # # Force users to explicitly declare new/custom properties
                 self._properties.define_property(name=k, **v, units=units)
 
-    def define_custom_properties(self, p):
+    def define_custom_properties(self, p: dict):
         """Add custom properties to the metadata.
 
         For each property, the value should be another dict which may contain
@@ -536,7 +536,7 @@ class PropertyClassMetadata(object):
         for k, v in p.items():
             self._properties.define_property(name=k, **v)
 
-    def add_required_properties(self, p):
+    def add_required_properties(self, p: str):
         # TODO: Update doc string
         """Add required properties to the metadata.
 
@@ -555,6 +555,6 @@ class PropertyClassMetadata(object):
             except KeyError:
                 self._properties.define_property(name=k, supported=False, required=True)
 
-    def get_derived_units(self, units):
+    def get_derived_units(self, units: str):
         # TODO: Deprecate in favour of common units property
         return self.derived_units[units]

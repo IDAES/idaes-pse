@@ -18,6 +18,7 @@ and it is intended that specialty applications can and will define their own
 property sets as required (e.g. electrolyte systems).
 """
 from pyomo.environ import units
+from pyomo.core.base.units_container import _PyomoUnit
 
 from idaes.core.util.exceptions import PropertyPackageError
 import idaes.logger as idaeslog
@@ -42,7 +43,12 @@ class PropertyMetadata(object):
 
     # TODO: Add optional doc string to metadata objects
     def __init__(
-        self, name=None, method=None, units=None, supported=False, required=False
+        self,
+        name: str = None,
+        method: str = None,
+        units: _PyomoUnit = None,
+        supported: bool = False,
+        required: bool = False,
     ):
         if name is None:
             raise TypeError('"name" is required')
@@ -54,7 +60,7 @@ class PropertyMetadata(object):
         # TODO: For future, this would be the place to store default scaling information, etc.
         # TODO: Could also define default bounds, nominal values, etc.
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str):
         try:
             return getattr(self, "_" + key)
         except AttributeError:
@@ -102,7 +108,7 @@ class PropertyMetadata(object):
         """
         return self._required
 
-    def set_method(self, meth):
+    def set_method(self, meth: str):
         """
         Set method attribute of property.
 
@@ -115,7 +121,7 @@ class PropertyMetadata(object):
         # TODO: Validate that meth is callable?
         self._method = meth
 
-    def set_supported(self, supported=True):
+    def set_supported(self, supported: bool = True):
         """
         Set supported attribute of property
 
@@ -128,7 +134,7 @@ class PropertyMetadata(object):
         # TODO: Validate that supported is bool
         self._supported = supported
 
-    def set_required(self, required=True):
+    def set_required(self, required: bool = True):
         """
         Set required attribute of property
 
@@ -142,7 +148,9 @@ class PropertyMetadata(object):
         # TODO: Validate that required is bool
         self._required = required
 
-    def update_property(self, method=None, required=None, supported=None):
+    def update_property(
+        self, method: str = None, required: bool = None, supported: bool = None
+    ):
         """
         Update attributes of this property.
 
@@ -179,7 +187,7 @@ class PropertySetBase(object):
     def __init__(self, parent):
         self._parent_block = parent
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str):
         try:
             return getattr(self, key.upper())
         except AttributeError:
@@ -198,7 +206,12 @@ class PropertySetBase(object):
                     yield aobj
 
     def define_property(
-        self, name=None, method=None, supported=True, required=False, units=None
+        self,
+        name: str,
+        method: str = None,
+        required: bool = False,
+        supported: bool = True,
+        units: _PyomoUnit = None,
     ):
         """
         Define a new property called `name`.
@@ -231,7 +244,7 @@ class PropertySetBase(object):
             ),
         )
 
-    def check_required_properties(self, other):
+    def check_required_properties(self, other: "PropertySetBase"):
         """
         Check that other property package supports all properties marked as required by this package.
 
