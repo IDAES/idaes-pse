@@ -350,7 +350,9 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         super().calculate_scaling_factors()
 
         gsf = iscale.get_scaling_factor
-        ssf = common._set_scaling_factor_if_none
+
+        def ssf(c, s):
+            iscale.set_scaling_factor(c, s, overwrite=False)
 
         def cst(c, s):
             return iscale.constraint_scaling_transform(c, s, overwrite=False)
