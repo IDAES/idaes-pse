@@ -22,7 +22,6 @@ from idaes.models.properties.general_helmholtz.components.registry import (
     component_registered,
 )
 
-# These modules register themselves
 import idaes.models.properties.general_helmholtz.components.h2o as h2o
 import idaes.models.properties.general_helmholtz.components.co2 as co2
 import idaes.models.properties.general_helmholtz.components.r134a as r134a
