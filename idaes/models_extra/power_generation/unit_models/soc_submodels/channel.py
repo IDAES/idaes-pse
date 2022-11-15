@@ -813,9 +813,15 @@ class SocChannelData(UnitModelBlockData):
 
     def recursive_scaling(self):
         gsf = iscale.get_scaling_factor
-        ssf = common._set_scaling_factor_if_none
-        sgsf = common._set_and_get_scaling_factor
-        cst = lambda c, s: iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+        def ssf(c, s):
+            iscale.set_scaling_factor(c, s, overwrite=False)
+
+        sgsf = iscale.set_and_get_scaling_factor
+
+        def cst(c, s):
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
+
         sR = 1e-1  # Scaling factor for R
         # sD = 5e3 # Heuristic scaling factor for diffusion coefficient
         sD = 1e4
