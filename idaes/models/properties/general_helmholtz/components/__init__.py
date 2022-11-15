@@ -16,19 +16,19 @@ some properties not implimented as external functions.
 
 __author__ = "John Eslick"
 
+from idaes.models.properties.general_helmholtz.components.registry import(
+    register_helmholtz_component,
+    get_transport_module,
+    component_registered,
+)
+
+# These modules register themselves 
 import idaes.models.properties.general_helmholtz.components.h2o as h2o
 import idaes.models.properties.general_helmholtz.components.co2 as co2
 import idaes.models.properties.general_helmholtz.components.r134a as r134a
 import idaes.models.properties.general_helmholtz.components.r1234ze as r1234ze
 
-_components = {
-    "h2o": h2o,
-    "co2": co2,
-    "r134a": r134a,
-    "r1234ze": r1234ze,
-}
-
-
-def get_component_module(comp_str):
-    comp_str = comp_str.lower()
-    return _components.get(comp_str, None)
+register_helmholtz_component("h2o", h2o)
+register_helmholtz_component("co2", co2)
+register_helmholtz_component("r134a", r134a)
+register_helmholtz_component("r1234ze", r1234ze)

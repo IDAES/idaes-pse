@@ -21,7 +21,6 @@ Fenghour, A., W.A. Wakeham, V. Vesovic, (1998). "The Viscosity of Carbon
 
 import pyomo.environ as pyo
 
-
 def _thermal_conductivity(blk, delta, tau, on_blk=None):
     b = {
         0: 0.4226159,
