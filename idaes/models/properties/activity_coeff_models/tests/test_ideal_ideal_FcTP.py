@@ -57,6 +57,8 @@ class TestFcTP_LV_inlet:
         m.fs.state_block_ideal_vl[0].temperature.fix(368)
         m.fs.state_block_ideal_vl[0].pressure.fix(101325)
 
+        iscale.calculate_scaling_factors(m)
+
         return m
 
     @pytest.mark.unit
@@ -71,8 +73,6 @@ class TestFcTP_LV_inlet:
         assert hasattr(model.fs.state_block_ideal_vl[0], "eq_phase_equilibrium")
         assert not hasattr(model.fs.state_block_ideal_vl[0], "eq_activity_coeff")
         assert not hasattr(model.fs.state_block_ideal_vl[0], "eq_mol_frac_out")
-
-        iscale.calculate_scaling_factors(model.fs.state_block_ideal_vl[0])
 
     @pytest.mark.unit
     def test_dof(self, model):
@@ -305,6 +305,8 @@ class TestFcTP_LV_outlet:
         m.fs.state_block_ideal_vl[0].temperature.fix(368)
         m.fs.state_block_ideal_vl[0].pressure.fix(101325)
 
+        iscale.calculate_scaling_factors(m)
+
         return m
 
     @pytest.mark.unit
@@ -319,8 +321,6 @@ class TestFcTP_LV_outlet:
         assert hasattr(model.fs.state_block_ideal_vl[0], "eq_phase_equilibrium")
         assert not hasattr(model.fs.state_block_ideal_vl[0], "eq_activity_coeff")
         assert not hasattr(model.fs.state_block_ideal_vl[0], "eq_mol_frac_out")
-
-        iscale.calculate_scaling_factors(model.fs.state_block_ideal_vl[0])
 
     @pytest.mark.unit
     def test_dof(self, model):

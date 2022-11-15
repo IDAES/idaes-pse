@@ -1839,6 +1839,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
         sf_T = iscale.get_scaling_factor(self.temperature, default=1, warning=True)
         sf_P = iscale.get_scaling_factor(self.pressure, default=1, warning=True)
 
+        if self.is_property_constructed("_temperature_equilibrium"):
+            iscale.set_scaling_factor(self._temperature_equilibrium, sf_T)
+
         if self.is_property_constructed("_teq"):
             iscale.set_scaling_factor(self._teq, sf_T)
         if self.is_property_constructed("_teq_constraint"):
@@ -1853,11 +1856,28 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 self._t1_constraint, sf_T, overwrite=False
             )
 
+        if self.is_property_constructed("temperature_bubble"):
+            iscale.set_scaling_factor(self.temperature_bubble, sf_T)
+        if self.is_property_constructed("eq_temperature_bubble"):
+            iscale.constraint_scaling_transform(
+                self.eq_temperature_bubble, sf_T, overwrite=False
+            )
+
+        if self.is_property_constructed("temperature_dew"):
+            iscale.set_scaling_factor(self.temperature_dew, sf_T)
+        if self.is_property_constructed("eq_temperature_dew"):
+            iscale.constraint_scaling_transform(
+                self.eq_temperature_dew, sf_T, overwrite=False
+            )
+
         if self.is_property_constructed("total_flow_balance"):
             s = iscale.get_scaling_factor(self.flow_mol, default=1, warning=True)
             iscale.constraint_scaling_transform(
                 self.total_flow_balance, s, overwrite=False
             )
+
+        if self.is_property_constructed("flow_mol_phase_comp"):
+            iscale.set_scaling_factor(self.flow_mol_phase_comp, sf_flow)
 
         if self.is_property_constructed("component_flow_balances"):
             for i, c in self.component_flow_balances.items():
@@ -1875,7 +1895,10 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         if self.is_property_constructed("density_mol"):
             for c in self.eq_density_mol.values():
-                iscale.constraint_scaling_transform(c, sf_P, overwrite=False)
+                sf = iscale.get_scaling_factor(
+                    self.density_mol, default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if self.is_property_constructed("enth_mol_phase_comp"):
             for p, c in self.eq_enth_mol_phase_comp.items():
@@ -1909,5 +1932,31 @@ class ActivityCoeffStateBlockData(StateBlockData):
             for p, c in self.eq_gibbs_mol_phase_comp.items():
                 sf = iscale.get_scaling_factor(
                     self.gibbs_mol_phase_comp[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("eq_comp"):
+            for p, c in self.eq_comp.items():
+                sf = iscale.get_scaling_factor(self.eq_comp[p], default=1, warning=True)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("eq_mole_frac"):
+            for p, c in self.eq_mole_frac.items():
+                sf = iscale.get_scaling_factor(
+                    self.eq_mole_frac[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("eq_phase_equilibrium"):
+            for p, c in self.eq_phase_equilibrium.items():
+                sf = iscale.get_scaling_factor(
+                    self.eq_phase_equilibrium[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("eq_P_vap"):
+            for p, c in self.eq_P_vap.items():
+                sf = iscale.get_scaling_factor(
+                    self.eq_P_vap[p], default=1, warning=True
                 )
                 iscale.constraint_scaling_transform(c, sf, overwrite=False)
