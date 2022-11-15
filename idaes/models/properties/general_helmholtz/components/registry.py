@@ -21,18 +21,22 @@ _default_data_dir = os.path.join(_default_data_dir, "")
 
 _components = {}
 
+
 class _ComponentStruct(object):
     def __init__(self, transport_module=None, path=None):
         self.transport_module = transport_module
 
+
 def register_helmholtz_component(comp_str, transport_module=None):
     _components[comp_str] = _ComponentStruct(transport_module=transport_module)
-    
+
+
 def get_transport_module(comp_str):
     comp_str = comp_str.lower()
     if component_registered(comp_str):
         return _components[comp_str].transport_module
     return None
+
 
 def component_registered(comp_str):
     comp_str = comp_str.lower()

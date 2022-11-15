@@ -918,18 +918,14 @@ class HelmholtzThermoExpressions(object):
         tmod = get_transport_module(c)
         if tmod is None:
             raise RuntimeError(f"Transport roperties not available for {c}")
-        return tmod._thermal_conductivity(
-            self.param, delta_liq, tau, blk
-        )
+        return tmod._thermal_conductivity(self.param, delta_liq, tau, blk)
 
     def thermal_conductivity_vap(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         tmod = get_transport_module(c)
         if tmod is None:
             raise RuntimeError(f"Transport roperties not available for {c}")
-        return tmod._thermal_conductivity(
-            self.param, delta_vap, tau, blk
-        )
+        return tmod._thermal_conductivity(self.param, delta_vap, tau, blk)
 
     def p_sat(self, T=None, tau=None):
         """Return saturation pressure as a function of T or tau"""

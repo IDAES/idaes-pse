@@ -984,9 +984,7 @@ class HelmholtzStateBlockData(StateBlockData):
         if tmod is not None:
             # Phase Thermal conductiviy
             def rule_tc(b, p):
-                return tmod._thermal_conductivity(
-                    self, delta[p], tau, on_blk=self
-                )
+                return tmod._thermal_conductivity(self, delta[p], tau, on_blk=self)
 
             self.therm_cond_phase = pyo.Expression(
                 phlist, rule=rule_tc, doc="Thermal conductivity"
@@ -994,9 +992,7 @@ class HelmholtzStateBlockData(StateBlockData):
 
             # Phase dynamic viscosity
             def rule_mu(b, p):
-                return tmod._viscosity(
-                    self, delta[p], tau, on_blk=self
-                )
+                return tmod._viscosity(self, delta[p], tau, on_blk=self)
 
             self.visc_d_phase = pyo.Expression(
                 phlist, rule=rule_mu, doc="Viscosity (dynamic)"
