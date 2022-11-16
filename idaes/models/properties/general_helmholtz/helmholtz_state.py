@@ -995,7 +995,7 @@ class HelmholtzStateBlockData(StateBlockData):
                 return tmod._viscosity(self, delta[p], tau, on_blk=self)
 
             self.visc_d_phase = pyo.Expression(
-                phlist, rule=rule_mu, doc="Viscosity (dynamic)"
+                phlist, rule=rule_mu, doc="Dynamic viscosity"
             )
 
             # Phase kinimatic viscosity

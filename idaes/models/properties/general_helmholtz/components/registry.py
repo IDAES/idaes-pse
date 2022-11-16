@@ -23,7 +23,7 @@ _components = {}
 
 
 class _ComponentStruct(object):
-    def __init__(self, transport_module=None, path=None):
+    def __init__(self, transport_module=None):
         self.transport_module = transport_module
 
 
