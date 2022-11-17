@@ -1164,8 +1164,6 @@ class ScalingFactorExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
         EXPR.UnaryFunctionExpression: _get_scale_factor_for_unary_function,
         EXPR.NPV_UnaryFunctionExpression: _get_scale_factor_for_unary_function,
         EXPR.Expr_ifExpression: _get_scale_factor_expr_if,
-        IndexTemplate: _get_scale_factor_no_children,  # TODO: Is this correct?
-        EXPR.GetItemExpression: None,  # TODO: Need to work out what to do here
         EXPR.ExternalFunctionExpression: _get_scale_factor_external_function,
         EXPR.NPV_ExternalFunctionExpression: _get_scale_factor_external_function,
         EXPR.LinearExpression: _get_scale_factor_for_sum,
