@@ -42,7 +42,7 @@ def common_components(nt, nz, ncomp, nreact):
             "length_y": 1,
             "heat_flux_x1": nz * nt,
             "mole_frac_comp": nz * nt * ncomp,
-            "log_mole_frac_comp": nz * nt * ncomp,
+            "log_mole_frac_comp": nz * nt * nreact,
             "activation_potential": nz * nt,
             "activation_potential_alpha1": 1,
             "activation_potential_alpha2": 1,
@@ -52,7 +52,7 @@ def common_components(nt, nz, ncomp, nreact):
         },
         pyo.Constraint: {
             "mole_frac_comp_eqn": nz * nt * ncomp,
-            "log_mole_frac_comp_eqn": nz * nt * ncomp,
+            "log_mole_frac_comp_eqn": nz * nt * nreact,
             "material_flux_x_eqn": nz * nt * ncomp,
             "activation_potential_eqn": nz * nt,
             "heat_flux_x_eqn": nz * nt,

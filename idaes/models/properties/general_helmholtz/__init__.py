@@ -19,5 +19,6 @@ from .helmholtz_functions import (
     HelmholtzParameterBlockData,
     add_helmholtz_external_functions,
     helmholtz_available,
+    helmholtz_data_dir,
 )
 from .helmholtz_state import HelmholtzStateBlock, HelmholtzStateBlockData
