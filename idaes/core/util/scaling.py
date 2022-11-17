@@ -25,9 +25,9 @@ The expressions can be evaluated with variable scaling factors in place of
 variables to calculate additional scaling factors.
 """
 
-__author__ = "John Eslick, Tim Bartholomew, Robert Parker"
+__author__ = "John Eslick, Tim Bartholomew, Robert Parker, Andrew Lee"
 
-from math import log10
+import math
 import scipy.sparse.linalg as spla
 import scipy.linalg as la
 
@@ -41,6 +41,12 @@ from pyomo.common.collections import ComponentMap, ComponentSet
 from pyomo.dae import DerivativeVar
 from pyomo.dae.flatten import slice_component_along_sets
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from pyomo.core.expr.visitor import ExpressionValueVisitor
+from pyomo.core.expr import current as EXPR
+from pyomo.core.expr.numvalue import native_types, pyomo_constant_types
+from pyomo.core.expr.template_expr import IndexTemplate
+from pyomo.core.base.units_container import _PyomoUnit
+
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -1041,3 +1047,167 @@ class FlattenedScalingAssignment(object):
             nominal_state = 1 / scaling_factor[state_data]
             nominal_deriv = nominal_state / nominal_wrt
             scaling_factor[dv] = 1 / nominal_deriv
+
+
+# New functions
+class ScalingFactorExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
+    """
+    Expression walker for collecting scaling factors in an expression.
+
+    Returns a list of scaling factors for each additive term in the expression.
+    """
+
+    def __init__(self, warning: bool = True, exception: bool = False):
+        """
+        Visitor class used to determine scaling factors of an expression. Do not use
+        this class directly.
+
+        Args:
+            warning: bool indicating whether to log a warning when a
+                missing scaling factors is encountered (default=True)
+            exception: bool indicating whether to raise an Exception when a
+                missing scaling factors is encountered (default=False)
+
+        Notes
+        -----
+        This class inherits from the :class:`StreamBasedExpressionVisitor` to implement
+        a walker that returns the pyomo units and pint units corresponding to an
+        expression.
+        There are class attributes (dicts) that map the expression node type to the
+        particular method that should be called to return the units of the node based
+        on the units of its child arguments. This map is used in exitNode.
+        """
+        super().__init__()
+
+        self.warning = warning
+        self.exception = exception
+
+    def _get_scale_factor_for_sum(self, node, child_scale_factors):
+        sf = []
+        for i in child_scale_factors:
+            for j in i:
+                sf.append(j)
+        return sf
+
+    def _get_scale_factor_for_product(self, node, child_scale_factors):
+        assert len(child_scale_factors) == 2
+
+        sf = []
+        for i in child_scale_factors[0]:
+            for j in child_scale_factors[1]:
+                sf.append(i * j)
+        return sf
+
+    def _get_scale_factor_for_division(self, node, child_scale_factors):
+        assert len(child_scale_factors) == 2
+
+        sf = []
+        for i in child_scale_factors[0]:
+            for j in child_scale_factors[1]:
+                sf.append(i / j)
+        return sf
+
+    def _get_scale_factor_for_power(self, node, child_scale_factors):
+        assert len(child_scale_factors) == 2
+
+        # We will create separate scaling factors for all additive terms
+        # Users can decide how to use these later
+        sf = []
+        for i in child_scale_factors[0]:
+            for j in child_scale_factors[1]:
+                sf.append(i**j)
+        return sf
+
+    def _get_scale_factor_single_child(self, node, child_scale_factors):
+        assert len(child_scale_factors) == 1
+        return child_scale_factors[0]
+
+    def _get_scale_factor_for_unary_function(self, node, child_scale_factors):
+        assert len(child_scale_factors) == 1
+        func_name = node.getname()
+        func = getattr(math, func_name)
+        return [func(i) for i in child_scale_factors[0]]
+
+    def _get_scale_factor_expr_if(self, node, child_scale_factors):
+        assert len(child_scale_factors) == 3
+        return child_scale_factors[1] + child_scale_factors[2]
+
+    def _get_scale_factor_no_children(self, node, child_units):
+        assert len(child_units) == 0
+        # may need more checks for dimensionless for other types
+        assert type(node) is IndexTemplate
+        return [1]
+
+    def _get_scale_factor_external_function(self, node, child_units):
+        # TODO: Work out what to do here
+        # Maybe pass child_units into the external function and get the result?
+        # For now, assume we know nothing about scaling
+        return [1]
+
+    node_type_method_map = {
+        EXPR.EqualityExpression: _get_scale_factor_for_sum,
+        EXPR.InequalityExpression: _get_scale_factor_for_sum,
+        EXPR.RangedExpression: _get_scale_factor_for_sum,
+        EXPR.SumExpression: _get_scale_factor_for_sum,
+        EXPR.NPV_SumExpression: _get_scale_factor_for_sum,
+        EXPR.ProductExpression: _get_scale_factor_for_product,
+        EXPR.MonomialTermExpression: _get_scale_factor_for_product,
+        EXPR.NPV_ProductExpression: _get_scale_factor_for_product,
+        EXPR.DivisionExpression: _get_scale_factor_for_division,
+        EXPR.NPV_DivisionExpression: _get_scale_factor_for_division,
+        EXPR.PowExpression: _get_scale_factor_for_power,
+        EXPR.NPV_PowExpression: _get_scale_factor_for_power,
+        EXPR.NegationExpression: _get_scale_factor_single_child,
+        EXPR.NPV_NegationExpression: _get_scale_factor_single_child,
+        EXPR.AbsExpression: _get_scale_factor_single_child,
+        EXPR.NPV_AbsExpression: _get_scale_factor_single_child,
+        EXPR.UnaryFunctionExpression: _get_scale_factor_for_unary_function,
+        EXPR.NPV_UnaryFunctionExpression: _get_scale_factor_for_unary_function,
+        EXPR.Expr_ifExpression: _get_scale_factor_expr_if,
+        IndexTemplate: _get_scale_factor_no_children,  # TODO: Is this correct?
+        EXPR.GetItemExpression: None,  # TODO: Need to work out what to do here
+        EXPR.ExternalFunctionExpression: _get_scale_factor_external_function,
+        EXPR.NPV_ExternalFunctionExpression: _get_scale_factor_external_function,
+        EXPR.LinearExpression: _get_scale_factor_for_sum,
+    }
+
+    def exitNode(self, node, data):
+        """Callback for :class:`pyomo.core.current.StreamBasedExpressionVisitor`. This
+        method is called when moving back up the tree in a depth first search."""
+
+        # first check if the node is a leaf
+        nodetype = type(node)
+
+        # TODO: What do we do with an indexed component? Fail outright?
+
+        if nodetype in native_types or nodetype in pyomo_constant_types:
+            if node == 0:
+                return [1]  # Catch cases of zero and use default scaling of 1
+            return [abs(node)]
+
+        node_func = self.node_type_method_map.get(nodetype, None)
+        if node_func is not None:
+            return node_func(self, node, data)
+
+        elif not node.is_expression_type():
+            # this is a leaf, but not a native type
+            if nodetype is _PyomoUnit:
+                return [1]
+            else:
+                # might want to add other common types here
+                sf = get_scaling_factor(
+                    node, default=1, warning=self.warning, exception=self.exception
+                )
+                return [sf]
+
+        # not a leaf - check if it is a named expression
+        if (
+            hasattr(node, "is_named_expression_type")
+            and node.is_named_expression_type()
+        ):
+            return self._get_scale_factor_single_child(node, data)
+
+        raise TypeError(
+            "An unhandled expression node type: {} was encountered while retrieving the"
+            " scaling factor of expression".format(str(nodetype), str(node))
+        )
