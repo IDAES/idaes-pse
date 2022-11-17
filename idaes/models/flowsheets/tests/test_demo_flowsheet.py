@@ -95,7 +95,7 @@ def test_solve_flowsheet(model):
         0.5, 1e-4
     )
     assert model.fs.M01.outlet.pressure[0].value == pytest.approx(101325, 1e-4)
-    assert model.fs.M01.outlet.temperature[0].value == pytest.approx(370.79185, 1e-4)
+    assert model.fs.M01.outlet.temperature[0].value == pytest.approx(368.2, 1e-4)
 
     assert model.fs.H02.outlet.flow_mol[0].value == pytest.approx(2.0, 1e-4)
     assert model.fs.H02.outlet.mole_frac_comp[0, "benzene"].value == pytest.approx(
