@@ -372,7 +372,7 @@ def populate_default_scaling_factors(c):
             else:
                 v = f[0]
 
-            sf = 1 / (10 ** round(log10(pyo.value(v))))
+            sf = 1 / (10 ** round(math.log10(pyo.value(v))))
 
             c.set_default_scaling(p, sf)
 
