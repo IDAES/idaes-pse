@@ -1328,67 +1328,143 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
-        if (p == "Vap") and (j in self.params.component_list):
-            if self.params.config.state_vars == "FTPz":
-                return self.flow_mol_phase["Vap"] * self.mole_frac_phase_comp["Vap", j]
-            else:
-                return self.flow_mol_phase_comp["Vap", j]
-        elif (p == "Liq") and (j in self.params.component_list):
-            if self.params.config.state_vars == "FTPz":
-                return self.flow_mol_phase["Liq"] * self.mole_frac_phase_comp["Liq", j]
-            else:
-                return self.flow_mol_phase_comp["Liq", j]
-        else:
-            return 0
+        if not self.is_property_constructed("material_flow_terms"):
+            try:
+
+                def rule_material_flow_terms(b, p, j):
+                    if (p == "Vap") and (j in self.params.component_list):
+                        if self.params.config.state_vars == "FTPz":
+                            return (
+                                self.flow_mol_phase["Vap"]
+                                * self.mole_frac_phase_comp["Vap", j]
+                            )
+                        else:
+                            return self.flow_mol_phase_comp["Vap", j]
+                    elif (p == "Liq") and (j in self.params.component_list):
+                        if self.params.config.state_vars == "FTPz":
+                            return (
+                                self.flow_mol_phase["Liq"]
+                                * self.mole_frac_phase_comp["Liq", j]
+                            )
+                        else:
+                            return self.flow_mol_phase_comp["Liq", j]
+                    else:
+                        return 0
+
+                self.material_flow_terms = Expression(
+                    self.params.phase_list,
+                    self.params.component_list,
+                    rule=rule_material_flow_terms,
+                )
+
+            except AttributeError:
+                self.del_component(self.material_flow_terms)
+
+        return self.material_flow_terms[p, j]
 
     def get_enthalpy_flow_terms(self, p):
         """Create enthalpy flow terms."""
-        if p == "Vap":
-            if self.params.config.state_vars == "FTPz":
-                return self.flow_mol_phase["Vap"] * self.enth_mol_phase["Vap"]
-            else:
-                return (
-                    sum(
-                        self.flow_mol_phase_comp["Vap", j]
-                        for j in self.params.component_list
-                    )
-                    * self.enth_mol_phase["Vap"]
+        if not self.is_property_constructed("enthalpy_flow_terms"):
+            try:
+
+                def rule_enthalpy_flow_terms(b, p):
+                    if p == "Vap":
+                        if self.params.config.state_vars == "FTPz":
+                            return (
+                                self.flow_mol_phase["Vap"] * self.enth_mol_phase["Vap"]
+                            )
+                        else:
+                            return (
+                                sum(
+                                    self.flow_mol_phase_comp["Vap", j]
+                                    for j in self.params.component_list
+                                )
+                                * self.enth_mol_phase["Vap"]
+                            )
+                    elif p == "Liq":
+                        if self.params.config.state_vars == "FTPz":
+                            return (
+                                self.flow_mol_phase["Liq"] * self.enth_mol_phase["Liq"]
+                            )
+                        else:
+                            return (
+                                sum(
+                                    self.flow_mol_phase_comp["Liq", j]
+                                    for j in self.params.component_list
+                                )
+                                * self.enth_mol_phase["Liq"]
+                            )
+
+                self.enthalpy_flow_terms = Expression(
+                    self.params.phase_list, rule=rule_enthalpy_flow_terms
                 )
-        elif p == "Liq":
-            if self.params.config.state_vars == "FTPz":
-                return self.flow_mol_phase["Liq"] * self.enth_mol_phase["Liq"]
-            else:
-                return (
-                    sum(
-                        self.flow_mol_phase_comp["Liq", j]
-                        for j in self.params.component_list
-                    )
-                    * self.enth_mol_phase["Liq"]
-                )
+            except AttributeError:
+                self.del_component(self.enthalpy_flow_terms)
+        return self.enthalpy_flow_terms[p]
 
     def get_material_density_terms(self, p, j):
         """Create material density terms."""
-        if p == "Liq":
-            if j in self.params.component_list:
-                return self.density_mol[p] * self.mole_frac_phase_comp["Liq", j]
-            else:
-                return 0
-        elif p == "Vap":
-            if j in self.params.component_list:
-                return self.density_mol[p] * self.mole_frac_phase_comp["Vap", j]
-            else:
-                return 0
+        if not self.is_property_constructed("material_density_terms"):
+            try:
+
+                def rule_material_density_terms(b, p, j):
+                    if p == "Liq":
+                        if j in self.params.component_list:
+                            return (
+                                self.density_mol[p]
+                                * self.mole_frac_phase_comp["Liq", j]
+                            )
+                        else:
+                            return 0
+                    elif p == "Vap":
+                        if j in self.params.component_list:
+                            return (
+                                self.density_mol[p]
+                                * self.mole_frac_phase_comp["Vap", j]
+                            )
+                        else:
+                            return 0
+
+                self.material_density_terms = Expression(
+                    self.params.phase_list,
+                    self.params.component_list,
+                    rule=rule_material_density_terms,
+                )
+            except AttributeError:
+                self.del_component(self.material_density_terms)
+        return self.material_density_terms[p, j]
 
     def get_energy_density_terms(self, p):
         """Create enthalpy density terms."""
-        if p == "Liq":
-            return self.density_mol[p] * self.energy_internal_mol_phase["Liq"]
-        elif p == "Vap":
-            return self.density_mol[p] * self.energy_internal_mol_phase["Vap"]
+        if not self.is_property_constructed("energy_density_terms"):
+            try:
+
+                def rule_energy_density_terms(b, p):
+                    if p == "Liq":
+                        return (
+                            self.density_mol[p] * self.energy_internal_mol_phase["Liq"]
+                        )
+                    elif p == "Vap":
+                        return (
+                            self.density_mol[p] * self.energy_internal_mol_phase["Vap"]
+                        )
+
+                self.energy_density_terms = Expression(
+                    self.params.phase_list, rule=rule_energy_density_terms
+                )
+            except AttributeError:
+                self.del_component(self.energy_density_terms)
+        return self.energy_density_terms[p]
 
     def get_material_flow_basis(self):
         """Declare material flow basis."""
         return MaterialFlowBasis.molar
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentTotal
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def define_state_vars(self):
         """Define state vars."""
