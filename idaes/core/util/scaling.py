@@ -1054,7 +1054,7 @@ class ScalingFactorExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
     """
     Expression walker for collecting scaling factors in an expression.
 
-    Returns a list of scaling factors for each additive term in the expression.
+    Returns a list of expected magnitudes for each additive term in the expression.
     """
 
     def __init__(self, warning: bool = True, exception: bool = False):
@@ -1092,30 +1092,28 @@ class ScalingFactorExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
     def _get_scale_factor_for_product(self, node, child_scale_factors):
         assert len(child_scale_factors) == 2
 
-        sf = []
+        mag = []
         for i in child_scale_factors[0]:
             for j in child_scale_factors[1]:
-                sf.append(i * j)
-        return sf
+                mag.append(i * j)
+        return mag
 
     def _get_scale_factor_for_division(self, node, child_scale_factors):
         assert len(child_scale_factors) == 2
 
-        sf = []
+        mag = []
         for i in child_scale_factors[0]:
             for j in child_scale_factors[1]:
-                sf.append(i / j)
-        return sf
+                mag.append(i / j)
+        return mag
 
     def _get_scale_factor_for_power(self, node, child_scale_factors):
         assert len(child_scale_factors) == 2
 
-        # We will create separate scaling factors for all additive terms
-        # Users can decide how to use these later
-        sf = []
+        mag = []
         for i in child_scale_factors[0]:
-            sf.append(i ** sum(j for j in child_scale_factors[1]))
-        return sf
+            mag.append(i ** sum(j for j in child_scale_factors[1]))
+        return mag
 
     def _get_scale_factor_single_child(self, node, child_scale_factors):
         assert len(child_scale_factors) == 1
@@ -1195,7 +1193,7 @@ class ScalingFactorExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
                 sf = get_scaling_factor(
                     node, default=1, warning=self.warning, exception=self.exception
                 )
-                return [sf]
+                return [1 / sf]
 
         # not a leaf - check if it is a named expression
         if (

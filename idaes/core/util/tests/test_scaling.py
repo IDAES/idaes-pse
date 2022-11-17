@@ -1410,7 +1410,7 @@ class TestScalingFactorExtractionVisitor:
 
     @pytest.mark.unit
     def test_scalar_param_w_scale(self, m):
-        sc.set_scaling_factor(m.scalar_param, 12)
+        sc.set_scaling_factor(m.scalar_param, 1 / 12)
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=m.scalar_param
         ) == [12]
@@ -1430,9 +1430,9 @@ class TestScalingFactorExtractionVisitor:
 
     @pytest.mark.unit
     def test_indexed_param_w_scale(self, m):
-        sc.set_scaling_factor(m.indexed_param["a"], 13)
-        sc.set_scaling_factor(m.indexed_param["b"], 14)
-        sc.set_scaling_factor(m.indexed_param["c"], 15)
+        sc.set_scaling_factor(m.indexed_param["a"], 1 / 13)
+        sc.set_scaling_factor(m.indexed_param["b"], 1 / 14)
+        sc.set_scaling_factor(m.indexed_param["c"], 1 / 15)
 
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=m.indexed_param["a"]
@@ -1453,7 +1453,7 @@ class TestScalingFactorExtractionVisitor:
 
     @pytest.mark.unit
     def test_scalar_var_w_scale(self, m):
-        sc.set_scaling_factor(m.scalar_var, 21)
+        sc.set_scaling_factor(m.scalar_var, 1 / 21)
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=m.scalar_var
         ) == [21]
@@ -1473,9 +1473,9 @@ class TestScalingFactorExtractionVisitor:
 
     @pytest.mark.unit
     def test_indexed_var_w_scale(self, m):
-        sc.set_scaling_factor(m.indexed_var["a"], 22)
-        sc.set_scaling_factor(m.indexed_var["b"], 23)
-        sc.set_scaling_factor(m.indexed_var["c"], 24)
+        sc.set_scaling_factor(m.indexed_var["a"], 1 / 22)
+        sc.set_scaling_factor(m.indexed_var["b"], 1 / 23)
+        sc.set_scaling_factor(m.indexed_var["c"], 1 / 24)
 
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=m.indexed_var["a"]
@@ -1541,14 +1541,17 @@ class TestScalingFactorExtractionVisitor:
     def test_pow_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=m.scalar_var ** m.indexed_var["a"]
-        ) == [21**22]
+        ) == pytest.approx([21**22], rel=1e-12)
 
     @pytest.mark.unit
     def test_pow_sum_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=(m.scalar_var + m.indexed_var["a"])
             ** (m.scalar_param + m.indexed_var["b"])
-        ) == [21 ** (12 + 23), 22 ** (12 + 23)]
+        ) == [
+            pytest.approx(21 ** (12 + 23), rel=1e-12),
+            pytest.approx(22 ** (12 + 23), rel=1e-12),
+        ]
 
     @pytest.mark.unit
     def test_negation_expr(self, m):
@@ -1566,194 +1569,194 @@ class TestScalingFactorExtractionVisitor:
     def test_log_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.log(m.scalar_var)
-        ) == [math.log(21)]
+        ) == [pytest.approx(math.log(21), rel=1e-12)]
 
     @pytest.mark.unit
     def test_log_sum_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.log(m.scalar_var + m.indexed_var["a"])
-        ) == [math.log(21 + 22)]
+        ) == [pytest.approx(math.log(21 + 22), rel=1e-12)]
 
     @pytest.mark.unit
     def test_log10_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.log10(m.scalar_var)
-        ) == [math.log10(21)]
+        ) == [pytest.approx(math.log10(21), rel=1e-12)]
 
     @pytest.mark.unit
     def test_log10_sum_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.log10(m.scalar_var + m.indexed_var["a"])
-        ) == [math.log10(21 + 22)]
+        ) == [pytest.approx(math.log10(21 + 22), rel=1e-12)]
 
     @pytest.mark.unit
     def test_sqrt_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.sqrt(m.scalar_var)
-        ) == [21**0.5]
+        ) == [pytest.approx(21**0.5, rel=1e-12)]
 
     @pytest.mark.unit
     def test_sqrt_sum_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.sqrt(m.scalar_var + m.indexed_var["a"])
-        ) == [(21 + 22) ** 0.5]
+        ) == [pytest.approx((21 + 22) ** 0.5, rel=1e-12)]
 
     @pytest.mark.unit
     def test_sin_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.sin(m.scalar_var)
-        ) == [math.sin(21)]
+        ) == [pytest.approx(math.sin(21), rel=1e-12)]
 
     @pytest.mark.unit
     def test_sin_sum_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.sin(m.scalar_var + m.indexed_var["a"])
-        ) == [math.sin(21 + 22)]
+        ) == [pytest.approx(math.sin(21 + 22), rel=1e-12)]
 
     @pytest.mark.unit
     def test_cos_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.cos(m.scalar_var)
-        ) == [math.cos(21)]
+        ) == [pytest.approx(math.cos(21), rel=1e-12)]
 
     @pytest.mark.unit
     def test_cos_sum_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.cos(m.scalar_var + m.indexed_var["a"])
-        ) == [math.cos(21 + 22)]
+        ) == [pytest.approx(math.cos(21 + 22), rel=1e-12)]
 
     @pytest.mark.unit
     def test_tan_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.tan(m.scalar_var)
-        ) == [math.tan(21)]
+        ) == [pytest.approx(math.tan(21), rel=1e-12)]
 
     @pytest.mark.unit
     def test_tan_sum_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.tan(m.scalar_var + m.indexed_var["a"])
-        ) == [math.tan(21 + 22)]
+        ) == [pytest.approx(math.tan(21 + 22), rel=1e-12)]
 
     @pytest.mark.unit
     def test_sinh_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.sinh(m.scalar_var)
-        ) == [math.sinh(21)]
+        ) == [pytest.approx(math.sinh(21), rel=1e-12)]
 
     @pytest.mark.unit
     def test_sinh_sum_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.sinh(m.scalar_var + m.indexed_var["a"])
-        ) == [math.sinh(21 + 22)]
+        ) == [pytest.approx(math.sinh(21 + 22), rel=1e-12)]
 
     @pytest.mark.unit
     def test_cosh_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.cosh(m.scalar_var)
-        ) == [math.cosh(21)]
+        ) == [pytest.approx(math.cosh(21), rel=1e-12)]
 
     @pytest.mark.unit
     def test_cosh_sum_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.cosh(m.scalar_var + m.indexed_var["a"])
-        ) == [math.cosh(21 + 22)]
+        ) == [pytest.approx(math.cosh(21 + 22), rel=1e-12)]
 
     @pytest.mark.unit
     def test_tanh_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.tanh(m.scalar_var)
-        ) == [math.tanh(21)]
+        ) == [pytest.approx(math.tanh(21), rel=1e-12)]
 
     @pytest.mark.unit
     def test_tanh_sum_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.tanh(m.scalar_var + m.indexed_var["a"])
-        ) == [math.tanh(21 + 22)]
+        ) == [pytest.approx(math.tanh(21 + 22), rel=1e-12)]
 
     @pytest.mark.unit
     def test_asin_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.asin(1)
-        ) == [math.asin(1)]
+        ) == [pytest.approx(math.asin(1), rel=1e-12)]
 
     @pytest.mark.unit
     def test_asin_sum_expr(self, m):
-        sc.set_scaling_factor(m.scalar_param, 0.5)
+        sc.set_scaling_factor(m.scalar_param, 2)
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.asin(0.5 + m.scalar_param)
-        ) == [math.asin(1)]
+        ) == [pytest.approx(math.asin(1), rel=1e-12)]
 
     @pytest.mark.unit
     def test_acos_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.acos(m.scalar_param)
-        ) == [math.acos(0.5)]
+        ) == [pytest.approx(math.acos(0.5), rel=1e-12)]
 
     @pytest.mark.unit
     def test_acos_sum_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.acos(0.5 + m.scalar_param)
-        ) == [math.acos(1)]
+        ) == [pytest.approx(math.acos(1), rel=1e-12)]
 
     @pytest.mark.unit
     def test_sinh_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.sinh(m.scalar_var)
-        ) == [math.sinh(21)]
+        ) == [pytest.approx(math.sinh(21), rel=1e-12)]
 
     @pytest.mark.unit
     def test_sinh_sum_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.sinh(m.scalar_var + m.indexed_var["a"])
-        ) == [math.sinh(21 + 22)]
+        ) == [pytest.approx(math.sinh(21 + 22), rel=1e-12)]
 
     @pytest.mark.unit
     def test_asinh_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.asinh(m.scalar_var)
-        ) == [math.asinh(21)]
+        ) == [pytest.approx(math.asinh(21), rel=1e-12)]
 
     @pytest.mark.unit
     def test_asinh_sum_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.asinh(m.scalar_var + m.indexed_var["a"])
-        ) == [math.asinh(21 + 22)]
+        ) == [pytest.approx(math.asinh(21 + 22), rel=1e-12)]
 
     @pytest.mark.unit
     def test_acosh_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.acosh(m.scalar_var)
-        ) == [math.acosh(21)]
+        ) == [pytest.approx(math.acosh(21), rel=1e-12)]
 
     @pytest.mark.unit
     def test_acosh_sum_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.acosh(m.scalar_var + m.indexed_var["a"])
-        ) == [math.acosh(21 + 22)]
+        ) == [pytest.approx(math.acosh(21 + 22), rel=1e-12)]
 
     @pytest.mark.unit
     def test_atanh_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.atanh(m.scalar_param)
-        ) == [math.atanh(0.5)]
+        ) == [pytest.approx(math.atanh(0.5), rel=1e-12)]
 
     @pytest.mark.unit
     def test_atanh_sum_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.atanh(0.4 + m.scalar_param)
-        ) == [math.atanh(0.9)]
+        ) == [pytest.approx(math.atanh(0.9), rel=1e-12)]
 
     @pytest.mark.unit
     def test_exp_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.exp(m.scalar_param)
-        ) == [math.exp(0.5)]
+        ) == [pytest.approx(math.exp(0.5), rel=1e-12)]
 
     @pytest.mark.unit
     def test_exp_sum_expr(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
             expr=pyo.exp(0.4 + m.scalar_param)
-        ) == [math.exp(0.9)]
+        ) == [pytest.approx(math.exp(0.9), rel=1e-12)]
 
     @pytest.mark.unit
     def test_expr_if(selfself, m):
