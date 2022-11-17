@@ -1114,8 +1114,7 @@ class ScalingFactorExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
         # Users can decide how to use these later
         sf = []
         for i in child_scale_factors[0]:
-            for j in child_scale_factors[1]:
-                sf.append(i**j)
+            sf.append(i ** sum(j for j in child_scale_factors[1]))
         return sf
 
     def _get_scale_factor_single_child(self, node, child_scale_factors):
@@ -1126,7 +1125,7 @@ class ScalingFactorExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
         assert len(child_scale_factors) == 1
         func_name = node.getname()
         func = getattr(math, func_name)
-        return [func(i) for i in child_scale_factors[0]]
+        return [func(sum(i for i in child_scale_factors[0]))]
 
     def _get_scale_factor_expr_if(self, node, child_scale_factors):
         assert len(child_scale_factors) == 3
