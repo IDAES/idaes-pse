@@ -1084,6 +1084,102 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
 
         self.warning = warning
 
+    def _get_magnitude_base_type(self, node):
+        # Get scaling factor for node
+        sf = get_scaling_factor(node, default=1, warning=self.warning)
+
+        # Try to determine expected sign of node
+        if isinstance(node, pyo.Var):
+            ub = node.ub
+            lb = node.lb
+            domain = node.domain
+
+            # To avoid NoneType errors, assign dummy values in place of None
+            if ub is None:
+                # No upper bound, take a positive value
+                ub = 1000
+            if lb is None:
+                # No lower bound, take a negative value
+                lb = -1000
+
+            if lb >= 0 or domain in [
+                pyo.NonNegativeReals,
+                pyo.PositiveReals,
+                pyo.PositiveIntegers,
+                pyo.NonNegativeIntegers,
+                pyo.Boolean,
+                pyo.Binary,
+            ]:
+                # Strictly positive
+                sign = 1
+            elif ub <= 0 or domain in [
+                pyo.NegativeReals,
+                pyo.NonPositiveReals,
+                pyo.NegativeIntegers,
+                pyo.NonPositiveIntegers,
+            ]:
+                # Strictly negative
+                sign = -1
+            else:
+                # Unbounded, see if there is a current value
+                try:
+                    value = pyo.value(node)
+                except ValueError:
+                    value = None
+
+                if value is not None and value < 0:
+                    # Assigned negative value, assume value will remain negative
+                    sign = -1
+                else:
+                    # Either a positive value or no value, assume positive
+                    sign = 1
+        elif isinstance(node, pyo.Param):
+            domain = node.domain
+
+            if domain in [
+                pyo.NonNegativeReals,
+                pyo.PositiveReals,
+                pyo.PositiveIntegers,
+                pyo.NonNegativeIntegers,
+                pyo.Boolean,
+                pyo.Binary,
+            ]:
+                # Strictly positive
+                sign = 1
+            elif domain in [
+                pyo.NegativeReals,
+                pyo.NonPositiveReals,
+                pyo.NegativeIntegers,
+                pyo.NonPositiveIntegers,
+            ]:
+                # Strictly negative
+                sign = -1
+            else:
+                # Unbounded, see if there is a current value
+                try:
+                    value = pyo.value(node)
+                except ValueError:
+                    value = None
+
+                if value is not None and value < 0:
+                    # Assigned negative value, assume value will remain negative
+                    sign = -1
+                else:
+                    # Either a positive value or no value, assume positive
+                    sign = 1
+        else:
+            # No ideal, assume positive
+            sign = 1
+
+        try:
+            return [sign / sf]
+        except ZeroDivisionError:
+            raise ValueError(
+                f"Found component {node.name} with scaling factor of 0. "
+                "Scaling factors should not be set to 0 as this results in "
+                "numerical failures."
+            )
+
     def _get_nominal_value_for_sum_subexpression(self, child_nominal_values):
         # TODO: How do we deal with aggregating summed terms in sub-functions?
         # Scaling factors should be strictly positive, but a variable may be negative
@@ -1225,16 +1321,8 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
             if nodetype is _PyomoUnit:
                 return [1]
             else:
+                return self._get_magnitude_base_type(node)
                 # might want to add other common types here
-                sf = get_scaling_factor(node, default=1, warning=self.warning)
-                try:
-                    return [1 / sf]
-                except ZeroDivisionError:
-                    raise ValueError(
-                        f"Found component {node.name} with scaling factor of 0. "
-                        "Scaling factors should not be set to 0 as this results in "
-                        "numerical failures."
-                    )
 
         # not a leaf - check if it is a named expression
         if (

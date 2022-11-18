@@ -1484,6 +1484,48 @@ class TestNominalValueExtractionVisitor:
         ) == [15]
 
     @pytest.mark.unit
+    def test_param_neg_domain(self):
+        m = pyo.ConcreteModel()
+        m.param = pyo.Param(mutable=True, domain=pyo.NegativeReals)
+
+        # Sign of nominal value should be opposite of scaling factor
+        sc.set_scaling_factor(m.param, 1 / 4)
+        # Expect nominal value to be negative
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.param) == [-4]
+
+        sc.set_scaling_factor(m.param, -1 / 4)
+        # Expect nominal value to be positive
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.param) == [4]
+
+    @pytest.mark.unit
+    def test_param_pos_domain(self):
+        m = pyo.ConcreteModel()
+        m.param = pyo.Param(mutable=True, domain=pyo.PositiveReals)
+
+        # Sign of nominal value should be same as scaling factor
+        sc.set_scaling_factor(m.param, 1 / 4)
+        # Expect nominal value to be negative
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.param) == [4]
+
+        sc.set_scaling_factor(m.param, -1 / 4)
+        # Expect nominal value to be positive
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.param) == [-4]
+
+    @pytest.mark.unit
+    def test_param_neg_value(self):
+        m = pyo.ConcreteModel()
+        m.param = pyo.Param(initialize=-1, mutable=True, domain=pyo.Reals)
+
+        # Sign of nominal value should be opposite of scaling factor
+        sc.set_scaling_factor(m.param, 1 / 4)
+        # Expect nominal value to be negative
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.param) == [-4]
+
+        sc.set_scaling_factor(m.param, -1 / 4)
+        # Expect nominal value to be positive
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.param) == [4]
+
+    @pytest.mark.unit
     def test_scalar_var_no_scale(self, m):
         m.scalar_var = pyo.Var(initialize=1)
         assert sc.NominalValueExtractionVisitor().walk_expression(
@@ -1496,6 +1538,118 @@ class TestNominalValueExtractionVisitor:
         assert sc.NominalValueExtractionVisitor().walk_expression(
             expr=m.scalar_var
         ) == [21]
+
+    @pytest.mark.unit
+    def test_var_neg_bounds(self):
+        m = pyo.ConcreteModel()
+        m.var = pyo.Var(bounds=(-1000, 0))
+
+        # Sign of nominal value should be opposite of scaling factor
+        sc.set_scaling_factor(m.var, 1 / 4)
+        # Expect nominal value to be negative
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
+
+        sc.set_scaling_factor(m.var, -1 / 4)
+        # Expect nominal value to be positive
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
+
+    @pytest.mark.unit
+    def test_var_neg_upper_bound(self):
+        m = pyo.ConcreteModel()
+        m.var = pyo.Var(bounds=(None, -2000))
+
+        # Sign of nominal value should be opposite of scaling factor
+        sc.set_scaling_factor(m.var, 1 / 4)
+        # Expect nominal value to be negative
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
+
+        sc.set_scaling_factor(m.var, -1 / 4)
+        # Expect nominal value to be positive
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
+
+    @pytest.mark.unit
+    def test_var_neg_domain(self):
+        m = pyo.ConcreteModel()
+        m.var = pyo.Var(domain=pyo.NegativeReals)
+
+        # Sign of nominal value should be opposite of scaling factor
+        sc.set_scaling_factor(m.var, 1 / 4)
+        # Expect nominal value to be negative
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
+
+        sc.set_scaling_factor(m.var, -1 / 4)
+        # Expect nominal value to be positive
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
+
+    @pytest.mark.unit
+    def test_var_neg_value(self):
+        m = pyo.ConcreteModel()
+        m.var = pyo.Var(initialize=-1)
+
+        # Sign of nominal value should be opposite of scaling factor
+        sc.set_scaling_factor(m.var, 1 / 4)
+        # Expect nominal value to be negative
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
+
+        sc.set_scaling_factor(m.var, -1 / 4)
+        # Expect nominal value to be positive
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
+
+    @pytest.mark.unit
+    def test_var_pos_bounds(self):
+        m = pyo.ConcreteModel()
+        m.var = pyo.Var(bounds=(0, 1000))
+
+        # Sign of nominal value should be same as scaling factor
+        sc.set_scaling_factor(m.var, 1 / 4)
+        # Expect nominal value to be negative
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
+
+        sc.set_scaling_factor(m.var, -1 / 4)
+        # Expect nominal value to be positive
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
+
+    @pytest.mark.unit
+    def test_var_pos_lower_bound(self):
+        m = pyo.ConcreteModel()
+        m.var = pyo.Var(bounds=(1000, None))
+
+        # Sign of nominal value should be same as scaling factor
+        sc.set_scaling_factor(m.var, 1 / 4)
+        # Expect nominal value to be negative
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
+
+        sc.set_scaling_factor(m.var, -1 / 4)
+        # Expect nominal value to be positive
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
+
+    @pytest.mark.unit
+    def test_var_pos_domain(self):
+        m = pyo.ConcreteModel()
+        m.var = pyo.Var(domain=pyo.PositiveReals)
+
+        # Sign of nominal value should be same as scaling factor
+        sc.set_scaling_factor(m.var, 1 / 4)
+        # Expect nominal value to be negative
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
+
+        sc.set_scaling_factor(m.var, -1 / 4)
+        # Expect nominal value to be positive
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
+
+    @pytest.mark.unit
+    def test_var_pos_value(self):
+        m = pyo.ConcreteModel()
+        m.var = pyo.Var(initialize=1)
+
+        # Sign of nominal value should be same as scaling factor
+        sc.set_scaling_factor(m.var, 1 / 4)
+        # Expect nominal value to be negative
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
+
+        sc.set_scaling_factor(m.var, -1 / 4)
+        # Expect nominal value to be positive
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
 
     @pytest.mark.unit
     def test_indexed_var_no_scale(self, m):
