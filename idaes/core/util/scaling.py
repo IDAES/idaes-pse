@@ -829,7 +829,7 @@ def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
                 parent_block = var.parent_block()
 
                 disc_eq = getattr(parent_block, var.local_name + "_disc_eq")
-                # Look for continuity equation, which exists only for collocation with certain sets of polynomials
+                # Look for continuity equation, which exists only for collocation with certain sets of polynominals
                 try:
                     cont_eq = getattr(
                         parent_block, state_var.local_name + "_" + tname + "_cont_eq"
@@ -1074,81 +1074,104 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
         Notes
         -----
         This class inherits from the :class:`StreamBasedExpressionVisitor` to implement
-        a walker that returns the pyomo units and pint units corresponding to an
+        a walker that returns the nominal value corresponding to all additive terms in an
         expression.
         There are class attributes (dicts) that map the expression node type to the
-        particular method that should be called to return the units of the node based
-        on the units of its child arguments. This map is used in exitNode.
+        particular method that should be called to return the nominal value of the node based
+        on the nominal value of its child arguments. This map is used in exitNode.
         """
         super().__init__()
 
         self.warning = warning
 
-    def _get_nominal_value_for_sum(self, node, child_nomial_values):
+    def _get_nominal_value_for_sum_subexpression(self, child_nominal_values):
+        # TODO: How do we deal with aggregating summed terms in sub-functions?
+        # Scaling factors should be strictly positive, but a variable may be negative
+        # which is not captured here
+        return sum(i for i in child_nominal_values)
+
+    def _get_nominal_value_for_sum(self, node, child_nominal_values):
         # For sums, collect all child values into a list
         sf = []
-        for i in child_nomial_values:
+        for i in child_nominal_values:
             for j in i:
                 sf.append(j)
         return sf
 
-    def _get_nominal_value_for_product(self, node, child_nomial_values):
-        assert len(child_nomial_values) == 2
+    def _get_nominal_value_for_product(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 2
 
         mag = []
-        for i in child_nomial_values[0]:
-            for j in child_nomial_values[1]:
+        for i in child_nominal_values[0]:
+            for j in child_nominal_values[1]:
                 mag.append(i * j)
         return mag
 
-    def _get_nominal_value_for_division(self, node, child_nomial_values):
-        assert len(child_nomial_values) == 2
+    def _get_nominal_value_for_division(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 2
 
         mag = []
-        for i in child_nomial_values[0]:
-            for j in child_nomial_values[1]:
-                mag.append(i / j)
+        for i in child_nominal_values[0]:
+            denominator = self._get_nominal_value_for_sum_subexpression(
+                child_nominal_values[1]
+            )
+            if denominator == 0:
+                raise ValueError(
+                    f"Nominal value of 0 found in division expression. You should "
+                    "check you scaling factors and models to ensure there are not values "
+                    "of 0 that can appear in these functions."
+                )
+            mag.append(i / denominator)
         return mag
 
-    def _get_nominal_value_for_power(self, node, child_nomial_values):
-        assert len(child_nomial_values) == 2
+    def _get_nominal_value_for_power(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 2
 
-        mag = []
-        for i in child_nomial_values[0]:
-            mag.append(i ** sum(j for j in child_nomial_values[1]))
-        return mag
+        base = self._get_nominal_value_for_sum_subexpression(child_nominal_values[0])
+        exponent = self._get_nominal_value_for_sum_subexpression(
+            child_nominal_values[1]
+        )
 
-    def _get_nominal_value_single_child(self, node, child_nomial_values):
-        assert len(child_nomial_values) == 1
-        return child_nomial_values[0]
+        return [base**exponent]
 
-    def _get_nominal_value_abs(self, node, child_nomial_values):
-        assert len(child_nomial_values) == 1
-        return [abs(i) for i in child_nomial_values[0]]
+    def _get_nominal_value_single_child(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 1
+        return child_nominal_values[0]
 
-    def _get_nominal_value_negation(self, node, child_nomial_values):
-        assert len(child_nomial_values) == 1
-        return [-i for i in child_nomial_values[0]]
+    def _get_nominal_value_abs(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 1
+        return [abs(i) for i in child_nominal_values[0]]
 
-    def _get_nominal_value_for_unary_function(self, node, child_nomial_values):
-        assert len(child_nomial_values) == 1
+    def _get_nominal_value_negation(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 1
+        return [-i for i in child_nominal_values[0]]
+
+    def _get_nominal_value_for_unary_function(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 1
         func_name = node.getname()
+        func_nominal = self._get_nominal_value_for_sum_subexpression(
+            child_nominal_values[0]
+        )
         func = getattr(math, func_name)
-        return [func(sum(i for i in child_nomial_values[0]))]
+        try:
+            return [func(func_nominal)]
+        except ValueError:
+            raise ValueError(
+                f"Evaluation error occurred when getting nominal value in {func_name} "
+                f"expression with input {func_nominal}. You should check you scaling factors "
+                f"and model to address any numerical issues or scale this constraint manually."
+            )
 
-    def _get_nominal_value_expr_if(self, node, child_nomial_values):
-        assert len(child_nomial_values) == 3
-        return child_nomial_values[1] + child_nomial_values[2]
+    def _get_nominal_value_expr_if(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 3
+        return child_nominal_values[1] + child_nominal_values[2]
 
-    def _get_nominal_value_no_children(self, node, child_nomial_values):
-        assert len(child_nomial_values) == 0
-        # may need more checks for dimensionless for other types
-        assert type(node) is IndexTemplate
-        return [1]
-
-    def _get_nominal_value_external_function(self, node, child_nomial_values):
+    def _get_nominal_value_external_function(self, node, child_nominal_values):
         # First, need to get expected magnitudes of input terms, which may be sub-expressions
-        input_mag = [sum(i) for i in child_nomial_values]
+        input_mag = [
+            self._get_nominal_value_for_sum_subexpression(i)
+            for i in child_nominal_values
+        ]
 
         # Next, create a copy of the external function with expected magnitudes as inputs
         newfunc = node.create_node_with_local_data(input_mag)
@@ -1191,8 +1214,6 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
         # TODO: What do we do with an indexed component? Fail outright?
 
         if nodetype in native_types or nodetype in pyomo_constant_types:
-            if node == 0:
-                return [1]  # Catch cases of zero and use default scaling of 1
             return [node]
 
         node_func = self.node_type_method_map.get(nodetype, None)
@@ -1206,7 +1227,14 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
             else:
                 # might want to add other common types here
                 sf = get_scaling_factor(node, default=1, warning=self.warning)
-                return [1 / sf]
+                try:
+                    return [1 / sf]
+                except ZeroDivisionError:
+                    raise ValueError(
+                        f"Found component {node.name} with scaling factor of 0. "
+                        "Scaling factors should not be set to 0 as this results in "
+                        "numerical failures."
+                    )
 
         # not a leaf - check if it is a named expression
         if (
@@ -1216,8 +1244,8 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
             return self._get_nominal_value_single_child(node, data)
 
         raise TypeError(
-            "An unhandled expression node type: {} was encountered while retrieving the"
-            " scaling factor of expression".format(str(nodetype), str(node))
+            f"An unhandled expression node type: {str(nodetype)} was encountered while "
+            f"retrieving the scaling factor of expression {str(node)}"
         )
 
 

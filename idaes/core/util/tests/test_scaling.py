@@ -1385,7 +1385,22 @@ class TestNominalValueExtractionVisitor:
     def m(self):
         m = pyo.ConcreteModel()
         m.set = pyo.Set(initialize=["a", "b", "c"])
+
         return m
+
+    @pytest.mark.unit
+    def test_zero_scaling_factor(self):
+        m = pyo.ConcreteModel()
+        m.zero = pyo.Var()
+        sc.set_scaling_factor(m.zero, 0)
+
+        with pytest.raises(
+            ValueError,
+            match="Found component zero with scaling factor of 0. "
+            "Scaling factors should not be set to 0 as this results in "
+            "numerical failures.",
+        ):
+            sc.NominalValueExtractionVisitor().walk_expression(m.zero)
 
     @pytest.mark.unit
     def test_no_scaling_warning(self, caplog):
@@ -1415,7 +1430,7 @@ class TestNominalValueExtractionVisitor:
 
     @pytest.mark.unit
     def test_zero(self, m):
-        assert sc.NominalValueExtractionVisitor().walk_expression(expr=0) == [1]
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=0) == [0]
 
     @pytest.mark.unit
     def test_true(self, m):
@@ -1423,7 +1438,7 @@ class TestNominalValueExtractionVisitor:
 
     @pytest.mark.unit
     def test_false(self, m):
-        assert sc.NominalValueExtractionVisitor().walk_expression(expr=False) == [1]
+        assert sc.NominalValueExtractionVisitor().walk_expression(expr=False) == [0]
 
     @pytest.mark.unit
     def test_scalar_param_no_scale(self, m):
@@ -1572,14 +1587,26 @@ class TestNominalValueExtractionVisitor:
         assert sc.NominalValueExtractionVisitor().walk_expression(
             expr=(m.scalar_var + m.indexed_var["a"])
             / (m.scalar_param + m.indexed_var["b"])
-        ) == [21 / 12, 21 / 23, 22 / 12, 22 / 23]
+        ) == [21 / (12 + 23), 22 / (12 + 23)]
 
     @pytest.mark.unit
     def test_division_sum_expr_w_negation(self, m):
         assert sc.NominalValueExtractionVisitor().walk_expression(
             expr=(m.scalar_var - m.indexed_var["a"])
             / (m.scalar_param - m.indexed_var["b"])
-        ) == [21 / 12, -21 / 23, -22 / 12, 22 / 23]
+        ) == [21 / (12 - 23), -22 / (12 - 23)]
+
+    @pytest.mark.unit
+    def test_division_expr_error(self, m):
+        with pytest.raises(
+            ValueError,
+            match="Nominal value of 0 found in division expression. You should "
+            "check you scaling factors and models to ensure there are not values "
+            "of 0 that can appear in these functions.",
+        ):
+            sc.NominalValueExtractionVisitor().walk_expression(
+                expr=1 / (m.scalar_var - 21)
+            )
 
     @pytest.mark.unit
     def test_pow_expr(self, m):
@@ -1593,8 +1620,7 @@ class TestNominalValueExtractionVisitor:
             expr=(m.scalar_var + m.indexed_var["a"])
             ** (m.scalar_param + m.indexed_var["b"])
         ) == [
-            pytest.approx(21 ** (12 + 23), rel=1e-12),
-            pytest.approx(22 ** (12 + 23), rel=1e-12),
+            pytest.approx((21 + 22) ** (12 + 23), rel=1e-12),
         ]
 
     @pytest.mark.unit
@@ -1603,8 +1629,7 @@ class TestNominalValueExtractionVisitor:
             expr=(m.scalar_var - m.indexed_var["a"])
             ** (m.scalar_param - m.indexed_var["b"])
         ) == [
-            pytest.approx(21 ** (12 - 23), rel=1e-12),
-            pytest.approx(-(22 ** (12 - 23)), rel=1e-12),
+            pytest.approx((21 - 22) ** (12 - 23), rel=1e-12),
         ]
 
     @pytest.mark.unit
@@ -1624,6 +1649,18 @@ class TestNominalValueExtractionVisitor:
         assert sc.NominalValueExtractionVisitor().walk_expression(
             expr=pyo.log(m.scalar_var)
         ) == [pytest.approx(math.log(21), rel=1e-12)]
+
+    @pytest.mark.unit
+    def test_log_expr_error(self, m):
+        with pytest.raises(
+            ValueError,
+            match="Evaluation error occurred when getting nominal value in log expression "
+            "with input 0.0. You should check you scaling factors and model to "
+            "address any numerical issues or scale this constraint manually.",
+        ):
+            assert sc.NominalValueExtractionVisitor().walk_expression(
+                expr=pyo.log(m.scalar_var - 21)
+            )
 
     @pytest.mark.unit
     def test_log_sum_expr(self, m):
@@ -1656,6 +1693,18 @@ class TestNominalValueExtractionVisitor:
         ) == [pytest.approx(math.log10(-21 + 22), rel=1e-12)]
 
     @pytest.mark.unit
+    def test_log10_expr_error(self, m):
+        with pytest.raises(
+            ValueError,
+            match="Evaluation error occurred when getting nominal value in log10 expression "
+            "with input 0.0. You should check you scaling factors and model to "
+            "address any numerical issues or scale this constraint manually.",
+        ):
+            assert sc.NominalValueExtractionVisitor().walk_expression(
+                expr=pyo.log10(m.scalar_var - 21)
+            )
+
+    @pytest.mark.unit
     def test_sqrt_expr(self, m):
         assert sc.NominalValueExtractionVisitor().walk_expression(
             expr=pyo.sqrt(m.scalar_var)
@@ -1672,6 +1721,18 @@ class TestNominalValueExtractionVisitor:
         assert sc.NominalValueExtractionVisitor().walk_expression(
             expr=pyo.sqrt(-m.scalar_var + m.indexed_var["a"])
         ) == [pytest.approx((-21 + 22) ** 0.5, rel=1e-12)]
+
+    @pytest.mark.unit
+    def test_sqrt_expr_error(self, m):
+        with pytest.raises(
+            ValueError,
+            match="Evaluation error occurred when getting nominal value in sqrt expression "
+            "with input -21.0. You should check you scaling factors and model to "
+            "address any numerical issues or scale this constraint manually.",
+        ):
+            assert sc.NominalValueExtractionVisitor().walk_expression(
+                expr=pyo.sqrt(-m.scalar_var)
+            )
 
     @pytest.mark.unit
     def test_sin_expr(self, m):
@@ -1892,7 +1953,7 @@ class TestNominalValueExtractionVisitor:
         ) == [pytest.approx(math.exp(0.1), rel=1e-12)]
 
     @pytest.mark.unit
-    def test_expr_if(selfself, m):
+    def test_expr_if(self, m):
         m.exprif = pyo.Expr_if(
             IF=m.scalar_param,
             THEN=m.indexed_var["a"],
@@ -1906,7 +1967,7 @@ class TestNominalValueExtractionVisitor:
         ]
 
     @pytest.mark.unit
-    def test_expr_if_w_negation(selfself, m):
+    def test_expr_if_w_negation(self, m):
         m.exprif = pyo.Expr_if(
             IF=m.scalar_param,
             THEN=m.indexed_var["a"],
@@ -1958,7 +2019,7 @@ class TestNominalValueExtractionVisitor:
             expr=m.expression
         ) == [0.5 ** (22 + 23 + 24)]
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_constraint(self, m):
         m.constraint = pyo.Constraint(expr=m.scalar_var == m.expression)
 
