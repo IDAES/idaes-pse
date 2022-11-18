@@ -920,7 +920,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             )
                 except InconsistentUnitsError:
                     raise ValueError(
-                        f"The expression {scaled_param.name} has inconsitent units."
+                        f"The expression {scaled_param.name} has iInconsistent units."
                     )
 
         # Used by other functions for reporting results
