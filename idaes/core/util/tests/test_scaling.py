@@ -1382,6 +1382,20 @@ class TestScalingFactorExtractionVisitor:
         return m
 
     @pytest.mark.unit
+    def test_no_scaling_warning(self, caplog):
+        m = pyo.ConcreteModel()
+        m.var = pyo.Var()
+        sc.ScalingFactorExtractionVisitor(warning=True).walk_expression(m.var)
+        assert "Missing scaling factor for var" in caplog.text
+
+    @pytest.mark.unit
+    def test_no_scaling_no_warning(self, caplog):
+        m = pyo.ConcreteModel()
+        m.var = pyo.Var()
+        sc.ScalingFactorExtractionVisitor(warning=False).walk_expression(m.var)
+        assert "Missing scaling factor for var" not in caplog.text
+
+    @pytest.mark.unit
     def test_int(self, m):
         assert sc.ScalingFactorExtractionVisitor().walk_expression(expr=7) == [7]
 
@@ -1772,7 +1786,7 @@ class TestScalingFactorExtractionVisitor:
             24,
         ]
 
-    # TODO: Need tests for external functions, IndexTemplates and GetItemExpressions
+    # TODO: Need tests for external functions
 
     @pytest.mark.unit
     def test_Expression(self, m):
@@ -1789,5 +1803,217 @@ class TestScalingFactorExtractionVisitor:
         m.constraint = pyo.Constraint(expr=m.scalar_var == m.expression)
 
         assert sc.ScalingFactorExtractionVisitor().walk_expression(
-            expr=m.constraint.body
+            expr=m.constraint.expr
         ) == [21, 0.5 ** (22 + 23 + 24)]
+
+
+@pytest.fixture(scope="function")
+def m():
+    m = pyo.ConcreteModel()
+    m.set = pyo.Set(initialize=["a", "b", "c"])
+
+    m.scalar_var = pyo.Param(initialize=1, mutable=True)
+    m.indexed_var = pyo.Var(m.set, initialize=1)
+
+    sc.set_scaling_factor(m.scalar_var, 1 / 12)
+    sc.set_scaling_factor(m.indexed_var["a"], 1 / 22)
+    sc.set_scaling_factor(m.indexed_var["b"], 1 / 23)
+    sc.set_scaling_factor(m.indexed_var["c"], 1 / 24)
+
+    return m
+
+
+class TestSetConstraintScalingMaxMagnitude:
+    @pytest.mark.unit
+    def test_set_constraint_scaling_max_magnitude(self, m):
+        m.constraint = pyo.Constraint(
+            expr=m.scalar_var == sum(m.indexed_var[i] for i in m.set)
+        )
+
+        sc.set_constraint_scaling_max_magnitude(m.constraint)
+        assert m.scaling_factor[m.constraint] == 1 / 24
+
+    @pytest.mark.unit
+    def test_set_constraint_scaling_max_magnitude_indexed(self, m):
+        def indexed_rule(m, i):
+            return m.scalar_var == m.indexed_var[i]
+
+        m.constraint = pyo.Constraint(m.set, rule=indexed_rule)
+
+        sc.set_constraint_scaling_max_magnitude(m.constraint)
+        assert m.scaling_factor[m.constraint["a"]] == 1 / 22
+        assert m.scaling_factor[m.constraint["b"]] == 1 / 23
+        assert m.scaling_factor[m.constraint["c"]] == 1 / 24
+
+    @pytest.mark.unit
+    def test_set_constraint_scaling_max_magnitude_block(self, m):
+        m.block = pyo.Block()
+
+        m.block.constraint = pyo.Constraint(
+            expr=m.scalar_var == sum(m.indexed_var[i] for i in m.set)
+        )
+
+        def indexed_rule(b, i):
+            return m.scalar_var == m.indexed_var[i]
+
+        m.block.iconstraint = pyo.Constraint(m.set, rule=indexed_rule)
+
+        sc.set_constraint_scaling_max_magnitude(m)
+        assert m.block.scaling_factor[m.block.constraint] == 1 / 24
+        assert m.block.scaling_factor[m.block.iconstraint["a"]] == 1 / 22
+        assert m.block.scaling_factor[m.block.iconstraint["b"]] == 1 / 23
+        assert m.block.scaling_factor[m.block.iconstraint["c"]] == 1 / 24
+
+    @pytest.mark.unit
+    def test_set_constraint_scaling_max_magnitude_no_overwrite(self, m):
+        m.constraint = pyo.Constraint(
+            expr=m.scalar_var == sum(m.indexed_var[i] for i in m.set)
+        )
+
+        m.block = pyo.Block()
+        m.block.constraint = pyo.Constraint(
+            expr=m.scalar_var == sum(m.indexed_var[i] for i in m.set)
+        )
+
+        sc.set_scaling_factor(m.constraint, 1 / 42)
+        sc.set_scaling_factor(m.block.constraint, 1 / 43)
+
+        sc.set_constraint_scaling_max_magnitude(m, overwrite=False)
+        assert m.scaling_factor[m.constraint] == 1 / 42
+        assert m.block.scaling_factor[m.block.constraint] == 1 / 43
+
+
+class TestSetConstraintScalingMinMagnitude:
+    @pytest.mark.unit
+    def test_set_constraint_scaling_min_magnitude(self, m):
+        m.constraint = pyo.Constraint(
+            expr=m.scalar_var == sum(m.indexed_var[i] for i in m.set)
+        )
+
+        sc.set_constraint_scaling_min_magnitude(m.constraint)
+        assert m.scaling_factor[m.constraint] == 1 / 12
+
+    @pytest.mark.unit
+    def test_set_constraint_scaling_min_magnitude_indexed(self, m):
+        def indexed_rule(m, i):
+            return m.scalar_var == m.indexed_var[i]
+
+        m.constraint = pyo.Constraint(m.set, rule=indexed_rule)
+
+        sc.set_constraint_scaling_min_magnitude(m.constraint)
+        assert m.scaling_factor[m.constraint["a"]] == 1 / 12
+        assert m.scaling_factor[m.constraint["b"]] == 1 / 12
+        assert m.scaling_factor[m.constraint["c"]] == 1 / 12
+
+    @pytest.mark.unit
+    def test_set_constraint_scaling_min_magnitude_block(self, m):
+        m.block = pyo.Block()
+
+        m.block.constraint = pyo.Constraint(
+            expr=m.scalar_var == sum(m.indexed_var[i] for i in m.set)
+        )
+
+        def indexed_rule(b, i):
+            return m.scalar_var == m.indexed_var[i]
+
+        m.block.iconstraint = pyo.Constraint(m.set, rule=indexed_rule)
+
+        sc.set_constraint_scaling_min_magnitude(m)
+        assert m.block.scaling_factor[m.block.constraint] == 1 / 12
+        assert m.block.scaling_factor[m.block.iconstraint["a"]] == 1 / 12
+        assert m.block.scaling_factor[m.block.iconstraint["b"]] == 1 / 12
+        assert m.block.scaling_factor[m.block.iconstraint["c"]] == 1 / 12
+
+    @pytest.mark.unit
+    def test_set_constraint_scaling_min_magnitude_no_overwrite(self, m):
+        m.constraint = pyo.Constraint(
+            expr=m.scalar_var == sum(m.indexed_var[i] for i in m.set)
+        )
+
+        m.block = pyo.Block()
+        m.block.constraint = pyo.Constraint(
+            expr=m.scalar_var == sum(m.indexed_var[i] for i in m.set)
+        )
+
+        sc.set_scaling_factor(m.constraint, 1 / 42)
+        sc.set_scaling_factor(m.block.constraint, 1 / 43)
+
+        sc.set_constraint_scaling_min_magnitude(m, overwrite=False)
+        assert m.scaling_factor[m.constraint] == 1 / 42
+        assert m.block.scaling_factor[m.block.constraint] == 1 / 43
+
+
+class TestSetConstraintScalingHarmonicMagnitude:
+    @pytest.mark.unit
+    def test_set_constraint_scaling_harmonic_magnitude(self, m):
+        m.constraint = pyo.Constraint(
+            expr=m.scalar_var == sum(m.indexed_var[i] for i in m.set)
+        )
+
+        sc.set_constraint_scaling_harmonic_magnitude(m.constraint)
+        assert m.scaling_factor[m.constraint] == pytest.approx(
+            1 / (1 / 12 + 1 / 22 + 1 / 23 + 1 / 24), rel=1e-8
+        )
+
+    @pytest.mark.unit
+    def test_set_constraint_scaling_harmonic_magnitude_indexed(self, m):
+        def indexed_rule(m, i):
+            return m.scalar_var == m.indexed_var[i]
+
+        m.constraint = pyo.Constraint(m.set, rule=indexed_rule)
+
+        sc.set_constraint_scaling_harmonic_magnitude(m.constraint)
+        assert m.scaling_factor[m.constraint["a"]] == pytest.approx(
+            1 / (1 / 12 + 1 / 22), rel=1e-8
+        )
+        assert m.scaling_factor[m.constraint["b"]] == pytest.approx(
+            1 / (1 / 12 + 1 / 23), rel=1e-8
+        )
+        assert m.scaling_factor[m.constraint["c"]] == pytest.approx(
+            1 / (1 / 12 + 1 / 24), rel=1e-8
+        )
+
+    @pytest.mark.unit
+    def test_set_constraint_scaling_harmonic_magnitude_block(self, m):
+        m.block = pyo.Block()
+
+        m.block.constraint = pyo.Constraint(
+            expr=m.scalar_var == sum(m.indexed_var[i] for i in m.set)
+        )
+
+        def indexed_rule(b, i):
+            return m.scalar_var == m.indexed_var[i]
+
+        m.block.iconstraint = pyo.Constraint(m.set, rule=indexed_rule)
+
+        sc.set_constraint_scaling_harmonic_magnitude(m)
+        assert m.block.scaling_factor[m.block.constraint] == pytest.approx(
+            1 / (1 / 12 + 1 / 22 + 1 / 23 + 1 / 24), rel=1e-8
+        )
+        assert m.block.scaling_factor[m.block.iconstraint["a"]] == pytest.approx(
+            1 / (1 / 12 + 1 / 22), rel=1e-8
+        )
+        assert m.block.scaling_factor[m.block.iconstraint["b"]] == pytest.approx(
+            1 / (1 / 12 + 1 / 23), rel=1e-8
+        )
+        assert m.block.scaling_factor[m.block.iconstraint["c"]] == pytest.approx(
+            1 / (1 / 12 + 1 / 24), rel=1e-8
+        )
+
+    @pytest.mark.unit
+    def test_set_constraint_scaling_harmonic_magnitude_no_overwrite(self, m):
+        m.constraint = pyo.Constraint(
+            expr=m.scalar_var == sum(m.indexed_var[i] for i in m.set)
+        )
+
+        m.block = pyo.Block()
+        m.block.constraint = pyo.Constraint(
+            expr=m.scalar_var == sum(m.indexed_var[i] for i in m.set)
+        )
+
+        sc.set_scaling_factor(m.constraint, 1 / 42)
+        sc.set_scaling_factor(m.block.constraint, 1 / 43)
+
+        sc.set_constraint_scaling_harmonic_magnitude(m, overwrite=False)
+        assert m.scaling_factor[m.constraint] == 1 / 42
+        assert m.block.scaling_factor[m.block.constraint] == 1 / 43

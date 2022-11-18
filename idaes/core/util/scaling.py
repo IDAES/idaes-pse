@@ -1057,7 +1057,7 @@ class ScalingFactorExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
     Returns a list of expected magnitudes for each additive term in the expression.
     """
 
-    def __init__(self, warning: bool = True, exception: bool = False):
+    def __init__(self, warning: bool = True):
         """
         Visitor class used to determine scaling factors of an expression. Do not use
         this class directly.
@@ -1065,8 +1065,6 @@ class ScalingFactorExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
         Args:
             warning: bool indicating whether to log a warning when a
                 missing scaling factors is encountered (default=True)
-            exception: bool indicating whether to raise an Exception when a
-                missing scaling factors is encountered (default=False)
 
         Notes
         -----
@@ -1080,7 +1078,6 @@ class ScalingFactorExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
         super().__init__()
 
         self.warning = warning
-        self.exception = exception
 
     def _get_scale_factor_for_sum(self, node, child_scale_factors):
         sf = []
@@ -1190,9 +1187,7 @@ class ScalingFactorExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
                 return [1]
             else:
                 # might want to add other common types here
-                sf = get_scaling_factor(
-                    node, default=1, warning=self.warning, exception=self.exception
-                )
+                sf = get_scaling_factor(node, default=1, warning=self.warning)
                 return [1 / sf]
 
         # not a leaf - check if it is a named expression
@@ -1206,3 +1201,124 @@ class ScalingFactorExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
             "An unhandled expression node type: {} was encountered while retrieving the"
             " scaling factor of expression".format(str(nodetype), str(node))
         )
+
+
+def set_constraint_scaling_max_magnitude(
+    component, warning: bool = True, overwrite: bool = False, descend_into: bool = True
+):
+    """
+    Set scaling factors for constraints using maximum expected magnitude of additive terms in expression.
+    Scaling factor for constraints will be 1 / max(expected magnitudes).
+
+    Args:
+        component: a Pyomo component to set constraint scaling factors for.
+        warning: bool indicating whether to log a warning if a missing variable scaling factor is
+            found (default=True).
+        overwrite: bool indicating whether to overwrite existing scaling factors (default=False).
+        descend_into: bool indicating whether function should descend into child Blocks
+            if component is a Pyomo Block (default=True).
+
+    Returns:
+        None
+    """
+
+    def _set_sf_max_mag(c):
+        magnitudes = ScalingFactorExtractionVisitor(warning=warning).walk_expression(
+            c.expr
+        )
+        set_scaling_factor(c, 1 / max(magnitudes), overwrite=overwrite)
+
+    if isinstance(component, pyo.Block):
+        # Iterate over all constraint datas and call this method on each
+        for c in component.component_data_objects(
+            pyo.Constraint, descend_into=descend_into
+        ):
+            set_constraint_scaling_max_magnitude(
+                c, warning=warning, overwrite=overwrite
+            )
+    elif component.is_indexed():
+        for i in component:
+            _set_sf_max_mag(component[i])
+    else:
+        _set_sf_max_mag(component)
+
+
+def set_constraint_scaling_min_magnitude(
+    component, warning: bool = True, overwrite: bool = False, descend_into: bool = True
+):
+    """
+    Set scaling factors for constraints using minimum expected magnitude of additive terms in expression.
+    Scaling factor for constraints will be 1 / min(expected magnitudes).
+
+    Args:
+        component: a Pyomo component to set constraint scaling factors for.
+        warning: bool indicating whether to log a warning if a missing variable scaling factor is
+            found (default=True).
+        overwrite: bool indicating whether to overwrite existing scaling factors (default=False).
+        descend_into: bool indicating whether function should descend into child Blocks
+            if component is a Pyomo Block (default=True).
+
+    Returns:
+        None
+    """
+
+    def _set_sf_min_mag(c):
+        magnitudes = ScalingFactorExtractionVisitor(warning=warning).walk_expression(
+            c.expr
+        )
+        set_scaling_factor(c, 1 / min(magnitudes), overwrite=overwrite)
+
+    if isinstance(component, pyo.Block):
+        # Iterate over all constraint datas and call this method on each
+        for c in component.component_data_objects(
+            pyo.Constraint, descend_into=descend_into
+        ):
+            set_constraint_scaling_min_magnitude(
+                c, warning=warning, overwrite=overwrite
+            )
+    elif component.is_indexed():
+        for i in component:
+            _set_sf_min_mag(component[i])
+    else:
+        _set_sf_min_mag(component)
+
+
+def set_constraint_scaling_harmonic_magnitude(
+    component, warning: bool = True, overwrite: bool = False, descend_into: bool = True
+):
+    """
+    Set scaling factors for constraints using the harmonic sum of the expected magnitude of
+    additive terms in expression. Scaling factor for constraints will be 1 / sum(1/expected magnitudes).
+
+    Args:
+        component: a Pyomo component to set constraint scaling factors for.
+        warning: bool indicating whether to log a warning if a missing variable scaling factor is
+            found (default=True).
+        overwrite: bool indicating whether to overwrite existing scaling factors (default=False).
+        descend_into: bool indicating whether function should descend into child Blocks
+            if component is a Pyomo Block (default=True).
+
+    Returns:
+        None
+    """
+
+    def _set_sf_har_mag(c):
+        magnitudes = ScalingFactorExtractionVisitor(warning=warning).walk_expression(
+            c.expr
+        )
+        harm_sum = 1 / sum(1 / i for i in magnitudes)
+        set_scaling_factor(c, harm_sum, overwrite=overwrite)
+
+    if isinstance(component, pyo.Block):
+        # Iterate over all constraint datas and call this method on each
+        for c in component.component_data_objects(
+            pyo.Constraint, descend_into=descend_into
+        ):
+            set_constraint_scaling_harmonic_magnitude(
+                c, warning=warning, overwrite=overwrite
+            )
+    elif component.is_indexed():
+        for i in component:
+            _set_sf_har_mag(component[i])
+    else:
+        _set_sf_har_mag(component)
