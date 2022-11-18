@@ -49,7 +49,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.core.base.expression import ScalarExpression
-from pyomo.core.base.units_container import InconsistentUnitsError
+from pyomo.core.base.units_container import InconsistentUnitsError, UnitsError
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 import idaes.core.util.scaling as iscale
