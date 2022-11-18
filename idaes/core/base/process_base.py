@@ -143,9 +143,9 @@ class ProcessBlockData(_BlockData):
         Args:
             attribute: property attribute name
             value: default scaling factor
-            index: for indexed properties, if this is not provided the scaling
-                factor default applies to all indexed elements where specific
-                indexes are no specifically specified.
+            index: for indexed properties, if this is not provided the default
+                scaling factor applies to all indexed elements where specific
+                indexes are not specified.
 
         Returns:
             None
