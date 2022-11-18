@@ -30,6 +30,7 @@ __author__ = "John Eslick, Tim Bartholomew, Robert Parker, Andrew Lee"
 import math
 import scipy.sparse.linalg as spla
 import scipy.linalg as la
+import sys
 
 import pyomo.environ as pyo
 from pyomo.core.expr.visitor import identify_variables
@@ -494,6 +495,22 @@ def unscaled_variables_generator(blk, descend_into=True, include_fixed=False):
             yield v
 
 
+def list_unscaled_variables(
+    blk: pyo.Block, descend_into: bool = True, include_fixed: bool = False
+):
+    """
+    Return a list of constraints which do not have a scaling factor assigned
+    Args:
+        blk: block to check for unscaled constraints
+        descend_into: bool indicating whether to check constraints in sub-blocks
+        include_fixed: bool indicating whether to include fixed Vars in list
+
+    Returns:
+        list of unscaled variable data objects
+    """
+    return [c for c in unscaled_variables_generator(blk, descend_into, include_fixed)]
+
+
 def unscaled_constraints_generator(blk, descend_into=True):
     """Generator for unscaled constraints
 
@@ -511,6 +528,19 @@ def unscaled_constraints_generator(blk, descend_into=True):
             and get_constraint_transform_applied_scaling_factor(c) is None
         ):
             yield c
+
+
+def list_unscaled_constraints(blk: pyo.Block, descend_into: bool = True):
+    """
+    Return a list of constraints which do not have a scaling factor assigned
+    Args:
+        blk: block to check for unscaled constraints
+        descend_into: bool indicating whether to check constraints in sub-blocks
+
+    Returns:
+        list of unscaled constraint data objects
+    """
+    return [c for c in unscaled_constraints_generator(blk, descend_into)]
 
 
 def constraints_with_scale_factor_generator(blk, descend_into=True):
@@ -538,7 +568,7 @@ def badly_scaled_var_generator(
     their current scale factors and values. For each potentially poorly scaled
     variable it returns the var and its current scaled value.
 
-    Note that while this method is a reasonable heuristic for nonnegative
+    Note that while this method is a reasonable heuristic for non-negative
     variables like (absolute) temperature and pressure, molar flows, etc., it
     can be misleading for variables like enthalpies and fluxes.
 
@@ -566,6 +596,43 @@ def badly_scaled_var_generator(
             continue
         elif sv < small:
             yield v, sv
+
+
+def list_badly_scaled_variables(
+    blk,
+    large: float = 1e4,
+    small: float = 1e-3,
+    zero: float = 1e-10,
+    descend_into: bool = True,
+    include_fixed: bool = False,
+):
+    """Return a list of variables with poor scaling based on
+    their current scale factors and values. For each potentially poorly scaled
+    variable it returns the var and its current scaled value.
+
+    Note that while this method is a reasonable heuristic for non-negative
+    variables like (absolute) temperature and pressure, molar flows, etc., it
+    can be misleading for variables like enthalpies and fluxes.
+
+    Args:
+        blk: pyomo block
+        large: Magnitude that is considered to be too large
+        small: Magnitude that is considered to be too small
+        zero: Magnitude that is considered to be zero, variables with a value of
+            zero are okay, and not reported.
+        descend_into: bool indicating whether to check constraints in sub-blocks
+        include_fixed: bool indicating whether to include fixed Vars in list
+
+
+    Returns:
+        list of tuples containing (variable data object, current absolute value of scaled value)
+    """
+    return [
+        c
+        for c in badly_scaled_var_generator(
+            blk, large, small, zero, descend_into, include_fixed
+        )
+    ]
 
 
 def constraint_autoscale_large_jac(
@@ -1452,3 +1519,60 @@ def set_constraint_scaling_harmonic_magnitude(
             _set_sf_har_mag(component[i])
     else:
         _set_sf_har_mag(component)
+
+
+def report_scaling_issues(
+    blk,
+    ostream: "Stream" = None,
+    prefix: str = "",
+    large: float = 1e4,
+    small: float = 1e-3,
+    zero: float = 1e-10,
+    descend_into: bool = True,
+    include_fixed: bool = False,
+):
+    """
+    Write a report on potential scaling issues to a stream.
+
+    Args:
+        blk: block to check for scaling issues
+        ostream: stream object to write results to (default=stdout)
+        prefix: string to prefix output with
+        large: Magnitude that is considered to be too large
+        small: Magnitude that is considered to be too small
+        zero: Magnitude that is considered to be zero, variables with a value of
+            zero are okay, and not reported.
+        descend_into: bool indicating whether to check constraints in sub-blocks
+        include_fixed: bool indicating whether to include fixed Vars in list
+
+    Returns:
+        None
+    """
+    if ostream is None:
+        ostream = sys.stdout
+
+    # Write output
+    max_str_length = 84
+    tab = " " * 4
+    ostream.write("\n" + "=" * max_str_length + "\n")
+    ostream.write(f"{prefix}Potential Scaling Issues")
+    ostream.write("\n" * 2)
+
+    ostream.write(f"{prefix}{tab}Unscaled Variables")
+    ostream.write("\n" * 2)
+    for v in unscaled_variables_generator(blk, descend_into, include_fixed):
+        ostream.write(f"{prefix}{tab*2}{v.name}")
+    ostream.write("\n" * 2)
+    ostream.write(f"{prefix}{tab}Badly Scaled Variables")
+    ostream.write("\n" * 2)
+    for v in badly_scaled_var_generator(
+        blk, large, small, zero, descend_into, include_fixed
+    ):
+        ostream.write(f"{prefix}{tab*2}{v[0].name}: {v[1]}")
+    ostream.write("\n" * 2)
+    ostream.write(f"{prefix}{tab}Unscaled Constraints")
+    ostream.write("\n" * 2)
+    for c in unscaled_constraints_generator(blk, descend_into):
+        ostream.write(f"{prefix}{tab * 2}{c.name}")
+    ostream.write("\n")
+    ostream.write("\n" + "=" * max_str_length + "\n")

@@ -14,6 +14,7 @@
 This module contains tests for scaling.
 """
 import math
+from io import StringIO
 
 import pytest
 import pyomo.environ as pyo
@@ -540,6 +541,32 @@ def test_find_badly_scaled_vars():
     assert id(m.y) not in a
     assert id(m.b.w) in a
     assert id(m.z) not in a
+
+
+@pytest.mark.unit
+def test_list_badly_scaled_vars():
+    m = pyo.ConcreteModel()
+    m.x = pyo.Var(initialize=1e6)
+    m.y = pyo.Var(initialize=1e-8)
+    m.z = pyo.Var(initialize=1e-20)
+    m.b = pyo.Block()
+    m.b.w = pyo.Var(initialize=1e10)
+
+    a = sc.list_badly_scaled_variables(m)
+    for i in a:
+        assert i[0].name in ["x", "y", "b.w"]
+    assert len(a) == 3
+
+    m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+    m.b.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+    m.scaling_factor[m.x] = 1e-6
+    m.scaling_factor[m.y] = 1e6
+    m.scaling_factor[m.z] = 1
+    m.b.scaling_factor[m.b.w] = 1e-5
+
+    a = sc.list_badly_scaled_variables(m)
+    assert len(a) == 1
+    assert a[0][0] is m.b.w
 
 
 @pytest.mark.unit
@@ -2421,3 +2448,65 @@ class TestSetConstraintScalingHarmonicMagnitude:
         sc.set_constraint_scaling_harmonic_magnitude(m, overwrite=False)
         assert m.scaling_factor[m.constraint] == 1 / 42
         assert m.block.scaling_factor[m.block.constraint] == 1 / 43
+
+
+@pytest.mark.unit
+def test_list_unscaled_variables():
+    m = pyo.ConcreteModel()
+    m.v1 = pyo.Var()
+    m.v2 = pyo.Var()
+
+    # Scale v2
+    sc.set_scaling_factor(m.v2, 10)
+
+    assert sc.list_unscaled_variables(m) == [m.v1]
+
+
+@pytest.mark.unit
+def test_list_unscaled_constraints():
+    m = pyo.ConcreteModel()
+    m.v = pyo.Var()
+    m.c1 = pyo.Constraint(expr=m.v == 4)
+    m.c2 = pyo.Constraint(expr=m.v == 4)
+
+    # Scale c2
+    sc.constraint_scaling_transform(m.c2, 10, overwrite=True)
+
+    assert sc.list_unscaled_constraints(m) == [m.c1]
+
+
+@pytest.mark.unit
+def test_report_scaling_issues():
+    m = pyo.ConcreteModel()
+    m.v = pyo.Var()
+    m.v2 = pyo.Var(initialize=1e6)
+    m.c1 = pyo.Constraint(expr=m.v == 4)
+    m.c2 = pyo.Constraint(expr=m.v == 4)
+
+    # Scale v2 and c2
+    sc.set_scaling_factor(m.v2, 10, overwrite=True)
+    sc.constraint_scaling_transform(m.c2, 10, overwrite=True)
+
+    stream = StringIO()
+    sc.report_scaling_issues(m, ostream=stream)
+
+    expected = """
+====================================================================================
+Potential Scaling Issues
+
+    Unscaled Variables
+
+        v
+
+    Badly Scaled Variables
+
+        v2: 10000000.0
+
+    Unscaled Constraints
+
+        c1
+
+====================================================================================
+"""
+
+    assert stream.getvalue().strip() == expected.strip()
