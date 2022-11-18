@@ -19,7 +19,7 @@ Costing package based on methods from:
     Chapter 22. Cost Accounting and Capital Cost Estimation
     22.2 Cost Indexes and Capital Investment
 
-Curently, this costing package only includes methods for capital costing of
+Currently, this costing package only includes methods for capital costing of
 unit operations.
 """
 import pyomo.environ as pyo
@@ -238,12 +238,18 @@ class SSLWCostingData(FlowsheetCostingBlockData):
     @staticmethod
     def initialize_build(self):
         """
-        Here we can add intialization steps for the things we built in
+        Here we can add initialization steps for the things we built in
         build_process_costs.
 
         Note that the aggregate costs will be initialized by the framework.
         """
         # TODO: For now,  no additional process level costs to initialize
+        pass
+
+    def cost_none(blk, integer=True):
+        """
+        Placeholder costing method for those who want to write their own costing method.
+        """
         pass
 
     def cost_heat_exchanger(

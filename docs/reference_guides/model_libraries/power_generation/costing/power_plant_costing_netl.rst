@@ -244,11 +244,11 @@ Below is an example of how to add cost correlations to a flowsheet including a h
         flow_pattern=HeatExchangerFlowPattern.countercurrent)
     # set inputs
     m.fs.unit.shell_inlet.flow_mol[0].fix(100*pyunits.mol/pyunits.s)
-    m.fs.unit.shell_inlet.enth_mol[0].fix(3500*pyunits.mol/pyunits.s)
+    m.fs.unit.shell_inlet.enth_mol[0].fix(3500*pyunits.J/pyunits.mol)
     m.fs.unit.shell_inlet.pressure[0].fix(101325*pyunits.Pa)
     
     m.fs.unit.tube_inlet.flow_mol[0].fix(100*pyunits.mol/pyunits.s)
-    m.fs.unit.tube_inlet.enth_mol[0].fix(4000*pyunits.mol/pyunits.s)
+    m.fs.unit.tube_inlet.enth_mol[0].fix(4000*pyunits.J/pyunits.mol)
     m.fs.unit.tube_inlet.pressure[0].fix(101325*pyunits.Pa)
     
     m.fs.unit.area.fix(1000*pyunits.m**2)

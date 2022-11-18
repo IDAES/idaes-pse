@@ -93,7 +93,7 @@ class DefaultCostingComponents(StrEnum):
 
 
 def assert_flowsheet_costing_block(val):
-    """Domain validator for fowhseet costing block attributes
+    """Domain validator for flowsheet costing block attributes
 
     Args:
         val : value to be checked
@@ -525,7 +525,7 @@ class UnitModelCostingBlockData(ProcessBlockData):
         "flowsheet_costing_block",
         ConfigValue(
             domain=assert_flowsheet_costing_block,
-            doc="Reference to assoicated FlowsheetCostingBlock to use.",
+            doc="Reference to associated FlowsheetCostingBlock to use.",
         ),
     )
     CONFIG.declare(
@@ -581,7 +581,7 @@ class UnitModelCostingBlockData(ProcessBlockData):
         if method is None:
             method = fcb._get_costing_method_for(unit_model)
 
-        # Assign obejct references for costing package and unit model
+        # Assign object references for costing package and unit model
         add_object_reference(self, "costing_package", fcb)
         add_object_reference(self, "unit_model", unit_model)
 
@@ -614,7 +614,7 @@ class UnitModelCostingBlockData(ProcessBlockData):
         Placeholder method for initialization
         """
         # TODO: Implement an initialization method
-        # TODO: Need to have a general pupose method (block triangularisation?)
+        # TODO: Need to have a general purpose method (block triangularisation?)
         # TODO: Should also allow registering custom methods
 
         # Vars and Constraints

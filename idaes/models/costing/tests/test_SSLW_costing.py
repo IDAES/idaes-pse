@@ -36,7 +36,12 @@ from pyomo.common.config import ConfigValue
 
 from idaes.core import FlowsheetBlock, UnitModelBlock, UnitModelCostingBlock
 from idaes.core.solvers import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_expressions,
+    number_total_constraints,
+)
 from idaes.models.unit_models import (
     Compressor,
     CSTR,
@@ -961,3 +966,13 @@ class TestMapping:
         )
         assert hasattr(model.fs.unit.costing, "capital_cost")
         assert not hasattr(model.fs.unit.costing, "material_factor")
+
+    def test_none(self, model):
+        model.fs.unit = Heater(property_package=model.fs.pparams)
+        model.fs.unit.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=model.fs.costing,
+            costing_method=SSLWCostingData.cost_none,
+        )
+        assert number_variables(model.fs.unit.costing) == 0
+        assert number_expressions(model.fs.unit.costing) == 0
+        assert number_total_constraints(model.fs.unit.costing) == 0
