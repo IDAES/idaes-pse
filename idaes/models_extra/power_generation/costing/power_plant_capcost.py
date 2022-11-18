@@ -892,23 +892,27 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                                 )
                             )
             else:
-                if scaled_param.get_units() is None:
-                    raise ValueError(
-                        "Account %s uses units of %s. "
-                        "Units of %s were passed. "
-                        "Scaled_param must have units."
-                        % (cost_accounts[0], ref_units, scaled_param.get_units())
-                    )
-                else:
-                    try:
-                        pyunits.convert(scaled_param, ref_units)
-                    except InconsistentUnitsError:
-                        raise Exception(
+                try:
+                    if pyunits.get_units(scaled_param) is None:
+                        raise ValueError(
                             "Account %s uses units of %s. "
                             "Units of %s were passed. "
-                            "Cannot convert unit containers."
-                            % (cost_accounts[0], ref_units, scaled_param.get_units())
+                            "Scaled_param must have units."
+                            % (cost_accounts[0], ref_units, pyunits.get_units(scaled_param))
                         )
+                    else:
+                        try:
+                            pyunits.convert(scaled_param, ref_units)
+                        except InconsistentUnitsError:
+                            raise Exception(
+                                "Account %s uses units of %s. "
+                                "Units of %s were passed. "
+                                "Cannot convert unit containers."
+                                % (cost_accounts[0], ref_units, pyunits.get_units(scaled_param))
+                            )
+                except InconsistentUnitsError:
+                    raise ValueError(f"The expression {scaled_param.name} has inconsitent units.")
+
 
         # Used by other functions for reporting results
         blk.account_names = account_names
