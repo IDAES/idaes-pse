@@ -1050,17 +1050,22 @@ class FlattenedScalingAssignment(object):
 
 
 # New functions
-class ScalingFactorExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
+class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
     """
-    Expression walker for collecting scaling factors in an expression.
+    Expression walker for collecting scaling factors in an expression and determining the
+    expected value of the expression using the scaling factors as nominal inputs.
 
-    Returns a list of expected magnitudes for each additive term in the expression.
+    Returns a list of expected values for each additive term in the expression.
+
+    In order to properly assess the expected value of terms within functions, the sign
+    of each tem is maintained throughout thus returned values may be negative. Functions
+    using this walker should handle these appropriately.
     """
 
     def __init__(self, warning: bool = True):
         """
-        Visitor class used to determine scaling factors of an expression. Do not use
-        this class directly.
+        Visitor class used to determine nominal values of all terms in an expression based on
+        scaling factors assigned to the associated variables. Do not use this class directly.
 
         Args:
             warning: bool indicating whether to log a warning when a
@@ -1079,88 +1084,101 @@ class ScalingFactorExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
 
         self.warning = warning
 
-    def _get_scale_factor_for_sum(self, node, child_scale_factors):
+    def _get_nominal_value_for_sum(self, node, child_nomial_values):
+        # For sums, collect all child values into a list
         sf = []
-        for i in child_scale_factors:
+        for i in child_nomial_values:
             for j in i:
                 sf.append(j)
         return sf
 
-    def _get_scale_factor_for_product(self, node, child_scale_factors):
-        assert len(child_scale_factors) == 2
+    def _get_nominal_value_for_product(self, node, child_nomial_values):
+        assert len(child_nomial_values) == 2
 
         mag = []
-        for i in child_scale_factors[0]:
-            for j in child_scale_factors[1]:
+        for i in child_nomial_values[0]:
+            for j in child_nomial_values[1]:
                 mag.append(i * j)
         return mag
 
-    def _get_scale_factor_for_division(self, node, child_scale_factors):
-        assert len(child_scale_factors) == 2
+    def _get_nominal_value_for_division(self, node, child_nomial_values):
+        assert len(child_nomial_values) == 2
 
         mag = []
-        for i in child_scale_factors[0]:
-            for j in child_scale_factors[1]:
+        for i in child_nomial_values[0]:
+            for j in child_nomial_values[1]:
                 mag.append(i / j)
         return mag
 
-    def _get_scale_factor_for_power(self, node, child_scale_factors):
-        assert len(child_scale_factors) == 2
+    def _get_nominal_value_for_power(self, node, child_nomial_values):
+        assert len(child_nomial_values) == 2
 
         mag = []
-        for i in child_scale_factors[0]:
-            mag.append(i ** sum(j for j in child_scale_factors[1]))
+        for i in child_nomial_values[0]:
+            mag.append(i ** sum(j for j in child_nomial_values[1]))
         return mag
 
-    def _get_scale_factor_single_child(self, node, child_scale_factors):
-        assert len(child_scale_factors) == 1
-        return child_scale_factors[0]
+    def _get_nominal_value_single_child(self, node, child_nomial_values):
+        assert len(child_nomial_values) == 1
+        return child_nomial_values[0]
 
-    def _get_scale_factor_for_unary_function(self, node, child_scale_factors):
-        assert len(child_scale_factors) == 1
+    def _get_nominal_value_abs(self, node, child_nomial_values):
+        assert len(child_nomial_values) == 1
+        return [abs(i) for i in child_nomial_values[0]]
+
+    def _get_nominal_value_negation(self, node, child_nomial_values):
+        assert len(child_nomial_values) == 1
+        return [-i for i in child_nomial_values[0]]
+
+    def _get_nominal_value_for_unary_function(self, node, child_nomial_values):
+        assert len(child_nomial_values) == 1
         func_name = node.getname()
         func = getattr(math, func_name)
-        return [func(sum(i for i in child_scale_factors[0]))]
+        return [func(sum(i for i in child_nomial_values[0]))]
 
-    def _get_scale_factor_expr_if(self, node, child_scale_factors):
-        assert len(child_scale_factors) == 3
-        return child_scale_factors[1] + child_scale_factors[2]
+    def _get_nominal_value_expr_if(self, node, child_nomial_values):
+        assert len(child_nomial_values) == 3
+        return child_nomial_values[1] + child_nomial_values[2]
 
-    def _get_scale_factor_no_children(self, node, child_units):
-        assert len(child_units) == 0
+    def _get_nominal_value_no_children(self, node, child_nomial_values):
+        assert len(child_nomial_values) == 0
         # may need more checks for dimensionless for other types
         assert type(node) is IndexTemplate
         return [1]
 
-    def _get_scale_factor_external_function(self, node, child_units):
-        # TODO: Work out what to do here
-        # Maybe pass child_units into the external function and get the result?
-        # For now, assume we know nothing about scaling
-        return [1]
+    def _get_nominal_value_external_function(self, node, child_nomial_values):
+        # First, need to get expected magnitudes of input terms, which may be sub-expressions
+        input_mag = [sum(i) for i in child_nomial_values]
+
+        # Next, create a copy of the external function with expected magnitudes as inputs
+        newfunc = node.create_node_with_local_data(input_mag)
+
+        # Evaluate new function and return the absolute value
+        return [pyo.value(newfunc)]
 
     node_type_method_map = {
-        EXPR.EqualityExpression: _get_scale_factor_for_sum,
-        EXPR.InequalityExpression: _get_scale_factor_for_sum,
-        EXPR.RangedExpression: _get_scale_factor_for_sum,
-        EXPR.SumExpression: _get_scale_factor_for_sum,
-        EXPR.NPV_SumExpression: _get_scale_factor_for_sum,
-        EXPR.ProductExpression: _get_scale_factor_for_product,
-        EXPR.MonomialTermExpression: _get_scale_factor_for_product,
-        EXPR.NPV_ProductExpression: _get_scale_factor_for_product,
-        EXPR.DivisionExpression: _get_scale_factor_for_division,
-        EXPR.NPV_DivisionExpression: _get_scale_factor_for_division,
-        EXPR.PowExpression: _get_scale_factor_for_power,
-        EXPR.NPV_PowExpression: _get_scale_factor_for_power,
-        EXPR.NegationExpression: _get_scale_factor_single_child,
-        EXPR.NPV_NegationExpression: _get_scale_factor_single_child,
-        EXPR.AbsExpression: _get_scale_factor_single_child,
-        EXPR.NPV_AbsExpression: _get_scale_factor_single_child,
-        EXPR.UnaryFunctionExpression: _get_scale_factor_for_unary_function,
-        EXPR.NPV_UnaryFunctionExpression: _get_scale_factor_for_unary_function,
-        EXPR.Expr_ifExpression: _get_scale_factor_expr_if,
-        EXPR.ExternalFunctionExpression: _get_scale_factor_external_function,
-        EXPR.NPV_ExternalFunctionExpression: _get_scale_factor_external_function,
-        EXPR.LinearExpression: _get_scale_factor_for_sum,
+        EXPR.EqualityExpression: _get_nominal_value_for_sum,
+        EXPR.InequalityExpression: _get_nominal_value_for_sum,
+        EXPR.RangedExpression: _get_nominal_value_for_sum,
+        EXPR.SumExpression: _get_nominal_value_for_sum,
+        EXPR.NPV_SumExpression: _get_nominal_value_for_sum,
+        EXPR.ProductExpression: _get_nominal_value_for_product,
+        EXPR.MonomialTermExpression: _get_nominal_value_for_product,
+        EXPR.NPV_ProductExpression: _get_nominal_value_for_product,
+        EXPR.DivisionExpression: _get_nominal_value_for_division,
+        EXPR.NPV_DivisionExpression: _get_nominal_value_for_division,
+        EXPR.PowExpression: _get_nominal_value_for_power,
+        EXPR.NPV_PowExpression: _get_nominal_value_for_power,
+        EXPR.NegationExpression: _get_nominal_value_negation,
+        EXPR.NPV_NegationExpression: _get_nominal_value_negation,
+        EXPR.AbsExpression: _get_nominal_value_abs,
+        EXPR.NPV_AbsExpression: _get_nominal_value_abs,
+        EXPR.UnaryFunctionExpression: _get_nominal_value_for_unary_function,
+        EXPR.NPV_UnaryFunctionExpression: _get_nominal_value_for_unary_function,
+        EXPR.Expr_ifExpression: _get_nominal_value_expr_if,
+        EXPR.ExternalFunctionExpression: _get_nominal_value_external_function,
+        EXPR.NPV_ExternalFunctionExpression: _get_nominal_value_external_function,
+        EXPR.LinearExpression: _get_nominal_value_for_sum,
     }
 
     def exitNode(self, node, data):
@@ -1175,7 +1193,7 @@ class ScalingFactorExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
         if nodetype in native_types or nodetype in pyomo_constant_types:
             if node == 0:
                 return [1]  # Catch cases of zero and use default scaling of 1
-            return [abs(node)]
+            return [node]
 
         node_func = self.node_type_method_map.get(nodetype, None)
         if node_func is not None:
@@ -1195,7 +1213,7 @@ class ScalingFactorExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
             hasattr(node, "is_named_expression_type")
             and node.is_named_expression_type()
         ):
-            return self._get_scale_factor_single_child(node, data)
+            return self._get_nominal_value_single_child(node, data)
 
         raise TypeError(
             "An unhandled expression node type: {} was encountered while retrieving the"
@@ -1208,7 +1226,7 @@ def set_constraint_scaling_max_magnitude(
 ):
     """
     Set scaling factors for constraints using maximum expected magnitude of additive terms in expression.
-    Scaling factor for constraints will be 1 / max(expected magnitudes).
+    Scaling factor for constraints will be 1 / max(abs(nominal value)).
 
     Args:
         component: a Pyomo component to set constraint scaling factors for.
@@ -1223,10 +1241,9 @@ def set_constraint_scaling_max_magnitude(
     """
 
     def _set_sf_max_mag(c):
-        magnitudes = ScalingFactorExtractionVisitor(warning=warning).walk_expression(
-            c.expr
-        )
-        set_scaling_factor(c, 1 / max(magnitudes), overwrite=overwrite)
+        nominal = NominalValueExtractionVisitor(warning=warning).walk_expression(c.expr)
+        max_mag = max(abs(i) for i in nominal)
+        set_scaling_factor(c, 1 / max_mag, overwrite=overwrite)
 
     if isinstance(component, pyo.Block):
         # Iterate over all constraint datas and call this method on each
@@ -1248,7 +1265,7 @@ def set_constraint_scaling_min_magnitude(
 ):
     """
     Set scaling factors for constraints using minimum expected magnitude of additive terms in expression.
-    Scaling factor for constraints will be 1 / min(expected magnitudes).
+    Scaling factor for constraints will be 1 / min(abs(nominal value)).
 
     Args:
         component: a Pyomo component to set constraint scaling factors for.
@@ -1263,10 +1280,9 @@ def set_constraint_scaling_min_magnitude(
     """
 
     def _set_sf_min_mag(c):
-        magnitudes = ScalingFactorExtractionVisitor(warning=warning).walk_expression(
-            c.expr
-        )
-        set_scaling_factor(c, 1 / min(magnitudes), overwrite=overwrite)
+        nominal = NominalValueExtractionVisitor(warning=warning).walk_expression(c.expr)
+        min_mag = min(abs(i) for i in nominal)
+        set_scaling_factor(c, 1 / min_mag, overwrite=overwrite)
 
     if isinstance(component, pyo.Block):
         # Iterate over all constraint datas and call this method on each
@@ -1288,7 +1304,7 @@ def set_constraint_scaling_harmonic_magnitude(
 ):
     """
     Set scaling factors for constraints using the harmonic sum of the expected magnitude of
-    additive terms in expression. Scaling factor for constraints will be 1 / sum(1/expected magnitudes).
+    additive terms in expression. Scaling factor for constraints will be 1 / sum(1/abs(nominal value)).
 
     Args:
         component: a Pyomo component to set constraint scaling factors for.
@@ -1303,10 +1319,8 @@ def set_constraint_scaling_harmonic_magnitude(
     """
 
     def _set_sf_har_mag(c):
-        magnitudes = ScalingFactorExtractionVisitor(warning=warning).walk_expression(
-            c.expr
-        )
-        harm_sum = 1 / sum(1 / i for i in magnitudes)
+        nominal = NominalValueExtractionVisitor(warning=warning).walk_expression(c.expr)
+        harm_sum = 1 / sum(1 / abs(i) for i in nominal)
         set_scaling_factor(c, harm_sum, overwrite=overwrite)
 
     if isinstance(component, pyo.Block):
