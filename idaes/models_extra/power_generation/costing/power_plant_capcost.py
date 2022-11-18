@@ -894,7 +894,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             else:
                 try:
                     if pyunits.get_units(scaled_param) is None:
-                        raise InconsistentUnitsError(
+                        raise UnitsError(
                             "Account %s uses units of %s. "
                             "Units of %s were passed. "
                             "Scaled_param must have units."
@@ -908,7 +908,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         try:
                             pyunits.convert(scaled_param, ref_units)
                         except InconsistentUnitsError:
-                            raise InconsistentUnitsError(
+                            raise UnitsError(
                                 "Account %s uses units of %s. "
                                 "Units of %s were passed. "
                                 "Cannot convert unit containers."
@@ -919,7 +919,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                                 )
                             )
                 except InconsistentUnitsError:
-                    raise InconsistentUnitsError(
+                    raise UnitsError(
                         f"The expression {scaled_param.name} has inconsistent units."
                     )
 
