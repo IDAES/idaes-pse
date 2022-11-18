@@ -116,8 +116,6 @@ class ReactionParameterData(ReactionParameterBlock):
 
         self._reaction_block_class = ReactionBlock
 
-        self.default_scaling_factor = {}
-
         # Reaction Index
         self.rate_reaction_idx = Set(initialize=["R1"])
 

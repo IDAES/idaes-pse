@@ -106,66 +106,6 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         # By default, property packages do not include inherent reactions
         self._has_inherent_reactions = False
 
-        # This is a dict to store default property scaling factors. They are
-        # defined in the parameter block to provide a universal default for
-        # quantities in a particular kind of state block.  For example, you can
-        # set flow scaling once instead of for every state block. Some of these
-        # may be left for the user to set and some may be defined in a property
-        # module where reasonable defaults can be defined a priori. See
-        # set_default_scaling, get_default_scaling, and unset_default_scaling
-        self.default_scaling_factor = {}
-
-    def set_default_scaling(self, attribute, value, index=None):
-        """Set a default scaling factor for a property.
-
-        Args:
-            attribute: property attribute name
-            value: default scaling factor
-            index: for indexed properties, if this is not provied the scaling
-                factor default applies to all indexed elements where specific
-                indexes are no specifcally specified.
-
-        Returns:
-            None
-        """
-        self.default_scaling_factor[(attribute, index)] = value
-
-    def unset_default_scaling(self, attribute, index=None):
-        """Remove a previously set default value
-
-        Args:
-            attribute: property attribute name
-            index: optional index for indexed properties
-
-        Returns:
-            None
-        """
-        try:
-            del self.default_scaling_factor[(attribute, index)]
-        except KeyError:
-            pass
-
-    def get_default_scaling(self, attribute, index=None):
-        """Returns a default scale factor for a property
-
-        Args:
-            attribute: property attribute name
-            index: optional index for indexed properties
-
-        Returns:
-            None
-        """
-        try:
-            # If a specific component data index exists
-            return self.default_scaling_factor[(attribute, index)]
-        except KeyError:
-            try:
-                # indexed, but no specifc index?
-                return self.default_scaling_factor[(attribute, None)]
-            except KeyError:
-                # Can't find a default scale factor for what you asked for
-                return None
-
     @property
     def state_block_class(self):
         if self._state_block_class is not None:
