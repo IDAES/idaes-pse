@@ -21,7 +21,7 @@ from pyomo.core.base.constraint import ScalarConstraint, IndexedConstraint
 from pyomo.core.base.expression import ScalarExpression
 from pyomo.core.base.var import IndexedVar
 from pyomo.environ import units as pyunits
-from pyomo.core.base.units_container import InconsistentUnitsError
+from pyomo.core.base.units_container import InconsistentUnitsError, UnitsError
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock, UnitModelBlock, UnitModelCostingBlock
@@ -32,6 +32,114 @@ from idaes.models_extra.power_generation.costing.power_plant_capcost import (
     QGESSCosting,
     QGESSCostingData,
 )
+
+
+@pytest.mark.component
+def test_PP_costing_exp():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    # check that the model solved properly and has 0 degrees of freedom
+    assert degrees_of_freedom(m) == 0
+
+    ###########################################################################
+    #  Create costing constraints                                             #
+    ###########################################################################
+
+    # coal flow rate
+    # accounts 1.x and 2.x are coal handling, preparation and feed
+    # accounts 4.x are for boiler BOP and foundations
+    coal_accounts = ["1.1", "1.2", "1.3", "1.4", "2.1", "2.2", "4.11", "4.15", "4.16"]
+    m.fs.boiler = UnitModelBlock()
+    m.fs.boiler.coal_mass_flow = pyo.Expression(
+        expr=7238.95 * pyunits.ton / pyunits.day
+    )
+    m.fs.boiler.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": coal_accounts,
+            "scaled_param": m.fs.boiler.coal_mass_flow,
+            "tech": 2,
+            "ccs": "A",
+        },
+    )
+
+
+@pytest.mark.component
+def test_PP_costing_err1():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    # check that the model solved properly and has 0 degrees of freedom
+    assert degrees_of_freedom(m) == 0
+
+    ###########################################################################
+    #  Create costing constraints                                             #
+    ###########################################################################
+
+    # coal flow rate
+    # accounts 1.x and 2.x are coal handling, preparation and feed
+    # accounts 4.x are for boiler BOP and foundations
+    coal_accounts = ["1.1", "1.2", "1.3", "1.4", "2.1", "2.2", "4.11", "4.15", "4.16"]
+    m.fs.boiler = UnitModelBlock()
+    m.fs.boiler.coal_mass_flow = pyo.Expression(
+        expr=7238.95 * pyunits.ton / pyunits.day + 1 * pyunits.gal
+    )
+    with pytest.raises(UnitsError):
+        m.fs.boiler.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=QGESSCostingData.get_PP_costing,
+            costing_method_arguments={
+                "cost_accounts": coal_accounts,
+                "scaled_param": m.fs.boiler.coal_mass_flow,
+                "tech": 2,
+                "ccs": "A",
+            },
+        )
+
+
+@pytest.mark.component
+def test_PP_costing_err2():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    # check that the model solved properly and has 0 degrees of freedom
+    assert degrees_of_freedom(m) == 0
+
+    ###########################################################################
+    #  Create costing constraints                                             #
+    ###########################################################################
+
+    # coal flow rate
+    # accounts 1.x and 2.x are coal handling, preparation and feed
+    # accounts 4.x are for boiler BOP and foundations
+    coal_accounts = ["1.1", "1.2", "1.3", "1.4", "2.1", "2.2", "4.11", "4.15", "4.16"]
+    m.fs.boiler = UnitModelBlock()
+    m.fs.boiler.coal_mass_flow = pyo.Expression(expr=7238.95 * pyunits.ton)
+    with pytest.raises(UnitsError):
+        m.fs.boiler.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=QGESSCostingData.get_PP_costing,
+            costing_method_arguments={
+                "cost_accounts": coal_accounts,
+                "scaled_param": m.fs.boiler.coal_mass_flow,
+                "tech": 2,
+                "ccs": "A",
+            },
+        )
 
 
 @pytest.mark.component
