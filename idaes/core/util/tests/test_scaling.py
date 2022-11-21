@@ -27,6 +27,7 @@ from pyomo.core.expr.logical_expr import (
 )
 from pyomo.network import Port, Arc
 
+from idaes.core.base.process_base import ProcessBaseBlock
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import number_activated_objectives
 import idaes.core.util.scaling as sc
@@ -2510,3 +2511,202 @@ Potential Scaling Issues
 """
 
     assert stream.getvalue().strip() == expected.strip()
+
+
+class TestSetScalingFromDefault:
+    @pytest.fixture
+    def m(self):
+        m = pyo.ConcreteModel()
+
+        m.b = ProcessBaseBlock()
+
+        m.b.set = pyo.Set(initialize=["a", "b", "c"])
+
+        m.b.v1 = pyo.Var()
+        m.b.v2 = pyo.Var(m.b.set)
+
+        m.b.b2 = ProcessBaseBlock(m.b.set)
+
+        m.b.b2["a"].v3 = pyo.Var(m.b.set)
+        m.b.b2["b"].v4 = pyo.Var()
+
+        m.b.set_default_scaling("v1", 10)
+        m.b.set_default_scaling("v2", 20, index="a")
+        m.b.set_default_scaling("v2", 21, index="b")
+        m.b.set_default_scaling("v2", 22, index="c")
+
+        m.b.b2["a"].set_default_scaling("v3", 30)
+
+        return m
+
+    @pytest.mark.unit
+    def test_set_scaling_from_default_single_var(self, m):
+        sc.set_scaling_from_default(m.b.v1)
+
+        assert m.b.scaling_factor[m.b.v1] == 10
+
+    @pytest.mark.unit
+    def test_set_scaling_from_default_no_overwrite(self, m):
+        sc.set_scaling_factor(m.b.v1, 100)
+        sc.set_scaling_from_default(m.b.v1)
+
+        assert m.b.scaling_factor[m.b.v1] == 100
+
+    @pytest.mark.unit
+    def test_set_scaling_from_default_indexed_var(self, m):
+        sc.set_scaling_from_default(m.b.v2)
+
+        assert m.b.scaling_factor[m.b.v2["a"]] == 20
+        assert m.b.scaling_factor[m.b.v2["b"]] == 21
+        assert m.b.scaling_factor[m.b.v2["c"]] == 22
+
+    @pytest.mark.unit
+    def test_set_scaling_from_default_indexed_var_overall(self, m):
+        sc.set_scaling_from_default(m.b.b2["a"].v3)
+
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["a"]] == 30
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["b"]] == 30
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["c"]] == 30
+
+    @pytest.mark.unit
+    def test_set_scaling_from_default_no_value(self, m, caplog):
+        sc.set_scaling_from_default(m.b.b2["b"].v4)
+
+        expected = "No default scaling factor found for b.b2[b].v4, no scaling factor assigned."
+
+        assert expected in caplog.text
+        assert not hasattr(m.b.b2["b"], "scaling_factor")
+
+    @pytest.mark.unit
+    def test_set_scaling_from_default_missing(self, m, caplog):
+        sc.set_scaling_from_default(m.b.b2["b"].v4, missing=100)
+
+        expected = "No default scaling factor found for b.b2[b].v4, assigning value of 100 instead."
+
+        assert expected in caplog.text
+        assert m.b.b2["b"].scaling_factor[m.b.b2["b"].v4] == 100
+
+    @pytest.mark.unit
+    def test_set_scaling_from_default_block(self, m, caplog):
+        sc.set_scaling_from_default(m.b)
+
+        expected = "No default scaling factor found for b.b2[b].v4, no scaling factor assigned."
+
+        assert expected in caplog.text
+        assert m.b.scaling_factor[m.b.v1] == 10
+        assert m.b.scaling_factor[m.b.v2["a"]] == 20
+        assert m.b.scaling_factor[m.b.v2["b"]] == 21
+        assert m.b.scaling_factor[m.b.v2["c"]] == 22
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["a"]] == 30
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["b"]] == 30
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["c"]] == 30
+        assert not hasattr(m.b.b2["b"], "scaling_factor")
+
+    @pytest.mark.unit
+    def test_set_scaling_from_default_block_no_descend(self, m, caplog):
+        sc.set_scaling_from_default(m.b, descend_into=False)
+
+        expected = "No default scaling factor found for b.b2[b].v4, no scaling factor assigned."
+
+        assert expected not in caplog.text
+        assert m.b.scaling_factor[m.b.v1] == 10
+        assert m.b.scaling_factor[m.b.v2["a"]] == 20
+        assert m.b.scaling_factor[m.b.v2["b"]] == 21
+        assert m.b.scaling_factor[m.b.v2["c"]] == 22
+        assert not hasattr(m.b.b2["a"], "scaling_factor")
+        assert not hasattr(m.b.b2["b"], "scaling_factor")
+
+
+class TestSetVarScalingFromCurrentValue:
+    @pytest.fixture
+    def m(self):
+        m = pyo.ConcreteModel()
+
+        m.b = ProcessBaseBlock()
+
+        m.b.set = pyo.Set(initialize=["a", "b", "c"])
+
+        m.b.v1 = pyo.Var(initialize=7)
+        m.b.v2 = pyo.Var(m.b.set, initialize={"a": 11, "b": 12, "c": 13})
+
+        m.b.b2 = ProcessBaseBlock(m.b.set)
+
+        m.b.b2["a"].v3 = pyo.Var(m.b.set, initialize={"a": 31, "b": 32, "c": 33})
+        m.b.b2["b"].v4 = pyo.Var()
+
+        m.b.set_default_scaling("v1", 10)
+        m.b.set_default_scaling("v2", 20, index="a")
+        m.b.set_default_scaling("v2", 21, index="b")
+        m.b.set_default_scaling("v2", 22, index="c")
+
+        m.b.b2["a"].set_default_scaling("v3", 30)
+
+        return m
+
+    @pytest.mark.unit
+    def test_set_variable_scaling_from_current_value_single_var(self, m):
+        sc.set_variable_scaling_from_current_value(m.b.v1)
+
+        assert m.b.scaling_factor[m.b.v1] == 7
+
+    @pytest.mark.unit
+    def test_set_variable_scaling_from_current_value_no_overwrite(self, m):
+        sc.set_scaling_factor(m.b.v1, 100)
+        sc.set_variable_scaling_from_current_value(m.b.v1)
+
+        assert m.b.scaling_factor[m.b.v1] == 100
+
+    @pytest.mark.unit
+    def test_set_variable_scaling_from_current_value_indexed_var(self, m):
+        sc.set_variable_scaling_from_current_value(m.b.v2)
+
+        assert m.b.scaling_factor[m.b.v2["a"]] == 11
+        assert m.b.scaling_factor[m.b.v2["b"]] == 12
+        assert m.b.scaling_factor[m.b.v2["c"]] == 13
+
+    @pytest.mark.unit
+    def test_set_variable_scaling_from_current_value_indexed_var_overall(self, m):
+        sc.set_variable_scaling_from_current_value(m.b.b2["a"].v3)
+
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["a"]] == 31
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["b"]] == 32
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["c"]] == 33
+
+    @pytest.mark.unit
+    def test_set_variable_scaling_from_current_value_no_value(self, m, caplog):
+        sc.set_variable_scaling_from_current_value(m.b.b2["b"].v4)
+
+        expected = "Component b.b2[b].v4 does not have a current value; no scaling factor assigned."
+
+        assert expected in caplog.text
+        assert not hasattr(m.b.b2["b"], "scaling_factor")
+
+    @pytest.mark.unit
+    def test_set_variable_scaling_from_current_value_block(self, m, caplog):
+        sc.set_variable_scaling_from_current_value(m.b)
+
+        expected = "Component b.b2[b].v4 does not have a current value; no scaling factor assigned."
+
+        assert expected in caplog.text
+        assert m.b.scaling_factor[m.b.v1] == 7
+        assert m.b.scaling_factor[m.b.v2["a"]] == 11
+        assert m.b.scaling_factor[m.b.v2["b"]] == 12
+        assert m.b.scaling_factor[m.b.v2["c"]] == 13
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["a"]] == 31
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["b"]] == 32
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["c"]] == 33
+        assert not hasattr(m.b.b2["b"], "scaling_factor")
+
+    # @pytest.mark.unit
+    # def test_set_variable_scaling_from_current_value_block_no_descend(self, m, caplog):
+    #     sc.set_variable_scaling_from_current_value(m.b, descend_into=False)
+    #
+    #     expected = "Component b.b2[b].v4 does not have a current value; no scaling factor assigned."
+    #
+    #     assert expected not in caplog.text
+    #     assert m.b.scaling_factor[m.b.v1] == 10
+    #     assert m.b.scaling_factor[m.b.v2["a"]] == 20
+    #     assert m.b.scaling_factor[m.b.v2["b"]] == 21
+    #     assert m.b.scaling_factor[m.b.v2["c"]] == 22
+    #     assert not hasattr(m.b.b2["a"], "scaling_factor")
+    #     assert not hasattr(m.b.b2["b"], "scaling_factor")

@@ -33,6 +33,7 @@ import scipy.linalg as la
 import sys
 
 import pyomo.environ as pyo
+from pyomo.core.base.var import _VarData
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.network import Arc
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
@@ -1117,6 +1118,95 @@ class FlattenedScalingAssignment(object):
 
 
 # New functions
+def set_scaling_from_default(
+    component,
+    missing: float = None,
+    overwrite: bool = False,
+    descend_into: bool = True,
+    components_to_scale: "List of Pyomo component types" = [pyo.Var],
+):
+    """
+    Set scaling factor(s) for given component from default scaling factor dictionary associated with the parent model.
+
+    This function accepts any type of Pyomo component as an input, and will attempt to apply scaling factors to all
+    attached types of components listed in 'components_to_scale' argument. A warning will be logged for any
+    component which does not have a default scaling factor assigned.
+
+    Args:
+        component: Pyomo component to apply scaling factors to.
+        missing: value to use if a component does not have a default scaling factor assigned (default=None).
+        overwrite: bool indicating whether to overwrite existing scaling factors (default=False).
+        descend_into: bool indicating whether to descend into child Blocks if component is a Block (default=True).
+        components_to_scale: list of Pyomo component types to apply scaling factors to if component is a Block (default=[Var]).
+
+    Returns:
+        None
+
+    """
+    if isinstance(component, pyo.Block):
+        for c in component.component_data_objects(
+            components_to_scale, descend_into=descend_into
+        ):
+            set_scaling_from_default(c, missing=missing, overwrite=overwrite)
+    elif component.is_indexed():
+        for k in component.values():
+            set_scaling_from_default(k, missing=missing, overwrite=overwrite)
+    else:
+        parent = component.parent_block()
+        dsf = parent.get_default_scaling(
+            component.parent_component().local_name, index=component.index()
+        )
+
+        if dsf is not None:
+            set_scaling_factor(component, dsf, overwrite=overwrite)
+        elif missing is not None:
+            _log.warn(
+                f"No default scaling factor found for {component.name}, assigning value of {missing} instead."
+            )
+            set_scaling_factor(component, missing, overwrite=overwrite)
+        else:
+            _log.warn(
+                f"No default scaling factor found for {component.name}, no scaling factor assigned."
+            )
+
+
+def set_variable_scaling_from_current_value(
+    component, descend_into: bool = True, overwrite: bool = False
+):
+    """
+    Set scaling factor for variables based on current value. Component argument can be either a Pyomo Var or Block.
+    In case of a Block, this functon will attempt to scale all variables in the block using their current value,
+
+    Args:
+        component: component to scale
+        overwrite: bool indicating whether to overwrite existing scaling factors (default=False).
+        descend_into: bool indicating whether to descend into child Blocks if component is a Block (default=True).
+
+    Returns:
+        None
+
+    """
+    if isinstance(component, pyo.Block):
+        for c in component.component_data_objects(pyo.Var, descend_into=descend_into):
+            set_variable_scaling_from_current_value(c, overwrite=overwrite)
+    elif component.is_indexed():
+        for k in component.values():
+            set_variable_scaling_from_current_value(k, overwrite=overwrite)
+    elif not isinstance(component, _VarData):
+        raise TypeError(
+            f"Invalid component type {component.name} (type:{type(component)}). "
+            "component argument to set_variable_scaling_from_current_value must be "
+            "either a Pyomo Var or Block."
+        )
+    else:
+        try:
+            set_scaling_factor(component, pyo.value(component), overwrite=overwrite)
+        except ValueError:
+            _log.warning(
+                f"Component {component.name} does not have a current value; no scaling factor assigned."
+            )
+
+
 class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
     """
     Expression walker for collecting scaling factors in an expression and determining the
