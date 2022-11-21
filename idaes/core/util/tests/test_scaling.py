@@ -2710,3 +2710,106 @@ class TestSetVarScalingFromCurrentValue:
         assert m.b.scaling_factor[m.b.v2["c"]] == 13
         assert not hasattr(m.b.b2["a"], "scaling_factor")
         assert not hasattr(m.b.b2["b"], "scaling_factor")
+
+
+@pytest.mark.integration
+def test_scaling_workflow(caplog):
+    # Create the model
+    model = pyo.ConcreteModel()
+
+    # Add some basic Pyomo components to test underlying functionality
+    model.x = pyo.Var(bounds=(-5, 5), initialize=1.0)
+    model.y = pyo.Var(bounds=(0, 1), initialize=1.0)
+    model.obj = pyo.Objective(expr=1e8 * model.x + 1e6 * model.y)
+    model.con = pyo.Constraint(expr=model.x + model.y == 1.0)
+
+    # Create a dummy ProcessBlock with some Vars and Constraints
+    model.block = ProcessBaseBlock()
+    model.block.v1 = pyo.Var(initialize=6)
+    model.block.v2 = pyo.Var(initialize=14)
+    model.block.v3 = pyo.Var(initialize=32)
+    model.block.v4 = pyo.Var(initialize=40)
+
+    model.block.c1 = pyo.Constraint(
+        expr=model.block.v1 == model.block.v2 + model.block.v3 + model.block.v4
+    )
+
+    @model.block.Constraint(["max", "min"])
+    def c2(b, i):
+        return (
+            0
+            == model.block.v1 * pyo.exp(model.block.v2)
+            + model.block.v3 * model.block.v4
+        )
+
+    # Add some default scaling factors
+    model.block.set_default_scaling("v1", 0.1)
+    model.block.set_default_scaling("v2", 10)
+    model.block.set_default_scaling("v3", 100)
+
+    # Set some variable scaling factors
+    sc.set_scaling_factor(model.x, 0.2)
+    sc.set_scaling_factor(
+        model.block.v3, 20
+    )  # Set this so the default won';'t overwrite it
+
+    sc.set_scaling_from_default(model.block, overwrite=False)
+    sc.set_variable_scaling_from_current_value(model.block.v4)
+
+    # Set some constraint and objective scaling factors
+    sc.set_scaling_factor(model.obj, 1e-6)
+    sc.set_scaling_factor(model.con, 2.0)
+
+    sc.set_constraint_scaling_harmonic_magnitude(model.block.c1)
+    sc.set_constraint_scaling_max_magnitude(model.block.c2["max"])
+    sc.set_constraint_scaling_min_magnitude(model.block.c2["min"])
+
+    # Transform the model
+    scaled_model = pyo.TransformationFactory("core.scale_model").create_using(model)
+
+    # Check assigned scaling factors
+    assert (
+        "No default scaling factor found for block.v4, no scaling factor assigned."
+        in caplog.text
+    )
+
+    assert model.block.scaling_factor[model.block.v1] == 0.1
+    assert model.block.scaling_factor[model.block.v2] == 10
+    assert model.block.scaling_factor[model.block.v3] == 20
+    assert model.block.scaling_factor[model.block.v4] == 40
+    assert model.block.scaling_factor[model.block.c1] == pytest.approx(
+        1 / (0.1 + 10 + 20 + 40), rel=1e-8
+    )
+    assert model.block.scaling_factor[model.block.c2["max"]] == pytest.approx(
+        1 / (10 * math.exp(0.1)), rel=1e-8
+    )
+    assert model.block.scaling_factor[model.block.c2["min"]] == pytest.approx(
+        20 * 40, rel=1e-8
+    )
+
+    # # Check the untransformed model
+    # assert pyo.value(model.x) == pytest.approx(1.0, rel=1e-8)
+    assert pyo.value(model.obj) == pytest.approx(101000000.0, rel=1e-8)
+    assert pyo.value(model.block.c1) == pytest.approx(-80, rel=1e-8)
+    assert pyo.value(model.block.c2["max"]) == pytest.approx(-1296.309691, rel=1e-8)
+    assert pyo.value(model.block.c2["min"]) == pytest.approx(-1296.309691, rel=1e-8)
+
+    # Check the transformed model
+    assert pyo.value(scaled_model.scaled_x) == pytest.approx(0.2, rel=1e-8)
+    assert pyo.value(scaled_model.scaled_x.lb) == pytest.approx(-1.0, rel=1e-8)
+    assert pyo.value(scaled_model.block.scaled_v1) == pytest.approx(6 * 0.1, rel=1e-8)
+    assert pyo.value(scaled_model.block.scaled_v2) == pytest.approx(14 * 10, rel=1e-8)
+    assert pyo.value(scaled_model.block.scaled_v3) == pytest.approx(32 * 20, rel=1e-8)
+    assert pyo.value(scaled_model.block.scaled_v4) == pytest.approx(40 * 40, rel=1e-8)
+
+    assert pyo.value(scaled_model.scaled_obj) == pytest.approx(101.0, rel=1e-8)
+    assert pyo.value(scaled_model.block.scaled_c1) == pytest.approx(
+        -80 * 0.0142653352, rel=1e-8
+    )
+    # Note that scaling is intentionally very bad
+    assert pyo.value(scaled_model.block.scaled_c2["max"]) == pytest.approx(
+        -1296.309691 / (10 * math.exp(0.1)), rel=1e-8
+    )
+    assert pyo.value(scaled_model.block.scaled_c2["min"]) == pytest.approx(
+        -1296.309691 * 800, rel=1e-8
+    )
