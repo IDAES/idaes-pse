@@ -231,9 +231,8 @@ conditions, and thus corresponding constraints  should be included,
         self.set_default_scaling("mw", 100)
         self.set_default_scaling("mw_phase", 100)
         self.set_default_scaling("gibbs_mol_phase_comp", 1e-3)
-        # Check values for these 3
-        self.set_default_scaling("fug_vap", 1)
-        self.set_default_scaling("fug_liq", 1)
+        self.set_default_scaling("fug_vap", 1e-6)
+        self.set_default_scaling("fug_liq", 1e-6)
         self.set_default_scaling("ds_form", 100)
 
     @classmethod

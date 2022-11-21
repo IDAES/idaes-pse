@@ -63,7 +63,7 @@ def set_scaling(m):
     )
 
     iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].mole_frac_comp["benzene"], 1)
-    iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].mole_frac_comp["toluene"], 1e5)
+    iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].mole_frac_comp["toluene"], 1e4)
     iscale.set_scaling_factor(
         m.fs.M01.inlet_1_state[0].enth_mol_phase_comp["Liq", "benzene"], 1e-4
     )
@@ -410,37 +410,17 @@ def set_scaling(m):
 
     iscale.calculate_scaling_factors(m)
 
-    from idaes.core.util.scaling import (
-        unscaled_constraints_generator,
-        unscaled_variables_generator,
-        badly_scaled_var_generator,
-    )
-
-    print("\nUnscaled Constraints")
-    for i in unscaled_constraints_generator(m):
-        print(i[0].name)
-    print("\nUnscaled Vars")
-    for i in unscaled_variables_generator(m):
-        print(i[0].name)
-    print("\nBadly Scaled Vars")
-    for i in badly_scaled_var_generator(m):
-        print(i[0].name, i[1])
-
 
 def set_dof(m):
     m.fs.M01.inlet_1.flow_mol.fix(1.0)
-    m.fs.M01.inlet_1.mole_frac_comp[:, "benzene"].fix(0.99999)
-    m.fs.M01.inlet_1.mole_frac_comp[:, "toluene"].fix(0.00001)
-    # m.fs.M01.inlet_1.mole_frac_comp[:, "benzene"].fix(1)
-    # m.fs.M01.inlet_1.mole_frac_comp[:, "toluene"].fix(1e-5)
+    m.fs.M01.inlet_1.mole_frac_comp[:, "benzene"].fix(1)
+    m.fs.M01.inlet_1.mole_frac_comp[:, "toluene"].fix(1e-5)
     m.fs.M01.inlet_1.pressure.fix(101325)
     m.fs.M01.inlet_1.temperature.fix(370)
 
     m.fs.M01.inlet_2.flow_mol.fix(1.0)
-    m.fs.M01.inlet_2.mole_frac_comp[:, "benzene"].fix(0.00001)
-    m.fs.M01.inlet_2.mole_frac_comp[:, "toluene"].fix(0.99999)
-    # m.fs.M01.inlet_2.mole_frac_comp[:, "benzene"].fix(1e-5)
-    # m.fs.M01.inlet_2.mole_frac_comp[:, "toluene"].fix(1)
+    m.fs.M01.inlet_2.mole_frac_comp[:, "benzene"].fix(1e-5)
+    m.fs.M01.inlet_2.mole_frac_comp[:, "toluene"].fix(1)
     m.fs.M01.inlet_2.pressure.fix(1.3e5)
     m.fs.M01.inlet_2.temperature.fix(380)
 
