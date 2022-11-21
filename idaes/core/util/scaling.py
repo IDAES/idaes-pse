@@ -1200,7 +1200,13 @@ def set_variable_scaling_from_current_value(
         )
     else:
         try:
-            set_scaling_factor(component, pyo.value(component), overwrite=overwrite)
+            val = pyo.value(component)
+            if val == 0:
+                _log.warning(
+                    f"Component {component.name} currently has a value of 0; no scaling factor assigned."
+                )
+            else:
+                set_scaling_factor(component, 1 / val, overwrite=overwrite)
         except ValueError:
             _log.warning(
                 f"Component {component.name} does not have a current value; no scaling factor assigned."

@@ -2647,7 +2647,7 @@ class TestSetVarScalingFromCurrentValue:
     def test_set_variable_scaling_from_current_value_single_var(self, m):
         sc.set_variable_scaling_from_current_value(m.b.v1)
 
-        assert m.b.scaling_factor[m.b.v1] == 7
+        assert m.b.scaling_factor[m.b.v1] == pytest.approx(1 / 7, rel=1e-8)
 
     @pytest.mark.unit
     def test_set_variable_scaling_from_current_value_no_overwrite(self, m):
@@ -2660,17 +2660,23 @@ class TestSetVarScalingFromCurrentValue:
     def test_set_variable_scaling_from_current_value_indexed_var(self, m):
         sc.set_variable_scaling_from_current_value(m.b.v2)
 
-        assert m.b.scaling_factor[m.b.v2["a"]] == 11
-        assert m.b.scaling_factor[m.b.v2["b"]] == 12
-        assert m.b.scaling_factor[m.b.v2["c"]] == 13
+        assert m.b.scaling_factor[m.b.v2["a"]] == pytest.approx(1 / 11, rel=1e-8)
+        assert m.b.scaling_factor[m.b.v2["b"]] == pytest.approx(1 / 12, rel=1e-8)
+        assert m.b.scaling_factor[m.b.v2["c"]] == pytest.approx(1 / 13, rel=1e-8)
 
     @pytest.mark.unit
     def test_set_variable_scaling_from_current_value_indexed_var_overall(self, m):
         sc.set_variable_scaling_from_current_value(m.b.b2["a"].v3)
 
-        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["a"]] == 31
-        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["b"]] == 32
-        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["c"]] == 33
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["a"]] == pytest.approx(
+            1 / 31, rel=1e-8
+        )
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["b"]] == pytest.approx(
+            1 / 32, rel=1e-8
+        )
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["c"]] == pytest.approx(
+            1 / 33, rel=1e-8
+        )
 
     @pytest.mark.unit
     def test_set_variable_scaling_from_current_value_no_value(self, m, caplog):
@@ -2682,19 +2688,35 @@ class TestSetVarScalingFromCurrentValue:
         assert not hasattr(m.b.b2["b"], "scaling_factor")
 
     @pytest.mark.unit
+    def test_set_variable_scaling_from_current_value_zero_value(self, m, caplog):
+        m.b.b2["b"].v4.set_value(0)
+        sc.set_variable_scaling_from_current_value(m.b.b2["b"].v4)
+
+        expected = "Component b.b2[b].v4 currently has a value of 0; no scaling factor assigned."
+
+        assert expected in caplog.text
+        assert not hasattr(m.b.b2["b"], "scaling_factor")
+
+    @pytest.mark.unit
     def test_set_variable_scaling_from_current_value_block(self, m, caplog):
         sc.set_variable_scaling_from_current_value(m.b)
 
         expected = "Component b.b2[b].v4 does not have a current value; no scaling factor assigned."
 
         assert expected in caplog.text
-        assert m.b.scaling_factor[m.b.v1] == 7
-        assert m.b.scaling_factor[m.b.v2["a"]] == 11
-        assert m.b.scaling_factor[m.b.v2["b"]] == 12
-        assert m.b.scaling_factor[m.b.v2["c"]] == 13
-        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["a"]] == 31
-        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["b"]] == 32
-        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["c"]] == 33
+        assert m.b.scaling_factor[m.b.v1] == pytest.approx(1 / 7, rel=1e-8)
+        assert m.b.scaling_factor[m.b.v2["a"]] == pytest.approx(1 / 11, rel=1e-8)
+        assert m.b.scaling_factor[m.b.v2["b"]] == pytest.approx(1 / 12, rel=1e-8)
+        assert m.b.scaling_factor[m.b.v2["c"]] == pytest.approx(1 / 13, rel=1e-8)
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["a"]] == pytest.approx(
+            1 / 31, rel=1e-8
+        )
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["b"]] == pytest.approx(
+            1 / 32, rel=1e-8
+        )
+        assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["c"]] == pytest.approx(
+            1 / 33, rel=1e-8
+        )
         assert not hasattr(m.b.b2["b"], "scaling_factor")
 
     @pytest.mark.unit
@@ -2704,16 +2726,18 @@ class TestSetVarScalingFromCurrentValue:
         expected = "Component b.b2[b].v4 does not have a current value; no scaling factor assigned."
 
         assert expected not in caplog.text
-        assert m.b.scaling_factor[m.b.v1] == 7
-        assert m.b.scaling_factor[m.b.v2["a"]] == 11
-        assert m.b.scaling_factor[m.b.v2["b"]] == 12
-        assert m.b.scaling_factor[m.b.v2["c"]] == 13
+        assert m.b.scaling_factor[m.b.v1] == pytest.approx(1 / 7, rel=1e-8)
+        assert m.b.scaling_factor[m.b.v2["a"]] == pytest.approx(1 / 11, rel=1e-8)
+        assert m.b.scaling_factor[m.b.v2["b"]] == pytest.approx(1 / 12, rel=1e-8)
+        assert m.b.scaling_factor[m.b.v2["c"]] == pytest.approx(1 / 13, rel=1e-8)
         assert not hasattr(m.b.b2["a"], "scaling_factor")
         assert not hasattr(m.b.b2["b"], "scaling_factor")
 
 
 @pytest.mark.integration
 def test_scaling_workflow(caplog):
+    # TODO: This test will fail until an issue in Pyomo is resolved
+    # https://github.com/Pyomo/pyomo/pull/2619
     # Create the model
     model = pyo.ConcreteModel()
 
@@ -2726,9 +2750,9 @@ def test_scaling_workflow(caplog):
     # Create a dummy ProcessBlock with some Vars and Constraints
     model.block = ProcessBaseBlock()
     model.block.v1 = pyo.Var(initialize=6)
-    model.block.v2 = pyo.Var(initialize=14)
-    model.block.v3 = pyo.Var(initialize=32)
-    model.block.v4 = pyo.Var(initialize=40)
+    model.block.v2 = pyo.Var(initialize=15)
+    model.block.v3 = pyo.Var(initialize=3000)
+    model.block.v4 = pyo.Var(initialize=0.4)
 
     model.block.c1 = pyo.Constraint(
         expr=model.block.v1 == model.block.v2 + model.block.v3 + model.block.v4
@@ -2744,14 +2768,14 @@ def test_scaling_workflow(caplog):
 
     # Add some default scaling factors
     model.block.set_default_scaling("v1", 0.1)
-    model.block.set_default_scaling("v2", 10)
-    model.block.set_default_scaling("v3", 100)
+    model.block.set_default_scaling("v2", 0.1)
+    model.block.set_default_scaling("v3", 1000)  # Deliberately bad
 
     # Set some variable scaling factors
     sc.set_scaling_factor(model.x, 0.2)
     sc.set_scaling_factor(
-        model.block.v3, 20
-    )  # Set this so the default won';'t overwrite it
+        model.block.v3, 1e-3
+    )  # Set this so the default won't overwrite it
 
     sc.set_scaling_from_default(model.block, overwrite=False)
     sc.set_variable_scaling_from_current_value(model.block.v4)
@@ -2774,42 +2798,46 @@ def test_scaling_workflow(caplog):
     )
 
     assert model.block.scaling_factor[model.block.v1] == 0.1
-    assert model.block.scaling_factor[model.block.v2] == 10
-    assert model.block.scaling_factor[model.block.v3] == 20
-    assert model.block.scaling_factor[model.block.v4] == 40
+    assert model.block.scaling_factor[model.block.v2] == 0.1
+    assert model.block.scaling_factor[model.block.v3] == 1e-3
+    assert model.block.scaling_factor[model.block.v4] == 2.5
     assert model.block.scaling_factor[model.block.c1] == pytest.approx(
-        1 / (0.1 + 10 + 20 + 40), rel=1e-8
-    )
+        0.370233247, rel=1e-8
+    )  # 1 / (0.1 + 0.1 + 1e-3 + 1/0.4)
     assert model.block.scaling_factor[model.block.c2["max"]] == pytest.approx(
-        1 / (10 * math.exp(0.1)), rel=1e-8
-    )
+        4.53999298e-6, rel=1e-8
+    )  # 1 / (10 * math.exp(10))
     assert model.block.scaling_factor[model.block.c2["min"]] == pytest.approx(
-        20 * 40, rel=1e-8
-    )
+        0.0025, rel=1e-8
+    )  # 1/(1e3 * 0.4)
 
     # # Check the untransformed model
-    # assert pyo.value(model.x) == pytest.approx(1.0, rel=1e-8)
+    assert pyo.value(model.x) == pytest.approx(1.0, rel=1e-8)
+    assert pyo.value(model.block.v1) == pytest.approx(6, rel=1e-8)
+    assert pyo.value(model.block.v2) == pytest.approx(15, rel=1e-8)
+    assert pyo.value(model.block.v3) == pytest.approx(3000, rel=1e-8)
+    assert pyo.value(model.block.v4) == pytest.approx(0.4, rel=1e-8)
+
     assert pyo.value(model.obj) == pytest.approx(101000000.0, rel=1e-8)
-    assert pyo.value(model.block.c1) == pytest.approx(-80, rel=1e-8)
-    assert pyo.value(model.block.c2["max"]) == pytest.approx(-1296.309691, rel=1e-8)
-    assert pyo.value(model.block.c2["min"]) == pytest.approx(-1296.309691, rel=1e-8)
+    assert pyo.value(model.block.c1) == pytest.approx(-3009.4, rel=1e-8)
+    assert pyo.value(model.block.c2["max"].body) == pytest.approx(19615304.2, rel=1e-8)
+    assert pyo.value(model.block.c2["min"]) == pytest.approx(19615304.2, rel=1e-8)
 
     # Check the transformed model
     assert pyo.value(scaled_model.scaled_x) == pytest.approx(0.2, rel=1e-8)
     assert pyo.value(scaled_model.scaled_x.lb) == pytest.approx(-1.0, rel=1e-8)
-    assert pyo.value(scaled_model.block.scaled_v1) == pytest.approx(6 * 0.1, rel=1e-8)
-    assert pyo.value(scaled_model.block.scaled_v2) == pytest.approx(14 * 10, rel=1e-8)
-    assert pyo.value(scaled_model.block.scaled_v3) == pytest.approx(32 * 20, rel=1e-8)
-    assert pyo.value(scaled_model.block.scaled_v4) == pytest.approx(40 * 40, rel=1e-8)
+    assert pyo.value(scaled_model.block.scaled_v1) == pytest.approx(0.6, rel=1e-8)
+    assert pyo.value(scaled_model.block.scaled_v2) == pytest.approx(1.5, rel=1e-8)
+    assert pyo.value(scaled_model.block.scaled_v3) == pytest.approx(3, rel=1e-8)
+    assert pyo.value(scaled_model.block.scaled_v4) == pytest.approx(1, rel=1e-8)
 
     assert pyo.value(scaled_model.scaled_obj) == pytest.approx(101.0, rel=1e-8)
     assert pyo.value(scaled_model.block.scaled_c1) == pytest.approx(
-        -80 * 0.0142653352, rel=1e-8
-    )
-    # Note that scaling is intentionally very bad
+        -1114.17993, rel=1e-8
+    )  # -3009.4 * 0.370233247
     assert pyo.value(scaled_model.block.scaled_c2["max"]) == pytest.approx(
-        -1296.309691 / (10 * math.exp(0.1)), rel=1e-8
-    )
+        89.0533435, rel=1e-8
+    )  # 19615304.2 * 4.53999298e-6
     assert pyo.value(scaled_model.block.scaled_c2["min"]) == pytest.approx(
-        -1296.309691 * 800, rel=1e-8
-    )
+        49038.2606, rel=1e-8
+    )  # 19615304.2 * 0.0025
