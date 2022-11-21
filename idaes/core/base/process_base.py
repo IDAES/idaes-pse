@@ -137,7 +137,7 @@ class ProcessBlockData(_BlockData):
         # TODO: Deprecate once v2.0 is released
         return self._default_scaling_factors
 
-    def set_default_scaling(self, attribute, value, index=None):
+    def set_default_scaling(self, attribute: str, value: float, index: str = None):
         """Set a default scaling factor for a property.
 
         Args:
@@ -152,7 +152,7 @@ class ProcessBlockData(_BlockData):
         """
         self._default_scaling_factors[(attribute, index)] = value
 
-    def unset_default_scaling(self, attribute, index=None):
+    def unset_default_scaling(self, attribute: str, index: str = None):
         """Remove a previously set default value
 
         Args:
@@ -167,7 +167,7 @@ class ProcessBlockData(_BlockData):
         except KeyError:
             pass
 
-    def get_default_scaling(self, attribute, index=None):
+    def get_default_scaling(self, attribute: str, index: str = None):
         """Returns a default scale factor for a property
 
         Args:

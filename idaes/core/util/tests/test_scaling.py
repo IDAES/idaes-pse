@@ -2697,16 +2697,16 @@ class TestSetVarScalingFromCurrentValue:
         assert m.b.b2["a"].scaling_factor[m.b.b2["a"].v3["c"]] == 33
         assert not hasattr(m.b.b2["b"], "scaling_factor")
 
-    # @pytest.mark.unit
-    # def test_set_variable_scaling_from_current_value_block_no_descend(self, m, caplog):
-    #     sc.set_variable_scaling_from_current_value(m.b, descend_into=False)
-    #
-    #     expected = "Component b.b2[b].v4 does not have a current value; no scaling factor assigned."
-    #
-    #     assert expected not in caplog.text
-    #     assert m.b.scaling_factor[m.b.v1] == 10
-    #     assert m.b.scaling_factor[m.b.v2["a"]] == 20
-    #     assert m.b.scaling_factor[m.b.v2["b"]] == 21
-    #     assert m.b.scaling_factor[m.b.v2["c"]] == 22
-    #     assert not hasattr(m.b.b2["a"], "scaling_factor")
-    #     assert not hasattr(m.b.b2["b"], "scaling_factor")
+    @pytest.mark.unit
+    def test_set_variable_scaling_from_current_value_block_no_descend(self, m, caplog):
+        sc.set_variable_scaling_from_current_value(m.b, descend_into=False)
+
+        expected = "Component b.b2[b].v4 does not have a current value; no scaling factor assigned."
+
+        assert expected not in caplog.text
+        assert m.b.scaling_factor[m.b.v1] == 7
+        assert m.b.scaling_factor[m.b.v2["a"]] == 11
+        assert m.b.scaling_factor[m.b.v2["b"]] == 12
+        assert m.b.scaling_factor[m.b.v2["c"]] == 13
+        assert not hasattr(m.b.b2["a"], "scaling_factor")
+        assert not hasattr(m.b.b2["b"], "scaling_factor")
