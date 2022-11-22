@@ -1152,6 +1152,14 @@ def set_scaling_from_default(
         for k in component.values():
             set_scaling_from_default(k, missing=missing, overwrite=overwrite)
     else:
+        if not overwrite:
+            # If there is already a scaling factor, we can end here
+            sf = get_scaling_factor(
+                component, default=None, warning=False, exception=False
+            )
+            if sf is not None:
+                return
+
         parent = component.parent_block()
         dsf = parent.get_default_scaling(
             component.parent_component().local_name, index=component.index()
@@ -1199,8 +1207,17 @@ def set_variable_scaling_from_current_value(
             "either a Pyomo Var or Block."
         )
     else:
+        if not overwrite:
+            # If there is already a scaling factor, we can end here
+            sf = get_scaling_factor(
+                component, default=None, warning=False, exception=False
+            )
+            if sf is not None:
+                return
+
         try:
             val = pyo.value(component)
+
             if val == 0:
                 _log.warning(
                     f"Component {component.name} currently has a value of 0; no scaling factor assigned."

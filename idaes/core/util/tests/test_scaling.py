@@ -2578,6 +2578,17 @@ class TestSetScalingFromDefault:
         assert not hasattr(m.b.b2["b"], "scaling_factor")
 
     @pytest.mark.unit
+    def test_set_scaling_from_default_no_value_no_overwrite(self, m, caplog):
+        sc.set_scaling_factor(m.b.b2["b"].v4, 10)
+        sc.set_scaling_from_default(m.b.b2["b"].v4, overwrite=False)
+
+        # Already set scaling factor, so should not see a warning logged
+        expected = "No default scaling factor found for b.b2[b].v4, no scaling factor assigned."
+
+        assert expected not in caplog.text
+        assert m.b.b2["b"].scaling_factor[m.b.b2["b"].v4] == 10
+
+    @pytest.mark.unit
     def test_set_scaling_from_default_missing(self, m, caplog):
         sc.set_scaling_from_default(m.b.b2["b"].v4, missing=100)
 
@@ -2585,6 +2596,17 @@ class TestSetScalingFromDefault:
 
         assert expected in caplog.text
         assert m.b.b2["b"].scaling_factor[m.b.b2["b"].v4] == 100
+
+    @pytest.mark.unit
+    def test_set_scaling_from_default_missing_no_overwrite(self, m, caplog):
+        sc.set_scaling_factor(m.b.b2["b"].v4, 10)
+        sc.set_scaling_from_default(m.b.b2["b"].v4, missing=100, overwrite=False)
+
+        # Already set scaling factor, so should not see a warning logged
+        expected = "No default scaling factor found for b.b2[b].v4, assigning value of 100 instead."
+
+        assert expected not in caplog.text
+        assert m.b.b2["b"].scaling_factor[m.b.b2["b"].v4] == 10
 
     @pytest.mark.unit
     def test_set_scaling_from_default_block(self, m, caplog):
@@ -2688,6 +2710,19 @@ class TestSetVarScalingFromCurrentValue:
         assert not hasattr(m.b.b2["b"], "scaling_factor")
 
     @pytest.mark.unit
+    def test_set_variable_scaling_from_current_value_no_value_no_overwrite(
+        self, m, caplog
+    ):
+        sc.set_scaling_factor(m.b.b2["b"].v4, 10)
+        sc.set_variable_scaling_from_current_value(m.b.b2["b"].v4, overwrite=False)
+
+        # we have set a scaling factor already, so there should be no warning logged for missing value
+        expected = "Component b.b2[b].v4 does not have a current value; no scaling factor assigned."
+
+        assert expected not in caplog.text
+        assert m.b.b2["b"].scaling_factor[m.b.b2["b"].v4] == 10
+
+    @pytest.mark.unit
     def test_set_variable_scaling_from_current_value_zero_value(self, m, caplog):
         m.b.b2["b"].v4.set_value(0)
         sc.set_variable_scaling_from_current_value(m.b.b2["b"].v4)
@@ -2696,6 +2731,20 @@ class TestSetVarScalingFromCurrentValue:
 
         assert expected in caplog.text
         assert not hasattr(m.b.b2["b"], "scaling_factor")
+
+    @pytest.mark.unit
+    def test_set_variable_scaling_from_current_value_zero_value_no_overwrite(
+        self, m, caplog
+    ):
+        sc.set_scaling_factor(m.b.b2["b"].v4, 10)
+        m.b.b2["b"].v4.set_value(0)
+        sc.set_variable_scaling_from_current_value(m.b.b2["b"].v4, overwrite=False)
+
+        # we have set a scaling factor already, so there should be no warning logged for missing value
+        expected = "Component b.b2[b].v4 currently has a value of 0; no scaling factor assigned."
+
+        assert expected not in caplog.text
+        assert m.b.b2["b"].scaling_factor[m.b.b2["b"].v4] == 10
 
     @pytest.mark.unit
     def test_set_variable_scaling_from_current_value_block(self, m, caplog):
