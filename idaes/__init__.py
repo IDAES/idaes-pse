@@ -56,6 +56,27 @@ config.setup_environment(bin_directory, cfg.use_idaes_solvers)
 _log.debug("'idaes' logger debug test")
 
 
+def _handle_optional_compat_activation(
+    env_var: str = "IDAES_ACTIVATE_V1_COMPAT",
+):
+    found_in_env = os.environ.get(env_var, None)
+    if found_in_env:
+        _log.warning(
+            "Found environment variable %s=%s. Activating IDAES V1 compatibility.",
+            env_var,
+            found_in_env,
+        )
+        try:
+            from _idaes_v1_compat import activate
+        except ImportError:
+            _log.error("Required package _idaes_v1_compat not found")
+        else:
+            activate()
+
+
+_handle_optional_compat_activation()
+
+
 def _create_data_dir():
     """Create the IDAES directory to store data files in."""
     config.create_dir(data_directory)
