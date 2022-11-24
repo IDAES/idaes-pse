@@ -23,7 +23,7 @@ jobs:
     name: Verify v1 compat (env var=${{ matrix.env-var-value }}/${{ matrix.compat-ref }}/${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         python-version:
           - '3.8'
