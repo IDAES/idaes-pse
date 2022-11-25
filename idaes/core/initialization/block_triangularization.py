@@ -15,6 +15,7 @@ Initializer class for implementing Block Triangularization initialization
 """
 from pyomo.environ import check_optimal_termination, Constraint, Var
 from pyomo.common.config import ConfigValue
+from pyomo.contrib.incidence_analysis.util import solve_strongly_connected_components
 
 from idaes.core.initialization.initializer_base import InitializerBase
 from idaes.core.util.exceptions import InitializationError
@@ -32,29 +33,37 @@ class BlockTriangularizationInitializer(InitializerBase):
             description="Solver to use for NxN blocks",
         ),
     )
+    CONFIG.declare(
+        "block_solver_options",
+        ConfigValue(
+            default={},
+            description="Dict of options to pass to block solver",
+        ),
+    )
+    CONFIG.declare(
+        "calculate_variable_options",
+        ConfigValue(
+            default={},
+            description="Dict of options to pass to 1x1 block solver",
+            doc="Dict of options to pass to calc_var_kwds argument in "
+            "solve_strongly_connected_components method",
+        ),
+    )
 
-    def initialize(self, model, initial_guesses=None):
-        # 1. Get current model state
-        init_state = self.get_current_state(model)
+    def precheck(self, model):
+        super().precheck(model)
 
-        # 2. Load initial guesses
-        self.load_initial_guesses(model, initial_guesses)
+        # TODO: Add addition checks here for perfect matching, etc.
 
-        # 3. Fix states to make square
-        self.fix_input_states(model)
+    def initialization_routine(self, model):
+        if self.config.block_solver is not None:
+            solver = self.config.block_solver
+        else:
+            solver = get_solver()
 
-        # 4. Prechecks
-        self.precheck(model)
-
-        # 5. try: Call block-triangularization solver
-        try:
-            self.initialize_model(model)
-        # 6. finally: Restore model state
-        finally:
-            self.restore_model_state(model, init_state)
-
-        # 7. Check convergence
-        self.postcheck(model)
-
-    def initialize_model(self, model):
-        pass
+        solve_strongly_connected_components(
+            model,
+            solver=solver,
+            solver_kwds=self.config.block_solver_options,
+            calc_var_kwds=self.config.calculate_variable_options,
+        )

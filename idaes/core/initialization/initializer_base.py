@@ -13,13 +13,43 @@
 """
 Base class for initializer objects
 """
-from pyomo.environ import check_optimal_termination, Constraint, value, Var
+from pyomo.environ import (
+    BooleanVar,
+    Block,
+    check_optimal_termination,
+    Constraint,
+    Param,
+    value,
+    Var,
+)
+from pyomo.core.base.var import _VarData
 from pyomo.common.config import ConfigBlock, ConfigValue
 
+from idaes.core.util import to_json, from_json, StoreSpec
 from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
+import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee"
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
+
+
+StoreState = StoreSpec(
+    data_classes={
+        Var._ComponentDataClass: (("fixed",), None),
+        BooleanVar._ComponentDataClass: (("fixed",), None),
+        Block._ComponentDataClass: (("active",), None),
+        Constraint._ComponentDataClass: (("active",), None),
+    }
+)
+StoreValues = StoreSpec(
+    data_classes={
+        Var._ComponentDataClass: (("value",), None),
+        BooleanVar._ComponentDataClass: (("value",), None),
+    }
+)
 
 
 class InitializerBase:
@@ -38,18 +68,51 @@ class InitializerBase:
         self.config = self.CONFIG()
 
         self.postcheck_summary = {}
+        self.initial_state = {}
 
     def initialize(self, model, initial_guesses=None):
-        raise NotImplementedError()
+        # 1. Get current model state
+        init_state = self.get_current_state(model)
+
+        # 2. Load initial guesses
+        self.load_initial_guesses(model, initial_guesses)
+
+        # 3. Fix states to make square
+        self.fix_initialization_states(model)
+
+        # 4. Prechecks
+        self.precheck(model)
+
+        # 5. try: Call block-triangularization solver
+        try:
+            self.initialization_routine(model)
+        # 6. finally: Restore model state
+        finally:
+            self.restore_model_state(model, init_state)
+
+        # 7. Check convergence
+        self.postcheck(model)
 
     def get_current_state(self, model):
-        pass
+        self.initial_state = to_json(model, wts=StoreState, return_dict=True)
 
-    def load_initial_guesses(self, model, initial_guesses):
-        pass
+        return self.initial_state
 
-    def fix_input_states(self, model):
-        pass
+    def load_initial_guesses(self, model, initial_guesses=None, json_file=None):
+        if initial_guesses is not None and json_file is not None:
+            raise ValueError(
+                "Cannot provide both a set of initial guesses and a json file to load."
+            )
+
+        if initial_guesses is not None:
+            self._load_values_from_dict(model, initial_guesses)
+        elif json_file is not None:
+            from_json(model, fname=json_file, wts=StoreValues)
+        else:
+            _log.info_high("No initial guesses provided during initialization.")
+
+    def fix_initialization_states(self, model):
+        model.fix_initialization_states()
 
     def precheck(self, model):
         if not degrees_of_freedom(model) == 0:
@@ -58,11 +121,11 @@ class InitializerBase:
                 f"initialization (DoF = {degrees_of_freedom(model)})."
             )
 
-    def initialize_model(self, model):
+    def initialization_routine(self, model):
         raise NotImplementedError()
 
-    def restore_model_state(self, model, initial_state):
-        pass
+    def restore_model_state(self, model):
+        from_json(model, sd=self.initial_state, wts=StoreState)
 
     def postcheck(self, model, results_obj=None):
         if results_obj is not None:
@@ -78,14 +141,34 @@ class InitializerBase:
             # First, check that all non-stale Vars have values
             uninit_vars = []
             for v in model.component_data_objects(Var, descend_into=True):
-                if not v.stale and v.value is None:
-                    uninit_vars.appeand(v)
+                if v.value is None:
+                    uninit_vars.append(v)
             # Next check for unconverged equality constraints
             uninit_const = []
             for c in model.component_data_objects(Constraint, descend_into=True):
-                if c.upper is not None and c.lower is not None and c.upper == c.lower:
-                    if abs(value(c.body - c.lb)) >= self.config.constraint_tolerance:
+                try:
+                    if (
+                        c.upper is not None
+                        and c.lower is not None
+                        and c.upper == c.lower
+                    ):
+                        if (
+                            abs(value(c.body - c.lb))
+                            >= self.config.constraint_tolerance
+                        ):
+                            uninit_const.append(c)
+                    elif (
+                        c.upper is not None
+                        and value(c.body) > c.upper + self.config.constraint_tolerance
+                    ):
                         uninit_const.append(c)
+                    elif (
+                        c.lower is not None
+                        and value(c.body) < c.lower + self.config.constraint_tolerance
+                    ):
+                        uninit_const.append(c)
+                except ValueError:
+                    uninit_const.append(c)
 
             self.postcheck_summary = {
                 "uninitialized_vars": uninit_vars,
@@ -97,3 +180,18 @@ class InitializerBase:
                     f"{model.name} failed to initialize successfully: uninitialized variables or "
                     "unconverged equality constraints detected. Please check postcheck summary for more information."
                 )
+
+    def _load_values_from_dict(self, model, initial_guesses):
+        for c, v in initial_guesses.items():
+            component = model.find_component(c)
+
+            if not isinstance(component, (Var, _VarData)):
+                raise TypeError(
+                    f"Component {c} is not a Var. Initial guesses should only contain values for variables."
+                )
+            else:
+                if component.is_indexed():
+                    for i in component.values():
+                        i.set_value(v)
+                else:
+                    component.set_value(v)

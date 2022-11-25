@@ -806,7 +806,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
         sd: dictionary to read from
         o: Pyomo component whoes data to read
         wts: StoreSpec object specifying what to read in
-        lookup: a lookup table for id to componet for reading suffixes
+        lookup: a lookup table for id to component for reading suffixes
         suffixes: a list of suffixes put off reading until end
 
     Returns:
@@ -842,7 +842,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
                 raise (e)  # else raise exception
         if ff is not None:  # if a filer function was given, use it to make a
             # new a list based on the model and whats stored for the state
-            # this lets you contionally load things, for example only load
+            # this lets you condionally load things, for example only load
             # values for unfixed variables.
             alist = ff(el, edict)
         if Suffix in wts.classes:  # if loading suffixes make lookup table id
@@ -929,8 +929,8 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=None, root_name=None)
     Load the state of a Pyomo component state from a dictionary, json file, or
     json string.  Must only specify one of sd, fname, or s as a non-None value.
     This works by going through the model and loading the state of each
-    sub-compoent of o. If the saved state contains extra information, it is
-    ignored.  If the save state doesn't contain an enetry for a model component
+    sub-component of o. If the saved state contains extra information, it is
+    ignored.  If the save state doesn't contain an entry for a model component
     that is to be loaded an error will be raised, unless ignore_missing = True.
 
     Args:
@@ -943,7 +943,7 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=None, root_name=None)
             True if fname ends with '.gz' otherwise False.
 
     Returns:
-        Dictionary with some perfomance information. The keys are
+        Dictionary with some performance information. The keys are
         "etime_load_file", how long in seconds it took to load the json file
         "etime_read_dict", how long in seconds it took to read models state
         "etime_read_suffixes", how long in seconds it took to read suffixes
@@ -974,10 +974,10 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=None, root_name=None)
         raise Exception("Need to specify a data source to load from")
     dict_time = time.time()  # To calculate how long it took to read file
     if wts is None:  # if no StoreSpec object given use the default, which should
-        wts = StoreSpec()  # be the typlical save everything important
+        wts = StoreSpec()  # be the typical save everything important
     lookup = {}  # A dict to use for a lookup tables
     suffixes = {}  # A list of suffixes delayed to end so lookup is complete
-    # Read toplevel componet (is recursive)
+    # Read toplevel component (is recursive)
     if root_name is None:
         for k in sd:
             if k.startswith("__") and k.endswith("__"):
