@@ -70,12 +70,14 @@ class InitializerBase:
         self.postcheck_summary = {}
         self.initial_state = {}
 
-    def initialize(self, model, initial_guesses=None):
+    def initialize(self, model, initial_guesses=None, json_file=None):
         # 1. Get current model state
         init_state = self.get_current_state(model)
 
         # 2. Load initial guesses
-        self.load_initial_guesses(model, initial_guesses)
+        self.load_initial_guesses(
+            model, initial_guesses=initial_guesses, json_file=json_file
+        )
 
         # 3. Fix states to make square
         self.fix_initialization_states(model)
