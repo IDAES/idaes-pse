@@ -88,7 +88,7 @@ class InitializerBase:
             self.initialization_routine(model)
         # 6. finally: Restore model state
         finally:
-            self.restore_model_state(model, init_state)
+            self.restore_model_state(model)
 
         # 7. Check convergence
         self.postcheck(model)

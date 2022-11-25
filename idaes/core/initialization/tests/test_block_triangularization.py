@@ -14,8 +14,9 @@
 Tests for Block Triangularization initialization
 """
 import pytest
+import types
 
-from pyomo.environ import ConcreteModel
+from pyomo.environ import ConcreteModel, Constraint, Var
 
 from idaes.core.initialization.block_triangularization import (
     BlockTriangularizationInitializer,
@@ -33,42 +34,42 @@ from idaes.models.properties.examples.saponification_reactions import (
 __author__ = "Andrew Lee"
 
 
-@pytest.mark.integration
-def test_workflow():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
-
-    m.fs.properties = SaponificationParameterBlock()
-    m.fs.reactions = SaponificationReactionParameterBlock(
-        property_package=m.fs.properties
-    )
-
-    m.fs.unit = CSTR(
-        property_package=m.fs.properties,
-        reaction_package=m.fs.reactions,
-        has_equilibrium_reactions=False,
-        has_heat_transfer=True,
-        has_heat_of_reaction=True,
-        has_pressure_change=True,
-    )
-
-    m.fs.unit.inlet.flow_vol.fix(1.0e-03)
-    m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-    m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-    m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-    m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-    m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
-
-    m.fs.unit.inlet.temperature.fix(303.15)
-    m.fs.unit.inlet.pressure.fix(101325.0)
-
-    m.fs.unit.volume.fix(1.5e-03)
-    m.fs.unit.heat_duty.fix(0)
-    m.fs.unit.deltaP.fix(0)
-
-    initializer = BlockTriangularizationInitializer()
-
-    initializer.initialize(m)
+# @pytest.mark.integration
+# def test_workflow():
+#     m = ConcreteModel()
+#     m.fs = FlowsheetBlock(dynamic=False)
+#
+#     m.fs.properties = SaponificationParameterBlock()
+#     m.fs.reactions = SaponificationReactionParameterBlock(
+#         property_package=m.fs.properties
+#     )
+#
+#     m.fs.unit = CSTR(
+#         property_package=m.fs.properties,
+#         reaction_package=m.fs.reactions,
+#         has_equilibrium_reactions=False,
+#         has_heat_transfer=True,
+#         has_heat_of_reaction=True,
+#         has_pressure_change=True,
+#     )
+#
+#     m.fs.unit.inlet.flow_vol.fix(1.0e-03)
+#     m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+#     m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+#     m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+#     m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+#     m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+#
+#     m.fs.unit.inlet.temperature.fix(303.15)
+#     m.fs.unit.inlet.pressure.fix(101325.0)
+#
+#     m.fs.unit.volume.fix(1.5e-03)
+#     m.fs.unit.heat_duty.fix(0)
+#     m.fs.unit.deltaP.fix(0)
+#
+#     initializer = BlockTriangularizationInitializer()
+#
+#     initializer.initialize(m)
 
 
 class TestBTSubMethods:
@@ -81,38 +82,41 @@ class TestBTSubMethods:
         assert "constraint_tolerance" in initializer.config
 
         assert "block_solver" in initializer.config
+        assert "block_solver_options" in initializer.config
+        assert "calculate_variable_options" in initializer.config
+
+    # TODO: Tests for prechecks and initialization_routine stand alone
 
     @pytest.fixture
     def model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = SaponificationParameterBlock()
-        m.fs.reactions = SaponificationReactionParameterBlock(
-            property_package=m.fs.properties
-        )
+        m.v1 = Var()
+        m.v2 = Var()
+        m.v3 = Var()
+        m.v4 = Var()
 
-        m.fs.unit = CSTR(
-            property_package=m.fs.properties,
-            reaction_package=m.fs.reactions,
-            has_equilibrium_reactions=False,
-            has_heat_transfer=True,
-            has_heat_of_reaction=True,
-            has_pressure_change=True,
-        )
+        m.c1 = Constraint(expr=m.v1 == m.v2)
+        m.c2 = Constraint(expr=2 * m.v2 == m.v3 + m.v4)
+        m.c3 = Constraint(expr=m.v3 - m.v4 == 0)
 
-        m.fs.unit.inlet.flow_vol.fix(1.0e-03)
-        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        # Add a dummy method for fixing initialization states
+        def fix_initialization_states(blk):
+            blk.v1.fix(4)
 
-        m.fs.unit.inlet.temperature.fix(303.15)
-        m.fs.unit.inlet.pressure.fix(101325.0)
-
-        m.fs.unit.volume.fix(1.5e-03)
-        m.fs.unit.heat_duty.fix(0)
-        m.fs.unit.deltaP.fix(0)
+        m.fix_initialization_states = types.MethodType(fix_initialization_states, m)
 
         return m
+
+    @pytest.mark.component
+    def test_workflow(self, model):
+        initializer = BlockTriangularizationInitializer()
+
+        initializer.initialize(model)
+
+        assert model.v1.value == 4
+        assert model.v2.value == 4
+        assert model.v3.value == 4
+        assert model.v4.value == 4
+
+        assert not model.v1.fixed
