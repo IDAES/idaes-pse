@@ -13,6 +13,8 @@
 """
 Base class for initializer objects
 """
+from enum import Enum
+
 from pyomo.environ import (
     BooleanVar,
     Block,
@@ -36,6 +38,17 @@ __author__ = "Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 
+class InitializationStatus(Enum):
+    """
+    Enum of expected outputs from Initialization routines.
+    """
+
+    Ok = 1  # Succesfully converged to tolerance
+    Failed = 0  # Run, but failed to converge to tolerance
+    DoF = -1  # Failed due to Degrees of Freedom issue
+    Error = -2  # Exception raised during execution (other than DoF or convergence)
+
+
 StoreState = StoreSpec(
     data_classes={
         Var._ComponentDataClass: (("fixed",), None),
@@ -44,15 +57,16 @@ StoreState = StoreSpec(
         Constraint._ComponentDataClass: (("active",), None),
     }
 )
-StoreValues = StoreSpec(
-    data_classes={
-        Var._ComponentDataClass: (("value",), None),
-        BooleanVar._ComponentDataClass: (("value",), None),
-    }
-)
 
 
 class InitializerBase:
+    """
+    Base class for Initializer objects.
+
+    This implements a default workflow nad methods for common tasks.
+    Developers should feel free to overload these as necessary.
+    """
+
     CONFIG = ConfigBlock()
 
     CONFIG.declare(
@@ -67,12 +81,28 @@ class InitializerBase:
     def __init__(self):
         self.config = self.CONFIG()
 
+        self.initial_state = None
         self.postcheck_summary = {}
-        self.initial_state = {}
+        self.status = None
 
-    def initialize(self, model, initial_guesses=None, json_file=None):
+    def initialize(
+        self, model: Block, initial_guesses: dict = None, json_file: str = None
+    ):
+        """
+        Execute full initialization routine.
+
+        Args:
+            model: Pyomo model to be initialized.
+            initial_guesses: dict of initial guesses to load.
+            json_file: file name of json file to load initial guesses from as str.
+
+        Note - can only provide one of initial_guesses or json_file.
+
+        Returns:
+            InitializationStatus Enum
+        """
         # 1. Get current model state
-        init_state = self.get_current_state(model)
+        self.get_current_state(model)
 
         # 2. Load initial guesses
         self.load_initial_guesses(
@@ -93,15 +123,44 @@ class InitializerBase:
             self.restore_model_state(model)
 
         # 7. Check convergence
-        self.postcheck(model)
+        return self.postcheck(model)
 
-    def get_current_state(self, model):
+    def get_current_state(self, model: Block):
+        """
+        Get and store current state of variables (fixed/unfixed) and constraints/objectives
+        activated/deactivated in model.
+
+        Args:
+            model: Pyomo model to get state from.
+
+        Returns:
+            dict serializing current model state.
+        """
         self.initial_state = to_json(model, wts=StoreState, return_dict=True)
 
         return self.initial_state
 
-    def load_initial_guesses(self, model, initial_guesses=None, json_file=None):
+    def load_initial_guesses(
+        self, model: Block, initial_guesses: dict = None, json_file: str = None
+    ):
+        """
+        Load initial guesses for variables into model.
+
+        Args:
+            model: Pyomo model to be initialized.
+            initial_guesses: dict of initial guesses to load.
+            json_file: file name of json file to load initial guesses from as str.
+
+        Note - can only provide one of initial_guesses or json_file.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError if both initial_guesses and json_file are provided.
+        """
         if initial_guesses is not None and json_file is not None:
+            self.status = InitializationStatus.Error
             raise ValueError(
                 "Cannot provide both a set of initial guesses and a json file to load."
             )
@@ -109,31 +168,106 @@ class InitializerBase:
         if initial_guesses is not None:
             self._load_values_from_dict(model, initial_guesses)
         elif json_file is not None:
-            from_json(model, fname=json_file, wts=StoreValues)
+            # TODO: What should we load here?
+            # As this is just initialization, for now I am only loading variable values
+            from_json(
+                model, fname=json_file, wts=StoreSpec().value(only_not_fixed=True)
+            )
         else:
             _log.info_high("No initial guesses provided during initialization.")
 
-    def fix_initialization_states(self, model):
-        model.fix_initialization_states()
+    def fix_initialization_states(self, model: Block):
+        """
+        Call to model.fix_initialization_states method. Method will pass if
+        fix_initialization_states not found.
 
-    def precheck(self, model):
+        Args:
+            model: Pyomo Block to fix states on.
+
+        Returns:
+            None
+        """
+        try:
+            model.fix_initialization_states()
+        except InitializationError:
+            pass
+
+    def precheck(self, model: Block):
+        """
+        Check for satisfied degrees of freedom before running initialization.
+
+        Args:
+            model: Pyomo Block to fix states on.
+
+        Returns:
+            None
+
+        Raises:
+            InitializationError if Degrees of Freedom do not equal 0.
+        """
         if not degrees_of_freedom(model) == 0:
+            self.status = InitializationStatus.DoF
             raise InitializationError(
                 f"Degrees of freedom for {model.name} were not equal to zero during "
                 f"initialization (DoF = {degrees_of_freedom(model)})."
             )
 
-    def initialization_routine(self, model):
+    def initialization_routine(self, model: Block):
+        """
+        Placeholder method to run initialization routine. Derived classes should overload
+        this with the desired routine.
+
+        Args:
+            model: Pyomo Block to initialize.
+
+        Returns:
+            None
+
+        Raises:
+            NotImplementedError
+        """
+        self.status = InitializationStatus.Error
         raise NotImplementedError()
 
-    def restore_model_state(self, model):
-        from_json(model, sd=self.initial_state, wts=StoreState)
+    def restore_model_state(self, model: Block):
+        """
+        Restore model state to that stored in self.initial_state.
 
-    def postcheck(self, model, results_obj=None):
+        Args:
+            model: Pyomo Block ot restore state on.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError if no initial state is stored.
+        """
+        if self.initial_state is not None:
+            from_json(model, sd=self.initial_state, wts=StoreState)
+        else:
+            self.status = InitializationStatus.Error
+            raise ValueError("No initial state stored.")
+
+    def postcheck(self, model: Block, results_obj: dict = None):
+        """
+        Check the model has been converged after initialization.
+
+        If a results_obj is provided, this will be checked using check_optimal_termination,
+        otherwise this will walk all constraints in the model and check that they are within
+        tolerance (set via the Initializer constraint_tolerance config argument).
+
+        Args:
+            model: model to be checked for convergence.
+            results_obj: Pyomo solver results dict (if applicable, default=None).
+
+        Returns:
+            InitialationStatus Enum
+        """
         if results_obj is not None:
             self.postcheck_summary = {"solver_status": check_optimal_termination(model)}
             if not self.postcheck_summary["solver_status"]:
                 # Final solver call did not return optimal
+                self.status = InitializationStatus.Failed
                 raise InitializationError(
                     f"{model.name} failed to initialize successfully: solver did not return "
                     "optimal termination. Please check the output logs for more information."
@@ -178,22 +312,31 @@ class InitializerBase:
             }
 
             if len(uninit_const) > 0 or len(uninit_vars) > 0:
+                self.status = InitializationStatus.Failed
                 raise InitializationError(
                     f"{model.name} failed to initialize successfully: uninitialized variables or "
                     "unconverged equality constraints detected. Please check postcheck summary for more information."
                 )
 
+        self.status = InitializationStatus.Ok
+        return self.status
+
     def _load_values_from_dict(self, model, initial_guesses):
+        """
+        Internal method to iterate through items in initial_guesses and set value if Var and not fixed.
+        """
         for c, v in initial_guesses.items():
             component = model.find_component(c)
 
             if not isinstance(component, (Var, _VarData)):
+                self.status = InitializationStatus.Error
                 raise TypeError(
                     f"Component {c} is not a Var. Initial guesses should only contain values for variables."
                 )
             else:
                 if component.is_indexed():
                     for i in component.values():
-                        i.set_value(v)
-                else:
+                        if not i.fixed:
+                            i.set_value(v)
+                elif not component.fixed:
                     component.set_value(v)

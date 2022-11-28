@@ -15,17 +15,24 @@ Tests for InitializerBase class
 """
 import pytest
 import types
+import os
 
 from pyomo.environ import ConcreteModel, Constraint, Var
 
-from idaes.core.initialization.initializer_base import InitializerBase
+from idaes.core.initialization.initializer_base import (
+    InitializerBase,
+    InitializationStatus,
+)
 
 from idaes.core.util.exceptions import InitializationError
+
+path = os.path.dirname(__file__)
+fname = os.path.join(path, "init_example.json")
 
 __author__ = "Andrew Lee"
 
 
-class TestBTSubMethods:
+class TestSubMethods:
     @pytest.mark.unit
     def test_init(self):
         initializer = InitializerBase()
@@ -176,6 +183,28 @@ class TestBTSubMethods:
         assert not model.c4.active
 
     @pytest.mark.unit
+    def test_load_value_from_file(self):
+        m = ConcreteModel()
+
+        m.v1 = Var()
+        m.v2 = Var()
+        m.v3 = Var()
+        m.v4 = Var()
+
+        # Fix value of v2, it should not get overwritten
+        m.v2.fix(10)
+
+        initializer = InitializerBase()
+
+        # Load values from example file, all values are 4
+        initializer.load_initial_guesses(m, json_file=fname)
+
+        assert m.v1.value == 4
+        assert m.v2.value == 10  # Should retain fixed value
+        assert m.v3.value == 4
+        assert m.v4.value == 4
+
+    @pytest.mark.unit
     def test_load_values_dict(self, model):
         model.v3 = Var(["a", "b"])
         model.v4 = Var(["a", "b"])
@@ -203,6 +232,7 @@ class TestBTSubMethods:
             initializer.load_initial_guesses(
                 model, initial_guesses="foo", json_file="bar"
             )
+        assert initializer.status == InitializationStatus.Error
 
     @pytest.mark.unit
     def test_load_values_dict_non_var(self, model):
@@ -215,6 +245,7 @@ class TestBTSubMethods:
             match="Component c1 is not a Var. Initial guesses should only contain values for variables.",
         ):
             initializer.load_initial_guesses(model, initial_guesses=init_dict)
+        assert initializer.status == InitializationStatus.Error
 
     @pytest.mark.unit
     def test_fix_states(self, model):
@@ -238,6 +269,20 @@ class TestBTSubMethods:
 
         with pytest.raises(NotImplementedError):
             initializer.initialization_routine(model)
+        assert initializer.status == InitializationStatus.Error
+
+    @pytest.mark.unit
+    def test_precheck_fail(self, model):
+        model.v1.fix(10)
+
+        initializer = InitializerBase()
+        with pytest.raises(
+            InitializationError,
+            match="Degrees of freedom for unknown were not equal to zero during "
+            "initialization \(DoF = -1\).",
+        ):
+            initializer.precheck(model)
+        assert initializer.status == InitializationStatus.DoF
 
     @pytest.mark.unit
     def test_postcheck_vars_none(self, model):
@@ -251,6 +296,7 @@ class TestBTSubMethods:
         ):
             initializer.postcheck(model)
 
+        assert initializer.status == InitializationStatus.Failed
         assert len(initializer.postcheck_summary["uninitialized_vars"]) == 2
         assert len(initializer.postcheck_summary["unconverged_constraints"]) == 4
 
@@ -269,6 +315,7 @@ class TestBTSubMethods:
         ):
             initializer.postcheck(model)
 
+        assert initializer.status == InitializationStatus.Failed
         assert len(initializer.postcheck_summary["uninitialized_vars"]) == 0
         assert len(initializer.postcheck_summary["unconverged_constraints"]) == 4
 
@@ -287,6 +334,7 @@ class TestBTSubMethods:
         ):
             initializer.postcheck(model)
 
+        assert initializer.status == InitializationStatus.Failed
         assert len(initializer.postcheck_summary["uninitialized_vars"]) == 0
         assert len(initializer.postcheck_summary["unconverged_constraints"]) == 2
 
@@ -298,6 +346,7 @@ class TestBTSubMethods:
         initializer = InitializerBase()
         initializer.postcheck(model)
 
+        assert initializer.status == InitializationStatus.Ok
         assert len(initializer.postcheck_summary["uninitialized_vars"]) == 0
         assert len(initializer.postcheck_summary["unconverged_constraints"]) == 0
 
@@ -315,6 +364,7 @@ class TestBTSubMethods:
         ):
             initializer.postcheck(model)
 
+        assert initializer.status == InitializationStatus.Failed
         assert len(initializer.postcheck_summary["uninitialized_vars"]) == 0
         assert len(initializer.postcheck_summary["unconverged_constraints"]) == 1
 
@@ -323,5 +373,6 @@ class TestBTSubMethods:
 
         initializer.postcheck(model)
 
+        assert initializer.status == InitializationStatus.Ok
         assert len(initializer.postcheck_summary["uninitialized_vars"]) == 0
         assert len(initializer.postcheck_summary["unconverged_constraints"]) == 0

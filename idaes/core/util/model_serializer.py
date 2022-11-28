@@ -198,20 +198,20 @@ class StoreSpec(object):
             attributes that were written. Based on the state of the component
             and the stored state of the component, the filter function returns
             a list of attributes to read.  For example, a filter function can be
-            used to only read the values of varaibles that were fixed when they
+            used to only read the values of variables that were fixed when they
             were written. The order of the class keys is important and should
             go from specific classes to general ones. For example, if a
             UnitModel is a Block, but you want to store extra attributes for a
             UnitModel, UnitModel should come before Block in the key set.
         data_classes: This takes the same form as the classes argument, the
-            classes should be compoent data types.
+            classes should be component data types.
         ignore_missing: If True will ignore a component or attribute that exists
-            in the model, but not in the stored state. If false an excpetion
+            in the model, but not in the stored state. If false an exception
             will be raised for things in the model that should be loaded but
             aren't in the stored state. Extra items in the stored state will not
-            raise an exception regaurdless of this argument.
+            raise an exception regardless of this argument.
         suffix: If True store suffixes and component ids.  If false, don't store
-            suffixes. This is a legacy option. The prefered way to store a Suffix
+            suffixes. This is a legacy option. The preferred way to store a Suffix
             of not is just to include Suffix in classes or not.
         suffix_filter: None to store all suffixes or a list of suffixes to store.
     """
@@ -431,7 +431,7 @@ class StoreSpec(object):
     @classmethod
     def value_isfixed_isactive(cls, only_fixed):
         """
-        Retur a StoreSpec object to store variable values, if variables are
+        Return a StoreSpec object to store variable values, if variables are
         fixed and if components are active.
 
         Args:

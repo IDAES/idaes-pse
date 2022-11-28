@@ -21,6 +21,7 @@ from pyomo.environ import ConcreteModel, Constraint, Var
 from idaes.core.initialization.block_triangularization import (
     BlockTriangularizationInitializer,
 )
+from idaes.core.initialization.initializer_base import InitializationStatus
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.cstr import CSTR
@@ -112,7 +113,7 @@ class TestBTSubMethods:
     def test_workflow(self, model):
         initializer = BlockTriangularizationInitializer()
 
-        initializer.initialize(model)
+        status = initializer.initialize(model)
 
         assert model.v1.value == 4
         assert model.v2.value == 4
@@ -120,3 +121,5 @@ class TestBTSubMethods:
         assert model.v4.value == 4
 
         assert not model.v1.fixed
+
+        assert status == InitializationStatus.Ok

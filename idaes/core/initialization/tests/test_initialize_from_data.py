@@ -22,6 +22,7 @@ from pyomo.environ import ConcreteModel, Constraint, Var
 from idaes.core.initialization.initialize_from_data import (
     FromDataInitializer,
 )
+from idaes.core.initialization.initializer_base import InitializationStatus
 
 
 __author__ = "Andrew Lee"
@@ -65,7 +66,7 @@ class TestInitFromDataSubMethods:
     def test_workflow_from_json(self, model):
         initializer = FromDataInitializer()
 
-        initializer.initialize(model, json_file=fname)
+        status = initializer.initialize(model, json_file=fname)
 
         assert model.v1.value == 4
         assert model.v2.value == 4
@@ -73,3 +74,5 @@ class TestInitFromDataSubMethods:
         assert model.v4.value == 4
 
         assert not model.v1.fixed
+
+        assert status == InitializationStatus.Ok
