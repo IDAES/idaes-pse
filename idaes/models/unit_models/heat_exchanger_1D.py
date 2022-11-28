@@ -502,10 +502,8 @@ cold side flows from 1 to 0""",
         add_object_reference(self, "length", self.hot_side.length)
 
         # Equate hot and cold side lengths
-        @self.Constraint(
-            self.flowsheet().time, doc="Equating hot and cold side lengths"
-        )
-        def length_equality(self, t):
+        @self.Constraint(doc="Equating hot and cold side lengths")
+        def length_equality(self):
             return (
                 pyunits.convert(
                     self.cold_side.length, to_units=hot_side_units("length")
