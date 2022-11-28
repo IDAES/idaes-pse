@@ -648,6 +648,8 @@ cold side flows from 1 to 0""",
                     )
                 )
             )
+        else:
+            duty = pyunits.covert(duty[0], from_units=duty[1], to_units=hot_side_units("power"))
         duty_per_length = duty / self.length
         # Fix heat duties
         for v in self.hot_side.heat.values():
