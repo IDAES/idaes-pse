@@ -560,6 +560,7 @@ cold side flows from 1 to 0""",
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
+        duty=None,
     ):
         """
         Initialization routine for the unit.
@@ -574,6 +575,10 @@ cold side flows from 1 to 0""",
                      default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
+            duty : an initial guess for the amount of heat transferred. This
+                should be a tuple in the form (value, units). A default value
+                is calculated based on stream temperatures, the overall
+                heat transfer coefficient, and exchanger area
 
         Returns:
             None
@@ -630,27 +635,27 @@ cold side flows from 1 to 0""",
         cold_side_units = (
             self.config.cold_side.property_package.get_metadata().get_derived_units
         )
-        Q = value(
-            0.25
-            * self.heat_transfer_coefficient[0, 0]
-            * self.area
-            / self.length
-            * (
-                self.hot_side.properties[0, 0].temperature
-                - pyunits.convert(
-                    self.cold_side.properties[0, 0].temperature,
-                    to_units=hot_side_units("temperature"),
+        if duty is None:
+            duty = value(
+                0.25
+                * self.heat_transfer_coefficient[0, 0]
+                * self.area
+                * (
+                    self.hot_side.properties[0, 0].temperature
+                    - pyunits.convert(
+                        self.cold_side.properties[0, 0].temperature,
+                        to_units=hot_side_units("temperature"),
+                    )
                 )
             )
-        )
-
+        duty_per_length = duty / self.length
         # Fix heat duties
         for v in self.hot_side.heat.values():
-            v.fix(-Q)
+            v.fix(-duty_per_length)
         for v in self.cold_side.heat.values():
             v.fix(
                 pyunits.convert_value(
-                    Q,
+                    duty_per_length,
                     to_units=cold_side_units("power") / cold_side_units("length"),
                     from_units=hot_side_units("power") / hot_side_units("length"),
                 )
