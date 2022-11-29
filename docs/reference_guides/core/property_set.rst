@@ -1,7 +1,7 @@
 Property Sets
 =============
 
-Due to the large number of potential thermophysical properties that are used in process applications and the complexity associated with these calculations, one of the key aspects of the IDAES CMF is to be able to only specify calculations for those properties that are actually required for a given problem. In order to support this, and allow users to understand what is supported by a given property package, each property package is expected to define a `PropertySet` which lists what properties are supported and how these are constructed.
+Due to the large number of potential thermophysical properties that are used in process applications and the complexity associated with these calculations, one of the key aspects of the IDAES CMF is to be able to only specify calculations for those properties that are actually required for a given problem. In order to support this, and allow users to understand what is supported by a given property package, each property package is expected to define a `PropertySet` that lists what properties are supported and how these are constructed.
 
 `PropertySets` are application specific, and are intended to contain a comprehensive list of all properties of interest for the given application. Each property package should select a `PropertySet` appropriate for its application, and can then specify the sub-set of properties in the `PropertySet` are supported by that package, and how they will be constructed. The `PropertySet` will also define the expected units of measurement for each property by linking to the `UnitSet` defined for the property package.
 
@@ -16,7 +16,7 @@ The code below shows an example of how to set up a property package using the `S
 
 .. note::
 
-  Any property defined in a `PropertySet` which is not explicitly marked as `supported` is assumed to not be supported (i.e., the default value of `supported` is `False`).
+  Any property defined in a `PropertySet` that is not explicitly marked as `supported` is assumed to not be supported (i.e., the default value of `supported` is `False`).
 
 Core Property Sets
 ------------------

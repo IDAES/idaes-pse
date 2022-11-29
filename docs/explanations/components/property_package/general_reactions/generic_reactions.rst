@@ -90,7 +90,7 @@ Class Definition
 
 Alternatively, the IDAES Generic Reaction Package Framework supports defining classes derived from the IDAES `GenericReactionParameterData` class with methods for defining configuration options and parameters.
 
-Users can define two methods which are called automatically when an instance of the property package is created:
+Users can define two methods that are called automatically when an instance of the property package is created:
 
 1. `configure`, which defines the users selection of sub-models, and
 2. `parameters`, which defines the parameters necessary for the selected property methods.

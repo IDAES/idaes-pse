@@ -7,7 +7,7 @@ Defining Property Packages
 Introduction
 ------------
 
-In order to create and use a property package using the IDAES Generic Property Package Framework, users must provide a definition for the material they wish to model. The framework supports two approaches for defining the property package, which are described below, both of which are equivalent in practice.
+In order to create and use a property package using the IDAES Generic Property Package Framework, users must provide a definition for the material they wish to model. The framework supports two approaches for defining the property package that are described below, both of which are equivalent in practice.
 
 Units of Measurement
 --------------------
@@ -152,7 +152,7 @@ Class Definition
 
 Alternatively, the IDAES Generic Property Package Framework supports defining classes derived from the IDAES `GenericParameterData` with methods for defining configuration options and parameters.
 
-Users can define two methods which are called automatically when an instance of the property package is created:
+Users can define two methods that are called automatically when an instance of the property package is created:
 
 1. `configure`, which defines the users selection of sub-models, and
 2. `parameters`, which defines the parameters necessary for the selected property methods.
