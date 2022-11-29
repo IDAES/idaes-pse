@@ -59,8 +59,10 @@ class TestSubMethods:
 
     @pytest.mark.unit
     def test_get_initial_state(self, model):
-        initializer = InitializerBase()
+        model.v1.fix(42)
+        model.v2.set_value(43)
 
+        initializer = InitializerBase()
         state = initializer.get_current_state(model)
 
         assert state is initializer.initial_state
@@ -82,7 +84,8 @@ class TestSubMethods:
                                 "None": {
                                     "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
                                     "__id__": 3,
-                                    "fixed": False,
+                                    "fixed": True,
+                                    "value": 42,
                                 }
                             },
                         },
@@ -94,6 +97,7 @@ class TestSubMethods:
                                     "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
                                     "__id__": 5,
                                     "fixed": False,
+                                    "value": 43,
                                 }
                             },
                         },
@@ -163,6 +167,94 @@ class TestSubMethods:
         # Store the initial state
         initializer.get_current_state(model)
 
+        expected = {
+            "__type__": "<class 'pyomo.core.base.PyomoModel.ConcreteModel'>",
+            "__id__": 0,
+            "active": True,
+            "data": {
+                "None": {
+                    "__type__": "<class 'pyomo.core.base.PyomoModel.ConcreteModel'>",
+                    "__id__": 1,
+                    "active": True,
+                    "__pyomo_components__": {
+                        "v1": {
+                            "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                            "__id__": 2,
+                            "data": {
+                                "None": {
+                                    "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                    "__id__": 3,
+                                    "fixed": True,
+                                    "value": 10,
+                                }
+                            },
+                        },
+                        "v2": {
+                            "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                            "__id__": 4,
+                            "data": {
+                                "None": {
+                                    "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                    "__id__": 5,
+                                    "fixed": False,
+                                    "value": None,
+                                }
+                            },
+                        },
+                        "c1": {
+                            "__type__": "<class 'pyomo.core.base.constraint.ScalarConstraint'>",
+                            "__id__": 6,
+                            "active": True,
+                            "data": {
+                                "None": {
+                                    "__type__": "<class 'pyomo.core.base.constraint.ScalarConstraint'>",
+                                    "__id__": 7,
+                                    "active": True,
+                                }
+                            },
+                        },
+                        "c2": {
+                            "__type__": "<class 'pyomo.core.base.constraint.ScalarConstraint'>",
+                            "__id__": 8,
+                            "active": True,
+                            "data": {
+                                "None": {
+                                    "__type__": "<class 'pyomo.core.base.constraint.ScalarConstraint'>",
+                                    "__id__": 9,
+                                    "active": True,
+                                }
+                            },
+                        },
+                        "c3": {
+                            "__type__": "<class 'pyomo.core.base.constraint.ScalarConstraint'>",
+                            "__id__": 10,
+                            "active": True,
+                            "data": {
+                                "None": {
+                                    "__type__": "<class 'pyomo.core.base.constraint.ScalarConstraint'>",
+                                    "__id__": 11,
+                                    "active": True,
+                                }
+                            },
+                        },
+                        "c4": {
+                            "__type__": "<class 'pyomo.core.base.constraint.ScalarConstraint'>",
+                            "__id__": 12,
+                            "active": False,
+                            "data": {
+                                "None": {
+                                    "__type__": "<class 'pyomo.core.base.constraint.ScalarConstraint'>",
+                                    "__id__": 13,
+                                    "active": False,
+                                }
+                            },
+                        },
+                    },
+                }
+            },
+        }
+        assert expected == initializer.initial_state["unknown"]
+
         # Make some more changes to the state
         model.v1.set_value(21)
         model.v1.unfix()
@@ -173,10 +265,10 @@ class TestSubMethods:
         initializer.restore_model_state(model)
 
         # Check that state was reverted correctly
-        assert model.v1.value == 21  # Value should not have changed
-        assert model.v1.fixed
+        assert model.v1.value == 10  # Value should have changed back to original
+        assert model.v1.fixed  # Should be fixed again
         assert model.v2.value == 22  # Value should not have changed
-        assert not model.v2.fixed
+        assert not model.v2.fixed  # Should have been unfixed
         assert model.c1.active
         assert model.c2.active
         assert model.c3.active

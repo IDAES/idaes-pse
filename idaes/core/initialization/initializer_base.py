@@ -27,7 +27,7 @@ from pyomo.environ import (
 from pyomo.core.base.var import _VarData
 from pyomo.common.config import ConfigBlock, ConfigValue
 
-from idaes.core.util import to_json, from_json, StoreSpec
+from idaes.core.util.model_serializer import to_json, from_json, StoreSpec, _only_fixed
 from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
@@ -48,7 +48,7 @@ class InitializationStatus(Enum):
 
 StoreState = StoreSpec(
     data_classes={
-        Var._ComponentDataClass: (("fixed",), None),
+        Var._ComponentDataClass: (("fixed", "value"), _only_fixed),
         BooleanVar._ComponentDataClass: (("fixed",), None),
         Block._ComponentDataClass: (("active",), None),
         Constraint._ComponentDataClass: (("active",), None),
