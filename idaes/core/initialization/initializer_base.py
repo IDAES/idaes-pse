@@ -72,14 +72,14 @@ class InitializerBase:
     CONFIG.declare(
         "constraint_tolerance",
         ConfigValue(
-            default=1e-6,
+            default=1e-5,
             domain=float,
             description="Tolerance for checking constraint convergence",
         ),
     )
 
-    def __init__(self):
-        self.config = self.CONFIG()
+    def __init__(self, **kwargs):
+        self.config = self.CONFIG(kwargs)
 
         self.initial_state = None
         self.postcheck_summary = {}

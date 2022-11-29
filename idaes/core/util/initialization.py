@@ -27,7 +27,6 @@ from pyomo.network import Arc
 from pyomo.dae import ContinuousSet
 from pyomo.core.expr.visitor import identify_variables
 
-from idaes.core import FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (
@@ -307,7 +306,7 @@ def initialize_by_time_element(fs, time, **kwargs):
     Returns:
         None
     """
-    if not isinstance(fs, FlowsheetBlock):
+    if not fs.is_flowsheet():
         raise TypeError("First arg must be a FlowsheetBlock")
     if not isinstance(time, ContinuousSet):
         raise TypeError("Second arg must be a ContinuousSet")
