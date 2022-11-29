@@ -157,7 +157,7 @@ def test_run_drum1D(build_drum1D):
         + m.fs.unit.heat_duty[0]
     )
     # pressure drop
-    assert pytest.approx(3662.5483, abs=1e-3) == pyo.value(m.fs.unit.deltaP[0])
+    assert pytest.approx(3662.5483, rel=1e-5) == pyo.value(m.fs.unit.deltaP[0])
     # mass balance
     assert pytest.approx(0, abs=1e-3) == pyo.value(
         m.fs.unit.water_steam_inlet.flow_mol[0]

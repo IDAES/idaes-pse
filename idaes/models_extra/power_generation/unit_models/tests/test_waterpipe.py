@@ -113,7 +113,7 @@ def test_solve_unit(build_unit):
     )
 
     # pressure drop
-    assert pytest.approx(-224074.4039, abs=1e-3) == pyo.value(m.fs.unit.deltaP[0])
+    assert pytest.approx(-224074.4039, rel=1e-5) == pyo.value(m.fs.unit.deltaP[0])
     # check energy balance
     assert (
         pytest.approx(
@@ -175,7 +175,7 @@ def test_pipe_expansion():
     )
 
     # pressure drop
-    assert pytest.approx(-224306.548, abs=1e-3) == pyo.value(m.fs.unit.deltaP[0])
+    assert pytest.approx(-224306.548, rel=1e-5) == pyo.value(m.fs.unit.deltaP[0])
     # check energy balance
     assert (
         pytest.approx(
@@ -236,7 +236,7 @@ def test_pipe_noexpansion():
     )
 
     # pressure drop
-    assert pytest.approx(-219382.990, abs=1e-3) == pyo.value(m.fs.unit.deltaP[0])
+    assert pytest.approx(-219382.990, rel=1e-3) == pyo.value(m.fs.unit.deltaP[0])
     # check energy balance
     assert (
         pytest.approx(
@@ -299,7 +299,7 @@ def test_pipe_vaporphase():
     )
 
     # pressure drop
-    assert pytest.approx(-539105.588, abs=1e-3) == pyo.value(m.fs.unit.deltaP[0])
+    assert pytest.approx(-539105.588, rel=1e-3) == pyo.value(m.fs.unit.deltaP[0])
     # check energy balance
     assert (
         pytest.approx(

@@ -109,9 +109,21 @@ class SocConductiveSlabData(UnitModelBlockData):
         )
 
         # Parameters
-        self.heat_capacity = pyo.Var()
-        self.density = pyo.Var()
-        self.thermal_conductivity = pyo.Var()
+        self.heat_capacity = pyo.Var(
+            initialize=200,
+            doc="Heat capacity of slab (mass basis)",
+            units=pyo.units.J / pyo.units.kg / pyo.units.K,
+        )
+        self.density = pyo.Var(
+            initialize=1000,
+            doc="Density of slab",
+            units=pyo.units.kg / pyo.units.m**3,
+        )
+        self.thermal_conductivity = pyo.Var(
+            initialize=80,
+            doc="Thermal conductivity of slab",
+            units=pyo.units.W / pyo.units.m / pyo.units.K,
+        )
 
         @self.Expression(tset, ixnodes, iznodes)
         def temperature(b, t, ix, iz):
@@ -293,9 +305,15 @@ class SocConductiveSlabData(UnitModelBlockData):
 
     def recursive_scaling(self):
         gsf = iscale.get_scaling_factor
-        ssf = common._set_scaling_factor_if_none
-        sgsf = common._set_and_get_scaling_factor
-        cst = lambda c, s: iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+        def ssf(c, s):
+            iscale.set_scaling_factor(c, s, overwrite=False)
+
+        sgsf = iscale.set_and_get_scaling_factor
+
+        def cst(c, s):
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
+
         sR = 1e-1  # Scaling factor for R
         sD = 1e4  # Heuristic scaling factor for diffusion coefficient
         sy_def = 10  # Mole frac comp scaling

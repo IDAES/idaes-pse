@@ -62,11 +62,11 @@ class ConstantKeq:
                 order += rblock.reaction_order[p, j].value
 
             if c_form == ConcentrationForm.molarity:
-                c_units = units["density_mole"]
+                c_units = units.DENSITY_MOLE
             elif c_form == ConcentrationForm.molality:
-                c_units = units["amount"] * units["mass"] ** -1
+                c_units = units.AMOUNT * units.MASS**-1
             elif c_form == ConcentrationForm.partialPressure:
-                c_units = units["pressure"]
+                c_units = units.PRESSURE
             else:
                 raise BurntToast(
                     "{} received unrecognised ConcentrationForm ({}). "
@@ -139,11 +139,11 @@ class van_t_hoff:
                 order += rblock.reaction_order[p, j].value
 
             if c_form == ConcentrationForm.molarity:
-                c_units = units["density_mole"]
+                c_units = units.DENSITY_MOLE
             elif c_form == ConcentrationForm.molality:
-                c_units = units["amount"] * units["mass"] ** -1
+                c_units = units.AMOUNT * units.MASS**-1
             elif c_form == ConcentrationForm.partialPressure:
-                c_units = units["pressure"]
+                c_units = units.PRESSURE
             else:
                 raise BurntToast(
                     "{} received unrecognised ConcentrationForm ({}). "
@@ -160,7 +160,7 @@ class van_t_hoff:
 
         rblock.T_eq_ref = Var(
             doc="Reference temperature for equilibrium constant",
-            units=units["temperature"],
+            units=units.TEMPERATURE,
         )
         set_param_from_config(rblock, param="T_eq_ref", config=config)
 
@@ -185,7 +185,7 @@ class van_t_hoff:
 
         return (b.log_k_eq[r_idx] - l_keq_ref) == (
             -b.dh_rxn[r_idx]
-            / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+            / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
             * (1 / T - 1 / rblock.T_eq_ref)
         )
 
@@ -229,13 +229,13 @@ class gibbs_energy:
 
         rblock.ds_rxn_ref = Var(
             doc="Specific molar entropy of reaction at reference state",
-            units=units["entropy_mole"],
+            units=units.ENTROPY_MOLE,
         )
         set_param_from_config(rblock, param="ds_rxn_ref", config=config)
 
         rblock.T_eq_ref = Var(
             doc="Reference temperature for equilibrium constant",
-            units=units["temperature"],
+            units=units.TEMPERATURE,
         )
         set_param_from_config(rblock, param="T_eq_ref", config=config)
 
@@ -246,7 +246,7 @@ class gibbs_energy:
     @staticmethod
     def return_log_expression(b, rblock, r_idx, T):
         units = rblock.parent_block().get_metadata().derived_units
-        R = pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+        R = pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
 
         return b.log_k_eq[r_idx] == (
             (-rblock.dh_rxn_ref / (R * T)) + (rblock.ds_rxn_ref / R)
@@ -255,7 +255,7 @@ class gibbs_energy:
     @staticmethod
     def calculate_scaling_factors(b, rblock):
         units = rblock.parent_block().get_metadata().derived_units
-        R = pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+        R = pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
 
         keq_val = value(
             exp(-rblock.dh_rxn_ref / (R * rblock.T_eq_ref) + rblock.ds_rxn_ref / R)
