@@ -66,6 +66,16 @@ class SingleControlVolumeUnitInitializer(InitializerBase):
         # Get logger
         _log = self.get_logger(model)
 
+        sub_initializers = {}
+        for sm in model._initialization_order:
+            if sm is not model:
+                # Get initializers for add-ons
+                sub_initializers[sm] = self.get_submodel_initializer(sm)
+
+                # Call prepare method for add-ons
+                # TODO: Need arguments for submodel initialization
+                sub_initializers[sm].prepare()
+
         # Initialize properties
         try:
             # Guess a 0-D control volume
@@ -120,6 +130,27 @@ class SingleControlVolumeUnitInitializer(InitializerBase):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = solver.solve(model, tee=slc.tee)
 
-        _log.info_high("Step 3: {}.".format(idaeslog.condition(results)))
+        _log.info_high("Step 3: model {}.".format(idaeslog.condition(results)))
+
+        if len(model._initialization_order) > 1:
+            # Initialize add-ons
+            for sm in model._initialization_order:
+                if sm is not model:
+                    # TODO: Need arguments for submodel initialization
+                    sub_initializers[sm].initialize_addon()
+
+            # Solve model with addons
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                results = solver.solve(model, tee=slc.tee)
+
+            _log.info_high(
+                "Step 4: model with add-ons {}.".format(idaeslog.condition(results))
+            )
+
+            # Clean up add-ons
+            for sm in model._initialization_order:
+                if sm is not model:
+                    # TODO: Need arguments for submodel initialization
+                    sub_initializers[sm].finalize()
 
         return results
