@@ -201,11 +201,9 @@ def is_constant_up_to_units(expr):
         bool : True if the expr is constant besides units, False otherwise
     """
     for v in identify_variables(expr):
-        print(v)
         return False
     for p in identify_mutable_parameters(expr):
         if isinstance(p, _PyomoUnit):
             continue
-        print(p)
         return False
     return True
