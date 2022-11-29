@@ -17,6 +17,8 @@ This module contains miscellaneous utility functions for use in IDAES models.
 from enum import Enum
 
 import pyomo.environ as pyo
+from pyomo.core.expr.visitor import identify_variables, identify_mutable_parameters
+from pyomo.core.base.units_container import _PyomoUnit
 from pyomo.common.config import ConfigBlock
 
 import idaes.logger as idaeslog
@@ -186,3 +188,24 @@ class StrEnum(str, Enum):
 
     def __str__(self):
         return str(self.value)
+
+
+def is_constant_up_to_units(expr):
+    """
+    Determines if a Pyomo expression is constant, even if units are involved
+
+    Args:
+        expr : A Pyomo expression or a numeric value
+
+    Returns:
+        bool : True if the expr is constant besides units, False otherwise
+    """
+    for v in identify_variables(expr):
+        print(v)
+        return False
+    for p in identify_mutable_parameters(expr):
+        if isinstance(p, _PyomoUnit):
+            continue
+        print(p)
+        return False
+    return True
