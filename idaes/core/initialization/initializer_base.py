@@ -29,7 +29,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue
 
 from idaes.core.util.model_serializer import to_json, from_json, StoreSpec, _only_fixed
 from idaes.core.util.exceptions import InitializationError
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom, large_residuals_set
 import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee"
@@ -292,31 +292,7 @@ class InitializerBase:
                 if v.value is None:
                     uninit_vars.append(v)
             # Next check for unconverged equality constraints
-            uninit_const = []
-            for c in model.component_data_objects(Constraint, descend_into=True):
-                try:
-                    if (
-                        c.upper is not None
-                        and c.lower is not None
-                        and c.upper == c.lower
-                    ):
-                        if (
-                            abs(value(c.body - c.lb))
-                            >= self.config.constraint_tolerance
-                        ):
-                            uninit_const.append(c)
-                    elif (
-                        c.upper is not None
-                        and value(c.body) > c.upper + self.config.constraint_tolerance
-                    ):
-                        uninit_const.append(c)
-                    elif (
-                        c.lower is not None
-                        and value(c.body) < c.lower + self.config.constraint_tolerance
-                    ):
-                        uninit_const.append(c)
-                except ValueError:
-                    uninit_const.append(c)
+            uninit_const = large_residuals_set(model, self.config.constraint_tolerance)
 
             self.postcheck_summary = {
                 "uninitialized_vars": uninit_vars,
