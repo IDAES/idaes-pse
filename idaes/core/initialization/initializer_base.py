@@ -352,3 +352,48 @@ class InitializerBase:
                             i.set_value(v)
                 elif not component.fixed:
                     component.set_value(v)
+
+    def get_submodel_initializer(self, submodel: Block):
+        """
+        Lookup Initializer object to use for specified sub-model.
+
+        This starts by checking the local mapping of objects and types, then falls back
+        to object.default_initializer, followed by a global default (if defined).
+
+        Args:
+            submodel: sub-model to get default initializer for
+
+        Returns:
+
+        """
+        # TODO: For MWE, return submodel - this will mean we run submodel.initialize()
+        return submodel
+
+        # TODO: Prototype code for getting initializer
+        initializer = None
+
+        if hasattr(submodel, "params"):
+            # For StateBlocks and ReactionBlocks, look to the associated parameter block
+            submodel = submodel.params
+
+        if submodel in self.submodel_initializers:
+            # First look for specific model instance
+            initializer = self.submodel_initializers[submodel]
+        elif type(submodel) in self.submodel_initializers:
+            # Then look for types
+            initializer = self.submodel_initializers[type(submodel)]
+        else:
+            # Then try the model's default initializer
+            initializer = submodel.default_initializer
+
+        if initializer is None:
+            # If initializer is still None, try the master initializer's default
+            initializer = self.default_submodel_initializer
+
+        if initializer is None:
+            # If we still have no initializer, log a warning and keep going
+            self.get_logger(submodel).warning(
+                "No Initializer found - attempting to continue."
+            )
+
+        return initializer

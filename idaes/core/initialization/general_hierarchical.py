@@ -69,15 +69,17 @@ class SingleControlVolumeUnitInitializer(InitializerBase):
         # Initialize properties
         try:
             # Guess a 0-D control volume
-            prop_in = model.control_volume.properties_in
-
             # Initialize inlet properties - inlet state should already be fixed
-            # TODO: Call an initializer for the StateBlock
-            prop_in.initialize(
-                solver=self.config.solver,
-                optarg=self.config.solver_options,
-                outlvl=self.config.output_level,
+            prop_init = self.get_submodel_initializer(
+                model.control_volume.properties_in
             )
+
+            if prop_init is not None:
+                prop_init.initialize(
+                    solver=self.config.solver,
+                    optarg=self.config.solver_options,
+                    outlvl=self.config.output_level,
+                )
 
             # Map solution from inlet properties to outlet properties
             state = to_json(
@@ -93,7 +95,7 @@ class SingleControlVolumeUnitInitializer(InitializerBase):
         except AttributeError:
             # Assume it must be a 1-D control volume
             # TODO: Add steps here
-            pass
+            raise
 
         _log.info_high("Step 1: properties initialization complete")
 
