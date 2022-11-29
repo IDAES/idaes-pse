@@ -2,6 +2,7 @@ name: IDAES v1 compat
 
 on:
   push:
+  pull_request:
 
 defaults:
   run:
