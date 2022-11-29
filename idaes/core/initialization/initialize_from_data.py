@@ -13,14 +13,7 @@
 """
 Initializer class for implementing initialization from a data source
 """
-from pyomo.environ import check_optimal_termination, Constraint, Var
-from pyomo.common.config import ConfigValue
-from pyomo.contrib.incidence_analysis.util import solve_strongly_connected_components
-
 from idaes.core.initialization.initializer_base import InitializerBase
-from idaes.core.util.exceptions import InitializationError
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.solvers import get_solver
 
 __author__ = "Andrew Lee"
 

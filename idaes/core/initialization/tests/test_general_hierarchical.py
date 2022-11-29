@@ -11,15 +11,15 @@
 # license information.
 #################################################################################
 """
-Tests for Block Triangularization initialization
+Tests for general hierarchical initialization routines
 """
 import pytest
 import types
 
 from pyomo.environ import ConcreteModel, Constraint, value, Var
 
-from idaes.core.initialization.block_triangularization import (
-    BlockTriangularizationInitializer,
+from idaes.core.initialization.general_hierarchical import (
+    SingleControlVolumeUnitInitializer,
 )
 from idaes.core.initialization.initializer_base import InitializationStatus
 
@@ -68,7 +68,7 @@ def test_workflow():
     m.fs.unit.heat_duty.fix(0)
     m.fs.unit.deltaP.fix(0)
 
-    initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+    initializer = SingleControlVolumeUnitInitializer()
     initializer.initialize(m.fs.unit)
 
     assert initializer.status == InitializationStatus.Ok
@@ -93,53 +93,4 @@ def test_workflow():
     assert value(m.fs.unit.outlet.pressure[0]) == pytest.approx(101325, rel=1e-6)
 
 
-class TestBTSubMethods:
-    @pytest.mark.unit
-    def test_config(self):
-        initializer = BlockTriangularizationInitializer()
-
-        assert hasattr(initializer, "config")
-
-        assert "constraint_tolerance" in initializer.config
-
-        assert "block_solver" in initializer.config
-        assert "block_solver_options" in initializer.config
-        assert "calculate_variable_options" in initializer.config
-
-    # TODO: Tests for prechecks and initialization_routine stand alone
-
-    @pytest.fixture
-    def model(self):
-        m = ConcreteModel()
-
-        m.v1 = Var()
-        m.v2 = Var()
-        m.v3 = Var()
-        m.v4 = Var()
-
-        m.c1 = Constraint(expr=m.v1 == m.v2)
-        m.c2 = Constraint(expr=2 * m.v2 == m.v3 + m.v4)
-        m.c3 = Constraint(expr=m.v3 - m.v4 == 0)
-
-        # Add a dummy method for fixing initialization states
-        def fix_initialization_states(blk):
-            blk.v1.fix(4)
-
-        m.fix_initialization_states = types.MethodType(fix_initialization_states, m)
-
-        return m
-
-    @pytest.mark.component
-    def test_workflow(self, model):
-        initializer = BlockTriangularizationInitializer()
-
-        status = initializer.initialize(model)
-
-        assert model.v1.value == 4
-        assert model.v2.value == 4
-        assert model.v3.value == 4
-        assert model.v4.value == 4
-
-        assert not model.v1.fixed
-
-        assert status == InitializationStatus.Ok
+# TODO: Unit testing of methods

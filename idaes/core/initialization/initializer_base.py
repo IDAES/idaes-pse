@@ -34,9 +34,6 @@ import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee"
 
-# Set up logger
-_log = idaeslog.getLogger(__name__)
-
 
 class InitializationStatus(Enum):
     """
@@ -77,6 +74,13 @@ class InitializerBase:
             description="Tolerance for checking constraint convergence",
         ),
     )
+    CONFIG.declare(
+        "output_level",
+        ConfigValue(
+            default=idaeslog.NOTSET,
+            description="Set output level for logging messages",
+        ),
+    )
 
     def __init__(self, **kwargs):
         self.config = self.CONFIG(kwargs)
@@ -84,6 +88,9 @@ class InitializerBase:
         self.initial_state = None
         self.postcheck_summary = {}
         self.status = None
+
+    def get_logger(self, model):
+        return idaeslog.getInitLogger(model.name, self.config.output_level)
 
     def initialize(
         self, model: Block, initial_guesses: dict = None, json_file: str = None
@@ -115,15 +122,15 @@ class InitializerBase:
         # 4. Prechecks
         self.precheck(model)
 
-        # 5. try: Call block-triangularization solver
+        # 5. try: Call specified initialization routine
         try:
-            self.initialization_routine(model)
+            results = self.initialization_routine(model)
         # 6. finally: Restore model state
         finally:
             self.restore_model_state(model)
 
         # 7. Check convergence
-        return self.postcheck(model)
+        return self.postcheck(model, results_obj=results)
 
     def get_current_state(self, model: Block):
         """
@@ -174,7 +181,9 @@ class InitializerBase:
                 model, fname=json_file, wts=StoreSpec().value(only_not_fixed=True)
             )
         else:
-            _log.info_high("No initial guesses provided during initialization.")
+            self.get_logger(model).info_high(
+                "No initial guesses provided during initialization."
+            )
 
     def fix_initialization_states(self, model: Block):
         """
@@ -221,7 +230,8 @@ class InitializerBase:
             model: Pyomo Block to initialize.
 
         Returns:
-            None
+            Overloaded method should return a Pyomo solver results object is available,
+            otherwise None
 
         Raises:
             NotImplementedError
@@ -264,7 +274,9 @@ class InitializerBase:
             InitialationStatus Enum
         """
         if results_obj is not None:
-            self.postcheck_summary = {"solver_status": check_optimal_termination(model)}
+            self.postcheck_summary = {
+                "solver_status": check_optimal_termination(results_obj)
+            }
             if not self.postcheck_summary["solver_status"]:
                 # Final solver call did not return optimal
                 self.status = InitializationStatus.Failed
