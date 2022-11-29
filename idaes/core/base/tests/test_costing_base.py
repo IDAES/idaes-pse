@@ -174,10 +174,15 @@ class TestCostingPackageData(FlowsheetCostingBlockData):
         self.base_period = pyunits.year
 
         self.test_flow_2_cost = Param(initialize=0.07, units=pyunits.kW)
+        self.test_flow_3_cost_param1 = Param(
+            initialize=0.42, units=pyunits.USD_2020 / pyunits.g
+        )
+        self.test_flow_3_cost_param2 = Param(initialize=0.9)
 
         self.defined_flows = {
             "test_flow_1": 0.2 * pyunits.J,
             "test_flow_2": self.test_flow_2_cost,
+            "test_flow_3": self.test_flow_3_cost_param1 / self.test_flow_3_cost_param2,
         }
 
         self._bgp = True
@@ -232,11 +237,12 @@ class TestFlowsheetCostingBlock:
     def test_basic_attributes(self, costing):
         assert costing.costing._registered_unit_costing == []
         assert isinstance(costing.costing.flow_types, Set)
-        assert len(costing.costing.flow_types) == 2
+        assert len(costing.costing.flow_types) == 3
         assert "test_flow_1" in costing.costing.flow_types
         assert costing.costing._registered_flows == {
             "test_flow_1": [],
             "test_flow_2": [],
+            "test_flow_3": [],
         }
 
         assert costing.costing._costing_methods_map == {
@@ -245,13 +251,18 @@ class TestFlowsheetCostingBlock:
             TypeCData: TestCostingPackageData.method_3,
         }
 
-        # Check that test_flow_1 was properly defined
-        assert value(costing.costing.test_flow_1_cost) == 0.2
-        assert_units_equivalent(
-            pyunits.get_units(costing.costing.test_flow_1_cost), pyunits.J
-        )
+        # Check that test_flow_1_cost is a newly created Var
+        assert isinstance(costing.costing.test_flow_1_cost, Var)
+        assert costing.costing.test_flow_1_cost.value == 0.2
+        assert_units_equivalent(costing.costing.test_flow_1_cost.get_units(), pyunits.J)
 
+        # Check that test_flow_2_cost uses the defined Param
         assert isinstance(costing.costing.test_flow_2_cost, Param)
+
+        # Check that test_flow_3_cost used the defined expression
+        assert value(costing.costing.test_flow_3_cost) == 0.42 / 0.9
+        costing.costing.test_flow_3_cost_param1.value = 0.21
+        assert value(costing.costing.test_flow_3_cost) == 0.21 / 0.9
 
         # Test that build_global_parameters was called successfully
         assert costing.costing._bgp
@@ -262,30 +273,31 @@ class TestFlowsheetCostingBlock:
             "test_flow", 42 * pyunits.USD_test / pyunits.mol
         )
 
-        assert value(costing.costing.test_flow_cost) == 42
+        assert isinstance(costing.costing.test_flow_cost, Var)
+        assert costing.costing.test_flow_cost.value == 42
         assert_units_equivalent(
-            pyunits.get_units(costing.costing.test_flow_cost),
-            pyunits.USD_test / pyunits.mol,
+            costing.costing.test_flow_cost.get_units(), pyunits.USD_test / pyunits.mol
         )
         assert "test_flow" in costing.costing.flow_types
 
         assert costing.costing._registered_flows == {
             "test_flow_1": [],
             "test_flow_2": [],
+            "test_flow_3": [],
             "test_flow": [],
         }
 
     @pytest.mark.unit
     def test_register_flow_component_exists(self, costing):
-        costing.costing.test_flow_3_cost = Var()
+        costing.costing.test_flow_4_cost = Var()
         with pytest.raises(
             RuntimeError,
-            match="Component test_flow_3_cost already exists on costing but is not 42.",
+            match="Component test_flow_4_cost already exists on costing but is not 42.",
         ):
-            costing.costing.register_flow_type("test_flow_3", 42)
+            costing.costing.register_flow_type("test_flow_4", 42)
         # cleanup for next test
-        costing.costing.flow_types.remove("test_flow_3")
-        costing.costing.del_component(costing.costing.test_flow_3_cost)
+        costing.costing.flow_types.remove("test_flow_4")
+        costing.costing.del_component(costing.costing.test_flow_4_cost)
 
     @pytest.mark.unit
     def test_cost_flow_invalid_type(self, costing):

@@ -20,7 +20,7 @@ from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 
 from idaes.core import UnitModelBlockData
 from idaes.core.base.process_base import declare_process_block_class, ProcessBlockData
-from idaes.core.util.misc import add_object_reference, StrEnum
+from idaes.core.util.misc import add_object_reference, is_constant_up_to_units, StrEnum
 from idaes.core.util.exceptions import ConfigurationError
 
 import idaes.logger as idaeslog
@@ -353,16 +353,25 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                 )
             # now self.{flow_type}_cost is cost, so just use it
         else:
-            add_object_reference(self, name, cost)
-
-        if not pyo.is_fixed(cost):
-            try:
-                cost.fix()
-                _log.warn(f"fixing flow cost for flow {flow_type}")
-            except:
-                raise RuntimeError(
-                    f"Flow cost {cost} for flow {flow_type} is not fixed"
+            if is_constant_up_to_units(cost):
+                # Create a Var to hold the cost
+                # Units will be different between flows, so have to use scalar Vars
+                fvar = pyo.Var(
+                    units=pyo.units.get_units(cost),
+                    doc=f"Cost parameter for {flow_type} flow",
                 )
+                self.add_component(name, fvar)
+                fvar.fix(cost)
+            else:
+                add_object_reference(self, name, cost)
+                if not pyo.is_fixed(cost):
+                    try:
+                        cost.fix()
+                        _log.warn(f"fixing flow cost for flow {flow_type}")
+                    except:
+                        raise RuntimeError(
+                            f"Flow cost {cost} for flow {flow_type} is not fixed"
+                        )
 
         self._registered_flows[flow_type] = []
 
