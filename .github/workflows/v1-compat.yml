@@ -57,10 +57,11 @@ jobs:
         run: |
           echo "IDAES_ACTIVATE_V1_COMPAT=true" >> $GITHUB_ENV
       - name: Run verify tests
+        if: matrix.activated != 'no'
         run: |
           pytest "$input_file_name" --bwcompat-importables="$input_file_name"
-      - name: Report expected failure when not activated
-        if: failure() && matrix.activated == 'no'
+      - name: Run verify tests expecting failures
+        if: matrix.activated == 'no'
         run: |
-          echo "Expected failure due to v1 compat not activated"
+          pytest "$input_file_name" --bwcompat-importables="$input_file_name"; [ $? -eq 1 ]
 
