@@ -63,5 +63,5 @@ jobs:
       - name: Run verify tests expecting failures
         if: matrix.activated == 'no'
         run: |
-          pytest "$input_file_name" --bwcompat-importables="$input_file_name" || [ $? -eq 1 ]
+          pytest "$input_file_name" --bwcompat-importables="$input_file_name" && exit 1 || [ $? -eq 1 ]
 
