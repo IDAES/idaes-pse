@@ -2,7 +2,14 @@ name: IDAES v1 compat
 
 on:
   push:
+    branches:
+      - main
+      - '*_rel'
   pull_request:
+    types:
+      - opened
+      - ready_for_review
+      - synchronize
 
 defaults:
   run:
