@@ -28,12 +28,14 @@ Variable                    Name                  Notes
 =========================== ===================== ===================================================================================
 :math:`P_{ratio}`           ratioP
 :math:`V_t`                 volume                Only if has_rate_reactions = True, reference to control_volume.rate_reaction_extent
-:math:`W_{mechanical,t}`    work_mechanical       Reference to control_volume.work
+:math:`W_{mechanical,t}`    work_mechanical       Reference to control_volume.work :sup:`*`
 :math:`W_{fluid,t}`         work_fluid            Pump assumption only
 :math:`\eta_{pump,t}`       efficiency_pump       Pump assumption only
 :math:`W_{isentropic,t}`    work_isentropic       Isentropic assumption only
 :math:`\eta_{isentropic,t}` efficiency_isentropic Isentropic assumption only
 =========================== ===================== ===================================================================================
+
+:sup:`*` By default, ``control_volume.work`` is built only when the ``EnergyBalanceType`` of ``control_volume`` is `not` ``None`` and ``has_work_transfer``. However, when modeling a ``Pump`` there are cases where the mechanical work is calculated without demanding a full energy balance constraint. In these cases (when ``thermodynamic_assumption=ThermodynamicAssumption.pump`` and ``energy_balance_type=none``), a variable ``control_volume.work`` is constructed without being coupled to the usual energy balance constraint. ``work_mechanical`` is then referenced to ``control_volume.work`` and used to build constraints under the ``add_pump()`` method to simulate essential pump properties. 
 
 Isentropic Pressure Changers also have an additional Property Block named `properties_isentropic` (attached to the Unit Model).
 
