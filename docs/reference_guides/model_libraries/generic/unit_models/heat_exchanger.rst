@@ -169,3 +169,5 @@ to avoid an evaluation error in the log function.
 .. autofunction:: delta_temperature_amtd_callback
 
 .. autofunction:: delta_temperature_underwood_callback
+
+.. autofunction:: delta_temperature_lmtd_smooth_callback
