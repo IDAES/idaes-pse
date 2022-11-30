@@ -17,7 +17,6 @@ import idaes.logger as idaeslog
 import tarfile
 import idaes
 from idaes.config import extra_binaries
-from shutil import copyfile
 from pyomo.common.download import FileDownloader
 import urllib
 

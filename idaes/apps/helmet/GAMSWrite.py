@@ -23,7 +23,6 @@ from . import (
 )
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 global props, sample, sample_ratio
 props = []

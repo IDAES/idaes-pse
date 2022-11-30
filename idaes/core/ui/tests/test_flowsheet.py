@@ -25,7 +25,7 @@ from idaes.core.ui.flowsheet import (
 from idaes.models.properties.swco2 import SWCO2ParameterBlock
 from idaes.models.unit_models import Heater, PressureChanger, HeatExchanger
 from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
-from pyomo.environ import Expression, TransformationFactory, ConcreteModel
+from pyomo.environ import TransformationFactory, ConcreteModel
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (

@@ -14,7 +14,6 @@
 
 import logging
 import pytest
-import sys
 
 from io import StringIO
 from pyomo.common.log import LoggingIntercept
