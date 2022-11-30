@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 import pyomo.environ as pyo
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import In
 from idaes.core import declare_process_block_class
 from idaes.models_extra.power_generation.unit_models.balance import BalanceBlockData
 from idaes.core.util import from_json, to_json, StoreSpec

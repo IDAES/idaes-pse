@@ -30,22 +30,12 @@ from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.phase_equil.forms import (
-    fugacity,
     log_fugacity,
 )
 from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
-    IdealBubbleDew,
-)
-from idaes.models.properties.modular_properties.pure import NIST, RPP4, RPP5, Perrys
+from idaes.models.properties.modular_properties.pure import NIST, RPP4, RPP5
 
-from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
-from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius
-from idaes.models.properties.modular_properties.reactions.rate_forms import (
-    power_law_rate,
-)
 from idaes.models.properties.modular_properties.base.generic_reaction import (
-    GenericReactionParameterBlock,
     ConcentrationForm,
 )
 import idaes.models.properties.modular_properties.reactions as rxn
