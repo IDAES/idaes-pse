@@ -16,7 +16,7 @@ Tests for ControlVolumeBlockData.
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import ConcreteModel, Constraint, Expression, Set, units, Var, value
+from pyomo.environ import ConcreteModel, Constraint, Expression, Set, units, Var
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 from pyomo.common.config import ConfigBlock
 from idaes.core import (

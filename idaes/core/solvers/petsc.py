@@ -32,13 +32,9 @@ from pyomo.util.subsystems import (
     create_subsystem_block,
 )
 from pyomo.solvers.plugins.solvers.ASL import ASL
-from pyomo.opt.solver import SystemCallSolver
 from pyomo.common.tempfiles import TempfileManager
-from pyomo.common.errors import ApplicationError
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
-from idaes.core.solvers import get_solver
 import idaes.config as icfg
 
 
