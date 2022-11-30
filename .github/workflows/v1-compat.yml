@@ -21,7 +21,7 @@ jobs:
       compat_dependencies_pip_target: git+https://github.com/IDAES/devtools@bwcompat
       input_file_url: https://github.com/IDAES/idaes-pse/releases/download/${{ matrix.compat-ref }}/idaes-${{ matrix.compat-ref }}-bwcompat.collect.module_objects.json
       input_file_name: bwcompat.json
-    name: Verify v1 compat (env var=${{ matrix.env-var-value }}/${{ matrix.compat-ref }}/${{ matrix.python-version }})
+    name: Verify v1 compat (activated=${{ matrix.activated }}/${{ matrix.compat-ref }}/${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -31,9 +31,9 @@ jobs:
           - '3.10'
         compat-ref:
           - '1.13.0'
-        env-var-value:
-          - "true"
-          - ""
+        activated:
+          - "envvar"
+          - "no"
     steps:
       - uses: actions/checkout@v2
       - name: Set up Conda environment
@@ -52,8 +52,15 @@ jobs:
         run: |
           curl -sL "$input_file_url" -o "$input_file_name"
           ls -lah
+      - name: Set env var to activate v1 compat
+        if: matrix.activated == 'envvar'
+        run: |
+          echo "IDAES_ACTIVATE_V1_COMPAT=true" >> $GITHUB_ENV
       - name: Run verify tests
-        env:
-          IDAES_ACTIVATE_V1_COMPAT: ${{ matrix.env-var-value }}
         run: |
           pytest "$input_file_name" --bwcompat-importables="$input_file_name"
+      - name: Report expected failure when not activated
+        if: failure() && matrix.activated == 'no'
+        run: |
+          echo "Expected failure due to v1 compat not activated"
+
