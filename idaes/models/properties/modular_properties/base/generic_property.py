@@ -1385,7 +1385,8 @@ class _GenericStateBlock(StateBlock):
             init_log.info("Pressure slacks initialization complete.")
 
         # ---------------------------------------------------------------------
-        # If present, initialize bubble and dew point calculations
+        # If present, initialize bubble and dew point calculations, and
+        # equilirium temperature _tbar
         for k in blk.keys():
             T_units = blk[k].params.get_metadata().default_units["temperature"]
             # Bubble temperature initialization
@@ -1393,25 +1394,9 @@ class _GenericStateBlock(StateBlock):
 
             # Dew temperature initialization
             blk._init_Tdew(blk[k], T_units)
-
-        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        #     res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        # init_log.info(
-        #     "Dew and bubble point initialization: {}.".format(
-        #         idaeslog.condition(res)
-        #     )
-        # )
-        
-        # ---------------------------------------------------------------------
-        # Calculate _tbar
-        for k in blk.keys():
-            if (blk[k].params.config.phases_in_equilibrium is not None and
-                    (not blk[k].config.defined_state or blk[k].always_flash)):
-                for pp in blk[k].params._pe_pairs:
-                    blk[k].params.config.phase_equilibrium_state[pp] \
-                        .calculate_tbar(blk[k], pp)
-
-            init_log.info("Equilibrium temperature initialization complete.")
+            
+            init_log.info("Bubble, dew and equilibrium temperature "
+                          "initialization complete.")
 
         # ---------------------------------------------------------------------
         # Initialize sV and sL slacks
@@ -1769,7 +1754,7 @@ class _GenericStateBlock(StateBlock):
                 Tbub0 = Tbub1
                 counter += 1
 
-            blk.temperature_bubble[pp].fix(Tbub0)
+            blk._tbar[pp].fix(Tbub0)
 
             _mole_frac_tbub = {j: 0.0 for j in raoult_comps + henry_comps}
             for j in raoult_comps:
@@ -1905,7 +1890,7 @@ class _GenericStateBlock(StateBlock):
                 Tdew0 = Tdew1
                 counter += 1
 
-            blk.temperature_dew[pp].fix(Tdew0)
+            blk._tbar[pp].set_value((blk._tbar[pp].value + Tdew0) / 2)
 
             _mole_frac_tdew = {j: 0.0 for j in raoult_comps + henry_comps}
             for j in raoult_comps:
@@ -2069,12 +2054,6 @@ class GenericStateBlockData(StateBlockData):
             for pp in self.params._pe_pairs:
                 pe_form_config[pp].phase_equil(self, pp)
             
-            # Add bubble and dew temperatures
-            # _temperature_bubble(self)
-            # _temperature_dew(self)
-            for pp in self.params._pe_pairs:
-                pe_form_config[pp].bubble_dew_method(self)
-
             def rule_equilibrium(b, phase1, phase2, j):
                 if (phase1, j) not in b.phase_component_set or (
                     phase2,
@@ -2245,82 +2224,82 @@ class GenericStateBlockData(StateBlockData):
 
         # Add scaling for additional Vars and Constraints
         # Bubble and dew points
-        # def bubble_dew_scaling(b, pt_var):
-        #     # Ditch the m.fs.unit.control_volume...
-        #     short_name = pt_var.name.split(".")[-1]
+        def bubble_dew_scaling(b, pt_var):
+            # Ditch the m.fs.unit.control_volume...
+            short_name = pt_var.name.split(".")[-1]
 
-        #     if short_name.startswith("temperature"):
-        #         abbrv = "t"
-        #         sf_pt = sf_T
-        #     elif short_name.startswith("pressure"):
-        #         abbrv = "p"
-        #         sf_pt = sf_P
-        #     else:
-        #         _raise_dev_burnt_toast()
+            if short_name.startswith("temperature"):
+                abbrv = "t"
+                sf_pt = sf_T
+            elif short_name.startswith("pressure"):
+                abbrv = "p"
+                sf_pt = sf_P
+            else:
+                _raise_dev_burnt_toast()
 
-        #     if short_name.endswith("bubble"):
-        #         phase = VaporPhase
-        #         abbrv += "bub"
-        #     elif short_name.endswith("dew"):
-        #         phase = LiquidPhase
-        #         abbrv += "dew"
+            if short_name.endswith("bubble"):
+                phase = VaporPhase
+                abbrv += "bub"
+            elif short_name.endswith("dew"):
+                phase = LiquidPhase
+                abbrv += "dew"
 
-        #     x_var = getattr(b, "_mole_frac_" + abbrv)
+            x_var = getattr(b, "_mole_frac_" + abbrv)
 
-        #     if b.is_property_constructed("log_mole_frac_" + abbrv):
-        #         log_eq = getattr(b, "log_mole_frac_" + abbrv + "_eqn")
-        #     else:
-        #         log_eq = None
+            if b.is_property_constructed("log_mole_frac_" + abbrv):
+                log_eq = getattr(b, "log_mole_frac_" + abbrv + "_eqn")
+            else:
+                log_eq = None
 
-        #     # Directly scale the bubble/dew temperature/pressure variable
-        #     for v in pt_var.values():
-        #         if iscale.get_scaling_factor(v) is None:
-        #             iscale.set_scaling_factor(v, sf_pt)
+            # Directly scale the bubble/dew temperature/pressure variable
+            for v in pt_var.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, sf_pt)
 
-        #     # Scale mole fractions for bubble/dew calcs
-        #     for i, v in x_var.items():
-        #         if iscale.get_scaling_factor(v) is None:
-        #             if b.params.config.phases[i[0]]["type"] is phase:
-        #                 p = i[0]
-        #             elif b.params.config.phases[i[1]]["type"] is phase:
-        #                 p = i[1]
-        #             else:
-        #                 # We create bubble/dew variables for all phase
-        #                 # equilibrium pairs, regardless of whether it makes
-        #                 # sense. If the pair doesn't make sense, the constraint
-        #                 # is not created and the scaling factor is arbitrary
-        #                 p = i[0]
-        #             try:
-        #                 iscale.set_scaling_factor(v, sf_mf[p, i[2]])
-        #                 if log_eq is not None and (
-        #                     iscale.get_scaling_factor(log_eq[i]) is None
-        #                 ):
-        #                     iscale.constraint_scaling_transform(
-        #                         log_eq[i], sf_mf[p, i[2]], overwrite=False
-        #                     )
-        #             except KeyError:
-        #                 # component i[2] is not in the new phase, so this
-        #                 # variable is likely unused and scale doesn't matter
-        #                 iscale.set_scaling_factor(v, 1)
+            # Scale mole fractions for bubble/dew calcs
+            for i, v in x_var.items():
+                if iscale.get_scaling_factor(v) is None:
+                    if b.params.config.phases[i[0]]["type"] is phase:
+                        p = i[0]
+                    elif b.params.config.phases[i[1]]["type"] is phase:
+                        p = i[1]
+                    else:
+                        # We create bubble/dew variables for all phase
+                        # equilibrium pairs, regardless of whether it makes
+                        # sense. If the pair doesn't make sense, the constraint
+                        # is not created and the scaling factor is arbitrary
+                        p = i[0]
+                    try:
+                        iscale.set_scaling_factor(v, sf_mf[p, i[2]])
+                        if log_eq is not None and (
+                            iscale.get_scaling_factor(log_eq[i]) is None
+                        ):
+                            iscale.constraint_scaling_transform(
+                                log_eq[i], sf_mf[p, i[2]], overwrite=False
+                            )
+                    except KeyError:
+                        # component i[2] is not in the new phase, so this
+                        # variable is likely unused and scale doesn't matter
+                        iscale.set_scaling_factor(v, 1)
 
-        #     scaling_method = getattr(
-        #         b.params.config.bubble_dew_method, "scale_" + short_name
-        #     )
-        #     scaling_method(b, overwrite=False)
+            scaling_method = getattr(
+                b.params.config.bubble_dew_method, "scale_" + short_name
+            )
+            scaling_method(b, overwrite=False)
 
-        #     return
+            return
 
-        # if self.is_property_constructed("temperature_bubble"):
-        #     bubble_dew_scaling(self, self.temperature_bubble)
+        if self.is_property_constructed("temperature_bubble"):
+            bubble_dew_scaling(self, self.temperature_bubble)
 
-        # if self.is_property_constructed("temperature_dew"):
-        #     bubble_dew_scaling(self, self.temperature_dew)
+        if self.is_property_constructed("temperature_dew"):
+            bubble_dew_scaling(self, self.temperature_dew)
 
-        # if self.is_property_constructed("pressure_bubble"):
-        #     bubble_dew_scaling(self, self.pressure_bubble)
+        if self.is_property_constructed("pressure_bubble"):
+            bubble_dew_scaling(self, self.pressure_bubble)
 
-        # if self.is_property_constructed("pressure_dew"):
-        #     bubble_dew_scaling(self, self.pressure_dew)
+        if self.is_property_constructed("pressure_dew"):
+            bubble_dew_scaling(self, self.pressure_dew)
 
         # Scale log form constraints
         if self.is_property_constructed("log_mole_frac_comp"):
@@ -2554,50 +2533,6 @@ class GenericStateBlockData(StateBlockData):
 
     # -------------------------------------------------------------------------
     # Bubble and Dew Points
-
-    # def _bubble_dew_method(b):
-    #     t_units = b.params.get_metadata().default_units["temperature"]
-    #     try:
-    #         b.temperature_bubble = Var(
-    #             b.params._pe_pairs,
-    #             initialize=b.temperature,
-    #             doc="Bubble point temperature of mixture",
-    #             bounds=(b.temperature.lb, b.temperature.ub),
-    #             units=t_units,
-    #         )
-    #         b._mole_frac_tbub = Var(
-    #             b.params._pe_pairs,
-    #             b.component_list,
-    #             initialize=1/len(b.component_list),
-    #             bounds=(0, None),
-    #             doc="Vapor mole fractions at bubble temperature",
-    #             units=None,
-    #         )
-
-    #         b.temperature_dew = Var(
-    #             b.params._pe_pairs,
-    #             initialize=b.temperature,
-    #             doc="Dew point temperature of mixture",
-    #             bounds=(b.temperature.lb, b.temperature.ub),
-    #             units=t_units,
-    #         )
-    #         b._mole_frac_tdew = Var(
-    #             b.params._pe_pairs,
-    #             b.component_list,
-    #             initialize=1/len(b.component_list),
-    #             bounds=(0, None),
-    #             doc="Liquid mole fractions at dew temperature",
-    #             units=None,
-    #         )
-            
-    #         # for pp in b.params._pe_pairs:
-    #         #     b.temperature_bubble[pp].fix()
-    #         #     b.temperature_dew[pp].fix()
-                
-    #     except AttributeError:
-    #         b.del_component(b.temperature_bubble)
-    #         b.del_component(b.temperature_dew)
-    #         raise
 
     def _temperature_bubble(b):
         _temperature_pressure_bubble_dew(b, "temperature_bubble")

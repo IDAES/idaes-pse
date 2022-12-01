@@ -204,19 +204,6 @@ def phase_equil_initialization(b, phase_pair):
             c.deactivate()
 
 
-def calculate_tbar(b, phase_pair):
-    suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
-
-    if (hasattr(b, "temperature_bubble") and
-        hasattr(b, "temperature_dew")):
-        b._tbar[phase_pair].value = \
-            0.5 * value(b.temperature_bubble[phase_pair] +
-                        b.temperature_dew[phase_pair])
-
-    else:
-        b._tbar[phase_pair].value = value(b.temperature_bubble[phase_pair])
-
-
 def calculate_pbar(b, phase_pair):
     if hasattr(b, "_pbar"):
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
@@ -261,72 +248,12 @@ def calculate_ceos_derivative_slacks(b, phase_pair):
         gn['Vap'].value = 0
 
 
-def bubble_dew_method(b):
-    t_units = b.params.get_metadata().default_units["temperature"]
-    try:
-        b.temperature_bubble = Var(
-            b.params._pe_pairs,
-            initialize=b.temperature,
-            doc="Bubble point temperature of mixture",
-            bounds=(b.temperature.lb, b.temperature.ub),
-            units=t_units,
-        )
-        b._mole_frac_tbub = Var(
-            b.params._pe_pairs,
-            b.component_list,
-            initialize=1/len(b.component_list),
-            bounds=(0, None),
-            doc="Vapor mole fractions at bubble temperature",
-            units=None,
-        )
-
-        b.temperature_dew = Var(
-            b.params._pe_pairs,
-            initialize=b.temperature,
-            doc="Dew point temperature of mixture",
-            bounds=(b.temperature.lb, b.temperature.ub),
-            units=t_units,
-        )
-        b._mole_frac_tdew = Var(
-            b.params._pe_pairs,
-            b.component_list,
-            initialize=1/len(b.component_list),
-            bounds=(0, None),
-            doc="Liquid mole fractions at dew temperature",
-            units=None,
-        )
-        for pp in b.params._pe_pairs:
-            b.temperature_bubble[pp].fix()
-            b.temperature_dew[pp].fix()
-        
-        # for name in ("temperature_bubble", "temperature_dew"):
-        #     tmp = getattr(b.params.config.bubble_dew_method, name)
-        #     tmp(b)
-        
-        # for pp in b.params._pe_pairs:
-        #     for j in b.params.component_list:
-        #         b.eq_temperature_bubble[pp, j].deactivate()
-        #         b.eq_temperature_dew[pp, j].deactivate()
-        #         b.log_mole_frac_tbub_eqn[pp, j].deactivate()
-        #         b.log_mole_frac_tdew_eqn[pp, j].deactivate()
-        #     b.eq_mole_frac_tbub[pp].deactivate()
-        #     b.eq_mole_frac_tdew[pp].deactivate()
-        
-        
-    except AttributeError:
-        b.del_component(b.temperature_bubble)
-        b.del_component(b.temperature_dew)
-        raise
-
-
 # -----------------------------------------------------------------------------
 class SmoothVLE(object):
     # Deprecation: Eventually replace static methods with class methods
     phase_equil = phase_equil
     phase_equil_initialization = phase_equil_initialization
-    calculate_tbar = calculate_tbar
     calculate_pbar = calculate_pbar
     calculate_temperature_slacks = calculate_temperature_slacks
     calculate_ceos_derivative_slacks = calculate_ceos_derivative_slacks
     calculate_scaling_factors = calculate_scaling_factors
-    bubble_dew_method = bubble_dew_method
