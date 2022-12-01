@@ -649,7 +649,9 @@ cold side flows from 1 to 0""",
                 )
             )
         else:
-            duty = pyunits.convert_value(duty[0], from_units=duty[1], to_units=hot_side_units("power"))
+            duty = pyunits.convert_value(
+                duty[0], from_units=duty[1], to_units=hot_side_units("power")
+            )
         duty_per_length = value(duty / self.length)
         # Fix heat duties
         for v in self.hot_side.heat.values():
