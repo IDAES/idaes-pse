@@ -44,10 +44,24 @@ def test_heater_ph_mixed_byphase():
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = HelmholtzParameterBlock(pure_component="h2o")
     m.fs.heater = Heater(property_package=m.fs.properties)
-    m.fs.heater.inlet.enth_mol.fix(4000)
-    m.fs.heater.inlet.flow_mol.fix(100)
-    m.fs.heater.inlet.pressure.fix(101325)
+    m.fs.heater.inlet.enth_mol[0].set_value(4000)
+    m.fs.heater.inlet.flow_mol[0].fix(100)
+    m.fs.heater.inlet.pressure[0].set_value(101325)
     m.fs.heater.heat_duty[0].fix(100 * 20000)
+
+    # Test that property block properly holds state during initialization
+    flags = m.fs.heater.control_volume.initialize()
+    assert degrees_of_freedom(m) == 0
+
+    # Make sure original states are restored
+    m.fs.heater.control_volume.release_state(flags)
+    assert not m.fs.heater.inlet.enth_mol[0].fixed
+    assert m.fs.heater.inlet.flow_mol[0].fixed
+    assert not m.fs.heater.inlet.pressure[0].fixed
+
+    m.fs.heater.inlet.enth_mol.fix()
+    m.fs.heater.inlet.pressure.fix()
+
     m.fs.heater.initialize()
     assert degrees_of_freedom(m) == 0
     solver.solve(m)
