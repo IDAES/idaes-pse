@@ -16,9 +16,8 @@ Tests for IDAES Stoichiometric reactor.
 Author: Chinedu Okoli, Andrew Lee
 """
 import pytest
-from io import StringIO
 
-from pyomo.environ import check_optimal_termination, ConcreteModel, value, units, Var
+from pyomo.environ import check_optimal_termination, ConcreteModel, value, units
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import (

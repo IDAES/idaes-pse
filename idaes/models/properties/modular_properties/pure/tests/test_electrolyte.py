@@ -19,7 +19,7 @@ Authors: Andrew Lee
 import pytest
 import types
 
-from pyomo.environ import ConcreteModel, Block, Expression, value, Var, units as pyunits
+from pyomo.environ import ConcreteModel, Block, value, Var, units as pyunits
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_equivalent
 
