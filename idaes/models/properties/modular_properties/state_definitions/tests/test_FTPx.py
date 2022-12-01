@@ -44,17 +44,12 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
     declare_process_block_class,
-    VaporPhase,
-    LiquidPhase,
 )
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterData,
 )
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.models.properties.modular_properties.phase_equil.henry import (
-    HenryType,
-)
 import idaes.logger as idaeslog
 
 
