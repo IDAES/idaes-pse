@@ -132,13 +132,13 @@ def phase_equil(b, phase_pair):
         _pp = Var(initialize=0.0,
                  bounds=(0, None),
                  doc="Artificial pressure variable to check if P > Pc",
-                 units=pyunits.dimensionless)
+                 units=pyunits.Pa)
         b.add_component("_pp" + suffix, _pp)
         
         _pn = Var(initialize=0.0,
                  bounds=(0, None),
                  doc="Artificial pressure variable to check if P < Pc",
-                 units=pyunits.dimensionless)
+                 units=pyunits.Pa)
         b.add_component("_pn" + suffix, _pn)
 
         def rule_pbar(b):
