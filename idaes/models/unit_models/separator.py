@@ -415,9 +415,7 @@ objects linked the mixed state and all outlet states,
         # Create an instance of StateBlock for all outlets
         for o in outlet_list:
             o_obj = self.config.property_package.build_state_block(
-                self.flowsheet().time,
-                doc="Material properties at outlet",
-                default=tmp_dict,
+                self.flowsheet().time, doc="Material properties at outlet", **tmp_dict
             )
 
             setattr(self, o + "_state", o_obj)
@@ -439,9 +437,7 @@ objects linked the mixed state and all outlet states,
         tmp_dict["defined_state"] = True
 
         self.mixed_state = self.config.property_package.build_state_block(
-            self.flowsheet().time,
-            doc="Material properties of mixed stream",
-            default=tmp_dict,
+            self.flowsheet().time, doc="Material properties of mixed stream", **tmp_dict
         )
 
         return self.mixed_state

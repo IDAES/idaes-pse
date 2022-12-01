@@ -66,19 +66,17 @@ def build_drum1D():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     # Add property packages to flowsheet library
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
     m.fs.unit = Drum1D(
-        default={
-            "property_package": m.fs.prop_water,
-            "has_holdup": True,
-            "has_heat_transfer": True,
-            "has_pressure_change": True,
-            "finite_elements": 4,
-            "drum_inner_diameter": 1.2,
-            "drum_thickness": 0.119,
-        }
+        property_package=m.fs.prop_water,
+        has_holdup=True,
+        has_heat_transfer=True,
+        has_pressure_change=True,
+        finite_elements=4,
+        drum_inner_diameter=1.2,
+        drum_thickness=0.119,
     )
 
     m.fs.unit.drum_length.fix(15.3256)
@@ -159,7 +157,7 @@ def test_run_drum1D(build_drum1D):
         + m.fs.unit.heat_duty[0]
     )
     # pressure drop
-    assert pytest.approx(3662.5483, abs=1e-3) == pyo.value(m.fs.unit.deltaP[0])
+    assert pytest.approx(3662.5483, rel=1e-5) == pyo.value(m.fs.unit.deltaP[0])
     # mass balance
     assert pytest.approx(0, abs=1e-3) == pyo.value(
         m.fs.unit.water_steam_inlet.flow_mol[0]

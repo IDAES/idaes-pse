@@ -12,7 +12,7 @@
 #################################################################################
 import pytest
 
-from idaes.core.ui.icons import UnitModelIcon
+from idaes.core.ui.icons.icons import UnitModelIcon
 
 
 @pytest.mark.parametrize(

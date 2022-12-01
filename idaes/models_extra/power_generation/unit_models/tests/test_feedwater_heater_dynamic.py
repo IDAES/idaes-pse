@@ -33,54 +33,50 @@ def build_unit():
     m = pyo.ConcreteModel()
     # Add a flowsheet object to the model
     m.fs = FlowsheetBlock(
-        default={
-            "dynamic": True,
-            "time_set": [0, 60],
-            "time_units": pyo.units.s,
-            "default_property_package": iapws95.Iapws95ParameterBlock(),
-        }
+        dynamic=True,
+        time_set=[0, 60],
+        time_units=pyo.units.s,
+        default_property_package=iapws95.Iapws95ParameterBlock(),
     )
     m.fs.properties = m.fs.config.default_property_package
     m.fs.unit = FWH0DDynamic(
-        default={
-            "has_desuperheat": True,
-            "has_drain_cooling": True,
-            "has_drain_mixer": True,
-            "condense": {
-                "tube": {"has_pressure_change": True},
-                "shell": {"has_pressure_change": True},
-                "has_holdup": True,
-            },
-            "desuperheat": {"dynamic": False},
-            "cooling": {"dynamic": False, "has_holdup": False},
-            "property_package": m.fs.properties,
-        }
+        has_desuperheat=True,
+        has_drain_cooling=True,
+        has_drain_mixer=True,
+        condense={
+            "cold_side": {"has_pressure_change": True},
+            "hot_side": {"has_pressure_change": True},
+            "has_holdup": True,
+        },
+        desuperheat={"dynamic": False},
+        cooling={"dynamic": False, "has_holdup": False},
+        property_package=m.fs.properties,
     )
     m.discretizer = pyo.TransformationFactory("dae.finite_difference")
     m.discretizer.apply_to(m, nfe=2, wrt=m.fs.time, scheme="BACKWARD")
     m.fs.unit.set_initial_condition()
-    m.fs.unit.desuperheat.inlet_1.flow_mol.fix(100)
-    m.fs.unit.desuperheat.inlet_1.flow_mol.unfix()
-    m.fs.unit.desuperheat.inlet_1.pressure.fix(201325)
-    m.fs.unit.desuperheat.inlet_1.enth_mol.fix(60000)
+    m.fs.unit.desuperheat.hot_side_inlet.flow_mol.fix(100)
+    m.fs.unit.desuperheat.hot_side_inlet.flow_mol.unfix()
+    m.fs.unit.desuperheat.hot_side_inlet.pressure.fix(201325)
+    m.fs.unit.desuperheat.hot_side_inlet.enth_mol.fix(60000)
     m.fs.unit.drain_mix.drain.flow_mol.fix(1)
     m.fs.unit.drain_mix.drain.pressure.fix(201325)
     m.fs.unit.drain_mix.drain.enth_mol.fix(20000)
-    m.fs.unit.cooling.inlet_2.flow_mol.fix(400)
-    m.fs.unit.cooling.inlet_2.pressure.fix(101325)
-    m.fs.unit.cooling.inlet_2.enth_mol.fix(3000)
+    m.fs.unit.cooling.cold_side_inlet.flow_mol.fix(400)
+    m.fs.unit.cooling.cold_side_inlet.pressure.fix(101325)
+    m.fs.unit.cooling.cold_side_inlet.enth_mol.fix(3000)
     m.fs.unit.condense.area.fix(600)
     m.fs.unit.condense.overall_heat_transfer_coefficient.fix(1010)
     m.fs.unit.desuperheat.area.fix(85)
     m.fs.unit.desuperheat.overall_heat_transfer_coefficient.fix(145)
     m.fs.unit.cooling.area.fix(100)
     m.fs.unit.cooling.overall_heat_transfer_coefficient.fix(675)
-    m.fs.unit.condense.tube.deltaP[:].fix(0)
+    m.fs.unit.condense.cold_side.deltaP[:].fix(0)
     m.fs.unit.condense.level.fix(0.275)
     m.fs.unit.condense.heater_diameter.fix(1.4)
     m.fs.unit.condense.vol_frac_shell.fix(0.675)
     m.fs.unit.condense.cond_sect_length.fix(6.4)
-    m.fs.unit.condense.tube.volume.fix(1.3)
+    m.fs.unit.condense.cold_side.volume.fix(1.3)
 
     return m
 
@@ -126,15 +122,15 @@ def test_fwh_model(build_unit):
         "max_iter": 50,
     }
     # initial drain flow rate
-    drain_flow0 = m.fs.unit.cooling.outlet_1.flow_mol[0].value
+    drain_flow0 = m.fs.unit.cooling.hot_side_outlet.flow_mol[0].value
     assert pytest.approx(67.20607, abs=1e-2) == pyo.value(
-        m.fs.unit.cooling.outlet_1.flow_mol[0]
+        m.fs.unit.cooling.hot_side_outlet.flow_mol[0]
     )
 
     # change drain flow rate to increase water level
     for t in m.fs.time:
         if t >= 30:
-            m.fs.unit.cooling.outlet_1.flow_mol[t].fix(drain_flow0 * 0.95)
+            m.fs.unit.cooling.hot_side_outlet.flow_mol[t].fix(drain_flow0 * 0.95)
     m.fs.unit.condense.level.unfix()
     m.fs.unit.condense.level[0].fix()
     solver.solve(m, tee=True)

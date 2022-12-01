@@ -100,7 +100,7 @@ class TestStateBlockUnsymmetric(object):
         eos_opt["reference_state"] = Unsymmetric
 
         m = ConcreteModel()
-        m.params = GenericParameterBlock(default=config)
+        m.params = GenericParameterBlock(**config)
 
         m.state = m.params.build_state_block([1])
 

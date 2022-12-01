@@ -47,9 +47,9 @@ solver = get_solver()
 @pytest.fixture
 def build_phase_separator():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.unit = HelmPhaseSeparator(default={"property_package": m.fs.properties})
+    m.fs.unit = HelmPhaseSeparator(property_package=m.fs.properties)
     return m
 
 

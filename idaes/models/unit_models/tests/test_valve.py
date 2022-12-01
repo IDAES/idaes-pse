@@ -43,13 +43,10 @@ class GenericValve(object):
     @pytest.fixture(scope="class")
     def valve_model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = iapws95.Iapws95ParameterBlock()
         m.fs.valve = Valve(
-            default={
-                "valve_function_callback": self.type,
-                "property_package": m.fs.properties,
-            }
+            valve_function_callback=self.type, property_package=m.fs.properties
         )
         fin = 1000  # mol/s
         pin = 200000  # Pa

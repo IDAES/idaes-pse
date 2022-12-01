@@ -27,9 +27,6 @@ import idaes.core.util.model_statistics as mstat
 from idaes.core.util.constants import Constants
 import idaes.logger as idaeslog
 
-_safe_log_eps = 1e-9
-_safe_sqrt_eps = 1e-9
-
 
 class CV_Bound(enum.Enum):
     EXTRAPOLATE = 1
@@ -52,32 +49,6 @@ def _set_default_factor(c, s):
     for i in c:
         if iscale.get_scaling_factor(c[i]) is None:
             iscale.set_scaling_factor(c[i], s)
-
-
-def _set_scaling_factor_if_none(c, s):
-    """Set a component's scaling factor if no scaling factor exists
-
-    Args:
-        c: (scalar) component to be scaled
-        s: scaling factor
-    """
-    if iscale.get_scaling_factor(c) is None:
-        iscale.set_scaling_factor(c, s)
-
-
-def _set_and_get_scaling_factor(c, s):
-    """Set a component's scaling factor if no scaling factor exists, then
-    return the scaling factor assigned to it
-
-    Args:
-        c: (scalar) component to be scaled
-        s: scaling factor
-
-    Returns:
-        Scaling factor assigned to c
-    """
-    _set_scaling_factor_if_none(c, s)
-    return iscale.get_scaling_factor(c)
 
 
 def _set_if_unfixed(v, val):
@@ -550,9 +521,9 @@ def _binary_diffusion_coefficient_expr(temperature, p, c1, c2):
     Pa_to_bar = 1e-5
     return (
         (
-            0.002666
+            0.00266
             * cm2_to_m2
-            * temperature ** (3 / 2)
+            * (temperature / pyo.units.K) ** (3 / 2)
             / (p / pyo.units.Pa)
             / Pa_to_bar
             / mab**0.5

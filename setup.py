@@ -33,8 +33,7 @@ def rglob(path, glob):
     return list(map(str, p.rglob(glob)))
 
 
-DEPENDENCIES_FOR_PRERELEASE_VERSION = [
-]
+DEPENDENCIES_FOR_PRERELEASE_VERSION = []
 
 # For included DMF data
 DMF_DATA_ROOT = "data"
@@ -82,7 +81,7 @@ kwargs = dict(
         "numpy",
         "networkx",
         "omlt==0.3.1",  # fix the version for now as package evolves
-        "pandas",
+        "pandas<1.5",
         "pint",
         "psutil",
         "pyomo>=6.4.3",

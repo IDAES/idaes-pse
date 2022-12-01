@@ -67,17 +67,13 @@ def test_update_flowsheet(flash_model):
 def flash_model():
     """Flash unit model. Use '.fs' attribute to get the flowsheet."""
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     # Flash properties
     m.fs.properties = BTXParameterBlock(
-        default={
-            "valid_phase": ("Liq", "Vap"),
-            "activity_coeff_model": "Ideal",
-            "state_vars": "FTPz",
-        }
+        valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal", state_vars="FTPz"
     )
     # Flash unit
-    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    m.fs.flash = Flash(property_package=m.fs.properties)
     m.fs.flash.inlet.flow_mol.fix(1)
     m.fs.flash.inlet.temperature.fix(368)
     m.fs.flash.inlet.pressure.fix(101325)

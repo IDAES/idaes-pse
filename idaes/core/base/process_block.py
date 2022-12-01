@@ -22,7 +22,6 @@ import logging
 import inspect
 
 from pyomo.common.config import ConfigBlock
-from pyomo.common.deprecation import deprecation_warning
 from pyomo.environ import Block
 from pyomo.common.pyomo_typing import get_overloads_for
 
@@ -48,13 +47,13 @@ _process_block_docstring = """
         rule (function): A rule function or None. Default rule calls build().
         concrete (bool): If True, make this a toplevel model. **Default** - False.
         ctype (class): Pyomo ctype of the block.  **Default** - pyomo.environ.Block
-        default (dict): Default ProcessBlockData config{}
+        {}
         initialize (dict): ProcessBlockData config for individual elements. Keys
-            are BlockData indexes and values are dictionaries described under the
-            "default" argument above.
+            are BlockData indexes and values are dictionaries with config arguments 
+            as keys.
         idx_map (function): Function to take the index of a BlockData element and
             return the index in the initialize dict from which to read arguments.
-            This can be provided to overide the default behavior of matching the
+            This can be provided to override the default behavior of matching the
             BlockData index exactly to the index in initialize.
     Returns:
         ({}) New instance
@@ -64,7 +63,7 @@ _config_block_keys_docstring = """
 
             ..
 
-            Keys
+            Config args
 {}
             ..
 """
@@ -91,27 +90,13 @@ def _process_kwargs(o, kwargs):
     o._block_data_config_initialize = ConfigBlock(implicit=True)
     o._block_data_config_initialize.set_value(kwargs.pop("initialize", None))
     o._idx_map = kwargs.pop("idx_map", None)
-    _default = kwargs.pop("default", None)
-    if _default is not None:
-        deprecation_warning(
-            "The default argument for the ProcessBlock class is deprecated. "
-            "Arguments can now be passed directly as keyword arguments."
-        )
-    _block_data_config_default = _default
+
     _pyomo_kwargs = {}
     for arg in _pyomo_block_keywords:
         if arg in kwargs:
             _pyomo_kwargs[arg] = kwargs.pop(arg)
-    if kwargs:
-        # left over args for IDAES
-        if _block_data_config_default is None:
-            _block_data_config_default = kwargs
-        else:
-            raise RuntimeError(
-                "Do not supply both keyword arguments and the "
-                "'default' argument to ProcessBlock init. Default is deprecated."
-            )
-    o._block_data_config_default = _block_data_config_default
+
+    o._block_data_config_default = kwargs
     return _pyomo_kwargs
 
 

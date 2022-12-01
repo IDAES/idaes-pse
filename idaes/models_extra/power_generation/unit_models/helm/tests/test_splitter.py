@@ -20,10 +20,10 @@ from idaes.models.properties import iapws95
 @pytest.mark.component
 def test_splitter():
     m = pyo.ConcreteModel()
-    m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
+    m.fs = idaes.core.FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.unit = HelmSplitter(
-        default={"property_package": m.fs.properties, "outlet_list": ["o1", "o2", "o3"]}
+        property_package=m.fs.properties, outlet_list=["o1", "o2", "o3"]
     )
 
     Fin = 1e4  # mol/s

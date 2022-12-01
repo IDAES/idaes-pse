@@ -36,18 +36,16 @@ from idaes.core.util import scaling as iscale
 @pytest.mark.unit
 def test_basic_scaling():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     # Set flag to include inherent reactions
     m.fs.pp._has_inherent_reactions = True
 
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
 
     m.fs.cv.add_geometry()
@@ -92,15 +90,13 @@ def test_basic_scaling():
 @pytest.mark.unit
 def test_user_set_scaling():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -142,17 +138,15 @@ def test_user_set_scaling():
 @pytest.mark.unit
 def test_full_auto_scaling():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -187,7 +181,8 @@ def test_full_auto_scaling():
     # Unscaled variables are:
     # rate_reaction_extent (2 reactions, 11 spatial points)
     # equilibrium_reaction_extent  (2 reactions, 11 spatial points)
-    assert len(unscaled_var_list) == 44
+    # cp  (11 spatial points)
+    assert len(unscaled_var_list) == 55
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
@@ -196,17 +191,15 @@ def test_full_auto_scaling():
 @pytest.mark.unit
 def test_full_auto_scaling_dynamic():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyo.units.s})
+    m.fs = FlowsheetBlock(dynamic=True, time_units=pyo.units.s)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -243,7 +236,8 @@ def test_full_auto_scaling_dynamic():
     # Unscaled variables are:
     # rate_reaction_extent (2 reactions, 44 time & space points)
     # equilibrium_reaction_extent  (2 reactions, 44 time & space points)
-    assert len(unscaled_var_list) == 176
+    # cp  (44 time & space points)
+    assert len(unscaled_var_list) == 220
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
@@ -252,17 +246,15 @@ def test_full_auto_scaling_dynamic():
 @pytest.mark.unit
 def test_full_auto_scaling_mbtype_phase():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -298,7 +290,8 @@ def test_full_auto_scaling_mbtype_phase():
     # rate_reaction_extent (2 reactions, 11 spatial points)
     # equilibrium_reaction_extent  (2 reactions, 11 spatial points)
     # phase_equilibrium_generation  (2 reactions, 11 spatial points)
-    assert len(unscaled_var_list) == 66
+    # cp  (11 spatial points)
+    assert len(unscaled_var_list) == 77
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
@@ -307,17 +300,15 @@ def test_full_auto_scaling_mbtype_phase():
 @pytest.mark.unit
 def test_full_auto_scaling_mbtype_element():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyo.units.s})
+    m.fs = FlowsheetBlock(dynamic=True, time_units=pyo.units.s)
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.cv = ControlVolume1DBlock(
-        default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
     )
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -333,7 +324,9 @@ def test_full_auto_scaling_mbtype_element():
 
     # check that all variables have scaling factors
     unscaled_var_list = list(iscale.unscaled_variables_generator(m))
-    assert len(unscaled_var_list) == 0
+    # Unscaled variables are:
+    # cp  (44 space and time points)
+    assert len(unscaled_var_list) == 44
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0

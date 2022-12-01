@@ -214,22 +214,13 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         """
         r_units = self.get_metadata().default_units
         prop_units = self.config.property_package.get_metadata().default_units
-        for u in r_units:
-            try:
-                # TODO: This check is for backwards compatability with
-                # pre-units property packages. It can be removed once these are
-                # fully deprecated.
-                if isinstance(prop_units[u], str) and (prop_units[u] != r_units[u]):
-                    raise KeyError()
-                elif prop_units[u] is not r_units[u]:
-                    raise KeyError()
-            except KeyError:
-                raise PropertyPackageError(
-                    "{} the property package associated with this "
-                    "reaction package does not use the same set of "
-                    "units of measurement ({}). Please choose a "
-                    "property package which uses the same units.".format(self.name, u)
-                )
+        if not r_units.unitset_is_consistent(prop_units):
+            raise PropertyPackageError(
+                "{} the property package associated with this "
+                "reaction package does not use the same set of "
+                "units of measurement. Please choose a "
+                "property package which uses the same units.".format(self.name)
+            )
 
     def _validate_property_parameter_properties(self):
         """

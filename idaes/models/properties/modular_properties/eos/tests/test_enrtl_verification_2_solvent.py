@@ -130,7 +130,7 @@ class Test_H2O_MeOH_EtOH(object):
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
-        m.params = GenericParameterBlock(default=configuration)
+        m.params = GenericParameterBlock(**configuration)
 
         m.state = m.params.build_state_block([1])
 

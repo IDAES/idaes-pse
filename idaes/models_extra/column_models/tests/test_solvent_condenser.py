@@ -59,16 +59,14 @@ class TestStripperVaporFlow(object):
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.liquid_properties = GenericParameterBlock(default=aqueous_mea)
-        m.fs.vapor_properties = GenericParameterBlock(default=wet_co2)
+        m.fs.liquid_properties = GenericParameterBlock(**aqueous_mea)
+        m.fs.vapor_properties = GenericParameterBlock(**wet_co2)
 
         m.fs.unit = SolventCondenser(
-            default={
-                "liquid_property_package": m.fs.liquid_properties,
-                "vapor_property_package": m.fs.vapor_properties,
-            }
+            liquid_property_package=m.fs.liquid_properties,
+            vapor_property_package=m.fs.vapor_properties,
         )
 
         m.fs.unit.inlet.flow_mol[0].fix(1.1117)
@@ -281,16 +279,14 @@ class TestStripperHeatDuty(object):
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.liquid_properties = GenericParameterBlock(default=aqueous_mea)
-        m.fs.vapor_properties = GenericParameterBlock(default=wet_co2)
+        m.fs.liquid_properties = GenericParameterBlock(**aqueous_mea)
+        m.fs.vapor_properties = GenericParameterBlock(**wet_co2)
 
         m.fs.unit = SolventCondenser(
-            default={
-                "liquid_property_package": m.fs.liquid_properties,
-                "vapor_property_package": m.fs.vapor_properties,
-            }
+            liquid_property_package=m.fs.liquid_properties,
+            vapor_property_package=m.fs.vapor_properties,
         )
 
         m.fs.unit.inlet.flow_mol[0].fix(1.1117)

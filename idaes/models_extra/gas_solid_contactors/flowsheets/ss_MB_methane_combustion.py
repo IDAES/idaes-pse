@@ -47,28 +47,24 @@ from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reductio
 # -----------------------------------------------------------------------------
 def main():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # Set up thermo props and reaction props
     m.fs.gas_properties = GasPhaseParameterBlock()
     m.fs.solid_properties = SolidPhaseParameterBlock()
 
     m.fs.hetero_reactions = HeteroReactionParameterBlock(
-        default={
-            "solid_property_package": m.fs.solid_properties,
-            "gas_property_package": m.fs.gas_properties,
-        }
+        solid_property_package=m.fs.solid_properties,
+        gas_property_package=m.fs.gas_properties,
     )
 
     m.fs.MB = MBR(
-        default={
-            "transformation_method": "dae.collocation",
-            "gas_phase_config": {"property_package": m.fs.gas_properties},
-            "solid_phase_config": {
-                "property_package": m.fs.solid_properties,
-                "reaction_package": m.fs.hetero_reactions,
-            },
-        }
+        transformation_method="dae.collocation",
+        gas_phase_config={"property_package": m.fs.gas_properties},
+        solid_phase_config={
+            "property_package": m.fs.solid_properties,
+            "reaction_package": m.fs.hetero_reactions,
+        },
     )
 
     # Fix bed geometry variables

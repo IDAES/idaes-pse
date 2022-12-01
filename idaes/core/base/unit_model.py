@@ -35,7 +35,6 @@ from idaes.core.util.exceptions import (
     InitializationError,
 )
 from idaes.core.util.tables import create_stream_table_dataframe
-import idaes.core.util.unit_costing
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import DefaultBool
@@ -107,19 +106,6 @@ Must be True if dynamic = True,
 
         # Add a placeholder for initialization order
         self._initialization_order = []
-
-        # Check for overloading of initialize method
-        # TODO: Remove in IDAES v2.0
-        if type(self).initialize is not UnitModelBlockData.initialize:
-            _log.warn(
-                f"DEPRECATION: {str(self.__class__)} has overloaded the "
-                "initialize method. In v2.0, IDAES Will be moving to "
-                "having a centralized initialize method which calls "
-                "unit-specific initialize_build methods instead. "
-                "Model developers should update their models to "
-                "implement the initialize_build method instead of "
-                "overloading initialize."
-            )
 
         # Set up dynamic flag and time domain
         self._setup_dynamics()
@@ -547,12 +533,7 @@ Must be True if dynamic = True,
             c.activate()
 
             if hasattr(c, "initialize"):
-                # New type costing block
                 c.initialize(**cost_args)
-            else:
-                # TODO: Deprecate in IDAES v2.0
-                # Old style costing package
-                idaes.core.util.unit_costing.initialize(c, **cost_args)
 
         # Return any flags returned by initialize_build
         return flags
