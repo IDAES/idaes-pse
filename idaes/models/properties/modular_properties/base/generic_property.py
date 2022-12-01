@@ -1372,7 +1372,7 @@ class _GenericStateBlock(StateBlock):
             )
 
         # ---------------------------------------------------------------------
-        # Initialize supercritical extension variables: pp, pn, _pbar
+        # Initialize supercritical extension variables: _pp, _pn, _pbar
         for k in blk.keys():
             if blk[k].params.config.supercritical_extension:
                 if (blk[k].params.config.phases_in_equilibrium is not None and

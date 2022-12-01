@@ -129,23 +129,23 @@ def phase_equil(b, phase_pair):
     )
 
     if b.params.config.supercritical_extension:
-        pp = Var(initialize=0.0,
+        _pp = Var(initialize=0.0,
                  bounds=(0, None),
                  doc="Artificial pressure variable to check if P > Pc",
                  units=pyunits.dimensionless)
-        b.add_component("pp" + suffix, pp)
+        b.add_component("_pp" + suffix, _pp)
         
-        pn = Var(initialize=0.0,
+        _pn = Var(initialize=0.0,
                  bounds=(0, None),
                  doc="Artificial pressure variable to check if P < Pc",
                  units=pyunits.dimensionless)
-        b.add_component("pn" + suffix, pn)
+        b.add_component("_pn" + suffix, _pn)
 
         def rule_pbar(b):
             """
             _pbar = P - Pc * Pm - eps / 4
             """
-            return b._pbar[phase_pair] == b.pressure - pp - eps / 4
+            return b._pbar[phase_pair] == b.pressure - _pp - eps / 4
         b.add_component("_pbar_constraint" + suffix, Constraint(rule=rule_pbar))
 
         # Rule P+
@@ -153,7 +153,7 @@ def phase_equil(b, phase_pair):
             """
             P+ = max(0, P - Pc)
             """
-            return pp == smooth_max(0, b.pressure - b.pressure_crit_mix, eps)
+            return _pp == smooth_max(0, b.pressure - b.pressure_crit_mix, eps)
         b.add_component(
             "eq_pressure_comparison_1" + suffix,
             Constraint(rule=rule_pressure_comparison_1),
@@ -164,7 +164,7 @@ def phase_equil(b, phase_pair):
             """
             P- = max(0, Pc - P)
             """
-            return pn == smooth_max(0, b.pressure_crit_mix - b.pressure, eps)
+            return _pn == smooth_max(0, b.pressure_crit_mix - b.pressure, eps)
         b.add_component(
             "eq_pressure_comparison_2" + suffix,
             Constraint(rule=rule_pressure_comparison_2),
@@ -176,7 +176,7 @@ def phase_equil(b, phase_pair):
             or: 
             0 == min(P+, V)
             """
-            return smooth_min(pp, b.flow_mol_phase['Vap'], eps) == 0
+            return smooth_min(_pp, b.flow_mol_phase['Vap'], eps) == 0
         b.add_component(
             "vapor_flow_complementarity" + suffix,
             Constraint(rule=rule_vapor_flow_complementarity),
@@ -208,13 +208,13 @@ def calculate_pbar(b, phase_pair):
     if hasattr(b, "_pbar"):
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
         
-        pp = getattr(b, "pp" + suffix)
-        pn = getattr(b, "pn" + suffix)
+        _pp = getattr(b, "_pp" + suffix)
+        _pn = getattr(b, "_pn" + suffix)
         eps = getattr(b, "eps" + suffix)
         
-        pp.value = max(0, value(b.pressure - b.pressure_crit_mix))
-        pn.value = max(0, value(b.pressure_crit_mix - b.pressure))
-        b._pbar[phase_pair].value = value(b.pressure - pp - eps / 4)
+        _pp.value = max(0, value(b.pressure - b.pressure_crit_mix))
+        _pn.value = max(0, value(b.pressure_crit_mix - b.pressure))
+        b._pbar[phase_pair].value = value(b.pressure - _pp - eps / 4)
 
 
 def calculate_temperature_slacks(b, phase_pair):
