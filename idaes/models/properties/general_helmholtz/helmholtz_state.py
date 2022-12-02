@@ -65,8 +65,8 @@ class _StateBlock(StateBlock):
                     v.value = state[key]
                 except KeyError:
                     pass
-            if hold:
-                v.fix()
+        if hold:
+            v.fix()
 
     def initialize(self, *args, **kwargs):
         flags = {}
