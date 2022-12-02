@@ -13,9 +13,7 @@
 import pyomo.common.config
 import logging.config
 import json
-import yaml
 import os
-import importlib
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions

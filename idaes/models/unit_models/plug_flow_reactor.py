@@ -14,7 +14,7 @@
 Standard IDAES PFR model.
 """
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Var, Reference, Block
+from pyomo.environ import Constraint, Var, Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 
 # Import IDAES cores
@@ -32,7 +32,6 @@ from idaes.core.util.config import (
     is_reaction_parameter_block,
 )
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.constants import Constants as const
 
 __author__ = "Andrew Lee, John Eslick"
 

@@ -21,7 +21,6 @@ from pyomo.environ import (
     ConcreteModel,
     value,
     units,
-    Var,
     units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent

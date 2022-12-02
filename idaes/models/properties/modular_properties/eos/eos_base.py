@@ -22,7 +22,7 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     get_component_object as cobj,
 )
-from idaes.core.util.exceptions import PropertyNotSupportedError, ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError
 
 
 class EoSBase:

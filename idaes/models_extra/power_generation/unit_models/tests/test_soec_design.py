@@ -13,7 +13,6 @@
 
 import pyomo.environ as pyo
 
-import idaes
 from idaes.core import FlowsheetBlock
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
