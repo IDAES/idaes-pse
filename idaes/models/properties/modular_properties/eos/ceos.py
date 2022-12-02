@@ -497,7 +497,7 @@ class Cubic(EoSBase):
 
     @staticmethod
     def build_critical_properties(b, p):
-        if p == 'Vap':
+        if b.params.get_phase(p).is_vapor_phase():
             return None
         else:
             reference_phase = p
@@ -570,10 +570,11 @@ class Cubic(EoSBase):
 
     @staticmethod
     def initialize_critical_properties(b, p):
-        if p == 'Vap':
+        if b.params.get_phase(p).is_vapor_phase():
             return None
         else:
             if b.params.config.supercritical_extension:
+                # Using simple mixing rule from RPP4 to initialize
                 b.temperature_crit_mix.value = value(
                     sum(b.mole_frac_comp[j] *
                         b.params.get_component(j).temperature_crit

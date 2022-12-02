@@ -62,8 +62,14 @@ def phase_equil(b, phase_pair):
 
         # Equilibrium temperature
         def rule_tbar(b):
+            if b.params.get_phase(phase_pair[0]).is_vapor_phase():
+                vapor_phase = phase_pair[0]
+                liquid_phase = phase_pair[1]
+            else:
+                vapor_phase = phase_pair[1]
+                liquid_phase = phase_pair[0]
             return b._tbar[phase_pair] - b.temperature - \
-                s['Vap'] + s['Liq'] == 0
+                s[vapor_phase] + s[liquid_phase] == 0
         b.add_component("_tbar_constraint" + suffix, Constraint(rule=rule_tbar))
 
     else:
@@ -92,7 +98,7 @@ def phase_equil(b, phase_pair):
     def rule_temperature_slack_complementarity(b, p):
         flow_phase = b.flow_mol_phase[p]
         if b.params.config.supercritical_extension:
-            if p == 'Vap':
+            if b.params.get_phase(p).is_vapor_phase():
                 return smooth_min(s[p], flow_phase, eps) == 0
             else:
                 return Constraint.Skip
@@ -116,7 +122,7 @@ def phase_equil(b, phase_pair):
 
     def rule_cubic_slack_complementarity(b, p):
         flow_phase = b.flow_mol_phase[p]
-        if p == 'Vap':
+        if b.params.get_phase(p).is_vapor_phase():
             return smooth_min(gn[p], flow_phase, eps) == 0
         else:
             if b.params.config.supercritical_extension:
@@ -176,7 +182,11 @@ def phase_equil(b, phase_pair):
             or: 
             0 == min(P+, V)
             """
-            return smooth_min(_pp, b.flow_mol_phase['Vap'], eps) == 0
+            if b.params.get_phase(phase_pair[0]).is_vapor_phase():
+                vapor_phase = phase_pair[0]
+            else:
+                vapor_phase = phase_pair[1]
+            return smooth_min(_pp, b.flow_mol_phase[vapor_phase], eps) == 0
         b.add_component(
             "vapor_flow_complementarity" + suffix,
             Constraint(rule=rule_vapor_flow_complementarity),
@@ -221,16 +231,23 @@ def calculate_temperature_slacks(b, phase_pair):
     suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
     
     s = getattr(b, "s" + suffix)
-    
-    if b._tbar[phase_pair].value > b.temperature.value:
-        s['Vap'].value = value(b._tbar[phase_pair] - b.temperature)
-        s['Liq'].value = 0
-    elif b._tbar[phase_pair].value < b.temperature.value:
-        s['Vap'].value = 0
-        s['Liq'].value = value(b.temperature - b._tbar[phase_pair])
+
+    if b.params.get_phase(phase_pair[0]).is_vapor_phase():
+        vapor_phase = phase_pair[0]
+        liquid_phase = phase_pair[1]
     else:
-        s['Vap'].value = 0
-        s['Liq'].value = 0
+        vapor_phase = phase_pair[1]
+        liquid_phase = phase_pair[0]
+
+    if b._tbar[phase_pair].value > b.temperature.value:
+        s[vapor_phase].value = value(b._tbar[phase_pair] - b.temperature)
+        s[liquid_phase].value = 0
+    elif b._tbar[phase_pair].value < b.temperature.value:
+        s[vapor_phase].value = 0
+        s[liquid_phase].value = value(b.temperature - b._tbar[phase_pair])
+    else:
+        s[vapor_phase].value = 0
+        s[liquid_phase].value = 0
 
 
 def calculate_ceos_derivative_slacks(b, phase_pair):
@@ -239,13 +256,22 @@ def calculate_ceos_derivative_slacks(b, phase_pair):
     
     gp = getattr(b, "gp" + suffix)
     gn = getattr(b, "gn" + suffix)
+
+    if b.params.get_phase(phase_pair[0]).is_vapor_phase():
+        vapor_phase = phase_pair[0]
+        liquid_phase = phase_pair[1]
+    else:
+        vapor_phase = phase_pair[1]
+        liquid_phase = phase_pair[0]
     
-    if value(b.cubic_second_derivative[p1, p2, 'Liq']) < 0:
-        gp['Liq'].value = 0
-        gn['Liq'].value = value(-b.cubic_second_derivative[p1, p2, 'Liq'])
-    if value(b.cubic_second_derivative[p1, p2, 'Vap']) > 0:
-        gp['Vap'].value = value(b.cubic_second_derivative[p1, p2, 'Vap'])
-        gn['Vap'].value = 0
+    if value(b.cubic_second_derivative[p1, p2, liquid_phase]) < 0:
+        gp[liquid_phase].value = 0
+        gn[liquid_phase].value = value(
+            -b.cubic_second_derivative[p1, p2, liquid_phase])
+    if value(b.cubic_second_derivative[p1, p2, vapor_phase]) > 0:
+        gp[vapor_phase].value = value(
+            b.cubic_second_derivative[p1, p2, vapor_phase])
+        gn[vapor_phase].value = 0
 
 
 # -----------------------------------------------------------------------------

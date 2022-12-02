@@ -1357,7 +1357,10 @@ class _GenericStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Initialize temperature_crit_mix and pressure_crit_mix
         for k in blk.keys():
-            reference_phase = 'Liq'
+            reference_phase = next(
+                p for p in blk[k].params.phase_list if blk[k].params.get_phase(p)
+                .is_liquid_phase()
+            )
             p_config = blk[k].params.get_phase(reference_phase).config
             p_config.equation_of_state.initialize_critical_properties(
                 blk[k], reference_phase
@@ -2561,7 +2564,9 @@ class GenericStateBlockData(StateBlockData):
     # -------------------------------------------------------------------------
     # Critical Properties
     def _mixture_critical_properties(b):
-        reference_phase = 'Liq'
+        reference_phase = next(
+            p for p in b.params.phase_list if b.params.get_phase(p).is_liquid_phase()
+        )
         try:
             t_units = b.params.get_metadata().default_units["temperature"]
             p_units = pyunits.Pa
