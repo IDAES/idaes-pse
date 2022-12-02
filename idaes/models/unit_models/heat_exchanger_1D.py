@@ -17,10 +17,8 @@ Generic IDAES 1D Heat Exchanger Model with overall area and heat transfer coeffi
 from pyomo.environ import (
     Var,
     check_optimal_termination,
-    Constraint,
     value,
     units as pyunits,
-    as_quantity,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 

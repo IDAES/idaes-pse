@@ -13,16 +13,9 @@
 
 __author__ = "John Eslick"
 
-# Import Python libraries
-import os
-
-# Import Pyomo libraries
-from pyomo.environ import Expression, Param, RangeSet, Set, exp, sqrt, units as pyunits
-
 # Import IDAES
 from idaes.core import declare_process_block_class
 
-import idaes
 import idaes.logger as idaeslog
 from idaes.models.properties.general_helmholtz import (
     helmholtz_available,

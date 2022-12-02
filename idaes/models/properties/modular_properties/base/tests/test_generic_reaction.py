@@ -55,7 +55,6 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_forms impo
     log_power_law_equil,
 )
 
-from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.constants import Constants as constants
 
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError

@@ -18,12 +18,9 @@ Author: Rusty Gentile, John Eslick, Andrew Lee
 import pytest
 
 from pyomo.environ import (
-    check_optimal_termination,
     ConcreteModel,
     TransformationFactory,
     value,
-    Var,
-    Param,
     units as pyunits,
 )
 

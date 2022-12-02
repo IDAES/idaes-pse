@@ -18,8 +18,6 @@ import pyomo.environ as pyo
 from idaes.models.properties.general_helmholtz import (
     HelmholtzParameterBlock,
     HelmholtzThermoExpressions,
-    PhaseType,
-    StateVars,
     AmountBasis,
     add_helmholtz_external_functions,
     helmholtz_available as available,

@@ -23,7 +23,6 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 from idaes.core.util.config import is_physical_parameter_block
-import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from pyomo.environ import value
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars

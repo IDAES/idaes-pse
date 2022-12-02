@@ -16,8 +16,6 @@ from __future__ import division
 
 # from builtins import int, str
 import os.path
-import pprint
-import random
 import warnings
 
 # Imports from third parties
@@ -28,7 +26,6 @@ import pickle
 from pyomo.environ import *
 from pyomo.core.expr.visitor import replace_expressions
 import scipy.optimize as opt
-from scipy.special import comb as comb
 from six import string_types
 
 # Imports from IDAES namespace

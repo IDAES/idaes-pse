@@ -24,7 +24,6 @@ from idaes.models_extra.power_generation.properties import (
 from idaes.core import FlowsheetBlock
 import csv
 import os
-import idaes
 from math import log
 from idaes.core.solvers import get_solver
 

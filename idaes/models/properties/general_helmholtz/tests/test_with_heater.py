@@ -18,14 +18,13 @@ Author: John Eslick
 """
 import pytest
 
-from pyomo.environ import ConcreteModel, value, Expression
+from pyomo.environ import ConcreteModel, value
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import Heater
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import MaterialBalanceType
 from idaes.core.solvers import get_solver
-import idaes.core.util.scaling as iscale
 from idaes.models.properties.general_helmholtz import (
     HelmholtzParameterBlock,
     PhaseType,

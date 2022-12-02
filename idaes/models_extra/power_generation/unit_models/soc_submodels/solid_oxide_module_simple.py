@@ -37,23 +37,14 @@ Expressions:
 """
 __author__ = "Douglas Allan"
 
-from pyomo.common.config import ConfigValue, In, Bool, ListOf, ConfigBlock
+from pyomo.common.config import ConfigValue, ConfigBlock
 import pyomo.environ as pyo
-from pyomo.network import Port
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
-from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _gas_species_list,
-    _element_list,
-    _element_dict,
-)
 import idaes.core.util.scaling as iscale
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
