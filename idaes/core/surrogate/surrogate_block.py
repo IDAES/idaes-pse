@@ -13,7 +13,6 @@
 from pyomo.core.base.block import declare_custom_block, _BlockData
 from pyomo.environ import Var, Set
 import collections
-from pyomo.core.base.var import ScalarVar, IndexedVar, _GeneralVarData
 
 
 @declare_custom_block(name="SurrogateBlock")

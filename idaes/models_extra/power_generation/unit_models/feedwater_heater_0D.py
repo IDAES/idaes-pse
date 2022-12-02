@@ -27,7 +27,7 @@ are two models included here.
 
 __author__ = "John Eslick"
 
-from pyomo.common.config import ConfigValue, In, ConfigBlock, Bool
+from pyomo.common.config import ConfigValue, ConfigBlock, Bool
 from pyomo.environ import TransformationFactory, Var, value
 from pyomo.network import Arc
 

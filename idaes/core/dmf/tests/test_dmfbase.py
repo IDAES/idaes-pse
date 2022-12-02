@@ -30,7 +30,8 @@ import pytest
 from idaes.core.dmf import resource
 from idaes.core.dmf import errors
 from idaes.core.dmf.dmfbase import DMFConfig, DMF
-from .util import init_logging, NamedTemporaryFile
+from .util import init_logging
+from idaes.core.dmf.util import NamedTemporaryFile
 
 __author__ = "Dan Gunter <dkgunter@lbl.gov>"
 

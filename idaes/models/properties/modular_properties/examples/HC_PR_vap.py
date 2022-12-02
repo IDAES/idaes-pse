@@ -29,7 +29,7 @@ import logging
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores
-from idaes.core import LiquidPhase, VaporPhase, Component, PhaseType as PT
+from idaes.core import VaporPhase, Component, PhaseType as PT
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
 from idaes.models.properties.modular_properties.phase_equil.forms import log_fugacity
