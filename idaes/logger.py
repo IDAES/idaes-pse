@@ -12,9 +12,7 @@
 #################################################################################
 import idaes
 import logging
-import bisect
 import threading
-from collections.abc import Iterable
 
 from contextlib import contextmanager
 from pyomo.common.tee import capture_output

@@ -18,7 +18,7 @@ is prototype code
 """
 from enum import Enum
 
-from pyomo.environ import log, value, Var
+from pyomo.environ import log, Var
 
 from idaes.models.properties.modular_properties.base.utility import StateIndex
 from idaes.core.util.exceptions import ConfigurationError
