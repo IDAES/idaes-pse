@@ -273,6 +273,9 @@ _component_params = {
                 "G": 212.39,
                 "H": 0.0,
             },
+            "lennard_jones_sigma": (3.798, pyunits.angstrom),
+            "lennard_jones_epsilon_reduced": (71.4, pyunits.K),
+            "f_int_eucken": 1,
         },
     },
     "Ar": {
