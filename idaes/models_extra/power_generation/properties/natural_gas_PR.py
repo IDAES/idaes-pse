@@ -33,7 +33,6 @@ from idaes.models.properties.modular_properties.phase_equil.forms import (
     log_fugacity,
 )
 from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
-)
 from idaes.models.properties.modular_properties.pure import (
     NIST,
     RPP4,
