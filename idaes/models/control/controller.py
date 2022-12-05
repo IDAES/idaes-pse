@@ -23,9 +23,7 @@ import pyomo.dae as pyodae
 from idaes.core import UnitModelBlockData, declare_process_block_class
 from pyomo.common.config import ConfigValue, In, Bool
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.math import smooth_bound, smooth_abs
-import idaes.logger as idaeslog
-from idaes.core.solvers import get_solver
+from idaes.core.util.math import smooth_bound
 from idaes.core.util import scaling as iscale
 
 

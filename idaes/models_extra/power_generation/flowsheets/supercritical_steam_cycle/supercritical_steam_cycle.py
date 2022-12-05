@@ -29,6 +29,7 @@ import logging
 # Import Pyomo libraries
 import pyomo.environ as pyo
 from pyomo.network import Arc, Port
+from pyomo.common.fileutils import this_file_dir
 
 # IDAES Imports
 from idaes.core import FlowsheetBlock  # Flowsheet class
@@ -44,7 +45,6 @@ from idaes.models_extra.power_generation.unit_models.helm import (
 )
 from idaes.models_extra.power_generation.unit_models import FWH0D
 from idaes.models.unit_models import (  # basic IDAES unit models, and enum
-    HeatExchanger,
     MomentumMixingType,  # Enum type for mixer pressure calculation selection
 )
 from idaes.core.util.initialization import (
@@ -52,15 +52,11 @@ from idaes.core.util.initialization import (
 )  # for model intialization
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.tables import create_stream_table_dataframe  # as Pandas DataFrame
 
 # Callback used to construct heat exchangers with the Underwood approx. for LMTD
 from idaes.models.unit_models.heat_exchanger import (
     delta_temperature_underwood_callback,
 )
-
-# Pressure changer type (e.g. adiabatic, pump, isentropic...)
-from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
@@ -933,7 +929,7 @@ def pfd_result(m, df, svg):
     Args:
         m (ConcreteModel): A steam cycle model
         df (Pandas DataFrame): Stream table
-        svg (FILE*, str, bytes): Origianl svg svg as either a file-like object,
+        svg (FILE*, str, bytes): Original svg as either a file-like object,
             a string, or a byte array.
 
     Returns:
@@ -941,18 +937,18 @@ def pfd_result(m, df, svg):
     """
     tags = {}  # dict of tags and data to insert into SVG
     for i in df.index:  # Create entires for streams
-        tags[i + "_F"] = df.loc[i, "Molar Flow (mol/s)"]
-        tags[i + "_T"] = df.loc[i, "T (K)"]
-        tags[i + "_P"] = df.loc[i, "P (Pa)"]
+        tags[i + "_F"] = df.loc[i, "Molar Flow"]
+        tags[i + "_T"] = df.loc[i, "T"]
+        tags[i + "_P"] = df.loc[i, "P"]
         tags[i + "_X"] = df.loc[i, "Vapor Fraction"]
     # Add some additional quntities from the model to report
     tags["gross_power"] = -pyo.value(m.fs.turb.power[0])
     tags["gross_power_mw"] = -pyo.value(m.fs.turb.power[0]) * 1e-6
-    tags["steam_mass_flow"] = df.loc["STEAM_MAIN", "Mass Flow (kg/s)"]
+    tags["steam_mass_flow"] = df.loc["STEAM_MAIN", "Mass Flow"]
     tags["sc_eff"] = pyo.value(m.fs.steam_cycle_eff[0])
     tags["boiler_heat"] = pyo.value(m.fs.boiler_heat[0]) * 1e-6
-    tags["steam_pressure"] = df.loc["STEAM_MAIN", "P (Pa)"] / 1000.0
-    tags["cond_pressure"] = df.loc["EXHST_MAIN", "P (Pa)"] / 1000.0
+    tags["steam_pressure"] = df.loc["STEAM_MAIN", "P"] / 1000.0
+    tags["cond_pressure"] = df.loc["EXHST_MAIN", "P"] / 1000.0
     tags["bfp_power"] = pyo.value(m.fs.bfp.work_mechanical[0])
     tags["bfp_eff"] = pyo.value(m.fs.bfp.efficiency_isentropic[0]) * 100
     tags["bfpt_power"] = pyo.value(m.fs.bfpt.work_mechanical[0])
@@ -961,8 +957,12 @@ def pfd_result(m, df, svg):
     tag_group = ModelTagGroup()
     for t, v in tags.items():
         tag_group.add(t, v, format_string="{:.3f}")
-
-    return svg_tag(tag_group=tag_group, svg=svg)
+    if svg is None:
+        fname = os.path.join(this_file_dir(), "supercritical_steam_cycle.svg")
+        with open(fname, "r") as f:
+            svg = f.read()
+    s = svg_tag(tag_group=tag_group, svg=svg)
+    return s
 
 
 def main(initialize_from_file=None, store_initialization=None):

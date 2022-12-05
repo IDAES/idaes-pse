@@ -17,7 +17,7 @@ Author: Andrew Lee
 """
 import pytest
 
-from pyomo.environ import Block, ConcreteModel, Param, Set, TransformationFactory, units
+from pyomo.environ import ConcreteModel, Set, TransformationFactory, units
 from pyomo.dae import ContinuousSet
 from pyomo.network import Arc
 

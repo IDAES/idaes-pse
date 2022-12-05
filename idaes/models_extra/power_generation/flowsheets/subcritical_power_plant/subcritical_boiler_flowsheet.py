@@ -685,7 +685,9 @@ def initialize(m):
     outlvl = idaeslog.INFO_LOW
     _log = idaeslog.getLogger(fs.name, outlvl, tag="unit")
     solve_log = idaeslog.getSolveLogger(fs.name, outlvl, tag="unit")
-    solver = get_solver()
+    solver = get_solver(
+        options={"linear_solver": "ma57", "OF_ma57_automatic_scaling": "yes"}
+    )
 
     # set initial condition to steady-state condition for dynamic flowsheet
     if m.dynamic is True:
@@ -784,7 +786,6 @@ def initialize(m):
     if m.dynamic is False:
         fs.aECON.initialize(outlvl=outlvl)
         _log.info("Completed economizer initialization")
-
     if m.dynamic is False:
         _set_port(fs.aPipe.inlet, fs.aECON.tube_outlet)
         fs.aPipe.initialize(outlvl=outlvl)
@@ -1066,6 +1067,8 @@ def set_scaling_factors(m):
     iscale.set_scaling_factor(fs.aECON.tube._enthalpy_flow, 1e-8)
     iscale.set_scaling_factor(fs.aECON.shell.enthalpy_flow_dx, 1e-7)
     iscale.set_scaling_factor(fs.aECON.tube.enthalpy_flow_dx, 1e-7)
+    iscale.set_scaling_factor(fs.aECON.shell.heat, 1e-7)
+    iscale.set_scaling_factor(fs.aECON.tube.heat, 1e-7)
     for t, c in fs.aECON.shell.enthalpy_flow_dx_disc_eq.items():
         iscale.constraint_scaling_transform(c, 1e-7)
     for t, c in fs.aECON.tube.enthalpy_flow_dx_disc_eq.items():

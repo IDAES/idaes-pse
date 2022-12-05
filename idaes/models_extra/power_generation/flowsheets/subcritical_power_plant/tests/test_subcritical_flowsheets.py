@@ -13,8 +13,6 @@
 # Import Pyomo libraries
 import pyomo.environ as pyo
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.models.properties import iapws95
-
 
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.subcritical_power_plant as subcrit_plant
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.steam_cycle_flowsheet as steam_cycle

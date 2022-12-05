@@ -30,8 +30,6 @@ from idaes.models.unit_models.pressure_changer import (
     MaterialBalanceType,
 )
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util import from_json, to_json, StoreSpec
-from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 

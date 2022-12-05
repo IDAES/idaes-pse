@@ -15,7 +15,7 @@ Standard IDAES STOICHIOMETRIC reactor model
 """
 
 # Import Pyomo libraries
-from pyomo.environ import Reference, Var, Block
+from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
@@ -32,7 +32,6 @@ from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
 )
-import idaes.core.util.unit_costing as costing
 
 __author__ = "Chinedu Okoli, Andrew Lee"
 

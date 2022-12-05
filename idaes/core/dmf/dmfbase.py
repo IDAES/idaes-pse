@@ -15,7 +15,6 @@ Data Management Framework
 """
 # stdlib
 from datetime import datetime
-from io import IOBase
 import logging
 import os
 import pathlib

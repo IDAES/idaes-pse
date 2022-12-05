@@ -50,14 +50,13 @@ from idaes.core import (
     MomentumBalanceType,
 )
 
-from idaes.models.properties import swco2, iapws95
+from idaes.models.properties import iapws95
 from idaes.models.unit_models import (
     HeatExchangerLumpedCapacitance,
     HeatExchangerFlowPattern,
 )
 
 from idaes.models.unit_models.heat_exchanger import delta_temperature_lmtd_callback
-import numpy as np
 
 # Get default solver for testing
 solver = get_solver()

@@ -15,3 +15,4 @@ from idaes.models_extra.gas_solid_contactors.unit_models.bubbling_fluidized_bed 
 )
 from idaes.models_extra.gas_solid_contactors.unit_models.moving_bed import MBR
 from idaes.models_extra.gas_solid_contactors.unit_models.fixed_bed_0D import FixedBed0D
+from idaes.models_extra.gas_solid_contactors.unit_models.fixed_bed_1D import FixedBed1D

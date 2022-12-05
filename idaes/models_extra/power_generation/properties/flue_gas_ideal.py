@@ -31,7 +31,6 @@ from pyomo.environ import (
     check_optimal_termination,
     units as pyunits,
 )
-from pyomo.opt import SolverFactory
 from pyomo.common.config import ConfigValue
 
 # Import IDAES cores

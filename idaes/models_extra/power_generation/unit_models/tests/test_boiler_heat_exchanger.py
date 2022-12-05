@@ -49,8 +49,6 @@ from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 
-import idaes.logger as idaeslog
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()

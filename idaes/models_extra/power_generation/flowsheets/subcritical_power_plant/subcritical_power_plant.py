@@ -25,7 +25,6 @@ from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
 from idaes.models.control.controller import (
     PIDController,
     ControllerType,
-    ControllerMVBoundType,
 )
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.subcritical_boiler_flowsheet as blr
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.steam_cycle_flowsheet as stc

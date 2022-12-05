@@ -17,9 +17,32 @@ Set up logging for the idaes module, and import plugins.
 """
 import os
 import copy
+import logging
+
+
+def _handle_optional_compat_activation(
+    env_var: str = "IDAES_ACTIVATE_V1_COMPAT",
+):
+    _log = logging.getLogger("idaes_v1_compat")
+    found_in_env = os.environ.get(env_var, None)
+    if found_in_env:
+        _log.warning(
+            "Found environment variable %s=%s. Activating IDAES V1 compatibility.",
+            env_var,
+            found_in_env,
+        )
+        try:
+            from _idaes_v1_compat import activate
+        except ImportError:
+            _log.error("Required package _idaes_v1_compat not found")
+        else:
+            activate()
+
+
+_handle_optional_compat_activation()
+
 
 from . import config
-import logging
 
 from .ver import __version__  # noqa
 

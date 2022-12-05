@@ -336,10 +336,7 @@ class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
             None
         """
 
-        forecasts_arr = np.random.normal(
-            loc=corresponding_means, scale=corresponding_stds, size=(n_samples, horizon)
-        )
-        forecasts_arr[forecasts_arr < 0] = 0
+        return
 
 
 class Backcaster(AbstractPrescientPriceForecaster):

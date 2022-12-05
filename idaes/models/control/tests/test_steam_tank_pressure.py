@@ -41,7 +41,6 @@ from idaes.models.control.controller import (
     ControllerMVBoundType,
     ControllerAntiwindupType,
 )
-import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 from idaes.core.util.plot import plot_grid_dynamic
 
