@@ -284,6 +284,35 @@ def get_scaling_factor(c, default=None, warning=False, exception=False, hint=Non
     return sf
 
 
+def set_and_get_scaling_factor(c, default, warning=False, exception=False, hint=None):
+    """Checks whether a scaling factor exists for a component, sets the scaling factor
+    if it doesn't exist, then returns the scaling factor on the component (which is
+    the default value if it wasn't set originally).
+
+    Args:
+        c: component
+        default: default value to use for scaling factor of c if there is none
+        warning: whether to log a warning if a scaling factor is not found
+                 (default=False)
+        exception: whether to raise an Exception if a scaling factor is not
+                   found (default=False)
+        hint: (str) a string to add to the warning or exception message to help
+            locate the source.
+
+    Returns:
+        scaling factor (float)
+    """
+    if c.is_indexed():
+        raise AttributeError(
+            f"Ambiguous which scaling factor to return for indexed component {c.name}."
+        )
+    sf = get_scaling_factor(c, warning=warning, exception=exception, hint=hint)
+    if sf is None:
+        sf = default
+        set_scaling_factor(c, sf, data_objects=False)
+    return sf
+
+
 def unset_scaling_factor(c, data_objects=True):
     """Delete a component scaling factor.
 

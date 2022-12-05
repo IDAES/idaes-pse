@@ -16,7 +16,6 @@ Tests for ControlVolumeBlockData.
 Author: Andrew Lee
 """
 import pytest
-from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,

@@ -30,12 +30,9 @@ from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.phase_equil.forms import (
-    fugacity,
     log_fugacity,
 )
 from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
-    IdealBubbleDew,
 )
 from idaes.models.properties.modular_properties.pure import (
     NIST,
@@ -54,11 +51,6 @@ from idaes.models.properties.modular_properties.reactions.rate_constant import a
 from idaes.models.properties.modular_properties.reactions.rate_forms import (
     power_law_rate,
 )
-from idaes.models.properties.modular_properties.base.generic_reaction import (
-    GenericReactionParameterBlock,
-    ConcentrationForm,
-)
-import idaes.models.properties.modular_properties.reactions as rxn
 from idaes.core.util.exceptions import ConfigurationError
 
 # Set up logger
@@ -282,9 +274,6 @@ _component_params = {
                 "G": 212.39,
                 "H": 0.0,
             },
-            "lennard_jones_sigma": (3.798, pyunits.angstrom),
-            "lennard_jones_epsilon_reduced": (71.4, pyunits.K),
-            "f_int_eucken": 1,
         },
     },
     "Ar": {
@@ -612,9 +601,9 @@ def get_rxn(property_package, reactions=None, scaled=False):
                     ("Vap", "H2O"): 2,
                     ("Vap", "CO2"): 1,
                 },
-                "heat_of_reaction": rxn.dh_rxn.constant_dh_rxn,
-                "rate_constant": rxn.rate_constant.arrhenius,
-                "rate_form": rxn.rate_forms.power_law_rate,
+                "heat_of_reaction": constant_dh_rxn,
+                "rate_constant": arrhenius,
+                "rate_form": power_law_rate,
                 "concentration_form": ConcentrationForm.moleFraction,
                 "parameter_data": {
                     "dh_rxn_ref": 0,
@@ -629,9 +618,9 @@ def get_rxn(property_package, reactions=None, scaled=False):
                     ("Vap", "H2O"): 6,
                     ("Vap", "CO2"): 4,
                 },
-                "heat_of_reaction": rxn.dh_rxn.constant_dh_rxn,
-                "rate_constant": rxn.rate_constant.arrhenius,
-                "rate_form": rxn.rate_forms.power_law_rate,
+                "heat_of_reaction": constant_dh_rxn,
+                "rate_constant": arrhenius,
+                "rate_form": power_law_rate,
                 "concentration_form": ConcentrationForm.moleFraction,
                 "parameter_data": {
                     "dh_rxn_ref": 0,
@@ -646,9 +635,9 @@ def get_rxn(property_package, reactions=None, scaled=False):
                     ("Vap", "H2O"): 4,
                     ("Vap", "CO2"): 3,
                 },
-                "heat_of_reaction": rxn.dh_rxn.constant_dh_rxn,
-                "rate_constant": rxn.rate_constant.arrhenius,
-                "rate_form": rxn.rate_forms.power_law_rate,
+                "heat_of_reaction": constant_dh_rxn,
+                "rate_constant": arrhenius,
+                "rate_form": power_law_rate,
                 "concentration_form": ConcentrationForm.moleFraction,
                 "parameter_data": {
                     "dh_rxn_ref": 0,
@@ -663,9 +652,9 @@ def get_rxn(property_package, reactions=None, scaled=False):
                     ("Vap", "H2O"): 10,
                     ("Vap", "CO2"): 8,
                 },
-                "heat_of_reaction": rxn.dh_rxn.constant_dh_rxn,
-                "rate_constant": rxn.rate_constant.arrhenius,
-                "rate_form": rxn.rate_forms.power_law_rate,
+                "heat_of_reaction": constant_dh_rxn,
+                "rate_constant": arrhenius,
+                "rate_form": power_law_rate,
                 "concentration_form": ConcentrationForm.moleFraction,
                 "parameter_data": {
                     "dh_rxn_ref": 0,
@@ -679,9 +668,9 @@ def get_rxn(property_package, reactions=None, scaled=False):
                     ("Vap", "O2"): -1,
                     ("Vap", "CO2"): 2,
                 },
-                "heat_of_reaction": rxn.dh_rxn.constant_dh_rxn,
-                "rate_constant": rxn.rate_constant.arrhenius,
-                "rate_form": rxn.rate_forms.power_law_rate,
+                "heat_of_reaction": constant_dh_rxn,
+                "rate_constant": arrhenius,
+                "rate_form": power_law_rate,
                 "concentration_form": ConcentrationForm.moleFraction,
                 "parameter_data": {
                     "dh_rxn_ref": 0,
@@ -695,9 +684,9 @@ def get_rxn(property_package, reactions=None, scaled=False):
                     ("Vap", "O2"): -1,
                     ("Vap", "H2O"): 2,
                 },
-                "heat_of_reaction": rxn.dh_rxn.constant_dh_rxn,
-                "rate_constant": rxn.rate_constant.arrhenius,
-                "rate_form": rxn.rate_forms.power_law_rate,
+                "heat_of_reaction": constant_dh_rxn,
+                "rate_constant": arrhenius,
+                "rate_form": power_law_rate,
                 "concentration_form": ConcentrationForm.moleFraction,
                 "parameter_data": {
                     "dh_rxn_ref": 0,
@@ -712,9 +701,9 @@ def get_rxn(property_package, reactions=None, scaled=False):
                     ("Vap", "H2O"): 2,
                     ("Vap", "SO2"): 2,
                 },
-                "heat_of_reaction": rxn.dh_rxn.constant_dh_rxn,
-                "rate_constant": rxn.rate_constant.arrhenius,
-                "rate_form": rxn.rate_forms.power_law_rate,
+                "heat_of_reaction": constant_dh_rxn,
+                "rate_constant": arrhenius,
+                "rate_form": power_law_rate,
                 "concentration_form": ConcentrationForm.moleFraction,
                 "parameter_data": {
                     "dh_rxn_ref": 0,
@@ -729,9 +718,9 @@ def get_rxn(property_package, reactions=None, scaled=False):
                     ("Vap", "H2O"): 2,
                     ("Vap", "CO2"): 2,
                 },
-                "heat_of_reaction": rxn.dh_rxn.constant_dh_rxn,
-                "rate_constant": rxn.rate_constant.arrhenius,
-                "rate_form": rxn.rate_forms.power_law_rate,
+                "heat_of_reaction": constant_dh_rxn,
+                "rate_constant": arrhenius,
+                "rate_form": power_law_rate,
                 "concentration_form": ConcentrationForm.moleFraction,
                 "parameter_data": {
                     "dh_rxn_ref": 0,

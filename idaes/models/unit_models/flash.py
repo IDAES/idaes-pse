@@ -18,7 +18,7 @@ import logging
 from pandas import DataFrame
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Reference, Var, Block
+from pyomo.environ import Constraint, Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
 

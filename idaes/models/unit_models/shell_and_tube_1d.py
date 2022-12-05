@@ -23,7 +23,7 @@ from pyomo.environ import (
     value,
     units as pyunits,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import ConfigValue, Bool
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData

@@ -16,22 +16,18 @@ __author__ = "John Eslick"
 
 import enum
 import ctypes
-import math
 import os
 
 from matplotlib import pyplot as plt
 import numpy as np
 
 import pyomo.environ as pyo
-from pyomo.core.base.units_container import InconsistentUnitsError
 from pyomo.common.fileutils import find_library
 from pyomo.common.config import ConfigValue, In
 import idaes
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core import declare_process_block_class
 from idaes.core import (
-    StateBlock,
-    StateBlockData,
     PhysicalParameterBlock,
     LiquidPhase,
     VaporPhase,
@@ -39,7 +35,8 @@ from idaes.core import (
     Component,
 )
 from idaes.models.properties.general_helmholtz.components import (
-    get_component_module,
+    get_transport_module,
+    component_registered,
 )
 import idaes.logger as idaeslog
 
@@ -900,23 +897,31 @@ class HelmholtzThermoExpressions(object):
 
     def viscosity_liq(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return get_component_module(c)._viscosity(self.param, delta_liq, tau, blk)
+        tmod = get_transport_module(c)
+        if tmod is None:
+            raise RuntimeError(f"Transport properties not available for {c}")
+        return tmod._viscosity(self.param, delta_liq, tau, blk)
 
     def viscosity_vap(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return get_component_module(c)._viscosity(self.param, delta_vap, tau, blk)
+        tmod = get_transport_module(c)
+        if tmod is None:
+            raise RuntimeError(f"Transport properties not available for {c}")
+        return tmod._viscosity(self.param, delta_vap, tau, blk)
 
     def thermal_conductivity_liq(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return get_component_module(c)._thermal_conductivity(
-            self.param, delta_liq, tau, blk
-        )
+        tmod = get_transport_module(c)
+        if tmod is None:
+            raise RuntimeError(f"Transport properties not available for {c}")
+        return tmod._thermal_conductivity(self.param, delta_liq, tau, blk)
 
     def thermal_conductivity_vap(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return get_component_module(c)._thermal_conductivity(
-            self.param, delta_vap, tau, blk
-        )
+        tmod = get_transport_module(c)
+        if tmod is None:
+            raise RuntimeError(f"Transport properties not available for {c}")
+        return tmod._thermal_conductivity(self.param, delta_vap, tau, blk)
 
     def p_sat(self, T=None, tau=None):
         """Return saturation pressure as a function of T or tau"""
@@ -1287,7 +1292,7 @@ change.
     def build(self):
         super().build()
         # Check if the specified compoent is supported
-        if get_component_module(self.config.pure_component) is None:
+        if not component_registered(self.config.pure_component):
             raise ConfigurationError(
                 f"Component {self.config.pure_component} not supported."
             )
@@ -2125,6 +2130,8 @@ change.
                 "pressure_crit": {"method": None, "units": "Pa"},
                 "dens_mass_crit": {"method": None, "units": "kg/m^3"},
                 "dens_mass_star": {"method": None, "units": "kg/m^3"},
+                "dens_mol_crit": {"method": None, "units": "mol/m^3"},
+                "dens_mol_star": {"method": None, "units": "mol/m^3"},
                 "specific_gas_constant": {"method": None, "units": "J/kg.K"},
                 "mw": {"method": None, "units": "kg/mol"},
                 "temperature_sat": {"method": "None", "units": "K"},

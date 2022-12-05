@@ -15,23 +15,18 @@ Methods for cubic equations of state.
 
 Currently only supports liquid and vapor phases
 """
-import os
 from enum import Enum
 from copy import deepcopy
 
 from pyomo.environ import (
     exp,
     Expression,
-    ExternalFunction,
     log,
-    Param,
     Reals,
     sqrt,
     Var,
-    units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from idaes.core import LiquidPhase, VaporPhase
 from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     get_component_object as cobj,

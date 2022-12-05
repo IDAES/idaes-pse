@@ -18,7 +18,6 @@ from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
     Objective,
-    SolverFactory,
     value,
     units as pyunits,
 )
