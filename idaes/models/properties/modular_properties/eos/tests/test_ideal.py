@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import ConcreteModel, Expression, Var, units as pyunits, value
+from pyomo.environ import ConcreteModel, Var, units as pyunits, value
 from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.core import (

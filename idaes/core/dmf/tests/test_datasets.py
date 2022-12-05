@@ -15,7 +15,6 @@ Tests for idaes.core.dmf.datasets module
 """
 import copy
 import json
-from pathlib import Path
 import pytest
 import uuid
 from idaes.core.dmf import datasets

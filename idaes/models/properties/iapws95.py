@@ -13,16 +13,9 @@
 
 __author__ = "John Eslick"
 
-# Import Python libraries
-import os
-
-# Import Pyomo libraries
-from pyomo.environ import Expression, Param, RangeSet, Set, exp, sqrt, units as pyunits
-
 # Import IDAES
 from idaes.core import declare_process_block_class
 
-import idaes
 import idaes.logger as idaeslog
 from idaes.models.properties.general_helmholtz import (
     helmholtz_available,
@@ -44,7 +37,7 @@ _log = idaeslog.getLogger(__name__)
 
 def iapws95_available():
     """Make sure the compiled IAPWS-95 functions are available. Yes, in Windows
-    the .so extention is still used.
+    the .so extension is still used.
     """
     return helmholtz_available()
 
@@ -54,7 +47,7 @@ def htpx(T=None, P=None, x=None):
     Convenience function to calculate steam enthalpy from temperature and
     either pressure or vapor fraction. This function can be used for inlet
     streams and initialization where temperature is known instead of enthalpy.
-    User must provided values for two of T, P, or x.
+    User must provide values for two of T, P, or x.
 
     Args:
         T: Temperature with units (between 200 and 3000 K)

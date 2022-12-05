@@ -19,13 +19,12 @@ the `domain` argument in ConfigBlocks.
 
 __author__ = "Andrew Lee"
 
-from pyomo.common.config import ListOf, Bool
+from pyomo.common.config import Bool
 
 from pyomo.environ import Set
 from pyomo.dae import ContinuousSet
 from pyomo.network import Port
 from idaes.core import useDefault
-from idaes.core.base.phases import PhaseType
 from idaes.core.util.exceptions import ConfigurationError
 
 import idaes.logger as idaeslog

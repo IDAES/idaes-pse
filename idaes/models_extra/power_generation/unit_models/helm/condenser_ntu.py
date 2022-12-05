@@ -26,7 +26,6 @@ from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.util.misc import add_object_reference
 from idaes.models.unit_models.heater import (
     _make_heater_config_block,
     _make_heater_control_volume,
