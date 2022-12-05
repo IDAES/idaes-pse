@@ -491,6 +491,137 @@ def test_PP_costing():
 
 
 @pytest.mark.component
+def test_PP_costing_CE_index_year():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    # check that the model solved properly and has 0 degrees of freedom
+    assert degrees_of_freedom(m) == 0
+
+    ###########################################################################
+    #  Create costing constraints                                             #
+    ###########################################################################
+
+    # coal flow rate
+    # accounts 1.x and 2.x are coal handling, preparation and feed
+    # accounts 4.x are for boiler BOP and foundations
+    coal_accounts = ["1.1", "1.2", "1.3", "1.4", "2.1", "2.2", "4.11", "4.15", "4.16"]
+    m.fs.boiler_2018 = UnitModelBlock()
+    m.fs.boiler_2018.coal_mass_flow = pyo.Var(
+        initialize=7238.95, units=pyunits.ton / pyunits.day
+    )
+    m.fs.boiler_2018.coal_mass_flow.fix()
+    m.fs.boiler_2018.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": coal_accounts,
+            "scaled_param": m.fs.boiler_2018.coal_mass_flow,
+            "tech": 2,
+            "ccs": "A",
+            # the default is 2018
+        },
+    )
+
+    m.fs.boiler_2019_Sep = UnitModelBlock()
+    m.fs.boiler_2019_Sep.coal_mass_flow = pyo.Var(
+        initialize=7238.95, units=pyunits.ton / pyunits.day
+    )
+    m.fs.boiler_2019_Sep.coal_mass_flow.fix()
+    m.fs.boiler_2019_Sep.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": coal_accounts,
+            "scaled_param": m.fs.boiler_2019_Sep.coal_mass_flow,
+            "tech": 2,
+            "ccs": "A",
+            "CE_index_year": "2019_Sep",
+        },
+    )
+
+    m.fs.boiler_2020 = UnitModelBlock()
+    m.fs.boiler_2020.coal_mass_flow = pyo.Var(
+        initialize=7238.95, units=pyunits.ton / pyunits.day
+    )
+    m.fs.boiler_2020.coal_mass_flow.fix()
+    m.fs.boiler_2020.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": coal_accounts,
+            "scaled_param": m.fs.boiler_2020.coal_mass_flow,
+            "tech": 2,
+            "ccs": "A",
+            "CE_index_year": "2020",
+        },
+    )
+
+    m.fs.boiler_CE500 = UnitModelBlock()
+    m.fs.boiler_CE500.coal_mass_flow = pyo.Var(
+        initialize=7238.95, units=pyunits.ton / pyunits.day
+    )
+    m.fs.boiler_CE500.coal_mass_flow.fix()
+    m.fs.boiler_CE500.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": coal_accounts,
+            "scaled_param": m.fs.boiler_CE500.coal_mass_flow,
+            "tech": 2,
+            "ccs": "A",
+            "CE_index_year": "CE500",
+        },
+    )
+
+    # add initialize
+    QGESSCostingData.costing_initialization(m.fs.costing)
+
+    # try solving
+    solver = get_solver()
+    results = solver.solve(m, tee=True)
+
+    # check unit consistency
+    assert_units_consistent(m)
+
+    # check that total plant cost ratios match expected currency conversions
+    for account in coal_accounts:
+        # USD_2018 = CE 603.1
+        assert (
+            pytest.approx(
+                pyo.value(
+                    m.fs.boiler_2018.costing.total_plant_cost[account] /
+                    m.fs.boiler_CE500.costing.total_plant_cost[account]),
+                abs=1e-1)
+            == 603.1 / 500
+        )
+
+        # USD_2019_Sep = CE 599.3
+        assert (
+            pytest.approx(
+                pyo.value(
+                    m.fs.boiler_2019_Sep.costing.total_plant_cost[account] /
+                    m.fs.boiler_CE500.costing.total_plant_cost[account]),
+                abs=1e-1)
+            == 599.3 / 500
+        )
+
+        # USD_2020 = CE 596.2
+        assert (
+            pytest.approx(
+                pyo.value(
+                    m.fs.boiler_2020.costing.total_plant_cost[account] /
+                    m.fs.boiler_CE500.costing.total_plant_cost[account]),
+                abs=1e-1)
+            == 596.2 / 500
+        )
+
+
+@pytest.mark.component
 def test_build_process_costs_emptymodel():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
