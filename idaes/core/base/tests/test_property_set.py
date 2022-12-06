@@ -333,4 +333,28 @@ class TestPropertySetBase:
         return pset.unitset is p.default_units
 
 
-# TODO: How to test standard and electrolyte property sets?
+class DerivedPropertySet(PropertySetBase):
+    foo = PropertyMetadata(name="foo")
+    bar = PropertyMetadata(name="bar")
+    baz = "baz"
+
+
+class TestDerivedPropertySet:
+    @pytest.mark.unit
+    def test_standard_proeprties(self):
+        p = DummyMeta()
+        p.default_units = "foo"
+
+        pset = DerivedPropertySet(parent=p)
+
+        for i in pset._defined_properties:
+            assert i in [pset.foo, pset.bar]
+
+        assert isinstance(pset.foo, PropertyMetadata)
+        assert isinstance(pset.bar, PropertyMetadata)
+        assert not isinstance(pset.baz, PropertyMetadata)
+
+        # Check that we didn't accidentally overwrite anything
+        assert pset.foo is not DerivedPropertySet.foo
+        assert pset.bar is not DerivedPropertySet.bar
+        assert pset.baz is DerivedPropertySet.baz
