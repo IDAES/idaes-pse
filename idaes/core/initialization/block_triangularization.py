@@ -59,6 +59,7 @@ class BlockTriangularizationInitializer(InitializerBase):
         else:
             solver = get_solver()
 
+        # TODO: Can we get diagnostic output from this method?
         solve_strongly_connected_components(
             model,
             solver=solver,
