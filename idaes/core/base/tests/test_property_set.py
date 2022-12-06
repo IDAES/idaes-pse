@@ -117,11 +117,23 @@ class TestPropertySetBase:
         return pset
 
     @pytest.mark.unit
-    def test_parent(self):
+    def test_expected_attrs(self):
         p = object()
         pset = PropertySetBase(parent=p)
 
         assert pset._parent_block is p
+        assert pset._defined_properties == []
+
+    @pytest.mark.unit
+    def test_direct_assignment(self):
+        p = object()
+        pset = PropertySetBase(parent=p)
+
+        with pytest.raises(
+            TypeError,
+            match="PropertySets do not support direct assignment. Please use define_property",
+        ):
+            pset.foo = "bar"
 
     @pytest.mark.unit
     def test_define_property(self, pset):
