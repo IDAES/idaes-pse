@@ -18,12 +18,8 @@ __author__ = "John Eslick"
 import pyomo.environ as pyo
 from pyomo.common.collections import ComponentSet
 from pyomo.environ import units as pyunits
-from pyomo.core.base.units_container import InconsistentUnitsError
-from pyomo.common.fileutils import find_library
-from pyomo.common.config import ConfigValue, In
 
 from idaes.core.util.math import smooth_max
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core import declare_process_block_class
 from idaes.core import (
     StateBlock,
@@ -34,8 +30,6 @@ from idaes.core import (
 )
 from idaes.models.properties.general_helmholtz.helmholtz_functions import (
     add_helmholtz_external_functions,
-    HelmholtzParameterBlock,
-    HelmholtzThermoExpressions,
     AmountBasis,
     PhaseType,
     StateVars,
@@ -71,8 +65,8 @@ class _StateBlock(StateBlock):
                     v.value = state[key]
                 except KeyError:
                     pass
-            if hold:
-                v.fix()
+        if hold:
+            v.fix()
 
     def initialize(self, *args, **kwargs):
         flags = {}

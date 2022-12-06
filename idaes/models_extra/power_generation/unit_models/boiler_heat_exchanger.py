@@ -38,8 +38,7 @@ __author__ = "Boiler subsystem team (J Ma, M Zamarripa)"
 __version__ = "1.0.0"
 
 # Import Python libraries
-import logging
-from enum import Enum, EnumMeta
+from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigValue, In
@@ -80,7 +79,7 @@ from idaes.models.unit_models.heat_exchanger import (
 
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 class TubeArrangement(Enum):

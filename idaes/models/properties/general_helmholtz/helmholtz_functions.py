@@ -16,22 +16,18 @@ __author__ = "John Eslick"
 
 import enum
 import ctypes
-import math
 import os
 
 from matplotlib import pyplot as plt
 import numpy as np
 
 import pyomo.environ as pyo
-from pyomo.core.base.units_container import InconsistentUnitsError
 from pyomo.common.fileutils import find_library
 from pyomo.common.config import ConfigValue, In
 import idaes
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core import declare_process_block_class
 from idaes.core import (
-    StateBlock,
-    StateBlockData,
     PhysicalParameterBlock,
     LiquidPhase,
     VaporPhase,

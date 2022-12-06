@@ -13,7 +13,6 @@
 
 __author__ = "John Eslick"
 
-import pytest
 import idaes.models.properties.swco2 as swco2
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
 

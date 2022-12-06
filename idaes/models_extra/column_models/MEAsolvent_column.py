@@ -19,17 +19,11 @@ import numpy as np
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    ConcreteModel,
     value,
     Var,
     NonNegativeReals,
-    Param,
-    TransformationFactory,
     Constraint,
     Expression,
-    Objective,
-    SolverStatus,
-    TerminationCondition,
     check_optimal_termination,
     exp,
     units as pyunits,
@@ -46,7 +40,6 @@ from idaes.core.util.exceptions import InitializationError
 from idaes.core.solvers.get_solver import get_solver
 import idaes.logger as idaeslog
 
-from idaes.core.solvers import use_idaes_solver_configuration_defaults
 import idaes.core.util.scaling as iscale
 
 

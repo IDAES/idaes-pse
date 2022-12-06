@@ -76,7 +76,5 @@ An example of a plot that is produced:
 Available Methods
 ------------------
 
-.. automethod:: idaes.core.surrogate.plotting.sm_plotter.surrogate_scatter2D
-.. automethod:: idaes.core.surrogate.plotting.sm_plotter.surrogate_scatter3D
-.. automethod:: idaes.core.surrogate.plotting.sm_plotter.surrogate_parity
-.. automethod:: idaes.core.surrogate.plotting.sm_plotter.surrogate_residual
+.. automodule:: idaes.core.surrogate.plotting.sm_plotter
+    :members:

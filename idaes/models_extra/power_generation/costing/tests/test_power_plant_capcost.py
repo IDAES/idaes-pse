@@ -21,7 +21,7 @@ from pyomo.core.base.constraint import ScalarConstraint, IndexedConstraint
 from pyomo.core.base.expression import ScalarExpression
 from pyomo.core.base.var import IndexedVar
 from pyomo.environ import units as pyunits
-from pyomo.core.base.units_container import InconsistentUnitsError, UnitsError
+from pyomo.core.base.units_container import UnitsError
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock, UnitModelBlock, UnitModelCostingBlock

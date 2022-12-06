@@ -15,7 +15,7 @@ Standard IDAES STOICHIOMETRIC reactor model
 """
 
 # Import Pyomo libraries
-from pyomo.environ import Reference, Var, Block
+from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
