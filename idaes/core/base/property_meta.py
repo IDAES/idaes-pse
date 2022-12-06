@@ -506,7 +506,7 @@ class PropertyClassMetadata(object):
         for k, v in p.items():
             units = v.pop("units", None)
             try:
-                getattr(self._properties, "_" + k).update_property(**v)
+                getattr(self._properties, k).update_property(**v)
             except AttributeError:
                 # TODO: Deprecate this and make it raise an exception if an unknown property is encountered
                 # # Force users to explicitly declare new/custom properties

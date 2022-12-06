@@ -186,6 +186,26 @@ class PropertySetBase(object):
 
     def __init__(self, parent):
         self._parent_block = parent
+        self._defined_properties = []
+
+        for i in dir(self.__class__):
+            if not i.startswith("_"):
+                # Ignore anything starting with "_"
+                iobj = getattr(self.__class__, i)
+                if isinstance(iobj, PropertyMetadata):
+                    # TODO: Handle units
+                    setattr(
+                        self,
+                        i,
+                        PropertyMetadata(
+                            name=i,
+                            method=None,
+                            supported=False,
+                            required=False,
+                            units=iobj.units,
+                        ),
+                    )
+                    self._defined_properties.append(getattr(self, i))
 
     def __getitem__(self, key: str):
         try:
@@ -197,13 +217,8 @@ class PropertySetBase(object):
                 raise KeyError(f"Property {key} is not defined in this PropertySet.")
 
     def __iter__(self):
-        for a in dir(self):
-            if not a.startswith("_"):
-                # Ignore anything starting with "_" as they will show up twice otherwise
-                # This will also skip private attributes of object class
-                aobj = getattr(self, a)
-                if isinstance(aobj, PropertyMetadata):
-                    yield aobj
+        for a in self._defined_properties:
+            yield a
 
     def define_property(
         self,
@@ -243,6 +258,7 @@ class PropertySetBase(object):
                 units=units,
             ),
         )
+        self._defined_properties.append(getattr(self, name))
 
     def check_required_properties(self, other: "PropertySetBase"):
         """
@@ -255,14 +271,13 @@ class PropertySetBase(object):
             list of properties required by this package which are not supported by other package
         """
         unsupported = []
-        for a in dir(self):
-            aobj = getattr(self, a)
-            if isinstance(aobj, PropertyMetadata) and aobj.required:
+        for a in self._defined_properties:
+            if a.required:
                 try:
-                    if not other[aobj.name].supported:
-                        unsupported.append(aobj.name)
+                    if not other[a.name].supported:
+                        unsupported.append(a.name)
                 except KeyError:
-                    unsupported.append(aobj.name)
+                    unsupported.append(a.name)
 
         return unsupported
 
@@ -319,1439 +334,920 @@ class StandardPropertySet(PropertySetBase):
     definition of new properties if required.
     """
 
-    def __init__(self, parent):
-        super().__init__(parent)
-
-        # Concrete definition of all the standard IDAES properties
-        # TODO: Should we separate thermophysical and reaction properties?
-        # AL: I am inclined to say no - define all of them, and state which are supported
-        # This would allow for hybrid packages in the future
-        self._act_phase_comp = PropertyMetadata(
-            name="act_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._act_coeff_phase_comp = PropertyMetadata(
-            name="act_coeff_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._compress_fact = PropertyMetadata(
-            name="compress_fact",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._compress_fact_phase = PropertyMetadata(
-            name="compress_fact_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._conc_mass_comp = PropertyMetadata(
-            name="conc_mass_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DENSITY_MASS,
-        )
-        self._conc_mass_phase_comp = PropertyMetadata(
-            name="conc_mass_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DENSITY_MASS,
-        )
-        self._conc_mol_comp = PropertyMetadata(
-            name="conc_mol_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DENSITY_MOLE,
-        )
-        self._conc_mol_phase_comp = PropertyMetadata(
-            name="conc_mol_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DENSITY_MOLE,
-        )
-        self._cp_mass = PropertyMetadata(
-            name="cp_mass",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.HEAT_CAPACITY_MASS,
-        )
-        self._cp_mass_comp = PropertyMetadata(
-            name="cp_mass_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.HEAT_CAPACITY_MASS,
-        )
-        self._cp_mass_phase = PropertyMetadata(
-            name="cp_mass_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.HEAT_CAPACITY_MASS,
-        )
-        self._cp_mass_phase_comp = PropertyMetadata(
-            name="cp_mass_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.HEAT_CAPACITY_MASS,
-        )
-        self._cp_mol = PropertyMetadata(
-            name="cp_mol",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.HEAT_CAPACITY_MOLE,
-        )
-        self._cp_mol_comp = PropertyMetadata(
-            name="cp_mol_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.HEAT_CAPACITY_MOLE,
-        )
-        self._cp_mol_phase = PropertyMetadata(
-            name="cp_mol_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.HEAT_CAPACITY_MOLE,
-        )
-        self._cp_mol_phase_comp = PropertyMetadata(
-            name="cp_mol_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.HEAT_CAPACITY_MOLE,
-        )
-        self._cv_mass = PropertyMetadata(
-            name="cv_mass",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.HEAT_CAPACITY_MASS,
-        )
-        self._cv_mass_comp = PropertyMetadata(
-            name="cv_mass_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.HEAT_CAPACITY_MASS,
-        )
-        self._cv_mass_phase = PropertyMetadata(
-            name="cv_mass_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.HEAT_CAPACITY_MASS,
-        )
-        self._cv_mass_phase_comp = PropertyMetadata(
-            name="cv_mass_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.HEAT_CAPACITY_MASS,
-        )
-        self._cv_mol = PropertyMetadata(
-            name="cv_mol",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.HEAT_CAPACITY_MOLE,
-        )
-        self._cv_mol_comp = PropertyMetadata(
-            name="cv_mol_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.HEAT_CAPACITY_MOLE,
-        )
-        self._cv_mol_phase = PropertyMetadata(
-            name="cv_mol_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.HEAT_CAPACITY_MOLE,
-        )
-        self._cv_mol_phase_comp = PropertyMetadata(
-            name="cv_mol_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.HEAT_CAPACITY_MOLE,
-        )
-        self._dens_mass = PropertyMetadata(
-            name="dens_mass",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DENSITY_MASS,
-        )
-        self._dens_mass_comp = PropertyMetadata(
-            name="dens_mass_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DENSITY_MASS,
-        )
-        self._dens_mass_crit = PropertyMetadata(
-            name="dens_mass_crit",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DENSITY_MASS,
-        )
-        self._dens_mass_phase = PropertyMetadata(
-            name="dens_mass_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DENSITY_MASS,
-        )
-        self._dens_mol = PropertyMetadata(
-            name="dens_mol",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DENSITY_MOLE,
-        )
-        self._dens_mol_comp = PropertyMetadata(
-            name="dens_mol_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DENSITY_MOLE,
-        )
-        self._dens_mol_crit = PropertyMetadata(
-            name="dens_mol_crit",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DENSITY_MOLE,
-        )
-        self._dens_mol_phase = PropertyMetadata(
-            name="dens_mol_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DENSITY_MOLE,
-        )
-        self._diffus_comp = PropertyMetadata(
-            name="diffus_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DIFFUSIVITY,
-        )
-        self._diffus_phase_comp = PropertyMetadata(
-            name="diffus_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DIFFUSIVITY,
-        )
-        self._energy_internal_mass = PropertyMetadata(
-            name="energy_internal_mass",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MASS,
-        )
-        self._energy_internal_mass_phase = PropertyMetadata(
-            name="energy_internal_mass_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MASS,
-        )
-        self._energy_internal_mass_phase_comp = PropertyMetadata(
-            name="energy_internal_mass_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MASS,
-        )
-        self._energy_internal_mol = PropertyMetadata(
-            name="energy_internal_mol",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MOLE,
-        )
-        self._energy_internal_mol_phase = PropertyMetadata(
-            name="energy_internal_mol_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MOLE,
-        )
-        self._energy_internal_mol_phase_comp = PropertyMetadata(
-            name="energy_internal_mol_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MOLE,
-        )
-        self._enth_mass = PropertyMetadata(
-            name="enth_mass",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MASS,
-        )
-        self._enth_mass_phase = PropertyMetadata(
-            name="enth_mass_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MASS,
-        )
-        self._enth_mass_phase_comp = PropertyMetadata(
-            name="enth_mass_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MASS,
-        )
-        self._enth_mol = PropertyMetadata(
-            name="enth_mol",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MOLE,
-        )
-        self._enth_mol_comp = PropertyMetadata(
-            name="enth_mol_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MOLE,
-        )
-        self._enth_mol_phase = PropertyMetadata(
-            name="enth_mol_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MOLE,
-        )
-        self._enth_mol_phase_comp = PropertyMetadata(
-            name="enth_mol_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MOLE,
-        )
-        self._entr_mass = PropertyMetadata(
-            name="entr_mass",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MASS,
-        )
-        self._entr_mass_phase = PropertyMetadata(
-            name="entr_mass_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MASS,
-        )
-        self._entr_mass_phase_comp = PropertyMetadata(
-            name="entr_mass_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MASS,
-        )
-        self._entr_mol = PropertyMetadata(
-            name="entr_mol",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MOLE,
-        )
-        self._entr_mol_comp = PropertyMetadata(
-            name="entr_mol_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MOLE,
-        )
-        self._entr_mol_phase = PropertyMetadata(
-            name="entr_mol_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MOLE,
-        )
-        self._entr_mol_phase_comp = PropertyMetadata(
-            name="entr_mol_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MOLE,
-        )
-        self._flow_mass = PropertyMetadata(
-            name="flow_mass",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.FLOW_MASS,
-        )
-        self._flow_mass_comp = PropertyMetadata(
-            name="flow_mass_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.FLOW_MASS,
-        )
-        self._flow_mass_phase = PropertyMetadata(
-            name="flow_mass_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.FLOW_MASS,
-        )
-        self._flow_mass_phase_comp = PropertyMetadata(
-            name="flow_mass_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.FLOW_MASS,
-        )
-        self._flow_mol = PropertyMetadata(
-            name="flow_mol",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.FLOW_MOLE,
-        )
-        self._flow_mol_comp = PropertyMetadata(
-            name="flow_mol_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.FLOW_MOLE,
-        )
-        self._flow_mol_phase = PropertyMetadata(
-            name="flow_mol_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.FLOW_MOLE,
-        )
-        self._flow_mol_phase_comp = PropertyMetadata(
-            name="flow_mol_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.FLOW_MOLE,
-        )
-        self._flow_vol = PropertyMetadata(
-            name="flow_vol",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.FLOW_VOL,
-        )
-        self._flow_vol_comp = PropertyMetadata(
-            name="flow_vol_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.FLOW_VOL,
-        )
-        self._flow_vol_phase = PropertyMetadata(
-            name="flow_vol_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.FLOW_VOL,
-        )
-        self._flow_vol_phase_comp = PropertyMetadata(
-            name="flow_vol_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.FLOW_VOL,
-        )
-
-        self._fug_phase_comp = PropertyMetadata(
-            name="fug_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.PRESSURE,
-        )
-        self._fug_coeff_phase_comp = PropertyMetadata(
-            name="fug_coeff_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-
-        self._heat_capacity_ratio = PropertyMetadata(
-            name="heat_capacity_ratio",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._heat_capacity_ratio_phase = PropertyMetadata(
-            name="heat_capacity_ratio_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._gibbs_mass = PropertyMetadata(
-            name="gibbs_mass",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MASS,
-        )
-        self._gibbs_mass_phase = PropertyMetadata(
-            name="gibbs_mass_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MASS,
-        )
-        self._gibbs_mass_phase_comp = PropertyMetadata(
-            name="gibbs_mass_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MASS,
-        )
-        self._gibbs_mol = PropertyMetadata(
-            name="gibbs_mol",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MOLE,
-        )
-        self._gibbs_mol_phase = PropertyMetadata(
-            name="gibbs_mol_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MOLE,
-        )
-        self._gibbs_mol_phase_comp = PropertyMetadata(
-            name="gibbs_mol_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MOLE,
-        )
-        self._isentropic_speed_sound_phase = PropertyMetadata(
-            name="isentropic_speed_sound_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.VELOCITY,
-        )
-        self._isothermal_speed_sound_phase = PropertyMetadata(
-            name="isothermal_speed_sound_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.VELOCITY,
-        )
-        self._henry = PropertyMetadata(
-            name="henry",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-            # TODO: Units are an issue here, as there are multiple ways to define this
-        )
-        self._mass_frac_comp = PropertyMetadata(
-            name="mass_frac_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._mass_frac_phase_comp = PropertyMetadata(
-            name="mass_frac_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._mole_frac_comp = PropertyMetadata(
-            name="mole_frac_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._mole_frac_phase_comp = PropertyMetadata(
-            name="mole_frac_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._molality_phase_comp = PropertyMetadata(
-            name="molality_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.MOLALITY,
-        )
-        self._mw = PropertyMetadata(
-            name="mw",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.MOLECULAR_WEIGHT,
-        )
-        self._mw_comp = PropertyMetadata(
-            name="mw_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.MOLECULAR_WEIGHT,
-        )
-        self._mw_phase = PropertyMetadata(
-            name="mw_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.MOLECULAR_WEIGHT,
-        )
-        self._mw_phase_comp = PropertyMetadata(
-            name="mw_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.MOLECULAR_WEIGHT,
-        )
-        self._phase_frac = PropertyMetadata(
-            name="phase_frac",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._pressure = PropertyMetadata(
-            name="pressure",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.PRESSURE,
-        )
-        self._pressure_phase_comp = PropertyMetadata(
-            name="pressure_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.PRESSURE,
-        )
-        self._pressure_bubble = PropertyMetadata(
-            name="pressure_bubble",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.PRESSURE,
-        )
-        self._pressure_crit = PropertyMetadata(
-            name="pressure_crit",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.PRESSURE,
-        )
-        self._pressure_dew = PropertyMetadata(
-            name="pressure_dew",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.PRESSURE,
-        )
-        self._pressure_osm_phase = PropertyMetadata(
-            name="pressure_osm_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.PRESSURE,
-        )
-        self._pressure_red = PropertyMetadata(
-            name="pressure_red",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._pressure_sat = PropertyMetadata(
-            name="pressure_sat",  # TODO: Deprecate in favour of pressure_sat_comp
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.PRESSURE,
-        )
-        self._pressure_sat_comp = PropertyMetadata(
-            name="pressure_sat_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.PRESSURE,
-        )
-        self._surf_tens_phase = PropertyMetadata(
-            name="surf_tens_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.SURFACE_TENSION,
-        )
-        self._temperature = PropertyMetadata(
-            name="temperature",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.TEMPERATURE,
-        )
-        self._temperature_bubble = PropertyMetadata(
-            name="temperature_bubble",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.TEMPERATURE,
-        )
-        self._temperature_crit = PropertyMetadata(
-            name="temperature_crit",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.TEMPERATURE,
-        )
-        self._temperature_dew = PropertyMetadata(
-            name="temperature_dew",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.TEMPERATURE,
-        )
-        self._temperature_red = PropertyMetadata(
-            name="temperature_red",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._temperature_sat = PropertyMetadata(
-            name="temperature_sat",  # TODO: Deprecate in favour of temperature_sat_comp?
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.TEMPERATURE,
-        )
-        self._therm_cond = PropertyMetadata(
-            name="therm_cond",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.THERMAL_CONDUCTIVITY,
-        )
-        self._therm_cond_phase = PropertyMetadata(
-            name="therm_cond_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.THERMAL_CONDUCTIVITY,
-        )
-        self._visc_d = PropertyMetadata(
-            name="visc_d",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DYNAMIC_VISCOSITY,
-        )
-        self._visc_d_phase = PropertyMetadata(
-            name="visc_d_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DYNAMIC_VISCOSITY,
-        )
-        self._visc_k = PropertyMetadata(
-            name="visc_k",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.KINEMATIC_VISCOSITY,
-        )
-        self._visc_k_phase = PropertyMetadata(
-            name="visc_k_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.KINEMATIC_VISCOSITY,
-        )
-        self._vol_mol_phase = PropertyMetadata(
-            name="vol_mol_phase",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.MOLAR_VOLUME,
-        )
-        self._vol_mol_phase_comp = PropertyMetadata(
-            name="vol_mol_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.MOLAR_VOLUME,
-        )
-        # Log terms
-        self._log_act_phase_comp = PropertyMetadata(
-            name="log_act_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_conc_mol_phase_comp = PropertyMetadata(
-            name="log_conc_mol_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_mass_frac_phase_comp = PropertyMetadata(
-            name="log_mass_frac_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_molality_phase_comp = PropertyMetadata(
-            name="log_molality_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_mole_frac_comp = PropertyMetadata(
-            name="log_mole_frac_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_mole_frac_pbub = PropertyMetadata(
-            name="log_mole_frac_pbub",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_mole_frac_pdew = PropertyMetadata(
-            name="log_mole_frac_pdew",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_mole_frac_tbub = PropertyMetadata(
-            name="log_mole_frac_tbub",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_mole_frac_tdew = PropertyMetadata(
-            name="log_mole_frac_tdew",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_mole_frac_phase_comp = PropertyMetadata(
-            name="log_mole_frac_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_pressure_phase_comp = PropertyMetadata(
-            name="log_pressure_phase_comp",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-
-        # Reaction Properties
-        # TODO: Units are also problematic here - no single definition
-        self._dh_rxn = PropertyMetadata(
-            name="dh_rxn",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.ENERGY_MOLE,
-        )
-        self._k_eq = PropertyMetadata(
-            name="k_eq",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_k_eq = PropertyMetadata(
-            name="log_k_eq",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._k_rxn = PropertyMetadata(
-            name="k_rxn",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._reaction_rate = PropertyMetadata(
-            name="reaction_rate",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-
-    @property
-    def ACT_PHASE_COMP(self):
-        return self._act_phase_comp
-
-    @property
-    def ACT_COEFF_PHASE_COMP(self):
-        return self._act_coeff_phase_comp
-
-    @property
-    def COMPRESS_FACT(self):
-        return self._compress_fact
-
-    @property
-    def COMPRESS_FACT_PHASE(self):
-        return self._compress_fact_phase
-
-    @property
-    def CONC_MASS_COMP(self):
-        return self._conc_mass_comp
-
-    @property
-    def CONC_MASS_PHASE_COMP(self):
-        return self._conc_mass_phase_comp
-
-    @property
-    def CONC_MOL_COMP(self):
-        return self._conc_mol_comp
-
-    @property
-    def CONC_MOL_PHASE_COMP(self):
-        return self._conc_mol_phase_comp
-
-    @property
-    def CP_MASS(self):
-        return self._cp_mass
-
-    @property
-    def CP_MASS_COMP(self):
-        return self._cp_mass_comp
-
-    @property
-    def CP_MASS_PHASE(self):
-        return self._cp_mass_phase
-
-    @property
-    def CP_MASS_PHASE_COMP(self):
-        return self._cp_mass_phase_comp
-
-    @property
-    def CP_MOL(self):
-        return self._cp_mol
-
-    @property
-    def CP_MOL_COMP(self):
-        return self._cp_mol_comp
-
-    @property
-    def CP_MOL_PHASE(self):
-        return self._cp_mol_phase
-
-    @property
-    def CP_MOL_PHASE_COMP(self):
-        return self._cp_mol_phase_comp
-
-    @property
-    def CV_MASS(self):
-        return self._cv_mass
-
-    @property
-    def CV_MASS_COMP(self):
-        return self._cv_mass_comp
-
-    @property
-    def CV_MASS_PHASE(self):
-        return self._cv_mass_phase
-
-    @property
-    def CV_MASS_PHASE_COMP(self):
-        return self._cv_mass_phase_comp
-
-    @property
-    def CV_MOL(self):
-        return self._cv_mol
-
-    @property
-    def CV_MOL_COMP(self):
-        return self._cv_mol_comp
-
-    @property
-    def CV_MOL_PHASE(self):
-        return self._cv_mol_phase
-
-    @property
-    def CV_MOL_PHASE_COMP(self):
-        return self._cv_mol_phase_comp
-
-    @property
-    def DENS_MASS(self):
-        return self._dens_mass
-
-    @property
-    def DENS_MASS_COMP(self):
-        return self._dens_mass_comp
-
-    @property
-    def DENS_MASS_CRIT(self):
-        return self._dens_mass_crit
-
-    @property
-    def DENS_MASS_PHASE(self):
-        return self._dens_mass_phase
-
-    @property
-    def DENS_MOL(self):
-        return self._dens_mol
-
-    @property
-    def DENS_MOL_COMP(self):
-        return self._dens_mol_comp
-
-    @property
-    def DENS_MOL_CRIT(self):
-        return self._dens_mol_crit
-
-    @property
-    def DENS_MOL_PHASE(self):
-        return self._dens_mol_phase
-
-    @property
-    def DIFFUS_COMP(self):
-        return self._diffus_comp
-
-    @property
-    def DIFFUS_PHASE_COMP(self):
-        return self._diffus_phase_comp
-
-    @property
-    def ENERGY_INTERNAL_MASS(self):
-        return self._energy_internal_mass
-
-    @property
-    def ENERGY_INTERNAL_MASS_PHASE(self):
-        return self._energy_internal_mass_phase
-
-    @property
-    def ENERGY_INTERNAL_MASS_PHASE_COMP(self):
-        return self._energy_internal_mass_phase_comp
-
-    @property
-    def ENERGY_INTERNAL_MOL(self):
-        return self._energy_internal_mol
-
-    @property
-    def ENERGY_INTERNAL_MOL_PHASE(self):
-        return self._energy_internal_mol_phase
-
-    @property
-    def ENERGY_INTERNAL_MOL_PHASE_COMP(self):
-        return self._energy_internal_mol_phase_comp
-
-    @property
-    def ENTH_MASS(self):
-        return self._enth_mass
-
-    @property
-    def ENTH_MASS_PHASE(self):
-        return self._enth_mass_phase
-
-    @property
-    def ENTH_MASS_PHASE_COMP(self):
-        return self._enth_mass_phase_comp
-
-    @property
-    def ENTH_MOL(self):
-        return self._enth_mol
-
-    @property
-    def ENTH_MOL_COMP(self):
-        return self._enth_mol_comp
-
-    @property
-    def ENTH_MOL_PHASE(self):
-        return self._enth_mol_phase
-
-    @property
-    def ENTH_MOL_PHASE_COMP(self):
-        return self._enth_mol_phase_comp
-
-    @property
-    def ENTR_MASS(self):
-        return self._entr_mass
-
-    @property
-    def ENTR_MASS_PHASE(self):
-        return self._entr_mass_phase
-
-    @property
-    def ENTR_MASS_PHASE_COMP(self):
-        return self._entr_mass_phase_comp
-
-    @property
-    def ENTR_MOL(self):
-        return self._entr_mol
-
-    @property
-    def ENTR_MOL_COMP(self):
-        return self._entr_mol_comp
-
-    @property
-    def ENTR_MOL_PHASE(self):
-        return self._entr_mol_phase
-
-    @property
-    def ENTR_MOL_PHASE_COMP(self):
-        return self._entr_mol_phase_comp
-
-    @property
-    def FLOW_MASS(self):
-        return self._flow_mass
-
-    @property
-    def FLOW_MASS_COMP(self):
-        return self._flow_mass_comp
-
-    @property
-    def FLOW_MASS_PHASE(self):
-        return self._flow_mass_phase
-
-    @property
-    def FLOW_MASS_PHASE_COMP(self):
-        return self._flow_mass_phase_comp
-
-    @property
-    def FLOW_MOL(self):
-        return self._flow_mol
-
-    @property
-    def FLOW_MOL_COMP(self):
-        return self._flow_mol_comp
-
-    @property
-    def FLOW_MOL_PHASE(self):
-        return self._flow_mol_phase
-
-    @property
-    def FLOW_MOL_PHASE_COMP(self):
-        return self._flow_mol_phase_comp
-
-    @property
-    def FLOW_VOL(self):
-        return self._flow_vol
-
-    @property
-    def FLOW_VOL_COMP(self):
-        return self._flow_vol_comp
-
-    @property
-    def FLOW_VOL_PHASE(self):
-        return self._flow_vol_phase
-
-    @property
-    def FLOW_VOL_PHASE_COMP(self):
-        return self._flow_vol_phase_comp
-
-    @property
-    def FUG_PHASE_COMP(self):
-        return self._fug_phase_comp
-
-    @property
-    def FUG_COEFF_PHASE_COMP(self):
-        return self._fug_coeff_phase_comp
-
-    @property
-    def HEAT_CAPACITY_RATIO(self):
-        return self._heat_capacity_ratio
-
-    @property
-    def HEAT_CAPACITY_RATIO_PHASE(self):
-        return self._heat_capacity_ratio_phase
-
-    @property
-    def GIBBS_MASS(self):
-        return self._gibbs_mass
-
-    @property
-    def GIBBS_MASS_PHASE(self):
-        return self._gibbs_mass_phase
-
-    @property
-    def GIBBS_MASS_PHASE_COMP(self):
-        return self._gibbs_mass_phase_comp
-
-    @property
-    def GIBBS_MOL(self):
-        return self._gibbs_mol
-
-    @property
-    def GIBBS_MOL_PHASE(self):
-        return self._gibbs_mol_phase
-
-    @property
-    def GIBBS_MOL_PHASE_COMP(self):
-        return self._gibbs_mol_phase_comp
-
-    @property
-    def ISENTROPIC_SPEED_SOUND_PHASE(self):
-        return self._isentropic_speed_sound_phase
-
-    @property
-    def ISOTHERMAL_SPEED_SOUND_PHASE(self):
-        return self._isothermal_speed_sound_phase
-
-    @property
-    def HENRY(self):
-        return self._henry  # TODO: Units issue
-
-    @property
-    def MASS_FRAC_COMP(self):
-        return self._mass_frac_comp
-
-    @property
-    def MASS_FRAC_PHASE_COMP(self):
-        return self._mass_frac_phase_comp
-
-    @property
-    def MOLE_FRAC_COMP(self):
-        return self._mole_frac_comp
-
-    @property
-    def MOLE_FRAC_PHASE_COMP(self):
-        return self._mole_frac_phase_comp
-
-    @property
-    def MOLALITY_PHASE_COMP(self):
-        return self._molality_phase_comp
-
-    @property
-    def MW(self):
-        return self._mw
-
-    @property
-    def MW_COMP(self):
-        return self._mw_comp
-
-    @property
-    def MW_PHASE(self):
-        return self._mw_phase
-
-    @property
-    def MW_PHASE_COMP(self):
-        return self._mw_phase_comp  # TODO: THis should be redundant with _comp
-
-    @property
-    def PHASE_FRAC(self):
-        return self._phase_frac
-
-    @property
-    def PRESSURE(self):
-        return self._pressure
-
-    @property
-    def PRESSURE_PHASE_COMP(self):
-        return self._pressure_phase_comp
-
-    @property
-    def PRESSURE_BUBBLE(self):
-        return self._pressure_bubble
-
-    @property
-    def PRESSURE_CRIT(self):
-        return self._pressure_crit
-
-    @property
-    def PRESSURE_DEW(self):
-        return self._pressure_dew
-
-    @property
-    def PRESSURE_OSM_PHASE(self):
-        return self._pressure_osm_phase
-
-    @property
-    def PRESSURE_RED(self):
-        return self._pressure_red
-
-    @property
-    def PRESSURE_SAT(self):
-        return self._pressure_sat  # TODO: Deprecate for _comp
-
-    @property
-    def PRESSURE_SAT_COMP(self):
-        return self._pressure_sat_comp
-
-    @property
-    def SURF_TENS_PHASE(self):
-        return self._surf_tens_phase
-
-    @property
-    def TEMPERATURE(self):
-        return self._temperature
-
-    @property
-    def TEMPERATURE_BUBBLE(self):
-        return self._temperature_bubble
-
-    @property
-    def TEMPERATURE_CRIT(self):
-        return self._temperature_crit
-
-    @property
-    def TEMPERATURE_DEW(self):
-        return self._temperature_dew
-
-    @property
-    def TEMPERATURE_RED(self):
-        return self._temperature_red
-
-    @property
-    def TEMPERATURE_SAT(self):
-        return self._temperature_sat  # TODO: Deprecate for _comp
-
-    @property
-    def THERM_COND(self):
-        return self._therm_cond
-
-    @property
-    def THERM_COND_PHASE(self):
-        return self._therm_cond_phase
-
-    @property
-    def VISC_D(self):
-        return self._visc_d
-
-    @property
-    def VISC_D_PHASE(self):
-        return self._visc_d_phase
-
-    @property
-    def VISC_K_PHASE(self):
-        return self._visc_k_phase
-
-    @property
-    def VISC_K(self):
-        return self._visc_k
-
-    @property
-    def VOL_MOL_PHASE(self):
-        return self._vol_mol_phase
-
-    @property
-    def VOL_MOL_PHASE_COMP(self):
-        return self._vol_mol_phase_comp
-
-    @property
-    def LOG_ACT_PHASE_COMP(self):
-        return self._log_act_phase_comp
-
-    @property
-    def LOG_CONC_MOL_PHASE_COMP(self):
-        return self._log_conc_mol_phase_comp
-
-    @property
-    def LOG_MASS_FRAC_PHASE_COMP(self):
-        return self._log_mass_frac_phase_comp
-
-    @property
-    def LOG_MOLALITY_PHASE_COMP(self):
-        return self._log_molality_phase_comp
-
-    @property
-    def LOG_MOLE_FRAC_COMP(self):
-        return self._log_mole_frac_comp
-
-    @property
-    def LOG_MOLE_FRAC_PBUB(self):
-        return self._log_mole_frac_pbub
-
-    @property
-    def LOG_MOLE_FRAC_PDEW(self):
-        return self._log_mole_frac_pdew
-
-    @property
-    def LOG_MOLE_FRAC_TBUB(self):
-        return self._log_mole_frac_tbub
-
-    @property
-    def LOG_MOLE_FRAC_TDEW(self):
-        return self._log_mole_frac_tdew
-
-    @property
-    def LOG_MOLE_FRAC_PHASE_COMP(self):
-        return self._log_mole_frac_phase_comp
-
-    @property
-    def LOG_PRESSURE_PHASE_COMP(self):
-        return self._log_pressure_phase_comp
-
-    @property
-    def DH_RXN(self):
-        return self._dh_rxn
-
-    @property
-    def K_EQ(self):
-        return self._k_eq
-
-    @property
-    def LOG_K_EQ(self):
-        return self._log_k_eq
-
-    @property
-    def K_RXN(self):
-        return self._k_rxn
-
-    @property
-    def REACTION_RATE(self):
-        return self._reaction_rate
+    # Concrete definition of all the standard IDAES properties
+    # TODO: Should we separate thermophysical and reaction properties?
+    # AL: I am inclined to say no - define all of them, and state which are supported
+    # This would allow for hybrid packages in the future
+    act_phase_comp = PropertyMetadata(
+        name="act_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    act_coeff_phase_comp = PropertyMetadata(
+        name="act_coeff_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    compress_fact = PropertyMetadata(
+        name="compress_fact",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    compress_fact_phase = PropertyMetadata(
+        name="compress_fact_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    conc_mass_comp = PropertyMetadata(
+        name="conc_mass_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="DENSITY_MASS",
+    )
+    conc_mass_phase_comp = PropertyMetadata(
+        name="conc_mass_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="DENSITY_MASS",
+    )
+    conc_mol_comp = PropertyMetadata(
+        name="conc_mol_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="DENSITY_MOLE",
+    )
+    conc_mol_phase_comp = PropertyMetadata(
+        name="conc_mol_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="DENSITY_MOLE",
+    )
+    cp_mass = PropertyMetadata(
+        name="cp_mass",
+        method=None,
+        supported=False,
+        required=False,
+        units="HEAT_CAPACITY_MASS",
+    )
+    cp_mass_comp = PropertyMetadata(
+        name="cp_mass_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="HEAT_CAPACITY_MASS",
+    )
+    cp_mass_phase = PropertyMetadata(
+        name="cp_mass_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="HEAT_CAPACITY_MASS",
+    )
+    cp_mass_phase_comp = PropertyMetadata(
+        name="cp_mass_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="HEAT_CAPACITY_MASS",
+    )
+    cp_mol = PropertyMetadata(
+        name="cp_mol",
+        method=None,
+        supported=False,
+        required=False,
+        units="HEAT_CAPACITY_MOLE",
+    )
+    cp_mol_comp = PropertyMetadata(
+        name="cp_mol_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="HEAT_CAPACITY_MOLE",
+    )
+    cp_mol_phase = PropertyMetadata(
+        name="cp_mol_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="HEAT_CAPACITY_MOLE",
+    )
+    cp_mol_phase_comp = PropertyMetadata(
+        name="cp_mol_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="HEAT_CAPACITY_MOLE",
+    )
+    cv_mass = PropertyMetadata(
+        name="cv_mass",
+        method=None,
+        supported=False,
+        required=False,
+        units="HEAT_CAPACITY_MASS",
+    )
+    cv_mass_comp = PropertyMetadata(
+        name="cv_mass_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="HEAT_CAPACITY_MASS",
+    )
+    cv_mass_phase = PropertyMetadata(
+        name="cv_mass_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="HEAT_CAPACITY_MASS",
+    )
+    cv_mass_phase_comp = PropertyMetadata(
+        name="cv_mass_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="HEAT_CAPACITY_MASS",
+    )
+    cv_mol = PropertyMetadata(
+        name="cv_mol",
+        method=None,
+        supported=False,
+        required=False,
+        units="HEAT_CAPACITY_MOLE",
+    )
+    cv_mol_comp = PropertyMetadata(
+        name="cv_mol_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="HEAT_CAPACITY_MOLE",
+    )
+    cv_mol_phase = PropertyMetadata(
+        name="cv_mol_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="HEAT_CAPACITY_MOLE",
+    )
+    cv_mol_phase_comp = PropertyMetadata(
+        name="cv_mol_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="HEAT_CAPACITY_MOLE",
+    )
+    dens_mass = PropertyMetadata(
+        name="dens_mass",
+        method=None,
+        supported=False,
+        required=False,
+        units="DENSITY_MASS",
+    )
+    dens_mass_comp = PropertyMetadata(
+        name="dens_mass_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="DENSITY_MASS",
+    )
+    dens_mass_crit = PropertyMetadata(
+        name="dens_mass_crit",
+        method=None,
+        supported=False,
+        required=False,
+        units="DENSITY_MASS",
+    )
+    dens_mass_phase = PropertyMetadata(
+        name="dens_mass_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="DENSITY_MASS",
+    )
+    dens_mol = PropertyMetadata(
+        name="dens_mol",
+        method=None,
+        supported=False,
+        required=False,
+        units="DENSITY_MOLE",
+    )
+    dens_mol_comp = PropertyMetadata(
+        name="dens_mol_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="DENSITY_MOLE",
+    )
+    dens_mol_crit = PropertyMetadata(
+        name="dens_mol_crit",
+        method=None,
+        supported=False,
+        required=False,
+        units="DENSITY_MOLE",
+    )
+    dens_mol_phase = PropertyMetadata(
+        name="dens_mol_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="DENSITY_MOLE",
+    )
+    diffus_comp = PropertyMetadata(
+        name="diffus_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="DIFFUSIVITY",
+    )
+    diffus_phase_comp = PropertyMetadata(
+        name="diffus_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="DIFFUSIVITY",
+    )
+    energy_internal_mass = PropertyMetadata(
+        name="energy_internal_mass",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MASS",
+    )
+    energy_internal_mass_phase = PropertyMetadata(
+        name="energy_internal_mass_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MASS",
+    )
+    energy_internal_mass_phase_comp = PropertyMetadata(
+        name="energy_internal_mass_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MASS",
+    )
+    energy_internal_mol = PropertyMetadata(
+        name="energy_internal_mol",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MOLE",
+    )
+    energy_internal_mol_phase = PropertyMetadata(
+        name="energy_internal_mol_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MOLE",
+    )
+    energy_internal_mol_phase_comp = PropertyMetadata(
+        name="energy_internal_mol_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MOLE",
+    )
+    enth_mass = PropertyMetadata(
+        name="enth_mass",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MASS",
+    )
+    enth_mass_phase = PropertyMetadata(
+        name="enth_mass_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MASS",
+    )
+    enth_mass_phase_comp = PropertyMetadata(
+        name="enth_mass_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MASS",
+    )
+    enth_mol = PropertyMetadata(
+        name="enth_mol",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MOLE",
+    )
+    enth_mol_comp = PropertyMetadata(
+        name="enth_mol_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MOLE",
+    )
+    enth_mol_phase = PropertyMetadata(
+        name="enth_mol_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MOLE",
+    )
+    enth_mol_phase_comp = PropertyMetadata(
+        name="enth_mol_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MOLE",
+    )
+    entr_mass = PropertyMetadata(
+        name="entr_mass",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MASS",
+    )
+    entr_mass_phase = PropertyMetadata(
+        name="entr_mass_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MASS",
+    )
+    entr_mass_phase_comp = PropertyMetadata(
+        name="entr_mass_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MASS",
+    )
+    entr_mol = PropertyMetadata(
+        name="entr_mol",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MOLE",
+    )
+    entr_mol_comp = PropertyMetadata(
+        name="entr_mol_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MOLE",
+    )
+    entr_mol_phase = PropertyMetadata(
+        name="entr_mol_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MOLE",
+    )
+    entr_mol_phase_comp = PropertyMetadata(
+        name="entr_mol_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MOLE",
+    )
+    flow_mass = PropertyMetadata(
+        name="flow_mass",
+        method=None,
+        supported=False,
+        required=False,
+        units="FLOW_MASS",
+    )
+    flow_mass_comp = PropertyMetadata(
+        name="flow_mass_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="FLOW_MASS",
+    )
+    flow_mass_phase = PropertyMetadata(
+        name="flow_mass_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="FLOW_MASS",
+    )
+    flow_mass_phase_comp = PropertyMetadata(
+        name="flow_mass_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="FLOW_MASS",
+    )
+    flow_mol = PropertyMetadata(
+        name="flow_mol",
+        method=None,
+        supported=False,
+        required=False,
+        units="FLOW_MOLE",
+    )
+    flow_mol_comp = PropertyMetadata(
+        name="flow_mol_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="FLOW_MOLE",
+    )
+    flow_mol_phase = PropertyMetadata(
+        name="flow_mol_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="FLOW_MOLE",
+    )
+    flow_mol_phase_comp = PropertyMetadata(
+        name="flow_mol_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="FLOW_MOLE",
+    )
+    flow_vol = PropertyMetadata(
+        name="flow_vol",
+        method=None,
+        supported=False,
+        required=False,
+        units="FLOW_VOL",
+    )
+    flow_vol_comp = PropertyMetadata(
+        name="flow_vol_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="FLOW_VOL",
+    )
+    flow_vol_phase = PropertyMetadata(
+        name="flow_vol_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="FLOW_VOL",
+    )
+    flow_vol_phase_comp = PropertyMetadata(
+        name="flow_vol_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="FLOW_VOL",
+    )
+
+    fug_phase_comp = PropertyMetadata(
+        name="fug_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="PRESSURE",
+    )
+    fug_coeff_phase_comp = PropertyMetadata(
+        name="fug_coeff_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+
+    heat_capacity_ratio = PropertyMetadata(
+        name="heat_capacity_ratio",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    heat_capacity_ratio_phase = PropertyMetadata(
+        name="heat_capacity_ratio_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    gibbs_mass = PropertyMetadata(
+        name="gibbs_mass",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MASS",
+    )
+    gibbs_mass_phase = PropertyMetadata(
+        name="gibbs_mass_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MASS",
+    )
+    gibbs_mass_phase_comp = PropertyMetadata(
+        name="gibbs_mass_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MASS",
+    )
+    gibbs_mol = PropertyMetadata(
+        name="gibbs_mol",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MOLE",
+    )
+    gibbs_mol_phase = PropertyMetadata(
+        name="gibbs_mol_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MOLE",
+    )
+    gibbs_mol_phase_comp = PropertyMetadata(
+        name="gibbs_mol_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MOLE",
+    )
+    isentropic_speed_sound_phase = PropertyMetadata(
+        name="isentropic_speed_sound_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="VELOCITY",
+    )
+    isothermal_speed_sound_phase = PropertyMetadata(
+        name="isothermal_speed_sound_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="VELOCITY",
+    )
+    henry = PropertyMetadata(
+        name="henry",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+        # TODO: Units are an issue here, as there are multiple ways to define this
+    )
+    mass_frac_comp = PropertyMetadata(
+        name="mass_frac_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    mass_frac_phase_comp = PropertyMetadata(
+        name="mass_frac_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    mole_frac_comp = PropertyMetadata(
+        name="mole_frac_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    mole_frac_phase_comp = PropertyMetadata(
+        name="mole_frac_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    molality_phase_comp = PropertyMetadata(
+        name="molality_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="MOLALITY",
+    )
+    mw = PropertyMetadata(
+        name="mw",
+        method=None,
+        supported=False,
+        required=False,
+        units="MOLECULAR_WEIGHT",
+    )
+    mw_comp = PropertyMetadata(
+        name="mw_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="MOLECULAR_WEIGHT",
+    )
+    mw_phase = PropertyMetadata(
+        name="mw_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="MOLECULAR_WEIGHT",
+    )
+    mw_phase_comp = PropertyMetadata(
+        name="mw_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="MOLECULAR_WEIGHT",
+    )
+    phase_frac = PropertyMetadata(
+        name="phase_frac",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    pressure = PropertyMetadata(
+        name="pressure",
+        method=None,
+        supported=False,
+        required=False,
+        units="PRESSURE",
+    )
+    pressure_phase_comp = PropertyMetadata(
+        name="pressure_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="PRESSURE",
+    )
+    pressure_bubble = PropertyMetadata(
+        name="pressure_bubble",
+        method=None,
+        supported=False,
+        required=False,
+        units="PRESSURE",
+    )
+    pressure_crit = PropertyMetadata(
+        name="pressure_crit",
+        method=None,
+        supported=False,
+        required=False,
+        units="PRESSURE",
+    )
+    pressure_dew = PropertyMetadata(
+        name="pressure_dew",
+        method=None,
+        supported=False,
+        required=False,
+        units="PRESSURE",
+    )
+    pressure_osm_phase = PropertyMetadata(
+        name="pressure_osm_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="PRESSURE",
+    )
+    pressure_red = PropertyMetadata(
+        name="pressure_red",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    pressure_sat = PropertyMetadata(
+        name="pressure_sat",  # TODO: Deprecate in favour of pressure_sat_comp
+        method=None,
+        supported=False,
+        required=False,
+        units="PRESSURE",
+    )
+    pressure_sat_comp = PropertyMetadata(
+        name="pressure_sat_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="PRESSURE",
+    )
+    surf_tens_phase = PropertyMetadata(
+        name="surf_tens_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="SURFACE_TENSION",
+    )
+    temperature = PropertyMetadata(
+        name="temperature",
+        method=None,
+        supported=False,
+        required=False,
+        units="TEMPERATURE",
+    )
+    temperature_bubble = PropertyMetadata(
+        name="temperature_bubble",
+        method=None,
+        supported=False,
+        required=False,
+        units="TEMPERATURE",
+    )
+    temperature_crit = PropertyMetadata(
+        name="temperature_crit",
+        method=None,
+        supported=False,
+        required=False,
+        units="TEMPERATURE",
+    )
+    temperature_dew = PropertyMetadata(
+        name="temperature_dew",
+        method=None,
+        supported=False,
+        required=False,
+        units="TEMPERATURE",
+    )
+    temperature_red = PropertyMetadata(
+        name="temperature_red",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    temperature_sat = PropertyMetadata(
+        name="temperature_sat",  # TODO: Deprecate in favour of temperature_sat_comp?
+        method=None,
+        supported=False,
+        required=False,
+        units="TEMPERATURE",
+    )
+    therm_cond = PropertyMetadata(
+        name="therm_cond",
+        method=None,
+        supported=False,
+        required=False,
+        units="THERMAL_CONDUCTIVITY",
+    )
+    therm_cond_phase = PropertyMetadata(
+        name="therm_cond_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="THERMAL_CONDUCTIVITY",
+    )
+    visc_d = PropertyMetadata(
+        name="visc_d",
+        method=None,
+        supported=False,
+        required=False,
+        units="DYNAMIC_VISCOSITY",
+    )
+    visc_d_phase = PropertyMetadata(
+        name="visc_d_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="DYNAMIC_VISCOSITY",
+    )
+    visc_k = PropertyMetadata(
+        name="visc_k",
+        method=None,
+        supported=False,
+        required=False,
+        units="KINEMATIC_VISCOSITY",
+    )
+    visc_k_phase = PropertyMetadata(
+        name="visc_k_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="KINEMATIC_VISCOSITY",
+    )
+    vol_mol_phase = PropertyMetadata(
+        name="vol_mol_phase",
+        method=None,
+        supported=False,
+        required=False,
+        units="MOLAR_VOLUME",
+    )
+    vol_mol_phase_comp = PropertyMetadata(
+        name="vol_mol_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units="MOLAR_VOLUME",
+    )
+    # Log terms
+    log_act_phase_comp = PropertyMetadata(
+        name="log_act_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_conc_mol_phase_comp = PropertyMetadata(
+        name="log_conc_mol_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_mass_frac_phase_comp = PropertyMetadata(
+        name="log_mass_frac_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_molality_phase_comp = PropertyMetadata(
+        name="log_molality_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_mole_frac_comp = PropertyMetadata(
+        name="log_mole_frac_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_mole_frac_pbub = PropertyMetadata(
+        name="log_mole_frac_pbub",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_mole_frac_pdew = PropertyMetadata(
+        name="log_mole_frac_pdew",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_mole_frac_tbub = PropertyMetadata(
+        name="log_mole_frac_tbub",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_mole_frac_tdew = PropertyMetadata(
+        name="log_mole_frac_tdew",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_mole_frac_phase_comp = PropertyMetadata(
+        name="log_mole_frac_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_pressure_phase_comp = PropertyMetadata(
+        name="log_pressure_phase_comp",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+
+    # Reaction Properties
+    # TODO: Units are also problematic here - no single definition
+    dh_rxn = PropertyMetadata(
+        name="dh_rxn",
+        method=None,
+        supported=False,
+        required=False,
+        units="ENERGY_MOLE",
+    )
+    k_eq = PropertyMetadata(
+        name="k_eq",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_k_eq = PropertyMetadata(
+        name="log_k_eq",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    k_rxn = PropertyMetadata(
+        name="k_rxn",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    reaction_rate = PropertyMetadata(
+        name="reaction_rate",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
 
 
 class ElectrolytePropertySet(StandardPropertySet):
@@ -1760,353 +1256,222 @@ class ElectrolytePropertySet(StandardPropertySet):
     definition of new properties if required.
     """
 
-    def __init__(self, parent):
-        super().__init__(parent)
-
-        # Definition of additional properties required for electrolyte applications
-        self._act_phase_comp_apparent = PropertyMetadata(
-            name="act_phase_comp_apparent",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._act_phase_comp_true = PropertyMetadata(
-            name="act_phase_comp_true",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._act_coeff_phase_comp_apparent = PropertyMetadata(
-            name="act_coeff_phase_comp_apparent",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._act_coeff_phase_comp_true = PropertyMetadata(
-            name="act_coeff_phase_comp_true",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._conc_mass_phase_comp_apparent = PropertyMetadata(
-            name="conc_mass_phase_comp_apparent",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DENSITY_MASS,
-        )
-        self._conc_mass_phase_comp_true = PropertyMetadata(
-            name="conc_mass_phase_comp_true",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DENSITY_MASS,
-        )
-        self._conc_mol_phase_comp_apparent = PropertyMetadata(
-            name="conc_mol_phase_comp_apparent",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DENSITY_MOLE,
-        )
-        self._conc_mol_phase_comp_true = PropertyMetadata(
-            name="conc_mol_phase_comp_true",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DENSITY_MOLE,
-        )
-        self._diffus_phase_comp_apparent = PropertyMetadata(
-            name="diffus_phase_comp_apparent",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DIFFUSIVITY,
-        )
-        self._diffus_phase_comp_true = PropertyMetadata(
-            name="diffus_phase_comp_true",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.DIFFUSIVITY,
-        )
-        self._mass_frac_phase_comp_apparent = PropertyMetadata(
-            name="mass_frac_phase_comp_apparent",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._mass_frac_phase_comp_true = PropertyMetadata(
-            name="mass_frac_phase_comp_true",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._mole_frac_phase_comp_apparent = PropertyMetadata(
-            name="mole_frac_phase_comp_apparent",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._mole_frac_phase_comp_true = PropertyMetadata(
-            name="mole_frac_phase_comp_true",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._molality_phase_comp_apparent = PropertyMetadata(
-            name="molality_phase_comp_apparent",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.MOLALITY,
-        )
-        self._molality_phase_comp_true = PropertyMetadata(
-            name="molality_phase_comp_true",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.MOLALITY,
-        )
-        self._pressure_phase_comp_apparent = PropertyMetadata(
-            name="pressure_phase_comp_apparent",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.PRESSURE,
-        )
-        self._pressure_phase_comp_true = PropertyMetadata(
-            name="pressure_phase_comp_true",
-            method=None,
-            supported=False,
-            required=False,
-            units=self.unitset.PRESSURE,
-        )
-        # Log terms
-        self._log_act_phase_solvents = PropertyMetadata(
-            name="log_act_phase_solvents",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_act_phase_comp_apparent = PropertyMetadata(
-            name="log_act_phase_comp_apparent",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_act_phase_comp_true = PropertyMetadata(
-            name="log_act_phase_comp_true",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_conc_mol_phase_comp_apparent = PropertyMetadata(
-            name="log_conc_mol_phase_comp_apparent",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_conc_mol_phase_comp_true = PropertyMetadata(
-            name="log_conc_mol_phase_comp_true",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_mass_frac_phase_comp_apparent = PropertyMetadata(
-            name="log_mass_frac_phase_comp_apparent",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_mass_frac_phase_comp_true = PropertyMetadata(
-            name="log_mass_frac_phase_comp_true",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_molality_phase_comp_apparent = PropertyMetadata(
-            name="log_molality_phase_comp_apparent",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_molality_phase_comp_true = PropertyMetadata(
-            name="log_molality_phase_comp_true",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_mole_frac_phase_comp_apparent = PropertyMetadata(
-            name="log_mole_frac_phase_comp_apparent",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_mole_frac_phase_comp_true = PropertyMetadata(
-            name="log_mole_frac_phase_comp_true",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_pressure_phase_comp_apparent = PropertyMetadata(
-            name="log_pressure_phase_comp_apparent",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-        self._log_pressure_phase_comp_true = PropertyMetadata(
-            name="log_pressure_phase_comp_true",
-            method=None,
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
-
-    @property
-    def ACT_PHASE_COMP_APPARENT(self):
-        return self._act_phase_comp_apparent
-
-    @property
-    def ACT_PHASE_COMP_TRUE(self):
-        return self._act_phase_comp_true
-
-    @property
-    def ACT_COEFF_PHASE_COMP_APPARENT(self):
-        return self._act_coeff_phase_comp_apparent
-
-    @property
-    def ACT_COEFF_PHASE_COMP_TRUE(self):
-        return self._act_coeff_phase_comp_true
-
-    @property
-    def CONC_MASS_PHASE_COMP_APPARENT(self):
-        return self._conc_mass_phase_comp_apparent
-
-    @property
-    def CONC_MASS_PHASE_COMP_TRUE(self):
-        return self._conc_mass_phase_comp_true
-
-    @property
-    def CONC_MOL_PHASE_COMP_APPARENT(self):
-        return self._conc_mol_phase_comp_apparent
-
-    @property
-    def CONC_MOL_PHASE_COMP_TRUE(self):
-        return self._conc_mol_phase_comp_true
-
-    @property
-    def DIFFUS_PHASE_COMP_APPARENT(self):
-        return self._diffus_phase_comp_apparent
-
-    @property
-    def DIFFUS_PHASE_COMP_TRUE(self):
-        return self._diffus_phase_comp_true
-
-    @property
-    def MASS_FRAC_PHASE_COMP_APPARENT(self):
-        return self._mass_frac_phase_comp_apparent
-
-    @property
-    def MASS_FRAC_PHASE_COMP_TRUE(self):
-        return self._mass_frac_phase_comp_true
-
-    @property
-    def MOLE_FRAC_PHASE_COMP_APPARENT(self):
-        return self._mole_frac_phase_comp_apparent
-
-    @property
-    def MOLE_FRAC_PHASE_COMP_TRUE(self):
-        return self._mole_frac_phase_comp_true
-
-    @property
-    def MOLALITY_PHASE_COMP_APPARENT(self):
-        return self._molality_phase_comp_apparent
-
-    @property
-    def MOLALITY_PHASE_COMP_TRUE(self):
-        return self._molality_phase_comp_true
-
-    @property
-    def PRESSURE_PHASE_COMP_APPARENT(self):
-        return self._pressure_phase_comp_apparent
-
-    @property
-    def PRESSURE_PHASE_COMP_TRUE(self):
-        return self._pressure_phase_comp_true
-
-    @property
-    def LOG_ACT_PHASE_SOLVENTS(self):
-        return self._log_act_phase_solvents
-
-    @property
-    def LOG_ACT_PHASE_COMP_APPARENT(self):
-        return self._log_act_phase_comp_apparent
-
-    @property
-    def LOG_ACT_PHASE_COMP_TRUE(self):
-        return self._log_act_phase_comp_true
-
-    @property
-    def LOG_CONC_MOL_PHASE_COMP_APPARENT(self):
-        return self._log_conc_mol_phase_comp_apparent
-
-    @property
-    def LOG_CONC_MOL_PHASE_COMP_TRUE(self):
-        return self._log_conc_mol_phase_comp_true
-
-    @property
-    def LOG_MASS_FRAC_PHASE_COMP_APPARENT(self):
-        return self._log_mass_frac_phase_comp_apparent
-
-    @property
-    def LOG_MASS_FRAC_PHASE_COMP_TRUE(self):
-        return self._log_mass_frac_phase_comp_true
-
-    @property
-    def LOG_MOLALITY_PHASE_COMP_APPARENT(self):
-        return self._log_molality_phase_comp_apparent
-
-    @property
-    def LOG_MOLALITY_PHASE_COMP_TRUE(self):
-        return self._log_molality_phase_comp_true
-
-    @property
-    def LOG_MOLE_FRAC_PHASE_COMP_APPARENT(self):
-        return self._log_mole_frac_phase_comp_apparent
-
-    @property
-    def LOG_MOLE_FRAC_PHASE_COMP_TRUE(self):
-        return self._log_mole_frac_phase_comp_true
-
-    @property
-    def LOG_PRESSURE_PHASE_COMP(self):
-        return self._log_pressure_phase_comp
-
-    @property
-    def LOG_PRESSURE_PHASE_COMP_APPARENT(self):
-        return self._log_pressure_phase_comp_apparent
-
-    @property
-    def LOG_PRESSURE_PHASE_COMP_TRUE(self):
-        return self._log_pressure_phase_comp_true
+    # Definition of additional properties required for electrolyte applications
+    act_phase_comp_apparent = PropertyMetadata(
+        name="act_phase_comp_apparent",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    act_phase_comp_true = PropertyMetadata(
+        name="act_phase_comp_true",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    act_coeff_phase_comp_apparent = PropertyMetadata(
+        name="act_coeff_phase_comp_apparent",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    act_coeff_phase_comp_true = PropertyMetadata(
+        name="act_coeff_phase_comp_true",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    conc_mass_phase_comp_apparent = PropertyMetadata(
+        name="conc_mass_phase_comp_apparent",
+        method=None,
+        supported=False,
+        required=False,
+        units="DENSITY_MASS",
+    )
+    conc_mass_phase_comp_true = PropertyMetadata(
+        name="conc_mass_phase_comp_true",
+        method=None,
+        supported=False,
+        required=False,
+        units="DENSITY_MASS",
+    )
+    conc_mol_phase_comp_apparent = PropertyMetadata(
+        name="conc_mol_phase_comp_apparent",
+        method=None,
+        supported=False,
+        required=False,
+        units="DENSITY_MOLE",
+    )
+    conc_mol_phase_comp_true = PropertyMetadata(
+        name="conc_mol_phase_comp_true",
+        method=None,
+        supported=False,
+        required=False,
+        units="DENSITY_MOLE",
+    )
+    diffus_phase_comp_apparent = PropertyMetadata(
+        name="diffus_phase_comp_apparent",
+        method=None,
+        supported=False,
+        required=False,
+        units="DIFFUSIVITY",
+    )
+    diffus_phase_comp_true = PropertyMetadata(
+        name="diffus_phase_comp_true",
+        method=None,
+        supported=False,
+        required=False,
+        units="DIFFUSIVITY",
+    )
+    mass_frac_phase_comp_apparent = PropertyMetadata(
+        name="mass_frac_phase_comp_apparent",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    mass_frac_phase_comp_true = PropertyMetadata(
+        name="mass_frac_phase_comp_true",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    mole_frac_phase_comp_apparent = PropertyMetadata(
+        name="mole_frac_phase_comp_apparent",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    mole_frac_phase_comp_true = PropertyMetadata(
+        name="mole_frac_phase_comp_true",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    molality_phase_comp_apparent = PropertyMetadata(
+        name="molality_phase_comp_apparent",
+        method=None,
+        supported=False,
+        required=False,
+        units="MOLALITY",
+    )
+    molality_phase_comp_true = PropertyMetadata(
+        name="molality_phase_comp_true",
+        method=None,
+        supported=False,
+        required=False,
+        units="MOLALITY",
+    )
+    pressure_phase_comp_apparent = PropertyMetadata(
+        name="pressure_phase_comp_apparent",
+        method=None,
+        supported=False,
+        required=False,
+        units="PRESSURE",
+    )
+    pressure_phase_comp_true = PropertyMetadata(
+        name="pressure_phase_comp_true",
+        method=None,
+        supported=False,
+        required=False,
+        units="PRESSURE",
+    )
+    # Log terms
+    log_act_phase_solvents = PropertyMetadata(
+        name="log_act_phase_solvents",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_act_phase_comp_apparent = PropertyMetadata(
+        name="log_act_phase_comp_apparent",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_act_phase_comp_true = PropertyMetadata(
+        name="log_act_phase_comp_true",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_conc_mol_phase_comp_apparent = PropertyMetadata(
+        name="log_conc_mol_phase_comp_apparent",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_conc_mol_phase_comp_true = PropertyMetadata(
+        name="log_conc_mol_phase_comp_true",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_mass_frac_phase_comp_apparent = PropertyMetadata(
+        name="log_mass_frac_phase_comp_apparent",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_mass_frac_phase_comp_true = PropertyMetadata(
+        name="log_mass_frac_phase_comp_true",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_molality_phase_comp_apparent = PropertyMetadata(
+        name="log_molality_phase_comp_apparent",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_molality_phase_comp_true = PropertyMetadata(
+        name="log_molality_phase_comp_true",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_mole_frac_phase_comp_apparent = PropertyMetadata(
+        name="log_mole_frac_phase_comp_apparent",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_mole_frac_phase_comp_true = PropertyMetadata(
+        name="log_mole_frac_phase_comp_true",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_pressure_phase_comp_apparent = PropertyMetadata(
+        name="log_pressure_phase_comp_apparent",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
+    log_pressure_phase_comp_true = PropertyMetadata(
+        name="log_pressure_phase_comp_true",
+        method=None,
+        supported=False,
+        required=False,
+        units=units.dimensionless,
+    )
