@@ -67,6 +67,12 @@ class PropertyMetadata(object):
             # TODO: Real error message - needs to be a KeyError to work with getattr elsewhere
             raise KeyError()
 
+    def __repr__(self):
+        return f"{self._name} ({self._units}%s%s)" % (
+            "supported" if self._supported else "",
+            "required" if self._required else "",
+        )
+
     @property
     def name(self):
         """
@@ -185,17 +191,20 @@ class PropertySetBase(object):
     """
 
     def __init__(self, parent):
-        self._parent_block = parent
-        self._defined_properties = []
+        super().__setattr__("_parent_block", parent)
+        super().__setattr__("_defined_properties", [])
 
+        # Find stadanrd properties defined in class and create instance versions
         for i in dir(self.__class__):
             if not i.startswith("_"):
                 # Ignore anything starting with "_"
                 iobj = getattr(self.__class__, i)
                 if isinstance(iobj, PropertyMetadata):
-                    # TODO: Handle units
-                    setattr(
-                        self,
+                    units = iobj.units
+                    # Check if units is a placeholder string and update if required
+                    if isinstance(units, str):
+                        units = getattr(self._parent_block.default_units, units)
+                    super().__setattr__(
                         i,
                         PropertyMetadata(
                             name=i,
@@ -207,14 +216,16 @@ class PropertySetBase(object):
                     )
                     self._defined_properties.append(getattr(self, i))
 
+    def __setattr__(self, key, value):
+        raise TypeError(
+            "PropertySets do not support direct assignment. Please use define_property"
+        )
+
     def __getitem__(self, key: str):
         try:
-            return getattr(self, key.upper())
+            return getattr(self, key)
         except AttributeError:
-            try:
-                return getattr(self, key)
-            except AttributeError:
-                raise KeyError(f"Property {key} is not defined in this PropertySet.")
+            raise KeyError(f"Property {key} is not defined in this PropertySet.")
 
     def __iter__(self):
         for a in self._defined_properties:
@@ -247,8 +258,7 @@ class PropertySetBase(object):
                 "method if you wish to update an existing property's metadata."
             )
 
-        setattr(
-            self,
+        super().__setattr__(
             name,
             PropertyMetadata(
                 name=name,

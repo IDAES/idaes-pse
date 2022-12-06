@@ -7,7 +7,9 @@ Due to the large number of potential thermophysical properties that are used in 
 
 The code below shows an example of how to set up a property package using the `StandardPropertySet` (suitable for most liquid and vapor phase property packages) and identify which properties are supported.
 
-@classmethod
+.. code-block:: python
+
+    @classmethod
     def define_metadata(cls, obj):
         # Select StandardPropertySet
         obj.define_property_set(StandardPropertySet)

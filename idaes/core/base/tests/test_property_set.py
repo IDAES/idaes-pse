@@ -174,8 +174,6 @@ class TestPropertySetBase:
             units=units.dimensionless,
         )
 
-        # Test both capitalized and uncapitalized
-        assert pset["foo"] is pset.FOO
         assert pset["FOO"] is pset.FOO
 
     @pytest.mark.unit
@@ -202,9 +200,8 @@ class TestPropertySetBase:
             units=units.dimensionless,
         )
 
-        # Only FOO should be returned by iter
         for i in pset:
-            assert i is pset.FOO
+            assert i in [pset.FOO, pset._BAR]
 
     @pytest.mark.unit
     def test_list_required_properties(self, pset):
