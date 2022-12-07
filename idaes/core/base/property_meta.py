@@ -506,10 +506,11 @@ class PropertyClassMetadata(object):
         for k, v in p.items():
             units = v.pop("units", None)
             try:
-                getattr(self._properties, k).update_property(**v)
+                n, i = self._properties.get_name_and_index(k)
+                getattr(self._properties, n)[i].update_property(**v)
             except AttributeError:
                 # TODO: Deprecate this and make it raise an exception if an unknown property is encountered
-                # # Force users to explicitly declare new/custom properties
+                # Force users to explicitly declare new/custom properties
                 self._properties.define_property(name=k, **v, units=units)
 
     def define_custom_properties(self, p: dict):

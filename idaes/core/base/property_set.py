@@ -198,6 +198,8 @@ class PropertyMetadata(object):
                 super().__setattr__("_" + i, _PropertyMetadataIndex(parent=self))
 
     def __getitem__(self, key: str):
+        if key is None:
+            key = "none"
         try:
             return getattr(self, "_" + key)
         except AttributeError:
@@ -338,7 +340,7 @@ class PropertySetBase(object):
         super().__setattr__("_defined_properties", [])
         super().__setattr__("_defined_indices", copy(self.__class__._defined_indices))
 
-        # Find stadanrd properties defined in class and create instance versions
+        # Find standard properties defined in class and create instance versions
         for i in dir(self.__class__):
             if not i.startswith("_"):
                 # Ignore anything starting with "_"
@@ -363,14 +365,15 @@ class PropertySetBase(object):
         )
 
     def __getitem__(self, key: str):
+        n, i = self.get_name_and_index(key)
         try:
-            return getattr(self, key)
+            return getattr(self, n)[i]
         except AttributeError:
             raise KeyError(f"Property {key} is not defined in this PropertySet.")
 
     def __iter__(self):
         for a in self._defined_properties:
-            yield a
+            yield getattr(self, a)
 
     def define_property(
         self,
@@ -431,7 +434,7 @@ class PropertySetBase(object):
                 indices=self._defined_indices,
             ),
         )
-        self._defined_properties.append(getattr(self, name))
+        self._defined_properties.append(name)
 
     def check_required_properties(self, other: "PropertySetBase"):
         """
@@ -445,12 +448,14 @@ class PropertySetBase(object):
         """
         unsupported = []
         for a in self._defined_properties:
-            if a.required:
-                try:
-                    if not other[a.name].supported:
-                        unsupported.append(a.name)
-                except KeyError:
-                    unsupported.append(a.name)
+            aobj = getattr(self, a)
+            for i in [*self._defined_indices, "none"]:
+                if aobj[i].required:
+                    try:
+                        if not getattr(other, a)[i].supported:
+                            unsupported.append(a + "_" + i)
+                    except KeyError:
+                        unsupported.append(a + "_" + i)
 
         return unsupported
 
@@ -463,8 +468,9 @@ class PropertySetBase(object):
         """
         list = []
         for p in self:
-            if p.supported:
-                list.append(p)
+            for i in [*self._defined_indices, "none"]:
+                if p[i].supported:
+                    list.append(p[i])
         return list
 
     def list_unsupported_properties(self):
@@ -476,8 +482,9 @@ class PropertySetBase(object):
         """
         list = []
         for p in self:
-            if not p.supported:
-                list.append(p)
+            for i in [*self._defined_indices, "none"]:
+                if not p[i].supported:
+                    list.append(p[i])
         return list
 
     def list_required_properties(self):
@@ -489,8 +496,9 @@ class PropertySetBase(object):
         """
         list = []
         for p in self:
-            if p.required:
-                list.append(p)
+            for i in [*self._defined_indices, "none"]:
+                if p[i].required:
+                    list.append(p[i])
         return list
 
     @property
@@ -517,11 +525,11 @@ class PropertySetBase(object):
 
         if property in self._defined_properties:
             name = property
-        if "phase" in property:
+        if "phase" in property and not property.startswith("phase"):
             sep_point = property.index("phase") - 1
             name = property[:sep_point]
             index = property[sep_point + 1 :]
-        elif "comp" in property:
+        elif "comp" in property and not property.startswith("comp"):
             sep_point = property.index("comp") - 1
             name = property[:sep_point]
             index = property[sep_point + 1 :]
@@ -551,502 +559,321 @@ class StandardPropertySet(PropertySetBase):
     # TODO: Should we separate thermophysical and reaction properties?
     # AL: I am inclined to say no - define all of them, and state which are supported
     # This would allow for hybrid packages in the future
-    act_phase_comp = PropertyMetadata(
-        name="act_phase_comp",
-        units=units.dimensionless,
-    )
-    act_coeff_phase_comp = PropertyMetadata(
-        name="act_coeff_phase_comp",
+    act = PropertyMetadata(
+        name="act",
+        doc="Chemical Activity",
         units=units.dimensionless,
     )
     compress_fact = PropertyMetadata(
         name="compress_fact",
+        doc="Compressiblity Factor",
         units=units.dimensionless,
     )
-    compress_fact_phase = PropertyMetadata(
-        name="compress_fact_phase",
-        units=units.dimensionless,
-    )
-    conc_mass_comp = PropertyMetadata(
-        name="conc_mass_comp",
+    conc_mass = PropertyMetadata(
+        name="conc_mass",
+        doc="Concentration on a Mass Basis",
         units="DENSITY_MASS",
     )
-    conc_mass_phase_comp = PropertyMetadata(
-        name="conc_mass_phase_comp",
-        units="DENSITY_MASS",
-    )
-    conc_mol_comp = PropertyMetadata(
-        name="conc_mol_comp",
-        units="DENSITY_MOLE",
-    )
-    conc_mol_phase_comp = PropertyMetadata(
-        name="conc_mol_phase_comp",
+    conc_mol = PropertyMetadata(
+        name="conc_mol",
+        doc="Concentration on a Molar Basis",
         units="DENSITY_MOLE",
     )
     cp_mass = PropertyMetadata(
         name="cp_mass",
-        units="HEAT_CAPACITY_MASS",
-    )
-    cp_mass_comp = PropertyMetadata(
-        name="cp_mass_comp",
-        units="HEAT_CAPACITY_MASS",
-    )
-    cp_mass_phase = PropertyMetadata(
-        name="cp_mass_phase",
-        units="HEAT_CAPACITY_MASS",
-    )
-    cp_mass_phase_comp = PropertyMetadata(
-        name="cp_mass_phase_comp",
+        doc="Constant Pressure Specific Heat Capacity (Mass Basis)",
         units="HEAT_CAPACITY_MASS",
     )
     cp_mol = PropertyMetadata(
         name="cp_mol",
-        units="HEAT_CAPACITY_MOLE",
-    )
-    cp_mol_comp = PropertyMetadata(
-        name="cp_mol_comp",
-        units="HEAT_CAPACITY_MOLE",
-    )
-    cp_mol_phase = PropertyMetadata(
-        name="cp_mol_phase",
-        units="HEAT_CAPACITY_MOLE",
-    )
-    cp_mol_phase_comp = PropertyMetadata(
-        name="cp_mol_phase_comp",
+        doc="Constant Pressure Specific Heat Capacity (Molar Basis)",
         units="HEAT_CAPACITY_MOLE",
     )
     cv_mass = PropertyMetadata(
         name="cv_mass",
-        units="HEAT_CAPACITY_MASS",
-    )
-    cv_mass_comp = PropertyMetadata(
-        name="cv_mass_comp",
-        units="HEAT_CAPACITY_MASS",
-    )
-    cv_mass_phase = PropertyMetadata(
-        name="cv_mass_phase",
-        units="HEAT_CAPACITY_MASS",
-    )
-    cv_mass_phase_comp = PropertyMetadata(
-        name="cv_mass_phase_comp",
+        doc="Constant Volume Specific Heat Capacity (Mass Basis)",
         units="HEAT_CAPACITY_MASS",
     )
     cv_mol = PropertyMetadata(
         name="cv_mol",
-        units="HEAT_CAPACITY_MOLE",
-    )
-    cv_mol_comp = PropertyMetadata(
-        name="cv_mol_comp",
-        units="HEAT_CAPACITY_MOLE",
-    )
-    cv_mol_phase = PropertyMetadata(
-        name="cv_mol_phase",
-        units="HEAT_CAPACITY_MOLE",
-    )
-    cv_mol_phase_comp = PropertyMetadata(
-        name="cv_mol_phase_comp",
+        doc="Constant Volume Specific Heat Capacity (Molar Basis)",
         units="HEAT_CAPACITY_MOLE",
     )
     dens_mass = PropertyMetadata(
         name="dens_mass",
-        units="DENSITY_MASS",
-    )
-    dens_mass_comp = PropertyMetadata(
-        name="dens_mass_comp",
+        doc="Density (Mass Basis)",
         units="DENSITY_MASS",
     )
     dens_mass_crit = PropertyMetadata(
         name="dens_mass_crit",
-        units="DENSITY_MASS",
-    )
-    dens_mass_phase = PropertyMetadata(
-        name="dens_mass_phase",
+        doc="Mass Density at Critical Point",
         units="DENSITY_MASS",
     )
     dens_mol = PropertyMetadata(
         name="dens_mol",
-        units="DENSITY_MOLE",
-    )
-    dens_mol_comp = PropertyMetadata(
-        name="dens_mol_comp",
+        doc="Density (Molar Basis)",
         units="DENSITY_MOLE",
     )
     dens_mol_crit = PropertyMetadata(
         name="dens_mol_crit",
-        units="DENSITY_MOLE",
-    )
-    dens_mol_phase = PropertyMetadata(
-        name="dens_mol_phase",
+        doc="Molar Density at Critical Point",
         units="DENSITY_MOLE",
     )
     diffus_comp = PropertyMetadata(
         name="diffus_comp",
-        units="DIFFUSIVITY",
-    )
-    diffus_phase_comp = PropertyMetadata(
-        name="diffus_phase_comp",
+        doc="Diffusivity Coefficient",
         units="DIFFUSIVITY",
     )
     energy_internal_mass = PropertyMetadata(
         name="energy_internal_mass",
-        units="ENERGY_MASS",
-    )
-    energy_internal_mass_phase = PropertyMetadata(
-        name="energy_internal_mass_phase",
-        units="ENERGY_MASS",
-    )
-    energy_internal_mass_phase_comp = PropertyMetadata(
-        name="energy_internal_mass_phase_comp",
+        doc="Specific Internal Energy (Mass Basis)",
         units="ENERGY_MASS",
     )
     energy_internal_mol = PropertyMetadata(
         name="energy_internal_mol",
-        units="ENERGY_MOLE",
-    )
-    energy_internal_mol_phase = PropertyMetadata(
-        name="energy_internal_mol_phase",
-        units="ENERGY_MOLE",
-    )
-    energy_internal_mol_phase_comp = PropertyMetadata(
-        name="energy_internal_mol_phase_comp",
+        doc="Specific Internal Energy (Molar Basis)",
         units="ENERGY_MOLE",
     )
     enth_mass = PropertyMetadata(
         name="enth_mass",
-        units="ENERGY_MASS",
-    )
-    enth_mass_phase = PropertyMetadata(
-        name="enth_mass_phase",
-        units="ENERGY_MASS",
-    )
-    enth_mass_phase_comp = PropertyMetadata(
-        name="enth_mass_phase_comp",
+        doc="Specific Enthalpy (Mass Basis)",
         units="ENERGY_MASS",
     )
     enth_mol = PropertyMetadata(
         name="enth_mol",
-        units="ENERGY_MOLE",
-    )
-    enth_mol_comp = PropertyMetadata(
-        name="enth_mol_comp",
-        units="ENERGY_MOLE",
-    )
-    enth_mol_phase = PropertyMetadata(
-        name="enth_mol_phase",
-        units="ENERGY_MOLE",
-    )
-    enth_mol_phase_comp = PropertyMetadata(
-        name="enth_mol_phase_comp",
+        doc="Specific Enthalpy (Molar Basis)",
         units="ENERGY_MOLE",
     )
     entr_mass = PropertyMetadata(
         name="entr_mass",
-        units="ENERGY_MASS",
-    )
-    entr_mass_phase = PropertyMetadata(
-        name="entr_mass_phase",
-        units="ENERGY_MASS",
-    )
-    entr_mass_phase_comp = PropertyMetadata(
-        name="entr_mass_phase_comp",
+        doc="Specific Entropy (Mass Basis)",
         units="ENERGY_MASS",
     )
     entr_mol = PropertyMetadata(
         name="entr_mol",
-        units="ENERGY_MOLE",
-    )
-    entr_mol_comp = PropertyMetadata(
-        name="entr_mol_comp",
-        units="ENERGY_MOLE",
-    )
-    entr_mol_phase = PropertyMetadata(
-        name="entr_mol_phase",
-        units="ENERGY_MOLE",
-    )
-    entr_mol_phase_comp = PropertyMetadata(
-        name="entr_mol_phase_comp",
+        doc="Specific Entropy (Molar Basis)",
         units="ENERGY_MOLE",
     )
     flow_mass = PropertyMetadata(
         name="flow_mass",
-        units="FLOW_MASS",
-    )
-    flow_mass_comp = PropertyMetadata(
-        name="flow_mass_comp",
-        units="FLOW_MASS",
-    )
-    flow_mass_phase = PropertyMetadata(
-        name="flow_mass_phase",
-        units="FLOW_MASS",
-    )
-    flow_mass_phase_comp = PropertyMetadata(
-        name="flow_mass_phase_comp",
+        doc="Mass Flow Rate",
         units="FLOW_MASS",
     )
     flow_mol = PropertyMetadata(
         name="flow_mol",
-        units="FLOW_MOLE",
-    )
-    flow_mol_comp = PropertyMetadata(
-        name="flow_mol_comp",
-        units="FLOW_MOLE",
-    )
-    flow_mol_phase = PropertyMetadata(
-        name="flow_mol_phase",
-        units="FLOW_MOLE",
-    )
-    flow_mol_phase_comp = PropertyMetadata(
-        name="flow_mol_phase_comp",
+        doc="Molar Flow Rate",
         units="FLOW_MOLE",
     )
     flow_vol = PropertyMetadata(
         name="flow_vol",
+        doc="Volumetric Flow Rate",
         units="FLOW_VOL",
     )
-    flow_vol_comp = PropertyMetadata(
-        name="flow_vol_comp",
-        units="FLOW_VOL",
-    )
-    flow_vol_phase = PropertyMetadata(
-        name="flow_vol_phase",
-        units="FLOW_VOL",
-    )
-    flow_vol_phase_comp = PropertyMetadata(
-        name="flow_vol_phase_comp",
-        units="FLOW_VOL",
-    )
-    fug_phase_comp = PropertyMetadata(
-        name="fug_phase_comp",
+    fug = PropertyMetadata(
+        name="fug",
+        doc="Fugacity",
         units="PRESSURE",
     )
-    fug_coeff_phase_comp = PropertyMetadata(
-        name="fug_coeff_phase_comp",
+    fug_coeff = PropertyMetadata(
+        name="fug_coeff",
+        doc="Fugacity Coefficient",
         units=units.dimensionless,
     )
     heat_capacity_ratio = PropertyMetadata(
         name="heat_capacity_ratio",
-        units=units.dimensionless,
-    )
-    heat_capacity_ratio_phase = PropertyMetadata(
-        name="heat_capacity_ratio_phase",
+        doc="Heat Capacity Ration",
         units=units.dimensionless,
     )
     gibbs_mass = PropertyMetadata(
         name="gibbs_mass",
-        units="ENERGY_MASS",
-    )
-    gibbs_mass_phase = PropertyMetadata(
-        name="gibbs_mass_phase",
-        units="ENERGY_MASS",
-    )
-    gibbs_mass_phase_comp = PropertyMetadata(
-        name="gibbs_mass_phase_comp",
+        doc="Specific Gibbs Energy (Mass Basis)",
         units="ENERGY_MASS",
     )
     gibbs_mol = PropertyMetadata(
         name="gibbs_mol",
-        units="ENERGY_MOLE",
-    )
-    gibbs_mol_phase = PropertyMetadata(
-        name="gibbs_mol_phase",
-        units="ENERGY_MOLE",
-    )
-    gibbs_mol_phase_comp = PropertyMetadata(
-        name="gibbs_mol_phase_comp",
+        doc="Specific Gibbs Energy (Molar Basis)",
         units="ENERGY_MOLE",
     )
     isentropic_speed_sound_phase = PropertyMetadata(
         name="isentropic_speed_sound_phase",
+        doc="Isentropic Speed of Sound",
         units="VELOCITY",
     )
     isothermal_speed_sound_phase = PropertyMetadata(
         name="isothermal_speed_sound_phase",
+        doc="Isothermal Speed of Sound",
         units="VELOCITY",
     )
     henry = PropertyMetadata(
         name="henry",
+        doc="Henry Constant",
         units=units.dimensionless,
         # TODO: Units are an issue here, as there are multiple ways to define this
     )
-    mass_frac_comp = PropertyMetadata(
-        name="mass_frac_comp",
+    mass_frac = PropertyMetadata(
+        name="mass_frac",
+        doc="Mass Fraction",
         units=units.dimensionless,
     )
-    mass_frac_phase_comp = PropertyMetadata(
-        name="mass_frac_phase_comp",
+    mole_frac = PropertyMetadata(
+        name="mole_frac",
+        doc="Mole Fraction",
         units=units.dimensionless,
     )
-    mole_frac_comp = PropertyMetadata(
-        name="mole_frac_comp",
-        units=units.dimensionless,
-    )
-    mole_frac_phase_comp = PropertyMetadata(
-        name="mole_frac_phase_comp",
-        units=units.dimensionless,
-    )
-    molality_phase_comp = PropertyMetadata(
-        name="molality_phase_comp",
+    molality = PropertyMetadata(
+        name="molality",
+        doc="Molality",
         units="MOLALITY",
     )
     mw = PropertyMetadata(
         name="mw",
-        units="MOLECULAR_WEIGHT",
-    )
-    mw_comp = PropertyMetadata(
-        name="mw_comp",
-        units="MOLECULAR_WEIGHT",
-    )
-    mw_phase = PropertyMetadata(
-        name="mw_phase",
-        units="MOLECULAR_WEIGHT",
-    )
-    mw_phase_comp = PropertyMetadata(
-        name="mw_phase_comp",
+        doc="Molecular Weight",
         units="MOLECULAR_WEIGHT",
     )
     phase_frac = PropertyMetadata(
         name="phase_frac",
+        doc="Phase Fraction",
         units=units.dimensionless,
     )
     pressure = PropertyMetadata(
         name="pressure",
-        units="PRESSURE",
-    )
-    pressure_phase_comp = PropertyMetadata(
-        name="pressure_phase_comp",
+        doc="Pressure",
         units="PRESSURE",
     )
     pressure_bubble = PropertyMetadata(
         name="pressure_bubble",
+        doc="Bubble Point Pressure",
         units="PRESSURE",
     )
     pressure_crit = PropertyMetadata(
         name="pressure_crit",
+        doc="Pressure at Critical Point",
         units="PRESSURE",
     )
     pressure_dew = PropertyMetadata(
         name="pressure_dew",
+        doc="Dew point Pressure",
         units="PRESSURE",
     )
-    pressure_osm_phase = PropertyMetadata(
-        name="pressure_osm_phase",
+    pressure_osm = PropertyMetadata(
+        name="pressure_osm",
+        doc="Osmotic Pressure",
         units="PRESSURE",
     )
     pressure_red = PropertyMetadata(
         name="pressure_red",
+        doc="Reduced Pressure",
         units=units.dimensionless,
     )
     pressure_sat = PropertyMetadata(
-        name="pressure_sat",  # TODO: Deprecate in favour of pressure_sat_comp
+        name="pressure_sat",
+        doc="Saturation Pressure",
         units="PRESSURE",
     )
-    pressure_sat_comp = PropertyMetadata(
-        name="pressure_sat_comp",
-        units="PRESSURE",
-    )
-    surf_tens_phase = PropertyMetadata(
-        name="surf_tens_phase",
+    surf_tens = PropertyMetadata(
+        name="surf_tens",
+        doc="Surface Tension",
         units="SURFACE_TENSION",
     )
     temperature = PropertyMetadata(
         name="temperature",
+        doc="Temperature",
         units="TEMPERATURE",
     )
     temperature_bubble = PropertyMetadata(
         name="temperature_bubble",
+        doc="Bubble Point Temperature",
         units="TEMPERATURE",
     )
     temperature_crit = PropertyMetadata(
         name="temperature_crit",
+        doc="Temperature at Critical Point",
         units="TEMPERATURE",
     )
     temperature_dew = PropertyMetadata(
         name="temperature_dew",
+        doc="Dew Point Temperature",
         units="TEMPERATURE",
     )
     temperature_red = PropertyMetadata(
         name="temperature_red",
+        doc="Reduced Temperature",
         units=units.dimensionless,
     )
     temperature_sat = PropertyMetadata(
-        name="temperature_sat",  # TODO: Deprecate in favour of temperature_sat_comp?
+        name="temperature_sat",
+        doc="Saturation Temperature",
         units="TEMPERATURE",
     )
     therm_cond = PropertyMetadata(
         name="therm_cond",
-        units="THERMAL_CONDUCTIVITY",
-    )
-    therm_cond_phase = PropertyMetadata(
-        name="therm_cond_phase",
+        doc="Thermal Conductivity",
         units="THERMAL_CONDUCTIVITY",
     )
     visc_d = PropertyMetadata(
         name="visc_d",
-        units="DYNAMIC_VISCOSITY",
-    )
-    visc_d_phase = PropertyMetadata(
-        name="visc_d_phase",
+        doc="Dynamic Viscosity",
         units="DYNAMIC_VISCOSITY",
     )
     visc_k = PropertyMetadata(
         name="visc_k",
+        doc="Kinematic Viscosity",
         units="KINEMATIC_VISCOSITY",
     )
-    visc_k_phase = PropertyMetadata(
-        name="visc_k_phase",
-        units="KINEMATIC_VISCOSITY",
-    )
-    vol_mol_phase = PropertyMetadata(
-        name="vol_mol_phase",
-        units="MOLAR_VOLUME",
-    )
-    vol_mol_phase_comp = PropertyMetadata(
-        name="vol_mol_phase_comp",
+    vol_mol = PropertyMetadata(
+        name="vol_mol",
+        doc="Molar Volume",
         units="MOLAR_VOLUME",
     )
     # Log terms
-    log_act_phase_comp = PropertyMetadata(
-        name="log_act_phase_comp",
+    log_act = PropertyMetadata(
+        name="log_act",
+        doc="Log of Activity",
         units=units.dimensionless,
     )
-    log_conc_mol_phase_comp = PropertyMetadata(
-        name="log_conc_mol_phase_comp",
+    log_conc_mol = PropertyMetadata(
+        name="log_conc_mol",
+        doc="Log of Molar Concentration",
         units=units.dimensionless,
     )
-    log_mass_frac_phase_comp = PropertyMetadata(
+    log_mass_frac = PropertyMetadata(
         name="log_mass_frac_phase_comp",
+        doc="Log of Mass Fractions",
         units=units.dimensionless,
     )
-    log_molality_phase_comp = PropertyMetadata(
-        name="log_molality_phase_comp",
+    log_molality = PropertyMetadata(
+        name="log_molality",
+        doc="Log of Molality",
         units=units.dimensionless,
     )
-    log_mole_frac_comp = PropertyMetadata(
-        name="log_mole_frac_comp",
+    log_mole_frac = PropertyMetadata(
+        name="log_mole_frac",
+        doc="Log of Mole Fractions",
         units=units.dimensionless,
     )
     log_mole_frac_pbub = PropertyMetadata(
         name="log_mole_frac_pbub",
+        doc="Log of Mole Fractions at Bubble Point Pressure",
         units=units.dimensionless,
     )
     log_mole_frac_pdew = PropertyMetadata(
         name="log_mole_frac_pdew",
+        doc="Log of Mole Fractions at Dew Point Pressure",
         units=units.dimensionless,
     )
     log_mole_frac_tbub = PropertyMetadata(
         name="log_mole_frac_tbub",
+        doc="Log of Mole Fractions at Bubble Point Temperature",
         units=units.dimensionless,
     )
     log_mole_frac_tdew = PropertyMetadata(
         name="log_mole_frac_tdew",
+        doc="Log of Mole Fractions at Dew Point Temperature",
         units=units.dimensionless,
     )
-    log_mole_frac_phase_comp = PropertyMetadata(
-        name="log_mole_frac_phase_comp",
-        units=units.dimensionless,
-    )
-    log_pressure_phase_comp = PropertyMetadata(
-        name="log_pressure_phase_comp",
+    log_pressure = PropertyMetadata(
+        name="log_pressure",
+        doc="Log of Pressure",
         units=units.dimensionless,
     )
 
@@ -1054,22 +881,27 @@ class StandardPropertySet(PropertySetBase):
     # TODO: Units are also problematic here - no single definition
     dh_rxn = PropertyMetadata(
         name="dh_rxn",
+        doc="Heat of Reaction",
         units="ENERGY_MOLE",
     )
     k_eq = PropertyMetadata(
         name="k_eq",
+        doc="Equilibrium Coefficient",
         units=units.dimensionless,
     )
     log_k_eq = PropertyMetadata(
         name="log_k_eq",
+        doc="Log of Equilibrium Coefficient",
         units=units.dimensionless,
     )
     k_rxn = PropertyMetadata(
         name="k_rxn",
+        doc="Rate Constant",
         units=units.dimensionless,
     )
     reaction_rate = PropertyMetadata(
         name="reaction_rate",
+        doc="Reaction Rate",
         units=units.dimensionless,
     )
 
@@ -1089,128 +921,9 @@ class ElectrolytePropertySet(StandardPropertySet):
     ]
 
     # Definition of additional properties required for electrolyte applications
-    act_phase_comp_apparent = PropertyMetadata(
-        name="act_phase_comp_apparent",
-        units=units.dimensionless,
-    )
-    act_phase_comp_true = PropertyMetadata(
-        name="act_phase_comp_true",
-        units=units.dimensionless,
-    )
-    act_coeff_phase_comp_apparent = PropertyMetadata(
-        name="act_coeff_phase_comp_apparent",
-        units=units.dimensionless,
-    )
-    act_coeff_phase_comp_true = PropertyMetadata(
-        name="act_coeff_phase_comp_true",
-        units=units.dimensionless,
-    )
-    conc_mass_phase_comp_apparent = PropertyMetadata(
-        name="conc_mass_phase_comp_apparent",
-        units="DENSITY_MASS",
-    )
-    conc_mass_phase_comp_true = PropertyMetadata(
-        name="conc_mass_phase_comp_true",
-        units="DENSITY_MASS",
-    )
-    conc_mol_phase_comp_apparent = PropertyMetadata(
-        name="conc_mol_phase_comp_apparent",
-        units="DENSITY_MOLE",
-    )
-    conc_mol_phase_comp_true = PropertyMetadata(
-        name="conc_mol_phase_comp_true",
-        units="DENSITY_MOLE",
-    )
-    diffus_phase_comp_apparent = PropertyMetadata(
-        name="diffus_phase_comp_apparent",
-        units="DIFFUSIVITY",
-    )
-    diffus_phase_comp_true = PropertyMetadata(
-        name="diffus_phase_comp_true",
-        units="DIFFUSIVITY",
-    )
-    mass_frac_phase_comp_apparent = PropertyMetadata(
-        name="mass_frac_phase_comp_apparent",
-        units=units.dimensionless,
-    )
-    mass_frac_phase_comp_true = PropertyMetadata(
-        name="mass_frac_phase_comp_true",
-        units=units.dimensionless,
-    )
-    mole_frac_phase_comp_apparent = PropertyMetadata(
-        name="mole_frac_phase_comp_apparent",
-        units=units.dimensionless,
-    )
-    mole_frac_phase_comp_true = PropertyMetadata(
-        name="mole_frac_phase_comp_true",
-        units=units.dimensionless,
-    )
-    molality_phase_comp_apparent = PropertyMetadata(
-        name="molality_phase_comp_apparent",
-        units="MOLALITY",
-    )
-    molality_phase_comp_true = PropertyMetadata(
-        name="molality_phase_comp_true",
-        units="MOLALITY",
-    )
-    pressure_phase_comp_apparent = PropertyMetadata(
-        name="pressure_phase_comp_apparent",
-        units="PRESSURE",
-    )
-    pressure_phase_comp_true = PropertyMetadata(
-        name="pressure_phase_comp_true",
-        units="PRESSURE",
-    )
     # Log terms
     log_act_phase_solvents = PropertyMetadata(
         name="log_act_phase_solvents",
-        units=units.dimensionless,
-    )
-    log_act_phase_comp_apparent = PropertyMetadata(
-        name="log_act_phase_comp_apparent",
-        units=units.dimensionless,
-    )
-    log_act_phase_comp_true = PropertyMetadata(
-        name="log_act_phase_comp_true",
-        units=units.dimensionless,
-    )
-    log_conc_mol_phase_comp_apparent = PropertyMetadata(
-        name="log_conc_mol_phase_comp_apparent",
-        units=units.dimensionless,
-    )
-    log_conc_mol_phase_comp_true = PropertyMetadata(
-        name="log_conc_mol_phase_comp_true",
-        units=units.dimensionless,
-    )
-    log_mass_frac_phase_comp_apparent = PropertyMetadata(
-        name="log_mass_frac_phase_comp_apparent",
-        units=units.dimensionless,
-    )
-    log_mass_frac_phase_comp_true = PropertyMetadata(
-        name="log_mass_frac_phase_comp_true",
-        units=units.dimensionless,
-    )
-    log_molality_phase_comp_apparent = PropertyMetadata(
-        name="log_molality_phase_comp_apparent",
-        units=units.dimensionless,
-    )
-    log_molality_phase_comp_true = PropertyMetadata(
-        name="log_molality_phase_comp_true",
-        units=units.dimensionless,
-    )
-    log_mole_frac_phase_comp_apparent = PropertyMetadata(
-        name="log_mole_frac_phase_comp_apparent",
-        units=units.dimensionless,
-    )
-    log_mole_frac_phase_comp_true = PropertyMetadata(
-        name="log_mole_frac_phase_comp_true",
-        units=units.dimensionless,
-    )
-    log_pressure_phase_comp_apparent = PropertyMetadata(
-        name="log_pressure_phase_comp_apparent",
-        units=units.dimensionless,
-    )
-    log_pressure_phase_comp_true = PropertyMetadata(
-        name="log_pressure_phase_comp_true",
+        doc="Log of Activity of Solvents",
         units=units.dimensionless,
     )

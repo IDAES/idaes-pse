@@ -190,7 +190,7 @@ class TestPropertySetBase:
         assert pset.foo.required
         assert pset.foo.units is units.dimensionless
 
-        assert pset.foo in pset._defined_properties
+        assert "foo" in pset._defined_properties
 
         assert isinstance(pset.foo._none, _PropertyMetadataIndex)
         assert isinstance(pset.foo._comp, _PropertyMetadataIndex)
@@ -253,12 +253,17 @@ class TestPropertySetBase:
             units=units.dimensionless,
         )
 
-        assert pset["FOO"] is pset.FOO
+        assert pset["FOO"] is pset.FOO._none
+        assert pset["FOO_comp"] is pset.FOO._comp
+        assert pset["FOO_phase"] is pset.FOO._phase
+        assert pset["FOO_phase_comp"] is pset.FOO._phase_comp
 
     @pytest.mark.unit
     def test_getitem_no_present(self, pset):
         with pytest.raises(
-            KeyError, match="Property foo is not defined in this PropertySet."
+            ValueError,
+            match="Unhandled property: foo. This is mostly likely due "
+            "to the property not being defined in this PropertySet.",
         ):
             pset["foo"]
 
@@ -286,109 +291,66 @@ class TestPropertySetBase:
     def test_list_required_properties(self, pset):
         pset.define_property(
             name="FOO",
-            method="baz",
-            supported=True,
-            required=True,
             units=units.dimensionless,
         )
-        pset.define_property(
-            name="BAR",
-            method="baz",
-            supported=True,
-            required=False,
-            units=units.dimensionless,
-        )
+        pset.FOO["none"].set_required(True)
+        pset.FOO["phase"].set_required(True)
 
-        assert pset.list_required_properties() == [pset.FOO]
+        rp = pset.list_required_properties()
+        for p in rp:
+            assert p in [pset.FOO[None], pset.FOO["phase"]]
 
     @pytest.mark.unit
     def test_check_required_properties(self, pset):
         # ADd some required properties
         pset.define_property(
             name="FOO",
-            method="baz",
-            supported=True,
-            required=True,
             units=units.dimensionless,
         )
-        pset.define_property(
-            name="BAR",
-            method="baz",
-            supported=True,
-            required=True,
-            units=units.dimensionless,
-        )
-        pset.define_property(
-            name="BAZ",
-            method="baz",
-            supported=True,
-            required=True,
-            units=units.dimensionless,
-        )
+        pset.FOO["none"].set_required(True)
+        pset.FOO["phase"].set_required(True)
+        pset.FOO["phase_comp"].set_required(True)
 
         # Create a second property set, which only supports some required properties
         pset2 = PropertySetBase(parent=pset._parent_block)
         # In metadata but explicitly not supported
         pset2.define_property(
             name="FOO",
-            method="baz",
-            supported=False,
-            required=True,
             units=units.dimensionless,
         )
-        # In metadata and supported
-        pset2.define_property(
-            name="BAR",
-            method="baz",
-            supported=True,
-            required=True,
-            units=units.dimensionless,
-        )
-        # BAZ is missing from metadata
+        pset2.FOO["none"].set_supported(True)
+        pset2.FOO["phase"].set_supported(True)
+        pset2.FOO["phase_comp"].set_supported(False)
 
-        # Check required properties should return FOO and BAZ
         unsupported = pset.check_required_properties(pset2)
-        assert "FOO" in unsupported
-        assert "BAZ" in unsupported
-        assert len(unsupported) == 2
+        assert "FOO_phase_comp" in unsupported
+        assert len(unsupported) == 1
 
     @pytest.mark.unit
     def test_list_supported_properties(self, pset):
         pset.define_property(
             name="FOO",
-            method="baz",
-            supported=True,
-            required=True,
             units=units.dimensionless,
         )
-        pset.define_property(
-            name="BAR",
-            method="baz",
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
+        pset.FOO["none"].set_supported(True)
+        pset.FOO["phase"].set_supported(True)
 
-        assert pset.list_supported_properties() == [pset.FOO]
+        sp = pset.list_supported_properties()
+        for p in sp:
+            assert p in [pset.FOO[None], pset.FOO["phase"]]
 
     @pytest.mark.unit
     def test_list_unsupported_properties(self, pset):
         pset.define_property(
             name="FOO",
-            method="baz",
-            supported=True,
-            required=True,
             units=units.dimensionless,
         )
-        pset.define_property(
-            name="BAR",
-            method="baz",
-            supported=False,
-            required=False,
-            units=units.dimensionless,
-        )
+        pset.FOO["none"].set_supported(True)
+        pset.FOO["phase"].set_supported(True)
 
-        assert pset.list_unsupported_properties() == [pset.BAR]
+        usp = pset.list_unsupported_properties()
+        for p in usp:
+            assert p in [pset.FOO["comp"], pset.FOO["phase_comp"]]
 
     @pytest.mark.unit
     def test_unitset(self):
@@ -470,7 +432,7 @@ class TestDerivedPropertySet:
         pset = DerivedPropertySet(parent=p)
 
         for i in pset._defined_properties:
-            assert i in [pset.foo, pset.bar]
+            assert i in ["foo", "bar"]
 
         assert isinstance(pset.foo, PropertyMetadata)
         assert isinstance(pset.bar, PropertyMetadata)
