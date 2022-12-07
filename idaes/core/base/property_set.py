@@ -17,10 +17,12 @@ There is a base set of standard properties which are applicable in most applicat
 and it is intended that specialty applications can and will define their own
 property sets as required (e.g. electrolyte systems).
 """
+from copy import copy
+
 from pyomo.environ import units
 from pyomo.core.base.units_container import _PyomoUnit
 
-from idaes.core.util.exceptions import PropertyPackageError
+from idaes.core.util.exceptions import PropertyPackageError, BurntToast
 import idaes.logger as idaeslog
 
 __author__ = "Dan Gunter <dkgunter@lbl.gov>, Andrew Lee"
@@ -34,7 +36,7 @@ class PropertyMetadata(object):
 
     This object stores all the metadata associated with a single property, including:
 
-        - standard name
+        - documentation of property
         - units of measurement for this property (defined via associated UnitSet)
         - method that constructs this property and associated constraints (if build-on-demand)
         - whether property is supported by this package
@@ -52,11 +54,14 @@ class PropertyMetadata(object):
     ):
         if name is None:
             raise TypeError('"name" is required')
-        self._name = name
-        self._method = method
-        self._supported = supported
-        self._required = required
-        self._units = units  # TODO: Validate units are from UnitSet or dimensionless - needs deprecation
+
+        super().__setattr__("_name", name)
+        super().__setattr__("_method", method)
+        super().__setattr__("_supported", supported)
+        super().__setattr__("_required", required)
+        super().__setattr__(
+            "_units", units
+        )  # TODO: Validate units are from UnitSet or dimensionless - needs deprecation
         # TODO: For future, this would be the place to store default scaling information, etc.
         # TODO: Could also define default bounds, nominal values, etc.
 
@@ -73,10 +78,13 @@ class PropertyMetadata(object):
             "required" if self._required else "",
         )
 
+    def __setattr__(self, key, value):
+        raise TypeError("Property metadata does not support assignment.")
+
     @property
     def name(self):
         """
-        Standard name for property
+        Doc string for property
         """
         return self._name
 
@@ -125,7 +133,7 @@ class PropertyMetadata(object):
             None
         """
         # TODO: Validate that meth is callable?
-        self._method = meth
+        super().__setattr__("_method", meth)
 
     def set_supported(self, supported: bool = True):
         """
@@ -138,7 +146,7 @@ class PropertyMetadata(object):
             None
         """
         # TODO: Validate that supported is bool
-        self._supported = supported
+        super().__setattr__("_supported", supported)
 
     def set_required(self, required: bool = True):
         """
@@ -152,7 +160,7 @@ class PropertyMetadata(object):
             None
         """
         # TODO: Validate that required is bool
-        self._required = required
+        super().__setattr__("_required", required)
 
     def update_property(
         self, method: str = None, required: bool = None, supported: bool = None
@@ -190,9 +198,13 @@ class PropertySetBase(object):
     This defines the common methods expected of all PropertySets.
     """
 
+    # Define the standard indices for IDAES properties
+    _defined_indices = ["comp", "phase", "phase_comp"]
+
     def __init__(self, parent):
         super().__setattr__("_parent_block", parent)
         super().__setattr__("_defined_properties", [])
+        super().__setattr__("_defined_indices", copy(self.__class__._defined_indices))
 
         # Find stadanrd properties defined in class and create instance versions
         for i in dir(self.__class__):
@@ -204,17 +216,13 @@ class PropertySetBase(object):
                     # Check if units is a placeholder string and update if required
                     if isinstance(units, str):
                         units = getattr(self._parent_block.default_units, units)
-                    super().__setattr__(
-                        i,
-                        PropertyMetadata(
-                            name=i,
-                            method=None,
-                            supported=False,
-                            required=False,
-                            units=iobj.units,
-                        ),
+                    self._add_property(
+                        name=i,
+                        method=None,
+                        supported=None,
+                        required=None,
+                        units=units,
                     )
-                    self._defined_properties.append(getattr(self, i))
 
     def __setattr__(self, key, value):
         raise TypeError(
@@ -258,6 +266,22 @@ class PropertySetBase(object):
                 "method if you wish to update an existing property's metadata."
             )
 
+        self._add_property(
+            name=name,
+            method=method,
+            supported=supported,
+            required=required,
+            units=units,
+        )
+
+    def _add_property(
+        self,
+        name: str,
+        method: str = None,
+        required: bool = False,
+        supported: bool = False,
+        units: _PyomoUnit = None,
+    ):
         super().__setattr__(
             name,
             PropertyMetadata(
@@ -336,6 +360,46 @@ class PropertySetBase(object):
         Reference to UnitSet associated with this PropertySet (via the parent metadata object).
         """
         return self._parent_block.default_units
+
+    def get_name_and_index(self, property: str):
+        """
+        Separates an indexed property name into the main property and index,
+
+        This method is written assuming the standard indices, and checks for 'phase' and then
+        'component' before checking for any custom indices. Developers of custom PropertySets
+        may wish to overload this with custom search logic better suited to the set of defined
+        indices.
+
+        Returns:
+            name, index: strings indicating the name of the base property and indexing set.
+        """
+        name = None
+        index = None
+
+        if property in self._defined_properties:
+            name = property
+        if "phase" in property:
+            sep_point = property.index("phase") - 1
+            name = property[:sep_point]
+            index = property[sep_point + 1 :]
+        elif "comp" in property:
+            sep_point = property.index("comp") - 1
+            name = property[:sep_point]
+            index = property[sep_point + 1 :]
+        else:
+            for i in self._defined_indices:
+                if i in property:
+                    sep_point = property.index(i) - 1
+                    name = property[:sep_point]
+                    index = property[sep_point + 1 :]
+
+        if name is None:
+            raise ValueError(
+                f"Unhandled property: {property}. This is mostly likely due to the "
+                "property not being defined in this PropertySet."
+            )
+
+        return name, index
 
 
 class StandardPropertySet(PropertySetBase):
@@ -1265,6 +1329,14 @@ class ElectrolytePropertySet(StandardPropertySet):
     This object defines all the standard properties supported by IDAES, and also allows for
     definition of new properties if required.
     """
+
+    _defined_indices = [
+        "comp",
+        "phase",
+        "phase_comp",
+        "phase_comp_apparent",
+        "phase_comp_true",
+    ]
 
     # Definition of additional properties required for electrolyte applications
     act_phase_comp_apparent = PropertyMetadata(

@@ -14,7 +14,13 @@ import pytest
 
 from pyomo.environ import units
 
-from idaes.core.base.property_set import PropertyMetadata, PropertySetBase
+from idaes.core.base.property_set import (
+    PropertyMetadata,
+    PropertySetBase,
+    StandardPropertySet,
+    ElectrolytePropertySet,
+)
+from idaes.core.base.property_meta import UnitSet
 from idaes.core.util.exceptions import PropertyPackageError
 
 
@@ -123,6 +129,7 @@ class TestPropertySetBase:
 
         assert pset._parent_block is p
         assert pset._defined_properties == []
+        assert pset._defined_indices == ["comp", "phase", "phase_comp"]
 
     @pytest.mark.unit
     def test_direct_assignment(self):
@@ -332,6 +339,61 @@ class TestPropertySetBase:
 
         return pset.unitset is p.default_units
 
+    @pytest.mark.unit
+    def test_get_name_and_index(self):
+        p = DummyMeta()
+        p.default_units = "foo"
+
+        pset = PropertySetBase(parent=p)
+        pset._defined_properties.append("foo_bar")
+
+        n, i = pset.get_name_and_index("foo_bar")
+        assert n == "foo_bar"
+        assert i is None
+
+        n, i = pset.get_name_and_index("foo_bar_phase")
+        assert n == "foo_bar"
+        assert i == "phase"
+
+        n, i = pset.get_name_and_index("foo_bar_comp")
+        assert n == "foo_bar"
+        assert i == "comp"
+
+        n, i = pset.get_name_and_index("foo_bar_phase_comp")
+        assert n == "foo_bar"
+        assert i == "phase_comp"
+
+        with pytest.raises(
+            ValueError,
+            match="Unhandled property: baz. This is mostly likely due to the "
+            "property not being defined in this PropertySet.",
+        ):
+            pset.get_name_and_index("baz")
+
+    @pytest.mark.unit
+    def test_get_name_and_index_custom(self):
+        p = DummyMeta()
+        p.default_units = "foo"
+
+        pset = PropertySetBase(parent=p)
+        pset._defined_indices.append("bar")
+
+        n, i = pset.get_name_and_index("foo_bar")
+        assert n == "foo"
+        assert i == "bar"
+
+        n, i = pset.get_name_and_index("foo_bar_phase")
+        assert n == "foo_bar"
+        assert i == "phase"
+
+        n, i = pset.get_name_and_index("foo_bar_comp")
+        assert n == "foo_bar"
+        assert i == "comp"
+
+        n, i = pset.get_name_and_index("foo_bar_phase_comp")
+        assert n == "foo_bar"
+        assert i == "phase_comp"
+
 
 class DerivedPropertySet(PropertySetBase):
     foo = PropertyMetadata(name="foo")
@@ -341,7 +403,7 @@ class DerivedPropertySet(PropertySetBase):
 
 class TestDerivedPropertySet:
     @pytest.mark.unit
-    def test_standard_proeprties(self):
+    def test_standard_properties(self):
         p = DummyMeta()
         p.default_units = "foo"
 
@@ -358,3 +420,101 @@ class TestDerivedPropertySet:
         assert pset.foo is not DerivedPropertySet.foo
         assert pset.bar is not DerivedPropertySet.bar
         assert pset.baz is DerivedPropertySet.baz
+
+
+class TestStandardPropertySet:
+    @pytest.mark.unit
+    def test_defined_indices(self):
+        p = DummyMeta()
+        p.default_units = UnitSet()
+
+        pset = StandardPropertySet(parent=p)
+
+        assert pset._defined_indices == ["comp", "phase", "phase_comp"]
+
+    @pytest.mark.unit
+    def test_get_name_and_index(self):
+        p = DummyMeta()
+        p.default_units = UnitSet()
+
+        pset = PropertySetBase(parent=p)
+        pset._defined_properties.append("foo_bar")
+
+        n, i = pset.get_name_and_index("foo_bar")
+        assert n == "foo_bar"
+        assert i is None
+
+        n, i = pset.get_name_and_index("foo_bar_phase")
+        assert n == "foo_bar"
+        assert i == "phase"
+
+        n, i = pset.get_name_and_index("foo_bar_comp")
+        assert n == "foo_bar"
+        assert i == "comp"
+
+        n, i = pset.get_name_and_index("foo_bar_phase_comp")
+        assert n == "foo_bar"
+        assert i == "phase_comp"
+
+        with pytest.raises(
+            ValueError,
+            match="Unhandled property: baz. This is mostly likely due to the "
+            "property not being defined in this PropertySet.",
+        ):
+            pset.get_name_and_index("baz")
+
+
+class TestElectrolytePropertySet:
+    @pytest.mark.unit
+    def test_defined_indices(self):
+        p = DummyMeta()
+        p.default_units = UnitSet()
+
+        pset = ElectrolytePropertySet(parent=p)
+
+        assert pset._defined_indices == [
+            "comp",
+            "phase",
+            "phase_comp",
+            "phase_comp_apparent",
+            "phase_comp_true",
+        ]
+
+    @pytest.mark.unit
+    def test_get_name_and_index(self):
+        p = DummyMeta()
+        p.default_units = UnitSet()
+
+        pset = PropertySetBase(parent=p)
+        pset._defined_properties.append("foo_bar")
+
+        n, i = pset.get_name_and_index("foo_bar")
+        assert n == "foo_bar"
+        assert i is None
+
+        n, i = pset.get_name_and_index("foo_bar_phase")
+        assert n == "foo_bar"
+        assert i == "phase"
+
+        n, i = pset.get_name_and_index("foo_bar_comp")
+        assert n == "foo_bar"
+        assert i == "comp"
+
+        n, i = pset.get_name_and_index("foo_bar_phase_comp")
+        assert n == "foo_bar"
+        assert i == "phase_comp"
+
+        n, i = pset.get_name_and_index("foo_bar_phase_comp_apparent")
+        assert n == "foo_bar"
+        assert i == "phase_comp_apparent"
+
+        n, i = pset.get_name_and_index("foo_bar_phase_comp_true")
+        assert n == "foo_bar"
+        assert i == "phase_comp_true"
+
+        with pytest.raises(
+            ValueError,
+            match="Unhandled property: baz. This is mostly likely due to the "
+            "property not being defined in this PropertySet.",
+        ):
+            pset.get_name_and_index("baz")
