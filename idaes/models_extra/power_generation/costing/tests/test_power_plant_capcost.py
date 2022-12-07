@@ -782,6 +782,72 @@ def test_PP_costing_additional_costing_params_no_overwrite():
 
 
 @pytest.mark.component
+def test_PP_costing_additional_costing_params_no_overwrite_different_account():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    # check that the model solved properly and has 0 degrees of freedom
+    assert degrees_of_freedom(m) == 0
+
+    # create new account to test, this is a "new" entry for 1.1
+    additional_costing_params = {
+        "1": {
+            "A": {
+                "1.1": {
+                    "Account Name": "Coal Receive & Unload",
+                    "BEC": 1504.0143517610745,
+                    "BEC_units": "K$2020",
+                    "Eng Fee": 0.175,
+                    "Exponent": 0.62,
+                    "Process Contingency": 0.0,
+                    "Process Parameter": "Coal Feed Rate",
+                    "Project Contingency": 0.15,
+                    "RP Value": 5904.5598,
+                    "Units": "ton/d",
+                },
+            }
+        }
+    }
+
+    ###########################################################################
+    #  Create costing constraints                                             #
+    ###########################################################################
+
+    # coal flow rate
+    # accounts 1.x and 2.x are coal handling, preparation and feed
+    # accounts 4.x are for boiler BOP and foundations
+    coal_accounts = ["1.2"]
+    m.fs.boiler = UnitModelBlock()
+    m.fs.boiler.coal_mass_flow = pyo.Var(
+        initialize=7238.95, units=pyunits.ton / pyunits.day
+    )
+    m.fs.boiler.coal_mass_flow.fix()
+    # check that error is not thrown because this is not account 1.1
+    m.fs.boiler.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": coal_accounts,
+            "scaled_param": m.fs.boiler.coal_mass_flow,
+            "tech": 1,
+            "ccs": "A",
+            "additional_costing_params": additional_costing_params,
+            "use_additional_costing_params": False,
+        },
+    )
+
+    # adding a check just to make sure everything works as expected
+    assert (
+        pytest.approx(pyo.value(m.fs.boiler.costing.total_plant_cost["1.2"]), abs=1e-1)
+        == 4165 / 1e3
+    )
+
+
+@pytest.mark.component
 def test_PP_costing_additional_costing_params_allow_overwrite():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
