@@ -19,9 +19,80 @@ from idaes.core.base.property_set import (
     PropertySetBase,
     StandardPropertySet,
     ElectrolytePropertySet,
+    _PropertyMetadataIndex,
 )
 from idaes.core.base.property_meta import UnitSet
 from idaes.core.util.exceptions import PropertyPackageError
+
+
+class DummyMeta:
+    pass
+
+
+class Test_PropertyMetadataIndex:
+    @pytest.fixture(scope="function")
+    def meta(self):
+        p = DummyMeta()
+
+        meta = _PropertyMetadataIndex(parent=p)
+
+        return meta
+
+    @pytest.mark.unit
+    def test_all_args(self, meta):
+        p = DummyMeta()
+
+        meta = _PropertyMetadataIndex(
+            parent=p,
+            method="foo",
+            supported=True,
+            required=True,
+        )
+        assert meta.method == "foo"
+        assert meta.supported
+        assert meta.required
+
+    @pytest.mark.unit
+    def test_default_value(self, meta):
+        assert meta.method is None
+        assert not meta.supported
+        assert not meta.required
+
+    @pytest.mark.unit
+    def test_set_method(self, meta):
+        assert meta.method is None
+        meta.set_method("foo")
+        assert meta.method == "foo"
+
+    @pytest.mark.unit
+    def test_set_required(self, meta):
+        assert not meta.required
+        meta.set_required(True)
+        assert meta.required
+
+    @pytest.mark.unit
+    def test_set_supported(self, meta):
+        assert not meta.supported
+        meta.set_supported(True)
+        assert meta.supported
+
+    @pytest.mark.unit
+    def test_update_property_args(self, meta):
+        assert meta.method is None
+        assert not meta.supported
+        assert not meta.required
+
+        meta.update_property(method="foo", required=True, supported=False)
+
+        assert meta.method == "foo"
+        assert not meta.supported
+        assert meta.required
+
+        meta.update_property(method="foo", required=False, supported=True)
+
+        assert meta.method == "foo"
+        assert meta.supported
+        assert not meta.required
 
 
 class TestPropertyMetadata:
@@ -50,12 +121,17 @@ class TestPropertyMetadata:
             method="foo",
             supported=True,
             required=True,
+            indices=["a", "b"],
         )
         assert meta.name == "test"
         assert meta.units is units.dimensionless
         assert meta.method == "foo"
         assert meta.supported
         assert meta.required
+
+        assert isinstance(meta._a, _PropertyMetadataIndex)
+        assert isinstance(meta._b, _PropertyMetadataIndex)
+        assert isinstance(meta._none, _PropertyMetadataIndex)
 
     @pytest.mark.unit
     def test_default_value(self, meta):
@@ -64,52 +140,7 @@ class TestPropertyMetadata:
         assert meta.method is None
         assert not meta.supported
         assert not meta.required
-
-    @pytest.mark.unit
-    def test_set_method(self, meta):
-        assert meta.method is None
-        meta.set_method("foo")
-        assert meta.method == "foo"
-
-    @pytest.mark.unit
-    def test_set_required(self, meta):
-        assert not meta.required
-        meta.set_required(True)
-        assert meta.required
-
-    @pytest.mark.unit
-    def test_set_supported(self, meta):
-        assert not meta.supported
-        meta.set_supported(True)
-        assert meta.supported
-
-    @pytest.mark.unit
-    def test_update_property_args(self, meta):
-        assert meta.name == "test"
-        assert meta.units is units.dimensionless
-        assert meta.method is None
-        assert not meta.supported
-        assert not meta.required
-
-        meta.update_property(method="foo", required=True, supported=False)
-
-        assert meta.name == "test"
-        assert meta.units is units.dimensionless
-        assert meta.method == "foo"
-        assert not meta.supported
-        assert meta.required
-
-        meta.update_property(method="foo", required=False, supported=True)
-
-        assert meta.name == "test"
-        assert meta.units is units.dimensionless
-        assert meta.method == "foo"
-        assert meta.supported
-        assert not meta.required
-
-
-class DummyMeta:
-    pass
+        assert isinstance(meta._none, _PropertyMetadataIndex)
 
 
 class TestPropertySetBase:
@@ -143,6 +174,30 @@ class TestPropertySetBase:
             pset.foo = "bar"
 
     @pytest.mark.unit
+    def test_add_property(self, pset):
+        pset._add_property(
+            name="foo",
+            method="baz",
+            supported=True,
+            required=True,
+            units=units.dimensionless,
+        )
+
+        assert isinstance(pset.foo, PropertyMetadata)
+        assert pset.foo.name == "foo"
+        assert pset.foo.method == "baz"
+        assert pset.foo.supported
+        assert pset.foo.required
+        assert pset.foo.units is units.dimensionless
+
+        assert pset.foo in pset._defined_properties
+
+        assert isinstance(pset.foo._none, _PropertyMetadataIndex)
+        assert isinstance(pset.foo._comp, _PropertyMetadataIndex)
+        assert isinstance(pset.foo._phase, _PropertyMetadataIndex)
+        assert isinstance(pset.foo._phase_comp, _PropertyMetadataIndex)
+
+    @pytest.mark.unit
     def test_define_property(self, pset):
         pset.define_property(
             name="foo",
@@ -158,6 +213,11 @@ class TestPropertySetBase:
         assert pset.foo.supported
         assert pset.foo.required
         assert pset.foo.units is units.dimensionless
+
+        assert isinstance(pset.foo._none, _PropertyMetadataIndex)
+        assert isinstance(pset.foo._comp, _PropertyMetadataIndex)
+        assert isinstance(pset.foo._phase, _PropertyMetadataIndex)
+        assert isinstance(pset.foo._phase_comp, _PropertyMetadataIndex)
 
     @pytest.mark.unit
     def test_define_property_duplicate(self, pset):
