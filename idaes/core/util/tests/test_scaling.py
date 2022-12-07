@@ -18,7 +18,7 @@ import pytest
 import pyomo.environ as pyo
 import pyomo.dae as dae
 from pyomo.common.collections import ComponentSet
-from pyomo.core.expr.logical_expr import (
+from pyomo.core.expr.relational_expr import (
     EqualityExpression,
     InequalityExpression,
     RangedExpression,
