@@ -118,16 +118,10 @@ class TestPropertyMetadata:
         meta = PropertyMetadata(
             name="test",
             units=units.dimensionless,
-            method="foo",
-            supported=True,
-            required=True,
             indices=["a", "b"],
         )
         assert meta.name == "test"
         assert meta.units is units.dimensionless
-        assert meta.method == "foo"
-        assert meta.supported
-        assert meta.required
 
         assert isinstance(meta._a, _PropertyMetadataIndex)
         assert isinstance(meta._b, _PropertyMetadataIndex)
@@ -137,9 +131,6 @@ class TestPropertyMetadata:
     def test_default_value(self, meta):
         assert meta.name == "test"
         assert meta.units is units.dimensionless
-        assert meta.method is None
-        assert not meta.supported
-        assert not meta.required
         assert isinstance(meta._none, _PropertyMetadataIndex)
 
 
@@ -185,9 +176,9 @@ class TestPropertySetBase:
 
         assert isinstance(pset.foo, PropertyMetadata)
         assert pset.foo.name == "foo"
-        assert pset.foo.method == "baz"
-        assert pset.foo.supported
-        assert pset.foo.required
+        assert pset.foo._none.method == "baz"
+        assert pset.foo._none.supported
+        assert pset.foo._none.required
         assert pset.foo.units is units.dimensionless
 
         assert "foo" in pset._defined_properties
@@ -209,9 +200,9 @@ class TestPropertySetBase:
 
         assert isinstance(pset.foo, PropertyMetadata)
         assert pset.foo.name == "foo"
-        assert pset.foo.method == "baz"
-        assert pset.foo.supported
-        assert pset.foo.required
+        assert pset.foo._none.method == "baz"
+        assert pset.foo._none.supported
+        assert pset.foo._none.required
         assert pset.foo.units is units.dimensionless
 
         assert isinstance(pset.foo._none, _PropertyMetadataIndex)
@@ -391,6 +382,30 @@ class TestPropertySetBase:
             "property not being defined in this PropertySet.",
         ):
             pset.get_name_and_index("baz")
+
+    @pytest.mark.unit
+    def test_get_name_and_index_phase_frac(self):
+        p = DummyMeta()
+        p.default_units = "foo"
+
+        pset = PropertySetBase(parent=p)
+        pset._defined_properties.append("phase_frac")
+
+        n, i = pset.get_name_and_index("phase_frac")
+        assert n == "phase_frac"
+        assert i is None
+
+        n, i = pset.get_name_and_index("phase_frac_comp")
+        assert n == "phase_frac"
+        assert i == "comp"
+
+        n, i = pset.get_name_and_index("phase_frac_phase")
+        assert n == "phase_frac"
+        assert i == "phase"
+
+        n, i = pset.get_name_and_index("phase_frac_phase_comp")
+        assert n == "phase_frac"
+        assert i == "phase_comp"
 
     @pytest.mark.unit
     def test_get_name_and_index_custom(self):

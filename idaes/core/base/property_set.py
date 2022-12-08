@@ -50,6 +50,12 @@ class _PropertyMetadataIndex(object):
     def __setattr__(self, key, value):
         raise TypeError("Property metadata does not support assignment.")
 
+    def __repr__(self):
+        return f"{self._parent._doc} ({self._parent._units}%s%s)" % (
+            "supported" if self._supported else "",
+            "required" if self._required else "",
+        )
+
     @property
     def method(self):
         """
@@ -94,7 +100,10 @@ class _PropertyMetadataIndex(object):
         Returns:
             None
         """
-        super().__setattr__("_method", str(meth))
+        if meth is None:
+            super().__setattr__("_method", None)
+        else:
+            super().__setattr__("_method", str(meth))
 
     def set_supported(self, supported: bool = True):
         """
@@ -159,9 +168,11 @@ class PropertyMetadata(object):
         - name of property
         - documentation of property
         - units of measurement for this property (defined via associated UnitSet)
-        - method that constructs this property and associated constraints (if build-on-demand)
-        - whether property is supported by this package
-        - whether this package expects this property to be provided by another package
+        - attributes for sub-properties identifying
+
+            - method that constructs this property and associated constraints (if build-on-demand)
+            - whether property is supported by this package
+            - whether this package expects this property to be provided by another package
     """
 
     # TODO: Add optional doc string to metadata objects
@@ -169,10 +180,7 @@ class PropertyMetadata(object):
         self,
         name: str = None,
         doc: str = None,
-        method: str = None,
         units: _PyomoUnit = None,
-        supported: bool = False,
-        required: bool = False,
         indices: list = None,
     ):
         if name is None:
@@ -182,11 +190,6 @@ class PropertyMetadata(object):
 
         super().__setattr__("_name", name)
         super().__setattr__("_doc", doc)
-
-        # TODO: Move to indexed elements
-        super().__setattr__("_method", method)
-        super().__setattr__("_supported", supported)
-        super().__setattr__("_required", required)
 
         # TODO: Validate units are from UnitSet or dimensionless - needs deprecation
         super().__setattr__("_units", units)
@@ -207,10 +210,7 @@ class PropertyMetadata(object):
             raise KeyError()
 
     def __repr__(self):
-        return f"{self._doc} ({self._units}%s%s)" % (
-            "supported" if self._supported else "",
-            "required" if self._required else "",
-        )
+        return f"{self._doc} ({self._units})"
 
     def __setattr__(self, key, value):
         raise TypeError("Property metadata does not support assignment.")
@@ -223,14 +223,6 @@ class PropertyMetadata(object):
         return self._name
 
     @property
-    def method(self):
-        """
-        Reference to method that can be called to construct this property and associated
-        constraints if using build-on-demand approach.
-        """
-        return self._method
-
-    @property
     def units(self):
         """
         Units of measurement for this property. This should be a reference to a quantity defined
@@ -238,91 +230,7 @@ class PropertyMetadata(object):
         """
         return self._units
 
-    @property
-    def supported(self):
-        """
-        Bool indicating whether this property package supports calculation of this property.
-        """
-        return self._supported
-
-    @property
-    def required(self):
-        """
-        Bool indicating whether this property package requires calculation of this property
-        by another property package.
-
-        This is most commonly used by reaction packages which rely of thermophysical property
-        packages to define other properties.
-        """
-        return self._required
-
-    def set_method(self, meth: str):
-        """
-        Set method attribute of property.
-
-        Args:
-            meth: reference to method required to construct this property
-
-        Returns:
-            None
-        """
-        # TODO: Validate that meth is callable?
-        super().__setattr__("_method", meth)
-
-    def set_supported(self, supported: bool = True):
-        """
-        Set supported attribute of property
-
-        Args:
-            supported: bool indicating whether package supports this property
-
-        Returns:
-            None
-        """
-        # TODO: Validate that supported is bool
-        super().__setattr__("_supported", supported)
-
-    def set_required(self, required: bool = True):
-        """
-        Set required attribute of property
-
-        Args:
-            required: bool indicating whether package requires this property be defined by
-            another property package
-
-        Returns:
-            None
-        """
-        # TODO: Validate that required is bool
-        super().__setattr__("_required", required)
-
-    def update_property(
-        self, method: str = None, required: bool = None, supported: bool = None
-    ):
-        """
-        Update attributes of this property.
-
-        Args:
-            method: method name (str) to be assigned to construct property
-            required : bool indicating whether this property package requires this property to be
-                defined by another package
-            supported : bool indicating whether this property package supports this property
-
-        Returns:
-            None
-
-        Note that if not provided a value, 'supported' is assumed to be True.
-        """
-        if method is not None:
-            self.set_method(method)
-        if required is not None:
-            self.set_required(required)
-        if supported is not None:
-            self.set_supported(supported)
-        else:
-            # Assume supported if not explicitly stated
-            # TODO: Reconsider in the future, for now do this for backwards compatibility
-            self.set_supported(True)
+    # TODO: An overall update method across multiple indices?
 
 
 class PropertySetBase(object):
@@ -353,9 +261,6 @@ class PropertySetBase(object):
                     self._add_property(
                         name=i,
                         doc=iobj._doc,
-                        method=None,
-                        supported=None,
-                        required=None,
                         units=units,
                     )
 
@@ -422,19 +327,24 @@ class PropertySetBase(object):
         supported: bool = False,
         units: _PyomoUnit = None,
     ):
+        # TODO: Need to support defining custom indexed properties and setting metadata
         super().__setattr__(
             name,
             PropertyMetadata(
                 name=name,
                 doc=doc,
-                method=method,
-                supported=supported,
-                required=required,
                 units=units,
                 indices=self._defined_indices,
             ),
         )
         self._defined_properties.append(name)
+
+        # Set metadata on _none index
+        getattr(self, name)._none.update_property(
+            method=method,
+            supported=supported,
+            required=required,
+        )
 
     def check_required_properties(self, other: "PropertySetBase"):
         """
@@ -454,7 +364,7 @@ class PropertySetBase(object):
                     try:
                         if not getattr(other, a)[i].supported:
                             unsupported.append(a + "_" + i)
-                    except KeyError:
+                    except AttributeError:
                         unsupported.append(a + "_" + i)
 
         return unsupported
@@ -523,28 +433,35 @@ class PropertySetBase(object):
         name = None
         index = None
 
+        sep_point = None
         if property in self._defined_properties:
-            name = property
-        if "phase" in property and not property.startswith("phase"):
-            sep_point = property.index("phase") - 1
-            name = property[:sep_point]
-            index = property[sep_point + 1 :]
+            sep_point = 0
+        elif "phase" in property and not property.startswith("phase"):
+            if "phase_comp" in property:
+                sep_point = property.rindex("phase_comp")
+            else:
+                sep_point = property.rindex("phase")
         elif "comp" in property and not property.startswith("comp"):
-            sep_point = property.index("comp") - 1
-            name = property[:sep_point]
-            index = property[sep_point + 1 :]
+            if "phase_comp" in property:
+                sep_point = property.rindex("phase_comp")
+            else:
+                sep_point = property.rindex("comp")
         else:
             for i in self._defined_indices:
                 if i in property:
-                    sep_point = property.index(i) - 1
-                    name = property[:sep_point]
-                    index = property[sep_point + 1 :]
+                    sep_point = property.rindex(i)
 
-        if name is None:
+        if sep_point is None:
             raise ValueError(
                 f"Unhandled property: {property}. This is mostly likely due to the "
                 "property not being defined in this PropertySet."
             )
+        elif sep_point > 0:
+            name = property[: sep_point - 1]
+            index = property[sep_point:]
+        else:
+            name = property
+            index = None
 
         return name, index
 

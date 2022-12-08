@@ -1257,7 +1257,7 @@ class TestGenericStateBlock(object):
         frame.props[1].flow_mol_phase_comp = Var(frame.props[1].phase_component_set)
 
         # Call all properties in metadata and assert they exist.
-        for p in frame.params.get_metadata().properties:
+        for p in frame.params.get_metadata().properties.list_supported_properties():
             if p.name.endswith(("apparent", "true")):
                 # True and apparent properties require electrolytes, which are
                 # not tested here

@@ -61,7 +61,7 @@ def test_set_metadata():
 
     set_metadata(m.props)
 
-    assert m.props.get_metadata().properties["enth_mol"]["method"] is None
+    assert m.props.get_metadata().properties.enth_mol._none.method is None
 
 
 class TestInvalidBounds(object):
