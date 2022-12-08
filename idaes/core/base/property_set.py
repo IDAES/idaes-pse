@@ -34,12 +34,14 @@ class _PropertyMetadataIndex(object):
     def __init__(
         self,
         parent,
+        idx,
         method: str = None,
         units: _PyomoUnit = None,
         supported: bool = False,
         required: bool = False,
     ):
         super().__setattr__("_parent", parent)
+        super().__setattr__("_idx", idx)
         super().__setattr__("_method", method)
         super().__setattr__("_supported", supported)
         super().__setattr__("_required", required)
@@ -55,6 +57,16 @@ class _PropertyMetadataIndex(object):
             "supported" if self._supported else "",
             "required" if self._required else "",
         )
+
+    @property
+    def name(self):
+        """
+        Name of sub-property as a string
+        """
+        suffix = ""
+        if self._idx is not "none":
+            suffix = f"_{self._idx}"
+        return f"{self._parent.name}{suffix}"
 
     @property
     def method(self):
@@ -195,10 +207,10 @@ class PropertyMetadata(object):
         super().__setattr__("_units", units)
 
         # Create entries for indexed sub-properties
-        super().__setattr__("_none", _PropertyMetadataIndex(parent=self))
+        super().__setattr__("_none", _PropertyMetadataIndex(parent=self, idx="none"))
         if indices is not None:
             for i in indices:
-                super().__setattr__("_" + i, _PropertyMetadataIndex(parent=self))
+                super().__setattr__("_" + i, _PropertyMetadataIndex(parent=self, idx=i))
 
     def __getitem__(self, key: str):
         if key is None:

@@ -34,7 +34,7 @@ class Test_PropertyMetadataIndex:
     def meta(self):
         p = DummyMeta()
 
-        meta = _PropertyMetadataIndex(parent=p)
+        meta = _PropertyMetadataIndex(parent=p, idx="baz")
 
         return meta
 
@@ -44,11 +44,14 @@ class Test_PropertyMetadataIndex:
 
         meta = _PropertyMetadataIndex(
             parent=p,
+            idx="bar",
             method="foo",
             supported=True,
             required=True,
         )
         assert meta.method == "foo"
+        assert meta._parent is p
+        assert meta._idx == "bar"
         assert meta.supported
         assert meta.required
 
@@ -57,6 +60,8 @@ class Test_PropertyMetadataIndex:
         assert meta.method is None
         assert not meta.supported
         assert not meta.required
+
+        assert meta._idx == "baz"
 
     @pytest.mark.unit
     def test_set_method(self, meta):
