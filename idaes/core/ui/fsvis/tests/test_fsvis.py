@@ -25,7 +25,7 @@ import re
 import requests
 import time
 
-from pyomo.environ import ConcreteModel, SolverFactory, Constraint, value
+from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,

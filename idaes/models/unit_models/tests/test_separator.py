@@ -16,7 +16,6 @@ Tests for Separator unit model.
 Author: Andrew Lee
 """
 import pytest
-from io import StringIO
 import pandas
 
 from pyomo.environ import (
