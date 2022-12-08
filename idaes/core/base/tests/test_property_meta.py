@@ -230,3 +230,82 @@ def test_add_default_units_extra_arg():
         m.meta_object.add_default_units(
             {"foo": "bar"},
         )
+
+
+@pytest.mark.unit
+def test_add_properties():
+    m = ConcreteModel()
+    m.meta_object = PropertyClassMetadata()
+
+    m.meta_object.add_properties(
+        {
+            "flow_vol": {"method": "foo", "supported": True},
+            "conc_mol_comp": {"method": "bar", "supported": True},
+            "mw_phase": {"required": True, "supported": False},
+            "dens_mol_phase_comp": {"method": "baz", "supported": True},
+        }
+    )
+
+    assert m.meta_object._properties.flow_vol._none.method == "foo"
+    assert m.meta_object._properties.flow_vol._none.supported
+    assert not m.meta_object._properties.flow_vol._none.required
+
+    assert m.meta_object._properties.flow_vol._comp.method is None
+    assert not m.meta_object._properties.flow_vol._comp.supported
+    assert not m.meta_object._properties.flow_vol._comp.required
+
+    assert m.meta_object._properties.flow_vol._phase.method is None
+    assert not m.meta_object._properties.flow_vol._phase.supported
+    assert not m.meta_object._properties.flow_vol._phase.required
+
+    assert m.meta_object._properties.flow_vol._phase_comp.method is None
+    assert not m.meta_object._properties.flow_vol._phase_comp.supported
+    assert not m.meta_object._properties.flow_vol._phase_comp.required
+
+    assert m.meta_object._properties.conc_mol._none.method is None
+    assert not m.meta_object._properties.conc_mol._none.supported
+    assert not m.meta_object._properties.conc_mol._none.required
+
+    assert m.meta_object._properties.conc_mol._comp.method == "bar"
+    assert m.meta_object._properties.conc_mol._comp.supported
+    assert not m.meta_object._properties.conc_mol._comp.required
+
+    assert m.meta_object._properties.conc_mol._phase.method is None
+    assert not m.meta_object._properties.conc_mol._phase.supported
+    assert not m.meta_object._properties.conc_mol._phase.required
+
+    assert m.meta_object._properties.conc_mol._phase_comp.method is None
+    assert not m.meta_object._properties.conc_mol._phase_comp.supported
+    assert not m.meta_object._properties.conc_mol._phase_comp.required
+
+    assert m.meta_object._properties.mw._none.method is None
+    assert not m.meta_object._properties.mw._none.supported
+    assert not m.meta_object._properties.mw._none.required
+
+    assert m.meta_object._properties.mw._comp.method is None
+    assert not m.meta_object._properties.mw._comp.supported
+    assert not m.meta_object._properties.mw._comp.required
+
+    assert m.meta_object._properties.mw._phase.method is None
+    assert not m.meta_object._properties.mw._phase.supported
+    assert m.meta_object._properties.mw._phase.required
+
+    assert m.meta_object._properties.mw._phase_comp.method is None
+    assert not m.meta_object._properties.mw._phase_comp.supported
+    assert not m.meta_object._properties.mw._phase_comp.required
+
+    assert m.meta_object._properties.dens_mol._none.method is None
+    assert not m.meta_object._properties.dens_mol._none.supported
+    assert not m.meta_object._properties.dens_mol._none.required
+
+    assert m.meta_object._properties.dens_mol._comp.method is None
+    assert not m.meta_object._properties.dens_mol._comp.supported
+    assert not m.meta_object._properties.dens_mol._comp.required
+
+    assert m.meta_object._properties.dens_mol._phase.method is None
+    assert not m.meta_object._properties.dens_mol._phase.supported
+    assert not m.meta_object._properties.dens_mol._phase.required
+
+    assert m.meta_object._properties.dens_mol._phase_comp.method == "baz"
+    assert m.meta_object._properties.dens_mol._phase_comp.supported
+    assert not m.meta_object._properties.dens_mol._phase_comp.required
