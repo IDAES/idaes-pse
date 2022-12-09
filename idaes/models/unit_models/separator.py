@@ -220,10 +220,10 @@ balance type
     **default** - MomentumBalanceType.pressureTotal.
     **Valid values:** {
     **MomentumBalanceType.none** - exclude momentum balances,
-    **MomentumBalanceType.pressureTotal** - single pressure balance for material,
-    **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
-    **MomentumBalanceType.momentumTotal** - single momentum balance for material,
-    **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}""",
+    **MomentumBalanceType.pressureTotal** - single pressure balance for material (pressure in all outlets is equivalent),
+    **MomentumBalanceType.pressurePhase** - pressure balances for each phase (pressure in all outlets is equivalent),
+    **MomentumBalanceType.momentumTotal** - single momentum balance for material (pressure in all outlets is equivalent),
+    **MomentumBalanceType.momentumPhase** - momentum balances for each phase (pressure in all outlets is equivalent).}""",
         ),
     )
     CONFIG.declare(
@@ -807,6 +807,7 @@ objects linked the mixed state and all outlet states,
         """
 
         if self.config.momentum_balance_type is not MomentumBalanceType.none:
+
             @self.Constraint(
                 self.flowsheet().time,
                 self.outlet_idx,

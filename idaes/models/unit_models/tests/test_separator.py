@@ -665,48 +665,20 @@ class TestSplitConstruction(object):
 
         assert not hasattr(build.fs.sep, "material_splitting_eqn")
 
+    @pytest.mark.parametrize("balance_type", MomentumBalanceType)
+    @pytest.mark.parametrize("split_type", SplittingType)
     @pytest.mark.unit
-    def test_add_momentum_splitting_constraints_none_total(self, build):
-        build.fs.sep.config.momentum_balance_type = MomentumBalanceType.none
+    def test_momentum_splitting(self, build, balance_type, split_type):
+        build.fs.sep.config.split_basis = split_type
+        build.fs.sep.config.momentum_balance_type = balance_type
 
         build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        build.fs.sep.add_momentum_splitting_constraints(build.fs.sep.mixed_state)
 
-        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
-
-        assert not hasattr(build.fs.sep, "momentum_splitting_eqn")
-
-    @pytest.mark.unit
-    def test_add_momentum_splitting_constraints_none_phase(self, build):
-        build.fs.sep.config.split_basis = SplittingType.phaseFlow
-        build.fs.sep.config.momentum_balance_type = MomentumBalanceType.none
-
-        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
-
-        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
-
-        assert not hasattr(build.fs.sep, "momentum_splitting_eqn")
-
-    @pytest.mark.unit
-    def test_add_momentum_splitting_constraints_none_component(self, build):
-        build.fs.sep.config.split_basis = SplittingType.componentFlow
-        build.fs.sep.config.momentum_balance_type = MomentumBalanceType.none
-
-        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
-
-        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
-
-        assert not hasattr(build.fs.sep, "momentum_splitting_eqn")
-
-    @pytest.mark.unit
-    def test_add_momentum_splitting_constraints_none_phase_component(self, build):
-        build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
-        build.fs.sep.config.momentum_balance_type = MomentumBalanceType.none
-
-        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
-
-        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
-
-        assert not hasattr(build.fs.sep, "momentum_splitting_eqn")
+        if balance_type is MomentumBalanceType.none:
+            assert not hasattr(build.fs.sep, "pressure_equality_eqn")
+        else:
+            assert isinstance(build.fs.sep.pressure_equality_eqn, Constraint)
 
     @pytest.mark.unit
     def test_add_energy_splitting_constraints(self, build):
