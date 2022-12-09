@@ -69,8 +69,7 @@ def _valve_pressure_flow_cb(b):
     b.Cv.fix()
 
     b.flow_var = pyo.Reference(b.control_volume.properties_in[:].flow_mol)
-    # b.pressure_flow_equation_scale = lambda x: x ** 2
-    b.pressure_flow_equation_scale = lambda x: x
+    b.pressure_flow_equation_scale = lambda x: x ** 2
 
     @b.Constraint(b.flowsheet().time)
     def pressure_flow_equation(b2, t):
@@ -79,10 +78,7 @@ def _valve_pressure_flow_cb(b):
         F = b2.control_volume.properties_in[t].flow_mol
         Cv = b2.Cv
         fun = b2.valve_function[t]
-        # return F**2 == Cv**2 * (Pi**2 - Po**2) * fun**2
-        # return F == Cv * pyo.sqrt(Pi ** 2 - Po ** 2) * fun
-        # return F ** 2 == Cv ** 2 * (Pi + Po) * (-b2.deltaP[t]) * fun ** 2
-        return F == Cv * pyo.sqrt((Pi + Po) * (-b2.deltaP[t])) * fun
+        return F**2 == Cv**2 * (Pi**2 - Po**2) * fun**2
 
 
 def _add_inlet_pressure_step(m, time=1, value=6.0e5):

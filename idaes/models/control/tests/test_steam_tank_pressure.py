@@ -119,7 +119,7 @@ def create_model(
     Args:
         steady_state (bool): If True, create a steady state model, otherwise
             create a dynamic model
-        time_set (list): The begining and end point of the time domain
+        time_set (list): The beginning and end point of the time domain
         time_units (Pyomo Unit object): Units of time domain
         nfe (int): Number of finite elements argument for the DAE
             transformation.
