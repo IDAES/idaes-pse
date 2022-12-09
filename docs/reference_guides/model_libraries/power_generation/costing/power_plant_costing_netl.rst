@@ -122,6 +122,7 @@ The Power Plant costing method has the following arguments:
 * ccs : which reference parameter to use, as some accounts are costed using two different reference parameters; defaults to "B", and "A" is also a valid option
 * CE_index_year : Chemical Engineering Cost Index base year, defaults to 2018; calling the registered Pyomo currency units dictionary of plant cost index values will allow conversion between base years within the flowsheet
 * additional_costing_params : option to add a costing parameter dictionary to supplement existing account data
+* use_additional_costing_params : True/False flag whether IDAES should use new data when additonal account names match existing account names, or fail with a useful error message; defaults to False, meaning pre-installed accounts in BB_costing_params and generic_ccs_costing will never be bypassed or overwritten by duplicated additional accounts unless this flag is set to True on the unit costing block argument level
 
  1. Supercritical PC,
  2. Subcritical PC, 

@@ -20,7 +20,6 @@ import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock
 
 import idaes.logger as idaeslog
-from idaes.core.util.tags import svg_tag as svg_tag_new
 
 _log = idaeslog.getLogger(__name__)
 

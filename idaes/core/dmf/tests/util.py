@@ -18,7 +18,6 @@ import importlib
 import logging
 import os
 import shutil
-import tempfile
 import time
 from unittest.mock import MagicMock, patch
 import warnings
@@ -28,7 +27,7 @@ import pytest
 
 # local
 from idaes.core.dmf import dmfbase
-from idaes.core.dmf.util import mkdtemp, NamedTemporaryFile
+from idaes.core.dmf.util import mkdtemp
 
 __author__ = "Dan Gunter"
 

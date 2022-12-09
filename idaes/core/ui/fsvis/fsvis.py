@@ -16,7 +16,7 @@ from collections import namedtuple
 from pathlib import Path
 import sys
 import time
-from typing import Optional, Union, Tuple
+from typing import Optional, Union
 import webbrowser
 
 # package

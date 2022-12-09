@@ -41,7 +41,6 @@ from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
 import idaes.core.util.scaling as iscale
-from idaes.core.util.exceptions import UserModelError
 
 
 # Set up logger

@@ -18,7 +18,6 @@ __author__ = "John Eslick"
 import pytest
 import pyomo.environ as pyo
 from pyomo.network import Arc
-import pyomo.dae as pyodae
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.models.unit_models import Heater, Valve
 from idaes.models.properties import iapws95
@@ -28,8 +27,6 @@ from idaes.models.control.controller import (
     ControllerType,
     ControllerMVBoundType,
 )
-import idaes.core.util.scaling as iscale
-from idaes.core.solvers import get_solver
 from idaes.core.solvers import petsc
 from idaes.core.util.math import smooth_max, smooth_min
 import numpy as np

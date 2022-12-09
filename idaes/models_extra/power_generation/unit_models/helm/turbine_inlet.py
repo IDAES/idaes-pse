@@ -19,7 +19,7 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
 """
 __Author__ = "John Eslick"
 
-from pyomo.environ import Var, sqrt, value, SolverFactory, units as pyunits
+from pyomo.environ import Var, sqrt, value, units as pyunits
 from idaes.core import declare_process_block_class
 from idaes.models_extra.power_generation.unit_models.helm.turbine import (
     HelmIsentropicTurbineData,

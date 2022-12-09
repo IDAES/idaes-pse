@@ -22,7 +22,7 @@ Author: Chinedu Okoli
 import time
 
 # Import Pyomo libraries
-from pyomo.environ import ConcreteModel, SolverFactory, value
+from pyomo.environ import ConcreteModel, value
 
 # Import IDAES core modules
 from idaes.core import FlowsheetBlock
