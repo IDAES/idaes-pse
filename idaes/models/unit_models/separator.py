@@ -220,10 +220,10 @@ balance type
     **default** - MomentumBalanceType.pressureTotal.
     **Valid values:** {
     **MomentumBalanceType.none** - exclude momentum balances,
-    **MomentumBalanceType.pressureTotal** - single pressure balance for material (pressure in all outlets is equal),
-    **MomentumBalanceType.pressurePhase** - pressure balances for each phase (pressure in all outlets is equal),
-    **MomentumBalanceType.momentumTotal** - single momentum balance for material (pressure in all outlets is equal),
-    **MomentumBalanceType.momentumPhase** - momentum balances for each phase (pressure in all outlets is equal).}""",
+    **MomentumBalanceType.pressureTotal** - pressure in all outlets is equal,
+    **MomentumBalanceType.pressurePhase** - not yet supported,
+    **MomentumBalanceType.momentumTotal** - not yet supported,
+    **MomentumBalanceType.momentumPhase** - not yet supported.}""",
         ),
     )
     CONFIG.declare(
@@ -806,7 +806,9 @@ objects linked the mixed state and all outlet states,
         pressures in outlets.
         """
 
-        if self.config.momentum_balance_type is not MomentumBalanceType.none:
+        if self.config.momentum_balance_type is MomentumBalanceType.none:
+            pass
+        elif self.config.momentum_balance_type is MomentumBalanceType.pressureTotal:
 
             @self.Constraint(
                 self.flowsheet().time,
@@ -816,6 +818,12 @@ objects linked the mixed state and all outlet states,
             def pressure_equality_eqn(b, t, o):
                 o_block = getattr(self, o + "_state")
                 return mixed_block[t].pressure == o_block[t].pressure
+
+        else:
+            raise NotImplementedError(
+                f"Separators do not yet support momentum balances of type "
+                f"{self.config.momentum_balance_type}"
+            )
 
     def partition_outlet_flows(self, mb, outlet_list):
         """

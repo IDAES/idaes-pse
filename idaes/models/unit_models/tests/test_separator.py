@@ -673,12 +673,22 @@ class TestSplitConstruction(object):
         build.fs.sep.config.momentum_balance_type = balance_type
 
         build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
-        build.fs.sep.add_momentum_splitting_constraints(build.fs.sep.mixed_state)
 
         if balance_type is MomentumBalanceType.none:
+            build.fs.sep.add_momentum_splitting_constraints(build.fs.sep.mixed_state)
             assert not hasattr(build.fs.sep, "pressure_equality_eqn")
-        else:
+        elif balance_type is MomentumBalanceType.pressureTotal:
+            build.fs.sep.add_momentum_splitting_constraints(build.fs.sep.mixed_state)
             assert isinstance(build.fs.sep.pressure_equality_eqn, Constraint)
+        else:
+            with pytest.raises(
+                NotImplementedError,
+                match=f"Separators do not yet support momentum balances of type "
+                f"{balance_type}",
+            ):
+                build.fs.sep.add_momentum_splitting_constraints(
+                    build.fs.sep.mixed_state
+                )
 
     @pytest.mark.unit
     def test_add_energy_splitting_constraints(self, build):
