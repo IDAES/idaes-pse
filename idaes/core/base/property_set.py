@@ -36,7 +36,6 @@ class _PropertyMetadataIndex(object):
         parent,
         idx,
         method: str = None,
-        units: _PyomoUnit = None,
         supported: bool = False,
         required: bool = False,
     ):
@@ -180,11 +179,13 @@ class PropertyMetadata(object):
         - name of property
         - documentation of property
         - units of measurement for this property (defined via associated UnitSet)
+        - indexing set for sub-properties (e.g. by component or by phase)
         - attributes for sub-properties identifying
 
             - method that constructs this property and associated constraints (if build-on-demand)
             - whether property is supported by this package
             - whether this package expects this property to be provided by another package
+
     """
 
     # TODO: Add optional doc string to metadata objects
@@ -196,6 +197,27 @@ class PropertyMetadata(object):
         indices: list = None,
         initialize: dict = None,
     ):
+        """
+        Construct a PropertyMetadata object.
+
+        Args:
+            name: name of property
+            doc: doc string for property
+            units: units of measurement for property
+            indices: list of sub-property indices
+            initialize: dict of metadata attributes to set by sub-property
+
+
+        Supported metadata attributes are:
+
+            - method: str representing a method name to call to construct this property
+            - required: bool indicating whether a property package requires this property to be
+                        supplied by another property package
+            - supported: bool indicating whether a property package supports this property
+
+        Returns:
+            None
+        """
         if name is None:
             raise TypeError('"name" is required')
         if doc is None:
@@ -306,11 +328,12 @@ class PropertySetBase(object):
         self,
         name: str,
         doc: str = None,
+        units: _PyomoUnit = None,
+        indices=None,
         method: str = None,
         required: bool = False,
         supported: bool = True,
-        units: _PyomoUnit = None,
-        indices=None,
+        initialize: dict = None,
     ):
         """
         Define a new property called `name`.
@@ -318,12 +341,17 @@ class PropertySetBase(object):
         Args:
             name: name of new property (required)
             doc: doc string for property
-            method: reference to build-on-demand method for property (optional, default=None)
-            supported: bool indicating if package supports this property (optional, default=True)
-            required: bool indicating if package requires this property from another package (optional, default=False)
             units: quantity defined in associated UnitSet defining the units of measurement for property
             indices: list, bool or None. Indicates what sub-property indices should be added. None = use default set,
-                     False = unindexed (only 'none' entry)/
+                     False = unindexed (only 'none' entry)
+            method: reference to build-on-demand method for property (optional,
+                    only if indices is None or False, default=None)
+            supported: bool indicating if package supports this property (optional,
+                       only if indices is None or False, default=True)
+            required: bool indicating if package requires this property from another package (optional,
+                      only if indices is None or False, default=False)
+            initialize: dict constaining values for method, required and supported by sub-property indices
+                        (optional). Cannot combine with method, required or supported arguments.
 
         Returns:
             None
@@ -342,6 +370,7 @@ class PropertySetBase(object):
             required=required,
             units=units,
             indices=indices,
+            initialize=initialize,
         )
 
     def _add_property(
@@ -353,8 +382,33 @@ class PropertySetBase(object):
         supported: bool = False,
         units: _PyomoUnit = None,
         indices: list = None,
+        initialize: dict = None,
     ):
-        # TODO: Need to support defining custom indexed properties and setting metadata
+        if indices is not None:
+            # Cannot assign method, required or supported as we don't know what index they apply to.
+            # Raise exception if these are not default values.
+            if required or supported or method is not None:
+                raise ValueError(
+                    "Cannot assign method, required or supported attributes directly to indexed "
+                    "properties. Please use the initialize argument instead."
+                )
+        else:
+            # Otherwise, take global arguments and set to initialize "none" index
+            if initialize is None:
+                initialize = {
+                    "none": {
+                        "method": method,
+                        "required": required,
+                        "supported": supported,
+                    },
+                }
+            else:
+                if required or supported or method is not None:
+                    raise ValueError(
+                        "Cannot provide values for initialize and any of method, required or supported "
+                        "arguments. Please use the one approach or the other."
+                    )
+
         if indices is None:
             indices = list(self._defined_indices)
             indices.append("none")
@@ -368,17 +422,10 @@ class PropertySetBase(object):
                 doc=doc,
                 units=units,
                 indices=indices,
+                initialize=initialize,
             ),
         )
         self._defined_properties.append(name)
-
-        # Set metadata on _none index
-        if "none" in indices:
-            getattr(self, name)._none.update_property(
-                method=method,
-                supported=supported,
-                required=required,
-            )
 
     def check_required_properties(self, other: "PropertySetBase"):
         """

@@ -215,12 +215,39 @@ class TestPropertySetBase:
         assert isinstance(pset.foo._phase_comp, _PropertyMetadataIndex)
 
     @pytest.mark.unit
+    def test_add_property_unindexed_init(self, pset):
+        pset._add_property(
+            name="foo",
+            initialize={
+                "none": {
+                    "method": "baz",
+                    "supported": True,
+                    "required": True,
+                },
+            },
+            units=units.dimensionless,
+        )
+
+        assert isinstance(pset.foo, PropertyMetadata)
+        assert pset.foo.name == "foo"
+        assert pset.foo._none.method == "baz"
+        assert pset.foo._none.supported
+        assert pset.foo._none.required
+        assert pset.foo.units is units.dimensionless
+        for i in pset.foo._indices:
+            assert i in ["comp", "phase", "phase_comp", "none"]
+
+        assert "foo" in pset._defined_properties
+
+        assert isinstance(pset.foo._none, _PropertyMetadataIndex)
+        assert isinstance(pset.foo._comp, _PropertyMetadataIndex)
+        assert isinstance(pset.foo._phase, _PropertyMetadataIndex)
+        assert isinstance(pset.foo._phase_comp, _PropertyMetadataIndex)
+
+    @pytest.mark.unit
     def test_add_property_w_index(self, pset):
         pset._add_property(
             name="foo",
-            method="baz",
-            supported=True,
-            required=True,
             units=units.dimensionless,
             indices=["a", "b"],
         )
@@ -237,6 +264,38 @@ class TestPropertySetBase:
         assert isinstance(pset.foo._a, _PropertyMetadataIndex)
         assert isinstance(pset.foo._b, _PropertyMetadataIndex)
         assert not hasattr(pset.foo, "_none")
+
+    @pytest.mark.unit
+    def test_add_property_w_index_other(self, pset):
+        with pytest.raises(
+            ValueError,
+            match="Cannot assign method, required or supported attributes directly to indexed "
+            "properties. Please use the initialize argument instead.",
+        ):
+            pset._add_property(
+                name="foo",
+                method="baz",
+                supported=True,
+                required=True,
+                units=units.dimensionless,
+                indices=["a", "b"],
+            )
+
+    @pytest.mark.unit
+    def test_add_property_init_and_other(self, pset):
+        with pytest.raises(
+            ValueError,
+            match="Cannot provide values for initialize and any of method, required or supported "
+            "arguments. Please use the one approach or the other.",
+        ):
+            pset._add_property(
+                name="foo",
+                method="baz",
+                supported=True,
+                required=True,
+                units=units.dimensionless,
+                initialize="bar",
+            )
 
     @pytest.mark.unit
     def test_define_property(self, pset):

@@ -487,14 +487,16 @@ class PropertyClassMetadata(object):
         For each property, the value should be another dict which may contain
         the following keys:
 
-        - 'method': (required) the name of a method to construct the
+        - 'units': (optional) units of measurement for the property.
+        - 'indices': (optional) list of sub-property indices for this property. If None, use default set, if False unindexed.
+        - 'method': (optional, only if 'indices' is None or False) the name of a method to construct the
                     property as a str, or None if the property will be
                     constructed by default.
-        - 'units': (optional) units of measurement for the property.
-        - 'supported': (optional, default = True) bool indicating if this property is
+        - 'supported': (optional, only if 'indices' is None or False) bool indicating if this property is
                        supported by this package.
-        - 'required': (optional, default = False) bool indicating if this property is
+        - 'required': (optional, only if 'indices' is None or False bool indicating if this property is
                       required by this package.
+        - 'initialize': (optional) dict indicating 'method', 'required' and 'supported' values for sub-properties by index.
 
         Args:
             p (dict): Key=property, Value=dict
@@ -519,14 +521,16 @@ class PropertyClassMetadata(object):
         For each property, the value should be another dict which may contain
         the following keys:
 
-        - 'method': (required) the name of a method to construct the
+        - 'units': (optional) units of measurement for the property.
+        - 'indices': (optional) list of sub-property indices for this property. If None, use default set, if False unindexed.
+        - 'method': (optional, only if 'indices' is None or False) the name of a method to construct the
                     property as a str, or None if the property will be
                     constructed by default.
-        - 'units': (optional) units of measurement for the property.
-        - 'supported': (optional, default = True) bool indicating if this property is
+        - 'supported': (optional, only if 'indices' is None or False) bool indicating if this property is
                        supported by this package.
-        - 'required': (optional, default = False) bool indicating if this property is
+        - 'required': (optional, only if 'indices' is None or False bool indicating if this property is
                       required by this package.
+        - 'initialize': (optional) dict indicating 'method', 'required' and 'supported' values for sub-properties by index.
 
         Args:
             p (dict): Key=property, Value=dict
@@ -538,7 +542,7 @@ class PropertyClassMetadata(object):
             self._properties.define_property(name=k, **v)
 
     def add_required_properties(self, p: str):
-        # TODO: Update doc string
+        # TODO: Deprecate
         """Add required properties to the metadata.
 
         Update 'required' attribute of specified properties.
