@@ -40,6 +40,9 @@ from idaes.models.properties.modular_properties.pure import (
     ChapmanEnskogLennardJones,
     Eucken,
 )
+from idaes.models.properties.modular_properties.base.generic_reaction import (
+    ConcentrationForm,
+)
 from idaes.models.properties.modular_properties.transport_properties import (
     ViscosityWilke,
     ThermalConductivityWMS,
