@@ -194,6 +194,7 @@ class PropertyMetadata(object):
         doc: str = None,
         units: _PyomoUnit = None,
         indices: list = None,
+        initialize: dict = None,
     ):
         if name is None:
             raise TypeError('"name" is required')
@@ -206,11 +207,20 @@ class PropertyMetadata(object):
         # TODO: Validate units are from UnitSet or dimensionless - needs deprecation
         super().__setattr__("_units", units)
 
+        # Record indices - needed for building instance specific cases
+        super().__setattr__("_indices", indices)
+
         # Create entries for indexed sub-properties
-        super().__setattr__("_none", _PropertyMetadataIndex(parent=self, idx="none"))
-        if indices is not None:
-            for i in indices:
-                super().__setattr__("_" + i, _PropertyMetadataIndex(parent=self, idx=i))
+        if indices is None or indices is False:
+            indices = ["none"]
+
+        for i in indices:
+            super().__setattr__("_" + i, _PropertyMetadataIndex(parent=self, idx=i))
+
+        # Initialize values in sub-properties
+        if initialize is not None:
+            for k, v in initialize.items():
+                self[k].update_property(**v)
 
     def __getitem__(self, key: str):
         if key is None:
@@ -218,8 +228,7 @@ class PropertyMetadata(object):
         try:
             return getattr(self, "_" + key)
         except AttributeError:
-            # TODO: Real error message - needs to be a KeyError to work with getattr elsewhere
-            raise KeyError()
+            raise KeyError(f"Property {self._name} does not have index {key}.")
 
     def __repr__(self):
         return f"{self._doc} ({self._units})"
@@ -274,6 +283,7 @@ class PropertySetBase(object):
                         name=i,
                         doc=iobj._doc,
                         units=units,
+                        indices=iobj._indices,  # get desired indices from parent
                     )
 
     def __setattr__(self, key, value):
@@ -300,6 +310,7 @@ class PropertySetBase(object):
         required: bool = False,
         supported: bool = True,
         units: _PyomoUnit = None,
+        indices=None,
     ):
         """
         Define a new property called `name`.
@@ -311,6 +322,8 @@ class PropertySetBase(object):
             supported: bool indicating if package supports this property (optional, default=True)
             required: bool indicating if package requires this property from another package (optional, default=False)
             units: quantity defined in associated UnitSet defining the units of measurement for property
+            indices: list, bool or None. Indicates what sub-property indices should be added. None = use default set,
+                     False = unindexed (only 'none' entry)/
 
         Returns:
             None
@@ -328,6 +341,7 @@ class PropertySetBase(object):
             supported=supported,
             required=required,
             units=units,
+            indices=indices,
         )
 
     def _add_property(
@@ -338,25 +352,33 @@ class PropertySetBase(object):
         required: bool = False,
         supported: bool = False,
         units: _PyomoUnit = None,
+        indices: list = None,
     ):
         # TODO: Need to support defining custom indexed properties and setting metadata
+        if indices is None:
+            indices = list(self._defined_indices)
+            indices.append("none")
+        elif indices is False:
+            indices = ["none"]
+
         super().__setattr__(
             name,
             PropertyMetadata(
                 name=name,
                 doc=doc,
                 units=units,
-                indices=self._defined_indices,
+                indices=indices,
             ),
         )
         self._defined_properties.append(name)
 
         # Set metadata on _none index
-        getattr(self, name)._none.update_property(
-            method=method,
-            supported=supported,
-            required=required,
-        )
+        if "none" in indices:
+            getattr(self, name)._none.update_property(
+                method=method,
+                supported=supported,
+                required=required,
+            )
 
     def check_required_properties(self, other: "PropertySetBase"):
         """
@@ -371,7 +393,7 @@ class PropertySetBase(object):
         unsupported = []
         for a in self._defined_properties:
             aobj = getattr(self, a)
-            for i in [*self._defined_indices, "none"]:
+            for i in aobj._indices:
                 if aobj[i].required:
                     try:
                         if not getattr(other, a)[i].supported:
@@ -390,7 +412,7 @@ class PropertySetBase(object):
         """
         list = []
         for p in self:
-            for i in [*self._defined_indices, "none"]:
+            for i in p._indices:
                 if p[i].supported:
                     list.append(p[i])
         return list
@@ -404,7 +426,7 @@ class PropertySetBase(object):
         """
         list = []
         for p in self:
-            for i in [*self._defined_indices, "none"]:
+            for i in p._indices:
                 if not p[i].supported:
                     list.append(p[i])
         return list
@@ -418,7 +440,7 @@ class PropertySetBase(object):
         """
         list = []
         for p in self:
-            for i in [*self._defined_indices, "none"]:
+            for i in p._indices:
                 if p[i].required:
                     list.append(p[i])
         return list
@@ -708,11 +730,13 @@ class StandardPropertySet(PropertySetBase):
         name="temperature",
         doc="Temperature",
         units="TEMPERATURE",
+        indices=False,
     )
     temperature_bubble = PropertyMetadata(
         name="temperature_bubble",
         doc="Bubble Point Temperature",
         units="TEMPERATURE",
+        indices=False,
     )
     temperature_crit = PropertyMetadata(
         name="temperature_crit",
@@ -723,11 +747,13 @@ class StandardPropertySet(PropertySetBase):
         name="temperature_dew",
         doc="Dew Point Temperature",
         units="TEMPERATURE",
+        indices=False,
     )
     temperature_red = PropertyMetadata(
         name="temperature_red",
         doc="Reduced Temperature",
         units=units.dimensionless,
+        indices=False,
     )
     temperature_sat = PropertyMetadata(
         name="temperature_sat",
@@ -752,6 +778,11 @@ class StandardPropertySet(PropertySetBase):
     vol_mol = PropertyMetadata(
         name="vol_mol",
         doc="Molar Volume",
+        units="MOLAR_VOLUME",
+    )
+    vol_mol_crit = PropertyMetadata(
+        name="vol_mol",
+        doc="Molar Volume at Critical Point",
         units="MOLAR_VOLUME",
     )
     # Log terms

@@ -119,23 +119,42 @@ class TestPropertyMetadata:
             )
 
     @pytest.mark.unit
-    def test_all_args(self, meta):
+    def test_all_args(self):
         meta = PropertyMetadata(
             name="test",
             units=units.dimensionless,
-            indices=["a", "b"],
+            indices=["a", "b", "none"],
+            initialize={
+                None: {"method": "foo", "required": True, "supported": True},
+                "a": {"method": "bar", "required": False, "supported": True},
+                "b": {"method": "baz", "required": True, "supported": False},
+            },
         )
+
         assert meta.name == "test"
         assert meta.units is units.dimensionless
+        assert meta._indices == ["a", "b", "none"]
+
+        assert isinstance(meta._none, _PropertyMetadataIndex)
+        assert meta._none.method == "foo"
+        assert meta._none.required
+        assert meta._none.supported
 
         assert isinstance(meta._a, _PropertyMetadataIndex)
+        assert meta._a.method == "bar"
+        assert not meta._a.required
+        assert meta._a.supported
+
         assert isinstance(meta._b, _PropertyMetadataIndex)
-        assert isinstance(meta._none, _PropertyMetadataIndex)
+        assert meta._b.method == "baz"
+        assert meta._b.required
+        assert not meta._b.supported
 
     @pytest.mark.unit
     def test_default_value(self, meta):
         assert meta.name == "test"
         assert meta.units is units.dimensionless
+        assert meta._indices is None
         assert isinstance(meta._none, _PropertyMetadataIndex)
 
 
@@ -185,6 +204,8 @@ class TestPropertySetBase:
         assert pset.foo._none.supported
         assert pset.foo._none.required
         assert pset.foo.units is units.dimensionless
+        for i in pset.foo._indices:
+            assert i in ["comp", "phase", "phase_comp", "none"]
 
         assert "foo" in pset._defined_properties
 
@@ -192,6 +213,30 @@ class TestPropertySetBase:
         assert isinstance(pset.foo._comp, _PropertyMetadataIndex)
         assert isinstance(pset.foo._phase, _PropertyMetadataIndex)
         assert isinstance(pset.foo._phase_comp, _PropertyMetadataIndex)
+
+    @pytest.mark.unit
+    def test_add_property_w_index(self, pset):
+        pset._add_property(
+            name="foo",
+            method="baz",
+            supported=True,
+            required=True,
+            units=units.dimensionless,
+            indices=["a", "b"],
+        )
+
+        assert isinstance(pset.foo, PropertyMetadata)
+        assert pset.foo.name == "foo"
+        assert pset.foo.units is units.dimensionless
+
+        for i in pset.foo._indices:
+            assert i in ["a", "b"]
+
+        assert "foo" in pset._defined_properties
+
+        assert isinstance(pset.foo._a, _PropertyMetadataIndex)
+        assert isinstance(pset.foo._b, _PropertyMetadataIndex)
+        assert not hasattr(pset.foo, "_none")
 
     @pytest.mark.unit
     def test_define_property(self, pset):
@@ -473,6 +518,18 @@ class TestStandardPropertySet:
         pset = StandardPropertySet(parent=p)
 
         assert pset._defined_indices == ["comp", "phase", "phase_comp"]
+
+    @pytest.mark.unit
+    def test_unindexed_properties(self):
+        p = DummyMeta()
+        p.default_units = UnitSet()
+
+        pset = StandardPropertySet(parent=p)
+
+        assert pset.temperature._indices == ["none"]
+        assert pset.temperature_bubble._indices == ["none"]
+        assert pset.temperature_dew._indices == ["none"]
+        assert pset.temperature_red._indices == ["none"]
 
     @pytest.mark.unit
     def test_get_name_and_index(self):
