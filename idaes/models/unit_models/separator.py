@@ -220,10 +220,10 @@ balance type
     **default** - MomentumBalanceType.pressureTotal.
     **Valid values:** {
     **MomentumBalanceType.none** - exclude momentum balances,
-    **MomentumBalanceType.pressureTotal** - single pressure balance for material (pressure in all outlets is equivalent),
-    **MomentumBalanceType.pressurePhase** - pressure balances for each phase (pressure in all outlets is equivalent),
-    **MomentumBalanceType.momentumTotal** - single momentum balance for material (pressure in all outlets is equivalent),
-    **MomentumBalanceType.momentumPhase** - momentum balances for each phase (pressure in all outlets is equivalent).}""",
+    **MomentumBalanceType.pressureTotal** - single pressure balance for material (pressure in all outlets is equal),
+    **MomentumBalanceType.pressurePhase** - pressure balances for each phase (pressure in all outlets is equal),
+    **MomentumBalanceType.momentumTotal** - single momentum balance for material (pressure in all outlets is equal),
+    **MomentumBalanceType.momentumPhase** - momentum balances for each phase (pressure in all outlets is equal).}""",
         ),
     )
     CONFIG.declare(
