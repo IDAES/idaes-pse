@@ -25,10 +25,8 @@ import pandas as pd
 
 # package
 import pyomo.core as pc
-from pyomo.core.base.param import Param
-from pyomo.environ import Constraint, sin, cos, log, exp, Set, Reals
-from pyomo.common.config import ConfigValue, In, Bool
-from pyomo.common.config import PositiveInt, PositiveFloat
+from pyomo.environ import Constraint, sin, cos, log, exp, Set, Param
+from pyomo.common.config import ConfigValue, In, Bool, PositiveInt, PositiveFloat
 from idaes.core.surrogate.base.surrogate_base import SurrogateTrainer, SurrogateBase
 from idaes.core.surrogate.pysmo import (
     polynomial_regression as pr,

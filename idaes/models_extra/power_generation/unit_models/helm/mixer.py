@@ -13,7 +13,7 @@
 """
 General purpose mixer block for IDAES models
 """
-from pyomo.environ import Param, PositiveReals, SolverFactory, value
+from pyomo.environ import Param, PositiveReals, value
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
 
 from idaes.core import (

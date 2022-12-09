@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Tests for rate forms
+Tests for equilibrium forms
 """
 
 import pytest
@@ -27,7 +27,7 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_forms impo
 from idaes.core import SolidPhase
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.math import safe_log, smooth_max
+from idaes.core.util.math import smooth_max
 from idaes.core.util.exceptions import ConfigurationError
 
 

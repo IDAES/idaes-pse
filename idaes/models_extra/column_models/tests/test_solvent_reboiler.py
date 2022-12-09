@@ -44,7 +44,7 @@ from idaes.models_extra.column_models.solvent_reboiler import SolventReboiler
 from idaes.models_extra.column_models.properties.MEA_solvent import (
     configuration as aqueous_mea,
 )
-from idaes.models_extra.column_models.properties.MEA_vapor import flue_gas, wet_co2
+from idaes.models_extra.column_models.properties.MEA_vapor import flue_gas
 from idaes.core.util.exceptions import InitializationError
 
 

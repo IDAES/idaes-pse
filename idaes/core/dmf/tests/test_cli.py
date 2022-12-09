@@ -16,10 +16,8 @@ Test the `idaes.core.dmf.cli` module.
 # stdlib
 import logging
 from urllib.parse import urlparse
-import sys
 
 # third-party
-import click
 from click.testing import CliRunner
 import pytest
 

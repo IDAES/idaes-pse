@@ -27,7 +27,6 @@ from pyomo.environ import (
     Expression,
     value,
     Var,
-    Set,
     units as pyunits,
 )
 from pyomo.util.check_units import check_units_equivalent, assert_units_consistent
@@ -37,9 +36,7 @@ from idaes.models.properties.modular_properties.state_definitions.FTPx import (
     FTPx,
     define_state,
     set_metadata,
-    define_default_scaling_factors,
     state_initialization,
-    _set_mole_fractions_vle,
     _modified_rachford_rice,
 )
 from idaes.core import (
@@ -47,31 +44,13 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
     declare_process_block_class,
-    PhaseType,
-    LiquidPhase,
-    VaporPhase,
 )
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterData,
 )
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
-from idaes.core.util.exceptions import ConfigurationError, UserModelError
-from idaes.models.properties.modular_properties.phase_equil.henry import (
-    ConstantH,
-    HenryType,
-)
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
-    IdealBubbleDew,
-)
+from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
-
-from idaes.models.properties.modular_properties.base.generic_property import (
-    GenericParameterBlock,
-)
-
-from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
-
-from idaes.core import VaporPhase, LiquidPhase, Component
 
 
 @declare_process_block_class("DummyParameterBlock")

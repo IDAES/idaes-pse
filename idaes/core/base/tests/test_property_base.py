@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 import types
 
-from pyomo.environ import Block, ConcreteModel, Constraint, Set, Var, units as pyunits
+from pyomo.environ import ConcreteModel, Constraint, Set, Var, units as pyunits
 from pyomo.common.config import ConfigBlock
 from pyomo.network import Port
 
