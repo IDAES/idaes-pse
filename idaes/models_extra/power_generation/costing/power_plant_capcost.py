@@ -477,6 +477,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         ccs="B",
         CE_index_year="2018",
         additional_costing_params=None,
+        use_additional_costing_params=False,
     ):
         """
         Power Plant Costing Method
@@ -548,6 +549,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             CE_index_year: year for cost basis, e.g. "2018" to use 2018 dollars
             additional_costing_params: user-defined dictionary to append to
                 existing cost accounts dictionary
+            use_additional_costing_params: Boolean flag to use additional costing
+                parameters when account names conflict with existing accounts data
 
         The appropriate scaling parameters for various cost accounts can be
         found in the QGESS on capital cost scaling (Report
@@ -683,18 +686,24 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             ].items():
                                 if (
                                     accountkey in frozen_dict[techkey][ccskey].keys()
-                                ):  # this is not allowed
-                                    raise ValueError(
-                                        "Data already exists for Account {} "
-                                        "using technology {} with CCS {}. "
-                                        "Please confirm that the custom "
-                                        "account dictionary is correct, or "
-                                        "add the new parameters as a new "
-                                        "account.".format(
-                                            accountkey, str(techkey), ccskey
+                                ) and not use_additional_costing_params:
+                                    if accountkey not in cost_accounts:
+                                        pass  # not the current account, don't fail here
+                                    else:  # this is not allowed
+                                        raise ValueError(
+                                            "Data already exists for Account {} "
+                                            "using technology {} with CCS {}. "
+                                            "Please confirm that the custom "
+                                            "account dictionary is correct, or "
+                                            "add the new parameters as a new "
+                                            "account. To use the custom account "
+                                            "dictionary for all conflicts, please "
+                                            "pass the argument use_additional_costing_params "
+                                            "as True.".format(
+                                                accountkey, str(techkey), ccskey
+                                            )
                                         )
-                                    )
-                                else:
+                                else:  # conflict is the account passed, and overwrite it
                                     frozen_dict[techkey][ccskey][
                                         accountkey
                                     ] = accountval
