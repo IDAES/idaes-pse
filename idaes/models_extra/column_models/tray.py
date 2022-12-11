@@ -411,6 +411,7 @@ see property package for documentation.}""",
             )
             self.liq_side_draw = Port(noruleinit=True, doc="liquid side draw.")
             make_phase_split(
+                self,
                 port=self.liq_side_draw,
                 phase=self._liquid_set,
                 has_liquid_side_draw=self.config.has_liquid_side_draw,
