@@ -272,29 +272,28 @@ see property package for documentation.}""",
         self.add_inlet_port()
 
         # Outlet ports that always exist irrespective of reboiler type
-        self.bottoms = Port(
-            noruleinit=True,
-            doc="Bottoms stream."
-        )
+        self.bottoms = Port(noruleinit=True, doc="Bottoms stream.")
 
         self.vapor_reboil = Port(
             noruleinit=True,
             doc="Vapor outlet stream that is returned to " "to the bottom tray.",
         )
 
-        make_phase_split(self.control_volume,
-                port=self.bottoms,
-                phase=self._liquid_set,
-                side_sf=1,
-                equipmentType="Reboiler"
-            )
+        make_phase_split(
+            self.control_volume,
+            port=self.bottoms,
+            phase=self._liquid_set,
+            side_sf=1,
+            equipmentType="Reboiler",
+        )
 
-        make_phase_split(self.control_volume,
-                port=self.vapor_reboil,
-                phase=self._vapor_set,
-                side_sf=1,
-                equipmentType="Reboiler"
-            )
+        make_phase_split(
+            self.control_volume,
+            port=self.vapor_reboil,
+            phase=self._vapor_set,
+            side_sf=1,
+            equipmentType="Reboiler",
+        )
 
         # Add object reference to variables of the control volume
         # Reference to the heat duty
@@ -311,10 +310,7 @@ see property package for documentation.}""",
         self.add_inlet_port()
 
         # Outlet ports that always exist irrespective of reboiler type
-        self.bottoms = Port(
-            noruleinit=True,
-            doc="Bottoms stream."
-        )
+        self.bottoms = Port(noruleinit=True, doc="Bottoms stream.")
 
         self.vapor_reboil = Port(
             noruleinit=True,

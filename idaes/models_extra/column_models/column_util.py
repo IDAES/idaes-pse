@@ -41,8 +41,8 @@ def make_phase_split(
     has_liquid_side_draw=False,
     has_vapor_side_draw=False,
     side_sf=None,
-    equipmentType=None
-    ):
+    equipmentType=None,
+):
     """Method to split and populate the outlet ports with corresponding
     phase values from the mixed stream outlet block."""
 
@@ -150,9 +150,7 @@ def make_phase_split(
                         )
 
                 # add the reference and variable name to the port
-                expr = Expression(
-                    self.flowsheet().time, index_set, rule=rule_mole_frac
-                )
+                expr = Expression(self.flowsheet().time, index_set, rule=rule_mole_frac)
                 self.add_component("e_mole_frac_" + port.local_name, expr)
                 port.add(expr, k)
             else:
@@ -180,8 +178,9 @@ def make_phase_split(
                     if not member_list[k].is_indexed():
 
                         def rule_flow(self, t):
-                            return (self.properties_out[t].component(local_name)
-                                ) * (side_sf)
+                            return (self.properties_out[t].component(local_name)) * (
+                                side_sf
+                            )
 
                         # add the reference and variable name to the port
                         expr = Expression(self.flowsheet().time, rule=rule_flow)
@@ -194,11 +193,14 @@ def make_phase_split(
 
                         # Rule to link the flow to the port
                         def rule_flow(self, t, i):
-                            return (self.properties_out[t].component(local_name)[i]
-                                ) * (side_sf)
+                            return (self.properties_out[t].component(local_name)[i]) * (
+                                side_sf
+                            )
 
                         # add the reference and variable name to the port
-                        expr = Expression(self.flowsheet().time, index_set, rule=rule_flow)
+                        expr = Expression(
+                            self.flowsheet().time, index_set, rule=rule_flow
+                        )
                         self.add_component("e_flow_" + port.local_name, expr)
                         port.add(expr, k)
 
@@ -251,6 +253,7 @@ def make_phase_split(
 
                 # If statement to skip in case equimpment is not a Tray
                 if equipmentType == None:
+
                     def rule_flow(self, t, p, i):
                         if (phase is self._liquid_set and p in self._liquid_set) or (
                             phase is self._vapor_set and p in self._vapor_set
@@ -270,10 +273,11 @@ def make_phase_split(
                             return 1e-8
 
                 else:
+
                     def rule_flow(self, t, p, i):
-                        return (
-                            self.properties_out[t].component(local_name)[p, i]
-                        ) * (side_sf)
+                        return (self.properties_out[t].component(local_name)[p, i]) * (
+                            side_sf
+                        )
 
                 expr = Expression(
                     self.flowsheet().time, phase_set, component_set, rule=rule_flow

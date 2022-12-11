@@ -419,13 +419,15 @@ see property package for documentation.}""",
 
             # Populate the liquid outlet port with the remaining liquid
             # after the side draw
-            make_phase_split(self,
-                port=self.liq_out, phase=self._liquid_set, side_sf=1 - self.liq_side_sf
+            make_phase_split(
+                self,
+                port=self.liq_out,
+                phase=self._liquid_set,
+                side_sf=1 - self.liq_side_sf,
             )
         else:
             # Populate the liquid outlet port when no liquid side draw
-            make_phase_split(self,
-                port=self.liq_out, phase=self._liquid_set, side_sf=1)
+            make_phase_split(self, port=self.liq_out, phase=self._liquid_set, side_sf=1)
 
         # Add the vapor outlet port
         self.vap_out = Port(noruleinit=True, doc="vapor outlet from tray")
@@ -436,7 +438,8 @@ see property package for documentation.}""",
                 initialize=0.01, doc="split fraction for the vapor side draw"
             )
             self.vap_side_draw = Port(noruleinit=True, doc="vapor side draw.")
-            make_phase_split(self,
+            make_phase_split(
+                self,
                 port=self.vap_side_draw,
                 phase=self._vapor_set,
                 has_vapor_side_draw=self.config.has_vapor_side_draw,
@@ -444,13 +447,15 @@ see property package for documentation.}""",
             )
             # Populate the vapor outlet port with the remaining vapor
             # after the vapor side draw
-            make_phase_split(self,
-                port=self.vap_out, phase=self._vapor_set, side_sf=1 - self.vap_side_sf
+            make_phase_split(
+                self,
+                port=self.vap_out,
+                phase=self._vapor_set,
+                side_sf=1 - self.vap_side_sf,
             )
         else:
             # Populate the vapor outlet port when no vapor side draw
-            make_phase_split(self,
-                port=self.vap_out, phase=self._vapor_set, side_sf=1)
+            make_phase_split(self, port=self.vap_out, phase=self._vapor_set, side_sf=1)
 
     def initialize(
         self,

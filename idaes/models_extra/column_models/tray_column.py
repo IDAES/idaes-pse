@@ -418,17 +418,11 @@ see property package for documentation.}""",
             solver=solver, optarg=optarg, outlvl=outlvl
         )
 
-        propagate_state(
-            destination=self.condenser.inlet,
-            source=self.feed_tray.vap_out
-        )
+        propagate_state(destination=self.condenser.inlet, source=self.feed_tray.vap_out)
 
         self.condenser.initialize(solver=solver, optarg=optarg, outlvl=outlvl)
 
-        propagate_state(
-            destination=self.reboiler.inlet,
-            source=self.feed_tray.liq_out
-        )
+        propagate_state(destination=self.reboiler.inlet, source=self.feed_tray.liq_out)
 
         self.reboiler.initialize(solver=solver, optarg=optarg, outlvl=outlvl)
 
@@ -436,11 +430,11 @@ see property package for documentation.}""",
         for i in self._rectification_index:
             propagate_state(
                 destination=self.rectification_section[i].liq_in,
-                source=self.condenser.reflux
+                source=self.condenser.reflux,
             )
             propagate_state(
                 destination=self.rectification_section[i].vap_in,
-                source=self.feed_tray.vap_out
+                source=self.feed_tray.vap_out,
             )
             if i == 1:
                 rect_liq_flags = self.rectification_section[i].initialize(
@@ -467,11 +461,11 @@ see property package for documentation.}""",
         for i in self._stripping_index:
             propagate_state(
                 destination=self.stripping_section[i].liq_in,
-                source=self.feed_tray.liq_out
+                source=self.feed_tray.liq_out,
             )
             propagate_state(
                 destination=self.stripping_section[i].vap_in,
-                source=self.reboiler.vapor_reboil
+                source=self.reboiler.vapor_reboil,
             )
             if i == self.config.feed_tray_location + 1:
                 strip_liq_flags = self.stripping_section[i].initialize(

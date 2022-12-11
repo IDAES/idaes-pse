@@ -244,27 +244,27 @@ see property package for documentation.}""",
         self._make_ports()
 
         def rule_reflux(self):
-            return (
-                self.reflux_ratio * (1 + self.reflux_ratio)**-1
-            )
+            return self.reflux_ratio * (1 + self.reflux_ratio) ** -1
 
         self.expr1 = Expression(rule=rule_reflux)
 
         if self.config.condenser_type == CondenserType.totalCondenser:
 
-            make_phase_split(self.control_volume,
-                    port=self.reflux,
-                    phase=self._liquid_set,
-                    side_sf=(self.expr1),
-                    equipmentType=CondenserType.totalCondenser
-                )
+            make_phase_split(
+                self.control_volume,
+                port=self.reflux,
+                phase=self._liquid_set,
+                side_sf=(self.expr1),
+                equipmentType=CondenserType.totalCondenser,
+            )
 
-            make_phase_split(self.control_volume,
-                    port=self.distillate,
-                    phase=self._liquid_set,
-                    side_sf=(1- self.expr1),
-                    equipmentType=CondenserType.totalCondenser
-                )
+            make_phase_split(
+                self.control_volume,
+                port=self.distillate,
+                phase=self._liquid_set,
+                side_sf=(1 - self.expr1),
+                equipmentType=CondenserType.totalCondenser,
+            )
 
             if self.config.temperature_spec == TemperatureSpec.atBubblePoint:
                 # Option 1: if true, condition for total condenser
@@ -299,25 +299,28 @@ see property package for documentation.}""",
 
         else:
 
-            make_phase_split(self.control_volume,
-                    port=self.reflux,
-                    phase=self._liquid_set,
-                    side_sf=(self.expr1),
-                    equipmentType=CondenserType.partialCondenser
-                )
+            make_phase_split(
+                self.control_volume,
+                port=self.reflux,
+                phase=self._liquid_set,
+                side_sf=(self.expr1),
+                equipmentType=CondenserType.partialCondenser,
+            )
 
-            make_phase_split(self.control_volume,
-                    port=self.distillate,
-                    phase=self._liquid_set,
-                    side_sf=(1- self.expr1),
-                    equipmentType=CondenserType.partialCondenser
-                )
-            make_phase_split(self.control_volume,
-                    port=self.vapor_outlet,
-                    phase=self._vapor_set,
-                    side_sf=1,
-                    equipmentType=CondenserType.partialCondenser
-                )
+            make_phase_split(
+                self.control_volume,
+                port=self.distillate,
+                phase=self._liquid_set,
+                side_sf=(1 - self.expr1),
+                equipmentType=CondenserType.partialCondenser,
+            )
+            make_phase_split(
+                self.control_volume,
+                port=self.vapor_outlet,
+                phase=self._vapor_set,
+                side_sf=1,
+                equipmentType=CondenserType.partialCondenser,
+            )
 
         # Add object reference to variables of the control volume
         # Reference to the heat duty
