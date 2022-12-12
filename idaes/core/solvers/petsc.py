@@ -540,14 +540,13 @@ def petsc_dae_by_time_element(
 
     tprev = t0
     count = 1
-    fix_derivs = []
     tj = previous_trajectory
     if tj is not None:
         variables_prev = [var[t0] for var in time_vars]
 
     with TemporarySubsystemManager(
         to_deactivate=tdisc,
-        to_fix=initial_variables + fix_derivs,
+        to_fix=initial_variables,
     ):
         # Solver time steps
         deriv_diff_map = _get_derivative_differential_data_map(m, time)
