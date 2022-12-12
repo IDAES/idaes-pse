@@ -16,7 +16,6 @@ Authors: Andrew Lee
 """
 
 import pytest
-from io import StringIO
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, value, units
 from idaes.core import (

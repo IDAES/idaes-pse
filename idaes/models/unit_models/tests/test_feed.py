@@ -16,7 +16,6 @@ Authors: Andrew Lee
 """
 
 import pytest
-from io import StringIO
 
 from pyomo.environ import ConcreteModel, value, units as pyunits
 from pyomo.util.check_units import assert_units_consistent

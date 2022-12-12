@@ -41,7 +41,6 @@ import pyomo.environ as pyo
 from idaes.core import declare_process_block_class, UnitModelBlockData
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 import idaes.core.util.scaling as iscale
-from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
 

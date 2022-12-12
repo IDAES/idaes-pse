@@ -21,7 +21,6 @@ from idaes.models.properties import iapws95
 from idaes.core.solvers import get_solver
 
 from pyomo.environ import units as pyunits
-import idaes
 
 
 def create_isentropic_compressor(f=1000, T_in=500, p_in=1e6, ratioP=1.5):

@@ -10,12 +10,10 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-import sys
 
 from idaes.core.surrogate.pysmo.sampling import (
     LatinHypercubeSampling,
     UniformSampling,
-    HaltonSampling,
     HammersleySampling,
     CVTSampling,
     SamplingMethods,

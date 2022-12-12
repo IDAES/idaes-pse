@@ -18,12 +18,8 @@ import json
 import os
 import pyomo.environ as pyo
 import pyomo.dae as pyodae
-from pyomo.util.subsystems import (
-    TemporarySubsystemManager,
-    create_subsystem_block,
-)
+from pyomo.util.subsystems import create_subsystem_block
 from idaes.core.solvers import petsc
-from idaes.core.solvers.features import dae
 
 
 def rp_example():

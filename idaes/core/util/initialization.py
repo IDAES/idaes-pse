@@ -19,8 +19,6 @@ from pyomo.environ import (
     Block,
     check_optimal_termination,
     Constraint,
-    Param,
-    Var,
     value,
 )
 from pyomo.network import Arc

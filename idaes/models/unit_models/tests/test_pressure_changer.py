@@ -16,7 +16,6 @@ Tests for Pressure Changer unit model.
 Author: Andrew Lee, Emmanuel Ogbe
 """
 import pytest
-from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,

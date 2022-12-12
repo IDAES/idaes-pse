@@ -47,7 +47,7 @@ __author__ = "Douglas Allan"
 
 import copy
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 import pyomo.environ as pyo
 
 

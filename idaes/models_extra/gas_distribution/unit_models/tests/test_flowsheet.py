@@ -10,38 +10,19 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-import itertools
-import math
 import pytest
 
 import pyomo.common.unittest as unittest
-from pyomo.common.collections import ComponentMap, ComponentSet
 import pyomo.environ as pyo
-import pyomo.dae as dae
-from pyomo.core.expr.visitor import identify_variables
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.dae.flatten import flatten_dae_components
 from pyomo.network.arc import Arc
 
 from pyomo.contrib.incidence_analysis import (
     IncidenceGraphInterface,
-    solve_strongly_connected_components,
-)
-from pyomo.contrib.incidence_analysis.interface import (
-    _generate_variables_in_constraints,
 )
 from pyomo.util.check_units import assert_units_consistent
-from pyomo.util.subsystems import ParamSweeper
 
 import idaes.core as idaes
-from idaes.models.properties.modular_properties.base.generic_property import (
-    GenericParameterBlock,
-)
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    large_residuals_set,
-)
-from idaes.core.util.constants import Constants
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models_extra.gas_distribution.properties.natural_gas import (
     NaturalGasParameterBlock,
 )

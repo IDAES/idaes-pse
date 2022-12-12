@@ -20,7 +20,6 @@ Assumptions:
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    Block,
     check_optimal_termination,
     Constraint,
     Expression,

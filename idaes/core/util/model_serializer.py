@@ -15,7 +15,6 @@ Functions for saving and loading Pyomo objects to json
 """
 
 from pyomo.environ import *
-from pyomo.network import Port, Arc
 from pyomo.dae import *
 from pyomo.core.base.component import ComponentData
 import json
