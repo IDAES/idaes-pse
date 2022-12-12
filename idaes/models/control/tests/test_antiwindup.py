@@ -81,38 +81,6 @@ def _valve_pressure_flow_cb(b):
         return F**2 == Cv**2 * (Pi**2 - Po**2) * fun**2
 
 
-def _add_inlet_pressure_step(m, time=1, value=6.0e5):
-    """Easy function to add an inlet pressure step change
-
-    Args:
-        m (ConcreteModel): A valve and tank model
-        time (float): Time for the step to occur
-        value (float): New pressure at time
-
-    Returns:
-        None
-    """
-    for t in m.fs.time:
-        if t >= time:
-            m.fs.valve_1.inlet.pressure[t].fix(value)
-
-
-def _add_inlet_pressure_step(m, time=1, value=6.0e5):
-    """Easy function to add an inlet pressure step change
-
-    Args:
-        m (ConcreteModel): A valve and tank model
-        time (float): Time for the step to occur
-        value (float): New pressure at time
-
-    Returns:
-        None
-    """
-    for t in m.fs.time:
-        if t >= time:
-            m.fs.valve_1.inlet.pressure[t].fix(value)
-
-
 def _add_setpoint_step(m, time=1, value=6.0e5):
     """Easy function to add an inlet pressure step change
 
@@ -316,23 +284,28 @@ def create_model(
     return m, solver
 
 
-@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
-@pytest.mark.component
-def test_setpoint_change_windup():
+def get_valve_openings(P_inlet, P_out_1, P_out_2):
     # First calculate the two steady states that should be achieved in the test
     # don't worry these steady state problems solve super fast
     m_steady, solver = create_model(tee=False)
-    m_steady.fs.valve_1.inlet.pressure.fix(6.0e5)
-    m_steady.fs.tank_2.control_volume.properties_out[0].pressure.fix(1.5e5)
+    m_steady.fs.valve_1.inlet.pressure.fix(P_inlet)
+    m_steady.fs.tank_2.control_volume.properties_out[0].pressure.fix(P_out_1)
     m_steady.fs.valve_1.valve_opening[0].unfix()
     solver.solve(m_steady, tee=False)
     s1_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
     print(f"Steady state 1 valve opening: {s1_valve}")
 
-    m_steady.fs.tank_2.control_volume.properties_out[0].pressure.fix(3.0e5)
+    m_steady.fs.tank_2.control_volume.properties_out[0].pressure.fix(P_out_2)
     solver.solve(m_steady, tee=False)
     s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
     print(f"Steady state 2 valve opening: {s2_valve}")
+    return s1_valve, s2_valve
+
+
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+@pytest.mark.component
+def test_setpoint_change_windup():
+    s1_valve, s2_valve = get_valve_openings(6.0e5, 1.5e5, 3.0e5)
 
     tsim = 40
 
@@ -395,20 +368,7 @@ def test_setpoint_change_windup():
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 @pytest.mark.component
 def test_setpoint_change_conditional_integration():
-    # First calculate the two steady states that should be achieved in the test
-    # don't worry these steady state problems solve super fast
-    m_steady, solver = create_model(tee=False)
-    m_steady.fs.valve_1.inlet.pressure.fix(6.0e5)
-    m_steady.fs.tank_2.control_volume.properties_out[0].pressure.fix(1.5e5)
-    m_steady.fs.valve_1.valve_opening[0].unfix()
-    solver.solve(m_steady, tee=False)
-    s1_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
-    print(f"Steady state 1 valve opening: {s1_valve}")
-
-    m_steady.fs.tank_2.control_volume.properties_out[0].pressure.fix(3.0e5)
-    solver.solve(m_steady, tee=False)
-    s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
-    print(f"Steady state 2 valve opening: {s2_valve}")
+    s1_valve, s2_valve = get_valve_openings(6.0e5, 1.5e5, 3.0e5)
 
     tsim = 40
 
@@ -468,20 +428,7 @@ def test_setpoint_change_conditional_integration():
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 @pytest.mark.component
 def test_setpoint_change_back_calculation():
-    # First calculate the two steady states that should be achieved in the test
-    # don't worry these steady state problems solve super fast
-    m_steady, solver = create_model(tee=False)
-    m_steady.fs.valve_1.inlet.pressure.fix(6.0e5)
-    m_steady.fs.tank_2.control_volume.properties_out[0].pressure.fix(1.5e5)
-    m_steady.fs.valve_1.valve_opening[0].unfix()
-    solver.solve(m_steady, tee=False)
-    s1_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
-    print(f"Steady state 1 valve opening: {s1_valve}")
-
-    m_steady.fs.tank_2.control_volume.properties_out[0].pressure.fix(3.0e5)
-    solver.solve(m_steady, tee=False)
-    s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
-    print(f"Steady state 2 valve opening: {s2_valve}")
+    s1_valve, s2_valve = get_valve_openings(6.0e5, 1.5e5, 3.0e5)
 
     tsim = 40
 

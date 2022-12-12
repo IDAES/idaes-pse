@@ -274,14 +274,13 @@ def test_inlet_disturbance():
     solver.solve(m_steady, tee=False)
     s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
 
-    # Next create a model for the 0 to 5 sec time period
+    # Next create a model for the 0 to 12 sec time period
     m_dynamic, solver = create_model(
         steady_state=False, time_set=[0, 12], nfe=30, calc_integ=True, tee=False
     )
 
     # Add a step change right in inlet pressure
     _add_inlet_pressure_step(m_dynamic, time=6, value=5.5e5)
-    # _add_setpoint_step(m_dynamic, time=6, value=3.5e5)
     solver.solve(m_dynamic, tee=False)
 
     # Check that we reach the expected steady state (almost) by t = 5.6 and t=12
@@ -312,7 +311,7 @@ def test_inlet_disturbance_derivative_on_error():
     solver.solve(m_steady, tee=False)
     s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
 
-    # Next create a model for the 0 to 5 sec time period
+    # Next create a model for the 0 to 12 sec time period
     m_dynamic, solver = create_model(
         steady_state=False,
         time_set=[0, 12],
@@ -324,7 +323,6 @@ def test_inlet_disturbance_derivative_on_error():
 
     # Add a step change right in inlet pressure
     _add_inlet_pressure_step(m_dynamic, time=6, value=5.5e5)
-    # _add_setpoint_step(m_dynamic, time=6, value=3.5e5)
     solver.solve(m_dynamic, tee=False)
 
     # Check that we reach the expected steady state (almost) by t = 5.6 and t=12
@@ -355,7 +353,7 @@ def test_setpoint_change_derivative_on_pv():
     solver.solve(m_steady, tee=False)
     s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
 
-    # Next create a model for the 0 to 5 sec time period
+    # Next create a model for the 0 to 12 sec time period
     m_dynamic, solver = create_model(
         steady_state=False,
         time_set=[0, 12],
@@ -402,7 +400,7 @@ def test_setpoint_change_derivative_on_error():
     solver.solve(m_steady, tee=False)
     s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
 
-    # Next create a model for the 0 to 5 sec time period
+    # Next create a model for the 0 to 12 sec time period
     m_dynamic, solver = create_model(
         steady_state=False,
         time_set=[0, 12],
