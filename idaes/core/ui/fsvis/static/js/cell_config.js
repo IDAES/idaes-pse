@@ -9,7 +9,9 @@
  *
  * Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
  * license information.
-*/
+ * 
+ * Author: Abdelrahman Elbashandy <aaelbashandy@lbl.gov>
+ */
 
 /**
  * Interpret cell configuration specified by each icon chosen in the model.
@@ -31,7 +33,7 @@ export class JointJsCellConfig {
 
     /**
      * Finding the correct cell index based on the given cell name 'cellName'
-    */
+     */
     findCellIndex(cellName, cellType) {
         for (let i = 0; i < this.model['cells'].length; i++) {
             const cell = this.model['cells'][i];
@@ -47,7 +49,7 @@ export class JointJsCellConfig {
      * Generate a custom function that handles the router 'gap' option.
      * The 'gap' option is specified by the users to choose the two vertices
      * that the link will take to connect the unit models (elements).
-    */
+     */
     routerGapFnFactory(gap) {
         // Link router functions in JointJS execute automatically when their
         // elements that they are connected to rotate.
@@ -87,17 +89,26 @@ export class JointJsCellConfig {
         return router_fn;
     }
 
+    /**
+     * Read the routing config for each link in jointjs and create a custom
+     * routing function for it based on the routing configuration.
+     */
 	processRoutingConfig() {
         const src = "source";
         const dest = "destination";
 
         var routing_config = this._model['routing_config'];
         for (var linkName in routing_config) {
+            // Create routing function
             var routing_fn = this.routerGapFnFactory(
                 routing_config[linkName].cell_config.gap
             );
 
+            // Because the jointjs object expects all the cell objects to exist
+            // in an array, then we gotta find the right index for that link.
             const cell_index = this.findCellIndex(linkName, "standard.Link");
+
+            // Assign the routing function to the right cell/link
             this._model['cells'][cell_index].router = routing_fn;
         }
         return this._model;

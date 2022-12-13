@@ -35,7 +35,6 @@ from idaes.core.util.exceptions import (
     InitializationError,
 )
 from idaes.core.util.tables import create_stream_table_dataframe
-import idaes.core.util.unit_costing
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import DefaultBool
@@ -534,12 +533,7 @@ Must be True if dynamic = True,
             c.activate()
 
             if hasattr(c, "initialize"):
-                # New type costing block
                 c.initialize(**cost_args)
-            else:
-                # TODO: Deprecate in IDAES v2.0
-                # Old style costing package
-                idaes.core.util.unit_costing.initialize(c, **cost_args)
 
         # Return any flags returned by initialize_build
         return flags

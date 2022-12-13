@@ -18,7 +18,7 @@ Author: John Eslick
 import pytest
 from pyomo.environ import ConcreteModel, Var, value
 from pyomo.common.config import ConfigValue
-from idaes.core import ProcessBlock, ProcessBlockData, declare_process_block_class
+from idaes.core import ProcessBlockData, declare_process_block_class
 
 
 @declare_process_block_class("MyBlock")

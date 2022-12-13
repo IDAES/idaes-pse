@@ -13,9 +13,6 @@
 """
 Framework for generic property packages
 """
-# Import Python libraries
-import types
-
 # Import Pyomo libraries
 from pyomo.environ import (
     Block,

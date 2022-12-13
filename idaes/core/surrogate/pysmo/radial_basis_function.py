@@ -14,11 +14,8 @@
 
 # Imports from the python standard library
 from __future__ import division, print_function
-from builtins import int, str
-import itertools
+from builtins import str
 import os.path
-import pprint
-import random
 import warnings
 
 # Imports from third parties

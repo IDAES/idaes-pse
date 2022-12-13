@@ -16,7 +16,6 @@ Tests for DMF 'workspace' module.
 # stdlib
 import logging
 import os
-import sys
 
 # third-party
 import pytest

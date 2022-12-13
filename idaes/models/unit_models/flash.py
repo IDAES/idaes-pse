@@ -18,7 +18,7 @@ import logging
 from pandas import DataFrame
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Reference, Var, Block
+from pyomo.environ import Constraint, Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
 
@@ -39,7 +39,6 @@ from idaes.models.unit_models.separator import (
 )
 
 from idaes.core.util.config import is_physical_parameter_block
-import idaes.core.util.unit_costing as costing
 from idaes.core.util.units_of_measurement import report_quantity
 
 

@@ -16,7 +16,6 @@ Tests for Separator unit model.
 Author: Andrew Lee
 """
 import pytest
-from io import StringIO
 import pandas
 
 from pyomo.environ import (
@@ -37,6 +36,7 @@ from idaes.core import (
     FlowsheetBlock,
     declare_process_block_class,
     MaterialBalanceType,
+    MomentumBalanceType,
     StateBlockData,
     StateBlock,
     PhysicalParameterBlock,
@@ -107,7 +107,7 @@ class TestBaseConstruction(object):
 
     @pytest.mark.unit
     def test_separator_config(self, build):
-        assert len(build.fs.sep.config) == 14
+        assert len(build.fs.sep.config) == 15
         assert build.fs.sep.config.dynamic is False
         assert build.fs.sep.config.has_holdup is False
         assert build.fs.sep.config.property_package == build.fs.pp
@@ -664,6 +664,31 @@ class TestSplitConstruction(object):
         build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert not hasattr(build.fs.sep, "material_splitting_eqn")
+
+    @pytest.mark.parametrize("balance_type", MomentumBalanceType)
+    @pytest.mark.parametrize("split_type", SplittingType)
+    @pytest.mark.unit
+    def test_momentum_splitting(self, build, balance_type, split_type):
+        build.fs.sep.config.split_basis = split_type
+        build.fs.sep.config.momentum_balance_type = balance_type
+
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+
+        if balance_type is MomentumBalanceType.none:
+            build.fs.sep.add_momentum_splitting_constraints(build.fs.sep.mixed_state)
+            assert not hasattr(build.fs.sep, "pressure_equality_eqn")
+        elif balance_type is MomentumBalanceType.pressureTotal:
+            build.fs.sep.add_momentum_splitting_constraints(build.fs.sep.mixed_state)
+            assert isinstance(build.fs.sep.pressure_equality_eqn, Constraint)
+        else:
+            with pytest.raises(
+                NotImplementedError,
+                match=f"Separators do not yet support momentum balances of type "
+                f"{balance_type}",
+            ):
+                build.fs.sep.add_momentum_splitting_constraints(
+                    build.fs.sep.mixed_state
+                )
 
     @pytest.mark.unit
     def test_add_energy_splitting_constraints(self, build):
@@ -1432,53 +1457,44 @@ class TestIAPWS(object):
         expected = pandas.DataFrame.from_dict(
             {
                 "Units": {
-                    "Molar Flow (mol/s)": getattr(pyunits.pint_registry, "mole/second"),
-                    "Mass Flow (kg/s)": getattr(pyunits.pint_registry, "kg/second"),
-                    "T (K)": getattr(pyunits.pint_registry, "K"),
-                    "P (Pa)": getattr(pyunits.pint_registry, "Pa"),
+                    "Molar Flow": getattr(pyunits.pint_registry, "mole/second"),
+                    "Mass Flow": getattr(pyunits.pint_registry, "kg/second"),
+                    "T": getattr(pyunits.pint_registry, "K"),
+                    "P": getattr(pyunits.pint_registry, "Pa"),
                     "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
-                    "Molar Enthalpy (J/mol) Vap": getattr(
-                        pyunits.pint_registry, "J/mole"
-                    ),
-                    "Molar Enthalpy (J/mol) Liq": getattr(
-                        pyunits.pint_registry, "J/mole"
-                    ),
+                    "Molar Enthalpy": getattr(pyunits.pint_registry, "J/mole"),
                 },
                 "Inlet": {
-                    "Molar Flow (mol/s)": 100,
-                    "Mass Flow (kg/s)": 1.8015,
-                    "T (K)": 339.43,
-                    "P (Pa)": 101325,
+                    "Molar Flow": 100,
+                    "Mass Flow": 1.8015,
+                    "T": 339.43,
+                    "P": 101325,
                     "Vapor Fraction": 0,
-                    "Molar Enthalpy (J/mol) Vap": 46684,
-                    "Molar Enthalpy (J/mol) Liq": 5000,
+                    "Molar Enthalpy": 5000,
                 },
                 "outlet_1": {
-                    "Molar Flow (mol/s)": 1,
-                    "Mass Flow (kg/s)": 1.8015e-2,
-                    "T (K)": 286.34,
-                    "P (Pa)": 1e5,
+                    "Molar Flow": 1,
+                    "Mass Flow": 1.8015e-2,
+                    "T": 270.4877112932641,
+                    "P": 11032305.8275,
                     "Vapor Fraction": 0,
-                    "Molar Enthalpy (J/mol) Vap": 2168.6,
-                    "Molar Enthalpy (J/mol) Liq": 1000,
+                    "Molar Enthalpy": 0.01102138712926277,
                 },
                 "outlet_2": {
-                    "Molar Flow (mol/s)": 1,
-                    "Mass Flow (kg/s)": 1.8015e-2,
-                    "T (K)": 286.34,
-                    "P (Pa)": 1e5,
+                    "Molar Flow": 1,
+                    "Mass Flow": 1.8015e-2,
+                    "T": 270.4877112932641,
+                    "P": 11032305.8275,
                     "Vapor Fraction": 0,
-                    "Molar Enthalpy (J/mol) Vap": 2168.6,
-                    "Molar Enthalpy (J/mol) Liq": 1000,
+                    "Molar Enthalpy": 0.01102138712926277,
                 },
                 "outlet_3": {
-                    "Molar Flow (mol/s)": 1,
-                    "Mass Flow (kg/s)": 1.8015e-2,
-                    "T (K)": 286.34,
-                    "P (Pa)": 1e5,
+                    "Molar Flow": 1,
+                    "Mass Flow": 1.8015e-2,
+                    "T": 270.4877112932641,
+                    "P": 11032305.8275,
                     "Vapor Fraction": 0,
-                    "Molar Enthalpy (J/mol) Vap": 2168.6,
-                    "Molar Enthalpy (J/mol) Liq": 1000,
+                    "Molar Enthalpy": 0.01102138712926277,
                 },
             }
         )

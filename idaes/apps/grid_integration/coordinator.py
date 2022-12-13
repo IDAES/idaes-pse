@@ -389,7 +389,7 @@ class DoubleLoopCoordinator:
 
         return
 
-    def _update_static_params(self, gen_dict):
+    def _update_static_params(self, gen_dict, first_ruc):
 
         """
         Update static parameters in the Prescient generator parameter data dictionary depending on generator type.
@@ -399,6 +399,7 @@ class DoubleLoopCoordinator:
 
         Args:
             gen_dict: Prescient generator parameter data dictionary.
+            first_ruc: Is this the very first unit commitment problem
 
         Returns:
             None
@@ -432,7 +433,7 @@ class DoubleLoopCoordinator:
                 if "p_fuel" in gen_dict:
                     gen_dict.pop("p_fuel")
             elif param == "initial_status" or param == "initial_p_output":
-                if param not in gen_dict:
+                if first_ruc:
                     gen_dict[param] = value
             else:
                 gen_dict[param] = value
@@ -464,7 +465,12 @@ class DoubleLoopCoordinator:
 
         gen_name = self.bidder.bidding_model_object.model_data.gen_name
         gen_dict = ruc_instance.data["elements"]["generator"][gen_name]
-        self._update_static_params(gen_dict)
+        first_ruc = (
+            simulator.time_manager.current_time is None
+            or simulator.time_manager.current_time
+            == simulator.time_manager.get_first_time_step()
+        )
+        self._update_static_params(gen_dict, first_ruc=first_ruc)
 
         return
 
@@ -639,7 +645,7 @@ class DoubleLoopCoordinator:
 
         gen_name = self.bidder.bidding_model_object.model_data.gen_name
         gen_dict = sced_instance.data["elements"]["generator"][gen_name]
-        self._update_static_params(gen_dict)
+        self._update_static_params(gen_dict, first_ruc=False)
 
         return
 

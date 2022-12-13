@@ -15,10 +15,8 @@ import pyomo.environ as pyo
 import pandas as pd
 from idaes.apps.grid_integration import Tracker
 from idaes.apps.grid_integration import Bidder, SelfScheduler
-from idaes.apps.grid_integration import DoubleLoopCoordinator
 from idaes.apps.grid_integration.forecaster import AbstractPrescientPriceForecaster
 from idaes.apps.grid_integration.model_data import (
-    GeneratorModelData,
     ThermalGeneratorModelData,
     RenewableGeneratorModelData,
 )
@@ -314,7 +312,7 @@ testing_generator_params = {
     "shutdown_capacity": 30,
     "startup_capacity": 30,
     "initial_status": 9,
-    "initial_p_output": 30,
+    "initial_p_output": 42,
     "production_cost_bid_pairs": [
         (30, 30),
         (45.3, 30),

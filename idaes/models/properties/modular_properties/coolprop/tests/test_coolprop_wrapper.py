@@ -30,7 +30,6 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.util.check_units import assert_units_equivalent
-from pyomo.common.dependencies import attempt_import
 
 from idaes.core import FlowsheetBlock, Component, LiquidPhase, VaporPhase
 from idaes.models.properties.modular_properties.base.generic_property import (
