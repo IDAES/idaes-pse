@@ -162,4 +162,6 @@ configuration = {
             ("toluene", "toluene"): 0.000,
         }
     },
+    # Supercritical extension
+    "supercritical_extension": False,
 }

@@ -353,4 +353,6 @@ configuration_Dowling_2015 = {
             ("oxygen", "oxygen"): 0.000,
         }
     },
+    # Supercritical extension
+    "supercritical_extension": False,
 }
