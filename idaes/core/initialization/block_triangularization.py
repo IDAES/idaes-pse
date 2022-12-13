@@ -15,8 +15,10 @@ Initializer class for implementing Block Triangularization initialization
 """
 from pyomo.common.config import ConfigValue
 from pyomo.contrib.incidence_analysis.util import solve_strongly_connected_components
+from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
 
 from idaes.core.initialization.initializer_base import InitializerBase
+from idaes.core.util.exceptions import InitializationError
 from idaes.core.solvers import get_solver
 
 __author__ = "Andrew Lee"
@@ -51,7 +53,14 @@ class BlockTriangularizationInitializer(InitializerBase):
     def precheck(self, model):
         super().precheck(model)
 
-        # TODO: Add addition checks here for perfect matching, etc.
+        igraph = IncidenceGraphInterface(model, include_inequality=False)
+        matching = igraph.maximum_matching()
+        if len(matching) != len(igraph.variables):
+            self._update_summary(model, "status", InitializationStatus.PrecheckFailed)
+            raise InitializationError(
+                f"Perfect matching not found for {model.name}. "
+                f"This suggests that the model is structurally singular."
+            )
 
     def initialization_routine(self, model):
         if self.config.block_solver is not None:

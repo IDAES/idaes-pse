@@ -29,10 +29,15 @@ from pyomo.common.config import ConfigBlock, ConfigValue
 
 from idaes.core.util.model_serializer import to_json, from_json, StoreSpec, _only_fixed
 from idaes.core.util.exceptions import InitializationError
-from idaes.core.util.model_statistics import degrees_of_freedom, large_residuals_set
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    large_residuals_set,
+    variables_in_activated_constraints_set,
+)
 import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee"
+_log = idaeslog.getLogger(__name__)
 
 
 class InitializationStatus(Enum):
@@ -41,15 +46,17 @@ class InitializationStatus(Enum):
     """
 
     Ok = 1  # Succesfully converged to tolerance
-    Failed = 0  # Run, but failed to converge to tolerance
-    DoF = -1  # Failed due to Degrees of Freedom issue
-    Error = -2  # Exception raised during execution (other than DoF or convergence)
+    none = 0  # Initiazation has not yet been run
+    Failed = -1  # Run, but failed to converge to tolerance
+    DoF = -2  # Failed due to Degrees of Freedom issue
+    PrecheckFailed = -3  # Failed pre-check step (other than DoF)
+    Error = -4  # Exception raised during execution (other than DoF or convergence)
 
 
 StoreState = StoreSpec(
     data_classes={
         Var._ComponentDataClass: (("fixed", "value"), _only_fixed),
-        BooleanVar._ComponentDataClass: (("fixed",), None),
+        BooleanVar._ComponentDataClass: (("fixed", "value"), _only_fixed),
         Block._ComponentDataClass: (("active",), None),
         Constraint._ComponentDataClass: (("active",), None),
     }
@@ -60,7 +67,7 @@ class InitializerBase:
     """
     Base class for Initializer objects.
 
-    This implements a default workflow nad methods for common tasks.
+    This implements a default workflow and methods for common tasks.
     Developers should feel free to overload these as necessary.
     """
 
@@ -86,8 +93,7 @@ class InitializerBase:
         self.config = self.CONFIG(kwargs)
 
         self.initial_state = None
-        self.postcheck_summary = {}
-        self.status = None
+        self.summary = {}
 
     def get_logger(self, model):
         return idaeslog.getInitLogger(model.name, self.config.output_level)
@@ -148,7 +154,11 @@ class InitializerBase:
         return self.initial_state
 
     def load_initial_guesses(
-        self, model: Block, initial_guesses: dict = None, json_file: str = None
+        self,
+        model: Block,
+        initial_guesses: dict = None,
+        json_file: str = None,
+        exception_on_fixed: bool = True,
     ):
         """
         Load initial guesses for variables into model.
@@ -157,6 +167,8 @@ class InitializerBase:
             model: Pyomo model to be initialized.
             initial_guesses: dict of initial guesses to load.
             json_file: file name of json file to load initial guesses from as str.
+            exception_on_fixed: (optional, initial_guesses only) bool indicating whether to supress
+                                exceptions when guess provided for a fixed variable (default=True).
 
         Note - can only provide one of initial_guesses or json_file.
 
@@ -167,22 +179,25 @@ class InitializerBase:
             ValueError if both initial_guesses and json_file are provided.
         """
         if initial_guesses is not None and json_file is not None:
-            self.status = InitializationStatus.Error
+            self._update_summary(model, "status", InitializationStatus.Error)
+
             raise ValueError(
                 "Cannot provide both a set of initial guesses and a json file to load."
             )
 
         if initial_guesses is not None:
-            self._load_values_from_dict(model, initial_guesses)
+            # TODO: Need tests for exception_on_fixed
+            self._load_values_from_dict(
+                model, initial_guesses, exception_on_fixed=exception_on_fixed
+            )
         elif json_file is not None:
-            # TODO: What should we load here?
-            # As this is just initialization, for now I am only loading variable values
+            # Only load variable values
             from_json(
                 model, fname=json_file, wts=StoreSpec().value(only_not_fixed=True)
             )
         else:
-            self.get_logger(model).info_high(
-                "No initial guesses provided during initialization."
+            _log.info_high(
+                f"No initial guesses provided during initialization of model {model.name}."
             )
 
     def fix_initialization_states(self, model: Block):
@@ -198,7 +213,10 @@ class InitializerBase:
         """
         try:
             model.fix_initialization_states()
-        except InitializationError:
+        except AttributeError:
+            _log.info_high(
+                f"Model {model.name} does not have a fix_initialization_states method - attempting to continue."
+            )
             pass
 
     def precheck(self, model: Block):
@@ -214,8 +232,10 @@ class InitializerBase:
         Raises:
             InitializationError if Degrees of Freedom do not equal 0.
         """
-        if not degrees_of_freedom(model) == 0:
-            self.status = InitializationStatus.DoF
+        dof = degrees_of_freedom(model)
+        self._update_summary(model, "DoF", dof)
+        if not dof == 0:
+            self._update_summary(model, "status", InitializationStatus.DoF)
             raise InitializationError(
                 f"Degrees of freedom for {model.name} were not equal to zero during "
                 f"initialization (DoF = {degrees_of_freedom(model)})."
@@ -236,12 +256,18 @@ class InitializerBase:
         Raises:
             NotImplementedError
         """
-        self.status = InitializationStatus.Error
+        self._update_summary(model, "status", InitializationStatus.Error)
         raise NotImplementedError()
 
     def restore_model_state(self, model: Block):
         """
         Restore model state to that stored in self.initial_state.
+
+        This method restores the following:
+
+            - fixed status of all variables,
+            - value of any fixed variables,
+            - active status of all Constraints and Blcoks.
 
         Args:
             model: Pyomo Block ot restore state on.
@@ -255,10 +281,12 @@ class InitializerBase:
         if self.initial_state is not None:
             from_json(model, sd=self.initial_state, wts=StoreState)
         else:
-            self.status = InitializationStatus.Error
+            self._update_summary(model, "status", InitializationStatus.Error)
             raise ValueError("No initial state stored.")
 
-    def postcheck(self, model: Block, results_obj: dict = None):
+    def postcheck(
+        self, model: Block, results_obj: dict = None, exclude_unused_vars: bool = False
+    ):
         """
         Check the model has been converged after initialization.
 
@@ -269,55 +297,68 @@ class InitializerBase:
         Args:
             model: model to be checked for convergence.
             results_obj: Pyomo solver results dict (if applicable, default=None).
+            exclude_unused_vars: bool indicating whether to check if uninitialized vars appear in active
+                constraints and ignore if this is the case. Checking for unused vars required determining the
+                set of variables in active constraint. Default = False.
 
         Returns:
             InitialationStatus Enum
         """
         if results_obj is not None:
-            self.postcheck_summary = {
-                "solver_status": check_optimal_termination(results_obj)
-            }
-            if not self.postcheck_summary["solver_status"]:
+            self._update_summary(
+                model, "solver_status", check_optimal_termination(results_obj)
+            )
+
+            if not self.summary[model]["solver_status"]:
                 # Final solver call did not return optimal
-                self.status = InitializationStatus.Failed
+                self._update_summary(model, "status", InitializationStatus.Failed)
                 raise InitializationError(
                     f"{model.name} failed to initialize successfully: solver did not return "
                     "optimal termination. Please check the output logs for more information."
                 )
         else:
             # Need to manually check initialization
-            # First, check that all non-stale Vars have values
+            # First, check that all Vars have values
+            if exclude_unused_vars:
+                # Need to get set of Vars in active constraints
+                active_vars = variables_in_activated_constraints_set(model)
+            else:
+                # Placeholder, this should not get accessed unless exclude_unused_vars is True
+                active_vars = None
+
             uninit_vars = []
             for v in model.component_data_objects(Var, descend_into=True):
                 if v.value is None:
-                    uninit_vars.append(v)
+                    if not exclude_unused_vars or v in active_vars:
+                        uninit_vars.append(v)
+
             # Next check for unconverged equality constraints
             uninit_const = large_residuals_set(model, self.config.constraint_tolerance)
 
-            self.postcheck_summary = {
-                "uninitialized_vars": uninit_vars,
-                "unconverged_constraints": uninit_const,
-            }
+            self._update_summary(model, "uninitialized_vars", uninit_vars)
+            self._update_summary(model, "unconverged_constraints", uninit_const)
 
             if len(uninit_const) > 0 or len(uninit_vars) > 0:
-                self.status = InitializationStatus.Failed
+                self._update_summary(model, "status", InitializationStatus.Failed)
                 raise InitializationError(
                     f"{model.name} failed to initialize successfully: uninitialized variables or "
                     "unconverged equality constraints detected. Please check postcheck summary for more information."
                 )
 
-        self.status = InitializationStatus.Ok
-        return self.status
+        self._update_summary(model, "status", InitializationStatus.Ok)
+        return self.summary[model]["status"]
 
-    def _load_values_from_dict(self, model, initial_guesses):
+    def _load_values_from_dict(self, model, initial_guesses, exception_on_fixed=True):
         """
         Internal method to iterate through items in initial_guesses and set value if Var and not fixed.
         """
         for c, v in initial_guesses.items():
             component = model.find_component(c)
 
-            if not isinstance(component, (Var, _VarData)):
-                self.status = InitializationStatus.Error
+            if component is None:
+                raise ValueError(f"Could not find a component with name {c}.")
+            elif not isinstance(component, (Var, _VarData)):
+                self._update_summary(model, "status", InitializationStatus.Error)
                 raise TypeError(
                     f"Component {c} is not a Var. Initial guesses should only contain values for variables."
                 )
@@ -326,8 +367,55 @@ class InitializerBase:
                     for i in component.values():
                         if not i.fixed:
                             i.set_value(v)
+                        elif exception_on_fixed:
+                            self._update_summary(
+                                model, "status", InitializationStatus.Error
+                            )
+                            raise InitializationError(
+                                f"Attempted to change the value of fixed variable {i.name}. "
+                                "Initialization from initial guesses does not support changing the value "
+                                "of fixed variables."
+                            )
+                        else:
+                            _log.debug(
+                                f"Found initial guess for fixed Var {i.name} - ignoring."
+                            )
                 elif not component.fixed:
                     component.set_value(v)
+                elif exception_on_fixed:
+                    self._update_summary(model, "status", InitializationStatus.Error)
+                    raise InitializationError(
+                        f"Attempted to change the value of fixed variable {component.name}. "
+                        "Initialization from initial guesses does not support changing the value "
+                        "of fixed variables."
+                    )
+                else:
+                    _log.debug(
+                        f"Found initial guess for fixed Var {component.name} - ignoring."
+                    )
+
+    def _update_summary(self, model, attribute, state):
+        if model not in self.summary:
+            self.summary[model] = {}
+            self.summary[model]["status"] = InitializationStatus.none
+
+        self.summary[model][attribute] = state
+
+
+class ModularInitializerBase(InitializerBase):
+    """
+    Base class for modular Initializer objects.
+
+    This extends the base Initializer class to include attributes and methods for
+    defining initializer objects for sub-models.
+    """
+
+    CONFIG = InitializerBase.CONFIG()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.submodel_initializers = {}
 
     def get_submodel_initializer(self, submodel: Block):
         """
@@ -342,7 +430,7 @@ class InitializerBase:
         Returns:
 
         """
-        # TODO: For MWE, return submodel - this will mean we run submodel.initialize()
+        # TODO: For MWE, return submodel - this will means we run submodel.initialize()
         return submodel
 
         # TODO: Prototype code for getting initializer

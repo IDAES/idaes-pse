@@ -17,7 +17,7 @@ IDAES models with standard forms (e.g. units with 1 control volume)
 from pyomo.environ import Block
 from pyomo.common.config import ConfigValue
 
-from idaes.core.initialization.initializer_base import InitializerBase
+from idaes.core.initialization.initializer_base import ModularInitializerBase
 from idaes.core.solvers import get_solver
 from idaes.core.util import to_json, from_json, StoreSpec
 import idaes.logger as idaeslog
@@ -25,13 +25,13 @@ import idaes.logger as idaeslog
 __author__ = "Andrew Lee"
 
 
-class SingleControlVolumeUnitInitializer(InitializerBase):
+class SingleControlVolumeUnitInitializer(ModularInitializerBase):
     """
     This is a general purpose Initializer object for unit models which
     have a single Control Volume named 'control_volume'.
     """
 
-    CONFIG = InitializerBase.CONFIG()
+    CONFIG = ModularInitializerBase.CONFIG()
     CONFIG.declare(
         "solver",
         ConfigValue(
@@ -110,15 +110,15 @@ class SingleControlVolumeUnitInitializer(InitializerBase):
         _log.info_high("Step 1: properties initialization complete")
 
         # Initialize reactions if they exist
-        try:
-            model.control_volume.reactions.initialize(
-                solver=self.config.solver,
-                optarg=self.config.solver_options,
-                outlvl=self.config.output_level,
-                state_vars_fixed=True,
-            )
-        except AttributeError:
-            pass
+        if hasattr(model.control_volume, "reactions"):
+            rxn_init = self.get_submodel_initializer(model.control_volume.reactions)
+
+            if rxn_init is not None:
+                rxn_init.initialize(
+                    solver=self.config.solver,
+                    optarg=self.config.solver_options,
+                    outlvl=self.config.output_level,
+                )
         _log.info_high("Step 2: reactions initialization complete")
 
         # Solve full unit model

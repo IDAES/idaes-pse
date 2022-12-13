@@ -25,6 +25,7 @@ from idaes.core.initialization.initializer_base import (
 )
 
 from idaes.core.util.exceptions import InitializationError
+import idaes.logger as idaeslog
 
 path = os.path.dirname(__file__)
 fname = os.path.join(path, "init_example.json")
@@ -37,7 +38,7 @@ class TestSubMethods:
     def test_init(self):
         initializer = InitializerBase()
 
-        assert initializer.postcheck_summary == {}
+        assert initializer.summary == {}
 
         assert hasattr(initializer, "config")
 
@@ -324,7 +325,7 @@ class TestSubMethods:
             initializer.load_initial_guesses(
                 model, initial_guesses="foo", json_file="bar"
             )
-        assert initializer.status == InitializationStatus.Error
+        assert initializer.summary[model]["status"] == InitializationStatus.Error
 
     @pytest.mark.unit
     def test_load_values_dict_non_var(self, model):
@@ -337,7 +338,25 @@ class TestSubMethods:
             match="Component c1 is not a Var. Initial guesses should only contain values for variables.",
         ):
             initializer.load_initial_guesses(model, initial_guesses=init_dict)
-        assert initializer.status == InitializationStatus.Error
+        assert initializer.summary[model]["status"] == InitializationStatus.Error
+
+    @pytest.mark.unit
+    def test_load_value_none(self, caplog):
+        caplog.set_level(
+            idaeslog.DEBUG,
+            logger="idaes",
+        )
+
+        m = ConcreteModel()
+        m.v1 = Var()
+
+        initializer = InitializerBase()
+        initializer.load_initial_guesses(m)
+
+        expected = "No initial guesses provided during initialization of model unknown."
+        assert expected in caplog.text
+
+        assert m.v1.value is None
 
     @pytest.mark.unit
     def test_fix_states(self, model):
@@ -356,12 +375,28 @@ class TestSubMethods:
         assert not model.v2.fixed
 
     @pytest.mark.unit
+    def test_fix_states_no_method(self, model, caplog):
+        caplog.set_level(
+            idaeslog.DEBUG,
+            logger="idaes",
+        )
+
+        initializer = InitializerBase()
+        initializer.fix_initialization_states(model)
+
+        expected = "Model unknown does not have a fix_initialization_states method - attempting to continue."
+        assert expected in caplog.text
+
+        assert not model.v1.fixed
+        assert not model.v2.fixed
+
+    @pytest.mark.unit
     def test_initialization_routine(self, model):
         initializer = InitializerBase()
 
         with pytest.raises(NotImplementedError):
             initializer.initialization_routine(model)
-        assert initializer.status == InitializationStatus.Error
+        assert initializer.summary[model]["status"] == InitializationStatus.Error
 
     @pytest.mark.unit
     def test_precheck_fail(self, model):
@@ -374,7 +409,16 @@ class TestSubMethods:
             "initialization \(DoF = -1\).",
         ):
             initializer.precheck(model)
-        assert initializer.status == InitializationStatus.DoF
+        assert initializer.summary[model]["status"] == InitializationStatus.DoF
+        assert initializer.summary[model]["DoF"] == -1
+
+    @pytest.mark.unit
+    def test_precheck_ok(self, model):
+        initializer = InitializerBase()
+        initializer.precheck(model)
+
+        assert initializer.summary[model]["status"] == InitializationStatus.none
+        assert initializer.summary[model]["DoF"] == 0
 
     @pytest.mark.unit
     def test_postcheck_vars_none(self, model):
@@ -388,9 +432,9 @@ class TestSubMethods:
         ):
             initializer.postcheck(model)
 
-        assert initializer.status == InitializationStatus.Failed
-        assert len(initializer.postcheck_summary["uninitialized_vars"]) == 2
-        assert len(initializer.postcheck_summary["unconverged_constraints"]) == 4
+        assert initializer.summary[model]["status"] == InitializationStatus.Failed
+        assert len(initializer.summary[model]["uninitialized_vars"]) == 2
+        assert len(initializer.summary[model]["unconverged_constraints"]) == 4
 
     @pytest.mark.unit
     def test_postcheck_vars_wrong(self, model):
@@ -407,9 +451,9 @@ class TestSubMethods:
         ):
             initializer.postcheck(model)
 
-        assert initializer.status == InitializationStatus.Failed
-        assert len(initializer.postcheck_summary["uninitialized_vars"]) == 0
-        assert len(initializer.postcheck_summary["unconverged_constraints"]) == 4
+        assert initializer.summary[model]["status"] == InitializationStatus.Failed
+        assert len(initializer.summary[model]["uninitialized_vars"]) == 0
+        assert len(initializer.summary[model]["unconverged_constraints"]) == 4
 
     @pytest.mark.unit
     def test_postcheck_partially_satisfied(self, model):
@@ -426,9 +470,9 @@ class TestSubMethods:
         ):
             initializer.postcheck(model)
 
-        assert initializer.status == InitializationStatus.Failed
-        assert len(initializer.postcheck_summary["uninitialized_vars"]) == 0
-        assert len(initializer.postcheck_summary["unconverged_constraints"]) == 2
+        assert initializer.summary[model]["status"] == InitializationStatus.Failed
+        assert len(initializer.summary[model]["uninitialized_vars"]) == 0
+        assert len(initializer.summary[model]["unconverged_constraints"]) == 2
 
     @pytest.mark.unit
     def test_postcheck_correct(self, model):
@@ -438,9 +482,9 @@ class TestSubMethods:
         initializer = InitializerBase()
         initializer.postcheck(model)
 
-        assert initializer.status == InitializationStatus.Ok
-        assert len(initializer.postcheck_summary["uninitialized_vars"]) == 0
-        assert len(initializer.postcheck_summary["unconverged_constraints"]) == 0
+        assert initializer.summary[model]["status"] == InitializationStatus.Ok
+        assert len(initializer.summary[model]["uninitialized_vars"]) == 0
+        assert len(initializer.summary[model]["unconverged_constraints"]) == 0
 
     @pytest.mark.unit
     def test_postcheck_near_tolerance(self, model):
@@ -456,15 +500,172 @@ class TestSubMethods:
         ):
             initializer.postcheck(model)
 
-        assert initializer.status == InitializationStatus.Failed
-        assert len(initializer.postcheck_summary["uninitialized_vars"]) == 0
-        assert len(initializer.postcheck_summary["unconverged_constraints"]) == 1
+        assert initializer.summary[model]["status"] == InitializationStatus.Failed
+        assert len(initializer.summary[model]["uninitialized_vars"]) == 0
+        assert len(initializer.summary[model]["unconverged_constraints"]) == 1
 
         # Change tolerance and recheck
         initializer.config.constraint_tolerance = 1e-3
 
         initializer.postcheck(model)
 
-        assert initializer.status == InitializationStatus.Ok
-        assert len(initializer.postcheck_summary["uninitialized_vars"]) == 0
-        assert len(initializer.postcheck_summary["unconverged_constraints"]) == 0
+        assert initializer.summary[model]["status"] == InitializationStatus.Ok
+        assert len(initializer.summary[model]["uninitialized_vars"]) == 0
+        assert len(initializer.summary[model]["unconverged_constraints"]) == 0
+
+    @pytest.mark.unit
+    def test_postcheck_ignore_unused(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1)
+        m.v2 = Var(initialize=2)
+        m.v3 = Var()  # unused
+        m.c = Constraint(expr=m.v1 * 2 == m.v2)
+
+        initializer = InitializerBase()
+
+        # By default ,will fail due to m.v3
+        with pytest.raises(
+            InitializationError,
+            match=f"unknown failed to initialize successfully: uninitialized variables or "
+            "unconverged equality constraints detected. Please check postcheck summary for "
+            "more information.",
+        ):
+            initializer.postcheck(m)
+
+        assert initializer.summary[m]["status"] == InitializationStatus.Failed
+        assert initializer.summary[m]["uninitialized_vars"] == [m.v3]
+        assert len(initializer.summary[m]["unconverged_constraints"]) == 0
+
+        # Try again whilst skipping unused vars
+        initializer.postcheck(m, exclude_unused_vars=True)
+
+        assert initializer.summary[m]["status"] == InitializationStatus.Ok
+        assert len(initializer.summary[m]["uninitialized_vars"]) == 0
+        assert len(initializer.summary[m]["unconverged_constraints"]) == 0
+
+    @pytest.mark.unit
+    def test_update_summary(self):
+        initializer = InitializerBase()
+
+        assert initializer.summary == {}
+
+        initializer._update_summary("foo", "bar", "baz")
+
+        assert initializer.summary["foo"]["bar"] == "baz"
+        assert initializer.summary["foo"]["status"] == InitializationStatus.none
+
+    @pytest.mark.unit
+    def test_load_values_from_dict_not_var(self):
+        m = ConcreteModel()
+        m.v = Var()
+        m.c = Constraint(expr=m.v == 0)
+
+        initializer = InitializerBase()
+
+        with pytest.raises(
+            TypeError,
+            match="Component c is not a Var. Initial guesses should only contain values for variables.",
+        ):
+            initializer._load_values_from_dict(m, {m.c: 10})
+
+        assert initializer.summary[m]["status"] == InitializationStatus.Error
+
+    @pytest.mark.unit
+    def test_load_values_from_dict_indexed(self):
+        m = ConcreteModel()
+        m.v = Var(["a", "b"])
+
+        initializer = InitializerBase()
+
+        initializer._load_values_from_dict(m, {m.v: 10})
+
+        assert m.v["a"].value == 10
+        assert m.v["b"].value == 10
+
+    @pytest.mark.unit
+    def test_load_values_from_dict_indexed_fixed(self):
+        m = ConcreteModel()
+        m.v = Var(["a", "b"])
+        m.v["b"].fix(20)
+
+        initializer = InitializerBase()
+
+        with pytest.raises(
+            InitializationError,
+            match="Attempted to change the value of fixed variable v\[b\]. "
+            "Initialization from initial guesses does not support changing the value "
+            "of fixed variables.",
+        ):
+            initializer._load_values_from_dict(m, {m.v: 10})
+
+        assert initializer.summary[m]["status"] == InitializationStatus.Error
+
+    @pytest.mark.unit
+    def test_load_values_from_dict_indexed_fixed_ignore(self, caplog):
+        caplog.set_level(
+            idaeslog.DEBUG,
+            logger="idaes",
+        )
+
+        m = ConcreteModel()
+        m.v = Var(["a", "b"])
+        m.v["b"].fix(20)
+
+        initializer = InitializerBase()
+        initializer._load_values_from_dict(m, {m.v: 10}, exception_on_fixed=False)
+
+        assert m.v["a"].value == 10
+        assert m.v["b"].value == 20
+
+        expected = "Found initial guess for fixed Var v[b] - ignoring."
+        assert expected in caplog.text
+
+    @pytest.mark.unit
+    def test_load_values_from_dict_scalar(self):
+        m = ConcreteModel()
+        m.v = Var(["a", "b"])
+
+        initializer = InitializerBase()
+
+        initializer._load_values_from_dict(m, {'v["a"]': 10})
+
+        assert m.v["a"].value == 10
+        assert m.v["b"].value == None
+
+    @pytest.mark.unit
+    def test_load_values_from_dict_scalar_fixed(self):
+        m = ConcreteModel()
+        m.v = Var(["a", "b"])
+        m.v["a"].fix(20)
+
+        initializer = InitializerBase()
+
+        with pytest.raises(
+            InitializationError,
+            match="Attempted to change the value of fixed variable v\[a\]. "
+            "Initialization from initial guesses does not support changing the value "
+            "of fixed variables.",
+        ):
+            initializer._load_values_from_dict(m, {'v["a"]': 10})
+
+        assert initializer.summary[m]["status"] == InitializationStatus.Error
+
+    @pytest.mark.unit
+    def test_load_values_from_dict_scalar_fixed_ignore(self, caplog):
+        caplog.set_level(
+            idaeslog.DEBUG,
+            logger="idaes",
+        )
+
+        m = ConcreteModel()
+        m.v = Var()
+        m.v.fix(20)
+
+        initializer = InitializerBase()
+        initializer = InitializerBase()
+        initializer._load_values_from_dict(m, {"v": 10}, exception_on_fixed=False)
+
+        assert m.v.value == 20
+
+        expected = "Found initial guess for fixed Var v - ignoring."
+        assert expected in caplog.text
