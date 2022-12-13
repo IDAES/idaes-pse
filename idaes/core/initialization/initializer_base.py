@@ -92,7 +92,7 @@ class InitializerBase:
     def __init__(self, **kwargs):
         self.config = self.CONFIG(kwargs)
 
-        self.initial_state = None
+        self.initial_state = {}
         self.summary = {}
 
     def get_logger(self, model):
@@ -149,9 +149,9 @@ class InitializerBase:
         Returns:
             dict serializing current model state.
         """
-        self.initial_state = to_json(model, wts=StoreState, return_dict=True)
+        self.initial_state[model] = to_json(model, wts=StoreState, return_dict=True)
 
-        return self.initial_state
+        return self.initial_state[model]
 
     def load_initial_guesses(
         self,
@@ -278,8 +278,8 @@ class InitializerBase:
         Raises:
             ValueError if no initial state is stored.
         """
-        if self.initial_state is not None:
-            from_json(model, sd=self.initial_state, wts=StoreState)
+        if model in self.initial_state:
+            from_json(model, sd=self.initial_state[model], wts=StoreState)
         else:
             self._update_summary(model, "status", InitializationStatus.Error)
             raise ValueError("No initial state stored.")
@@ -412,33 +412,54 @@ class ModularInitializerBase(InitializerBase):
 
     CONFIG = InitializerBase.CONFIG()
 
+    CONFIG.declare(
+        "default_submodel_initializer",
+        ConfigValue(
+            default=None,
+            description="Default Initializer object to use for sub-models.",
+            doc="Default Initializer object to use for sub-models. Only used if no Initializer "
+            "defined in submodel_initializers.",
+        ),
+    )
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         self.submodel_initializers = {}
 
+    def add_submodel_initializer(self, submodel: Block, initializer: InitializerBase):
+        """
+        Define an Initializer for a give submodel or type of submodel.
+
+        Args:
+            submodel: submodel or type of submodel to define Initializer for.
+            initializer: Initalizer object to use for this/these submodels.
+
+        Returns:
+            None
+        """
+        self.submodel_initializers[submodel] = initializer
+
     def get_submodel_initializer(self, submodel: Block):
         """
         Lookup Initializer object to use for specified sub-model.
 
-        This starts by checking the local mapping of objects and types, then falls back
-        to object.default_initializer, followed by a global default (if defined).
+        This method will return Initializers in the following order:
+
+            1. Initializer defined for a specific submodel.
+            2. Initializer defined for a type of model (e.g. UnitModel).
+            3. submodel.default_initializer (if present).
+            4. Initializer for submodel.params (in case of StateBlocks and ReactionBlocks).
+            5. Global default Initializer defined in config.default_submodel_initializer.
+            6. None.
 
         Args:
-            submodel: sub-model to get default initializer for
+            submodel: sub-model to get initializer for.
 
         Returns:
-
+            Initializer object or None.
         """
-        # TODO: For MWE, return submodel - this will means we run submodel.initialize()
-        return submodel
-
-        # TODO: Prototype code for getting initializer
         initializer = None
-
-        if hasattr(submodel, "params"):
-            # For StateBlocks and ReactionBlocks, look to the associated parameter block
-            submodel = submodel.params
 
         if submodel in self.submodel_initializers:
             # First look for specific model instance
@@ -448,16 +469,23 @@ class ModularInitializerBase(InitializerBase):
             initializer = self.submodel_initializers[type(submodel)]
         else:
             # Then try the model's default initializer
-            initializer = submodel.default_initializer
+            try:
+                initializer = submodel.default_initializer
+            except AttributeError:
+                pass
+
+        if initializer is None and hasattr(submodel, "params"):
+            # For StateBlocks and ReactionBlocks, look to the associated parameter block
+            initializer = self.get_submodel_initializer(submodel.params)
 
         if initializer is None:
             # If initializer is still None, try the master initializer's default
-            initializer = self.default_submodel_initializer
+            initializer = self.config.default_submodel_initializer
 
         if initializer is None:
             # If we still have no initializer, log a warning and keep going
-            self.get_logger(submodel).warning(
-                "No Initializer found - attempting to continue."
+            _log.warning(
+                f"No Initializer found for submodel {submodel.name} - attempting to continue."
             )
 
         return initializer

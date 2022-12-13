@@ -22,6 +22,7 @@ from pyomo.environ import ConcreteModel, Constraint, Var
 from idaes.core.initialization.initializer_base import (
     InitializerBase,
     InitializationStatus,
+    ModularInitializerBase,
 )
 
 from idaes.core.util.exceptions import InitializationError
@@ -39,6 +40,7 @@ class TestSubMethods:
         initializer = InitializerBase()
 
         assert initializer.summary == {}
+        assert initializer.initial_state == {}
 
         assert hasattr(initializer, "config")
 
@@ -66,7 +68,7 @@ class TestSubMethods:
         initializer = InitializerBase()
         state = initializer.get_current_state(model)
 
-        assert state is initializer.initial_state
+        assert state is initializer.initial_state[model]
 
         expected = {
             "__type__": "<class 'pyomo.core.base.PyomoModel.ConcreteModel'>",
@@ -254,7 +256,7 @@ class TestSubMethods:
                 }
             },
         }
-        assert expected == initializer.initial_state["unknown"]
+        assert expected == initializer.initial_state[model]["unknown"]
 
         # Make some more changes to the state
         model.v1.set_value(21)
@@ -662,10 +664,129 @@ class TestSubMethods:
         m.v.fix(20)
 
         initializer = InitializerBase()
-        initializer = InitializerBase()
         initializer._load_values_from_dict(m, {"v": 10}, exception_on_fixed=False)
 
         assert m.v.value == 20
 
         expected = "Found initial guess for fixed Var v - ignoring."
         assert expected in caplog.text
+
+
+class TestModularInitializerBase:
+    @pytest.mark.unit
+    def test_base_attributed(self):
+        initializer = ModularInitializerBase()
+
+        assert initializer.submodel_initializers == {}
+        assert initializer.config.default_submodel_initializer is None
+
+    def dummy_initializer(self):
+        pass
+
+    @pytest.mark.unit
+    def test_get_submodel_initializer_specific_model(self):
+        m = ConcreteModel()
+
+        initializer = ModularInitializerBase()
+        initializer.submodel_initializers[m] = self.dummy_initializer
+
+        assert initializer.get_submodel_initializer(m) == self.dummy_initializer
+
+    @pytest.mark.unit
+    def test_get_submodel_initializer_model_type(self):
+        m = ConcreteModel()
+
+        initializer = ModularInitializerBase()
+        initializer.submodel_initializers[ConcreteModel] = self.dummy_initializer
+
+        assert initializer.get_submodel_initializer(m) == self.dummy_initializer
+
+    @pytest.mark.unit
+    def test_get_submodel_initializer_model_default(self):
+        m = ConcreteModel()
+        m.default_initializer = self.dummy_initializer
+
+        initializer = ModularInitializerBase()
+
+        assert initializer.get_submodel_initializer(m) == self.dummy_initializer
+
+    @pytest.mark.unit
+    def test_get_submodel_initializer_global_default(self):
+        m = ConcreteModel()
+
+        initializer = ModularInitializerBase(
+            default_submodel_initializer=self.dummy_initializer
+        )
+        assert initializer.config.default_submodel_initializer == self.dummy_initializer
+
+        assert initializer.get_submodel_initializer(m) == self.dummy_initializer
+
+    @pytest.mark.unit
+    def test_get_submodel_initializer_model_w_params(self):
+        class DummyParam:
+            pass
+
+        dummy_param = DummyParam()
+
+        m = ConcreteModel()
+        m.params = dummy_param
+
+        initializer = ModularInitializerBase()
+        initializer.submodel_initializers[dummy_param] = self.dummy_initializer
+
+        assert initializer.get_submodel_initializer(m) == self.dummy_initializer
+
+    @pytest.mark.unit
+    def test_get_submodel_initializer_none(self, caplog):
+        m = ConcreteModel()
+
+        initializer = ModularInitializerBase()
+
+        assert initializer.get_submodel_initializer(m) is None
+        expected = "No Initializer found for submodel unknown - attempting to continue."
+        assert expected in caplog.text
+
+    @pytest.mark.unit
+    def test_get_submodel_initializer_priorit(self, caplog):
+        # Progressively add higher priority initializers and ensure they are returned
+        class DummyParam:
+            def __init__(self):
+                self.name = "dummy"
+
+        dummy_param = DummyParam()
+
+        m = ConcreteModel()
+        m.params = dummy_param
+
+        initializer = ModularInitializerBase()
+
+        # No default set
+        assert initializer.get_submodel_initializer(m) is None
+
+        # Add a global default
+        initializer.config.default_submodel_initializer = "global"
+        assert initializer.get_submodel_initializer(m) == "global"
+
+        # Parameter block
+        initializer.submodel_initializers[dummy_param] = "params"
+        assert initializer.get_submodel_initializer(m) == "params"
+
+        # Model default
+        m.default_initializer = "model_default"
+        assert initializer.get_submodel_initializer(m) == "model_default"
+
+        # Model type
+        initializer.submodel_initializers[ConcreteModel] = "type"
+        assert initializer.get_submodel_initializer(m) == "type"
+
+        # Specific model
+        initializer.submodel_initializers[m] = "specific_model"
+        assert initializer.get_submodel_initializer(m) == "specific_model"
+
+    @pytest.mark.unit
+    def test_add_submodel_initializer(self, caplog):
+        initializer = ModularInitializerBase()
+        assert initializer.submodel_initializers == {}
+
+        initializer.add_submodel_initializer("foo", "bar")
+        assert initializer.submodel_initializers == {"foo": "bar"}
