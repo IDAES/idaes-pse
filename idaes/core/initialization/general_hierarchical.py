@@ -55,7 +55,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         self._solver = None
 
     def initialization_routine(
-        self, model: Block, addon_args: dict = {}, copy_inlet_state: bool = False
+        self, model: Block, addon_args: dict = None, copy_inlet_state: bool = False
     ):
         """
         Common initialization routine for models with standard form.
@@ -74,6 +74,8 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
                 f"Model {model.name} does not appear to be a standard form unit model. "
                 f"Please use an Initializer specific to the model being initialized."
             )
+        if addon_args is None:
+            addon_args = {}
 
         # Get logger
         _log = self.get_logger(model)
@@ -106,7 +108,6 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
                     addon_args[sm] = {}
 
                 # Call prepare method for add-ons
-                # TODO: Need arguments for submodel initialization
                 sub_initializers[sm].addon_prepare(sm, **addon_args[sm])
 
         logger.info_high("Step 1: preparation complete.")
@@ -122,7 +123,6 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
             if sm is model:
                 results = self._initialize_main_model(model, copy_inlet_state, logger)
             else:
-                # TODO: Need arguments for submodel initialization
                 sub_initializers[sm].addon_initialize(sm, **addon_args[sm])
 
         if results is None:
@@ -142,7 +142,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
             self._init_props_0D(model, copy_inlet_state)
         except AttributeError:
             # Assume it must be a 1-D control volume
-            self._init_props_1D(model, copy_inlet_state)
+            self._init_props_1D(model)
 
         logger.info_high("Step 2a: properties initialization complete")
 
@@ -152,7 +152,6 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         logger.info_high("Step 2b: reactions initialization complete")
 
         # Solve main model
-        solver = get_solver(self.config.solver, self.config.solver_options)
         solve_log = idaeslog.getSolveLogger(
             model.name, self.config.output_level, tag="unit"
         )
@@ -160,7 +159,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = self._get_solver().solve(model, tee=slc.tee)
 
-        logger.info_high("Step 2c: model {}.".format(idaeslog.condition(results)))
+        logger.info_high(f"Step 2c: model {idaeslog.condition(results)}.")
 
         return results
 
@@ -235,7 +234,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
                 results = self._get_solver().solve(model, tee=slc.tee)
 
         logger.info_high(
-            "Step 3: full model initialization {}.".format(idaeslog.condition(results))
+            f"Step 3: full model initialization {idaeslog.condition(results)}."
         )
 
         return results
@@ -243,7 +242,6 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
     def _cleanup(self, model, addon_args, sub_initializers, logger):
         for sm in reversed(model.initialization_order):
             if sm is not model:
-                # TODO: Need arguments for submodel initialization
                 sub_initializers[sm].addon_finalize(sm, **addon_args[sm])
 
         logger.info_high("Step 4: clean up completed.")

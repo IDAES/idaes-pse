@@ -20,8 +20,6 @@ from pyomo.environ import (
     Block,
     check_optimal_termination,
     Constraint,
-    Param,
-    value,
     Var,
 )
 from pyomo.core.base.var import _VarData
@@ -217,7 +215,6 @@ class InitializerBase:
             _log.info_high(
                 f"Model {model.name} does not have a fix_initialization_states method - attempting to continue."
             )
-            pass
 
     def precheck(self, model: Block):
         """
@@ -258,6 +255,8 @@ class InitializerBase:
         """
         self._update_summary(model, "status", InitializationStatus.Error)
         raise NotImplementedError()
+
+        return None
 
     def restore_model_state(self, model: Block):
         """
@@ -363,7 +362,7 @@ class InitializerBase:
         try:
             addon.deactivate()
         except AttributeError:
-            raise Initializationerror(
+            raise InitializationError(
                 f"Could not deactivate add-on {addon.name}: this suggests it is not a Pyomo Block."
             )
 

@@ -17,9 +17,11 @@ from pyomo.environ import SolverFactory
 from pyomo.common.config import ConfigValue
 from pyomo.contrib.incidence_analysis.util import solve_strongly_connected_components
 from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
-from pyomo.core.expr.calculus.derivatives import differentiate
 
-from idaes.core.initialization.initializer_base import InitializerBase
+from idaes.core.initialization.initializer_base import (
+    InitializerBase,
+    InitializationStatus,
+)
 from idaes.core.util.exceptions import InitializationError
 from idaes.core.solvers import get_solver
 
