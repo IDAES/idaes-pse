@@ -71,7 +71,7 @@ def test_workflow():
     initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
     initializer.initialize(m.fs.unit)
 
-    assert initializer.status == InitializationStatus.Ok
+    assert initializer.summary[m.fs.unit]["status"] == InitializationStatus.Ok
 
     assert value(m.fs.unit.outlet.flow_vol[0]) == pytest.approx(1e-3, rel=1e-6)
     assert value(m.fs.unit.outlet.conc_mol_comp[0, "H2O"]) == pytest.approx(

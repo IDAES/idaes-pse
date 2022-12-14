@@ -16,6 +16,7 @@ Initializer class for implementing Block Triangularization initialization
 from pyomo.common.config import ConfigValue
 from pyomo.contrib.incidence_analysis.util import solve_strongly_connected_components
 from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
+from pyomo.core.expr.calculus.derivatives import differentiate
 
 from idaes.core.initialization.initializer_base import InitializerBase
 from idaes.core.util.exceptions import InitializationError
@@ -46,7 +47,9 @@ class BlockTriangularizationInitializer(InitializerBase):
             default={},
             description="Dict of options to pass to 1x1 block solver",
             doc="Dict of options to pass to calc_var_kwds argument in "
-            "solve_strongly_connected_components method",
+            "solve_strongly_connected_components method. NOTE: models "
+            "involving ExternalFunctions must set "
+            "'diff_mode=differentiate.Modes.reverse_numeric'",
         ),
     )
 

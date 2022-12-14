@@ -348,6 +348,63 @@ class InitializerBase:
         self._update_summary(model, "status", InitializationStatus.Ok)
         return self.summary[model]["status"]
 
+    def addon_prepare(self, addon: Block):
+        """
+        Prepare add-on model for initialization. This deactivates the add-on model.
+
+        Derived Initializers should overload this as required.
+
+        Args:
+            addon: model to be prepared for initialization
+
+        Returns:
+            None.
+        """
+        try:
+            addon.deactivate()
+        except AttributeError:
+            raise Initializationerror(
+                f"Could not deactivate add-on {addon.name}: this suggests it is not a Pyomo Block."
+            )
+
+    def addon_initialize(
+        self, addon: Block, initial_guesses: dict = None, json_file: str = None
+    ):
+        """
+        Initialize add-on model. This activates the Block and then calls self.initialize(addon).
+
+        Derived Initializers should overload this as required.
+
+        Args:
+            addon: Pyomo model to be initialized.
+            initial_guesses: dict of initial guesses to load.
+            json_file: file name of json file to load initial guesses from as str.
+
+        Note - can only provide one of initial_guesses or json_file.
+
+        Returns:
+            InitializationStatus Enum
+        """
+        addon.activate()
+
+        return self.initialize(
+            addon, initial_guesses=initial_guesses, json_file=json_file
+        )
+
+    def addon_finalize(self, addon):
+        """
+        Final clean up of add-ons after initialization. This method does nothing.
+
+        Derived Initializers should overload this as required.
+
+        Args:
+            addon: model to be cleaned-up after initialization
+
+        Returns:
+            None.
+        """
+        pass
+
     def _load_values_from_dict(self, model, initial_guesses, exception_on_fixed=True):
         """
         Internal method to iterate through items in initial_guesses and set value if Var and not fixed.
