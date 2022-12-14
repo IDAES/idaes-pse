@@ -202,8 +202,16 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
                 wts=StoreSpec().value(only_not_fixed=True),
             )
 
-    def _init_props_1D(self, model, copy_inlet_state):
-        pass
+    def _init_props_1D(self, model):
+        prop_init = self.get_submodel_initializer(model.control_volume.properties)
+
+        if prop_init is not None:
+            prop_init.initialize(
+                model.control_volume.properties,
+                solver=self.config.solver,
+                optarg=self.config.solver_options,
+                outlvl=self.config.output_level,
+            )
 
     def _init_rxns(self, model):
         rxn_init = self.get_submodel_initializer(model.control_volume.reactions)

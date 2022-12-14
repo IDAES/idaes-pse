@@ -309,6 +309,21 @@ def test_init_props_0D_copy():
 
 
 @pytest.mark.unit
+def test_init_props_1D():
+    m = ConcreteModel()
+    m.control_volume = Block()
+    m.control_volume.properties = Block()
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+
+    initializer.add_submodel_initializer(m.control_volume.properties, DummyInit())
+    initializer._init_props_1D(m)
+
+    assert m.control_volume.properties._initialized
+
+
+@pytest.mark.unit
 def test_init_rxns():
     m = ConcreteModel()
     m.control_volume = Block()
