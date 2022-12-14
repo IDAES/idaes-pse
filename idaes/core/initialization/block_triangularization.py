@@ -13,6 +13,7 @@
 """
 Initializer class for implementing Block Triangularization initialization
 """
+from pyomo.environ import SolverFactory
 from pyomo.common.config import ConfigValue
 from pyomo.contrib.incidence_analysis.util import solve_strongly_connected_components
 from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
@@ -30,7 +31,7 @@ class BlockTriangularizationInitializer(InitializerBase):
     CONFIG.declare(
         "block_solver",
         ConfigValue(
-            default=None,  # TODO: Use a square-problem solver here
+            default="scipy.fsolve",
             description="Solver to use for NxN blocks",
         ),
     )
@@ -67,9 +68,9 @@ class BlockTriangularizationInitializer(InitializerBase):
 
     def initialization_routine(self, model):
         if self.config.block_solver is not None:
-            solver = self.config.block_solver
+            solver = SolverFactory(self.config.block_solver)
         else:
-            solver = get_solver()
+            solver = get_solver(self.config.block_solver)
 
         # TODO: Can we get diagnostic output from this method?
         solve_strongly_connected_components(

@@ -115,6 +115,9 @@ class ProcessBlockData(_BlockData):
         """
         self._get_config_args()
 
+        # Add initialization order list, and populate with current model
+        self.initialization_order = [self]
+
     def flowsheet(self):
         """
         This method returns the components parent flowsheet object, i.e. the

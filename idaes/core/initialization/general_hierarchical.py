@@ -20,6 +20,7 @@ from pyomo.common.config import ConfigValue
 from idaes.core.initialization.initializer_base import ModularInitializerBase
 from idaes.core.solvers import get_solver
 from idaes.core.util import to_json, from_json, StoreSpec
+from idaes.core.util.exceptions import InitializationError
 import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee"
@@ -47,12 +48,18 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         ),
     )
 
-    def initialization_routine(self, model: Block):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self._solver = None
+
+    def initialization_routine(self, model: Block, addon_args: dict = {}):
         """
         Common initialization routine for models with standard form.
 
         Args:
             model: Pyomo Block to be initialized
+            addon_args: dict of arguments to be passed to add-on Initializers. Keys should be submodel components.
 
         Returns:
             Pyomo solver results object
@@ -66,16 +73,61 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         # Get logger
         _log = self.get_logger(model)
 
+        # Prepare add-ons for initialization
+        sub_initializers, addon_args = self._prepare_addons(model, addon_args, _log)
+
+        # Initialize model and sub-models
+        results = self._initialize_submodels(model, addon_args, _log)
+
+        # Solve full model including add-ons
+        results = self._solve_full_model(model, _log, results)
+
+        # Clean up add-ons
+        self._cleanup(model, addon_args, sub_initializers, _log)
+
+        return results
+
+    def _prepare_addons(self, model, addon_args, logger):
         sub_initializers = {}
-        for sm in model._initialization_order:
+        addon_args = dict(addon_args)
+        for sm in model.initialization_order:
             if sm is not model:
                 # Get initializers for add-ons
-                sub_initializers[sm] = self.get_submodel_initializer(sm)
+                sub_initializers[sm] = self.get_submodel_initializer(sm)()
+
+                if sm not in addon_args.keys():
+                    addon_args[sm] = {}
 
                 # Call prepare method for add-ons
                 # TODO: Need arguments for submodel initialization
-                sub_initializers[sm].prepare()
+                sub_initializers[sm].addon_prepare(sm, **addon_args[sm])
 
+        logger.info_high("Step 1: preparation complete.")
+
+        return sub_initializers, addon_args
+
+    def _initialize_submodels(self, model, addon_args, logger):
+        results = None
+
+        for sm in model.initialization_order:
+            print(sm.name)
+            if sm is model:
+                results = self._initialize_main_model(model, logger)
+            else:
+                # TODO: Need arguments for submodel initialization
+                sub_initializers[sm].addon_initialize(sm, **addon_args[sm])
+
+        if results is None:
+            raise InitializationError(
+                f"Main model ({model.name}) was not initialized (no results returned). "
+                f"This is likely due to an error in the model.initialization_order."
+            )
+
+        logger.info_high("Step 2: sub-model initialization complete.")
+
+        return results
+
+    def _initialize_main_model(self, model, logger):
         # Initialize properties
         try:
             # Guess a 0-D control volume
@@ -86,6 +138,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
             if prop_init is not None:
                 prop_init.initialize(
+                    model.control_volume.properties_in,
                     solver=self.config.solver,
                     optarg=self.config.solver_options,
                     outlvl=self.config.output_level,
@@ -107,7 +160,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
             # TODO: Add steps here
             raise
 
-        _log.info_high("Step 1: properties initialization complete")
+        logger.info_high("Step 2a: properties initialization complete")
 
         # Initialize reactions if they exist
         if hasattr(model.control_volume, "reactions"):
@@ -115,42 +168,52 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
             if rxn_init is not None:
                 rxn_init.initialize(
+                    model.control_volume.reactions,
                     solver=self.config.solver,
                     optarg=self.config.solver_options,
                     outlvl=self.config.output_level,
                 )
-        _log.info_high("Step 2: reactions initialization complete")
+        logger.info_high("Step 2b: reactions initialization complete")
 
-        # Solve full unit model
+        # Solve main model
         solver = get_solver(self.config.solver, self.config.solver_options)
         solve_log = idaeslog.getSolveLogger(
             model.name, self.config.output_level, tag="unit"
         )
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solver.solve(model, tee=slc.tee)
+            results = self._get_solver().solve(model, tee=slc.tee)
 
-        _log.info_high("Step 3: model {}.".format(idaeslog.condition(results)))
-
-        if len(model._initialization_order) > 1:
-            # Initialize add-ons
-            for sm in model._initialization_order:
-                if sm is not model:
-                    # TODO: Need arguments for submodel initialization
-                    sub_initializers[sm].initialize_addon()
-
-            # Solve model with addons
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                results = solver.solve(model, tee=slc.tee)
-
-            _log.info_high(
-                "Step 4: model with add-ons {}.".format(idaeslog.condition(results))
-            )
-
-            # Clean up add-ons
-            for sm in model._initialization_order:
-                if sm is not model:
-                    # TODO: Need arguments for submodel initialization
-                    sub_initializers[sm].finalize()
+        logger.info_high("Step 2c: model {}.".format(idaeslog.condition(results)))
 
         return results
+
+    def _solve_full_model(self, model, logger, results):
+        # Check to see if there are any add-ons
+        if len(model.initialization_order) > 1:
+            # Solve model with addons
+            solve_log = idaeslog.getSolveLogger(
+                model.name, self.config.output_level, tag="unit"
+            )
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                results = self._get_solver().solve(model, tee=slc.tee)
+
+        logger.info_high(
+            "Step 3: full model initialization {}.".format(idaeslog.condition(results))
+        )
+
+        return results
+
+    def _cleanup(self, model, addon_args, sub_initializers, logger):
+        for sm in reversed(model.initialization_order):
+            if sm is not model:
+                # TODO: Need arguments for submodel initialization
+                sub_initializers[sm].addon_finalize(sm, **addon_args[sm])
+
+        logger.info_high("Step 4: clean up completed.")
+
+    def _get_solver(self):
+        if self._solver is None:
+            self._solver = get_solver(self.config.solver, self.config.solver_options)
+
+        return self._solver

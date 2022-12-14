@@ -747,7 +747,7 @@ class TestModularInitializerBase:
         assert expected in caplog.text
 
     @pytest.mark.unit
-    def test_get_submodel_initializer_priorit(self, caplog):
+    def test_get_submodel_initializer_priorit(self):
         # Progressively add higher priority initializers and ensure they are returned
         class DummyParam:
             def __init__(self):
@@ -784,7 +784,7 @@ class TestModularInitializerBase:
         assert initializer.get_submodel_initializer(m) == "specific_model"
 
     @pytest.mark.unit
-    def test_add_submodel_initializer(self, caplog):
+    def test_add_submodel_initializer(self):
         initializer = ModularInitializerBase()
         assert initializer.submodel_initializers == {}
 

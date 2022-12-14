@@ -16,12 +16,13 @@ Tests for general hierarchical initialization routines
 import pytest
 import types
 
-from pyomo.environ import ConcreteModel, Constraint, value, Var
+from pyomo.environ import Block, ConcreteModel, Constraint, value, Var
 
 from idaes.core.initialization.general_hierarchical import (
     SingleControlVolumeUnitInitializer,
 )
 from idaes.core.initialization.initializer_base import InitializationStatus
+import idaes.logger as idaeslog
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.cstr import CSTR
@@ -94,3 +95,161 @@ def test_workflow():
 
 
 # TODO: Unit testing of methods
+@pytest.mark.unit
+def test_nonstandard_model():
+    m = ConcreteModel()
+
+    initializer = SingleControlVolumeUnitInitializer()
+
+    with pytest.raises(
+        TypeError,
+        match="Model unknown does not appear to be a standard form unit model. "
+        "Please use an Initializer specific to the model being initialized.",
+    ):
+        initializer.initialize(m)
+
+
+class DummyInit:
+    def addon_prepare(self, addon, output="default"):
+        addon._test = output
+
+    def addon_finalize(self, addon, output="default"):
+        addon._test2 = output
+
+
+@pytest.mark.unit
+def test_prepare_addons_none():
+    m = ConcreteModel()
+    m.initialization_order = [m]
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+
+    args = {"foo": "bar"}
+    subinit, addon_args = initializer._prepare_addons(m, args, log)
+
+    assert subinit == {}
+    assert addon_args == {"foo": "bar"}
+    # Make sure we didn't change the original args
+    assert args == {"foo": "bar"}
+
+
+@pytest.mark.unit
+def test_prepare_addons_no_args():
+    m = ConcreteModel()
+    m.b = Block()
+    m.initialization_order = [m, m.b]
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+    initializer.add_submodel_initializer(m.b, DummyInit)
+
+    args = {"foo": "bar"}
+    subinit, addon_args = initializer._prepare_addons(m, args, log)
+
+    assert len(subinit) == 1
+    assert isinstance(subinit[m.b], DummyInit)
+    assert addon_args == {"foo": "bar", m.b: {}}
+    assert m.b._test == "default"
+    # Make sure we didn't change the original args
+    assert args == {"foo": "bar"}
+
+
+@pytest.mark.unit
+def test_prepare_addons_w_args():
+    m = ConcreteModel()
+    m.b = Block()
+    m.initialization_order = [m, m.b]
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+    initializer.add_submodel_initializer(m.b, DummyInit)
+
+    args = {"foo": "bar", m.b: {"output": "checkval"}}
+    subinit, addon_args = initializer._prepare_addons(m, args, log)
+
+    assert len(subinit) == 1
+    assert isinstance(subinit[m.b], DummyInit)
+    assert addon_args == {"foo": "bar", m.b: {"output": "checkval"}}
+    assert m.b._test == "checkval"
+    # Make sure we didn't change the original args
+    assert args == {"foo": "bar", m.b: {"output": "checkval"}}
+
+
+@pytest.mark.unit
+def test_solve_full_model_no_addons():
+    m = ConcreteModel()
+    m.initialization_order = [m]
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+
+    results = initializer._solve_full_model(m, log, "test_results")
+
+    assert results == "test_results"
+
+
+@pytest.mark.unit
+def test_solve_full_model_w_addons():
+    m = ConcreteModel()
+    m.b = Block()
+    m.b.v = Var()
+    m.b.c = Constraint(expr=m.b.v == 12)
+
+    m.initialization_order = [m, m.b]
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+
+    results = initializer._solve_full_model(m, log, "test_results")
+
+    assert value(m.b.v) == pytest.approx(12, rel=1e-8)
+    assert isinstance(results, dict)
+    assert "Solution" in results
+
+
+@pytest.mark.unit
+def test_cleanup_none():
+    m = ConcreteModel()
+    m.initialization_order = [m]
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+
+    args = {"foo": "bar"}
+    subinit = {}
+    initializer._cleanup(m, args, subinit, log)
+
+    # No-op - what to assert?
+
+
+@pytest.mark.unit
+def test_cleanup_no_args():
+    m = ConcreteModel()
+    m.b = Block()
+    m.initialization_order = [m, m.b]
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+
+    args = {"foo": "bar", m.b: {}}
+    subinit = {m.b: DummyInit()}
+    initializer._cleanup(m, args, subinit, log)
+
+    assert m.b._test2 == "default"
+
+
+@pytest.mark.unit
+def test_cleanup_w_args():
+    m = ConcreteModel()
+    m.b = Block()
+    m.initialization_order = [m, m.b]
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+
+    args = {"foo": "bar", m.b: {"output": "forty-two"}}
+    subinit = {m.b: DummyInit()}
+    initializer._cleanup(m, args, subinit, log)
+
+    assert m.b._test2 == "forty-two"

@@ -33,6 +33,15 @@ class _Flowsheet(FlowsheetBlockData):
 
 
 @pytest.mark.unit
+def test_initialization_order():
+    # Test flowsheet method
+    m = ConcreteModel()
+    m.a = Flowsheet()
+
+    assert m.a.initialization_order == [m.a]
+
+
+@pytest.mark.unit
 def test_flowsheet():
     # Test flowsheet method
     m = ConcreteModel()
