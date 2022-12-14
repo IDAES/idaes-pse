@@ -250,22 +250,22 @@ class TestIAPWS(object):
 
         expected = {
             "Units": {
-                "Molar Flow (mol/s)": getattr(pyunits.pint_registry, "mole/second"),
-                "Mass Flow (kg/s)": getattr(pyunits.pint_registry, "kg/second"),
-                "T (K)": getattr(pyunits.pint_registry, "K"),
-                "P (Pa)": getattr(pyunits.pint_registry, "Pa"),
+                "Molar Flow": getattr(pyunits.pint_registry, "mole/second"),
+                "Mass Flow": getattr(pyunits.pint_registry, "kg/second"),
+                "T": getattr(pyunits.pint_registry, "K"),
+                "P": getattr(pyunits.pint_registry, "Pa"),
                 "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
-                "Molar Enthalpy (J/mol) Vap": getattr(pyunits.pint_registry, "J/mole"),
-                "Molar Enthalpy (J/mol) Liq": getattr(pyunits.pint_registry, "J/mole"),
+                "Molar Enthalpy": getattr(pyunits.pint_registry, "J/mole"),
             },
             "Outlet": {
-                "Molar Flow (mol/s)": pytest.approx(100, rel=1e-4),
-                "Mass Flow (kg/s)": pytest.approx(1.8015, rel=1e-4),
-                "T (K)": pytest.approx(373.13, rel=1e-4),
-                "P (Pa)": pytest.approx(101325, rel=1e-4),
-                "Vapor Fraction": pytest.approx(0.40467, abs=1e-4),
-                "Molar Enthalpy (J/mol) Vap": pytest.approx(48201, rel=1e-4),
-                "Molar Enthalpy (J/mol) Liq": pytest.approx(7549.7, rel=1e-4),
+                "Molar Flow": pytest.approx(100, rel=1e-3),
+                "Mass Flow": pytest.approx(1.8015, rel=1e-3),
+                "T": pytest.approx(373.13, rel=1e-3),
+                "P": pytest.approx(101325, rel=1e-3),
+                "Vapor Fraction": pytest.approx(0.40467, abs=1e-3),
+                "Molar Enthalpy": pytest.approx(
+                    48201 * 0.4046 + (1 - 0.4046) * 7549.7, rel=1e-3
+                ),
             },
         }
 

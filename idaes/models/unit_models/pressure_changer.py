@@ -30,7 +30,6 @@ from pyomo.environ import (
     Reals,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
@@ -42,16 +41,12 @@ from idaes.core import (
     ProcessBlockData,
     UnitModelBlockData,
     useDefault,
-    UnitModelCostingBlock,  # TODO: Clean up in IDAES 2.0
 )
 from idaes.core.util.exceptions import PropertyNotSupportedError, InitializationError
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
-
-# TODO: Clean up in IDAES 2.0
-import idaes.core.util.unit_costing as costing
 
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
@@ -1014,18 +1009,6 @@ see property package for documentation.}""",
 
         return {"vars": var_dict}
 
-    @deprecated(
-        "The get_costing method is being deprecated in favor of the new "
-        "FlowsheetCostingBlock tools.",
-        version="TBD",
-    )
-    def get_costing(self, module=costing, year=None, **kwargs):
-        if not hasattr(self.flowsheet(), "costing"):
-            self.flowsheet().get_costing(year=year)
-
-        self.costing = Block()
-        module.pressure_changer_costing(self.costing, **kwargs)
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
@@ -1158,13 +1141,6 @@ see property package for documentation.}""",
                 # There are some other material balance types but they create
                 # constraints with different names.
                 _log.warning(f"Unknown material balance type {mb_type}")
-
-        # TODO: Deprecate as part of IDAES 2.0
-        # Check for old-style costing block, and scale if required
-        if hasattr(self, "costing") and not isinstance(
-            self.costing, UnitModelCostingBlock
-        ):
-            costing.calculate_scaling_factors(self.costing)
 
 
 @declare_process_block_class("Turbine", doc="Isentropic turbine model")
