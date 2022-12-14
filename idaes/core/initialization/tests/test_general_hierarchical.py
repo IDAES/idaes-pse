@@ -23,6 +23,7 @@ from idaes.core.initialization.general_hierarchical import (
 )
 from idaes.core.initialization.initializer_base import InitializationStatus
 import idaes.logger as idaeslog
+from idaes.core.util.exceptions import InitializationError
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.cstr import CSTR
@@ -79,16 +80,16 @@ def test_workflow():
         55388, rel=1e-6
     )
     assert value(m.fs.unit.outlet.conc_mol_comp[0, "NaOH"]) == pytest.approx(
-        20.31609, rel=1e-6
+        20.316235, rel=1e-6
     )
     assert value(m.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]) == pytest.approx(
-        20.31609, rel=1e-6
+        20.316235, rel=1e-6
     )
     assert value(m.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]) == pytest.approx(
-        79.683910, rel=1e-6
+        79.684995, rel=1e-6
     )
     assert value(m.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]) == pytest.approx(
-        79.683910, rel=1e-6
+        79.684995, rel=1e-6
     )
     assert value(m.fs.unit.outlet.temperature[0]) == pytest.approx(304.0856, rel=1e-6)
     assert value(m.fs.unit.outlet.pressure[0]) == pytest.approx(101325, rel=1e-6)
@@ -113,8 +114,14 @@ class DummyInit:
     def addon_prepare(self, addon, output="default"):
         addon._test = output
 
+    def addon_initialize(self, model, **kwargs):
+        model._addon_initialized = True
+
     def addon_finalize(self, addon, output="default"):
         addon._test2 = output
+
+    def initialize(self, model, **kwargs):
+        model._initialized = True
 
 
 @pytest.mark.unit
@@ -253,3 +260,328 @@ def test_cleanup_w_args():
     initializer._cleanup(m, args, subinit, log)
 
     assert m.b._test2 == "forty-two"
+
+
+@pytest.mark.unit
+def test_init_props_0D_no_copy():
+    m = ConcreteModel()
+    m.control_volume = Block()
+    m.control_volume.properties_in = Block()
+    m.control_volume.properties_in.v1 = Var()
+
+    m.control_volume.properties_out = Block()
+    m.control_volume.properties_out.v1 = Var()
+    m.control_volume.properties_out.v2 = Var()
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+
+    initializer.add_submodel_initializer(m.control_volume.properties_in, DummyInit())
+    initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
+    initializer._init_props_0D(m, False)
+
+    assert m.control_volume.properties_in._initialized
+    assert m.control_volume.properties_out._initialized
+
+
+@pytest.mark.unit
+def test_init_props_0D_copy():
+    m = ConcreteModel()
+    m.control_volume = Block()
+    m.control_volume.properties_in = Block()
+    m.control_volume.properties_in.v1 = Var(initialize=12)
+
+    m.control_volume.properties_out = Block()
+    m.control_volume.properties_out.v1 = Var(initialize=6)
+    m.control_volume.properties_out.v2 = Var(initialize=7)
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+
+    initializer.add_submodel_initializer(m.control_volume.properties_in, DummyInit())
+    initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
+    initializer._init_props_0D(m, True)
+
+    assert m.control_volume.properties_in._initialized
+    assert not hasattr(m.control_volume.properties_out, "_initialized")
+    assert value(m.control_volume.properties_out.v1) == 12
+    assert value(m.control_volume.properties_out.v2) == 7
+
+
+@pytest.mark.unit
+def test_init_rxns():
+    m = ConcreteModel()
+    m.control_volume = Block()
+    m.control_volume.reactions = Block()
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+
+    initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
+    initializer._init_rxns(m)
+
+    assert m.control_volume.reactions._initialized
+
+
+@pytest.mark.unit
+def test_initialize_main_model_no_copy():
+    m = ConcreteModel()
+    m.control_volume = Block()
+    m.control_volume.properties_in = Block()
+    m.control_volume.properties_in.v1 = Var(initialize=12)
+
+    m.control_volume.properties_out = Block()
+    m.control_volume.properties_out.v1 = Var(initialize=6)
+    m.control_volume.properties_out.v2 = Var(initialize=7)
+
+    m.control_volume.reactions = Block()
+    m.control_volume.reactions.v1 = Var()
+
+    m.control_volume.c1 = Constraint(
+        expr=m.control_volume.properties_in.v1 == m.control_volume.properties_out.v1
+    )
+    m.control_volume.c2 = Constraint(
+        expr=m.control_volume.reactions.v1 == 0.5 * m.control_volume.properties_out.v1
+    )
+
+    m.control_volume.properties_in.v1.fix()
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+
+    initializer.add_submodel_initializer(m.control_volume.properties_in, DummyInit())
+    initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
+    initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
+
+    results = initializer._initialize_main_model(m, False, log)
+
+    assert isinstance(results, dict)
+    assert "Solution" in results
+
+    assert value(m.control_volume.properties_in.v1) == pytest.approx(12, rel=1e-5)
+    assert value(m.control_volume.properties_out.v1) == pytest.approx(12, rel=1e-5)
+    assert value(m.control_volume.properties_out.v2) == pytest.approx(7, rel=1e-5)
+    assert value(m.control_volume.reactions.v1) == pytest.approx(6, rel=1e-5)
+
+    assert m.control_volume.properties_in._initialized
+    assert m.control_volume.properties_out._initialized
+    assert m.control_volume.reactions._initialized
+
+
+@pytest.mark.unit
+def test_initialize_main_model_copy():
+    m = ConcreteModel()
+    m.control_volume = Block()
+    m.control_volume.properties_in = Block()
+    m.control_volume.properties_in.v1 = Var(initialize=12)
+
+    m.control_volume.properties_out = Block()
+    m.control_volume.properties_out.v1 = Var(initialize=6)
+    m.control_volume.properties_out.v2 = Var(initialize=7)
+
+    m.control_volume.reactions = Block()
+    m.control_volume.reactions.v1 = Var()
+
+    m.control_volume.c1 = Constraint(
+        expr=m.control_volume.properties_in.v1 == m.control_volume.properties_out.v1
+    )
+    m.control_volume.c2 = Constraint(
+        expr=m.control_volume.reactions.v1 == 0.5 * m.control_volume.properties_out.v1
+    )
+
+    m.control_volume.properties_in.v1.fix()
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+
+    initializer.add_submodel_initializer(m.control_volume.properties_in, DummyInit())
+    initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
+    initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
+
+    results = initializer._initialize_main_model(m, True, log)
+
+    assert isinstance(results, dict)
+    assert "Solution" in results
+
+    assert value(m.control_volume.properties_in.v1) == pytest.approx(12, rel=1e-5)
+    assert value(m.control_volume.properties_out.v1) == pytest.approx(12, rel=1e-5)
+    assert value(m.control_volume.properties_out.v2) == pytest.approx(7, rel=1e-5)
+    assert value(m.control_volume.reactions.v1) == pytest.approx(6, rel=1e-5)
+
+    assert m.control_volume.properties_in._initialized
+    assert not hasattr(m.control_volume.properties_out, "_initialized")
+    assert m.control_volume.reactions._initialized
+
+
+# TODO: init props 1D
+
+
+@pytest.mark.unit
+def test_initialize_submodels_no_order():
+    m = ConcreteModel()
+    m.initialization_order = []
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+
+    with pytest.raises(
+        InitializationError,
+        match="Main model \(unknown\) was not initialized \(no results returned\). "
+        "This is likely due to an error in the model.initialization_order.",
+    ):
+        initializer._initialize_submodels(m, {}, False, {}, log)
+
+
+@pytest.mark.unit
+def test_initialize_submodels_no_addons_no_copy():
+    m = ConcreteModel()
+    m.initialization_order = [m]
+
+    m.control_volume = Block()
+    m.control_volume.properties_in = Block()
+    m.control_volume.properties_in.v1 = Var(initialize=12)
+
+    m.control_volume.properties_out = Block()
+    m.control_volume.properties_out.v1 = Var(initialize=6)
+    m.control_volume.properties_out.v2 = Var(initialize=7)
+
+    m.control_volume.reactions = Block()
+    m.control_volume.reactions.v1 = Var()
+
+    # Add-on block, but not in initialization order so should be skipped
+    m.addon = Block()
+
+    m.control_volume.c1 = Constraint(
+        expr=m.control_volume.properties_in.v1 == m.control_volume.properties_out.v1
+    )
+    m.control_volume.c2 = Constraint(
+        expr=m.control_volume.reactions.v1 == 0.5 * m.control_volume.properties_out.v1
+    )
+
+    m.control_volume.properties_in.v1.fix()
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+
+    initializer.add_submodel_initializer(m.control_volume.properties_in, DummyInit())
+    initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
+    initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
+    initializer.add_submodel_initializer(m.addon, DummyInit())
+
+    initializer._initialize_submodels(
+        m, {m.addon: {}}, False, {m.addon: DummyInit()}, log
+    )
+
+    assert value(m.control_volume.properties_in.v1) == pytest.approx(12, rel=1e-5)
+    assert value(m.control_volume.properties_out.v1) == pytest.approx(12, rel=1e-5)
+    assert value(m.control_volume.properties_out.v2) == pytest.approx(7, rel=1e-5)
+    assert value(m.control_volume.reactions.v1) == pytest.approx(6, rel=1e-5)
+
+    assert m.control_volume.properties_in._initialized
+    assert m.control_volume.properties_out._initialized
+    assert m.control_volume.reactions._initialized
+    assert not hasattr(m.addon, "_initialized")
+    assert not hasattr(m.addon, "_addon_initialized")
+
+
+@pytest.mark.unit
+def test_initialize_submodels_no_addons_copy():
+    m = ConcreteModel()
+    m.initialization_order = [m]
+
+    m.control_volume = Block()
+    m.control_volume.properties_in = Block()
+    m.control_volume.properties_in.v1 = Var(initialize=12)
+
+    m.control_volume.properties_out = Block()
+    m.control_volume.properties_out.v1 = Var(initialize=6)
+    m.control_volume.properties_out.v2 = Var(initialize=7)
+
+    m.control_volume.reactions = Block()
+    m.control_volume.reactions.v1 = Var()
+
+    # Add-on block, but not in initialization order so should be skipped
+    m.addon = Block()
+
+    m.control_volume.c1 = Constraint(
+        expr=m.control_volume.properties_in.v1 == m.control_volume.properties_out.v1
+    )
+    m.control_volume.c2 = Constraint(
+        expr=m.control_volume.reactions.v1 == 0.5 * m.control_volume.properties_out.v1
+    )
+
+    m.control_volume.properties_in.v1.fix()
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+
+    initializer.add_submodel_initializer(m.control_volume.properties_in, DummyInit())
+    initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
+    initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
+    initializer.add_submodel_initializer(m.addon, DummyInit())
+
+    initializer._initialize_submodels(
+        m, {m.addon: {}}, True, {m.addon: DummyInit()}, log
+    )
+
+    assert value(m.control_volume.properties_in.v1) == pytest.approx(12, rel=1e-5)
+    assert value(m.control_volume.properties_out.v1) == pytest.approx(12, rel=1e-5)
+    assert value(m.control_volume.properties_out.v2) == pytest.approx(7, rel=1e-5)
+    assert value(m.control_volume.reactions.v1) == pytest.approx(6, rel=1e-5)
+
+    assert m.control_volume.properties_in._initialized
+    assert not hasattr(m.control_volume.properties_out, "_initialized")
+    assert m.control_volume.reactions._initialized
+    assert not hasattr(m.addon, "_initialized")
+    assert not hasattr(m.addon, "_addon_initialized")
+
+
+@pytest.mark.unit
+def test_initialize_submodels_w_addons_copy():
+    m = ConcreteModel()
+    m.initialization_order = [m]
+
+    m.control_volume = Block()
+    m.control_volume.properties_in = Block()
+    m.control_volume.properties_in.v1 = Var(initialize=12)
+
+    m.control_volume.properties_out = Block()
+    m.control_volume.properties_out.v1 = Var(initialize=6)
+    m.control_volume.properties_out.v2 = Var(initialize=7)
+
+    m.control_volume.reactions = Block()
+    m.control_volume.reactions.v1 = Var()
+
+    m.addon = Block()
+    m.initialization_order.append(m.addon)
+
+    m.control_volume.c1 = Constraint(
+        expr=m.control_volume.properties_in.v1 == m.control_volume.properties_out.v1
+    )
+    m.control_volume.c2 = Constraint(
+        expr=m.control_volume.reactions.v1 == 0.5 * m.control_volume.properties_out.v1
+    )
+
+    m.control_volume.properties_in.v1.fix()
+
+    initializer = SingleControlVolumeUnitInitializer()
+    log = initializer.get_logger(m)
+
+    initializer.add_submodel_initializer(m.control_volume.properties_in, DummyInit())
+    initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
+    initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
+
+    initializer._initialize_submodels(
+        m, {m.addon: {}}, True, {m.addon: DummyInit()}, log
+    )
+
+    assert value(m.control_volume.properties_in.v1) == pytest.approx(12, rel=1e-5)
+    assert value(m.control_volume.properties_out.v1) == pytest.approx(12, rel=1e-5)
+    assert value(m.control_volume.properties_out.v2) == pytest.approx(7, rel=1e-5)
+    assert value(m.control_volume.reactions.v1) == pytest.approx(6, rel=1e-5)
+
+    assert m.control_volume.properties_in._initialized
+    assert not hasattr(m.control_volume.properties_out, "_initialized")
+    assert m.control_volume.reactions._initialized
+    assert not hasattr(m.addon, "_initialized")
+    assert m.addon._addon_initialized

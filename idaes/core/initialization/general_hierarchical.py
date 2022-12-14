@@ -36,7 +36,8 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
     CONFIG.declare(
         "solver",
         ConfigValue(
-            default=None,
+            default=None,  # TODO: Can we add a square problem solver as the default here?
+            # At the moment there is an issue with the scipy solvers not supporting the tee argument.
             description="Solver to use for initialization",
         ),
     )
@@ -53,13 +54,17 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
         self._solver = None
 
-    def initialization_routine(self, model: Block, addon_args: dict = {}):
+    def initialization_routine(
+        self, model: Block, addon_args: dict = {}, copy_inlet_state: bool = False
+    ):
         """
         Common initialization routine for models with standard form.
 
         Args:
             model: Pyomo Block to be initialized
             addon_args: dict of arguments to be passed to add-on Initializers. Keys should be submodel components.
+            copy_inlet_state: bool (default=False). Whether to copy inlet state to other sttes or not. Copying will
+                generally be faster, but inlet states may not contain all proeprties required elsewhere.
 
         Returns:
             Pyomo solver results object
@@ -77,7 +82,9 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         sub_initializers, addon_args = self._prepare_addons(model, addon_args, _log)
 
         # Initialize model and sub-models
-        results = self._initialize_submodels(model, addon_args, _log)
+        results = self._initialize_submodels(
+            model, addon_args, copy_inlet_state, sub_initializers, _log
+        )
 
         # Solve full model including add-ons
         results = self._solve_full_model(model, _log, results)
@@ -106,13 +113,14 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
         return sub_initializers, addon_args
 
-    def _initialize_submodels(self, model, addon_args, logger):
+    def _initialize_submodels(
+        self, model, addon_args, copy_inlet_state, sub_initializers, logger
+    ):
         results = None
 
         for sm in model.initialization_order:
-            print(sm.name)
             if sm is model:
-                results = self._initialize_main_model(model, logger)
+                results = self._initialize_main_model(model, copy_inlet_state, logger)
             else:
                 # TODO: Need arguments for submodel initialization
                 sub_initializers[sm].addon_initialize(sm, **addon_args[sm])
@@ -127,52 +135,20 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
         return results
 
-    def _initialize_main_model(self, model, logger):
+    def _initialize_main_model(self, model, copy_inlet_state, logger):
         # Initialize properties
         try:
             # Guess a 0-D control volume
-            # Initialize inlet properties - inlet state should already be fixed
-            prop_init = self.get_submodel_initializer(
-                model.control_volume.properties_in
-            )
-
-            if prop_init is not None:
-                prop_init.initialize(
-                    model.control_volume.properties_in,
-                    solver=self.config.solver,
-                    optarg=self.config.solver_options,
-                    outlvl=self.config.output_level,
-                )
-
-            # Map solution from inlet properties to outlet properties
-            state = to_json(
-                model.control_volume.properties_in,
-                wts=StoreSpec().value(),
-                return_dict=True,
-            )
-            from_json(
-                model.control_volume.properties_out,
-                sd=state,
-                wts=StoreSpec().value(only_not_fixed=True),
-            )
+            self._init_props_0D(model, copy_inlet_state)
         except AttributeError:
             # Assume it must be a 1-D control volume
-            # TODO: Add steps here
-            raise
+            self._init_props_1D(model, copy_inlet_state)
 
         logger.info_high("Step 2a: properties initialization complete")
 
         # Initialize reactions if they exist
         if hasattr(model.control_volume, "reactions"):
-            rxn_init = self.get_submodel_initializer(model.control_volume.reactions)
-
-            if rxn_init is not None:
-                rxn_init.initialize(
-                    model.control_volume.reactions,
-                    solver=self.config.solver,
-                    optarg=self.config.solver_options,
-                    outlvl=self.config.output_level,
-                )
+            self._init_rxns(model)
         logger.info_high("Step 2b: reactions initialization complete")
 
         # Solve main model
@@ -187,6 +163,58 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         logger.info_high("Step 2c: model {}.".format(idaeslog.condition(results)))
 
         return results
+
+    def _init_props_0D(self, model, copy_inlet_state):
+        # Initialize inlet properties - inlet state should already be fixed
+        prop_init = self.get_submodel_initializer(model.control_volume.properties_in)
+
+        if prop_init is not None:
+            prop_init.initialize(
+                model.control_volume.properties_in,
+                solver=self.config.solver,
+                optarg=self.config.solver_options,
+                outlvl=self.config.output_level,
+            )
+
+        if not copy_inlet_state:
+            # Just in case the user set a different initializer for the outlet
+            prop_init = self.get_submodel_initializer(
+                model.control_volume.properties_out
+            )
+
+            if prop_init is not None:
+                prop_init.initialize(
+                    model.control_volume.properties_out,
+                    solver=self.config.solver,
+                    optarg=self.config.solver_options,
+                    outlvl=self.config.output_level,
+                )
+        else:
+            # Map solution from inlet properties to outlet properties
+            state = to_json(
+                model.control_volume.properties_in,
+                wts=StoreSpec().value(),
+                return_dict=True,
+            )
+            from_json(
+                model.control_volume.properties_out,
+                sd=state,
+                wts=StoreSpec().value(only_not_fixed=True),
+            )
+
+    def _init_props_1D(self, model, copy_inlet_state):
+        pass
+
+    def _init_rxns(self, model):
+        rxn_init = self.get_submodel_initializer(model.control_volume.reactions)
+
+        if rxn_init is not None:
+            rxn_init.initialize(
+                model.control_volume.reactions,
+                solver=self.config.solver,
+                optarg=self.config.solver_options,
+                outlvl=self.config.output_level,
+            )
 
     def _solve_full_model(self, model, logger, results):
         # Check to see if there are any add-ons
