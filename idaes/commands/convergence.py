@@ -16,7 +16,6 @@ __author__ = "John Eslick"
 
 import importlib
 import re
-import os
 import click
 import json
 import logging

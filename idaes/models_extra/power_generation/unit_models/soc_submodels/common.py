@@ -13,7 +13,6 @@
 
 __author__ = "John Eslick, Douglas Allan"
 
-import copy
 import enum
 
 from pyomo.common.config import ConfigValue, In
@@ -49,32 +48,6 @@ def _set_default_factor(c, s):
     for i in c:
         if iscale.get_scaling_factor(c[i]) is None:
             iscale.set_scaling_factor(c[i], s)
-
-
-def _set_scaling_factor_if_none(c, s):
-    """Set a component's scaling factor if no scaling factor exists
-
-    Args:
-        c: (scalar) component to be scaled
-        s: scaling factor
-    """
-    if iscale.get_scaling_factor(c) is None:
-        iscale.set_scaling_factor(c, s)
-
-
-def _set_and_get_scaling_factor(c, s):
-    """Set a component's scaling factor if no scaling factor exists, then
-    return the scaling factor assigned to it
-
-    Args:
-        c: (scalar) component to be scaled
-        s: scaling factor
-
-    Returns:
-        Scaling factor assigned to c
-    """
-    _set_scaling_factor_if_none(c, s)
-    return iscale.get_scaling_factor(c)
 
 
 def _set_if_unfixed(v, val):

@@ -26,7 +26,6 @@ from typing import Union
 import pytest
 
 #
-from pyomo.environ import value
 from idaes.core.dmf import util, resource
 from .util import init_logging
 

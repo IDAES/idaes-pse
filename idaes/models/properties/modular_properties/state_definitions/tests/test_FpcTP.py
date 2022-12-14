@@ -27,7 +27,6 @@ from idaes.models.properties.modular_properties.state_definitions.FpcTP import (
     FpcTP,
     define_state,
     set_metadata,
-    define_default_scaling_factors,
 )
 from idaes.core import (
     FlowsheetBlock,

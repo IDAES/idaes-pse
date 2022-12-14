@@ -18,12 +18,8 @@ __author__ = "John Eslick"
 import pyomo.environ as pyo
 from pyomo.common.collections import ComponentSet
 from pyomo.environ import units as pyunits
-from pyomo.core.base.units_container import InconsistentUnitsError
-from pyomo.common.fileutils import find_library
-from pyomo.common.config import ConfigValue, In
 
 from idaes.core.util.math import smooth_max
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core import declare_process_block_class
 from idaes.core import (
     StateBlock,
@@ -34,15 +30,13 @@ from idaes.core import (
 )
 from idaes.models.properties.general_helmholtz.helmholtz_functions import (
     add_helmholtz_external_functions,
-    HelmholtzParameterBlock,
-    HelmholtzThermoExpressions,
     AmountBasis,
     PhaseType,
     StateVars,
     _data_dir,
 )
 from idaes.models.properties.general_helmholtz.components import (
-    get_component_module,
+    get_transport_module,
 )
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -71,8 +65,8 @@ class _StateBlock(StateBlock):
                     v.value = state[key]
                 except KeyError:
                     pass
-            if hold:
-                v.fix()
+        if hold:
+            v.fix()
 
     def initialize(self, *args, **kwargs):
         flags = {}
@@ -980,33 +974,31 @@ class HelmholtzStateBlockData(StateBlockData):
             pub_phlist, component_list, rule=rule_mole_frac_phase_comp
         )
 
-        # Phase Thermal conductiviy
-        def rule_tc(b, p):
-            return get_component_module(cmp)._thermal_conductivity(
-                self, delta[p], tau, on_blk=self
+        tmod = get_transport_module(cmp)
+        if tmod is not None:
+            # Phase Thermal conductiviy
+            def rule_tc(b, p):
+                return tmod._thermal_conductivity(self, delta[p], tau, on_blk=self)
+
+            self.therm_cond_phase = pyo.Expression(
+                phlist, rule=rule_tc, doc="Thermal conductivity"
             )
 
-        self.therm_cond_phase = pyo.Expression(
-            phlist, rule=rule_tc, doc="Thermal conductivity"
-        )
+            # Phase dynamic viscosity
+            def rule_mu(b, p):
+                return tmod._viscosity(self, delta[p], tau, on_blk=self)
 
-        # Phase dynamic viscosity
-        def rule_mu(b, p):
-            return get_component_module(cmp)._viscosity(
-                self, delta[p], tau, on_blk=self
+            self.visc_d_phase = pyo.Expression(
+                phlist, rule=rule_mu, doc="Dynamic viscosity"
             )
 
-        self.visc_d_phase = pyo.Expression(
-            phlist, rule=rule_mu, doc="Viscosity (dynamic)"
-        )
+            # Phase kinimatic viscosity
+            def rule_nu(b, p):
+                return self.visc_d_phase[p] / self.dens_mass_phase[p]
 
-        # Phase kinimatic viscosity
-        def rule_nu(b, p):
-            return self.visc_d_phase[p] / self.dens_mass_phase[p]
-
-        self.visc_k_phase = pyo.Expression(
-            phlist, rule=rule_nu, doc="Kinematic viscosity"
-        )
+            self.visc_k_phase = pyo.Expression(
+                phlist, rule=rule_nu, doc="Kinematic viscosity"
+            )
 
         # Define some expressions for the balance terms returned by functions
         # This is just to allow assigning scale factors to the expressions
