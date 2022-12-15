@@ -800,7 +800,7 @@ def variables_not_in_activated_constraints_set(block):
         block : model to be studied
 
     Returns:
-        A ComponentSet including all Var components which appear within
+        A ComponentSet including all Var components which do not appear within
         activated Constraints in block
     """
     var_set = ComponentSet()
@@ -822,7 +822,7 @@ def number_variables_not_in_activated_constraints(block):
         block : model to be studied
 
     Returns:
-        Number of Var components which appear within active Constraints in
+        Number of Var components which do not appear within active Constraints in
         block
     """
     return len(variables_not_in_activated_constraints_set(block))
