@@ -82,6 +82,7 @@ def register_idaes_currency_units():
                 "USD_2018 = 500/603.1 * USD_CE500",
                 "USD_2019 = 500/607.5 * USD_CE500",
                 "USD_2020 = 500/596.2 * USD_CE500",
+                "USD_2021 = 500/677.7 * USD_CE500",
             ]
         )
 
