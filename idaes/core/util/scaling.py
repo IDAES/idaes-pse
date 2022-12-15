@@ -500,10 +500,10 @@ def list_unscaled_variables(
     blk: pyo.Block, descend_into: bool = True, include_fixed: bool = False
 ):
     """
-    Return a list of constraints which do not have a scaling factor assigned
+    Return a list of variables which do not have a scaling factor assigned
     Args:
-        blk: block to check for unscaled constraints
-        descend_into: bool indicating whether to check constraints in sub-blocks
+        blk: block to check for unscaled variables
+        descend_into: bool indicating whether to check variables in sub-blocks
         include_fixed: bool indicating whether to include fixed Vars in list
 
     Returns:
@@ -897,7 +897,7 @@ def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
                 parent_block = var.parent_block()
 
                 disc_eq = getattr(parent_block, var.local_name + "_disc_eq")
-                # Look for continuity equation, which exists only for collocation with certain sets of polynominals
+                # Look for continuity equation, which exists only for collocation with certain sets of polynomials
                 try:
                     cont_eq = getattr(
                         parent_block, state_var.local_name + "_" + tname + "_cont_eq"
@@ -1238,7 +1238,7 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
     Returns a list of expected values for each additive term in the expression.
 
     In order to properly assess the expected value of terms within functions, the sign
-    of each tem is maintained throughout thus returned values may be negative. Functions
+    of each term is maintained throughout thus returned values may be negative. Functions
     using this walker should handle these appropriately.
     """
 
@@ -1361,9 +1361,6 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
             )
 
     def _get_nominal_value_for_sum_subexpression(self, child_nominal_values):
-        # TODO: How do we deal with aggregating summed terms in sub-functions?
-        # Scaling factors should be strictly positive, but a variable may be negative
-        # which is not captured here
         return sum(i for i in child_nominal_values)
 
     def _get_nominal_value_for_sum(self, node, child_nominal_values):
@@ -1486,8 +1483,6 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
 
         # first check if the node is a leaf
         nodetype = type(node)
-
-        # TODO: What do we do with an indexed component? Fail outright?
 
         if nodetype in native_types or nodetype in pyomo_constant_types:
             return [node]
