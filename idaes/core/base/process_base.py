@@ -28,6 +28,7 @@ from pyomo.common.config import ConfigBlock
 from enum import Enum
 
 from idaes.core.base.process_block import declare_process_block_class
+from idaes.core.initialization import BlockTriangularizationInitializer
 from idaes.core.util.exceptions import (
     ConfigurationError,
     DynamicError,
@@ -117,6 +118,8 @@ class ProcessBlockData(_BlockData):
 
         # Add initialization order list, and populate with current model
         self.initialization_order = [self]
+        # Set default initializer
+        self.default_initializer = BlockTriangularizationInitializer
 
     def flowsheet(self):
         """

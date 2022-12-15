@@ -24,6 +24,7 @@ from pyomo.environ import Block, ConcreteModel, Set, Var, Param, Expression, uni
 
 from idaes.core.base.process_base import ProcessBaseBlock
 from idaes.core import FlowsheetBlockData, declare_process_block_class
+from idaes.core.initialization import BlockTriangularizationInitializer
 
 
 @declare_process_block_class("Flowsheet")
@@ -33,12 +34,13 @@ class _Flowsheet(FlowsheetBlockData):
 
 
 @pytest.mark.unit
-def test_initialization_order():
+def test_base_attributes():
     # Test flowsheet method
     m = ConcreteModel()
     m.a = Flowsheet()
 
     assert m.a.initialization_order == [m.a]
+    assert m.a.default_initializer == BlockTriangularizationInitializer
 
 
 @pytest.mark.unit
