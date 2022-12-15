@@ -86,7 +86,7 @@ kwargs = dict(
         "pandas<1.5",
         "pint",
         "psutil",
-        "pyomo @ https://github.com/IDAES/pyomo/archive/6.4.3.zip",
+        "pyomo>=6.4.3",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
