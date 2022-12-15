@@ -19,10 +19,14 @@ import os
 
 from pyomo.environ import ConcreteModel, Constraint, Var
 
+from idaes.core.base.process_base import ProcessBaseBlock
 from idaes.core.initialization.initializer_base import (
     InitializerBase,
     InitializationStatus,
     ModularInitializerBase,
+)
+from idaes.core.initialization.block_triangularization import (
+    BlockTriangularizationInitializer,
 )
 
 from idaes.core.util.exceptions import InitializationError
@@ -745,6 +749,17 @@ class TestModularInitializerBase:
         assert initializer.get_submodel_initializer(m) is None
         expected = "No Initializer found for submodel unknown - attempting to continue."
         assert expected in caplog.text
+
+    @pytest.mark.unit
+    def test_get_submodel_initializer_process_base_default(self):
+        m = ConcreteModel()
+        m.b = ProcessBaseBlock()
+
+        initializer = ModularInitializerBase()
+        assert (
+            initializer.get_submodel_initializer(m.b)
+            is BlockTriangularizationInitializer
+        )
 
     @pytest.mark.unit
     def test_get_submodel_initializer_priorit(self):
