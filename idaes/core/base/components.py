@@ -230,6 +230,8 @@ class ComponentData(ProcessBlockData):
             "omega": pyunits.dimensionless,
             "pressure_crit": p_units,
             "temperature_crit": base_units["temperature"],
+            "volume_crit": pyunits.meter**3/pyunits.mol,
+            "compress_factor_crit": pyunits.dimensionless,
         }
         for p, u in var_dict.items():
             if p in self.config.parameter_data:
