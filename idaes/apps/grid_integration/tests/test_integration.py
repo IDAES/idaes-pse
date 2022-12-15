@@ -172,16 +172,11 @@ class TestDoubleLoopIntegration:
         return self_scheduler_output_dir
 
     @pytest.mark.unit
-    def test_output_dir_exist(
+    def test_prescient_outputs_exist(
         self, simulation_results_dir, self_scheduler_simulation_results_dir
     ):
         assert os.path.isdir(simulation_results_dir)
         assert os.path.isdir(self_scheduler_simulation_results_dir)
-
-    @pytest.mark.component
-    def test_csv_files_saved(
-        self, simulation_results_dir, self_scheduler_simulation_results_dir
-    ):
 
         file_names = [
             "hourly_gen_summary.csv",
