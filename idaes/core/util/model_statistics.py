@@ -791,6 +791,43 @@ def number_variables_in_activated_constraints(block):
     return len(variables_in_activated_constraints_set(block))
 
 
+def variables_not_in_activated_constraints_set(block):
+    """
+    Method to return a ComponentSet of all Var components which do not appear within a
+    Constraint in a model.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        A ComponentSet including all Var components which do not appear within
+        activated Constraints in block
+    """
+    var_set = ComponentSet()
+
+    active_vars = variables_in_activated_constraints_set(block)
+
+    for v in block.component_data_objects(ctype=Var, active=True, descend_into=True):
+        if v not in active_vars:
+            var_set.add(v)
+    return var_set
+
+
+def number_variables_not_in_activated_constraints(block):
+    """
+    Method to return the number of Var components that do not appear within active
+    Constraints in a model.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        Number of Var components which do not appear within active Constraints in
+        block
+    """
+    return len(variables_not_in_activated_constraints_set(block))
+
+
 def variables_in_activated_equalities_set(block):
     """
     Method to return a ComponentSet of all Var components which appear within
