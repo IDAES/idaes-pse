@@ -30,7 +30,7 @@ _log.warning(
 f"""The v1 series of IDAES (including this version, {__version__}) is no longer supported.
 
 IDAES users should migrate their code to IDAES v2, which will become the default
-with the upcoming 2.0.0 final release.
+with the upcoming 2.0.0 stable release.
 
 For more information, including step-by-step guides on how to migrate code to IDAES v2,
 visit https://github.com/IDAES/idaes-pse/wiki/idaes-v2.
