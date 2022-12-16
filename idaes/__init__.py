@@ -35,6 +35,10 @@ with the upcoming 2.0.0 final release.
 For more information, including step-by-step guides on how to migrate code to IDAES v2,
 visit https://github.com/IDAES/idaes-pse/wiki/idaes-v2.
 
+To uninstall this version and start using IDAES v2 now, run:
+
+pip uninstall --yes idaes-pse && pip install idaes-pse --pre
+
 If you wish to continue using the unsupported IDAES v1 series without this warning,
 uninstall this version of IDAES and install the (functionally identical) 1.13.0 release:
 
