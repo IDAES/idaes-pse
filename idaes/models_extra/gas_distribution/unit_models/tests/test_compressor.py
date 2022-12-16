@@ -19,18 +19,11 @@ import pyomo.environ as pyo
 
 from pyomo.contrib.incidence_analysis import (
     IncidenceGraphInterface,
-    solve_strongly_connected_components,
-)
-from pyomo.contrib.incidence_analysis.interface import (
-    _generate_variables_in_constraints,
 )
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.util.subsystems import ParamSweeper
 
 import idaes.core as idaes
-from idaes.models.properties.modular_properties.base.generic_property import (
-    GenericParameterBlock,
-)
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models_extra.gas_distribution.properties.natural_gas import (
     NaturalGasParameterBlock,
@@ -114,12 +107,12 @@ class TestCompressorValues(unittest.TestCase):
         default = {
             "dynamic": False,
         }
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         compressor_config = {
             "property_package": m.fs.properties,
         }
-        m.fs.compressor = IsothermalCompressor(default=compressor_config)
+        m.fs.compressor = IsothermalCompressor(**compressor_config)
 
         time = m.fs.time
         t0 = m.fs.time.first()
@@ -233,12 +226,12 @@ class TestSimpleCompressor(unittest.TestCase):
         default = {
             "dynamic": False,
         }
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         compressor_config = {
             "property_package": m.fs.properties,
         }
-        m.fs.compressor = IsothermalCompressor(default=compressor_config)
+        m.fs.compressor = IsothermalCompressor(**compressor_config)
 
         m.fs.compressor.inlet_state[0].temperature.fix(300.0 * pyo.units.K)
         m.fs.compressor.inlet_state[0].pressure.fix(20.0 * pyo.units.bar)

@@ -47,17 +47,15 @@ solver = get_solver()
 @pytest.fixture(scope="module")
 def build_unit():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.unit = SteamHeater(
-        default={
-            "dynamic": False,
-            "property_package": m.fs.properties,
-            "has_holdup": True,
-            "has_heat_transfer": True,
-            "has_pressure_change": True,
-            "single_side_only": True,
-        }
+        dynamic=False,
+        property_package=m.fs.properties,
+        has_holdup=True,
+        has_heat_transfer=True,
+        has_pressure_change=True,
+        single_side_only=True,
     )
     return m
 
@@ -129,7 +127,7 @@ def test_solve_unit(build_unit):
     )
 
     # pressure drop
-    assert pytest.approx(-282158.4020, abs=1e-3) == pyo.value(m.fs.unit.deltaP[0])
+    assert pytest.approx(-282158.4020, rel=1e-5) == pyo.value(m.fs.unit.deltaP[0])
     # check energy balance
     assert (
         pytest.approx(

@@ -19,15 +19,12 @@ from pyomo.environ import (
     Block,
     check_optimal_termination,
     Constraint,
-    Param,
-    Var,
     value,
 )
 from pyomo.network import Arc
 from pyomo.dae import ContinuousSet
 from pyomo.core.expr.visitor import identify_variables
 
-from idaes.core import FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (
@@ -307,7 +304,7 @@ def initialize_by_time_element(fs, time, **kwargs):
     Returns:
         None
     """
-    if not isinstance(fs, FlowsheetBlock):
+    if not fs.is_flowsheet():
         raise TypeError("First arg must be a FlowsheetBlock")
     if not isinstance(time, ContinuousSet):
         raise TypeError("Second arg must be a ContinuousSet")
@@ -429,9 +426,9 @@ def initialize_by_time_element(fs, time, **kwargs):
         "Flowsheet has been deactivated. Beginning element-wise initialization"
     )
     for i in range(1, nfe + 1):
-        t_prev = time[(i - 1) * ncp + 1]
+        t_prev = time.at((i - 1) * ncp + 1)
         # Non-initial time points in the finite element:
-        fe = [time[k] for k in range((i - 1) * ncp + 2, i * ncp + 2)]
+        fe = [time.at(k) for k in range((i - 1) * ncp + 2, i * ncp + 2)]
 
         init_log.info(f"Entering step {i}/{nfe} of initialization")
 

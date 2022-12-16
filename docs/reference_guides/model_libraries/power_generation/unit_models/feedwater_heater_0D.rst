@@ -53,16 +53,16 @@ are not necessarily realistic.
           property_package=model.fs.properties
       )
 
-      model.fs.fwh.desuperheat.inlet_1.flow_mol.fix(100)
-      model.fs.fwh.desuperheat.inlet_1.flow_mol.unfix()
-      model.fs.fwh.desuperheat.inlet_1.pressure.fix(201325)
-      model.fs.fwh.desuperheat.inlet_1.enth_mol.fix(60000)
+      model.fs.fwh.desuperheat.hot_side_inlet.flow_mol.fix(100)
+      model.fs.fwh.desuperheat.hot_side_inlet.flow_mol.unfix()
+      model.fs.fwh.desuperheat.hot_side_inlet.pressure.fix(201325)
+      model.fs.fwh.desuperheat.hot_side_inlet.enth_mol.fix(60000)
       model.fs.fwh.drain_mix.drain.flow_mol.fix(1)
       model.fs.fwh.drain_mix.drain.pressure.fix(201325)
       model.fs.fwh.drain_mix.drain.enth_mol.fix(20000)
-      model.fs.fwh.cooling.inlet_2.flow_mol.fix(400)
-      model.fs.fwh.cooling.inlet_2.pressure.fix(101325)
-      model.fs.fwh.cooling.inlet_2.enth_mol.fix(3000)
+      model.fs.fwh.cooling.cold_side_inlet.flow_mol.fix(400)
+      model.fs.fwh.cooling.cold_side_inlet.pressure.fix(101325)
+      model.fs.fwh.cooling.cold_side_inlet.enth_mol.fix(3000)
       model.fs.fwh.condense.area.fix(1000)
       model.fs.fwh.condense.overall_heat_transfer_coefficient.fix(100)
       model.fs.fwh.desuperheat.area.fix(1000)
@@ -101,6 +101,6 @@ Unit                        Option                 Doc
 Degrees of Freedom
 ------------------
 
-The ``area`` and ``overall_heat_transfer_coefficient`` should be fixed or constraints should be provided to calculate ``overall_heat_transfer_coefficient``.  If the inlets are also fixed except for the inlet steam flow rate (``inlet_1.flow_mol``), the model will have 0 degrees of freedom.
+The ``area`` and ``overall_heat_transfer_coefficient`` should be fixed or constraints should be provided to calculate ``overall_heat_transfer_coefficient``.  If the inlets are also fixed except for the inlet steam flow rate (``hot_side_inlet.flow_mol``), the model will have 0 degrees of freedom.
 
 See :class:`FWH0D` and :class:`FWH0DData` for full Python class details.

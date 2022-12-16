@@ -44,7 +44,7 @@ from idaes.models_extra.column_models.solvent_reboiler import SolventReboiler
 from idaes.models_extra.column_models.properties.MEA_solvent import (
     configuration as aqueous_mea,
 )
-from idaes.models_extra.column_models.properties.MEA_vapor import flue_gas, wet_co2
+from idaes.models_extra.column_models.properties.MEA_vapor import flue_gas
 from idaes.core.util.exceptions import InitializationError
 
 
@@ -58,16 +58,14 @@ class TestAbsorberVaporFlow(object):
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.liquid_properties = GenericParameterBlock(default=aqueous_mea)
-        m.fs.vapor_properties = GenericParameterBlock(default=flue_gas)
+        m.fs.liquid_properties = GenericParameterBlock(**aqueous_mea)
+        m.fs.vapor_properties = GenericParameterBlock(**flue_gas)
 
         m.fs.unit = SolventReboiler(
-            default={
-                "liquid_property_package": m.fs.liquid_properties,
-                "vapor_property_package": m.fs.vapor_properties,
-            }
+            liquid_property_package=m.fs.liquid_properties,
+            vapor_property_package=m.fs.vapor_properties,
         )
 
         m.fs.unit.inlet.flow_mol[0].fix(83.89)
@@ -266,16 +264,14 @@ class TestAbsorberHeatDuty(object):
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.liquid_properties = GenericParameterBlock(default=aqueous_mea)
-        m.fs.vapor_properties = GenericParameterBlock(default=flue_gas)
+        m.fs.liquid_properties = GenericParameterBlock(**aqueous_mea)
+        m.fs.vapor_properties = GenericParameterBlock(**flue_gas)
 
         m.fs.unit = SolventReboiler(
-            default={
-                "liquid_property_package": m.fs.liquid_properties,
-                "vapor_property_package": m.fs.vapor_properties,
-            }
+            liquid_property_package=m.fs.liquid_properties,
+            vapor_property_package=m.fs.vapor_properties,
         )
 
         m.fs.unit.inlet.flow_mol[0].fix(83.89)

@@ -890,7 +890,7 @@ class TestDynamicBlock(object):
         ctypes_to_not_shift = (AlgVar, InputVar, FixedVar)
         shift = (tl - t0) / 2  # 0.5, one sample
         idx_of_last_sample = time.find_nearest_index(tl - shift)
-        time_of_last_sample = time[idx_of_last_sample]
+        time_of_last_sample = time.at(idx_of_last_sample)
         blk.advance_by_time(shift, ctype=ctypes_to_shift)
         for t in time:
             if t <= shift:
@@ -937,7 +937,7 @@ class TestDynamicBlock(object):
         ctypes_to_not_shift = (AlgVar, InputVar, FixedVar)
         shift = (tl - t0) / 2  # 0.5, one sample
         idx_of_last_sample = time.find_nearest_index(tl - shift)
-        time_of_last_sample = time[idx_of_last_sample]
+        time_of_last_sample = time.at(idx_of_last_sample)
         blk.set_sample_time(shift)
         blk.advance_one_sample(ctype=ctypes_to_shift)
         for t in time:
@@ -963,15 +963,15 @@ class TestDynamicBlock(object):
 
         time_in_sample = list(blk.generate_time_in_sample(ts))
         i_prev = time.find_nearest_index(ts - blk.sample_time)
-        pred_time_in_sample = [time[i] for i in range(i_prev + 1, i_s + 1)]
+        pred_time_in_sample = [time.at(i) for i in range(i_prev + 1, i_s + 1)]
         assert time_in_sample == pred_time_in_sample
 
         time_in_sample = list(blk.generate_time_in_sample(ts, include_t0=True))
-        pred_time_in_sample = [time[i] for i in range(i_prev, i_s + 1)]
+        pred_time_in_sample = [time.at(i) for i in range(i_prev, i_s + 1)]
         assert time_in_sample == pred_time_in_sample
 
         i_0 = 1
-        t0 = time[i_0]
+        t0 = time.at(i_0)
         ts = time.last()
         time_in_sample = list(blk.generate_time_in_sample(ts, t0=t0))
         pred_time_in_sample = list(t for t in time if t != t0)
@@ -1073,7 +1073,7 @@ class TestDynamicBlock(object):
         blk = self.make_block()
         time = blk.time
         t0 = time.first()
-        t1 = time[2]
+        t1 = time.at(2)
         vals = list(0.1 * i for i in blk.INPUT_SET)
         for var, val in zip(blk.vectors.input[:, t1], vals):
             var.set_value(val)

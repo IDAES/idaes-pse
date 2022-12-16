@@ -10,38 +10,19 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-import itertools
-import math
 import pytest
 
 import pyomo.common.unittest as unittest
-from pyomo.common.collections import ComponentMap, ComponentSet
 import pyomo.environ as pyo
-import pyomo.dae as dae
-from pyomo.core.expr.visitor import identify_variables
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.dae.flatten import flatten_dae_components
 from pyomo.network.arc import Arc
 
 from pyomo.contrib.incidence_analysis import (
     IncidenceGraphInterface,
-    solve_strongly_connected_components,
-)
-from pyomo.contrib.incidence_analysis.interface import (
-    _generate_variables_in_constraints,
 )
 from pyomo.util.check_units import assert_units_consistent
-from pyomo.util.subsystems import ParamSweeper
 
 import idaes.core as idaes
-from idaes.models.properties.modular_properties.base.generic_property import (
-    GenericParameterBlock,
-)
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    large_residuals_set,
-)
-from idaes.core.util.constants import Constants
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models_extra.gas_distribution.properties.natural_gas import (
     NaturalGasParameterBlock,
 )
@@ -83,7 +64,7 @@ class TestConstructFlowsheets(unittest.TestCase):
             "time_set": [0.0, 20.0],
             "time_units": pyo.units.hr,
         }
-        m.fs = idaes.FlowsheetBlock(default=fs_config)
+        m.fs = idaes.FlowsheetBlock(**fs_config)
         m.fs.properties = NaturalGasParameterBlock()
 
         pipeline_config = {
@@ -91,7 +72,7 @@ class TestConstructFlowsheets(unittest.TestCase):
             "finite_elements": 2,
         }
         m.fs.pipeline_set = pyo.Set(initialize=range(3))
-        m.fs.pipeline = GasPipeline(m.fs.pipeline_set, default=pipeline_config)
+        m.fs.pipeline = GasPipeline(m.fs.pipeline_set, **pipeline_config)
 
         node_config = [
             {
@@ -129,9 +110,7 @@ class TestConstructFlowsheets(unittest.TestCase):
 
         compressor_config = {"property_package": m.fs.properties}
         m.fs.compressor_set = pyo.Set(initialize=range(2))
-        m.fs.compressor = IsothermalCompressor(
-            m.fs.compressor_set, default=compressor_config
-        )
+        m.fs.compressor = IsothermalCompressor(m.fs.compressor_set, **compressor_config)
 
         # Connect compressors to pipelines
         # Should/could I make this easier?
@@ -231,7 +210,7 @@ class TestConstructFlowsheets(unittest.TestCase):
             "time_set": [0.0, 20.0],
             "time_units": pyo.units.hr,
         }
-        m.fs = idaes.FlowsheetBlock(default=fs_config)
+        m.fs = idaes.FlowsheetBlock(**fs_config)
         m.fs.properties = NaturalGasParameterBlock()
 
         pipeline_config = {
@@ -239,7 +218,7 @@ class TestConstructFlowsheets(unittest.TestCase):
             "finite_elements": 2,
         }
         m.fs.pipeline_set = pyo.Set(initialize=range(3))
-        m.fs.pipeline = GasPipeline(m.fs.pipeline_set, default=pipeline_config)
+        m.fs.pipeline = GasPipeline(m.fs.pipeline_set, **pipeline_config)
 
         node_config = [
             {
@@ -277,9 +256,7 @@ class TestConstructFlowsheets(unittest.TestCase):
 
         compressor_config = {"property_package": m.fs.properties}
         m.fs.compressor_set = pyo.Set(initialize=range(1))
-        m.fs.compressor = IsothermalCompressor(
-            m.fs.compressor_set, default=compressor_config
-        )
+        m.fs.compressor = IsothermalCompressor(m.fs.compressor_set, **compressor_config)
 
         # Connect compressors to pipelines
         # Should/could I make this easier?
@@ -375,7 +352,7 @@ class TestConstructFlowsheets(unittest.TestCase):
             "time_set": [0.0, 20.0],
             "time_units": pyo.units.hr,
         }
-        m.fs = idaes.FlowsheetBlock(default=fs_config)
+        m.fs = idaes.FlowsheetBlock(**fs_config)
         m.fs.properties = NaturalGasParameterBlock()
 
         pipeline_config = {
@@ -383,7 +360,7 @@ class TestConstructFlowsheets(unittest.TestCase):
             "finite_elements": 2,
         }
         m.fs.pipeline_set = pyo.Set(initialize=range(3))
-        m.fs.pipeline = GasPipeline(m.fs.pipeline_set, default=pipeline_config)
+        m.fs.pipeline = GasPipeline(m.fs.pipeline_set, **pipeline_config)
 
         node_config = [
             {
@@ -421,9 +398,7 @@ class TestConstructFlowsheets(unittest.TestCase):
 
         compressor_config = {"property_package": m.fs.properties}
         m.fs.compressor_set = pyo.Set(initialize=range(2))
-        m.fs.compressor = IsothermalCompressor(
-            m.fs.compressor_set, default=compressor_config
-        )
+        m.fs.compressor = IsothermalCompressor(m.fs.compressor_set, **compressor_config)
 
         # Connect compressors to pipelines
         # Should/could I make this easier?

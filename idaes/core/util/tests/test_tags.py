@@ -16,7 +16,10 @@ __Author__ = "John Eslick"
 
 import pytest
 import pyomo.environ as pyo
+from pyomo.environ import ConcreteModel, Set, Block, Var
+from pyomo.network import Port
 from idaes.core.util import ModelTag, ModelTagGroup
+from idaes.core.util.tags import svg_tag
 
 
 @pytest.fixture()

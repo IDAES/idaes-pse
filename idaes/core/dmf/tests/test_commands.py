@@ -16,13 +16,12 @@ Tests for idaes.core.dmf.commands
 import logging
 import os
 import shutil
-import sys
 
 #
 import pytest
 
 #
-from idaes.core.dmf import dmfbase, commands, errors, workspace, util
+from idaes.core.dmf import dmfbase, commands, errors
 from idaes.core.dmf.util import mkdtemp
 from .util import init_logging
 

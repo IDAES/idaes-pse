@@ -16,7 +16,6 @@ Authors: Andrew Lee
 """
 
 import pytest
-from io import StringIO
 
 from pyomo.environ import ConcreteModel
 from pyomo.util.check_units import assert_units_consistent
@@ -50,15 +49,12 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
 
     m.fs.unit = Translator(
-        default={
-            "inlet_property_package": m.fs.properties,
-            "outlet_property_package": m.fs.properties,
-        }
+        inlet_property_package=m.fs.properties, outlet_property_package=m.fs.properties
     )
 
     # Check unit config arguments
@@ -77,16 +73,14 @@ class TestTranslate(object):
     @pytest.fixture(scope="class")
     def trans(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties1 = SaponificationParameterBlock()
         m.fs.properties2 = BTXParameterBlock()
 
         m.fs.unit = Translator(
-            default={
-                "inlet_property_package": m.fs.properties1,
-                "outlet_property_package": m.fs.properties2,
-            }
+            inlet_property_package=m.fs.properties1,
+            outlet_property_package=m.fs.properties2,
         )
 
         m.fs.unit.inlet.flow_vol.fix(1.0e-03)

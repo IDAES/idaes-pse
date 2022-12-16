@@ -28,7 +28,7 @@ def build_flowsheet(m=None):
     if m is None:
         m = pyo.ConcreteModel()
 
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.x = pyo.Var(within=pyo.NonNegativeReals)
     m.fs.y = pyo.Var(within=pyo.NonNegativeReals)

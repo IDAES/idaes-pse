@@ -19,7 +19,7 @@ except ImportError:
     import importlib_resources as resources
 from numbers import Number
 from pathlib import Path
-from typing import Dict, Union, List
+from typing import Dict, Union
 
 import pytest
 import pandas as pd
@@ -82,12 +82,12 @@ class Test5Bus:
 
     @pytest.fixture
     def run_simulator(self, prescient_options: PrescientOptions) -> None:
-        Prescient = pytest.importorskip(
-            "prescient.simulator.Prescient",
+        prescient_simulator = pytest.importorskip(
+            "prescient.simulator",
             reason="Prescient (optional dependency) not available",
         )
 
-        sim = Prescient()
+        sim = prescient_simulator.Prescient()
         sim.simulate(**prescient_options)
 
     @pytest.fixture

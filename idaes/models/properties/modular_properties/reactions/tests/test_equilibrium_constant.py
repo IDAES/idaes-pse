@@ -40,28 +40,26 @@ def model():
     m.thermo = m.pparams.build_state_block([1])
 
     m.rparams = GenericReactionParameterBlock(
-        default={
-            "property_package": m.pparams,
-            "reaction_basis": MaterialFlowBasis.molar,
-            "equilibrium_reactions": {
-                "r1": {
-                    "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
-                    "equilibrium_form": "foo",
-                    "concentration_form": ConcentrationForm.moleFraction,
-                }
-            },
-            "base_units": {
-                "amount": pyunits.mol,
-                "mass": pyunits.kg,
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "temperature": pyunits.K,
-            },
-        }
+        property_package=m.pparams,
+        reaction_basis=MaterialFlowBasis.molar,
+        equilibrium_reactions={
+            "r1": {
+                "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
+                "equilibrium_form": "foo",
+                "concentration_form": ConcentrationForm.moleFraction,
+            }
+        },
+        base_units={
+            "amount": pyunits.mol,
+            "mass": pyunits.kg,
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "temperature": pyunits.K,
+        },
     )
 
     m.rxn = m.rparams.build_reaction_block(
-        [1], default={"state_block": m.thermo, "has_equilibrium": False}
+        [1], state_block=m.thermo, has_equilibrium=False
     )
 
     m.rxn[1].dh_rxn = Var(["r1"], initialize=1, units=pyunits.J / pyunits.mol)
@@ -279,7 +277,7 @@ class TestVanTHoff(object):
             (model.rxn[1].log_k_eq["r1"] - log(model.rparams.reaction_r1.k_eq_ref))
             == (
                 -model.rxn[1].dh_rxn["r1"]
-                / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+                / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
                 * (1 / (300 * pyunits.K) - 1 / model.rparams.reaction_r1.T_eq_ref)
             )
         )
@@ -320,7 +318,7 @@ class TestVanTHoff(object):
             (model.rxn[1].log_k_eq["r1"] - log(model.rparams.reaction_r1.k_eq_ref))
             == (
                 -model.rxn[1].dh_rxn["r1"]
-                / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+                / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
                 * (1 / (300 * pyunits.K) - 1 / model.rparams.reaction_r1.T_eq_ref)
             )
         )
@@ -371,7 +369,7 @@ class TestVanTHoff(object):
             )
             == (
                 -model.rxn[1].dh_rxn["r1"]
-                / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+                / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
                 * (1 / (300 * pyunits.K) - 1 / model.rparams.reaction_r1.T_eq_ref)
             )
         )
@@ -422,7 +420,7 @@ class TestVanTHoff(object):
             )
             == (
                 -model.rxn[1].dh_rxn["r1"]
-                / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+                / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
                 * (1 / (300 * pyunits.K) - 1 / model.rparams.reaction_r1.T_eq_ref)
             )
         )
@@ -471,7 +469,7 @@ class TestVanTHoff(object):
             )
             == (
                 -model.rxn[1].dh_rxn["r1"]
-                / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+                / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
                 * (1 / (300 * pyunits.K) - 1 / model.rparams.reaction_r1.T_eq_ref)
             )
         )
@@ -520,7 +518,7 @@ class TestVanTHoff(object):
             )
             == (
                 -model.rxn[1].dh_rxn["r1"]
-                / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+                / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
                 * (1 / (300 * pyunits.K) - 1 / model.rparams.reaction_r1.T_eq_ref)
             )
         )
@@ -571,7 +569,7 @@ class TestVanTHoff(object):
             )
             == (
                 -model.rxn[1].dh_rxn["r1"]
-                / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+                / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
                 * (1 / (300 * pyunits.K) - 1 / model.rparams.reaction_r1.T_eq_ref)
             )
         )
@@ -622,7 +620,7 @@ class TestVanTHoff(object):
             )
             == (
                 -model.rxn[1].dh_rxn["r1"]
-                / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+                / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
                 * (1 / (300 * pyunits.K) - 1 / model.rparams.reaction_r1.T_eq_ref)
             )
         )

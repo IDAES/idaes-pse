@@ -27,13 +27,10 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.solvers import get_solver
-
 from idaes.core.solvers.homotopy import homotopy
 
 # Set module level pyest marker
 pytestmark = pytest.mark.solver
-
-import idaes.core.solvers
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -372,18 +369,14 @@ def test_basic_max_step(model):
 @pytest.fixture()
 def model2():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # vapor-liquid (ideal) - FTPz
     m.fs.properties_ideal_vl_FTPz = BTXParameterBlock(
-        default={
-            "valid_phase": ("Liq", "Vap"),
-            "activity_coeff_model": "Ideal",
-            "state_vars": "FTPz",
-        }
+        valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal", state_vars="FTPz"
     )
     m.fs.state_block = m.fs.properties_ideal_vl_FTPz.build_state_block(
-        default={"defined_state": True}
+        defined_state=True
     )
 
     m.fs.state_block.flow_mol.fix(1)

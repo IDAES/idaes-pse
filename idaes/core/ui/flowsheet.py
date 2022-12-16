@@ -31,7 +31,8 @@ from pyomo.network.port import Port
 
 # package
 from idaes import logger
-from idaes.core.ui.icons import UnitModelIcon
+from idaes.core.ui.icons.icons import UnitModelIcon
+from idaes.core.ui.icons.positioning import UnitModelsPositioning
 
 _log = logger.getLogger(__name__)
 
@@ -182,7 +183,8 @@ class FlowsheetSerializer:
         self.unit_models = {}  # {unit: {"name": unit.getname(), "type": str?}}
         self.streams = {}  # {Arc.getname(): Arc} or {Port.getname(): Port}
         self.ports = {}  # {Port: parent_unit}
-        self.edges = defaultdict(list)  # {name: {"source": unit, "dest": unit}}
+        self.edges = defaultdict(dict)  # {name: {"source": unit, "dest": unit}}
+        self.adj_list = defaultdict(set)  # {name: (neighbor1, neighbor2, ...)}
         self.orphaned_ports = {}
         self.labels = {}
         self._stream_table_df = None
@@ -198,6 +200,7 @@ class FlowsheetSerializer:
         self._logger = logger.getLogger(__name__)
         self.name = name
         self.flowsheet = flowsheet
+        self._positioning_model = None
         # serialize
         self._ingest_flowsheet()
         self._construct_output_json()
@@ -291,10 +294,13 @@ class FlowsheetSerializer:
         used_ports = set()
         for name, stream in self.streams.items():
             try:  # This is necessary because for internally-nested arcs we may not record ports
+                src = self.ports[stream.source]
+                dst = self.ports[stream.dest]
                 self.edges[name] = {
-                    "source": self.ports[stream.source],
-                    "dest": self.ports[stream.dest],
+                    "source": src,
+                    "dest": dst,
                 }
+                self.adj_list[src.getname()].add(dst.getname())
                 used_ports.add(stream.source)
                 used_ports.add(stream.dest)
             except KeyError as error:
@@ -464,6 +470,7 @@ class FlowsheetSerializer:
                 src = unit_port if type_ == self.FEED else self.ports[port]
                 dst = unit_port if type_ != self.FEED else self.ports[port]
                 self.edges[edge_name] = {"source": src, "dest": dst}
+                self.adj_list[src.getname()].add(dst.getname())
                 # Add label
                 self.labels[edge_name] = f"{type_} info"
                 # Check if we can add the port to the stream table
@@ -503,6 +510,7 @@ class FlowsheetSerializer:
         return f"{base_name}_{self._unit_name_used_count[base_name]}"
 
     def _construct_output_json(self):
+        self._positioning_model = UnitModelsPositioning(self.adj_list, self.unit_models)
         self._construct_model_json()
         self._construct_jointjs_json()
 
@@ -615,27 +623,11 @@ class FlowsheetSerializer:
                     default_icon.link_positions,
                 )
 
-        def adjust_image_position(x_pos, y_pos, y_starting_pos):
-            """Based on the position of the last added element, we calculate
-            the x,y position of the next element.
-            """
-            # If x_pos it greater than 700 then start another diagonal line
-            if x_pos >= 700:
-                x_pos = 100
-                y_pos = y_starting_pos
-                y_starting_pos += 100
-            else:
-                x_pos += 100
-                y_pos += 100
-
-            return x_pos, y_pos, y_starting_pos
-
         self._out_json["cells"] = []
 
         # Start out in the top left corner until we get a better inital layout
         x_pos = 10
         y_pos = 10
-        y_starting_pos = 10
 
         track_jointjs_elements = {}
 
@@ -656,20 +648,16 @@ class FlowsheetSerializer:
             dest_unit_icon = UnitModelIcon(dest_unit_type)
 
             if src_unit_name not in track_jointjs_elements:
+                x_pos, y_pos = self._positioning_model.get_position(src_unit_name)
                 cell_index = create_jointjs_image(
                     src_unit_icon, src_unit_name, src_unit_type, x_pos, y_pos
-                )
-                x_pos, y_pos, y_starting_pos = adjust_image_position(
-                    x_pos, y_pos, y_starting_pos
                 )
                 track_jointjs_elements[src_unit_name] = cell_index
 
             if dest_unit_name not in track_jointjs_elements:
+                x_pos, y_pos = self._positioning_model.get_position(dest_unit_name)
                 cell_index = create_jointjs_image(
                     dest_unit_icon, dest_unit_name, dest_unit_type, x_pos, y_pos
-                )
-                x_pos, y_pos, y_starting_pos = adjust_image_position(
-                    x_pos, y_pos, y_starting_pos
                 )
                 track_jointjs_elements[dest_unit_name] = cell_index
 

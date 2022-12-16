@@ -30,7 +30,6 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.util.check_units import assert_units_equivalent
-from pyomo.common.dependencies import attempt_import
 
 from idaes.core import FlowsheetBlock, Component, LiquidPhase, VaporPhase
 from idaes.models.properties.modular_properties.base.generic_property import (
@@ -245,7 +244,7 @@ class TestCoolPropProperties(object):
 
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         configuration = {
             # Specifying components
@@ -295,9 +294,9 @@ class TestCoolPropProperties(object):
             "parameter_data": {"PR_kappa": {("benzene", "benzene"): 0.000}},
         }
 
-        m.fs.props = GenericParameterBlock(default=configuration)
+        m.fs.props = GenericParameterBlock(**configuration)
 
-        m.fs.state = m.fs.props.build_state_block([0], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([0], defined_state=True)
 
         m.fs.state[0].flow_mol.fix(1)
         m.fs.state[0].pressure.fix(101325)
@@ -768,7 +767,7 @@ class TestVerifyExcessLiq(object):
 
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         configuration = {
             # Specifying components
@@ -819,9 +818,9 @@ class TestVerifyExcessLiq(object):
             "parameter_data": {"PR_kappa": {("benzene", "benzene"): 0.000}},
         }
 
-        m.fs.props = GenericParameterBlock(default=configuration)
+        m.fs.props = GenericParameterBlock(**configuration)
 
-        m.fs.state = m.fs.props.build_state_block([0], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([0], defined_state=True)
 
         m.fs.state[0].flow_mol.fix(1)
         m.fs.state[0].mole_frac_comp["benzene"].fix(1)
@@ -907,7 +906,7 @@ class TestVerifyExcessVap(object):
 
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         # NBP reference state: h=0, s=0 for saturated liquid at 1 atmosphere
         CoolProp.set_reference_state("benzene", "NBP")
@@ -964,9 +963,9 @@ class TestVerifyExcessVap(object):
             "parameter_data": {"PR_kappa": {("benzene", "benzene"): 0.000}},
         }
 
-        m.fs.props = GenericParameterBlock(default=configuration)
+        m.fs.props = GenericParameterBlock(**configuration)
 
-        m.fs.state = m.fs.props.build_state_block([0], default={"defined_state": True})
+        m.fs.state = m.fs.props.build_state_block([0], defined_state=True)
 
         m.fs.state[0].flow_mol.fix(1)
         m.fs.state[0].mole_frac_comp["benzene"].fix(1)

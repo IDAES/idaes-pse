@@ -15,9 +15,8 @@ Standard IDAES STOICHIOMETRIC reactor model
 """
 
 # Import Pyomo libraries
-from pyomo.environ import Reference, Var, Block
+from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
@@ -33,7 +32,6 @@ from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
 )
-import idaes.core.util.unit_costing as costing
 
 __author__ = "Chinedu Okoli, Andrew Lee"
 
@@ -265,20 +263,3 @@ see reaction package for documentation.}""",
             var_dict["Pressure Change"] = self.deltaP[time_point]
 
         return {"vars": var_dict}
-
-    @deprecated(
-        "The get_costing method is being deprecated in favor of the new "
-        "FlowsheetCostingBlock tools.",
-        version="TBD",
-    )
-    def get_costing(self, year=None, module=costing, **kwargs):
-        if not hasattr(self.flowsheet(), "costing"):
-            self.flowsheet().get_costing(year=year, module=module)
-
-        self.costing = Block()
-        units_meta = self.config.property_package.get_metadata().get_derived_units
-        self.length = Var(initialize=1, units=units_meta("length"), doc="vessel length")
-        self.diameter = Var(
-            initialize=1, units=units_meta("length"), doc="vessel diameter"
-        )
-        module.rstoic_costing(self.costing)

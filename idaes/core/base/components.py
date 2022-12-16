@@ -214,11 +214,9 @@ class ComponentData(ProcessBlockData):
                 self._add_to_electrolyte_component_list()
 
         base_units = self.parent_block().get_metadata().default_units
-        der_units = self.parent_block().get_metadata().derived_units
-        p_units = base_units["mass"] / base_units["length"] / base_units["time"] ** 2
 
         # Create Param for molecular weight if provided
-        param_dict = {"mw": base_units["mass"] / base_units["amount"]}
+        param_dict = {"mw": base_units.MOLECULAR_WEIGHT}
         for p, u in param_dict.items():
             if p in self.config.parameter_data:
                 self.add_component(p, Param(mutable=True, units=u))
@@ -226,11 +224,11 @@ class ComponentData(ProcessBlockData):
 
         # Create Vars for common parameters
         var_dict = {
-            "dens_mol_crit": der_units["density_mole"],
+            "dens_mol_crit": base_units.DENSITY_MOLE,
             "omega": pyunits.dimensionless,
-            "pressure_crit": p_units,
-            "temperature_crit": base_units["temperature"],
-            "volume_crit": pyunits.meter**3/pyunits.mol,
+            "pressure_crit": base_units.PRESSURE,
+            "temperature_crit": base_units.TEMPERATURE,
+            "volume_crit": base_units.VOLUME_MOL,
             "compress_factor_crit": pyunits.dimensionless,
         }
         for p, u in var_dict.items():

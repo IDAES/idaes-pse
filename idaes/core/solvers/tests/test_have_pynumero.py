@@ -14,7 +14,6 @@
 Basic test to make sure the pynumero library is available and working
 """
 
-import idaes
 import pyomo.environ as pyo
 import pytest
 

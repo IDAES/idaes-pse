@@ -16,9 +16,8 @@ Tests for IDAES Stoichiometric reactor.
 Author: Chinedu Okoli, Andrew Lee
 """
 import pytest
-from io import StringIO
 
-from pyomo.environ import check_optimal_termination, ConcreteModel, value, units, Var
+from pyomo.environ import check_optimal_termination, ConcreteModel, value, units
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import (
@@ -60,18 +59,13 @@ solver = get_solver()
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = PhysicalParameterTestBlock()
-    m.fs.reactions = ReactionParameterTestBlock(
-        default={"property_package": m.fs.properties}
-    )
+    m.fs.reactions = ReactionParameterTestBlock(property_package=m.fs.properties)
 
     m.fs.unit = StoichiometricReactor(
-        default={
-            "property_package": m.fs.properties,
-            "reaction_package": m.fs.reactions,
-        }
+        property_package=m.fs.properties, reaction_package=m.fs.reactions
     )
 
     # Check unit config arguments
@@ -92,21 +86,19 @@ class TestSaponification(object):
     @pytest.fixture(scope="class")
     def sapon(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = SaponificationParameterBlock()
         m.fs.reactions = SaponificationReactionParameterBlock(
-            default={"property_package": m.fs.properties}
+            property_package=m.fs.properties
         )
 
         m.fs.unit = StoichiometricReactor(
-            default={
-                "property_package": m.fs.properties,
-                "reaction_package": m.fs.reactions,
-                "has_heat_transfer": True,
-                "has_heat_of_reaction": True,
-                "has_pressure_change": True,
-            }
+            property_package=m.fs.properties,
+            reaction_package=m.fs.reactions,
+            has_heat_transfer=True,
+            has_heat_of_reaction=True,
+            has_pressure_change=True,
         )
 
         m.fs.unit.inlet.flow_vol.fix(1)
@@ -264,23 +256,3 @@ class TestSaponification(object):
                 "Pressure Change": sapon.fs.unit.deltaP[0],
             }
         }
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_costing(self, sapon):
-        sapon.fs.unit.get_costing()
-        assert isinstance(sapon.fs.unit.costing.purchase_cost, Var)
-        sapon.fs.unit.diameter.fix(2)
-        sapon.fs.unit.length.fix(3)
-        results = solver.solve(sapon)
-        # Check for optimal solution
-        assert check_optimal_termination(results)
-        assert pytest.approx(56327.5803, abs=1e3) == value(
-            sapon.fs.unit.costing.base_cost
-        )
-        assert pytest.approx(85432.06008, abs=1e3) == value(
-            sapon.fs.unit.costing.purchase_cost
-        )
-
-        assert_units_consistent(sapon.fs.unit.costing)

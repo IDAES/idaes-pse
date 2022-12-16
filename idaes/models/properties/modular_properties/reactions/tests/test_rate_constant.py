@@ -38,28 +38,26 @@ def model():
     m.thermo = m.pparams.build_state_block([1])
 
     m.rparams = GenericReactionParameterBlock(
-        default={
-            "property_package": m.pparams,
-            "reaction_basis": MaterialFlowBasis.molar,
-            "rate_reactions": {
-                "r1": {
-                    "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
-                    "rate_form": "foo",
-                    "concentration_form": ConcentrationForm.moleFraction,
-                }
-            },
-            "base_units": {
-                "amount": pyunits.mol,
-                "mass": pyunits.kg,
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "temperature": pyunits.K,
-            },
-        }
+        property_package=m.pparams,
+        reaction_basis=MaterialFlowBasis.molar,
+        rate_reactions={
+            "r1": {
+                "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
+                "rate_form": "foo",
+                "concentration_form": ConcentrationForm.moleFraction,
+            }
+        },
+        base_units={
+            "amount": pyunits.mol,
+            "mass": pyunits.kg,
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "temperature": pyunits.K,
+        },
     )
 
     m.rxn = m.rparams.build_reaction_block(
-        [1], default={"state_block": m.thermo, "has_equilibrium": False}
+        [1], state_block=m.thermo, has_equilibrium=False
     )
 
     return m

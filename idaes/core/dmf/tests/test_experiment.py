@@ -15,9 +15,7 @@ Tests for idaes.core.dmf.experiment module
 """
 import logging
 from pathlib import Path
-import sys
 from tempfile import TemporaryDirectory
-import time
 from typing import Union
 
 import pytest

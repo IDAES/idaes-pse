@@ -21,12 +21,7 @@ __author__ = "Alejandro Garciadiego"
 # Import objects from pyomo package
 from pyomo.environ import (
     check_optimal_termination,
-    ConcreteModel,
-    SolverFactory,
     value,
-    Var,
-    Constraint,
-    Expression,
     units as pyunits,
 )
 import idaes.logger as idaeslog
@@ -137,7 +132,7 @@ def Txy_data(
 
     # Add properties parameter blocks to the flowsheet with specifications
 
-    model.props = model.params.build_state_block([1], default={"defined_state": True})
+    model.props = model.params.build_state_block([1], defined_state=True)
 
     # Set intial concentration of component 1 close to 1
     x = 0.99

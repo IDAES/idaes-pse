@@ -13,9 +13,6 @@
 """
 Framework for generic property packages
 """
-# Import Python libraries
-import types
-
 # Import Pyomo libraries
 from pyomo.environ import (
     Block,
@@ -637,13 +634,6 @@ class GenericParameterData(PhysicalParameterBlock):
                 "state_definition configuration argument. Please fix "
                 "your property parameter definition to include this.".format(self.name)
             )
-        elif isinstance(self.config.state_definition, types.ModuleType):
-            _log.info(
-                "DEPRECATED - definiton of generic property "
-                "packages is moving to using static classes "
-                "instead of modules. Please refer to the IDAES "
-                "documentation."
-            )
 
         units = self.get_metadata().derived_units
 
@@ -655,8 +645,8 @@ class GenericParameterData(PhysicalParameterBlock):
                 "your property parameter definition to include this.".format(self.name)
             )
         else:
-            self.pressure_ref = Param(mutable=True, units=units["pressure"])
-            set_param_value(self, "pressure_ref", units["pressure"])
+            self.pressure_ref = Param(mutable=True, units=units.PRESSURE)
+            set_param_value(self, "pressure_ref", units.PRESSURE)
 
         if self.config.temperature_ref is None:
             raise ConfigurationError(
@@ -665,8 +655,8 @@ class GenericParameterData(PhysicalParameterBlock):
                 "your property parameter definition to include this.".format(self.name)
             )
         else:
-            self.temperature_ref = Param(mutable=True, units=units["temperature"])
-            set_param_value(self, "temperature_ref", units["temperature"])
+            self.temperature_ref = Param(mutable=True, units=units.TEMPERATURE)
+            set_param_value(self, "temperature_ref", units.TEMPERATURE)
 
         # Validate equations of state
         for p in self.phase_list:
@@ -708,14 +698,6 @@ class GenericParameterData(PhysicalParameterBlock):
                         "for all phase pairs.".format(self.name)
                     )
 
-                if isinstance(pie_config[pp], types.ModuleType):
-                    _log.info(
-                        "DEPRECATED - definiton of generic property "
-                        "packages is moving to using static classes "
-                        "instead of modules. Please refer to the IDAES "
-                        "documentation."
-                    )
-
                 for j in self.component_list:
                     if (pp[0], j) in self._phase_component_set and (
                         pp[1],
@@ -753,14 +735,6 @@ class GenericParameterData(PhysicalParameterBlock):
         for c in self.component_list:
             cobj = self.get_component(c)
             for a, v in cobj.config.items():
-                if isinstance(v, types.ModuleType):
-                    _log.info(
-                        "DEPRECATED - definiton of generic property "
-                        "packages is moving to using static classes "
-                        "instead of modules. Please refer to the IDAES "
-                        "documentation."
-                    )
-
                 # Check to see if v has an attribute build_parameters
                 if hasattr(v, "build_parameters"):
                     build_parameters = v.build_parameters
@@ -1391,7 +1365,7 @@ class _GenericStateBlock(StateBlock):
         # If present, initialize bubble and dew point calculations, and
         # equilirium temperature _tbar
         for k in blk.keys():
-            T_units = blk[k].params.get_metadata().default_units["temperature"]
+            T_units = blk[k].params.get_metadata().default_units.TEMPERATURE
             # Bubble temperature initialization
             blk._init_Tbub(blk[k], T_units)
 
@@ -2027,7 +2001,7 @@ class GenericStateBlockData(StateBlockData):
             not self.config.defined_state or self.always_flash
         ):
 
-            t_units = self.params.get_metadata().default_units["temperature"]
+            t_units = self.params.get_metadata().default_units.TEMPERATURE
             self._tbar = Var(
                 self.params._pe_pairs,
                 initialize=value(self.temperature),
@@ -4465,12 +4439,12 @@ def _temperature_pressure_bubble_dew(b, name):
     if splt[0] == "temperature":
         abbrv = "t" + abbrv
         bounds = (b.temperature.lb, b.temperature.ub)
-        units = b.params.get_metadata().default_units["temperature"]
+        units = b.params.get_metadata().default_units.TEMPERATURE
     elif splt[0] == "pressure":
         abbrv = "p" + abbrv
         bounds = (b.pressure.lb, b.pressure.ub)
         units_meta = b.params.get_metadata().derived_units
-        units = units_meta["pressure"]
+        units = units_meta.PRESSURE
     else:
         _raise_dev_burnt_toast()
 

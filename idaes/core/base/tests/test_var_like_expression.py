@@ -16,9 +16,7 @@ This module tests for the VarLikeExpression component.
 
 import pytest
 
-from pyomo.environ import ConcreteModel, Expression, Block, Var, units
-from pyomo.common.config import ConfigBlock
-from pyomo.core.base.units_container import UnitsError
+from pyomo.environ import ConcreteModel, Expression, Var
 
 from idaes.core.base.var_like_expression import VarLikeExpression
 
@@ -33,7 +31,7 @@ def test_SimpleVarLikeExpression():
 
     m.e = VarLikeExpression(expr=m.v)
 
-    assert m.e.type() is Expression
+    assert m.e.ctype is Expression
     assert not m.e.is_indexed()
 
     with pytest.raises(
@@ -90,7 +88,7 @@ def test_IndexedVarLikeExpression():
 
     m.e = VarLikeExpression([1, 2, 3, 4], expr=m.v)
 
-    assert m.e.type() is Expression
+    assert m.e.ctype is Expression
     assert m.e.is_indexed()
 
     with pytest.raises(

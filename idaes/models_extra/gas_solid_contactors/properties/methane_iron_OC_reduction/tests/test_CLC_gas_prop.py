@@ -42,12 +42,12 @@ solver = get_solver()
 @pytest.fixture(scope="class")
 def gas_prop():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # gas properties and state inlet block
     m.fs.properties = GasPhaseParameterBlock()
     m.fs.unit = m.fs.properties.build_state_block(
-        [0], default={"parameters": m.fs.properties, "defined_state": True}
+        [0], parameters=m.fs.properties, defined_state=True
     )
 
     m.fs.unit[0].flow_mol.fix(1)
@@ -82,12 +82,12 @@ def test_setInputs_state_block(gas_prop):
 @pytest.fixture(scope="class")
 def gas_prop_unscaled():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # gas properties and state inlet block
     m.fs.properties = GasPhaseParameterBlock()
     m.fs.unit = m.fs.properties.build_state_block(
-        [0], default={"parameters": m.fs.properties, "defined_state": True}
+        [0], parameters=m.fs.properties, defined_state=True
     )
 
     m.fs.unit[0].flow_mol.fix(1)

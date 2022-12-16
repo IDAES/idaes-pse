@@ -73,14 +73,6 @@ from pyomo.network import Arc
 
 # IDAES Imports
 from idaes.core.util.model_statistics import degrees_of_freedom
-
-# Callback used to construct heat exchangers with the Underwood LMTD approx.
-from idaes.models.unit_models.heat_exchanger import (
-    delta_temperature_underwood_callback,
-)
-
-# Pressure changer type (e.g. adiabatic, pump, isentropic...)
-from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
 import idaes.logger as idaeslog
 
 _log = idaeslog.getModelLogger(__name__, logging.INFO)
@@ -146,28 +138,29 @@ def main():
     #    m.fs.bfp.outlet.pressure[:].fix(26922222.222))
 
     m.fs.FHWtoECON = Arc(
-        source=m.fs.fwh8.desuperheat.outlet_2, destination=m.fs.ECON.side_1_inlet
+        source=m.fs.fwh8.desuperheat.cold_side_outlet,
+        destination=m.fs.ECON.cold_side_inlet,
     )
 
     m.fs.Att2HP = Arc(source=m.fs.ATMP1.outlet, destination=m.fs.turb.inlet_split.inlet)
 
     m.fs.HPout2RH = Arc(
-        source=m.fs.turb.hp_split[7].outlet_1, destination=m.fs.RH.side_1_inlet
+        source=m.fs.turb.hp_split[7].outlet_1, destination=m.fs.RH.cold_side_inlet
     )
 
     m.fs.RHtoIP = Arc(
-        source=m.fs.RH.side_1_outlet, destination=m.fs.turb.ip_stages[1].inlet
+        source=m.fs.RH.cold_side_outlet, destination=m.fs.turb.ip_stages[1].inlet
     )
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
     # unfix boiler connections
-    m.fs.ECON.side_1_inlet.flow_mol.unfix()
-    m.fs.ECON.side_1_inlet.enth_mol[0].unfix()
-    m.fs.ECON.side_1_inlet.pressure[0].unfix()
-    m.fs.RH.side_1_inlet.flow_mol.unfix()
-    m.fs.RH.side_1_inlet.enth_mol[0].unfix()
-    m.fs.RH.side_1_inlet.pressure[0].unfix()
+    m.fs.ECON.cold_side_inlet.flow_mol.unfix()
+    m.fs.ECON.cold_side_inlet.enth_mol[0].unfix()
+    m.fs.ECON.cold_side_inlet.pressure[0].unfix()
+    m.fs.RH.cold_side_inlet.flow_mol.unfix()
+    m.fs.RH.cold_side_inlet.enth_mol[0].unfix()
+    m.fs.RH.cold_side_inlet.pressure[0].unfix()
     m.fs.hotwell.makeup.flow_mol[:].setlb(-1.0)
 
     # if user has trouble with infeasible solutions, an easy test

@@ -68,7 +68,7 @@ class TestParamBlock(object):
     @pytest.mark.unit
     def test_build(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration)
+        model.params = GenericParameterBlock(**configuration)
 
         assert isinstance(model.params.phase_list, Set)
         assert len(model.params.phase_list) == 2
@@ -96,7 +96,6 @@ class TestParamBlock(object):
                 "flow_mol": (0, 10, 20, pyunits.mol / pyunits.s),
                 "temperature": (273.15, 323.15, 1000, pyunits.K),
                 "pressure": (5e4, 108900, 1e7, pyunits.Pa),
-                "mole_frac_comp": {"H2O": (0, 0.5, 1), "CO2": (0, 0.5, 1)},
             },
             item_callback=_as_quantity,
         )
@@ -130,11 +129,9 @@ class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration)
+        model.params = GenericParameterBlock(**configuration)
 
-        model.props = model.params.build_state_block(
-            [1], default={"defined_state": True}
-        )
+        model.props = model.params.build_state_block([1], defined_state=True)
 
         model.props[1].flow_mol.fix(10)
         model.props[1].temperature.fix(323.15)
@@ -249,9 +246,9 @@ class TestStateBlock(object):
     def test_temp_swing(self):
         # Create a flash model with the CO2-H2O property package
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.properties = GenericParameterBlock(default=configuration)
-        m.fs.flash = Flash(default={"property_package": m.fs.properties})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = GenericParameterBlock(**configuration)
+        m.fs.flash = Flash(property_package=m.fs.properties)
 
         # Fix inlet stream state variables
         m.fs.flash.inlet.flow_mol.fix(9.89433124673833)  # mol/s

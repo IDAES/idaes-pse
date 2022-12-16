@@ -15,9 +15,11 @@ import pyomo.environ as pyo
 import pandas as pd
 from idaes.apps.grid_integration import Tracker
 from idaes.apps.grid_integration import Bidder, SelfScheduler
-from idaes.apps.grid_integration import DoubleLoopCoordinator
-from idaes.apps.grid_integration.forecaster import AbstractPriceForecaster
-from idaes.apps.grid_integration.model_data import GeneratorModelData
+from idaes.apps.grid_integration.forecaster import AbstractPrescientPriceForecaster
+from idaes.apps.grid_integration.model_data import (
+    ThermalGeneratorModelData,
+    RenewableGeneratorModelData,
+)
 
 
 class TestingModel:
@@ -42,15 +44,17 @@ class TestingModel:
             None
         """
 
-        if not isinstance(model_data, GeneratorModelData):
-            raise TypeError(f"model_data must be an instance of GeneratorModelData.")
         self._model_data = model_data
 
         self.generator = self.model_data.gen_name
         self.result_list = []
         self.pmin = self.model_data.p_min
         self.pmax = self.model_data.p_max
-        self.marginal_cost = self.model_data.p_cost[0][1]
+
+        if model_data.generator_type == "thermal":
+            self.marginal_cost = self.model_data.p_cost[0][1]
+        else:
+            self.marginal_cost = 0
 
     @property
     def model_data(self):
@@ -260,8 +264,7 @@ class TestingModel:
         return ("tot_cost", 1)
 
 
-class TestingForecaster(AbstractPriceForecaster):
-
+class TestingForecaster(AbstractPrescientPriceForecaster):
     """
     A fake forecaster class for testing.
     """
@@ -290,11 +293,16 @@ class TestingForecaster(AbstractPriceForecaster):
     def _forecast(self, horizon, n_samples, prediction):
         return {i: [prediction] * horizon for i in range(n_samples)}
 
+    def fetch_hourly_stats_from_prescient(self, prescient_hourly_stats):
+        return
+
+    def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
+        return
+
 
 testing_generator_params = {
     "gen_name": "10_STEAM",
     "bus": "bus5",
-    "generator_type": "thermal",
     "p_min": 30,
     "p_max": 76,
     "min_down_time": 4,
@@ -303,6 +311,8 @@ testing_generator_params = {
     "ramp_down_60min": 120,
     "shutdown_capacity": 30,
     "startup_capacity": 30,
+    "initial_status": 9,
+    "initial_p_output": 42,
     "production_cost_bid_pairs": [
         (30, 30),
         (45.3, 30),
@@ -313,7 +323,17 @@ testing_generator_params = {
     "fixed_commitment": None,
 }
 
-testing_model_data = GeneratorModelData(**testing_generator_params)
+testing_model_data = ThermalGeneratorModelData(**testing_generator_params)
+
+renewable_generator_params = {
+    "gen_name": "Testing_Renewable_Generator",
+    "bus": "bus5",
+    "p_min": 0,
+    "p_max": 200,
+    "p_cost": 0,
+    "fixed_commitment": None,
+}
+testing_renewable_data = RenewableGeneratorModelData(**renewable_generator_params)
 tracking_horizon = 4
 day_ahead_bidding_horizon = 48
 real_time_bidding_horizon = 4

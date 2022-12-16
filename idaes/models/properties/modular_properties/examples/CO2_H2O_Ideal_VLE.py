@@ -78,6 +78,7 @@ configuration = {
                 "pressure_crit": (220.64e5, pyunits.Pa),  # [1]
                 "temperature_crit": (647, pyunits.K),  # [1]
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": (
                         5.459,
                         pyunits.kmol * pyunits.m**-3,
@@ -210,7 +211,6 @@ configuration = {
         "flow_mol": (0, 10, 20, pyunits.mol / pyunits.s),
         "temperature": (273.15, 323.15, 1000, pyunits.K),
         "pressure": (5e4, 108900, 1e7, pyunits.Pa),
-        "mole_frac_comp": {"H2O": (0, 0.5, 1), "CO2": (0, 0.5, 1)},
     },
     "pressure_ref": (101325, pyunits.Pa),
     "temperature_ref": (298.15, pyunits.K),

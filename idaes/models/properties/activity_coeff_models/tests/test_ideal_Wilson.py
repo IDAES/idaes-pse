@@ -29,30 +29,30 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 # -----------------------------------------------------------------------------
 # Create a flowsheet for test
 m = ConcreteModel()
-m.fs = FlowsheetBlock(default={"dynamic": False})
+m.fs = FlowsheetBlock(dynamic=False)
 
 # vapor-liquid (Wilson)
 m.fs.properties_Wilson_vl = BTXParameterBlock(
-    default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "Wilson"}
+    valid_phase=("Liq", "Vap"), activity_coeff_model="Wilson"
 )
 m.fs.state_block_Wilson_vl = m.fs.properties_Wilson_vl.build_state_block(
-    default={"defined_state": True}
+    defined_state=True
 )
 
 # liquid only (Wilson)
 m.fs.properties_Wilson_l = BTXParameterBlock(
-    default={"valid_phase": "Liq", "activity_coeff_model": "Wilson"}
+    valid_phase="Liq", activity_coeff_model="Wilson"
 )
 m.fs.state_block_Wilson_l = m.fs.properties_Wilson_l.build_state_block(
-    default={"has_phase_equilibrium": False, "defined_state": True}
+    has_phase_equilibrium=False, defined_state=True
 )
 
 # vapour only (Wilson)
 m.fs.properties_Wilson_v = BTXParameterBlock(
-    default={"valid_phase": "Vap", "activity_coeff_model": "Wilson"}
+    valid_phase="Vap", activity_coeff_model="Wilson"
 )
 m.fs.state_block_Wilson_v = m.fs.properties_Wilson_v.build_state_block(
-    default={"has_phase_equilibrium": False, "defined_state": True}
+    has_phase_equilibrium=False, defined_state=True
 )
 
 
@@ -134,30 +134,30 @@ def test_setInputs_inlet_state_block():
 
 
 # Create a flowsheet object to test outlet state blocks
-m.fs1 = FlowsheetBlock(default={"dynamic": False})
+m.fs1 = FlowsheetBlock(dynamic=False)
 
 # vapor-liquid (Wilson)
 m.fs1.properties_Wilson_vl = BTXParameterBlock(
-    default={"valid_phase": ("Liq", "Vap"), "activity_coeff_model": "Wilson"}
+    valid_phase=("Liq", "Vap"), activity_coeff_model="Wilson"
 )
 m.fs1.state_block_Wilson_vl = m.fs1.properties_Wilson_vl.build_state_block(
-    default={"defined_state": False}
+    defined_state=False
 )
 
 # liquid only (Wilson)
 m.fs1.properties_Wilson_l = BTXParameterBlock(
-    default={"valid_phase": "Liq", "activity_coeff_model": "Wilson"}
+    valid_phase="Liq", activity_coeff_model="Wilson"
 )
 m.fs1.state_block_Wilson_l = m.fs1.properties_Wilson_l.build_state_block(
-    default={"has_phase_equilibrium": False, "defined_state": False}
+    has_phase_equilibrium=False, defined_state=False
 )
 
 # vapour only (Wilson)
 m.fs1.properties_Wilson_v = BTXParameterBlock(
-    default={"valid_phase": "Vap", "activity_coeff_model": "Wilson"}
+    valid_phase="Vap", activity_coeff_model="Wilson"
 )
 m.fs1.state_block_Wilson_v = m.fs1.properties_Wilson_v.build_state_block(
-    default={"has_phase_equilibrium": False, "defined_state": False}
+    has_phase_equilibrium=False, defined_state=False
 )
 
 

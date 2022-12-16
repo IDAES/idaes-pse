@@ -10,38 +10,23 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-import itertools
-import math
 import pytest
 
 import pyomo.common.unittest as unittest
-from pyomo.common.collections import ComponentMap, ComponentSet
 import pyomo.environ as pyo
-import pyomo.dae as dae
-from pyomo.core.expr.visitor import identify_variables
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.dae.flatten import flatten_dae_components
 from pyomo.network.arc import Arc
 
 from pyomo.contrib.incidence_analysis import (
     IncidenceGraphInterface,
-    solve_strongly_connected_components,
-)
-from pyomo.contrib.incidence_analysis.interface import (
-    _generate_variables_in_constraints,
 )
 from pyomo.util.check_units import assert_units_consistent
-from pyomo.util.subsystems import ParamSweeper
 
 import idaes.core as idaes
-from idaes.models.properties.modular_properties.base.generic_property import (
-    GenericParameterBlock,
-)
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     large_residuals_set,
 )
-from idaes.core.util.constants import Constants
 from idaes.models_extra.gas_distribution.properties.natural_gas import (
     NaturalGasParameterBlock,
 )
@@ -50,17 +35,10 @@ from idaes.models_extra.gas_distribution.unit_models.compressor import (
     IsothermalCompressor as Compressor,
 )
 
-from idaes.apps.nmpc import (
-    get_tracking_cost_from_constant_setpoint as get_tracking_cost_expression,
-)
 from idaes.apps.nmpc.dynamic_data import (
     load_inputs_into_model,
     interval_data_from_time_series,
 )
-
-
-"""
-"""
 
 
 @pytest.mark.component
@@ -72,7 +50,7 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
     ):
         m = pyo.ConcreteModel()
         default = {"dynamic": False}
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         pipeline_config = {
             "property_package": m.fs.properties,
@@ -80,10 +58,10 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
             "transformation_scheme": scheme,
             "has_holdup": True,
         }
-        m.fs.pipeline = GasPipeline(default=pipeline_config)
+        m.fs.pipeline = GasPipeline(**pipeline_config)
         pipeline = m.fs.pipeline
         compressor_config = {"property_package": m.fs.properties}
-        m.fs.compressor = Compressor(default=compressor_config)
+        m.fs.compressor = Compressor(**compressor_config)
         compressor = m.fs.compressor
         cv = m.fs.pipeline.control_volume
         # Fix geometry variables
@@ -157,16 +135,16 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
             "time_set": [0.0, 20.0],
             "time_units": pyo.units.hr,
         }
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         pipeline_config = {
             "property_package": m.fs.properties,
             "finite_elements": nxfe,
         }
-        m.fs.pipeline = GasPipeline(default=pipeline_config)
+        m.fs.pipeline = GasPipeline(**pipeline_config)
         pipeline = m.fs.pipeline
         compressor_config = {"property_package": m.fs.properties}
-        m.fs.compressor = Compressor(default=compressor_config)
+        m.fs.compressor = Compressor(**compressor_config)
         compressor = m.fs.compressor
         m._compressor_to_pipeline = Arc(
             ports=(compressor.outlet_port, pipeline.inlet_port),
@@ -364,16 +342,16 @@ class TestConstructPipelineCompressorFlowsheet(unittest.TestCase):
         default = {
             "dynamic": False,
         }
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         pipeline_config = {
             "property_package": m.fs.properties,
             "finite_elements": 2,
         }
-        m.fs.pipeline = GasPipeline(default=pipeline_config)
+        m.fs.pipeline = GasPipeline(**pipeline_config)
         pipeline = m.fs.pipeline
         compressor_default = {"property_package": m.fs.properties}
-        m.fs.compressor = Compressor(default=compressor_default)
+        m.fs.compressor = Compressor(**compressor_default)
         compressor = m.fs.compressor
 
         m._compressor_to_pipeline = Arc(
@@ -427,17 +405,17 @@ class TestConstructPipelineCompressorFlowsheet(unittest.TestCase):
             "time_set": [0.0, 20.0],
             "time_units": pyo.units.hr,
         }
-        m.fs = idaes.FlowsheetBlock(default=default)
+        m.fs = idaes.FlowsheetBlock(**default)
         m.fs.properties = NaturalGasParameterBlock()
         pipeline_config = {
             "property_package": m.fs.properties,
             "finite_elements": 4,
         }
-        m.fs.pipeline = GasPipeline(default=pipeline_config)
+        m.fs.pipeline = GasPipeline(**pipeline_config)
         pipeline = m.fs.pipeline
 
         compressor_config = {"property_package": m.fs.properties}
-        m.fs.compressor = Compressor(default=compressor_config)
+        m.fs.compressor = Compressor(**compressor_config)
         compressor = m.fs.compressor
 
         m._pipeline_to_compressor = Arc(

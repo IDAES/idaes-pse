@@ -23,7 +23,6 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 from idaes.core.util.config import is_physical_parameter_block
-import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from pyomo.environ import value
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
@@ -98,17 +97,17 @@ see property package for documentation.}""",
         super(WaterFlashData, self).build()
 
         self.mixed_state = self.config.property_package.build_state_block(
-            self.flowsheet().time, default=self.config.property_package_args
+            self.flowsheet().time, **self.config.property_package_args
         )
 
         self.add_port("inlet", self.mixed_state)
 
         self.vap_state = self.config.property_package.build_state_block(
-            self.flowsheet().time, default=self.config.property_package_args
+            self.flowsheet().time, **self.config.property_package_args
         )
 
         self.liq_state = self.config.property_package.build_state_block(
-            self.flowsheet().time, default=self.config.property_package_args
+            self.flowsheet().time, **self.config.property_package_args
         )
 
         self.add_port("vap_outlet", self.vap_state)

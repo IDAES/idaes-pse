@@ -16,18 +16,21 @@ Make sure the supercritical steam cycle example solves.
 
 __author__ = "John Eslick"
 
+import os
 import pytest
 import pyomo.environ as pyo
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.models_extra.power_generation.flowsheets.supercritical_steam_cycle.supercritical_steam_cycle import (
     main,
+    pfd_result,
 )
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     activated_equalities_generator,
 )
 from idaes.models.properties import iapws95
+from idaes.core.util.tables import create_stream_table_dataframe  # as Pandas DataFrame
 
 
 @pytest.fixture(scope="module")
@@ -59,6 +62,9 @@ def test_init(model):
 @pytest.mark.integration
 def test_init_value(model):
     assert gross_power_mw(model) == pytest.approx(622.38, abs=1e-2)
+    # Make sure the stream table can be generated.
+    df = create_stream_table_dataframe(streams=model._streams, orient="index")
+    pfd_result(model, df, None)
 
 
 @pytest.mark.integration

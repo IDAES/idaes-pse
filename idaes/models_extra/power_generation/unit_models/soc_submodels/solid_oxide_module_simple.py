@@ -37,23 +37,14 @@ Expressions:
 """
 __author__ = "Douglas Allan"
 
-from pyomo.common.config import ConfigValue, In, Bool, ListOf, ConfigBlock
+from pyomo.common.config import ConfigValue, ConfigBlock
 import pyomo.environ as pyo
-from pyomo.network import Port
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
-from idaes.models_extra.power_generation.unit_models.soc_submodels.common import (
-    _gas_species_list,
-    _element_list,
-    _element_dict,
-)
 import idaes.core.util.scaling as iscale
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
@@ -137,7 +128,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         )
 
         self.solid_oxide_cell = soc.SolidOxideCell(
-            default=self.config.solid_oxide_cell_config
+            **self.config.solid_oxide_cell_config
         )
 
         def rule_absent_comp(blk, t, j, props):
@@ -167,11 +158,9 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                 param_block.build_state_block(
                     self.flowsheet().time,
                     doc=f"Material properties in {side}-side inlet stream",
-                    default={
-                        "defined_state": True,
-                        "has_phase_equilibrium": False,
-                        **package_args,
-                    },
+                    defined_state=True,
+                    has_phase_equilibrium=False,
+                    **package_args,
                 ),
             )
             setattr(
@@ -180,11 +169,9 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                 param_block.build_state_block(
                     self.flowsheet().time,
                     doc=f"Material properties in {side}-side outlet stream",
-                    default={
-                        "defined_state": False,
-                        "has_phase_equilibrium": False,
-                        **package_args,
-                    },
+                    defined_state=False,
+                    has_phase_equilibrium=False,
+                    **package_args,
                 ),
             )
             side_comps = getattr(self.solid_oxide_cell, f"{side}_component_list")
@@ -354,7 +341,9 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         super().calculate_scaling_factors()
 
         gsf = iscale.get_scaling_factor
-        ssf = common._set_scaling_factor_if_none
+
+        def ssf(c, s):
+            iscale.set_scaling_factor(c, s, overwrite=False)
 
         def cst(c, s):
             return iscale.constraint_scaling_transform(c, s, overwrite=False)

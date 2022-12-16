@@ -28,11 +28,7 @@ import pyomo.environ as pyo
 
 # Import IDAES core
 from idaes.core import FlowsheetBlock
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    number_variables,
-    number_total_constraints,
-)
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
 
@@ -50,7 +46,7 @@ solver = get_solver()
 @pytest.fixture(scope="module")
 def build_rom():
     m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.sofc = SofcSurrogate()
 
     return m

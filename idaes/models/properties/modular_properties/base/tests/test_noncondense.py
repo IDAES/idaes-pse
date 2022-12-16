@@ -76,6 +76,7 @@ configuration = {
                 "pressure_crit": 48.9e5,
                 "temperature_crit": 562.2,
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": 1.0162 * 1e3,
                     "2": 0.2655,
                     "3": 562.16,
@@ -117,6 +118,7 @@ configuration = {
                 "pressure_crit": 41e5,
                 "temperature_crit": 591.8,
                 "dens_mol_liq_comp_coeff": {
+                    "eqn_type": 1,
                     "1": 0.8488 * 1e3,
                     "2": 0.26655,
                     "3": 591.8,
@@ -197,7 +199,7 @@ class TestParamBlock(object):
     @pytest.mark.unit
     def test_build(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration)
+        model.params = GenericParameterBlock(**configuration)
 
         assert isinstance(model.params.phase_list, Set)
         assert len(model.params.phase_list) == 2
@@ -253,11 +255,9 @@ class TestNonCondensable_Liquid(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration)
+        model.params = GenericParameterBlock(**configuration)
 
-        model.props = model.params.build_state_block(
-            [1], default={"defined_state": True}
-        )
+        model.props = model.params.build_state_block([1], defined_state=True)
 
         # Fix state
         model.props[1].flow_mol.fix(1)
@@ -373,11 +373,9 @@ class TestNonCondensable_Vapour(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration)
+        model.params = GenericParameterBlock(**configuration)
 
-        model.props = model.params.build_state_block(
-            [1], default={"defined_state": True}
-        )
+        model.props = model.params.build_state_block([1], defined_state=True)
 
         # Fix state
         model.props[1].flow_mol.fix(1)
