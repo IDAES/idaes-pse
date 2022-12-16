@@ -25,6 +25,27 @@ from .ver import __version__  # noqa
 
 _log = logging.getLogger(__name__)
 
+
+_log.warning(
+f"""The v1 series of IDAES (including this version, {__version__}) is no longer supported.
+
+IDAES users should migrate their code to IDAES v2, which will become the default
+with the upcoming 2.0.0 stable release.
+
+For more information, including step-by-step guides on how to migrate code to IDAES v2,
+visit https://github.com/IDAES/idaes-pse/wiki/idaes-v2.
+
+To uninstall this version and start using IDAES v2 now, run:
+
+pip uninstall --yes idaes-pse && pip install idaes-pse --pre
+
+If you wish to continue using the unsupported IDAES v1 series without this warning,
+uninstall this version of IDAES and install the (functionally identical) 1.13.0 release:
+
+pip uninstall --yes idaes-pse && pip install idaes-pse==1.13.0
+"""
+)
+
 # Standard locations for config file, binary libraries and executables, ...
 data_directory, bin_directory, testing_directory = config.get_data_directory()
 # To avoid a circular import the config module doesn't import idaes, but
