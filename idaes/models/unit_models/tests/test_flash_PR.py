@@ -55,15 +55,14 @@ import idaes.core.util.scaling as iscale
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
-solver.options["linear_solver"] = "MA57"
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
 def test_config():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = GenericParameterBlock(default=configuration)
-    m.fs.unit = Flash(default={"property_package": m.fs.properties})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = GenericParameterBlock(**configuration)
+    m.fs.unit = Flash(property_package=m.fs.properties)
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 11
@@ -84,9 +83,9 @@ def test_config():
 @pytest.mark.unit
 def test_calc_scale():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = GenericParameterBlock(default=configuration)
-    m.fs.unit = Flash(default={"property_package": m.fs.properties})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = GenericParameterBlock(**configuration)
+    m.fs.unit = Flash(property_package=m.fs.properties)
     iscale.calculate_scaling_factors(m)
 
 
@@ -95,9 +94,9 @@ class TestBTXPengRobinson(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.properties = GenericParameterBlock(default=configuration)
-        m.fs.unit = Flash(default={"property_package": m.fs.properties})
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = GenericParameterBlock(**configuration)
+        m.fs.unit = Flash(property_package=m.fs.properties)
 
         m.fs.unit.inlet.flow_mol.fix(1)
         m.fs.unit.inlet.temperature.fix(368)
