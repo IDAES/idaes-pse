@@ -65,7 +65,7 @@ configuration = {
                 "mw": (78.1136e-3, pyunits.kg / pyunits.mol),  # [1]
                 "pressure_crit": (48.9e5, pyunits.Pa),  # [1]
                 "temperature_crit": (562.2, pyunits.K),  # [1]
-                "volume_crit": (256e-06, pyunits.meter**3/pyunits.mol),  # [1]
+                "volume_crit": (256e-06, pyunits.meter**3 / pyunits.mol),  # [1]
                 "compress_factor_crit": (0.268, pyunits.dimensionless),  # [1]
                 "omega": 0.212,  # [1]
                 "cp_mol_ig_comp_coeff": {
@@ -97,7 +97,7 @@ configuration = {
                 "mw": (92.1405e-3, pyunits.kg / pyunits.mol),  # [1]
                 "pressure_crit": (41e5, pyunits.Pa),  # [1]
                 "temperature_crit": (591.8, pyunits.K),  # [1]
-                "volume_crit": (316e-06, pyunits.meter**3/pyunits.mol),  # [1]
+                "volume_crit": (316e-06, pyunits.meter**3 / pyunits.mol),  # [1]
                 "compress_factor_crit": (0.264, pyunits.dimensionless),  # [1]
                 "omega": 0.263,  # [1]
                 "cp_mol_ig_comp_coeff": {

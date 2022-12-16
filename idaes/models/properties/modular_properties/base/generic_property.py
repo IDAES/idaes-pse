@@ -1332,32 +1332,36 @@ class _GenericStateBlock(StateBlock):
         # Initialize temperature_crit_mix and pressure_crit_mix
         for k in blk.keys():
             reference_phase = next(
-                p for p in blk[k].params.phase_list if blk[k].params.get_phase(p)
-                .is_liquid_phase()
+                p
+                for p in blk[k].params.phase_list
+                if blk[k].params.get_phase(p).is_liquid_phase()
             )
             p_config = blk[k].params.get_phase(reference_phase).config
             p_config.equation_of_state.initialize_critical_properties(
                 blk[k], reference_phase
             )
-                    
+
         if blk[k].params.config.supercritical_extension:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
             init_log.info(
-                "Critical point initialization complete: {}."
-                .format(idaeslog.condition(res))
+                "Critical point initialization complete: {}.".format(
+                    idaeslog.condition(res)
+                )
             )
 
         # ---------------------------------------------------------------------
         # Initialize supercritical extension variables: _pp, _pn, _pbar
         for k in blk.keys():
             if blk[k].params.config.supercritical_extension:
-                if (blk[k].params.config.phases_in_equilibrium is not None and
-                        (not blk[k].config.defined_state or blk[k].always_flash)):
+                if blk[k].params.config.phases_in_equilibrium is not None and (
+                    not blk[k].config.defined_state or blk[k].always_flash
+                ):
                     for pp in blk[k].params._pe_pairs:
-                        blk[k].params.config.phase_equilibrium_state[pp] \
-                            .calculate_pbar(blk[k], pp)
-        
+                        blk[k].params.config.phase_equilibrium_state[pp].calculate_pbar(
+                            blk[k], pp
+                        )
+
         if blk[k].params.config.supercritical_extension:
             init_log.info("Pressure slacks initialization complete.")
 
@@ -1371,30 +1375,34 @@ class _GenericStateBlock(StateBlock):
 
             # Dew temperature initialization
             blk._init_Tdew(blk[k], T_units)
-            
-            init_log.info("Bubble, dew and equilibrium temperature "
-                          "initialization complete.")
+
+            init_log.info(
+                "Bubble, dew and equilibrium temperature " "initialization complete."
+            )
 
         # ---------------------------------------------------------------------
         # Initialize sV and sL slacks
         for k in blk.keys():
-            if (blk[k].params.config.phases_in_equilibrium is not None and
-                    (not blk[k].config.defined_state or blk[k].always_flash)):
+            if blk[k].params.config.phases_in_equilibrium is not None and (
+                not blk[k].config.defined_state or blk[k].always_flash
+            ):
                 for pp in blk[k].params._pe_pairs:
-                    blk[k].params.config.phase_equilibrium_state[pp] \
-                        .calculate_temperature_slacks(blk[k], pp)
+                    blk[k].params.config.phase_equilibrium_state[
+                        pp
+                    ].calculate_temperature_slacks(blk[k], pp)
 
-        init_log.info("Temperature complementarity slacks initialization "
-                      "complete.")
+        init_log.info("Temperature complementarity slacks initialization " "complete.")
 
         # ---------------------------------------------------------------------
         # If flash, initialize g+ and g- slacks
         for k in blk.keys():
-            if (blk[k].params.config.phases_in_equilibrium is not None and
-                    (not blk[k].config.defined_state or blk[k].always_flash)):
+            if blk[k].params.config.phases_in_equilibrium is not None and (
+                not blk[k].config.defined_state or blk[k].always_flash
+            ):
                 for pp in blk[k].params._pe_pairs:
-                    blk[k].params.config.phase_equilibrium_state[pp] \
-                        .calculate_ceos_derivative_slacks(blk[k], pp)
+                    blk[k].params.config.phase_equilibrium_state[
+                        pp
+                    ].calculate_ceos_derivative_slacks(blk[k], pp)
         init_log.info("Cubic complementarity slacks initialization complete.")
 
         # ---------------------------------------------------------------------
@@ -1511,7 +1519,7 @@ class _GenericStateBlock(StateBlock):
                     blk[k]._tbar[pp].fix()
                     if blk[k].params.config.supercritical_extension:
                         blk[k]._pbar[pp].fix()
-            
+
             n_cons += number_activated_constraints(blk[k])
             dof += degrees_of_freedom(blk[k])
             if degrees_of_freedom(blk[k]) < 0:
@@ -1581,7 +1589,7 @@ class _GenericStateBlock(StateBlock):
             for pp in blk[k].params._pe_pairs:
                 blk[k]._tbar[pp].unfix()
                 if blk[k].params.config.supercritical_extension:
-                        blk[k]._pbar[pp].unfix()
+                    blk[k]._pbar[pp].unfix()
 
         n_cons = 0
         dof = 0
@@ -1658,7 +1666,7 @@ class _GenericStateBlock(StateBlock):
                     l_phase = pp[0]
                 else:
                     l_phase = pp[1]
-            
+
             # Calculate bubble point at subcritical pressure
             if blk.params.config.supercritical_extension == True:
                 pressure = blk._pbar[pp]
@@ -1743,9 +1751,7 @@ class _GenericStateBlock(StateBlock):
                     / pressure
                 )
                 if blk.is_property_constructed("log_mole_frac_tbub"):
-                    blk.log_mole_frac_tbub[pp, j].value = value(
-                        log(_mole_frac_tbub[j])
-                    )
+                    blk.log_mole_frac_tbub[pp, j].value = value(log(_mole_frac_tbub[j]))
 
             for j in henry_comps:
                 _mole_frac_tbub[j] = value(
@@ -1756,9 +1762,7 @@ class _GenericStateBlock(StateBlock):
                     / pressure
                 )
                 if blk.is_property_constructed("log_mole_frac_tbub"):
-                    blk.log_mole_frac_tbub[pp, j].value = value(
-                        log(_mole_frac_tbub[j])
-                    )
+                    blk.log_mole_frac_tbub[pp, j].value = value(log(_mole_frac_tbub[j]))
 
     def _init_Tdew(self, blk, T_units):
         for pp in blk.params._pe_pairs:
@@ -1879,9 +1883,7 @@ class _GenericStateBlock(StateBlock):
                     )
                 )
                 if blk.is_property_constructed("log_mole_frac_tdew"):
-                    blk.log_mole_frac_tdew[pp, j].value = value(
-                        log(_mole_frac_tdew[j])
-                    )
+                    blk.log_mole_frac_tdew[pp, j].value = value(log(_mole_frac_tdew[j]))
             for j in henry_comps:
                 _mole_frac_tdew[j] = value(
                     blk.mole_frac_comp[j]
@@ -1891,9 +1893,7 @@ class _GenericStateBlock(StateBlock):
                     .return_expression(blk, l_phase, j, Tdew0 * T_units)
                 )
                 if blk.is_property_constructed("log_mole_frac_tdew"):
-                    blk.log_mole_frac_tdew[pp, j].value = value(
-                        log(_mole_frac_tdew[j])
-                    )
+                    blk.log_mole_frac_tdew[pp, j].value = value(log(_mole_frac_tdew[j]))
 
     def _init_Pbub(self, blk, T_units):
         for pp in blk.params._pe_pairs:
@@ -2005,15 +2005,15 @@ class GenericStateBlockData(StateBlockData):
             self._tbar = Var(
                 self.params._pe_pairs,
                 initialize=value(self.temperature),
-                doc='Temperature for calculating phase equilibrium',
+                doc="Temperature for calculating phase equilibrium",
                 units=t_units,
             )
-            
+
             p_units = pyunits.Pa
             self._pbar = Var(
                 self.params._pe_pairs,
                 initialize=value(self.pressure),
-                doc='Pressure for calculating phase equilibrium',
+                doc="Pressure for calculating phase equilibrium",
                 units=p_units,
             )
 
@@ -2030,7 +2030,7 @@ class GenericStateBlockData(StateBlockData):
             pe_form_config = self.params.config.phase_equilibrium_state
             for pp in self.params._pe_pairs:
                 pe_form_config[pp].phase_equil(self, pp)
-            
+
             def rule_equilibrium(b, phase1, phase2, j):
                 if (phase1, j) not in b.phase_component_set or (
                     phase2,
@@ -2545,14 +2545,16 @@ class GenericStateBlockData(StateBlockData):
             t_units = b.params.get_metadata().default_units["temperature"]
             p_units = pyunits.Pa
             b.temperature_crit_mix = Var(
-                    doc="Critical temperature of mixture",
-                    bounds=(b.temperature.lb, None),
-                    units=t_units)
+                doc="Critical temperature of mixture",
+                bounds=(b.temperature.lb, None),
+                units=t_units,
+            )
 
             b.pressure_crit_mix = Var(
-                    doc="Critical pressure of mixture",
-                    bounds=(b.pressure.lb, None),
-                    units=p_units)
+                doc="Critical pressure of mixture",
+                bounds=(b.pressure.lb, None),
+                units=p_units,
+            )
 
             p_config = b.params.get_phase(reference_phase).config
             p_config.equation_of_state.build_critical_properties(b, reference_phase)
