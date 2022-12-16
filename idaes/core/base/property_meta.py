@@ -270,6 +270,14 @@ class UnitSet(object):
     @property
     def MOLECULAR_WEIGHT(self):
         return self._mass / self._amount
+    
+    @property
+    def VOLUME_MOL(self):
+        return self._length**3 / self._amount
+    
+    @property
+    def VOLUME_MASS(self):
+        return self._length**3 / self._mass
 
     # Energy
     @property

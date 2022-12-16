@@ -176,6 +176,8 @@ derived_quantities = {
     "density_mass": (units.kg * units.m**-3),
     "density_mole": (units.mol * units.m**-3),
     "molecular_weight": (units.kg / units.mol),
+    "volume_mol": (units.m**3 / units.mol),
+    "volume_mass": (units.m**3 / units.kg),
     "energy": (units.kg * units.m**2 * units.s**-2),
     "energy_mass": (units.m**2 * units.s**-2),
     "energy_mole": (units.kg * units.m**2 * units.s**-2 * units.mol**-1),
