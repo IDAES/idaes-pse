@@ -49,7 +49,7 @@ from idaes.core.util.exceptions import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.models_extra.column_models.column_util import make_phase_split
+from idaes.models_extra.column_models.util import make_phase_split
 
 _log = idaeslog.getLogger(__name__)
 

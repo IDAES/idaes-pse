@@ -55,7 +55,7 @@ from idaes.core.util.exceptions import (
     InitializationError,
 )
 from idaes.core.solvers import get_solver
-from idaes.models_extra.column_models.column_util import make_phase_split
+from idaes.models_extra.column_models.util import make_phase_split
 
 _log = idaeslog.getLogger(__name__)
 
