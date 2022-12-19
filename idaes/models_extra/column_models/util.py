@@ -14,7 +14,7 @@
 Utility functions for column models
 """
 
-__author__ = "Jaffer Ghouse"
+__author__ = "Jaffer Ghouse, Alejandro Garcia-Diego"
 
 import idaes.logger as idaeslog
 
@@ -35,18 +35,17 @@ _log = idaeslog.getLogger(__name__)
 
 
 def make_phase_split(
-    self,
+    model,
     port=None,
     phase=None,
-    has_liquid_side_draw=False,
-    has_vapor_side_draw=False,
     side_sf=None,
     equipmentType=None,
 ):
     """Method to split and populate the outlet ports with corresponding
     phase values from the mixed stream outlet block."""
+    t0 = model.flowsheet().time.first()
 
-    member_list = self.properties_out[0].define_port_members()
+    member_list = model.properties_out[t0].define_port_members()
 
     for k in member_list:
 
@@ -59,9 +58,9 @@ def make_phase_split(
             and "enth" not in local_name
         ):
             if not member_list[k].is_indexed():
-                var = self.properties_out[:].component(local_name)
+                var = model.properties_out[:].component(local_name)
             else:
-                var = self.properties_out[:].component(local_name)[...]
+                var = model.properties_out[:].component(local_name)[...]
 
             # add the reference and variable name to the port
             port.add(Reference(var), k)
@@ -85,12 +84,12 @@ def make_phase_split(
                     # multiple liquid or vapor phases if present. For the
                     # classical VLE system, this holds too.
                     if hasattr(
-                        self.properties_out[0], "mole_frac_phase_comp"
-                    ) and hasattr(self.properties_out[0], "flow_mol_phase"):
+                        model.properties_out[t0], "mole_frac_phase_comp"
+                    ) and hasattr(model.properties_out[t0], "flow_mol_phase"):
                         flow_phase_comp = False
                         local_name_frac = "mole_frac_phase_comp"
                         local_name_flow = "flow_mol_phase"
-                    elif hasattr(self.properties_out[0], "flow_mol_phase_comp"):
+                    elif hasattr(model.properties_out[t0], "flow_mol_phase_comp"):
                         flow_phase_comp = True
                         local_name_flow = "flow_mol_phase_comp"
                     else:
@@ -101,12 +100,12 @@ def make_phase_split(
                         )
                 elif "mass" in local_name:
                     if hasattr(
-                        self.properties_out[0], "mass_frac_phase_comp"
-                    ) and hasattr(self.properties_out[0], "flow_mass_phase"):
+                        model.properties_out[t0], "mass_frac_phase_comp"
+                    ) and hasattr(model.properties_out[t0], "flow_mass_phase"):
                         flow_phase_comp = False
                         local_name_frac = "mass_frac_phase_comp"
                         local_name_flow = "flow_mass_phase"
-                    elif hasattr(self.properties_out[0], "flow_mass_phase_comp"):
+                    elif hasattr(model.properties_out[t0], "flow_mass_phase_comp"):
                         flow_phase_comp = True
                         local_name_flow = "flow_mass_phase_comp"
                     else:
@@ -124,45 +123,47 @@ def make_phase_split(
                     )
 
                 # Rule for mole fraction
-                def rule_mole_frac(self, t, i):
+                def rule_mole_frac(model, t, i):
                     if not flow_phase_comp:
                         sum_flow_comp = sum(
-                            self.properties_out[t].component(local_name_frac)[p, i]
-                            * self.properties_out[t].component(local_name_flow)[p]
+                            model.properties_out[t].component(local_name_frac)[p, i]
+                            * model.properties_out[t].component(local_name_flow)[p]
                             for p in phase
                         )
 
                         return sum_flow_comp / sum(
-                            self.properties_out[t].component(local_name_flow)[p]
+                            model.properties_out[t].component(local_name_flow)[p]
                             for p in phase
                         )
 
                     else:
                         sum_flow_comp = sum(
-                            self.properties_out[t].component(local_name_flow)[p, i]
+                            model.properties_out[t].component(local_name_flow)[p, i]
                             for p in phase
                         )
 
                         return sum_flow_comp / sum(
-                            self.properties_out[t].component(local_name_flow)[p, i]
+                            model.properties_out[t].component(local_name_flow)[p, i]
                             for p in phase
-                            for i in self.config.property_package.component_list
+                            for i in model.config.property_package.component_list
                         )
 
                 # add the reference and variable name to the port
-                expr = Expression(self.flowsheet().time, index_set, rule=rule_mole_frac)
-                self.add_component("e_mole_frac_" + port.local_name, expr)
+                expr = Expression(
+                    model.flowsheet().time, index_set, rule=rule_mole_frac
+                )
+                model.add_component("e_mole_frac_" + port.local_name, expr)
                 port.add(expr, k)
             else:
 
                 # Assumes mole_frac_phase or mass_frac_phase exist as
                 # state vars in the port and therefore access directly
                 # from the state block.
-                var = self.properties_out[:].component(local_name)[...]
+                var = model.properties_out[:].component(local_name)[...]
 
                 # add the reference and variable name to the port
                 ref = Reference(var)
-                setattr(self, "_" + k + "_" + port.local_name + "_ref", ref)
+                setattr(model, "_" + k + "_" + port.local_name + "_ref", ref)
                 port.add(ref, k)
         elif "flow" in local_name:
             if "phase" not in local_name:
@@ -177,14 +178,14 @@ def make_phase_split(
                 if "total" in str(equipmentType):
                     if not member_list[k].is_indexed():
 
-                        def rule_flow(self, t):
-                            return (self.properties_out[t].component(local_name)) * (
+                        def rule_flow(model, t):
+                            return (model.properties_out[t].component(local_name)) * (
                                 side_sf
                             )
 
                         # add the reference and variable name to the port
-                        expr = Expression(self.flowsheet().time, rule=rule_flow)
-                        self.add_component("e_flow_" + port.local_name, expr)
+                        expr = Expression(model.flowsheet().time, rule=rule_flow)
+                        model.add_component("e_flow_" + port.local_name, expr)
                         port.add(expr, k)
                     else:
                         # Create references and populate the extensive variables
@@ -192,16 +193,16 @@ def make_phase_split(
                         index_set = member_list[k].index_set()
 
                         # Rule to link the flow to the port
-                        def rule_flow(self, t, i):
-                            return (self.properties_out[t].component(local_name)[i]) * (
-                                side_sf
-                            )
+                        def rule_flow(model, t, i):
+                            return (
+                                model.properties_out[t].component(local_name)[i]
+                            ) * (side_sf)
 
                         # add the reference and variable name to the port
                         expr = Expression(
-                            self.flowsheet().time, index_set, rule=rule_flow
+                            model.flowsheet().time, index_set, rule=rule_flow
                         )
-                        self.add_component("e_flow_" + port.local_name, expr)
+                        model.add_component("e_flow_" + port.local_name, expr)
                         port.add(expr, k)
 
                 else:
@@ -211,15 +212,15 @@ def make_phase_split(
                         local_name_flow = local_name + "_phase"
 
                         # Rule to link the flow to the port
-                        def rule_flow(self, t):
+                        def rule_flow(model, t):
                             return sum(
-                                self.properties_out[t].component(local_name_flow)[p]
+                                model.properties_out[t].component(local_name_flow)[p]
                                 for p in phase
                             ) * (side_sf)
 
                         # add the reference and variable name to the port
-                        expr = Expression(self.flowsheet().time, rule=rule_flow)
-                        self.add_component("e_flow_" + port.local_name, expr)
+                        expr = Expression(model.flowsheet().time, rule=rule_flow)
+                        model.add_component("e_flow_" + port.local_name, expr)
                         port.add(expr, k)
                     else:
                         # when it is flow comp indexed by component list
@@ -233,34 +234,34 @@ def make_phase_split(
                         index_set = member_list[k].index_set()
 
                         # Rule to link the flow to the port
-                        def rule_flow(self, t, i):
+                        def rule_flow(model, t, i):
                             return sum(
-                                self.properties_out[t].component(local_name_flow)[p, i]
+                                model.properties_out[t].component(local_name_flow)[p, i]
                                 for p in phase
                             ) * (side_sf)
 
                         expr = Expression(
-                            self.flowsheet().time, index_set, rule=rule_flow
+                            model.flowsheet().time, index_set, rule=rule_flow
                         )
-                        self.add_component("e_flow_" + port.local_name, expr)
+                        model.add_component("e_flow_" + port.local_name, expr)
                         port.add(expr, local_name)
             elif "phase" in local_name:
                 # flow is indexed by phase and comp
                 # Get the indexing sets i.e. component list and phase list
-                component_set = self.config.property_package.component_list
+                component_set = model.config.property_package.component_list
 
-                phase_set = self.config.property_package.phase_list
+                phase_set = model.config.property_package.phase_list
 
                 # If statement to skip in case equimpment is not a Tray
                 if equipmentType == None:
 
-                    def rule_flow(self, t, p, i):
-                        if (phase is self._liquid_set and p in self._liquid_set) or (
-                            phase is self._vapor_set and p in self._vapor_set
+                    def rule_flow(model, t, p, i):
+                        if (phase is model._liquid_set and p in model._liquid_set) or (
+                            phase is model._vapor_set and p in model._vapor_set
                         ):
                             # pass appropriate phase flow values to port
                             return (
-                                self.properties_out[t].component(local_name)[p, i]
+                                model.properties_out[t].component(local_name)[p, i]
                             ) * (side_sf)
 
                         else:
@@ -274,16 +275,16 @@ def make_phase_split(
 
                 else:
 
-                    def rule_flow(self, t, p, i):
-                        return (self.properties_out[t].component(local_name)[p, i]) * (
+                    def rule_flow(model, t, p, i):
+                        return (model.properties_out[t].component(local_name)[p, i]) * (
                             side_sf
                         )
 
                 expr = Expression(
-                    self.flowsheet().time, phase_set, component_set, rule=rule_flow
+                    model.flowsheet().time, phase_set, component_set, rule=rule_flow
                 )
 
-                self.add_component("e_" + local_name + port.local_name, expr)
+                model.add_component("e_" + local_name + port.local_name, expr)
                 port.add(expr, k)
             else:
                 raise PropertyPackageError(
@@ -309,14 +310,14 @@ def make_phase_split(
                     )
 
                 # Rule to link the phase enthalpy to the port.
-                def rule_enth(self, t):
+                def rule_enth(model, t):
                     return sum(
-                        self.properties_out[t].component(local_name_phase)[p]
+                        model.properties_out[t].component(local_name_phase)[p]
                         for p in phase
                     )
 
-                expr = Expression(self.flowsheet().time, rule=rule_enth)
-                self.add_component("e_enth_" + port.local_name, expr)
+                expr = Expression(model.flowsheet().time, rule=rule_enth)
+                model.add_component("e_enth_" + port.local_name, expr)
                 # add the reference and variable name to the port
                 port.add(expr, k)
 
@@ -327,13 +328,13 @@ def make_phase_split(
                 # vap_outlet
 
                 if not member_list[k].is_indexed():
-                    var = self.properties_out[:].component(local_name)
+                    var = model.properties_out[:].component(local_name)
                 else:
-                    var = self.properties_out[:].component(local_name)[...]
+                    var = model.properties_out[:].component(local_name)[...]
 
                 # add the reference and variable name to the port
                 ref = Reference(var)
-                setattr(self, "_" + k + "_" + port.local_name + "_ref", ref)
+                setattr(model, "_" + k + "_" + port.local_name + "_ref", ref)
                 port.add(ref, k)
             else:
                 raise PropertyNotSupportedError(
