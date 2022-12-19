@@ -414,7 +414,6 @@ see property package for documentation.}""",
                 self,
                 port=self.liq_side_draw,
                 phase=self._liquid_set,
-                has_liquid_side_draw=self.config.has_liquid_side_draw,
                 side_sf=self.liq_side_sf,
             )
 
@@ -443,7 +442,6 @@ see property package for documentation.}""",
                 self,
                 port=self.vap_side_draw,
                 phase=self._vapor_set,
-                has_vapor_side_draw=self.config.has_vapor_side_draw,
                 side_sf=self.vap_side_sf,
             )
             # Populate the vapor outlet port with the remaining vapor
