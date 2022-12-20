@@ -23,7 +23,7 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.core.base.var import _VarData
-from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.common.config import ConfigBlock, ConfigValue, add_docstring_list
 
 from idaes.core.util.model_serializer import to_json, from_json, StoreSpec, _only_fixed
 from idaes.core.util.exceptions import InitializationError
@@ -67,10 +67,10 @@ class InitializerBase:
 
     This implements a default workflow and methods for common tasks.
     Developers should feel free to overload these as necessary.
+
     """
 
     CONFIG = ConfigBlock()
-
     CONFIG.declare(
         "constraint_tolerance",
         ConfigValue(
@@ -87,11 +87,17 @@ class InitializerBase:
         ),
     )
 
+    __doc__ = add_docstring_list(__doc__, CONFIG)
+
     def __init__(self, **kwargs):
         self.config = self.CONFIG(kwargs)
 
         self.initial_state = {}
         self.summary = {}
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.__doc__ = add_docstring_list(cls.__doc__ if cls.__doc__ else "", cls.CONFIG)
 
     def get_logger(self, model):
         return idaeslog.getInitLogger(model.name, self.config.output_level)

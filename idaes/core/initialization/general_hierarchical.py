@@ -30,6 +30,9 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
     """
     This is a general purpose Initializer object for unit models which
     have a single Control Volume named 'control_volume'.
+
+    For details of the initialization routine, please see the documentation.
+
     """
 
     CONFIG = ModularInitializerBase.CONFIG()
@@ -55,7 +58,10 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         self._solver = None
 
     def initialization_routine(
-        self, model: Block, addon_args: dict = None, copy_inlet_state: bool = False
+        self,
+        model: Block,
+        addon_initializer_args: dict = None,
+        copy_inlet_state: bool = False,
     ):
         """
         Common initialization routine for models with one control volume.

@@ -14,7 +14,7 @@
 Initializer class for implementing Block Triangularization initialization
 """
 from pyomo.environ import SolverFactory
-from pyomo.common.config import ConfigDict, ConfigValue
+from pyomo.common.config import ConfigDict, ConfigValue, add_docstring_list
 from pyomo.contrib.incidence_analysis.util import solve_strongly_connected_components
 from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
 
@@ -29,6 +29,17 @@ __author__ = "Andrew Lee"
 
 
 class BlockTriangularizationInitializer(InitializerBase):
+    """
+    Block Triangularization based Initializer object.
+
+    This Initializer should be suitable for most models, but may struggle to initialize
+    tightly coupled systems of equations.
+
+    This Initializer uses the common workflow defined in InitializerBase and calls
+    the Pyomo solve_strongly_connected_components function to initialize the model.
+
+    """
+
     CONFIG = InitializerBase.CONFIG()
     CONFIG.declare(
         "block_solver",
@@ -57,6 +68,11 @@ class BlockTriangularizationInitializer(InitializerBase):
     )
 
     def precheck(self, model):
+        """
+        Check for perfect matching in model.
+
+        If this fails, it indicates a structural singularity in the model.
+        """
         super().precheck(model)
 
         igraph = IncidenceGraphInterface(model, include_inequality=False)
@@ -69,6 +85,9 @@ class BlockTriangularizationInitializer(InitializerBase):
             )
 
     def initialization_routine(self, model):
+        """
+        Call Block Triangularization solver on model.
+        """
         if self.config.block_solver is not None:
             solver = SolverFactory(self.config.block_solver)
         else:

@@ -19,6 +19,15 @@ __author__ = "Andrew Lee"
 
 
 class FromDataInitializer(InitializerBase):
+    """
+    This is a general purpose Initializer object which attempts to initialize a
+    model from user provided data.
+
+    Data can be provided in either json format or as a dict-like structure. The loaded
+    solution is then checked to ensure that it satisfies all constraints in the model.
+
+    """
+
     def initialization_routine(self, model):
         # No action required
         pass
