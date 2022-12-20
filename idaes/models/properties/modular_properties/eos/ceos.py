@@ -588,41 +588,40 @@ class Cubic(EoSBase):
         if b.params.get_phase(p).is_vapor_phase():
             return None
         else:
-            if b.params.config.supercritical_extension:
-                # Using simple mixing rule from RPP4 to initialize
-                b.temperature_crit_mix.value = value(
-                    sum(
-                        b.mole_frac_comp[j] * b.params.get_component(j).temperature_crit
-                        for j in b.component_list
-                    )
+            # Using simple mixing rule from RPP4 to initialize
+            b.temperature_crit_mix.value = value(
+                sum(
+                    b.mole_frac_comp[j] * b.params.get_component(j).temperature_crit
+                    for j in b.component_list
                 )
+            )
 
-                v_crit = value(
-                    sum(
-                        b.mole_frac_comp[j] * b.params.get_component(j).volume_crit
-                        for j in b.component_list
-                    )
+            v_crit = value(
+                sum(
+                    b.mole_frac_comp[j] * b.params.get_component(j).volume_crit
+                    for j in b.component_list
                 )
-                Z_crit = value(
-                    sum(
-                        b.mole_frac_comp[j]
-                        * b.params.get_component(j).compress_factor_crit
-                        for j in b.component_list
-                    )
+            )
+            Z_crit = value(
+                sum(
+                    b.mole_frac_comp[j]
+                    * b.params.get_component(j).compress_factor_crit
+                    for j in b.component_list
                 )
+            )
 
-                b.pressure_crit_mix.value = value(
-                    Z_crit * const.gas_constant * b.temperature_crit_mix / v_crit
-                )
+            b.pressure_crit_mix.value = value(
+                Z_crit * const.gas_constant * b.temperature_crit_mix / v_crit
+            )
 
-                for c in b.component_objects(Constraint):
-                    if c.local_name in ("A_crit", "B_crit"):
-                        c.activate()
-                    else:
-                        c.deactivate()
+            for c in b.component_objects(Constraint):
+                if c.local_name in ("A_crit", "B_crit"):
+                    c.activate()
+                else:
+                    c.deactivate()
 
-            return None
-
+        return None
+    
     @staticmethod
     def calculate_scaling_factors(b, pobj):
         pass

@@ -1337,11 +1337,12 @@ class _GenericStateBlock(StateBlock):
                 if blk[k].params.get_phase(p).is_liquid_phase()
             )
             p_config = blk[k].params.get_phase(reference_phase).config
-            p_config.equation_of_state.initialize_critical_properties(
-                blk[k], reference_phase
-            )
 
-        if blk[k].params.config.supercritical_extension:
+            if blk[k].params.config.supercritical_extension:       
+                p_config.equation_of_state.initialize_critical_properties(
+                    blk[k], reference_phase
+                )
+
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
             init_log.info(
