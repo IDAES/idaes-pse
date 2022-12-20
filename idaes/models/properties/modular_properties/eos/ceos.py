@@ -604,8 +604,7 @@ class Cubic(EoSBase):
             )
             Z_crit = value(
                 sum(
-                    b.mole_frac_comp[j]
-                    * b.params.get_component(j).compress_factor_crit
+                    b.mole_frac_comp[j] * b.params.get_component(j).compress_factor_crit
                     for j in b.component_list
                 )
             )
@@ -621,7 +620,7 @@ class Cubic(EoSBase):
                     c.deactivate()
 
         return None
-    
+
     @staticmethod
     def calculate_scaling_factors(b, pobj):
         pass

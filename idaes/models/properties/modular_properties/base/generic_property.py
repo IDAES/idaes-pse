@@ -1338,7 +1338,7 @@ class _GenericStateBlock(StateBlock):
             )
             p_config = blk[k].params.get_phase(reference_phase).config
 
-            if blk[k].params.config.supercritical_extension:       
+            if blk[k].params.config.supercritical_extension:
                 p_config.equation_of_state.initialize_critical_properties(
                     blk[k], reference_phase
                 )
