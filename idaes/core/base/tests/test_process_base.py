@@ -40,7 +40,7 @@ def test_base_attributes():
     m.a = Flowsheet()
 
     assert m.a.initialization_order == [m.a]
-    assert m.a.default_initializer == BlockTriangularizationInitializer
+    assert m.a.default_initializer is BlockTriangularizationInitializer
 
 
 @pytest.mark.unit

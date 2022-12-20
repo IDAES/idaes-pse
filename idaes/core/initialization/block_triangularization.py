@@ -14,7 +14,7 @@
 Initializer class for implementing Block Triangularization initialization
 """
 from pyomo.environ import SolverFactory
-from pyomo.common.config import ConfigValue
+from pyomo.common.config import ConfigDict, ConfigValue
 from pyomo.contrib.incidence_analysis.util import solve_strongly_connected_components
 from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
 
@@ -39,15 +39,15 @@ class BlockTriangularizationInitializer(InitializerBase):
     )
     CONFIG.declare(
         "block_solver_options",
-        ConfigValue(
-            default={},
+        ConfigDict(
+            implicit=True,
             description="Dict of options to pass to block solver",
         ),
     )
     CONFIG.declare(
         "calculate_variable_options",
-        ConfigValue(
-            default={},
+        ConfigDict(
+            implicit=True,
             description="Dict of options to pass to 1x1 block solver",
             doc="Dict of options to pass to calc_var_kwds argument in "
             "solve_strongly_connected_components method. NOTE: models "
@@ -72,7 +72,7 @@ class BlockTriangularizationInitializer(InitializerBase):
         if self.config.block_solver is not None:
             solver = SolverFactory(self.config.block_solver)
         else:
-            solver = get_solver(self.config.block_solver)
+            solver = get_solver(None)
 
         # TODO: Can we get diagnostic output from this method?
         solve_strongly_connected_components(

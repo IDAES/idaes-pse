@@ -80,6 +80,9 @@ class ProcessBlockData(_BlockData):
 
     CONFIG = ConfigBlock("ProcessBlockData", implicit=False)
 
+    # Set default initializer
+    default_initializer = BlockTriangularizationInitializer
+
     def __init__(self, component):
         """
         Initialize a ProcessBlockData object.
@@ -118,8 +121,6 @@ class ProcessBlockData(_BlockData):
 
         # Add initialization order list, and populate with current model
         self.initialization_order = [self]
-        # Set default initializer
-        self.default_initializer = BlockTriangularizationInitializer
 
     def flowsheet(self):
         """
