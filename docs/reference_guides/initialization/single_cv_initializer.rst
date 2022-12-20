@@ -13,14 +13,14 @@ This routine applies a hierarchical approach to initialize the `StateBlock(s)` w
 2. If present, initialize the ``ReactionBlock`` using the appropriate ``Initializer``.
 3. Call user-specified solver to converge the full model.
 
-This ``Initializer`` also supports add-ons to the main model (sub-models which are attached to the main model after construction, such as costing calculations). If add-ons are present, they are initialized according to the default sequence which is as follows:
+This ``Initializer`` also supports plug-ins to the main model (sub-models which are attached to the main model after construction, such as costing calculations). If plug-ins are present, they are initialized according to the default sequence which is as follows:
 
-1. After fixing the degrees of freedom by before initializing the main model, iterate through ``model.initialization_order`` and call ``SubmodelInitializer.addon_prepare`` for all add-ons found.
-2. Iterate through ``model.initialization_order`` again and either call the main model initialization routine or `SubmodelInitializer.addon_initialize`` as appropriate.
-3. Call user specified solver to converge the full model with all add-ons.
-4. iterate through ``model.initialization_order`` in reverse and either call ``SubmodelInitializer.addon_finalize`` for all add-ons.
+1. After fixing the degrees of freedom by before initializing the main model, iterate through ``model.initialization_order`` and call ``SubmodelInitializer.plugin_prepare`` for all plug-ins found.
+2. Iterate through ``model.initialization_order`` again and either call the main model initialization routine or `SubmodelInitializer.plugin_initialize`` as appropriate.
+3. Call user specified solver to converge the full model with all plug-ins.
+4. iterate through ``model.initialization_order`` in reverse and either call ``SubmodelInitializer.plugin_finalize`` for all plug-ins.
 
-Users can specify ``Initializers`` for each sub-model (``StateBlocks`` and add-ons); if users do not specify an ``Initializer`` for a sub-model then the routine will default to either i) the default ``Initializer`` specified when the main model ``Initializer`` was instantiated or ii) the default ``Initializer`` for the sub-model (specified in ``submodel.default_initializer``).
+Users can specify ``Initializers`` for each sub-model (``StateBlocks`` and plug-ins); if users do not specify an ``Initializer`` for a sub-model then the routine will default to either i) the default ``Initializer`` specified when the main model ``Initializer`` was instantiated or ii) the default ``Initializer`` for the sub-model (specified in ``submodel.default_initializer``).
 
 .. module:: idaes.core.initialization.general_hierarchical
 

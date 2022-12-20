@@ -353,35 +353,35 @@ class InitializerBase:
         self._update_summary(model, "status", InitializationStatus.Ok)
         return self.summary[model]["status"]
 
-    def addon_prepare(self, addon: Block):
+    def plugin_prepare(self, plugin: Block):
         """
-        Prepare add-on model for initialization. This deactivates the add-on model.
+        Prepare plug-in model for initialization. This deactivates the plug-in model.
 
         Derived Initializers should overload this as required.
 
         Args:
-            addon: model to be prepared for initialization
+            plugin: model to be prepared for initialization
 
         Returns:
             None.
         """
         try:
-            addon.deactivate()
+            plugin.deactivate()
         except AttributeError:
             raise InitializationError(
-                f"Could not deactivate add-on {addon.name}: this suggests it is not a Pyomo Block."
+                f"Could not deactivate plug-in {plugin.name}: this suggests it is not a Pyomo Block."
             )
 
-    def addon_initialize(
-        self, addon: Block, initial_guesses: dict = None, json_file: str = None
+    def plugin_initialize(
+        self, plugin: Block, initial_guesses: dict = None, json_file: str = None
     ):
         """
-        Initialize add-on model. This activates the Block and then calls self.initialize(addon).
+        Initialize plug-in model. This activates the Block and then calls self.initialize(plugin).
 
         Derived Initializers should overload this as required.
 
         Args:
-            addon: Pyomo model to be initialized.
+            plugin: Pyomo model to be initialized.
             initial_guesses: dict of initial guesses to load.
             json_file: file name of json file to load initial guesses from as str.
 
@@ -390,20 +390,20 @@ class InitializerBase:
         Returns:
             InitializationStatus Enum
         """
-        addon.activate()
+        plugin.activate()
 
         return self.initialize(
-            addon, initial_guesses=initial_guesses, json_file=json_file
+            plugin, initial_guesses=initial_guesses, json_file=json_file
         )
 
-    def addon_finalize(self, addon):
+    def plugin_finalize(self, plugin):
         """
-        Final clean up of add-ons after initialization. This method does nothing.
+        Final clean up of plug-ins after initialization. This method does nothing.
 
         Derived Initializers should overload this as required.
 
         Args:
-            addon: model to be cleaned-up after initialization
+            plugin: model to be cleaned-up after initialization
 
         Returns:
             None.

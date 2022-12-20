@@ -111,21 +111,21 @@ def test_nonstandard_model():
 
 
 class DummyInit:
-    def addon_prepare(self, addon, output="default"):
-        addon._test = output
+    def plugin_prepare(self, plugin, output="default"):
+        plugin._test = output
 
-    def addon_initialize(self, model, **kwargs):
-        model._addon_initialized = True
+    def plugin_initialize(self, model, **kwargs):
+        model._plugin_initialized = True
 
-    def addon_finalize(self, addon, output="default"):
-        addon._test2 = output
+    def plugin_finalize(self, plugin, output="default"):
+        plugin._test2 = output
 
     def initialize(self, model, **kwargs):
         model._initialized = True
 
 
 @pytest.mark.unit
-def test_prepare_addons_none():
+def test_prepare_plugins_none():
     m = ConcreteModel()
     m.initialization_order = [m]
 
@@ -133,16 +133,16 @@ def test_prepare_addons_none():
     log = initializer.get_logger(m)
 
     args = {"foo": "bar"}
-    subinit, addon_args = initializer._prepare_addons(m, args, log)
+    subinit, plugin_args = initializer._prepare_plugins(m, args, log)
 
     assert subinit == {}
-    assert addon_args == {"foo": "bar"}
+    assert plugin_args == {"foo": "bar"}
     # Make sure we didn't change the original args
     assert args == {"foo": "bar"}
 
 
 @pytest.mark.unit
-def test_prepare_addons_no_args():
+def test_prepare_plugins_no_args():
     m = ConcreteModel()
     m.b = Block()
     m.initialization_order = [m, m.b]
@@ -152,18 +152,18 @@ def test_prepare_addons_no_args():
     initializer.add_submodel_initializer(m.b, DummyInit)
 
     args = {"foo": "bar"}
-    subinit, addon_args = initializer._prepare_addons(m, args, log)
+    subinit, plugin_args = initializer._prepare_plugins(m, args, log)
 
     assert len(subinit) == 1
     assert isinstance(subinit[m.b], DummyInit)
-    assert addon_args == {"foo": "bar", m.b: {}}
+    assert plugin_args == {"foo": "bar", m.b: {}}
     assert m.b._test == "default"
     # Make sure we didn't change the original args
     assert args == {"foo": "bar"}
 
 
 @pytest.mark.unit
-def test_prepare_addons_w_args():
+def test_prepare_plugins_w_args():
     m = ConcreteModel()
     m.b = Block()
     m.initialization_order = [m, m.b]
@@ -173,18 +173,18 @@ def test_prepare_addons_w_args():
     initializer.add_submodel_initializer(m.b, DummyInit)
 
     args = {"foo": "bar", m.b: {"output": "checkval"}}
-    subinit, addon_args = initializer._prepare_addons(m, args, log)
+    subinit, plugin_args = initializer._prepare_plugins(m, args, log)
 
     assert len(subinit) == 1
     assert isinstance(subinit[m.b], DummyInit)
-    assert addon_args == {"foo": "bar", m.b: {"output": "checkval"}}
+    assert plugin_args == {"foo": "bar", m.b: {"output": "checkval"}}
     assert m.b._test == "checkval"
     # Make sure we didn't change the original args
     assert args == {"foo": "bar", m.b: {"output": "checkval"}}
 
 
 @pytest.mark.unit
-def test_solve_full_model_no_addons():
+def test_solve_full_model_no_plugins():
     m = ConcreteModel()
     m.initialization_order = [m]
 
@@ -197,7 +197,7 @@ def test_solve_full_model_no_addons():
 
 
 @pytest.mark.unit
-def test_solve_full_model_w_addons():
+def test_solve_full_model_w_plugins():
     m = ConcreteModel()
     m.b = Block()
     m.b.v = Var()
@@ -448,7 +448,7 @@ def test_initialize_submodels_no_order():
 
 
 @pytest.mark.unit
-def test_initialize_submodels_no_addons_no_copy():
+def test_initialize_submodels_no_plugins_no_copy():
     m = ConcreteModel()
     m.initialization_order = [m]
 
@@ -463,8 +463,8 @@ def test_initialize_submodels_no_addons_no_copy():
     m.control_volume.reactions = Block()
     m.control_volume.reactions.v1 = Var()
 
-    # Add-on block, but not in initialization order so should be skipped
-    m.addon = Block()
+    # plug-in block, but not in initialization order so should be skipped
+    m.plugin = Block()
 
     m.control_volume.c1 = Constraint(
         expr=m.control_volume.properties_in.v1 == m.control_volume.properties_out.v1
@@ -481,10 +481,10 @@ def test_initialize_submodels_no_addons_no_copy():
     initializer.add_submodel_initializer(m.control_volume.properties_in, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
-    initializer.add_submodel_initializer(m.addon, DummyInit())
+    initializer.add_submodel_initializer(m.plugin, DummyInit())
 
     initializer._initialize_submodels(
-        m, {m.addon: {}}, False, {m.addon: DummyInit()}, log
+        m, {m.plugin: {}}, False, {m.plugin: DummyInit()}, log
     )
 
     assert value(m.control_volume.properties_in.v1) == pytest.approx(12, rel=1e-5)
@@ -495,12 +495,12 @@ def test_initialize_submodels_no_addons_no_copy():
     assert m.control_volume.properties_in._initialized
     assert m.control_volume.properties_out._initialized
     assert m.control_volume.reactions._initialized
-    assert not hasattr(m.addon, "_initialized")
-    assert not hasattr(m.addon, "_addon_initialized")
+    assert not hasattr(m.plugin, "_initialized")
+    assert not hasattr(m.plugin, "_plugin_initialized")
 
 
 @pytest.mark.unit
-def test_initialize_submodels_no_addons_copy():
+def test_initialize_submodels_no_plugins_copy():
     m = ConcreteModel()
     m.initialization_order = [m]
 
@@ -515,8 +515,8 @@ def test_initialize_submodels_no_addons_copy():
     m.control_volume.reactions = Block()
     m.control_volume.reactions.v1 = Var()
 
-    # Add-on block, but not in initialization order so should be skipped
-    m.addon = Block()
+    # plug-in block, but not in initialization order so should be skipped
+    m.plugin = Block()
 
     m.control_volume.c1 = Constraint(
         expr=m.control_volume.properties_in.v1 == m.control_volume.properties_out.v1
@@ -533,10 +533,10 @@ def test_initialize_submodels_no_addons_copy():
     initializer.add_submodel_initializer(m.control_volume.properties_in, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
-    initializer.add_submodel_initializer(m.addon, DummyInit())
+    initializer.add_submodel_initializer(m.plugin, DummyInit())
 
     initializer._initialize_submodels(
-        m, {m.addon: {}}, True, {m.addon: DummyInit()}, log
+        m, {m.plugin: {}}, True, {m.plugin: DummyInit()}, log
     )
 
     assert value(m.control_volume.properties_in.v1) == pytest.approx(12, rel=1e-5)
@@ -547,12 +547,12 @@ def test_initialize_submodels_no_addons_copy():
     assert m.control_volume.properties_in._initialized
     assert not hasattr(m.control_volume.properties_out, "_initialized")
     assert m.control_volume.reactions._initialized
-    assert not hasattr(m.addon, "_initialized")
-    assert not hasattr(m.addon, "_addon_initialized")
+    assert not hasattr(m.plugin, "_initialized")
+    assert not hasattr(m.plugin, "_plugin_initialized")
 
 
 @pytest.mark.unit
-def test_initialize_submodels_w_addons_copy():
+def test_initialize_submodels_w_plugins_copy():
     m = ConcreteModel()
     m.initialization_order = [m]
 
@@ -567,8 +567,8 @@ def test_initialize_submodels_w_addons_copy():
     m.control_volume.reactions = Block()
     m.control_volume.reactions.v1 = Var()
 
-    m.addon = Block()
-    m.initialization_order.append(m.addon)
+    m.plugin = Block()
+    m.initialization_order.append(m.plugin)
 
     m.control_volume.c1 = Constraint(
         expr=m.control_volume.properties_in.v1 == m.control_volume.properties_out.v1
@@ -587,7 +587,7 @@ def test_initialize_submodels_w_addons_copy():
     initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
 
     initializer._initialize_submodels(
-        m, {m.addon: {}}, True, {m.addon: DummyInit()}, log
+        m, {m.plugin: {}}, True, {m.plugin: DummyInit()}, log
     )
 
     assert value(m.control_volume.properties_in.v1) == pytest.approx(12, rel=1e-5)
@@ -598,5 +598,5 @@ def test_initialize_submodels_w_addons_copy():
     assert m.control_volume.properties_in._initialized
     assert not hasattr(m.control_volume.properties_out, "_initialized")
     assert m.control_volume.reactions._initialized
-    assert not hasattr(m.addon, "_initialized")
-    assert m.addon._addon_initialized
+    assert not hasattr(m.plugin, "_initialized")
+    assert m.plugin._plugin_initialized

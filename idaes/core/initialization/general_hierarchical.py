@@ -60,7 +60,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
     def initialization_routine(
         self,
         model: Block,
-        addon_initializer_args: dict = None,
+        plugin_initializer_args: dict = None,
         copy_inlet_state: bool = False,
     ):
         """
@@ -68,7 +68,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
         Args:
             model: Pyomo Block to be initialized
-            addon_initializer_args: dict-of-dicts containing arguments to be passed to add-on Initializers.
+            plugin_initializer_args: dict-of-dicts containing arguments to be passed to plug-in Initializers.
                 Keys should be submodel components.
             copy_inlet_state: bool (default=False). Whether to copy inlet state to other sttes or not.
                 Copying will generally be faster, but inlet states may not contain all properties
@@ -82,50 +82,50 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
                 f"Model {model.name} does not appear to be a standard form unit model. "
                 f"Please use an Initializer specific to the model being initialized."
             )
-        if addon_initializer_args is None:
-            addon_initializer_args = {}
+        if plugin_initializer_args is None:
+            plugin_initializer_args = {}
 
         # Get logger
         _log = self.get_logger(model)
 
-        # Prepare add-ons for initialization
-        sub_initializers, addon_initializer_args = self._prepare_addons(
-            model, addon_initializer_args, _log
+        # Prepare plug-ins for initialization
+        sub_initializers, plugin_initializer_args = self._prepare_plugins(
+            model, plugin_initializer_args, _log
         )
 
         # Initialize model and sub-models
         results = self._initialize_submodels(
-            model, addon_initializer_args, copy_inlet_state, sub_initializers, _log
+            model, plugin_initializer_args, copy_inlet_state, sub_initializers, _log
         )
 
-        # Solve full model including add-ons
+        # Solve full model including plug-ins
         results = self._solve_full_model(model, _log, results)
 
-        # Clean up add-ons
-        self._cleanup(model, addon_initializer_args, sub_initializers, _log)
+        # Clean up plug-ins
+        self._cleanup(model, plugin_initializer_args, sub_initializers, _log)
 
         return results
 
-    def _prepare_addons(self, model, addon_initializer_args, logger):
+    def _prepare_plugins(self, model, plugin_initializer_args, logger):
         sub_initializers = {}
-        addon_initializer_args = dict(addon_initializer_args)
+        plugin_initializer_args = dict(plugin_initializer_args)
         for sm in model.initialization_order:
             if sm is not model:
-                # Get initializers for add-ons
+                # Get initializers for plug-ins
                 sub_initializers[sm] = self.get_submodel_initializer(sm)()
 
-                if sm not in addon_initializer_args.keys():
-                    addon_initializer_args[sm] = {}
+                if sm not in plugin_initializer_args.keys():
+                    plugin_initializer_args[sm] = {}
 
-                # Call prepare method for add-ons
-                sub_initializers[sm].addon_prepare(sm, **addon_initializer_args[sm])
+                # Call prepare method for plug-ins
+                sub_initializers[sm].plugin_prepare(sm, **plugin_initializer_args[sm])
 
         logger.info_high("Step 1: preparation complete.")
 
-        return sub_initializers, addon_initializer_args
+        return sub_initializers, plugin_initializer_args
 
     def _initialize_submodels(
-        self, model, addon_initializer_args, copy_inlet_state, sub_initializers, logger
+        self, model, plugin_initializer_args, copy_inlet_state, sub_initializers, logger
     ):
         results = None
 
@@ -133,7 +133,9 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
             if sm is model:
                 results = self._initialize_main_model(model, copy_inlet_state, logger)
             else:
-                sub_initializers[sm].addon_initialize(sm, **addon_initializer_args[sm])
+                sub_initializers[sm].plugin_initialize(
+                    sm, **plugin_initializer_args[sm]
+                )
 
         if results is None:
             raise InitializationError(
@@ -234,9 +236,9 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
             )
 
     def _solve_full_model(self, model, logger, results):
-        # Check to see if there are any add-ons
+        # Check to see if there are any plug-ins
         if len(model.initialization_order) > 1:
-            # Solve model with addons
+            # Solve model with plugins
             solve_log = idaeslog.getSolveLogger(
                 model.name, self.config.output_level, tag="unit"
             )
@@ -249,10 +251,10 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
         return results
 
-    def _cleanup(self, model, addon_initializer_args, sub_initializers, logger):
+    def _cleanup(self, model, plugin_initializer_args, sub_initializers, logger):
         for sm in reversed(model.initialization_order):
             if sm is not model:
-                sub_initializers[sm].addon_finalize(sm, **addon_initializer_args[sm])
+                sub_initializers[sm].plugin_finalize(sm, **plugin_initializer_args[sm])
 
         logger.info_high("Step 4: clean up completed.")
 
