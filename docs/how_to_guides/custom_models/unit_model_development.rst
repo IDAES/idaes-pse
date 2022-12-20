@@ -23,7 +23,7 @@ Configuration arguments in unit models allow model developers to provide the end
 * whether the model should be dynamic or steady-state, and
 * what property package to use when calculating thermophysical properties.
 
-The `UnitModelBlockData` class contains a simple configuration block which includes two configuration arguments; “dynamic” and “has_holdup”. These arguments are required for any model which is expected to be used in both steady-state and dynamic flowsheets and are used to determine whether accumulation and holdup terms should be constructed and included in the material balance equations. There are some situations whoever where a model is inherently steady-state (even if it is included in a dynamic flowsheet), notably those where outlet conditions are a function solely of the inlet conditions. Examples of these include:
+The `UnitModelBlockData` class contains a simple configuration block which includes two configuration arguments; “dynamic” and “has_holdup”. These arguments are required for any model which is expected to be used in both steady-state and dynamic flowsheets and are used to determine whether accumulation and holdup terms should be constructed and included in the material balance equations. There are some situations, however, where a model is inherently steady-state (even if it is included in a dynamic flowsheet), notably those where outlet conditions are a function solely of the inlet conditions. Examples of these include:
 
 * unit operations involving equilibrium where the outlet condition can be calculated directly from the inlet condition.
 * unit operations with negligible holdup where (total) flow out of the unit is always equal to the (total) flow in.
