@@ -36,7 +36,7 @@ from idaes.core import (
     MomentumBalanceType,
 )
 from idaes.models.unit_models.flash import Flash, EnergySplittingType
-from idaes.models.properties.modular_properties.base.generic_property_ncp import (
+from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from idaes.models.properties.modular_properties.examples.BT_PR import configuration
