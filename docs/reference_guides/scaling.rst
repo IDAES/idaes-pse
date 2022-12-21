@@ -3,7 +3,7 @@ Scaling Toolbox
 
 .. note::
 
-  In v2.0, IDAES is beginning to deploy a new suit of scaling tools. This documentation refers to the new tools.
+  In v2.0, IDAES is beginning to deploy a new suite of scaling tools. This documentation refers to the new tools.
   For documentation of the older scaling tools, :ref:`see here<reference_guides/core/util/scaling:Scaling Methods>`.
 
 .. module:: idaes.core.util.scaling
