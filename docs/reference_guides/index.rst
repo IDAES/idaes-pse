@@ -6,6 +6,7 @@ Reference Guides
 
     model_libraries/index
     core/index
+    scaling
     commands/index
     configuration
     logging
