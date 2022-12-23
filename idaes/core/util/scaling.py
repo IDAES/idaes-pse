@@ -34,6 +34,7 @@ import sys
 
 import pyomo.environ as pyo
 from pyomo.core.base.var import _VarData
+from pyomo.core.base.param import _ParamData
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.network import Arc
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
@@ -273,22 +274,30 @@ def get_scaling_factor(c, default=None, warning=False, exception=False, hint=Non
     try:
         sf = c.parent_block().scaling_factor[c]
     except (AttributeError, KeyError):
-        if hint is None:
-            h = ""
+        if not isinstance(c, (pyo.Param, _ParamData)):
+            if hint is None:
+                h = ""
+            else:
+                h = f", {hint}"
+            if warning:
+                if hasattr(c, "is_component_type") and c.is_component_type():
+                    _log.warning(f"Missing scaling factor for {c}{h}")
+                else:
+                    _log.warning(f"Trying to get scaling factor for unnamed expr {h}")
+            if exception and default is None:
+                if hasattr(c, "is_component_type") and c.is_component_type():
+                    _log.error(f"Missing scaling factor for {c}{h}")
+                else:
+                    _log.error(f"Trying to get scaling factor for unnamed expr {h}")
+                raise
+            sf = default
         else:
-            h = f", {hint}"
-        if warning:
-            if hasattr(c, "is_component_type") and c.is_component_type():
-                _log.warning(f"Missing scaling factor for {c}{h}")
+            # Params can just use current value (as long it is not 0)
+            val = pyo.value(c)
+            if not val == 0:
+                sf = abs(1 / pyo.value(c))
             else:
-                _log.warning(f"Trying to get scaling factor for unnamed expr {h}")
-        if exception and default is None:
-            if hasattr(c, "is_component_type") and c.is_component_type():
-                _log.error(f"Missing scaling factor for {c}{h}")
-            else:
-                _log.error(f"Trying to get scaling factor for unnamed expr {h}")
-            raise
-        sf = default
+                sf = 1
     return sf
 
 
@@ -1383,24 +1392,30 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
     def _get_nominal_value_for_division(self, node, child_nominal_values):
         assert len(child_nominal_values) == 2
 
-        mag = []
-        for i in child_nominal_values[0]:
-            denominator = self._get_nominal_value_for_sum_subexpression(
-                child_nominal_values[1]
+        numerator = self._get_nominal_value_for_sum_subexpression(
+            child_nominal_values[0]
+        )
+        denominator = self._get_nominal_value_for_sum_subexpression(
+            child_nominal_values[1]
+        )
+        if denominator == 0:
+            # Assign a nominal value of 1 so that we can continue
+            denominator = 1
+            # Log a warning for the user
+            _log.debug(
+                f"Nominal value of 0 found in denominator of division expression. "
+                "Assigning a value of 1. You should check you scaling factors and models to "
+                "ensure there are no values of 0 that can appear in these functions."
             )
-            if denominator == 0:
-                raise ValueError(
-                    f"Nominal value of 0 found in division expression. You should "
-                    "check you scaling factors and models to ensure there are not values "
-                    "of 0 that can appear in these functions."
-                )
-            mag.append(i / denominator)
-        return mag
+        return [numerator / denominator]
 
     def _get_nominal_value_for_power(self, node, child_nominal_values):
         assert len(child_nominal_values) == 2
 
-        base = self._get_nominal_value_for_sum_subexpression(child_nominal_values[0])
+        # Use the absolute value of the base term to avoid possible complex numbers
+        base = abs(
+            self._get_nominal_value_for_sum_subexpression(child_nominal_values[0])
+        )
         exponent = self._get_nominal_value_for_sum_subexpression(
             child_nominal_values[1]
         )
@@ -1422,6 +1437,7 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
     def _get_nominal_value_for_unary_function(self, node, child_nominal_values):
         assert len(child_nominal_values) == 1
         func_name = node.getname()
+        # TODO: Some of these need the absolute value of the nominal value (e.g. sqrt)
         func_nominal = self._get_nominal_value_for_sum_subexpression(
             child_nominal_values[0]
         )
