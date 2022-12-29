@@ -112,7 +112,7 @@ def _apparent_species_state(b):
             # Next, check for inherent reactions
             if b.has_inherent_reactions:
                 for r in b.params.inherent_reaction_idx:
-                    # Get stoichiometric coeffiicient for inherent reactions
+                    # Get stoichiometric coefficient for inherent reactions
                     gamma = b.params.inherent_reaction_stoichiometry[r, p, j]
 
                     if gamma != 0:
@@ -153,7 +153,6 @@ def _apparent_species_scaling(b):
         sf = iscale.get_scaling_factor(
             b.flow_mol_phase_comp_true[p, j], default=1, warning=True
         )
-
         iscale.constraint_scaling_transform(
             b.appr_to_true_species[p, j], sf, overwrite=False
         )

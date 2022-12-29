@@ -61,7 +61,7 @@ _log = idaeslog.getIdaesLogger(__name__)
 class SolventCondenserData(UnitModelBlockData):
     """
     Condenser unit for solvent column models using separate property packages
-    for liquid and vpor phases.
+    for liquid and vapor phases.
 
     Unit model to condense the vapor from the top of a solvent column.
     """
@@ -321,11 +321,11 @@ see property package for documentation.}""",
         flow_basis = self.liquid_phase[t_init].get_material_flow_basis()
         if flow_basis == MaterialFlowBasis.molar:
             fb = "flow_mole"
-        elif flow_basis == MaterialFlowBasis.molar:
-            fb = "flow_mass"
+        # elif flow_basis == MaterialFlowBasis.mass:
+        #     fb = "flow_mass"
         else:
             raise ConfigurationError(
-                f"{self.name} SolventCondenser only supports mass or molar "
+                f"{self.name} SolventCondenser only supports molar "
                 f"basis for MaterialFlowBasis."
             )
 
@@ -349,7 +349,7 @@ see property package for documentation.}""",
             elif j in self.liquid_phase.component_list:
                 # Non-volatile component
                 # No mass transfer term
-                # Set liquid flowrate to an arbitary small value
+                # Set liquid flowrate to an arbitrary small value
                 return (
                     blk.liquid_phase[t].get_material_flow_terms("Liq", j)
                     == blk.zero_flow_param
@@ -450,7 +450,14 @@ see property package for documentation.}""",
                     ),
                 )
             elif j in self.liquid_phase.component_list:
-                iscale.constraint_scaling_transform(v, value(1 / self.zero_flow_param))
+                iscale.constraint_scaling_transform(
+                    v,
+                    iscale.get_scaling_factor(
+                        self.liquid_phase[t].get_material_flow_terms("Liq",j),
+                        default=1,
+                        warning=True,
+                    ),
+                )
             else:
                 pass  # no need to scale this constraint
 

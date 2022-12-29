@@ -1004,7 +1004,7 @@ should be constructed in this state block,
         super().calculate_scaling_factors()
         # Get scaling factor defaults, if no scaling factor set
         for v in self.component_data_objects(
-            (Constraint, Var, Expression), descend_into=False
+            (Var, Expression), descend_into=False
         ):
             if iscale.get_scaling_factor(v) is None:  # don't replace if set
                 name = v.getname().split("[")[0]
@@ -1012,3 +1012,14 @@ should be constructed in this state block,
                 sf = self.config.parameters.get_default_scaling(name, index)
                 if sf is not None:
                     iscale.set_scaling_factor(v, sf)
+
+        for con in self.component_data_objects(Constraint, descend_into=False):
+            # if con.name == 'stripper_section.stripper.liquid_phase.properties[0.0,0.8].appr_to_true_species[Liq,CO2]':
+            #     import pdb; pdb.set_trace()
+            if iscale.get_constraint_transform_applied_scaling_factor(con) is None:
+                name = con.getname().split("[")[0]
+                index = con.index()
+                sf = self.config.parameters.get_default_scaling(name, index)
+                if sf is not None:
+                    iscale.constraint_scaling_transform(con, sf, overwrite=False)
+
