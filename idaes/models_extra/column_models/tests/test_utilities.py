@@ -13,12 +13,12 @@
 """
 Tests for column model utitliy functions
 
-Author: Alejandro Garcia-Diego, andrew Lee
+Author: Alejandro Garciadiego, Andrew Lee
 """
 import pytest
 from types import MethodType
 
-from pyomo.environ import ConcreteModel, Block, Var, Reference, Set
+from pyomo.environ import ConcreteModel, Block, Var, Expression, Reference, Set
 from pyomo.network import Port
 
 from idaes.models_extra.column_models.util import make_phase_split
@@ -68,3 +68,72 @@ def test_make_phase_split_general(m):
         assert m.port.temperature[i] is m.properties_out[i].temperature
         for j in ["a", "b"]:
             assert m.port.indexed[i, j] is m.properties_out[i].indexed[j]
+
+
+def test_make_phase_split_flow(m):
+    # Test for variables without special indices
+    # Mock define_port_members method
+    def define_port_members(m):
+        return {"temperature": m.temperature, "flow_mol_phase": m.flow_mol_phase}
+
+    def _liquid_set(m):
+        return ["a1", "b1"]
+
+    def _vapor_set(m):
+        return ["a1", "b1"]
+
+    components = ["a1", "b1"]
+    phases = ["L", "V"]
+
+    m.config.property_package = DummyData()
+    m.config.property_package.component_list = components
+    m.config.property_package.phase_list = phases
+
+    m._liquid_set = MethodType(_liquid_set, m)
+
+    m._vapor_set = MethodType(_vapor_set, m)
+
+    # Add variables and define_port_members method to dummy state block
+    for i in m.time:
+        m.properties_out[i].temperature = Var()
+        m.properties_out[i].flow_mol_phase = Expression(phases, components)
+
+        m.properties_out[i].define_port_members = MethodType(
+            define_port_members, m.properties_out[i]
+        )
+
+    # Call make_phase_split function
+    make_phase_split(m, m.port)
+
+    # m.display()
+    m.pprint()
+
+    # Check for expected results
+    for i in m.time:
+        assert m.port.temperature[i] is m.properties_out[i].temperature
+        for j in m.config.property_package.component_list:
+            for p in m.config.property_package.phase_list:
+                assert m.port.flow_mol_phase[i, p, j].is_expression_type()
+
+
+class DummyData:
+    """
+    Class containing necessary data to generate ccomponent list
+    """
+
+    def __init__(self):
+        self.config = self.config()
+
+    class config:
+        def __init__(self):
+            self.property_package = self.property_package()
+
+        class property_package:
+            # def __init__(self, list):
+            #     self.component_list = self.component_list(list)
+
+            def component_list(self, list):
+                self.component_list = list
+
+            def phase_list(self, list1):
+                self.component_list = list1
