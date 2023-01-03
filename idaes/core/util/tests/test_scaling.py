@@ -1769,26 +1769,25 @@ class TestNominalValueExtractionVisitor:
         assert sc.NominalValueExtractionVisitor().walk_expression(
             expr=(m.scalar_var + m.indexed_var["a"])
             / (m.scalar_param + m.indexed_var["b"])
-        ) == [21 / (12 + 23), 22 / (12 + 23)]
+        ) == [(21 + 22) / (12 + 23)]
 
     @pytest.mark.unit
     def test_division_sum_expr_w_negation(self, m):
         assert sc.NominalValueExtractionVisitor().walk_expression(
             expr=(m.scalar_var - m.indexed_var["a"])
             / (m.scalar_param - m.indexed_var["b"])
-        ) == [21 / (12 - 23), -22 / (12 - 23)]
+        ) == [(21 - 22) / (12 - 23)]
 
     @pytest.mark.unit
-    def test_division_expr_error(self, m):
-        with pytest.raises(
-            ValueError,
-            match="Nominal value of 0 found in division expression. You should "
-            "check you scaling factors and models to ensure there are not values "
-            "of 0 that can appear in these functions.",
-        ):
-            sc.NominalValueExtractionVisitor().walk_expression(
-                expr=1 / (m.scalar_var - 21)
-            )
+    def test_division_expr_error(self, m, caplog):
+        caplog.set_level(logging.DEBUG, logger="idaes.core.util.scaling")
+        sc.NominalValueExtractionVisitor().walk_expression(expr=1 / (m.scalar_var - 21))
+
+        expected = "Nominal value of 0 found in denominator of division expression. "
+        "Assigning a value of 1. You should check you scaling factors and models to "
+        "ensure there are no values of 0 that can appear in these functions."
+
+        assert expected in caplog.text
 
     @pytest.mark.unit
     def test_pow_expr(self, m):
@@ -1811,7 +1810,7 @@ class TestNominalValueExtractionVisitor:
             expr=(m.scalar_var - m.indexed_var["a"])
             ** (m.scalar_param - m.indexed_var["b"])
         ) == [
-            pytest.approx((21 - 22) ** (12 - 23), rel=1e-12),
+            pytest.approx(abs(21 - 22) ** (12 - 23), rel=1e-12),
         ]
 
     @pytest.mark.unit
@@ -2234,7 +2233,7 @@ class TestSetConstraintScalingMaxMagnitude:
         )
 
         sc.set_constraint_scaling_max_magnitude(m.constraint)
-        assert m.scaling_factor[m.constraint] == 1 / 24
+        assert m.scaling_factor[m.constraint] == 24
 
     @pytest.mark.unit
     def test_set_constraint_scaling_max_magnitude_w_negative(self, m):
@@ -2243,7 +2242,7 @@ class TestSetConstraintScalingMaxMagnitude:
         )
 
         sc.set_constraint_scaling_max_magnitude(m.constraint)
-        assert m.scaling_factor[m.constraint] == 1 / 24
+        assert m.scaling_factor[m.constraint] == 24
 
     @pytest.mark.unit
     def test_set_constraint_scaling_max_magnitude_indexed(self, m):
@@ -2253,9 +2252,9 @@ class TestSetConstraintScalingMaxMagnitude:
         m.constraint = pyo.Constraint(m.set, rule=indexed_rule)
 
         sc.set_constraint_scaling_max_magnitude(m.constraint)
-        assert m.scaling_factor[m.constraint["a"]] == 1 / 22
-        assert m.scaling_factor[m.constraint["b"]] == 1 / 23
-        assert m.scaling_factor[m.constraint["c"]] == 1 / 24
+        assert m.scaling_factor[m.constraint["a"]] == 22
+        assert m.scaling_factor[m.constraint["b"]] == 23
+        assert m.scaling_factor[m.constraint["c"]] == 24
 
     @pytest.mark.unit
     def test_set_constraint_scaling_max_magnitude_block(self, m):
@@ -2271,10 +2270,10 @@ class TestSetConstraintScalingMaxMagnitude:
         m.block.iconstraint = pyo.Constraint(m.set, rule=indexed_rule)
 
         sc.set_constraint_scaling_max_magnitude(m)
-        assert m.block.scaling_factor[m.block.constraint] == 1 / 24
-        assert m.block.scaling_factor[m.block.iconstraint["a"]] == 1 / 22
-        assert m.block.scaling_factor[m.block.iconstraint["b"]] == 1 / 23
-        assert m.block.scaling_factor[m.block.iconstraint["c"]] == 1 / 24
+        assert m.block.scaling_factor[m.block.constraint] == 24
+        assert m.block.scaling_factor[m.block.iconstraint["a"]] == 22
+        assert m.block.scaling_factor[m.block.iconstraint["b"]] == 23
+        assert m.block.scaling_factor[m.block.iconstraint["c"]] == 24
 
     @pytest.mark.unit
     def test_set_constraint_scaling_max_magnitude_no_overwrite(self, m):
@@ -2303,7 +2302,7 @@ class TestSetConstraintScalingMinMagnitude:
         )
 
         sc.set_constraint_scaling_min_magnitude(m.constraint)
-        assert m.scaling_factor[m.constraint] == 1 / 12
+        assert m.scaling_factor[m.constraint] == 12
 
     @pytest.mark.unit
     def test_set_constraint_scaling_min_magnitude_w_negative(self, m):
@@ -2312,7 +2311,7 @@ class TestSetConstraintScalingMinMagnitude:
         )
 
         sc.set_constraint_scaling_min_magnitude(m.constraint)
-        assert m.scaling_factor[m.constraint] == 1 / 12
+        assert m.scaling_factor[m.constraint] == 12
 
     @pytest.mark.unit
     def test_set_constraint_scaling_min_magnitude_indexed(self, m):
@@ -2322,9 +2321,9 @@ class TestSetConstraintScalingMinMagnitude:
         m.constraint = pyo.Constraint(m.set, rule=indexed_rule)
 
         sc.set_constraint_scaling_min_magnitude(m.constraint)
-        assert m.scaling_factor[m.constraint["a"]] == 1 / 12
-        assert m.scaling_factor[m.constraint["b"]] == 1 / 12
-        assert m.scaling_factor[m.constraint["c"]] == 1 / 12
+        assert m.scaling_factor[m.constraint["a"]] == 12
+        assert m.scaling_factor[m.constraint["b"]] == 12
+        assert m.scaling_factor[m.constraint["c"]] == 12
 
     @pytest.mark.unit
     def test_set_constraint_scaling_min_magnitude_block(self, m):
@@ -2340,10 +2339,10 @@ class TestSetConstraintScalingMinMagnitude:
         m.block.iconstraint = pyo.Constraint(m.set, rule=indexed_rule)
 
         sc.set_constraint_scaling_min_magnitude(m)
-        assert m.block.scaling_factor[m.block.constraint] == 1 / 12
-        assert m.block.scaling_factor[m.block.iconstraint["a"]] == 1 / 12
-        assert m.block.scaling_factor[m.block.iconstraint["b"]] == 1 / 12
-        assert m.block.scaling_factor[m.block.iconstraint["c"]] == 1 / 12
+        assert m.block.scaling_factor[m.block.constraint] == 12
+        assert m.block.scaling_factor[m.block.iconstraint["a"]] == 12
+        assert m.block.scaling_factor[m.block.iconstraint["b"]] == 12
+        assert m.block.scaling_factor[m.block.iconstraint["c"]] == 12
 
     @pytest.mark.unit
     def test_set_constraint_scaling_min_magnitude_no_overwrite(self, m):
@@ -2373,7 +2372,7 @@ class TestSetConstraintScalingHarmonicMagnitude:
 
         sc.set_constraint_scaling_harmonic_magnitude(m.constraint)
         assert m.scaling_factor[m.constraint] == pytest.approx(
-            1 / (1 / 12 + 1 / 22 + 1 / 23 + 1 / 24), rel=1e-8
+            (1 / 12 + 1 / 22 + 1 / 23 + 1 / 24), rel=1e-8
         )
 
     @pytest.mark.unit
@@ -2384,7 +2383,7 @@ class TestSetConstraintScalingHarmonicMagnitude:
 
         sc.set_constraint_scaling_harmonic_magnitude(m.constraint)
         assert m.scaling_factor[m.constraint] == pytest.approx(
-            1 / (1 / 12 + 1 / 22 + 1 / 23 + 1 / 24), rel=1e-8
+            (1 / 12 + 1 / 22 + 1 / 23 + 1 / 24), rel=1e-8
         )
 
     @pytest.mark.unit
@@ -2396,13 +2395,13 @@ class TestSetConstraintScalingHarmonicMagnitude:
 
         sc.set_constraint_scaling_harmonic_magnitude(m.constraint)
         assert m.scaling_factor[m.constraint["a"]] == pytest.approx(
-            1 / (1 / 12 + 1 / 22), rel=1e-8
+            (1 / 12 + 1 / 22), rel=1e-8
         )
         assert m.scaling_factor[m.constraint["b"]] == pytest.approx(
-            1 / (1 / 12 + 1 / 23), rel=1e-8
+            (1 / 12 + 1 / 23), rel=1e-8
         )
         assert m.scaling_factor[m.constraint["c"]] == pytest.approx(
-            1 / (1 / 12 + 1 / 24), rel=1e-8
+            (1 / 12 + 1 / 24), rel=1e-8
         )
 
     @pytest.mark.unit
@@ -2420,16 +2419,16 @@ class TestSetConstraintScalingHarmonicMagnitude:
 
         sc.set_constraint_scaling_harmonic_magnitude(m)
         assert m.block.scaling_factor[m.block.constraint] == pytest.approx(
-            1 / (1 / 12 + 1 / 22 + 1 / 23 + 1 / 24), rel=1e-8
+            (1 / 12 + 1 / 22 + 1 / 23 + 1 / 24), rel=1e-8
         )
         assert m.block.scaling_factor[m.block.iconstraint["a"]] == pytest.approx(
-            1 / (1 / 12 + 1 / 22), rel=1e-8
+            (1 / 12 + 1 / 22), rel=1e-8
         )
         assert m.block.scaling_factor[m.block.iconstraint["b"]] == pytest.approx(
-            1 / (1 / 12 + 1 / 23), rel=1e-8
+            (1 / 12 + 1 / 23), rel=1e-8
         )
         assert m.block.scaling_factor[m.block.iconstraint["c"]] == pytest.approx(
-            1 / (1 / 12 + 1 / 24), rel=1e-8
+            (1 / 12 + 1 / 24), rel=1e-8
         )
 
     @pytest.mark.unit
@@ -2851,14 +2850,14 @@ def test_scaling_workflow(caplog):
     assert model.block.scaling_factor[model.block.v3] == 1e-3
     assert model.block.scaling_factor[model.block.v4] == 2.5
     assert model.block.scaling_factor[model.block.c1] == pytest.approx(
-        0.370233247, rel=1e-8
-    )  # 1 / (0.1 + 0.1 + 1e-3 + 1/0.4)
+        2.701, rel=1e-8
+    )  # (0.1 + 0.1 + 1e-3 + 1/0.4)
     assert model.block.scaling_factor[model.block.c2["max"]] == pytest.approx(
-        4.53999298e-6, rel=1e-8
-    )  # 1 / (10 * math.exp(10))
+        220264.658, rel=1e-8
+    )  # (10 * math.exp(10))
     assert model.block.scaling_factor[model.block.c2["min"]] == pytest.approx(
-        0.0025, rel=1e-8
-    )  # 1/(1e3 * 0.4)
+        400, rel=1e-8
+    )  # (1e3 * 0.4)
 
     # # Check the untransformed model
     assert pyo.value(model.x) == pytest.approx(1.0, rel=1e-8)
@@ -2882,11 +2881,11 @@ def test_scaling_workflow(caplog):
 
     assert pyo.value(scaled_model.scaled_obj) == pytest.approx(101.0, rel=1e-8)
     assert pyo.value(scaled_model.block.scaled_c1) == pytest.approx(
-        -1114.17993, rel=1e-8
-    )  # -3009.4 * 0.370233247
+        -8128.3894, rel=1e-8
+    )  # -3009.4 / 0.370233247
     assert pyo.value(scaled_model.block.scaled_c2["max"]) == pytest.approx(
-        89.0533435, rel=1e-8
-    )  # 19615304.2 * 4.53999298e-6
+        4320558280000, rel=1e-8
+    )  # 19615304.2 / 4.53999298e-6
     assert pyo.value(scaled_model.block.scaled_c2["min"]) == pytest.approx(
-        49038.2606, rel=1e-8
-    )  # 19615304.2 * 0.0025
+        7846121693, rel=1e-8
+    )  # 19615304.2 / 0.0025

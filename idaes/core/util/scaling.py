@@ -1551,7 +1551,7 @@ def set_constraint_scaling_max_magnitude(
         nominal = NominalValueExtractionVisitor(warning=warning).walk_expression(c.expr)
         # 0 terms will never be the largest absolute magnitude, so we can ignore them
         max_mag = max(abs(i) for i in nominal)
-        set_scaling_factor(c, 1 / max_mag, overwrite=overwrite)
+        set_scaling_factor(c, max_mag, overwrite=overwrite)
 
     if isinstance(component, pyo.Block):
         # Iterate over all constraint datas and call this method on each
@@ -1591,7 +1591,7 @@ def set_constraint_scaling_min_magnitude(
         nominal = NominalValueExtractionVisitor(warning=warning).walk_expression(c.expr)
         # Ignore any 0 terms - we will assume they do not contribute to scaling
         min_mag = min(abs(i) for i in [j for j in nominal if j != 0])
-        set_scaling_factor(c, 1 / min_mag, overwrite=overwrite)
+        set_scaling_factor(c, min_mag, overwrite=overwrite)
 
     if isinstance(component, pyo.Block):
         # Iterate over all constraint datas and call this method on each
@@ -1630,7 +1630,7 @@ def set_constraint_scaling_harmonic_magnitude(
     def _set_sf_har_mag(c):
         nominal = NominalValueExtractionVisitor(warning=warning).walk_expression(c.expr)
         # Ignore any 0 terms - we will assume they do not contribute to scaling
-        harm_sum = 1 / sum(1 / abs(i) for i in [j for j in nominal if j != 0])
+        harm_sum = sum(1 / abs(i) for i in [j for j in nominal if j != 0])
         set_scaling_factor(c, harm_sum, overwrite=overwrite)
 
     if isinstance(component, pyo.Block):
