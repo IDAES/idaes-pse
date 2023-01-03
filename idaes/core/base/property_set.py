@@ -19,10 +19,10 @@ property sets as required (e.g. electrolyte systems).
 """
 from copy import copy
 
-from pyomo.environ import units
+from pyomo.environ import units as pyunits
 from pyomo.core.base.units_container import _PyomoUnit
 
-from idaes.core.util.exceptions import PropertyPackageError, BurntToast
+from idaes.core.util.exceptions import PropertyPackageError
 import idaes.logger as idaeslog
 
 __author__ = "Dan Gunter <dkgunter@lbl.gov>, Andrew Lee"
@@ -30,7 +30,7 @@ __author__ = "Dan Gunter <dkgunter@lbl.gov>, Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 
-class _PropertyMetadataIndex(object):
+class _PropertyMetadataIndex:
     def __init__(
         self,
         parent,
@@ -52,6 +52,7 @@ class _PropertyMetadataIndex(object):
         raise TypeError("Property metadata does not support assignment.")
 
     def __repr__(self):
+        # pylint: disable=E1101
         return f"{self._parent._doc} ({self._parent._units}%s%s)" % (
             "supported" if self._supported else "",
             "required" if self._required else "",
@@ -63,9 +64,9 @@ class _PropertyMetadataIndex(object):
         Name of sub-property as a string
         """
         suffix = ""
-        if self._idx is not "none":
-            suffix = f"_{self._idx}"
-        return f"{self._parent.name}{suffix}"
+        if self._idx is not "none":  # pylint: disable=E1101
+            suffix = f"_{self._idx}"  # pylint: disable=E1101
+        return f"{self._parent.name}{suffix}"  # pylint: disable=E1101
 
     @property
     def method(self):
@@ -73,7 +74,7 @@ class _PropertyMetadataIndex(object):
         Reference to method that can be called to construct this property and associated
         constraints if using build-on-demand approach.
         """
-        return self._method
+        return self._method  # pylint: disable=E1101
 
     @property
     def units(self):
@@ -81,14 +82,14 @@ class _PropertyMetadataIndex(object):
         Units of measurement for this property. This should be a reference to a quantity defined
         in the UnitSet associated with this property package.
         """
-        return self._parent.units
+        return self._parent.units  # pylint: disable=E1101
 
     @property
     def supported(self):
         """
         Bool indicating whether this property package supports calculation of this property.
         """
-        return self._supported
+        return self._supported  # pylint: disable=E1101
 
     @property
     def required(self):
@@ -99,7 +100,7 @@ class _PropertyMetadataIndex(object):
         This is most commonly used by reaction packages which rely of thermophysical property
         packages to define other properties.
         """
-        return self._required
+        return self._required  # pylint: disable=E1101
 
     def set_method(self, meth: str):
         """
@@ -170,7 +171,7 @@ class _PropertyMetadataIndex(object):
             self.set_supported(True)
 
 
-class PropertyMetadata(object):
+class PropertyMetadata:
     """
     Metadata object for defining a property.
 
@@ -250,10 +251,11 @@ class PropertyMetadata(object):
         try:
             return getattr(self, "_" + key)
         except AttributeError:
+            # pylint: disable=E1101
             raise KeyError(f"Property {self._name} does not have index {key}.")
 
     def __repr__(self):
-        return f"{self._doc} ({self._units})"
+        return f"{self._doc} ({self._units})"  # pylint: disable=E1101
 
     def __setattr__(self, key, value):
         raise TypeError("Property metadata does not support assignment.")
@@ -263,7 +265,7 @@ class PropertyMetadata(object):
         """
         Doc string for property
         """
-        return self._name
+        return self._name  # pylint: disable=E1101
 
     @property
     def units(self):
@@ -271,12 +273,12 @@ class PropertyMetadata(object):
         Units of measurement for this property. This should be a reference to a quantity defined
         in the UnitSet associated with this property package.
         """
-        return self._units
+        return self._units  # pylint: disable=E1101
 
     # TODO: An overall update method across multiple indices?
 
 
-class PropertySetBase(object):
+class PropertySetBase:
     """
     Base class for defining property sets.
 
@@ -300,6 +302,7 @@ class PropertySetBase(object):
                     units = iobj.units
                     # Check if units is a placeholder string and update if required
                     if isinstance(units, str):
+                        # pylint: disable=E1101
                         units = getattr(self._parent_block.default_units, units)
                     self._add_property(
                         name=i,
@@ -321,7 +324,7 @@ class PropertySetBase(object):
             raise KeyError(f"Property {key} is not defined in this PropertySet.")
 
     def __iter__(self):
-        for a in self._defined_properties:
+        for a in self._defined_properties:  # pylint: disable=E1101
             yield getattr(self, a)
 
     def define_property(
@@ -425,7 +428,7 @@ class PropertySetBase(object):
                 initialize=initialize,
             ),
         )
-        self._defined_properties.append(name)
+        self._defined_properties.append(name)  # pylint: disable=E1101
 
     def check_required_properties(self, other: "PropertySetBase"):
         """
@@ -438,7 +441,7 @@ class PropertySetBase(object):
             list of properties required by this package which are not supported by other package
         """
         unsupported = []
-        for a in self._defined_properties:
+        for a in self._defined_properties:  # pylint: disable=E1101
             aobj = getattr(self, a)
             for i in aobj._indices:
                 if aobj[i].required:
@@ -457,12 +460,12 @@ class PropertySetBase(object):
         Returns:
             list
         """
-        list = []
+        slist = []
         for p in self:
             for i in p._indices:
                 if p[i].supported:
-                    list.append(p[i])
-        return list
+                    slist.append(p[i])
+        return slist
 
     def list_unsupported_properties(self):
         """
@@ -471,12 +474,12 @@ class PropertySetBase(object):
         Returns:
             list
         """
-        list = []
+        ulist = []
         for p in self:
             for i in p._indices:
                 if not p[i].supported:
-                    list.append(p[i])
-        return list
+                    ulist.append(p[i])
+        return ulist
 
     def list_required_properties(self):
         """
@@ -485,21 +488,21 @@ class PropertySetBase(object):
         Returns:
             list
         """
-        list = []
+        rlist = []
         for p in self:
             for i in p._indices:
                 if p[i].required:
-                    list.append(p[i])
-        return list
+                    rlist.append(p[i])
+        return rlist
 
     @property
     def unitset(self):
         """
         Reference to UnitSet associated with this PropertySet (via the parent metadata object).
         """
-        return self._parent_block.default_units
+        return self._parent_block.default_units  # pylint: disable=E1101
 
-    def get_name_and_index(self, property: str):
+    def get_name_and_index(self, property_name: str):
         """
         Separates an indexed property name into the main property and index,
 
@@ -515,33 +518,33 @@ class PropertySetBase(object):
         index = None
 
         sep_point = None
-        if property in self._defined_properties:
+        if property_name in self._defined_properties:  # pylint: disable=E1101
             sep_point = 0
-        elif "phase" in property and not property.startswith("phase"):
-            if "phase_comp" in property:
-                sep_point = property.rindex("phase_comp")
+        elif "phase" in property_name and not property_name.startswith("phase"):
+            if "phase_comp" in property_name:
+                sep_point = property_name.rindex("phase_comp")
             else:
-                sep_point = property.rindex("phase")
-        elif "comp" in property and not property.startswith("comp"):
-            if "phase_comp" in property:
-                sep_point = property.rindex("phase_comp")
+                sep_point = property_name.rindex("phase")
+        elif "comp" in property_name and not property_name.startswith("comp"):
+            if "phase_comp" in property_name:
+                sep_point = property_name.rindex("phase_comp")
             else:
-                sep_point = property.rindex("comp")
+                sep_point = property_name.rindex("comp")
         else:
             for i in self._defined_indices:
-                if i in property:
-                    sep_point = property.rindex(i)
+                if i in property_name:
+                    sep_point = property_name.rindex(i)
 
         if sep_point is None:
             raise ValueError(
-                f"Unhandled property: {property}. This is mostly likely due to the "
+                f"Unhandled property: {property_name}. This is mostly likely due to the "
                 "property not being defined in this PropertySet."
             )
-        elif sep_point > 0:
-            name = property[: sep_point - 1]
-            index = property[sep_point:]
+        if sep_point > 0:
+            name = property_name[: sep_point - 1]
+            index = property_name[sep_point:]
         else:
-            name = property
+            name = property_name
             index = None
 
         return name, index
@@ -560,12 +563,12 @@ class StandardPropertySet(PropertySetBase):
     act = PropertyMetadata(
         name="act",
         doc="Chemical Activity",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     compress_fact = PropertyMetadata(
         name="compress_fact",
         doc="Compressiblity Factor",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     conc_mass = PropertyMetadata(
         name="conc_mass",
@@ -675,12 +678,12 @@ class StandardPropertySet(PropertySetBase):
     fug_coeff = PropertyMetadata(
         name="fug_coeff",
         doc="Fugacity Coefficient",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     heat_capacity_ratio = PropertyMetadata(
         name="heat_capacity_ratio",
         doc="Heat Capacity Ration",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     gibbs_mass = PropertyMetadata(
         name="gibbs_mass",
@@ -705,18 +708,18 @@ class StandardPropertySet(PropertySetBase):
     henry = PropertyMetadata(
         name="henry",
         doc="Henry Constant",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
         # TODO: Units are an issue here, as there are multiple ways to define this
     )
     mass_frac = PropertyMetadata(
         name="mass_frac",
         doc="Mass Fraction",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     mole_frac = PropertyMetadata(
         name="mole_frac",
         doc="Mole Fraction",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     molality = PropertyMetadata(
         name="molality",
@@ -731,7 +734,7 @@ class StandardPropertySet(PropertySetBase):
     phase_frac = PropertyMetadata(
         name="phase_frac",
         doc="Phase Fraction",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     pressure = PropertyMetadata(
         name="pressure",
@@ -761,7 +764,7 @@ class StandardPropertySet(PropertySetBase):
     pressure_red = PropertyMetadata(
         name="pressure_red",
         doc="Reduced Pressure",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     pressure_sat = PropertyMetadata(
         name="pressure_sat",
@@ -799,7 +802,7 @@ class StandardPropertySet(PropertySetBase):
     temperature_red = PropertyMetadata(
         name="temperature_red",
         doc="Reduced Temperature",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
         indices=False,
     )
     temperature_sat = PropertyMetadata(
@@ -836,52 +839,52 @@ class StandardPropertySet(PropertySetBase):
     log_act = PropertyMetadata(
         name="log_act",
         doc="Log of Activity",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     log_conc_mol = PropertyMetadata(
         name="log_conc_mol",
         doc="Log of Molar Concentration",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     log_mass_frac = PropertyMetadata(
         name="log_mass_frac_phase_comp",
         doc="Log of Mass Fractions",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     log_molality = PropertyMetadata(
         name="log_molality",
         doc="Log of Molality",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     log_mole_frac = PropertyMetadata(
         name="log_mole_frac",
         doc="Log of Mole Fractions",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     log_mole_frac_pbub = PropertyMetadata(
         name="log_mole_frac_pbub",
         doc="Log of Mole Fractions at Bubble Point Pressure",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     log_mole_frac_pdew = PropertyMetadata(
         name="log_mole_frac_pdew",
         doc="Log of Mole Fractions at Dew Point Pressure",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     log_mole_frac_tbub = PropertyMetadata(
         name="log_mole_frac_tbub",
         doc="Log of Mole Fractions at Bubble Point Temperature",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     log_mole_frac_tdew = PropertyMetadata(
         name="log_mole_frac_tdew",
         doc="Log of Mole Fractions at Dew Point Temperature",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     log_pressure = PropertyMetadata(
         name="log_pressure",
         doc="Log of Pressure",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
 
     # Reaction Properties
@@ -894,22 +897,22 @@ class StandardPropertySet(PropertySetBase):
     k_eq = PropertyMetadata(
         name="k_eq",
         doc="Equilibrium Coefficient",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     log_k_eq = PropertyMetadata(
         name="log_k_eq",
         doc="Log of Equilibrium Coefficient",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     k_rxn = PropertyMetadata(
         name="k_rxn",
         doc="Rate Constant",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
     reaction_rate = PropertyMetadata(
         name="reaction_rate",
         doc="Reaction Rate",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
 
 
@@ -932,5 +935,5 @@ class ElectrolytePropertySet(StandardPropertySet):
     log_act_phase_solvents = PropertyMetadata(
         name="log_act_phase_solvents",
         doc="Log of Activity of Solvents",
-        units=units.dimensionless,
+        units=pyunits.dimensionless,
     )
