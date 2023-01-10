@@ -223,6 +223,7 @@ class ThermalGeneratorModelData(GeneratorModelData):
         fixed_commitment=None,
         production_cost_bid_pairs=None,
         startup_cost_pairs=None,
+        **kwargs
     ):
 
         super().__init__(
@@ -244,6 +245,11 @@ class ThermalGeneratorModelData(GeneratorModelData):
 
         self.p_cost = self._assemble_default_cost_bids(production_cost_bid_pairs)
         self.startup_cost = self._assemble_default_startup_cost_bids(startup_cost_pairs)
+
+        for k, v in kwargs.items():
+            if hasattr(self, k):
+                raise ValueError(f"Duplicated input {k}")
+            setattr(self, k, v)
 
     def _check_empty_and_sort_cost_pairs(self, pair_description, pairs):
 
@@ -290,10 +296,10 @@ class ThermalGeneratorModelData(GeneratorModelData):
                 f"The first power output in the bid should be the Pmin {self.p_min}, but {production_cost_bid_pairs[0][0]} is provided."
             )
 
-        # if production_cost_bid_pairs[-1][0] != self.p_max:
-        #     raise ValueError(
-        #         f"The last power output in the bid should be the Pmax {self.p_max}, but {production_cost_bid_pairs[-1][0]} is provided."
-        #     )
+        if production_cost_bid_pairs[-1][0] != self.p_max:
+            raise ValueError(
+                f"The last power output in the bid should be the Pmax {self.p_max}, but {production_cost_bid_pairs[-1][0]} is provided."
+            )
 
         return production_cost_bid_pairs
 
