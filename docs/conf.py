@@ -70,7 +70,7 @@ main_doc = "index"
 
 # General information about the project.
 project = "IDAES"
-copyright = "2016-2021, David Miller et al."
+copyright = "2016-2023, David Miller et al."
 author = "The IDAES project"
 
 # The version info for the project you're documenting, acts as replacement for
