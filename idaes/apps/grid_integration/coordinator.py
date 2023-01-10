@@ -82,7 +82,6 @@ class DoubleLoopCoordinator:
         context.register_after_operations_callback(self.track_sced_signal)
         context.register_update_operations_stats_callback(self.update_observed_dispatch)
         context.register_after_ruc_activation_callback(self.activate_pending_DA_data)
-        context.register_after_ruc_activation_callback(self.write_plugin_results)
         context.register_finalization_callback(self.write_plugin_results)
 
         return

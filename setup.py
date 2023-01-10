@@ -33,7 +33,9 @@ def rglob(path, glob):
     return list(map(str, p.rglob(glob)))
 
 
-DEPENDENCIES_FOR_PRERELEASE_VERSION = []
+DEPENDENCIES_FOR_PRERELEASE_VERSION = [
+    "pyomo @ https://github.com/IDAES/pyomo/archive/6.4.3.zip"
+]
 
 # For included DMF data
 DMF_DATA_ROOT = "data"
@@ -84,7 +86,7 @@ kwargs = dict(
         "pandas<1.5",
         "pint",
         "psutil",
-        "pyomo>=6.4.3",
+        "pyomo @ https://github.com/IDAES/pyomo/archive/6.4.3.zip",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
@@ -106,6 +108,7 @@ kwargs = dict(
     },
     # Only installed if [<key>] is added to package name
     extras_require={
+        "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
         "optional": [
             "tensorflow",  # idaes.core.surrogate.keras_surrogate
             "gridx-prescient>=2.1",  # idaes.tests.prescient
