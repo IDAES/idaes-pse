@@ -223,7 +223,7 @@ class ThermalGeneratorModelData(GeneratorModelData):
         fixed_commitment=None,
         production_cost_bid_pairs=None,
         startup_cost_pairs=None,
-        **kwargs
+        **kwargs,
     ):
 
         super().__init__(
