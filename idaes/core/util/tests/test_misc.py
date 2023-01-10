@@ -289,7 +289,7 @@ class TestSetParamFromConfig:
         m.b.test_param = Var(initialize=1, units=units.s)
 
         with pytest.raises(
-            UnitsError, match="Cannot convert m to s. Units are not " "compatible."
+            UnitsError, match="Cannot convert m to s. Units are not compatible."
         ):
             set_param_from_config(m.b, "test_param")
 
@@ -305,7 +305,7 @@ class TestSetParamFromConfig:
 
         with pytest.raises(
             UnitsError,
-            match="Cannot convert dimensionless to s. Units " "are not compatible.",
+            match="Cannot convert None to s. Units are not compatible.",
         ):
             set_param_from_config(m.b, "test_param")
 
@@ -320,7 +320,7 @@ class TestSetParamFromConfig:
         m.b.test_param = Var(initialize=1, units=units.s)
 
         with pytest.raises(
-            UnitsError, match="Cannot convert None to s. Units " "are not compatible."
+            UnitsError, match="Cannot convert None to s. Units are not compatible."
         ):
             set_param_from_config(m.b, "test_param")
 
@@ -335,7 +335,7 @@ class TestSetParamFromConfig:
         m.b.test_param = Var(initialize=1, units=units.dimensionless)
 
         with pytest.raises(
-            UnitsError, match="Cannot convert s to None. Units " "are not compatible."
+            UnitsError, match="Cannot convert s to None. Units are not compatible."
         ):
             set_param_from_config(m.b, "test_param")
 
