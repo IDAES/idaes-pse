@@ -709,7 +709,9 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
     return inputs, samples, global_results
 
 
-def generate_baseline_statistics(conv_eval, n_points: int, seed: int = None):
+def generate_baseline_statistics(
+    conv_eval, n_points: int, seed: int = None, display: bool = True
+):
     """
     Generate and run samples to generate baseline convergence statistics.
 
@@ -717,6 +719,7 @@ def generate_baseline_statistics(conv_eval, n_points: int, seed: int = None):
         conv_eval: convergence evaluation object ot use to generate baseline
         n_points: number of points to generate for baseline
         seed: (optional) seed for random sample generator
+        display: print a summary of the baseline
 
     Returns:
         OrderedDict containing information defining baseline
@@ -743,6 +746,29 @@ def generate_baseline_statistics(conv_eval, n_points: int, seed: int = None):
             "iters_w_regularization"
         ]
         jsondict["results"][sname]["time"] = r["time"]
+
+    if display:
+        fails = []
+        restoration = []
+        regularization = []
+        for r in results:
+            sname = r["name"]
+            if not r["solved"]:
+                fails.append(sname)
+            if r["iters_in_restoration"] > 0:
+                restoration.append(sname)
+            if r["iters_w_regularization"] > 0:
+                regularization.append(sname)
+        print()
+        print("Failed Samples:")
+        for s in fails:
+            print(f"{' '*4}{s}")
+        print("Samples with Restoration:")
+        for s in restoration:
+            print(f"{' ' * 4}{s}")
+        print("Samples with Regularization:")
+        for s in regularization:
+            print(f"{' ' * 4}{s}")
 
     return jsondict
 
