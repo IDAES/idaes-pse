@@ -306,7 +306,10 @@ class ThermalGeneratorModelData(GeneratorModelData):
                 f"A valid production_cost_bid_pairs requires at least 2 points "
             )
 
-        if self.include_default_p_cost and production_cost_bid_pairs[-1][0] != self.p_max:
+        if (
+            self.include_default_p_cost
+            and production_cost_bid_pairs[-1][0] != self.p_max
+        ):
             raise ValueError(
                 f"The last power output in the bid should be the Pmax {self.p_max}, but {production_cost_bid_pairs[-1][0]} is provided."
             )
