@@ -1218,7 +1218,7 @@ class Bidder(StochasticProgramBidder):
             if self.bidding_model_object.model_data.include_default_p_cost:
                 p_cost_add = self.bidding_model_object.model_data.p_cost
             else:
-                p_cost_add = self.bidding_model_object.model_data.p_cost[0]
+                p_cost_add = self.bidding_model_object.model_data.p_cost[0:1]
 
             for power, marginal_cost in p_cost_add:
                 if round(power, 2) not in bids[t][gen]:
