@@ -232,6 +232,7 @@ def test_model_data_iterator(generator_data_object):
         "generator_type",
         "initial_status",
         "initial_p_output",
+        "include_default_p_cost",
     ]
     iter_result = [name for name, value in generator_data_object]
 
