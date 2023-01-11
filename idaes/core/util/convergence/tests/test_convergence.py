@@ -166,7 +166,9 @@ def test_convergence_evaluation_single():
     cb.write_sample_file(
         spec, fname, ceval_fixedvar_mutableparam_str, n_points=3, seed=43
     )
-    s, c, t, i = cb.run_single_sample_from_sample_file(fname, name="Sample-1")
+    s, c, i, rest, reg, i = cb.run_single_sample_from_sample_file(
+        fname, name="Sample-1"
+    )
     assert c == True
 
 
@@ -259,6 +261,17 @@ def test_convergence_evaluation_fixedvar_mutableparam():
         os.remove(fname)
     # if os.path.exists(results_fname):
     #     os.remove(results_fname)
+
+
+@pytest.mark.unit
+def test_parse_ipopt_output():
+    fname = os.path.join(currdir, "ipopt_output.txt")
+    iters, restoration, regularization, time = cb._parse_ipopt_output(fname)
+
+    assert iters == 43
+    assert restoration == 39
+    assert regularization == 4
+    assert time == 0.016 + 0.035
 
 
 if __name__ == "__main__":
