@@ -60,7 +60,7 @@ def convergence_sample(
 ):
     click.echo(
         "The command line interface for convergence testing has been deprecated and no longer works. "
-        "A nw API has been added to run convergence tests directly from the ConvergenceEvaluation object."
+        "A new API has been added to run convergence tests directly from the ConvergenceEvaluation object."
     )
 
 
@@ -116,7 +116,7 @@ def convergence_eval(
 ):
     click.echo(
         "The command line interface for convergence testing has been deprecated and no longer works. "
-        "A nw API has been added to run convergence tests directly from the ConvergenceEvaluation object."
+        "A new API has been added to run convergence tests directly from the ConvergenceEvaluation object."
     )
 
 
@@ -139,5 +139,5 @@ def convergence_eval(
 def convergence_search(regex, convergence_module):
     click.echo(
         "The command line interface for convergence testing has been deprecated and no longer works. "
-        "A nw API has been added to run convergence tests directly from the ConvergenceEvaluation object."
+        "A new API has been added to run convergence tests directly from the ConvergenceEvaluation object."
     )
