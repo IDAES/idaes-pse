@@ -47,7 +47,7 @@ In general, a unit model is not written with a specific flowsheet or set of ther
             description="Arguments to use for constructing property packages",
             doc="""A ConfigBlock with arguments to be passed to a property block(s) and used when constructing these."""))
 
-For unit models involving multiple property packages, or those that include reaction packages, additional pairs of configuration arguments are required for each of these. Model developers must provide unique names for each configuration argument, and are encourage to use meaningful names to assist end-users in understanding what package should be linked to each argument.
+For unit models involving multiple property packages, or those that include reaction packages, additional pairs of configuration arguments are required for each of these. Model developers must provide unique names for each configuration argument, and are encouraged to use meaningful names to assist end-users in understanding what package should be linked to each argument.
 
 Model developers may also declare additional configuration arguments to give end-users the ability to change the behavior of different parts of the model. For example, the core IDAES Unit Model Library makes use of these to  provide flexibility in the form of the balance equations. Use of additional configuration arguments is entirely optional.
 
@@ -95,7 +95,7 @@ The example below shows the general form used when declaring a new initializatio
 
 * blk – local name for the block to be initialized.
 * state_args – initial guesses for the state variables. The form of this may vary depending on the number and type of inlets to the unit model.
-* outlvl – optional argument to allow users to control the amount of diagnostic output from the initialization procedure. His requires the use of the IDAES logger tools to function.
+* outlvl – optional argument to allow users to control the amount of diagnostic output from the initialization procedure. This requires the use of the IDAES logger tools to function.
 * solver – allows the user to set a solver to use for initialization.
 * optarg – dict of options to pass to the solver; used to adjust solver behavior.
 
