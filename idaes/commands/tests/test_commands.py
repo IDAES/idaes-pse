@@ -554,25 +554,25 @@ def test_strip_test_cells(remove_cells_notebooks):
 ##################
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_get_extensions(runner):
     result = runner.invoke(extensions.get_extensions, ["--no-download"])
     assert result.exit_code == 0
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_print_extensions_version(runner):
     result = runner.invoke(extensions.extensions_version)
     assert result.exit_code == 0
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_get_extensions_plat(runner):
     result = runner.invoke(extensions.bin_platform)
     assert result.exit_code == 0
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_get_extensions_bad_plat(runner):
     result = runner.invoke(extensions.bin_platform, ["--distro", "johns_good_linux42"])
     assert result.exit_code == 0
