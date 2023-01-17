@@ -70,7 +70,7 @@ def _get_platform(fd, platform, arch):
     platform = f"{platform}-{mach}"
     # See if machine is supported
     if platform not in idaes.config.base_platforms:
-        raise UnsupportedPlatformError(f"Unsupported platfrom: {platform}.")
+        raise UnsupportedPlatformError(f"Unsupported platform: {platform}.")
     _log.debug(f"Downloading binaries for {platform}")
     return platform
 
@@ -82,7 +82,7 @@ def _get_checksums(fd, to_path, release):
     _log.debug(f"Getting checksum file {check_from}")
     fd.set_destination_filename(check_to)
     fd.get_binary_file(check_from)
-    # read the hashes file and store then in checksum dict
+    # read the hashes file and store them in checksum dict
     with open(check_to, "r") as f:
         for i in range(1000):
             line = f.readline(1000)
@@ -154,7 +154,7 @@ def download_binaries(
         nochecksum = True
     # set the locations to download files to, to_path is an alternate
     # subdirectory of idaes.data_directory that can optionally be used to test
-    # this function without interfereing with anything else.  It's a subdirectory
+    # this function without interfering with anything else.  It's a subdirectory
     # of the data directory because that should be a safe place to store some
     # test files.
     if alt_path is not None:

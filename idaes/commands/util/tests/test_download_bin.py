@@ -26,6 +26,8 @@ def _del_data_file(path):
         pass
 
 
+# TODO: Look at fixing this to avoid going out to network, maybe replace with unit tests
+# TODO: Add more unit testing where possible
 @pytest.mark.integration
 def test_dl_bin():
     idaes._create_testing_dir()
@@ -35,7 +37,7 @@ def test_dl_bin():
     idaes.commands.util.download_bin.download_binaries(
         release=idaes.config.default_binary_release, verbose=True, to_path="testing"
     )
-    _log.setLevel(ll)  # set logger level bakc to whatever it was
+    _log.setLevel(ll)  # set logger level back to whatever it was
     assert os.path.exists(os.path.join(idaes.testing_directory, "version_lib.txt"))
     assert os.path.exists(os.path.join(idaes.testing_directory, "version_solvers.txt"))
 
