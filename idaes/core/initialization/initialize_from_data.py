@@ -29,5 +29,5 @@ class FromDataInitializer(InitializerBase):
     """
 
     def initialization_routine(self, model):
-        # No action required
+        # No action required as data has been loaded in the load_initial_guesses method
         pass
