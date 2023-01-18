@@ -161,10 +161,10 @@ def test_create_download_package(platform):
         platform, "foo", "bar", [], False, False
     )
 
-    assert ptar == [
-        f"foo/idaes-lib-{platform}.tar.gz",
-        f"foo/idaes-solvers-{platform}.tar.gz",
-    ]
+    assert len(ptar) == 2
+    assert (os.path.join("foo", f"idaes-lib-{platform}.tar.gz")) in ptar
+    assert (os.path.join("foo", f"idaes-solvers-{platform}.tar.gz")) in ptar
+
     assert ftar == [f"idaes-lib-{platform}.tar.gz", f"idaes-solvers-{platform}.tar.gz"]
     assert furl == [
         f"bar/idaes-lib-{platform}.tar.gz",
@@ -180,11 +180,11 @@ def test_create_download_package_extras(platform):
     )
 
     # baz should be ignored as an unknown extra
-    assert ptar == [
-        f"foo/idaes-petsc-{platform}.tar.gz",
-        f"foo/idaes-lib-{platform}.tar.gz",
-        f"foo/idaes-solvers-{platform}.tar.gz",
-    ]
+    assert len(ptar) == 3
+    assert (os.path.join("foo", f"idaes-lib-{platform}.tar.gz")) in ptar
+    assert (os.path.join("foo", f"idaes-solvers-{platform}.tar.gz")) in ptar
+    assert (os.path.join("foo", f"idaes-petsc-{platform}.tar.gz")) in ptar
+
     assert ftar == [
         f"idaes-petsc-{platform}.tar.gz",
         f"idaes-lib-{platform}.tar.gz",
@@ -205,7 +205,9 @@ def test_create_download_package_extras_only(platform):
     )
 
     # baz should be ignored as an unknown extra
-    assert ptar == [f"foo/idaes-petsc-{platform}.tar.gz"]
+    assert len(ptar) == 1
+    assert (os.path.join("foo", f"idaes-petsc-{platform}.tar.gz")) in ptar
+
     assert ftar == [f"idaes-petsc-{platform}.tar.gz"]
     assert furl == [f"bar/idaes-petsc-{platform}.tar.gz"]
 
@@ -217,7 +219,9 @@ def test_create_download_package_library_only(platform):
         platform, "foo", "bar", [], False, True
     )
 
-    assert ptar == [f"foo/idaes-lib-{platform}.tar.gz"]
+    assert len(ptar) == 1
+    assert (os.path.join("foo", f"idaes-lib-{platform}.tar.gz")) in ptar
+
     assert ftar == [f"idaes-lib-{platform}.tar.gz"]
     assert furl == [f"bar/idaes-lib-{platform}.tar.gz"]
 
