@@ -183,7 +183,7 @@ def _download_package(fd, name, frm, to, platform):
         raise Exception(f"{name} binaries are unavailable for {platform}")
 
 
-def _verfiy_checksums(pname, ptar, ftar):
+def _verfiy_checksums(checksum, pname, ptar, ftar):
     # If release checksum is not False, nochecksum opt allows hash to be ignored
     if checksum:
         for n, p, f in zip(pname, ptar, ftar):
