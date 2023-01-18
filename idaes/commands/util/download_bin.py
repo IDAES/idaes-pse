@@ -111,12 +111,14 @@ def _get_checksum_paths(to_path, release):
 
 
 def _download_checksum(fd, check_to, check_from):
-    checksum = {}  # storage for hashes if install from release
-
     fd.set_destination_filename(check_to)
     fd.get_binary_file(check_from)
 
+
+def _read_checksum_file(check_to):
     # read the hashes file and store them in checksum dict
+    checksum = {}  # storage for hashes if install from release
+
     with open(check_to, "r") as f:
         for i in range(1000):
             line = f.readline(1000)
@@ -134,8 +136,9 @@ def _get_checksums(fd, to_path, release, nochecksum):
         return False  # default if not checking checksums
 
     check_to, check_from = _get_checksum_paths(to_path, release)
+    _download_checksum(fd, check_to, check_from)
 
-    return _download_checksum(fd, check_to, check_from)
+    return _read_checksum_file(check_to)
 
 
 def _create_download_package(platform, to_path, url, extra, extras_only, library_only):
@@ -180,7 +183,7 @@ def _download_package(fd, name, frm, to, platform):
         raise Exception(f"{name} binaries are unavailable for {platform}")
 
 
-def _verfiy_checksums(checksum, pname, ptar, ftar):
+def _verfiy_checksums(pname, ptar, ftar):
     # If release checksum is not False, nochecksum opt allows hash to be ignored
     if checksum:
         for n, p, f in zip(pname, ptar, ftar):
