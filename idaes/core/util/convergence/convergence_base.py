@@ -65,6 +65,7 @@ import json
 import logging
 import sys
 from io import StringIO
+from math import isclose
 
 import numpy as np
 
@@ -234,12 +235,16 @@ class ConvergenceEvaluation:
         with open(filename, "w") as fd:
             json.dump(jsondict, fd, indent=3)
 
-    def compare_to_baseline(self, baseline_filename: str):
+    def compare_to_baseline(
+        self, baseline_filename: str, rel_tol: float = 0.1, abs_tol: float = 1
+    ):
         """
-        Compare model convergence ot baseline.
+        Compare model convergence to baseline.
 
         Args:
-            baseline_filename - name of baseline file ot use for comparison as string.
+            baseline_filename - name of baseline file to use for comparison as string.
+            rel_tol - maximum relative tolerance for iteration comparison (default = 0.1)
+            abs_tol - minimum absolute tolerance for iteration comparison (default = 1)
 
         Returns:
             list of samples with different solver status
@@ -258,26 +263,63 @@ class ConvergenceEvaluation:
         # Run samples from baseline
         inputs, samples, results = run_convergence_evaluation(basedict, self)
 
-        # Compare to baseline
-        diff_solves = []
-        diff_iters = []
-        diff_rest = []
-        diff_reg = []
+        return _compare_run_to_baseline(
+            results, basedict["results"], rel_tol=rel_tol, abs_tol=abs_tol
+        )
 
-        for r in results:
-            sname = r["name"]
-            baseline = basedict["results"][sname]
 
-            if not r["solved"] == baseline["solved"]:
-                diff_solves.append(sname)
-            if not r["iters"] == baseline["iters"]:
-                diff_iters.append(sname)
-            if not r["iters_in_restoration"] == baseline["iters_in_restoration"]:
-                diff_rest.append(sname)
-            if not r["iters_w_regularization"] == baseline["iters_w_regularization"]:
-                diff_reg.append(sname)
+def _compare_run_to_baseline(run1, baseline, rel_tol: float = 0.1, abs_tol: float = 1):
+    """
+    Compare results of convergence evaluation run to baseline results.
 
-        return diff_solves, diff_iters, diff_rest, diff_reg
+    Args:
+        run1 - list of OrderedDicts from run_convergence_evaluation for run 1.
+        baseline - OrderedDict of results from baseline run.
+        rel_tol - maximum relative tolerance for iteration comparison (default = 0.1)
+        abs_tol - minimum absolute tolerance for iteration comparison (default = 1)
+
+    Returns:
+        list of samples with different solver status
+        list of samples with different number of iterations
+        list of samples with different number of iterations in restoration
+        list of samples with different number of iterations with regularization
+    """
+    diff_solves = []
+    diff_iters = []
+    diff_rest = []
+    diff_reg = []
+
+    for s1 in run1:
+        sname = s1["name"]
+
+        try:
+            s2 = baseline[sname]
+        except KeyError:
+            raise KeyError(
+                f"baseline does not contain a sample with the name {sname}. Please check that "
+                f"both convergence evaluation runs used the same set of samples."
+            )
+
+        if not s1["solved"] == s2["solved"]:
+            diff_solves.append(sname)
+        if not isclose(s1["iters"], s2["iters"], rel_tol=rel_tol, abs_tol=abs_tol):
+            diff_iters.append(sname)
+        if not isclose(
+            s1["iters_in_restoration"],
+            s2["iters_in_restoration"],
+            rel_tol=rel_tol,
+            abs_tol=abs_tol,
+        ):
+            diff_rest.append(sname)
+        if not isclose(
+            s1["iters_w_regularization"],
+            s2["iters_w_regularization"],
+            rel_tol=rel_tol,
+            abs_tol=abs_tol,
+        ):
+            diff_reg.append(sname)
+
+    return diff_solves, diff_iters, diff_rest, diff_reg
 
 
 def _class_import(class_path):
