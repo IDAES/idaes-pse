@@ -188,7 +188,10 @@ def hash_extensions(release, path):
 def bin_platform(distro):
     fd, arch = idaes.commands.util.download_bin._get_file_downloader(False, None)
     try:
-        platform = idaes.commands.util.download_bin._get_platform(fd, distro, arch)
+        arch, platform = idaes.commands.util.download_bin._get_arch_and_platform(
+            fd, distro
+        )
+        platform = idaes.commands.util.download_bin._get_release_platform(platform)
         click.echo(platform)
     except idaes.commands.util.download_bin.UnsupportedPlatformError:
         click.echo("No supported binaries found.")
