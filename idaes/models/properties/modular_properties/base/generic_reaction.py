@@ -26,6 +26,7 @@ from idaes.core import (
     ReactionBlockDataBase,
     ReactionBlockBase,
     MaterialFlowBasis,
+    ElectrolytePropertySet,
 )
 from idaes.models.properties.modular_properties.base.utility import ConcentrationForm
 from idaes.core.util.exceptions import (
@@ -470,6 +471,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
     @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
+        obj.define_property_set(ElectrolytePropertySet)
         obj.add_properties(
             {
                 "dh_rxn": {"method": "_dh_rxn"},
