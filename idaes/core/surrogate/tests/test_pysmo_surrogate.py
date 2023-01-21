@@ -1377,9 +1377,9 @@ class TestPysmoSurrogate:
         cstr = cstr.replace("inputs[x1]", "1")
         cstr = cstr.replace("inputs[x2]", "5")
         assert eval(cstr) == pytest.approx(0)
-        #assert str(blk.pysmo_constraint["z1"].body) == (
+        # assert str(blk.pysmo_constraint["z1"].body) == (
         #    "outputs[z1] - (-75.26111111111476 - 8.815277777775934*inputs[x1] + 18.81527777777826*inputs[x2] - 2.2556956302821618e-13*(inputs[x2]*inputs[x1]))"
-        #)
+        # )
 
     @pytest.mark.unit
     def test_evaluate_multisurrogate_poly(self, pysmo_surr2_poly):

@@ -1231,32 +1231,38 @@ class AlamoSurrogate(SurrogateBase):
 
         Args:
             block: Pyomo Block component to be populated with constraints.
-            additional_options (dict): as_expression (bool) is an optional 
+            additional_options (dict): as_expression (bool) is an optional
                 argument that indicates the surrogate models should be added
-                as expressions.   
+                as expressions.
         Returns:
             None
         """
 
         # TODO: do we need to add the index_set stuff back in?
         output_set = Set(initialize=self._output_labels, ordered=True)
-        
+
         if additional_options is not None:
             as_expression = additional_options.pop("as_expression", False)
         else:
             as_expression = False
-        
+
         if not as_expression:
+
             def alamo_rule(b, o):
                 lvars = block.input_vars_as_dict()
                 lvars.update(block.output_vars_as_dict())
                 return eval(self._surrogate_expressions[o], GLOBAL_FUNCS, lvars)
+
             block.alamo_constraint = Constraint(output_set, rule=alamo_rule)
         else:
+
             def alamo_rule(b, o):
                 lvars = block.input_vars_as_dict()
-                return eval(self._surrogate_expressions[o].split("==")[1], GLOBAL_FUNCS, lvars)
-            block.alamo_expression = Expression(output_set, rule=alamo_rule) 
+                return eval(
+                    self._surrogate_expressions[o].split("==")[1], GLOBAL_FUNCS, lvars
+                )
+
+            block.alamo_expression = Expression(output_set, rule=alamo_rule)
 
     def save(self, strm):
         """
