@@ -1226,12 +1226,14 @@ class AlamoSurrogate(SurrogateBase):
 
     def populate_block(self, block, additional_options=None):
         """
-        Method to populate a Pyomo Block with surrogate model constraints.
+        Method to populate a Pyomo Block with surrogate model constraints
+        or expressions.
 
         Args:
             block: Pyomo Block component to be populated with constraints.
-            additional_options: None
-               No additional options are required for this surrogate object
+            additional_options (dict): as_expression (bool) is an optional 
+                argument that indicates the surrogate models should be added
+                as expressions.   
         Returns:
             None
         """
