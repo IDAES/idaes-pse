@@ -1,0 +1,74 @@
+name: IDAES v1 compat
+
+on:
+  push:
+    branches:
+      - main
+      - '*_rel'
+  pull_request:
+    types:
+      - opened
+      - ready_for_review
+      - synchronize
+
+defaults:
+  run:
+    # -l: login shell, needed when using Conda run:
+    shell: bash -l {0}
+
+env:
+  PYTEST_ADDOPTS: --color=yes
+  PIP_PROGRESS_BAR: "off"
+  IDAES_CONDA_ENV_NAME: idaes-env
+
+jobs:
+
+  bwcompat-verify:
+    env:
+      compat_dependencies_pip_target: git+https://github.com/IDAES/devtools@bwcompat
+      input_file_url: https://github.com/IDAES/idaes-pse/releases/download/${{ matrix.compat-ref }}/idaes-${{ matrix.compat-ref }}-bwcompat.collect.module_objects.json
+      input_file_name: bwcompat.json
+    name: Verify v1 compat (activated=${{ matrix.activated }}/${{ matrix.compat-ref }}/${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.8'
+          - '3.10'
+        compat-ref:
+          - '1.13.0'
+        activated:
+          - "envvar"
+          - "no"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Conda environment
+        uses: conda-incubator/setup-miniconda@v2.1.1
+        with:
+          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME }}
+          python-version: ${{ matrix.python-version }}
+      - name: Set up idaes
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
+      - name: Install v1 compat requirements
+        run: |
+          pip install "$compat_dependencies_pip_target"
+      - name: Fetch input file for bwcompat.verify
+        run: |
+          curl -sL "$input_file_url" -o "$input_file_name"
+          ls -lah
+      - name: Set env var to activate v1 compat
+        if: matrix.activated == 'envvar'
+        run: |
+          echo "IDAES_ACTIVATE_V1_COMPAT=true" >> $GITHUB_ENV
+      - name: Run verify tests
+        if: matrix.activated != 'no'
+        run: |
+          pytest "$input_file_name" --bwcompat-importables="$input_file_name"
+      - name: Run verify tests expecting failures
+        if: matrix.activated == 'no'
+        run: |
+          pytest "$input_file_name" --bwcompat-importables="$input_file_name" && exit 1 || [ $? -eq 1 ]
+

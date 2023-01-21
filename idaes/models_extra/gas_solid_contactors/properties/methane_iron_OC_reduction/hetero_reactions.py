@@ -219,14 +219,18 @@ class ReactionParameterData(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
+        obj.define_custom_properties(
+            {
+                "OC_conv": {"method": "_OC_conv", "units": None},
+                "OC_conv_temp": {"method": "_OC_conv_temp", "units": None},
+            }
+        )
         obj.add_properties(
             {
                 "k_rxn": {
                     "method": "_k_rxn",
                     "units": "mol^(1-rxn_order)m^(3*rxn_order -2)/s]",
                 },
-                "OC_conv": {"method": "_OC_conv", "units": None},
-                "OC_conv_temp": {"method": "_OC_conv_temp", "units": None},
                 "reaction_rate": {"method": "_reaction_rate", "units": "mol_rxn/m3.s"},
             }
         )

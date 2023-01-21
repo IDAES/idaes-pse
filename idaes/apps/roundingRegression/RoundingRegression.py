@@ -13,7 +13,6 @@
 from pyomo.environ import *
 from pyomo.opt import SolverFactory
 import numpy as np
-import scipy as sp
 from scipy import linalg
 from copy import copy
 

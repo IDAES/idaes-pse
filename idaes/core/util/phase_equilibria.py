@@ -21,12 +21,7 @@ __author__ = "Alejandro Garciadiego"
 # Import objects from pyomo package
 from pyomo.environ import (
     check_optimal_termination,
-    ConcreteModel,
-    SolverFactory,
     value,
-    Var,
-    Constraint,
-    Expression,
     units as pyunits,
 )
 import idaes.logger as idaeslog

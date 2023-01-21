@@ -55,7 +55,6 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_forms impo
     log_power_law_equil,
 )
 
-from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.constants import Constants as constants
 
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
@@ -129,7 +128,7 @@ class TestGenericReactionParameterBlock(object):
         assert_units_equivalent(default_units.MASS, pyunits.kg)
         assert_units_equivalent(default_units.AMOUNT, pyunits.mol)
         assert_units_equivalent(default_units.TEMPERATURE, pyunits.K)
-        assert_units_equivalent(default_units.CURRENT, pyunits.W)
+        assert_units_equivalent(default_units.CURRENT, pyunits.ampere)
         assert_units_equivalent(default_units.LUMINOUS_INTENSITY, pyunits.candela)
 
         assert isinstance(m.rxn_params.rate_reaction_idx, Set)

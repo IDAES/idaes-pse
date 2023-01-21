@@ -24,8 +24,6 @@ from idaes.core import UnitModelBlockData, declare_process_block_class
 from pyomo.common.config import ConfigValue, In
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_bound
-import idaes.logger as idaeslog
-from idaes.core.solvers import get_solver
 
 
 class ControllerType(enum.Enum):

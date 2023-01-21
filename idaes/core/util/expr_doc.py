@@ -14,10 +14,7 @@
 import re
 
 from pyomo.core.expr.sympy_tools import (
-    _prod,
-    _sum,
     _functionMap,
-    _operatorMap,
     _pyomo_operator_map,
     _configure_sympy,
 )
@@ -34,7 +31,7 @@ from pyomo.core.base.constraint import _ConstraintData, Constraint
 from pyomo.core.base.expression import _ExpressionData
 from pyomo.core.base.block import _BlockData
 from pyomo.core.expr.visitor import StreamBasedExpressionVisitor
-from pyomo.core.expr.numeric_expr import ExternalFunctionExpression, ExpressionBase
+from pyomo.core.expr.numeric_expr import ExternalFunctionExpression
 from pyomo.core.expr import current as EXPR, native_types
 from pyomo.common.collections import ComponentMap
 

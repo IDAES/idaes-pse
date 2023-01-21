@@ -15,10 +15,8 @@ import pyomo.environ as pyo
 import pandas as pd
 from idaes.apps.grid_integration import Tracker
 from idaes.apps.grid_integration import Bidder, SelfScheduler
-from idaes.apps.grid_integration import DoubleLoopCoordinator
 from idaes.apps.grid_integration.forecaster import AbstractPrescientPriceForecaster
 from idaes.apps.grid_integration.model_data import (
-    GeneratorModelData,
     ThermalGeneratorModelData,
     RenewableGeneratorModelData,
 )

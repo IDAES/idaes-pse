@@ -34,7 +34,6 @@ from idaes.models.properties.modular_properties.pure.Perrys import *
 from idaes.core.util.misc import add_object_reference
 from idaes.core.base.property_meta import PropertyClassMetadata, UnitSet
 from idaes.core.util.exceptions import ConfigurationError
-import idaes.logger as idaeslog
 
 
 @pytest.fixture()
@@ -70,7 +69,7 @@ def frame():
     m.config.include_enthalpy_of_formation = True
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object._default_units = UnitSet(
+    m.meta_object._default_units.set_units(
         temperature=pyunits.K,
         mass=pyunits.kg,
         length=pyunits.m,
