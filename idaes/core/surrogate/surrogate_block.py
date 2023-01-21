@@ -108,7 +108,7 @@ class SurrogateBlockData(_BlockData):
                 ub = bnd[1]
                 if v.ub is not None:
                     ub = min(ub, v.ub)
-                print("Setting bound of {} to {}.".format(v, (lb, ub)))
+                #print("Setting bound of {} to {}.".format(v, (lb, ub)))
                 v.setlb(lb)
                 v.setub(ub)
 
