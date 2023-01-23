@@ -87,8 +87,8 @@ class SurrogateBlockData(_BlockData):
               If True, then the bounds on the input variables are updated using the bounds
               in the surrogate object. If False, then the bounds on the input variables are not overwritten.
            as_exception : bool
-              ALAMO only. If True, write the surrogate model as expressions rather than constraints.  If this 
-              option is used, the output_vars argument is not required. 
+              ALAMO only. If True, write the surrogate model as expressions rather than constraints.  If this
+              option is used, the output_vars argument is not required.
 
         Any additional keyword arguments are passed to the populate_block method of the underlying surrogate object.
         Please see the documentation for the specific surrogate object for details.
