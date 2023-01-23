@@ -1231,9 +1231,12 @@ class AlamoSurrogate(SurrogateBase):
 
         Args:
             block: Pyomo Block component to be populated with constraints.
-            additional_options (dict): as_expression (bool) is an optional
-                argument that indicates the surrogate models should be added
-                as expressions if True.
+            additional_options (dict): optional keyword arguments passes along
+                from build model. There is one optional argument, as_expression
+                (bool) if True, write the model as an expressions, if False or 
+                not provided write model as constraints. If as_expression is 
+                True, the output_variables argument to build_model() is not 
+                required. 
         Returns:
             None
         """
