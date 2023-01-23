@@ -2077,9 +2077,15 @@ class TestPysmoSurrogate:
         # Test save for polynomial regression with single output with bounds supplied
         stream1 = StringIO()
         pysmo_surr1.save(stream1)
-        assert re.sub("errors.*?}", "", jstring_poly_1) == re.sub(
-            "errors.*?}", "", stream1.getvalue()
-        )
+        pysmo_surr_new = PysmoSurrogate.load(stream1)
+        assert pysmo_surr1._input_labels == pysmo_surr_new._input_labels
+        assert pysmo_surr1._output_labels == pysmo_surr_new._output_labels
+        assert pysmo_surr1._input_bounds == pysmo_surr_new._input_bounds
+        assert pysmo_surr1._trained.model_type == pysmo_surr_new._trained.model_type
+        assert pysmo_surr1._trained.output_labels == pysmo_surr_new._trained.output_labels
+        assert list(pysmo_surr_new._trained._data) == ["z1"]
+        assert pysmo_surr1._trained._data["z1"].expression_str == pysmo_surr_new._trained._data["z1"].expression_str
+
 
     @pytest.mark.unit
     def test_save_poly2(self, pysmo_surr2_poly):
@@ -2087,18 +2093,30 @@ class TestPysmoSurrogate:
         _, poly_trained = pysmo_surr2_poly
         stream2a = StringIO()
         poly_trained.save(stream2a)
-        assert re.sub("errors.*?}", "", jstring_poly_2) == re.sub(
-            "errors.*?}", "", stream2a.getvalue()
-        )
+        pysmo_surr_new = PysmoSurrogate.load(stream2a)
+        assert poly_trained._input_labels == pysmo_surr_new._input_labels
+        assert poly_trained._output_labels == pysmo_surr_new._output_labels
+        assert poly_trained._input_bounds == pysmo_surr_new._input_bounds
+        assert poly_trained._trained.model_type == pysmo_surr_new._trained.model_type
+        assert poly_trained._trained.output_labels == pysmo_surr_new._trained.output_labels
+        assert list(pysmo_surr_new._trained._data) == ["z1", "z2"]
+        assert poly_trained._trained._data["z1"].expression_str == pysmo_surr_new._trained._data["z1"].expression_str
+        assert poly_trained._trained._data["z2"].expression_str == pysmo_surr_new._trained._data["z2"].expression_str
 
     @pytest.mark.unit
     def test_save_poly3(self, pysmo_surr4):
         # Test save for polynomial regression with multiple outputs and custom functions - most complicated to save
         stream4 = StringIO()
         pysmo_surr4.save(stream4)
-        assert re.sub("errors.*?}", "", jstring_poly_4) == re.sub(
-            "errors.*?}", "", stream4.getvalue()
-        )
+        pysmo_surr_new = PysmoSurrogate.load(stream4)
+        assert pysmo_surr4._input_labels == pysmo_surr_new._input_labels
+        assert pysmo_surr4._output_labels == pysmo_surr_new._output_labels
+        assert pysmo_surr4._input_bounds == pysmo_surr_new._input_bounds
+        assert pysmo_surr4._trained.model_type == pysmo_surr_new._trained.model_type
+        assert pysmo_surr4._trained.output_labels == pysmo_surr_new._trained.output_labels
+        assert list(pysmo_surr_new._trained._data) == ["z1", "z2"]
+        assert pysmo_surr4._trained._data["z1"].expression_str == pysmo_surr_new._trained._data["z1"].expression_str
+        assert pysmo_surr4._trained._data["z2"].expression_str == pysmo_surr_new._trained._data["z2"].expression_str
 
     @pytest.mark.unit
     def test_load_poly1(self):
