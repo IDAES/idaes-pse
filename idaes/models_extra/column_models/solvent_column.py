@@ -394,7 +394,7 @@ and used when constructing these
             self.vapor_phase.length_domain,
             initialize=0.9,
             units=(pyunits.m) ** 2 / (pyunits.m) ** 3,
-            doc="Specific interfacial area",
+            doc="Packing interfacial area per unit of column volume",
         )
 
         # Liquid and vapor holdups
@@ -492,6 +492,7 @@ and used when constructing these
         )
 
         # Mass transfer constraints
+        # "mass_transfer" is a bad name for this variable since it's written with a mole basis. "material" is better
         self.interphase_mass_transfer = Var(
             self.flowsheet().time,
             self.liquid_phase.length_domain,
@@ -560,10 +561,10 @@ and used when constructing these
             elif j in equilibrium_comp:
                 return (
                     pyunits.convert(
-                        blk.vapor_phase.mass_transfer_term[t, x, "Vap", j],
-                        to_units=lunits("amount") / lunits("time") / lunits("length"),
+                        -blk.interphase_mass_transfer[t, x, j],
+                        to_units=vunits("amount") / vunits("time") / vunits("length"),
                     )
-                    == -blk.interphase_mass_transfer[t, x, j]
+                    == blk.vapor_phase.mass_transfer_term[t, x, "Vap", j]
                 )
             else:
                 return blk.vapor_phase.mass_transfer_term[t, x, "Vap", j] == 0.0
@@ -575,7 +576,7 @@ and used when constructing these
             self.vapor_phase.length_domain,
             initialize=100,
             units=lunits("power") / lunits("temperature") / lunits("length"),
-            doc="Vapor-liquid heat transfer coefficient",
+            doc="Vapor-liquid heat transfer coefficient multiplied by heat transfer area per unit column length",
         )
 
         # Heat transfer
@@ -688,6 +689,13 @@ and used when constructing these
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
+        vunits = (
+            self.config.vapor_phase.property_package.get_metadata().get_derived_units
+        )
+        lunits = (
+            self.config.liquid_phase.property_package.get_metadata().get_derived_units
+        )
+
         # ---------------------------------------------------------------------
         # Scale variables
         for (t, x, j), v in self.pressure_equil.items():
@@ -751,13 +759,16 @@ and used when constructing these
             )
 
         for (t, x, j), v in self.liquid_mass_transfer_eqn.items():
+            zf = self.vapor_phase.length_domain.next(x)
             try:
                 sf = iscale.get_scaling_factor(
-                    self.interphase_mass_transfer[t, x, j], default=1, warning=False
+                    self.interphase_mass_transfer[t, zf, j], default=1, warning=False
                 )
             except KeyError:
                 # This implies a non-volatile component
-                sf = 1
+                sf = iscale.get_scaling_factor(
+                    self.liquid_phase.mass_transfer_term[t, x, "Liq", j], default=1, warning=True
+                )
             iscale.constraint_scaling_transform(v, sf)
 
         for (t, x, j), v in self.vapor_mass_transfer_eqn.items():
@@ -765,9 +776,17 @@ and used when constructing these
                 sf = iscale.get_scaling_factor(
                     self.interphase_mass_transfer[t, x, j], default=1, warning=False
                 )
+                # Account for the fact that this equation is written on a vapor unit basis
+                sf_units = pyunits.convert(
+                    1 / (lunits("amount") / lunits("time") / lunits("length")),
+                    1 / (vunits("amount") / vunits("time") / vunits("length"))
+                )
+                sf *= sf_units
             except KeyError:
                 # This implies a non-volatile component
-                sf = 1
+                sf = iscale.get_scaling_factor(
+                    self.vapor_phase.mass_transfer_term[t, x, "Vap", j], default=1, warning=True
+                )
             iscale.constraint_scaling_transform(v, sf)
 
         for (t, x), v in self.heat_transfer_eqn1.items():

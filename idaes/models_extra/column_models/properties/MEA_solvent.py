@@ -251,7 +251,7 @@ class N2OAnalogy:
 
 
 class PressureSatSolvent:
-    # Method for calculating saturation pressure ofsolvents
+    # Method for calculating saturation pressure of solvents
     @staticmethod
     def build_parameters(cobj):
         cobj.pressure_sat_comp_coeff_1 = Var(
