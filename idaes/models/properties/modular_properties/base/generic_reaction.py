@@ -192,7 +192,6 @@ class GenericReactionParameterData(ReactionParameterBlock):
         # The super.build tries to validate units, but they have not been set
         # and cannot be set until the config block is created by super.build
         super(ReactionParameterBlock, self).build()
-        self.default_scaling_factor = {}
 
         # Set base units of measurement
         self.get_metadata().add_default_units(self.config.base_units)
