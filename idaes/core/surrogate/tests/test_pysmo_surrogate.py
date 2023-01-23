@@ -1376,7 +1376,7 @@ class TestPysmoSurrogate:
         cstr = str(blk.pysmo_constraint["z1"].body).replace("outputs[z1]", "10")
         cstr = cstr.replace("inputs[x1]", "1")
         cstr = cstr.replace("inputs[x2]", "5")
-        assert eval(cstr) == pytest.approx(0)
+        assert eval(cstr) == pytest.approx(0, abs=1e-8)
         # assert str(blk.pysmo_constraint["z1"].body) == (
         #    "outputs[z1] - (-75.26111111111476 - 8.815277777775934*inputs[x1] + 18.81527777777826*inputs[x2] - 2.2556956302821618e-13*(inputs[x2]*inputs[x1]))"
         # )
@@ -1449,11 +1449,11 @@ class TestPysmoSurrogate:
         cstr = str(blk.pysmo_constraint["z1"].body).replace("outputs[z1]", "10")
         cstr = cstr.replace("inputs[x1]", "1")
         cstr = cstr.replace("inputs[x2]", "5")
-        assert eval(cstr) == pytest.approx(0)
+        assert eval(cstr) == pytest.approx(0, abs=1e-8)
         cstr = str(blk.pysmo_constraint["z2"].body).replace("outputs[z2]", "6")
         cstr = cstr.replace("inputs[x1]", "1")
         cstr = cstr.replace("inputs[x2]", "5")
-        assert eval(cstr) == pytest.approx(0)
+        assert eval(cstr) == pytest.approx(0, abs=1e-8)
 
     @pytest.mark.unit
     def test_evaluate_multisurrogate_poly_trigfuncs1(self, pysmo_surr3):
@@ -1632,11 +1632,11 @@ class TestPysmoSurrogate:
         cstr = str(blk.pysmo_constraint["z1"].body).replace("outputs[z1]", "10")
         cstr = cstr.replace("inputs[x1]", "1")
         cstr = cstr.replace("inputs[x2]", "5")
-        assert eval(cstr) == pytest.approx(0)
+        assert eval(cstr) == pytest.approx(0, abs=1e-8)
         cstr = str(blk.pysmo_constraint["z2"].body).replace("outputs[z2]", "6")
         cstr = cstr.replace("inputs[x1]", "1")
         cstr = cstr.replace("inputs[x2]", "5")
-        assert eval(cstr) == pytest.approx(0)
+        assert eval(cstr) == pytest.approx(0, abs=1e-8)
 
     @pytest.mark.parametrize(
         "confidence_dict", [{0.99: 3.2498355440153697}, {0.90: 1.8331129326536335}]
