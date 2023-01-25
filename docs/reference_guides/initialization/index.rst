@@ -11,7 +11,7 @@ Usage
     import MyInitializer
 
     initializer = MyInitializer(**configuration)
-    initializer.iniitalize(model, **arguments)
+    initializer.initialize(model, **arguments)
 
 Available Initializers
 ----------------------
