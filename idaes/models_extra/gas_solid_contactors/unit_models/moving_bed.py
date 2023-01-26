@@ -53,6 +53,7 @@ from pyomo.environ import (
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.dae import ContinuousSet
+from pyomo.core.base.block import _BlockData
 
 # Import IDAES cores
 from idaes.core import (
@@ -137,6 +138,40 @@ by the Pyomo TransformationFactory,
             description="Scheme to use for DAE transformation",
             doc="""Scheme to use when transforming domain. See Pyomo
 documentation for supported schemes,
+**default** - None.
+**Valid values:** {
+**None** - defaults to "BACKWARD" for finite difference transformation method,
+and to "LAGRANGE-RADAU" for collocation transformation method,
+**"BACKWARD"** - Use a finite difference transformation method,
+**"FORWARD""** - use a finite difference transformation method,
+**"LAGRANGE-RADAU""** - use a collocation transformation method}""",
+        ),
+    )
+    CONFIG.declare(
+        "gas_transformation_scheme",
+        ConfigValue(
+            default=None,
+            domain=In([None, "BACKWARD", "FORWARD"]),
+            description="Scheme to use for DAE transformation",
+            doc="""Scheme to use when transforming length domain of the gas
+phase. See Pyomo documentation for supported schemes,
+**default** - None.
+**Valid values:** {
+**None** - defaults to "BACKWARD" for finite difference transformation method,
+and to "LAGRANGE-RADAU" for collocation transformation method,
+**"BACKWARD"** - Use a finite difference transformation method,
+**"FORWARD""** - use a finite difference transformation method,
+**"LAGRANGE-RADAU""** - use a collocation transformation method}""",
+        ),
+    )
+    CONFIG.declare(
+        "solid_transformation_scheme",
+        ConfigValue(
+            default=None,
+            domain=In([None, "BACKWARD", "FORWARD"]),
+            description="Scheme to use for DAE transformation",
+            doc="""Scheme to use when transforming length domain of the solid
+phase. See Pyomo documentation for supported schemes,
 **default** - None.
 **Valid values:** {
 **None** - defaults to "BACKWARD" for finite difference transformation method,
@@ -375,6 +410,43 @@ see reaction package for documentation.}""",
                 "dae.collocation"
                 ".".format(self.name)
             )
+        elif (
+            self.config.transformation_method != "dae.finite_difference"
+            and (
+                self.config.gas_transformation_scheme is not None
+                or self.config.solid_transformation_scheme is not None
+            )
+        ):
+            raise ConfigurationError(
+                "Invalid configuration of {}. transformation_method must be"
+                " \"dae.finite_difference\" if gas_transformation_scheme or"
+                " solid_transformation_scheme are set".format(self.name)
+            )
+        elif (
+            (self.config.gas_transformation_scheme is None)
+            != (self.config.solid_transformation_scheme is None)
+        ):
+            raise ConfigurationError(
+                "Invalid configuration of {}. Either both"
+                " gas_transformation_scheme and solid_transformation_scheme"
+                " must be set, or neither must be set. Got {} and {}.".format(
+                    self.name,
+                    self.config.gas_transformation_scheme,
+                    self.config.solid_transformation_scheme,
+                )
+            )
+        elif (
+            (self.config.transformation_scheme is not None)
+            and (
+                (self.config.gas_transformation_scheme is not None)
+                or (self.config.solid_transformation_scheme is not None)
+            )
+        ):
+            raise ConfigurationError(
+                "Invalid configuration of {}. transformation_scheme cannot be"
+                " specified if gas_transformation_scheme and"
+                " solid_transformation_scheme are specified.".format(self.name)
+            )
 
         # Set flow directions for the control volume blocks
         # Gas flows from 0 to 1, solid flows from 1 to 0
@@ -390,7 +462,7 @@ see reaction package for documentation.}""",
                 " developers with this bug.".format(self.name)
             )
 
-        # Set arguments for gas sides if homoogeneous reaction block
+        # Set arguments for gas sides if homogeneous reaction block
         if self.config.gas_phase_config.reaction_package is not None:
             has_rate_reaction_gas_phase = True
         else:
@@ -433,12 +505,51 @@ see reaction package for documentation.}""",
         # Get units meta data from property packages
         units_meta_solid = solid_phase.property_package.get_metadata().get_derived_units
 
-        # Create a unit model length domain
-        self.length_domain = ContinuousSet(
-            bounds=(0.0, 1.0),
-            initialize=self.config.length_domain_set,
-            doc="Normalized length domain",
-        )
+        # In this branch, we assume that either both gas and solid
+        # transformation schemes are specified, or neither are specified.
+        if (
+            # solid and gas transformation schemes are specified
+            (self.config.solid_transformation_scheme is not None)
+            and (self.config.gas_transformation_scheme is not None)
+        ):
+            # Create length domain sets for gas and solid phases. This is
+            # necessary so we can apply different discretizations to the
+            # different phases.
+            self._gas_tr_scheme = self.config.gas_transformation_scheme
+            self._solid_tr_scheme = self.config.solid_transformation_scheme
+            self.solid_length_domain = ContinuousSet(
+                bounds=(0.0, 1.0),
+                initialize=self.config.length_domain_set,
+                doc="Solid phase normalized length domain",
+            )
+            self.gas_length_domain = ContinuousSet(
+                bounds=(0.0, 1.0),
+                initialize=self.config.length_domain_set,
+                doc="Gas phase normalized length domain",
+            )
+            # Create an instance attribute "length_domain" for convenience.
+            # Arbitrarily, use the solid phase length domain.
+            #
+            # We do not use Reference as it does not work for Sets.
+            super(_BlockData, self).__setattr__(
+                "length_domain", self.solid_length_domain
+            )
+        else:
+            # Neither gas nor solid transformation schemes are specified
+            self._gas_tr_scheme = self.config.transformation_scheme
+            self._solid_tr_scheme = self.config.transformation_scheme
+            self.length_domain = ContinuousSet(
+                bounds=(0.0, 1.0),
+                initialize=self.config.length_domain_set,
+                doc="Moving bed normalized length domain",
+            )
+            # Create instance attributes for gas and solid length domains
+            super(_BlockData, self).__setattr__(
+                "solid_length_domain", self.length_domain
+            )
+            super(_BlockData, self).__setattr__(
+                "gas_length_domain", self.length_domain
+            )
 
         self.bed_height = Var(
             domain=Reals,
@@ -453,7 +564,7 @@ see reaction package for documentation.}""",
 
         self.gas_phase = ControlVolume1DBlock(
             transformation_method=self.config.transformation_method,
-            transformation_scheme=self.config.transformation_scheme,
+            transformation_scheme=self._gas_tr_scheme,
             finite_elements=self.config.finite_elements,
             collocation_points=self.config.collocation_points,
             dynamic=self.config.dynamic,
@@ -466,7 +577,7 @@ see reaction package for documentation.}""",
         )
 
         self.gas_phase.add_geometry(
-            length_domain=self.length_domain,
+            length_domain=self.gas_length_domain,
             length_domain_set=self.config.length_domain_set,
             length_var=self.bed_height,
             flow_direction=set_direction_gas,
@@ -506,7 +617,7 @@ see reaction package for documentation.}""",
         # Set argument for heterogeneous reaction block
         self.solid_phase = ControlVolume1DBlock(
             transformation_method=self.config.transformation_method,
-            transformation_scheme=self.config.transformation_scheme,
+            transformation_scheme=self._solid_tr_scheme,
             finite_elements=self.config.finite_elements,
             collocation_points=self.config.collocation_points,
             dynamic=self.config.dynamic,
@@ -519,7 +630,7 @@ see reaction package for documentation.}""",
         )
 
         self.solid_phase.add_geometry(
-            length_domain=self.length_domain,
+            length_domain=self.solid_length_domain,
             length_domain_set=self.config.length_domain_set,
             length_var=self.bed_height,
             flow_direction=set_direction_solid,
@@ -602,12 +713,29 @@ see reaction package for documentation.}""",
 
         if self.config.transformation_method == "dae.finite_difference":
             self.discretizer = TransformationFactory(self.config.transformation_method)
-            self.discretizer.apply_to(
-                self,
-                wrt=self.length_domain,
-                nfe=self.config.finite_elements,
-                scheme=self.config.transformation_scheme,
-            )
+            if (
+                (self.config.gas_transformation_scheme is not None)
+                and (self.config.solid_transformation_scheme is not None)
+            ):
+                self.discretizer.apply_to(
+                    self,
+                    wrt=self.gas_length_domain,
+                    nfe=self.config.finite_elements,
+                    scheme=self.config.transformation_scheme,
+                )
+                self.discretizer.apply_to(
+                    self,
+                    wrt=self.solid_length_domain,
+                    nfe=self.config.finite_elements,
+                    scheme=self.config.transformation_scheme,
+                )
+            else:
+                self.discretizer.apply_to(
+                    self,
+                    wrt=self.length_domain,
+                    nfe=self.config.finite_elements,
+                    scheme=self.config.transformation_scheme,
+                )
         elif self.config.transformation_method == "dae.collocation":
             self.discretizer = TransformationFactory(self.config.transformation_method)
             self.discretizer.apply_to(
