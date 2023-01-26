@@ -26,10 +26,14 @@ from pyomo.environ import (
     Var,
     Constraint,
     TransformationFactory,
+    Reference,
     units as pyo_units,
 )
+from pyomo.core.expr.visitor import identify_variables
+from pyomo.dae.flatten import slice_component_along_sets
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.config import ConfigBlock
+from pyomo.common.collections import ComponentSet
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core import (
     FlowsheetBlock,
@@ -1131,7 +1135,6 @@ class TestIronOC_TransformationMethod(object):
 
 
 class TestBidirectionalSpatialDiscretization:
-
     @pytest.mark.unit
     def test_config_errors(self):
         m = ConcreteModel()
@@ -1162,10 +1165,10 @@ class TestBidirectionalSpatialDiscretization:
         ):
             m.fs.unit2.build()
 
-        #with pytest.raises(
+        # with pytest.raises(
         #    ConfigurationError,
         #    match="transformation_scheme cannot be specified",
-        #):
+        # ):
         #    m.fs.unit3 = MBR(
         #        transformation_scheme="BACKWARD",
         #        gas_transformation_scheme="BACKWARD",
@@ -1186,7 +1189,7 @@ class TestBidirectionalSpatialDiscretization:
         nxcp = 1
 
         time_set = [0.0, horizon]
-        ntfe = round(horizon/tfe_width)
+        ntfe = round(horizon / tfe_width)
 
         model = ConcreteModel()
         model.fs = FlowsheetBlock(
@@ -1200,7 +1203,7 @@ class TestBidirectionalSpatialDiscretization:
         model.fs.hetero_reactions = HeteroReactionParameterBlock(
             solid_property_package=model.fs.solid_properties,
             gas_property_package=model.fs.gas_properties,
-        )  
+        )
 
         model.fs.MB = MBR(
             finite_elements=nxfe,
@@ -1243,7 +1246,221 @@ class TestBidirectionalSpatialDiscretization:
             assert x in solid_length
             assert x in bed_length
 
+    @pytest.mark.unit
+    def test_var_indices(self):
+        horizon = 300.0
+        tfe_width = 100.0
+        ntcp = 3
 
-if __name__ == "__main__":
-    TestBidirectionalSpatialDiscretization().test_config_errors()
-    TestBidirectionalSpatialDiscretization().test_construct_dynamic()
+        nxfe = 3
+        nxcp = 1
+
+        time_set = [0.0, horizon]
+        ntfe = round(horizon / tfe_width)
+
+        model = ConcreteModel()
+        model.fs = FlowsheetBlock(
+            dynamic=True,
+            time_set=time_set,
+            time_units=pyo_units.s,
+        )
+
+        model.fs.gas_properties = GasPhaseParameterBlock()
+        model.fs.solid_properties = SolidPhaseParameterBlock()
+        model.fs.hetero_reactions = HeteroReactionParameterBlock(
+            solid_property_package=model.fs.solid_properties,
+            gas_property_package=model.fs.gas_properties,
+        )
+
+        model.fs.MB = MBR(
+            finite_elements=nxfe,
+            has_holdup=True,
+            length_domain_set=[],
+            transformation_method="dae.finite_difference",
+            collocation_points=nxcp,
+            gas_transformation_scheme="BACKWARD",
+            solid_transformation_scheme="FORWARD",
+            pressure_drop_type="ergun_correlation",
+            gas_phase_config={"property_package": model.fs.gas_properties},
+            solid_phase_config={
+                "property_package": model.fs.solid_properties,
+                "reaction_package": model.fs.hetero_reactions,
+            },
+        )
+
+        time = model.fs.time
+        discretizer = TransformationFactory("dae.collocation")
+        discretizer.apply_to(
+            model, wrt=time, nfe=ntfe, ncp=ntcp, scheme="LAGRANGE-RADAU"
+        )
+
+        gas_phase = model.fs.MB.gas_phase
+        solid_phase = model.fs.MB.solid_phase
+
+        gas_length = model.fs.MB.gas_phase.length_domain
+        solid_length = model.fs.MB.solid_phase.length_domain
+        bed_length = model.fs.MB.length_domain
+
+        gas_components = model.fs.gas_properties.component_list
+        solid_components = model.fs.solid_properties.component_list
+        gas_phases = model.fs.gas_properties.phase_list
+        solid_phases = model.fs.solid_properties.phase_list
+
+        gas_disc_eqs = [
+            gas_phase.material_flow_dx_disc_eq,
+            gas_phase.enthalpy_flow_dx_disc_eq,
+        ]
+        gas_flow_vars = [gas_phase._flow_terms, gas_phase._enthalpy_flow]
+
+        gas_disc_eqs = [
+            dict(
+                (idx, Reference(slice_))
+                for idx, slice_ in slice_component_along_sets(
+                    eq, (gas_length, solid_length)
+                )
+            )
+            for eq in gas_disc_eqs
+        ]
+        gas_flow_vars = [
+            dict(
+                (idx, Reference(slice_))
+                for idx, slice_ in slice_component_along_sets(
+                    var, (gas_length, solid_length)
+                )
+            )
+            for var in gas_flow_vars
+        ]
+
+        for eq_dict, var_dict in zip(gas_disc_eqs, gas_flow_vars):
+            # NOTE: I am relying on fact that equations and variables
+            # here have same non-space indices, and that they are in
+            # the same order.
+            for idx in eq_dict:
+                for x in gas_length:
+                    if x != gas_length.first():
+                        x_prev = gas_length.prev(x)
+                        eqdata = eq_dict[idx][x]
+                        vardata = var_dict[idx][x]
+                        vardata_prev = var_dict[idx][x_prev]
+                        var_set = ComponentSet(identify_variables(eqdata.expr))
+                        assert len(var_set) == 3
+                        assert vardata in var_set
+                        assert vardata_prev in var_set
+
+        solid_disc_eqs = [
+            solid_phase.material_flow_dx_disc_eq,
+            solid_phase.enthalpy_flow_dx_disc_eq,
+        ]
+        solid_flow_vars = [
+            solid_phase._flow_terms,
+            solid_phase._enthalpy_flow,
+        ]
+
+        solid_disc_eqs = [
+            dict(
+                (idx, Reference(slice_))
+                for idx, slice_ in slice_component_along_sets(
+                    eq, (gas_length, solid_length)
+                )
+            )
+            for eq in solid_disc_eqs
+        ]
+        solid_flow_vars = [
+            dict(
+                (idx, Reference(slice_))
+                for idx, slice_ in slice_component_along_sets(
+                    var, (gas_length, solid_length)
+                )
+            )
+            for var in solid_flow_vars
+        ]
+
+        gas_disc_eqs = [
+            gas_phase.material_flow_dx_disc_eq,
+            gas_phase.enthalpy_flow_dx_disc_eq,
+        ]
+        gas_flow_vars = [
+            gas_phase._flow_terms,
+            gas_phase._enthalpy_flow,
+        ]
+
+        gas_disc_eqs = [
+            dict(
+                (idx, Reference(slice_))
+                for idx, slice_ in slice_component_along_sets(
+                    eq, (gas_length, solid_length)
+                )
+            )
+            for eq in gas_disc_eqs
+        ]
+        gas_flow_vars = [
+            dict(
+                (idx, Reference(slice_))
+                for idx, slice_ in slice_component_along_sets(
+                    var, (gas_length, solid_length)
+                )
+            )
+            for var in gas_flow_vars
+        ]
+
+        #
+        # Test that discretization equations contain variables at the correct
+        # indices
+        #
+        for eq_dict, var_dict in zip(gas_disc_eqs, gas_flow_vars):
+            for idx in eq_dict:
+                for x in gas_length:
+                    if x != gas_length.first():
+                        x_prev = gas_length.prev(x)
+                        eqdata = eq_dict[idx][x]
+                        vardata = var_dict[idx][x]
+                        vardata_prev = var_dict[idx][x_prev]
+                        var_set = ComponentSet(identify_variables(eqdata.expr))
+                        assert len(var_set) == 3
+                        assert vardata in var_set
+                        assert vardata_prev in var_set
+
+        solid_disc_eqs = [
+            solid_phase.material_flow_dx_disc_eq,
+            solid_phase.enthalpy_flow_dx_disc_eq,
+        ]
+        solid_flow_vars = [
+            solid_phase._flow_terms,
+            solid_phase._enthalpy_flow,
+        ]
+
+        solid_disc_eqs = [
+            dict(
+                (idx, Reference(slice_))
+                for idx, slice_ in slice_component_along_sets(
+                    eq, (gas_length, solid_length)
+                )
+            )
+            for eq in solid_disc_eqs
+        ]
+        solid_flow_vars = [
+            dict(
+                (idx, Reference(slice_))
+                for idx, slice_ in slice_component_along_sets(
+                    var, (gas_length, solid_length)
+                )
+            )
+            for var in solid_flow_vars
+        ]
+
+        #
+        # Test that discretization equations contain variables at the correct
+        # indices
+        #
+        for eq_dict, var_dict in zip(solid_disc_eqs, solid_flow_vars):
+            for idx in eq_dict:
+                for x in solid_length:
+                    if x != solid_length.last():
+                        x_prev = solid_length.next(x)
+                        eqdata = eq_dict[idx][x]
+                        vardata = var_dict[idx][x]
+                        vardata_prev = var_dict[idx][x_prev]
+                        var_set = ComponentSet(identify_variables(eqdata.expr))
+                        assert len(var_set) == 3
+                        assert vardata in var_set
+                        assert vardata_prev in var_set
