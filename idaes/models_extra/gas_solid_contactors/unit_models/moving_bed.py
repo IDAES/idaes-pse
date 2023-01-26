@@ -410,21 +410,17 @@ see reaction package for documentation.}""",
                 "dae.collocation"
                 ".".format(self.name)
             )
-        elif (
-            self.config.transformation_method != "dae.finite_difference"
-            and (
-                self.config.gas_transformation_scheme is not None
-                or self.config.solid_transformation_scheme is not None
-            )
+        elif self.config.transformation_method != "dae.finite_difference" and (
+            self.config.gas_transformation_scheme is not None
+            or self.config.solid_transformation_scheme is not None
         ):
             raise ConfigurationError(
                 "Invalid configuration of {}. transformation_method must be"
-                " \"dae.finite_difference\" if gas_transformation_scheme or"
+                ' "dae.finite_difference" if gas_transformation_scheme or'
                 " solid_transformation_scheme are set".format(self.name)
             )
-        elif (
-            (self.config.gas_transformation_scheme is None)
-            != (self.config.solid_transformation_scheme is None)
+        elif (self.config.gas_transformation_scheme is None) != (
+            self.config.solid_transformation_scheme is None
         ):
             raise ConfigurationError(
                 "Invalid configuration of {}. Either both"
@@ -435,12 +431,9 @@ see reaction package for documentation.}""",
                     self.config.solid_transformation_scheme,
                 )
             )
-        elif (
-            (self.config.transformation_scheme is not None)
-            and (
-                (self.config.gas_transformation_scheme is not None)
-                or (self.config.solid_transformation_scheme is not None)
-            )
+        elif (self.config.transformation_scheme is not None) and (
+            (self.config.gas_transformation_scheme is not None)
+            or (self.config.solid_transformation_scheme is not None)
         ):
             raise ConfigurationError(
                 "Invalid configuration of {}. transformation_scheme cannot be"
@@ -547,9 +540,7 @@ see reaction package for documentation.}""",
             super(_BlockData, self).__setattr__(
                 "solid_length_domain", self.length_domain
             )
-            super(_BlockData, self).__setattr__(
-                "gas_length_domain", self.length_domain
-            )
+            super(_BlockData, self).__setattr__("gas_length_domain", self.length_domain)
 
         self.bed_height = Var(
             domain=Reals,
@@ -713,9 +704,8 @@ see reaction package for documentation.}""",
 
         if self.config.transformation_method == "dae.finite_difference":
             self.discretizer = TransformationFactory(self.config.transformation_method)
-            if (
-                (self.config.gas_transformation_scheme is not None)
-                and (self.config.solid_transformation_scheme is not None)
+            if (self.config.gas_transformation_scheme is not None) and (
+                self.config.solid_transformation_scheme is not None
             ):
                 self.discretizer.apply_to(
                     self,
