@@ -133,7 +133,9 @@ class SmoothVLE(object):
             p1, p2 = phase_pair
             pobj = b.params.get_phase(p)
             cname = pobj.config.equation_of_state_options["type"].name
-            cubic_second_derivative = getattr(b, "_" + cname + "_cubic_second_derivative")
+            cubic_second_derivative = getattr(
+                b, "_" + cname + "_cubic_second_derivative"
+            )
             return cubic_second_derivative[p1, p2, p] == gp[p] - gn[p]
 
         b.add_component(
@@ -298,9 +300,13 @@ class SmoothVLE(object):
         liqobj = b.params.get_phase(liquid_phase)
         cname_vap = vapobj.config.equation_of_state_options["type"].name
         cname_liq = liqobj.config.equation_of_state_options["type"].name
-        cubic_second_derivative_vap = getattr(b, "_" + cname_vap + "_cubic_second_derivative")
-        cubic_second_derivative_liq = getattr(b, "_" + cname_liq + "_cubic_second_derivative")
-        
+        cubic_second_derivative_vap = getattr(
+            b, "_" + cname_vap + "_cubic_second_derivative"
+        )
+        cubic_second_derivative_liq = getattr(
+            b, "_" + cname_liq + "_cubic_second_derivative"
+        )
+
         if value(cubic_second_derivative_liq[p1, p2, liquid_phase]) < 0:
             gp[liquid_phase].value = 0
             gn[liquid_phase].value = value(

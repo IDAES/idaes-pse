@@ -481,12 +481,10 @@ class Cubic(EoSBase):
                 _b, _, _ = calculate_cubic_coeffs(b, p1, p2, p3)
                 z = b.compress_fact_phase[p3]
                 return 6 * z + 2 * _b
-            
+
             b.add_component(
                 "_" + cname + "_cubic_second_derivative",
-                Expression(
-                    b.params._pe_pairs, b.phase_list, rule=second_derivative
-                ),
+                Expression(b.params._pe_pairs, b.phase_list, rule=second_derivative),
             )
             # b.cubic_second_derivative = Expression(
             #     b.params._pe_pairs, b.phase_list, rule=second_derivative
