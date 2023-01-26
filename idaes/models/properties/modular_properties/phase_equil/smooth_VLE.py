@@ -131,7 +131,10 @@ class SmoothVLE(object):
 
         def rule_cubic_root_complementarity(b, p):
             p1, p2 = phase_pair
-            return b.cubic_second_derivative[p1, p2, p] == gp[p] - gn[p]
+            pobj = b.params.get_phase(p)
+            cname = pobj.config.equation_of_state_options["type"].name
+            cubic_second_derivative = getattr(b, "_" + cname + "_cubic_second_derivative")
+            return cubic_second_derivative[p1, p2, p] == gp[p] - gn[p]
 
         b.add_component(
             "cubic_root_complementarity" + suffix,
@@ -291,13 +294,20 @@ class SmoothVLE(object):
             vapor_phase = phase_pair[1]
             liquid_phase = phase_pair[0]
 
-        if value(b.cubic_second_derivative[p1, p2, liquid_phase]) < 0:
+        vapobj = b.params.get_phase(vapor_phase)
+        liqobj = b.params.get_phase(liquid_phase)
+        cname_vap = vapobj.config.equation_of_state_options["type"].name
+        cname_liq = liqobj.config.equation_of_state_options["type"].name
+        cubic_second_derivative_vap = getattr(b, "_" + cname_vap + "_cubic_second_derivative")
+        cubic_second_derivative_liq = getattr(b, "_" + cname_liq + "_cubic_second_derivative")
+        
+        if value(cubic_second_derivative_liq[p1, p2, liquid_phase]) < 0:
             gp[liquid_phase].value = 0
             gn[liquid_phase].value = value(
-                -b.cubic_second_derivative[p1, p2, liquid_phase]
+                -cubic_second_derivative_liq[p1, p2, liquid_phase]
             )
-        if value(b.cubic_second_derivative[p1, p2, vapor_phase]) > 0:
+        if value(cubic_second_derivative_vap[p1, p2, vapor_phase]) > 0:
             gp[vapor_phase].value = value(
-                b.cubic_second_derivative[p1, p2, vapor_phase]
+                cubic_second_derivative_vap[p1, p2, vapor_phase]
             )
             gn[vapor_phase].value = 0
