@@ -721,13 +721,13 @@ see reaction package for documentation.}""",
                     self,
                     wrt=self.gas_length_domain,
                     nfe=self.config.finite_elements,
-                    scheme=self.config.transformation_scheme,
+                    scheme=self._gas_tr_scheme,
                 )
                 self.discretizer.apply_to(
                     self,
                     wrt=self.solid_length_domain,
                     nfe=self.config.finite_elements,
-                    scheme=self.config.transformation_scheme,
+                    scheme=self._solid_tr_scheme,
                 )
             else:
                 self.discretizer.apply_to(
