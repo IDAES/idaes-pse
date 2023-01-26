@@ -25,6 +25,8 @@ from pyomo.environ import (
     value,
     Var,
     Constraint,
+    TransformationFactory,
+    units as pyo_units,
 )
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.config import ConfigBlock
@@ -45,7 +47,10 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
-from idaes.core.util.exceptions import InitializationError
+from idaes.core.util.exceptions import (
+    InitializationError,
+    ConfigurationError,
+)
 
 # Import MBR unit model
 from idaes.models_extra.gas_solid_contactors.unit_models.moving_bed import MBR
@@ -89,7 +94,7 @@ def test_config():
     )
 
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 15
+    assert len(m.fs.unit.config) == 17
     assert isinstance(m.fs.unit.config.gas_phase_config, ConfigBlock)
     assert isinstance(m.fs.unit.config.solid_phase_config, ConfigBlock)
 
@@ -1123,3 +1128,122 @@ class TestIronOC_TransformationMethod(object):
 
         with pytest.raises(InitializationError):
             iron_oc.fs.unit.initialize()
+
+
+class TestBidirectionalSpatialDiscretization:
+
+    @pytest.mark.unit
+    def test_config_errors(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.gas_properties = GasPhaseParameterBlock()
+        m.fs.solid_properties = SolidPhaseParameterBlock()
+
+        with pytest.raises(
+            ConfigurationError,
+            match="transformation_method must be",
+        ):
+            m.fs.unit1 = MBR(
+                transformation_method="dae.collocation",
+                gas_transformation_scheme="BACKWARD",
+                gas_phase_config={"property_package": m.fs.gas_properties},
+                solid_phase_config={"property_package": m.fs.solid_properties},
+            )
+            m.fs.unit1.build()
+
+        m.fs.unit2 = MBR(
+            gas_transformation_scheme="BACKWARD",
+            gas_phase_config={"property_package": m.fs.gas_properties},
+            solid_phase_config={"property_package": m.fs.solid_properties},
+        )
+        with pytest.raises(
+            ConfigurationError,
+            match=r"Either both.*must be set",
+        ):
+            m.fs.unit2.build()
+
+        #with pytest.raises(
+        #    ConfigurationError,
+        #    match="transformation_scheme cannot be specified",
+        #):
+        #    m.fs.unit3 = MBR(
+        #        transformation_scheme="BACKWARD",
+        #        gas_transformation_scheme="BACKWARD",
+        #        solid_transformation_scheme="BACKWARD",
+        #        gas_phase_config={"property_package": m.fs.gas_properties},
+        #        solid_phase_config={"property_package": m.fs.solid_properties},
+        #    )
+        #    # For some reason, just constructing MBR here appears to call build...
+        #    #m.fs.unit3.build()
+
+    @pytest.mark.unit
+    def test_construct_dynamic(self):
+        horizon = 300.0
+        tfe_width = 100.0
+        ntcp = 3
+
+        nxfe = 3
+        nxcp = 1
+
+        time_set = [0.0, horizon]
+        ntfe = round(horizon/tfe_width)
+
+        model = ConcreteModel()
+        model.fs = FlowsheetBlock(
+            dynamic=True,
+            time_set=time_set,
+            time_units=pyo_units.s,
+        )
+
+        model.fs.gas_properties = GasPhaseParameterBlock()
+        model.fs.solid_properties = SolidPhaseParameterBlock()
+        model.fs.hetero_reactions = HeteroReactionParameterBlock(
+            solid_property_package=model.fs.solid_properties,
+            gas_property_package=model.fs.gas_properties,
+        )  
+
+        model.fs.MB = MBR(
+            finite_elements=nxfe,
+            has_holdup=True,
+            length_domain_set=[],
+            transformation_method="dae.finite_difference",
+            collocation_points=nxcp,
+            gas_transformation_scheme="BACKWARD",
+            solid_transformation_scheme="FORWARD",
+            pressure_drop_type="ergun_correlation",
+            gas_phase_config={"property_package": model.fs.gas_properties},
+            solid_phase_config={
+                "property_package": model.fs.solid_properties,
+                "reaction_package": model.fs.hetero_reactions,
+            },
+        )
+
+        time = model.fs.time
+        discretizer = TransformationFactory("dae.collocation")
+        discretizer.apply_to(
+            model, wrt=time, nfe=ntfe, ncp=ntcp, scheme="LAGRANGE-RADAU"
+        )
+
+        gas_phase = model.fs.MB.gas_phase
+        solid_phase = model.fs.MB.solid_phase
+
+        gas_length = model.fs.MB.gas_phase.length_domain
+        solid_length = model.fs.MB.solid_phase.length_domain
+        bed_length = model.fs.MB.length_domain
+
+        gas_components = model.fs.gas_properties.component_list
+        solid_components = model.fs.solid_properties.component_list
+        gas_phases = model.fs.gas_properties.phase_list
+        solid_phases = model.fs.solid_properties.phase_list
+
+        assert gas_length is not solid_length
+        assert len(gas_length) == len(solid_length)
+        assert len(gas_length) == len(bed_length)
+        for x in gas_length:
+            assert x in solid_length
+            assert x in bed_length
+
+
+if __name__ == "__main__":
+    TestBidirectionalSpatialDiscretization().test_config_errors()
+    TestBidirectionalSpatialDiscretization().test_construct_dynamic()
