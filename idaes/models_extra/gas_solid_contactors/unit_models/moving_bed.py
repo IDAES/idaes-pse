@@ -53,7 +53,6 @@ from pyomo.environ import (
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.dae import ContinuousSet
-from pyomo.core.base.block import _BlockData
 
 # Import IDAES cores
 from idaes.core import (
@@ -78,6 +77,7 @@ from idaes.core.util.exceptions import (
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants as constants
 from idaes.core.util.math import smooth_abs
+from idaes.core.util.misc import add_object_reference
 import idaes.logger as idaeslog
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
@@ -524,8 +524,8 @@ see reaction package for documentation.}""",
             # Arbitrarily, use the solid phase length domain.
             #
             # We do not use Reference as it does not work for Sets.
-            super(_BlockData, self).__setattr__(
-                "length_domain", self.solid_length_domain
+            add_object_reference(
+                self, "length_domain", self.solid_length_domain
             )
         else:
             # Neither gas nor solid transformation schemes are specified
@@ -537,10 +537,10 @@ see reaction package for documentation.}""",
                 doc="Moving bed normalized length domain",
             )
             # Create instance attributes for gas and solid length domains
-            super(_BlockData, self).__setattr__(
-                "solid_length_domain", self.length_domain
+            add_object_reference(
+                self, "solid_length_domain", self.length_domain
             )
-            super(_BlockData, self).__setattr__("gas_length_domain", self.length_domain)
+            add_object_reference(self, "gas_length_domain", self.length_domain)
 
         self.bed_height = Var(
             domain=Reals,
