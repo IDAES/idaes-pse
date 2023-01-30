@@ -47,13 +47,13 @@ _process_block_docstring = """
         rule (function): A rule function or None. Default rule calls build().
         concrete (bool): If True, make this a toplevel model. **Default** - False.
         ctype (class): Pyomo ctype of the block.  **Default** - pyomo.environ.Block
-        default (dict): Default ProcessBlockData config{}
+        {}
         initialize (dict): ProcessBlockData config for individual elements. Keys
-            are BlockData indexes and values are dictionaries described under the
-            "default" argument above.
+            are BlockData indexes and values are dictionaries with config arguments 
+            as keys.
         idx_map (function): Function to take the index of a BlockData element and
             return the index in the initialize dict from which to read arguments.
-            This can be provided to overide the default behavior of matching the
+            This can be provided to override the default behavior of matching the
             BlockData index exactly to the index in initialize.
     Returns:
         ({}) New instance
@@ -63,7 +63,7 @@ _config_block_keys_docstring = """
 
             ..
 
-            Keys
+            Config args
 {}
             ..
 """

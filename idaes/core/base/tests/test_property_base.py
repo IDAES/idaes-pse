@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 import types
 
-from pyomo.environ import Block, ConcreteModel, Constraint, Set, Var, units as pyunits
+from pyomo.environ import ConcreteModel, Constraint, Set, Var, units as pyunits
 from pyomo.common.config import ConfigBlock
 from pyomo.network import Port
 
@@ -515,14 +515,14 @@ class _Parameters(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties(
+        obj.define_custom_properties(
             {
                 "a": {"method": "a_method"},
                 "recursion1": {"method": "_recursion1"},
                 "recursion2": {"method": "_recursion2"},
                 "not_callable": {"method": "test_obj"},
                 "raise_exception": {"method": "_raise_exception"},
-                "not_supported": {"method": False},
+                "not_supported": {"supported": False},
                 "does_not_create_component": {"method": "_does_not_create_component"},
             }
         )

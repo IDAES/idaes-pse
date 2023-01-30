@@ -26,6 +26,7 @@ from idaes.core import (
     ReactionBlockDataBase,
     ReactionBlockBase,
     MaterialFlowBasis,
+    ElectrolytePropertySet,
 )
 from idaes.models.properties.modular_properties.base.utility import ConcentrationForm
 from idaes.core.util.exceptions import (
@@ -191,7 +192,6 @@ class GenericReactionParameterData(ReactionParameterBlock):
         # The super.build tries to validate units, but they have not been set
         # and cannot be set until the config block is created by super.build
         super(ReactionParameterBlock, self).build()
-        self.default_scaling_factor = {}
 
         # Set base units of measurement
         self.get_metadata().add_default_units(self.config.base_units)
@@ -471,6 +471,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
     @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
+        obj.define_property_set(ElectrolytePropertySet)
         obj.add_properties(
             {
                 "dh_rxn": {"method": "_dh_rxn"},

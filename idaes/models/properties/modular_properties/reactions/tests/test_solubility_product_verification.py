@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Tests for rate forms
+Verification tests for solubility product
 """
 
 import pytest
@@ -40,10 +40,8 @@ from idaes.core import (
     SolidPhase,
 )
 from idaes.core.solvers import get_solver
-import idaes.logger as idaeslog
-import idaes.core.util.scaling as iscale
 
-from idaes.models.properties.modular_properties.state_definitions import FTPx, FpcTP
+from idaes.models.properties.modular_properties.state_definitions import FpcTP
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
     solubility_product,

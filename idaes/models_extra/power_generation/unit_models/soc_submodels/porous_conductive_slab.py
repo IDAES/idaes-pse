@@ -51,7 +51,7 @@ Instances of ``Var`` that must be fixed:
 """
 __author__ = "John Eslick, Douglas Allan"
 
-from pyomo.common.config import ConfigValue, In, Bool, ListOf
+from pyomo.common.config import ConfigValue, Bool, ListOf
 from pyomo.dae import DerivativeVar
 import pyomo.environ as pyo
 

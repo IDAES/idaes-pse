@@ -245,8 +245,8 @@ conditions, and thus corresponding constraints  should be included,
                 "temperature": {"method": None, "units": "K"},
                 "pressure": {"method": None, "units": "Pa"},
                 "flow_mol_phase": {"method": None, "units": "mol/s"},
-                "density_mol": {"method": "_density_mol", "units": "mol/m^3"},
-                "pressure_sat": {"method": "_pressure_sat", "units": "Pa"},
+                "dens_mol": {"method": "_density_mol", "units": "mol/m^3"},
+                "pressure_sat_comp": {"method": "_pressure_sat_comp", "units": "Pa"},
                 "mole_frac_phase_comp": {
                     "method": "_mole_frac_phase",
                     "units": "no unit",
@@ -277,8 +277,12 @@ conditions, and thus corresponding constraints  should be included,
                 "temperature_dew": {"method": "_temperature_dew", "units": "K"},
                 "pressure_bubble": {"method": "_pressure_bubble", "units": "Pa"},
                 "pressure_dew": {"method": "_pressure_dew", "units": "Pa"},
-                "fug_vap": {"method": "_fug_vap", "units": "Pa"},
-                "fug_liq": {"method": "_fug_liq", "units": "Pa"},
+                "fug_phase_comp": {"method": "_fug_phase_comp", "units": "Pa"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
                 "ds_form": {"method": "_ds_form", "units": "J/mol.K"},
             }
         )
@@ -856,7 +860,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         self._teq_constraint = Constraint(rule=rule_teq)
 
         def rule_phase_eq(self, i):
-            return self.fug_vap[i] == self.fug_liq[i]
+            return self.fug_phase_comp["Vap", i] == self.fug_phase_comp["Liq", i]
 
         self.eq_phase_equilibrium = Constraint(
             self.params.component_list, rule=rule_phase_eq
@@ -1037,8 +1041,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
             self.params.component_list, rule=rule_activity_coeff
         )
 
-    def _pressure_sat(self):
-        self.pressure_sat = Var(
+    def _pressure_sat_comp(self):
+        self.pressure_sat_comp = Var(
             self.params.component_list,
             initialize=101325,
             doc="vapor pressure",
@@ -1057,7 +1061,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         def rule_P_vap(self, j):
             return (1 - self._reduced_temp[j]) * log(
-                self.pressure_sat[j] / self.params.pressure_critical[j]
+                self.pressure_sat_comp[j] / self.params.pressure_critical[j]
             ) == (
                 self.params.pressure_sat_coeff[j, "A"] * self._reduced_temp[j]
                 + self.params.pressure_sat_coeff[j, "B"] * self._reduced_temp[j] ** 1.5
@@ -1067,27 +1071,25 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         self.eq_P_vap = Constraint(self.params.component_list, rule=rule_P_vap)
 
-    def _fug_vap(self):
-        def rule_fug_vap(self, i):
-            return self.mole_frac_phase_comp["Vap", i] * self.pressure
-
-        self.fug_vap = Expression(self.params.component_list, rule=rule_fug_vap)
-
-    def _fug_liq(self):
-        def rule_fug_liq(self, i):
-            if self.config.parameters.config.activity_coeff_model == "Ideal":
-                return self.mole_frac_phase_comp["Liq", i] * self.pressure_sat[i]
+    def _fug_phase_comp(self):
+        def rule_fug_phase_comp(self, p, i):
+            if p == "Vap":
+                return self.mole_frac_phase_comp["Vap", i] * self.pressure
+            elif self.config.parameters.config.activity_coeff_model == "Ideal":
+                return self.mole_frac_phase_comp["Liq", i] * self.pressure_sat_comp[i]
             else:
                 return (
                     self.mole_frac_phase_comp["Liq", i]
                     * self.activity_coeff_comp[i]
-                    * self.pressure_sat[i]
+                    * self.pressure_sat_comp[i]
                 )
 
-        self.fug_liq = Expression(self.params.component_list, rule=rule_fug_liq)
+        self.fug_phase_comp = Expression(
+            self.params.phase_list, self.params.component_list, rule=rule_fug_phase_comp
+        )
 
     def _density_mol(self):
-        self.density_mol = Var(
+        self.dens_mol = Var(
             self.params.phase_list,
             doc="Molar density",
             units=pyunits.mol / pyunits.m**3,
@@ -1096,7 +1098,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         def density_mol_calculation(self, p):
             if p == "Vap":
                 return self.pressure == (
-                    self.density_mol[p] * const.gas_constant * self.temperature
+                    self.dens_mol[p] * const.gas_constant * self.temperature
                 )
             elif p == "Liq":  # TODO: Add a correlation to compute liq density
                 _log.warning(
@@ -1104,7 +1106,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                     "{}. Please provide value or expression to "
                     "compute the liquid density".format(self.name)
                 )
-                return self.density_mol[p] == 11.1e3  # mol/m3
+                return self.dens_mol[p] == 11.1e3  # mol/m3
 
         try:
             # Try to build constraint
@@ -1113,7 +1115,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
             )
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
-            self.del_component(self.density_mol)
+            self.del_component(self.dens_mol)
             self.del_component(self.density_mol_calculation)
             raise
 

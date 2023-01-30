@@ -13,7 +13,6 @@
 
 __author__ = "John Eslick, Douglas Allan"
 
-import copy
 import enum
 
 from pyomo.common.config import ConfigValue, In

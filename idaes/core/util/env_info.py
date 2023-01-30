@@ -15,7 +15,6 @@ __author__ = "John Eslick"
 
 import sys
 import platform
-import collections
 import pkg_resources
 import json
 

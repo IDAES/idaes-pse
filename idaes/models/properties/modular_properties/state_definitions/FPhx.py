@@ -43,7 +43,7 @@ def set_metadata(b):
     # Need to update metadata so that enth_mol is recorded as being part of the
     # state variables, and to ensure that getattr does not try to build it
     # using the default method.
-    b.get_metadata().properties["enth_mol"] = {"method": None}
+    b.get_metadata().properties["enth_mol"].set_method(None)
 
 
 def define_state(b):

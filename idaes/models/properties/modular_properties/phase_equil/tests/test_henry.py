@@ -15,7 +15,6 @@ Library of common forms for phase equilibrium constraints
 """
 from pyomo.environ import ConcreteModel, Expression, value, Var, units as pyunits
 
-from pyomo.util.check_units import assert_units_consistent
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )

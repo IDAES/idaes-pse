@@ -16,7 +16,6 @@ Utility functions.
 # stdlib
 from datetime import datetime, timedelta, timezone
 import importlib
-import inspect
 import json
 from json import JSONDecodeError
 import logging
