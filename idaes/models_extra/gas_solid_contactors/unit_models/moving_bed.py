@@ -157,11 +157,9 @@ and to "LAGRANGE-RADAU" for collocation transformation method,
 phase. See Pyomo documentation for supported schemes,
 **default** - None.
 **Valid values:** {
-**None** - defaults to "BACKWARD" for finite difference transformation method,
-and to "LAGRANGE-RADAU" for collocation transformation method,
+**None** - defaults to the value of the ``transformation_scheme`` option,
 **"BACKWARD"** - Use a finite difference transformation method,
-**"FORWARD""** - use a finite difference transformation method,
-**"LAGRANGE-RADAU""** - use a collocation transformation method}""",
+**"FORWARD""** - use a finite difference transformation method}""",
         ),
     )
     CONFIG.declare(
@@ -174,11 +172,9 @@ and to "LAGRANGE-RADAU" for collocation transformation method,
 phase. See Pyomo documentation for supported schemes,
 **default** - None.
 **Valid values:** {
-**None** - defaults to "BACKWARD" for finite difference transformation method,
-and to "LAGRANGE-RADAU" for collocation transformation method,
+**None** - defaults to the value of the ``transformation_scheme`` option,
 **"BACKWARD"** - Use a finite difference transformation method,
-**"FORWARD""** - use a finite difference transformation method,
-**"LAGRANGE-RADAU""** - use a collocation transformation method}""",
+**"FORWARD""** - use a finite difference transformation method}""",
         ),
     )
     CONFIG.declare(
