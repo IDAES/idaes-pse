@@ -1154,30 +1154,29 @@ class TestBidirectionalSpatialDiscretization:
             )
             m.fs.unit1.build()
 
-        m.fs.unit2 = MBR(
-            gas_transformation_scheme="BACKWARD",
-            gas_phase_config={"property_package": m.fs.gas_properties},
-            solid_phase_config={"property_package": m.fs.solid_properties},
-        )
         with pytest.raises(
             ConfigurationError,
             match=r"Either both.*must be set",
         ):
+            m.fs.unit2 = MBR(
+                gas_transformation_scheme="BACKWARD",
+                gas_phase_config={"property_package": m.fs.gas_properties},
+                solid_phase_config={"property_package": m.fs.solid_properties},
+            )
             m.fs.unit2.build()
 
-        # with pytest.raises(
-        #    ConfigurationError,
-        #    match="transformation_scheme cannot be specified",
-        # ):
-        #    m.fs.unit3 = MBR(
-        #        transformation_scheme="BACKWARD",
-        #        gas_transformation_scheme="BACKWARD",
-        #        solid_transformation_scheme="BACKWARD",
-        #        gas_phase_config={"property_package": m.fs.gas_properties},
-        #        solid_phase_config={"property_package": m.fs.solid_properties},
-        #    )
-        #    # For some reason, just constructing MBR here appears to call build...
-        #    #m.fs.unit3.build()
+        with pytest.raises(
+           ConfigurationError,
+           match="transformation_scheme cannot be specified",
+        ):
+            m.fs.unit3 = MBR(
+                transformation_scheme="BACKWARD",
+                gas_transformation_scheme="BACKWARD",
+                solid_transformation_scheme="BACKWARD",
+                gas_phase_config={"property_package": m.fs.gas_properties},
+                solid_phase_config={"property_package": m.fs.solid_properties},
+            )
+            m.fs.unit3.build()
 
     @pytest.mark.unit
     def test_construct_dynamic(self):
