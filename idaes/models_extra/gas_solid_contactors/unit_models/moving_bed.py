@@ -524,9 +524,7 @@ see reaction package for documentation.}""",
             # Arbitrarily, use the solid phase length domain.
             #
             # We do not use Reference as it does not work for Sets.
-            add_object_reference(
-                self, "length_domain", self.solid_length_domain
-            )
+            add_object_reference(self, "length_domain", self.solid_length_domain)
         else:
             # Neither gas nor solid transformation schemes are specified
             self._gas_tr_scheme = self.config.transformation_scheme
@@ -537,9 +535,7 @@ see reaction package for documentation.}""",
                 doc="Moving bed normalized length domain",
             )
             # Create instance attributes for gas and solid length domains
-            add_object_reference(
-                self, "solid_length_domain", self.length_domain
-            )
+            add_object_reference(self, "solid_length_domain", self.length_domain)
             add_object_reference(self, "gas_length_domain", self.length_domain)
 
         self.bed_height = Var(

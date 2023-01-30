@@ -1166,8 +1166,8 @@ class TestBidirectionalSpatialDiscretization:
             m.fs.unit2.build()
 
         with pytest.raises(
-           ConfigurationError,
-           match="transformation_scheme cannot be specified",
+            ConfigurationError,
+            match="transformation_scheme cannot be specified",
         ):
             m.fs.unit3 = MBR(
                 transformation_scheme="BACKWARD",
