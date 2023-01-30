@@ -122,7 +122,7 @@ provided (default = [0.0, 1.0])""",
         ConfigValue(
             default="dae.finite_difference",
             description="Method to use for DAE transformation",
-            doc="""Method to use to transform domain. Must be a method recognised
+            doc="""Method to use to transform domain. Must be a method recognized
 by the Pyomo TransformationFactory,
 **default** - "dae.finite_difference".
 **Valid values:** {
@@ -675,7 +675,7 @@ see reaction package for documentation.}""",
         self.add_outlet_port(name="solid_outlet", block=self.solid_phase)
 
         # =========================================================================
-        """ Add performace equation method"""
+        """ Add performance equation method"""
         self._apply_transformation()
         self._make_performance()
 
@@ -828,7 +828,7 @@ see reaction package for documentation.}""",
         # Add performance equations
 
         # ---------------------------------------------------------------------
-        # Geometry contraints
+        # Geometry constraints
 
         # Bed area
         @self.Constraint(doc="Bed area")
@@ -851,7 +851,7 @@ see reaction package for documentation.}""",
             return b.solid_phase.area[t, x] == b.bed_area * (1 - b.bed_voidage)
 
         # ---------------------------------------------------------------------
-        # Hydrodynamic contraints
+        # Hydrodynamic constraints
 
         # Gas superficial velocity
         @self.Constraint(
@@ -975,7 +975,7 @@ see reaction package for documentation.}""",
                 " developers with this bug.".format(self.name)
             )
         # ---------------------------------------------------------------------
-        # Reaction contraints
+        # Reaction constraints
 
         # Build homogeneous reaction constraints
         if gas_phase.reaction_package is not None:
@@ -992,7 +992,7 @@ see reaction package for documentation.}""",
                     * b.gas_phase.area[t, x]
                 )
 
-        # Build hetereogeneous reaction constraints
+        # Build heterogeneous reaction constraints
         if solid_phase.reaction_package is not None:
             # Solid side rate reaction extent
             @self.Constraint(
@@ -1211,7 +1211,7 @@ see reaction package for documentation.}""",
         solid_phase = blk.config.solid_phase_config
 
         # Keep all unit model geometry constraints, derivative_var constraints,
-        # and property block constraints active. Additionaly, in control
+        # and property block constraints active. Additionally, in control
         # volumes - keep conservation linking constraints and
         # holdup calculation (for dynamic flowsheets) constraints active
 
