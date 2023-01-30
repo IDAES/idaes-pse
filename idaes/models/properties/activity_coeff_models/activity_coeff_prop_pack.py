@@ -1835,11 +1835,15 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         phases = self.params.config.valid_phase
         is_two_phase = len(phases) == 2  # possibly {Liq}, {Vap}, or {Liq, Vap}
-        sf_flow = iscale.get_scaling_factor(
-            self.flow_mol_phase_comp, default=1, warning=True
-        )
+        if self.is_property_constructed("flow_mol_phase_comp"):
+            sf_flow = iscale.get_scaling_factor(
+                self.flow_mol_phase_comp, default=1, warning=True
+            )
+        else:
+            sf_flow = iscale.get_scaling_factor(
+                self.flow_mol_phase, default=1, warning=True
+            )
         sf_T = iscale.get_scaling_factor(self.temperature, default=1, warning=True)
-        sf_P = iscale.get_scaling_factor(self.pressure, default=1, warning=True)
 
         if self.is_property_constructed("_temperature_equilibrium"):
             iscale.set_scaling_factor(self._temperature_equilibrium, sf_T)
