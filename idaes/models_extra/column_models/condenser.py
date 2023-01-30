@@ -42,7 +42,6 @@ from idaes.core import (
     ControlVolume0DBlock,
     declare_process_block_class,
     EnergyBalanceType,
-    MomentumBalanceType,
     MaterialBalanceType,
     UnitModelBlockData,
     useDefault,

@@ -17,13 +17,10 @@ Author: Andrew Lee
 """
 import pytest
 from sys import modules
-import os
 
 from pyomo.environ import (
     ConcreteModel,
     Expression,
-    ExternalFunction,
-    Param,
     log,
     sqrt,
     value,
@@ -39,7 +36,6 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 )
 from idaes.core.util.exceptions import PropertyNotSupportedError, ConfigurationError
 from idaes.core.util.constants import Constants as const
-from idaes import bin_directory
 
 
 # Dummy method for property method calls

@@ -25,13 +25,16 @@ The expressions can be evaluated with variable scaling factors in place of
 variables to calculate additional scaling factors.
 """
 
-__author__ = "John Eslick, Tim Bartholomew, Robert Parker"
+__author__ = "John Eslick, Tim Bartholomew, Robert Parker, Andrew Lee"
 
-from math import log10
+import math
 import scipy.sparse.linalg as spla
 import scipy.linalg as la
+import sys
 
 import pyomo.environ as pyo
+from pyomo.core.base.var import _VarData
+from pyomo.core.base.param import _ParamData
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.network import Arc
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
@@ -41,6 +44,12 @@ from pyomo.common.collections import ComponentMap, ComponentSet
 from pyomo.dae import DerivativeVar
 from pyomo.dae.flatten import slice_component_along_sets
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from pyomo.core.expr.visitor import ExpressionValueVisitor
+from pyomo.core.expr import current as EXPR
+from pyomo.core.expr.numvalue import native_types, pyomo_constant_types
+from pyomo.core.expr.template_expr import IndexTemplate
+from pyomo.core.base.units_container import _PyomoUnit
+
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -265,22 +274,30 @@ def get_scaling_factor(c, default=None, warning=False, exception=False, hint=Non
     try:
         sf = c.parent_block().scaling_factor[c]
     except (AttributeError, KeyError):
-        if hint is None:
-            h = ""
+        if not isinstance(c, (pyo.Param, _ParamData)):
+            if hint is None:
+                h = ""
+            else:
+                h = f", {hint}"
+            if warning:
+                if hasattr(c, "is_component_type") and c.is_component_type():
+                    _log.warning(f"Missing scaling factor for {c}{h}")
+                else:
+                    _log.warning(f"Trying to get scaling factor for unnamed expr {h}")
+            if exception and default is None:
+                if hasattr(c, "is_component_type") and c.is_component_type():
+                    _log.error(f"Missing scaling factor for {c}{h}")
+                else:
+                    _log.error(f"Trying to get scaling factor for unnamed expr {h}")
+                raise
+            sf = default
         else:
-            h = f", {hint}"
-        if warning:
-            if hasattr(c, "is_component_type") and c.is_component_type():
-                _log.warning(f"Missing scaling factor for {c}{h}")
+            # Params can just use current value (as long it is not 0)
+            val = pyo.value(c)
+            if not val == 0:
+                sf = abs(1 / pyo.value(c))
             else:
-                _log.warning(f"Trying to get scaling factor for unnamed expr {h}")
-        if exception and default is None:
-            if hasattr(c, "is_component_type") and c.is_component_type():
-                _log.error(f"Missing scaling factor for {c}{h}")
-            else:
-                _log.error(f"Trying to get scaling factor for unnamed expr {h}")
-            raise
-        sf = default
+                sf = 1
     return sf
 
 
@@ -366,7 +383,7 @@ def populate_default_scaling_factors(c):
             else:
                 v = f[0]
 
-            sf = 1 / (10 ** round(log10(pyo.value(v))))
+            sf = 1 / (10 ** round(math.log10(pyo.value(v))))
 
             c.set_default_scaling(p, sf)
 
@@ -488,6 +505,22 @@ def unscaled_variables_generator(blk, descend_into=True, include_fixed=False):
             yield v
 
 
+def list_unscaled_variables(
+    blk: pyo.Block, descend_into: bool = True, include_fixed: bool = False
+):
+    """
+    Return a list of variables which do not have a scaling factor assigned
+    Args:
+        blk: block to check for unscaled variables
+        descend_into: bool indicating whether to check variables in sub-blocks
+        include_fixed: bool indicating whether to include fixed Vars in list
+
+    Returns:
+        list of unscaled variable data objects
+    """
+    return [c for c in unscaled_variables_generator(blk, descend_into, include_fixed)]
+
+
 def unscaled_constraints_generator(blk, descend_into=True):
     """Generator for unscaled constraints
 
@@ -505,6 +538,19 @@ def unscaled_constraints_generator(blk, descend_into=True):
             and get_constraint_transform_applied_scaling_factor(c) is None
         ):
             yield c
+
+
+def list_unscaled_constraints(blk: pyo.Block, descend_into: bool = True):
+    """
+    Return a list of constraints which do not have a scaling factor assigned
+    Args:
+        blk: block to check for unscaled constraints
+        descend_into: bool indicating whether to check constraints in sub-blocks
+
+    Returns:
+        list of unscaled constraint data objects
+    """
+    return [c for c in unscaled_constraints_generator(blk, descend_into)]
 
 
 def constraints_with_scale_factor_generator(blk, descend_into=True):
@@ -532,7 +578,7 @@ def badly_scaled_var_generator(
     their current scale factors and values. For each potentially poorly scaled
     variable it returns the var and its current scaled value.
 
-    Note that while this method is a reasonable heuristic for nonnegative
+    Note that while this method is a reasonable heuristic for non-negative
     variables like (absolute) temperature and pressure, molar flows, etc., it
     can be misleading for variables like enthalpies and fluxes.
 
@@ -560,6 +606,43 @@ def badly_scaled_var_generator(
             continue
         elif sv < small:
             yield v, sv
+
+
+def list_badly_scaled_variables(
+    blk,
+    large: float = 1e4,
+    small: float = 1e-3,
+    zero: float = 1e-10,
+    descend_into: bool = True,
+    include_fixed: bool = False,
+):
+    """Return a list of variables with poor scaling based on
+    their current scale factors and values. For each potentially poorly scaled
+    variable it returns the var and its current scaled value.
+
+    Note that while this method is a reasonable heuristic for non-negative
+    variables like (absolute) temperature and pressure, molar flows, etc., it
+    can be misleading for variables like enthalpies and fluxes.
+
+    Args:
+        blk: pyomo block
+        large: Magnitude that is considered to be too large
+        small: Magnitude that is considered to be too small
+        zero: Magnitude that is considered to be zero, variables with a value of
+            zero are okay, and not reported.
+        descend_into: bool indicating whether to check constraints in sub-blocks
+        include_fixed: bool indicating whether to include fixed Vars in list
+
+
+    Returns:
+        list of tuples containing (variable data object, current absolute value of scaled value)
+    """
+    return [
+        c
+        for c in badly_scaled_var_generator(
+            blk, large, small, zero, descend_into, include_fixed
+        )
+    ]
 
 
 def constraint_autoscale_large_jac(
@@ -1041,3 +1124,582 @@ class FlattenedScalingAssignment(object):
             nominal_state = 1 / scaling_factor[state_data]
             nominal_deriv = nominal_state / nominal_wrt
             scaling_factor[dv] = 1 / nominal_deriv
+
+
+# New functions
+def set_scaling_from_default(
+    component,
+    missing: float = None,
+    overwrite: bool = False,
+    descend_into: bool = True,
+    components_to_scale: "List of Pyomo component types" = [pyo.Var],
+):
+    """
+    Set scaling factor(s) for given component from default scaling factor dictionary associated with the parent model.
+
+    This function accepts any type of Pyomo component as an input, and will attempt to apply scaling factors to all
+    attached types of components listed in 'components_to_scale' argument. A warning will be logged for any
+    component which does not have a default scaling factor assigned.
+
+    Args:
+        component: Pyomo component to apply scaling factors to.
+        missing: value to use if a component does not have a default scaling factor assigned (default=None).
+        overwrite: bool indicating whether to overwrite existing scaling factors (default=False).
+        descend_into: bool indicating whether to descend into child Blocks if component is a Block (default=True).
+        components_to_scale: list of Pyomo component types to apply scaling factors to if component is a Block (default=[Var]).
+
+    Returns:
+        None
+
+    """
+    if isinstance(component, pyo.Block):
+        for c in component.component_data_objects(
+            components_to_scale, descend_into=descend_into
+        ):
+            set_scaling_from_default(c, missing=missing, overwrite=overwrite)
+    elif component.is_indexed():
+        for k in component.values():
+            set_scaling_from_default(k, missing=missing, overwrite=overwrite)
+    else:
+        if not overwrite:
+            # If there is already a scaling factor, we can end here
+            sf = get_scaling_factor(
+                component, default=None, warning=False, exception=False
+            )
+            if sf is not None:
+                return
+
+        parent = component.parent_block()
+        dsf = parent.get_default_scaling(
+            component.parent_component().local_name, index=component.index()
+        )
+
+        if dsf is not None:
+            set_scaling_factor(component, dsf, overwrite=overwrite)
+        elif missing is not None:
+            _log.warn(
+                f"No default scaling factor found for {component.name}, assigning value of {missing} instead."
+            )
+            set_scaling_factor(component, missing, overwrite=overwrite)
+        else:
+            _log.warn(
+                f"No default scaling factor found for {component.name}, no scaling factor assigned."
+            )
+
+
+def set_variable_scaling_from_current_value(
+    component, descend_into: bool = True, overwrite: bool = False
+):
+    """
+    Set scaling factor for variables based on current value. Component argument can be either a Pyomo Var or Block.
+    In case of a Block, this functon will attempt to scale all variables in the block using their current value,
+
+    Args:
+        component: component to scale
+        overwrite: bool indicating whether to overwrite existing scaling factors (default=False).
+        descend_into: bool indicating whether to descend into child Blocks if component is a Block (default=True).
+
+    Returns:
+        None
+
+    """
+    if isinstance(component, pyo.Block):
+        for c in component.component_data_objects(pyo.Var, descend_into=descend_into):
+            set_variable_scaling_from_current_value(c, overwrite=overwrite)
+    elif component.is_indexed():
+        for k in component.values():
+            set_variable_scaling_from_current_value(k, overwrite=overwrite)
+    elif not isinstance(component, _VarData):
+        raise TypeError(
+            f"Invalid component type {component.name} (type:{type(component)}). "
+            "component argument to set_variable_scaling_from_current_value must be "
+            "either a Pyomo Var or Block."
+        )
+    else:
+        if not overwrite:
+            # If there is already a scaling factor, we can end here
+            sf = get_scaling_factor(
+                component, default=None, warning=False, exception=False
+            )
+            if sf is not None:
+                return
+
+        try:
+            val = pyo.value(component)
+
+            if val == 0:
+                _log.warning(
+                    f"Component {component.name} currently has a value of 0; no scaling factor assigned."
+                )
+            else:
+                set_scaling_factor(component, 1 / val, overwrite=overwrite)
+        except ValueError:
+            _log.warning(
+                f"Component {component.name} does not have a current value; no scaling factor assigned."
+            )
+
+
+class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
+    """
+    Expression walker for collecting scaling factors in an expression and determining the
+    expected value of the expression using the scaling factors as nominal inputs.
+
+    Returns a list of expected values for each additive term in the expression.
+
+    In order to properly assess the expected value of terms within functions, the sign
+    of each term is maintained throughout thus returned values may be negative. Functions
+    using this walker should handle these appropriately.
+    """
+
+    def __init__(self, warning: bool = True):
+        """
+        Visitor class used to determine nominal values of all terms in an expression based on
+        scaling factors assigned to the associated variables. Do not use this class directly.
+
+        Args:
+            warning: bool indicating whether to log a warning when a
+                missing scaling factors is encountered (default=True)
+
+        Notes
+        -----
+        This class inherits from the :class:`StreamBasedExpressionVisitor` to implement
+        a walker that returns the nominal value corresponding to all additive terms in an
+        expression.
+        There are class attributes (dicts) that map the expression node type to the
+        particular method that should be called to return the nominal value of the node based
+        on the nominal value of its child arguments. This map is used in exitNode.
+        """
+        super().__init__()
+
+        self.warning = warning
+
+    def _get_magnitude_base_type(self, node):
+        # Get scaling factor for node
+        sf = get_scaling_factor(node, default=1, warning=self.warning)
+
+        # Try to determine expected sign of node
+        if isinstance(node, pyo.Var):
+            ub = node.ub
+            lb = node.lb
+            domain = node.domain
+
+            # To avoid NoneType errors, assign dummy values in place of None
+            if ub is None:
+                # No upper bound, take a positive value
+                ub = 1000
+            if lb is None:
+                # No lower bound, take a negative value
+                lb = -1000
+
+            if lb >= 0 or domain in [
+                pyo.NonNegativeReals,
+                pyo.PositiveReals,
+                pyo.PositiveIntegers,
+                pyo.NonNegativeIntegers,
+                pyo.Boolean,
+                pyo.Binary,
+            ]:
+                # Strictly positive
+                sign = 1
+            elif ub <= 0 or domain in [
+                pyo.NegativeReals,
+                pyo.NonPositiveReals,
+                pyo.NegativeIntegers,
+                pyo.NonPositiveIntegers,
+            ]:
+                # Strictly negative
+                sign = -1
+            else:
+                # Unbounded, see if there is a current value
+                try:
+                    value = pyo.value(node)
+                except ValueError:
+                    value = None
+
+                if value is not None and value < 0:
+                    # Assigned negative value, assume value will remain negative
+                    sign = -1
+                else:
+                    # Either a positive value or no value, assume positive
+                    sign = 1
+        elif isinstance(node, pyo.Param):
+            domain = node.domain
+
+            if domain in [
+                pyo.NonNegativeReals,
+                pyo.PositiveReals,
+                pyo.PositiveIntegers,
+                pyo.NonNegativeIntegers,
+                pyo.Boolean,
+                pyo.Binary,
+            ]:
+                # Strictly positive
+                sign = 1
+            elif domain in [
+                pyo.NegativeReals,
+                pyo.NonPositiveReals,
+                pyo.NegativeIntegers,
+                pyo.NonPositiveIntegers,
+            ]:
+                # Strictly negative
+                sign = -1
+            else:
+                # Unbounded, see if there is a current value
+                try:
+                    value = pyo.value(node)
+                except ValueError:
+                    value = None
+
+                if value is not None and value < 0:
+                    # Assigned negative value, assume value will remain negative
+                    sign = -1
+                else:
+                    # Either a positive value or no value, assume positive
+                    sign = 1
+        else:
+            # No ideal, assume positive
+            sign = 1
+
+        try:
+            return [sign / sf]
+        except ZeroDivisionError:
+            raise ValueError(
+                f"Found component {node.name} with scaling factor of 0. "
+                "Scaling factors should not be set to 0 as this results in "
+                "numerical failures."
+            )
+
+    def _get_nominal_value_for_sum_subexpression(self, child_nominal_values):
+        return sum(i for i in child_nominal_values)
+
+    def _get_nominal_value_for_sum(self, node, child_nominal_values):
+        # For sums, collect all child values into a list
+        sf = []
+        for i in child_nominal_values:
+            for j in i:
+                sf.append(j)
+        return sf
+
+    def _get_nominal_value_for_product(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 2
+
+        mag = []
+        for i in child_nominal_values[0]:
+            for j in child_nominal_values[1]:
+                mag.append(i * j)
+        return mag
+
+    def _get_nominal_value_for_division(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 2
+
+        numerator = self._get_nominal_value_for_sum_subexpression(
+            child_nominal_values[0]
+        )
+        denominator = self._get_nominal_value_for_sum_subexpression(
+            child_nominal_values[1]
+        )
+        if denominator == 0:
+            # Assign a nominal value of 1 so that we can continue
+            denominator = 1
+            # Log a warning for the user
+            _log.debug(
+                f"Nominal value of 0 found in denominator of division expression. "
+                "Assigning a value of 1. You should check you scaling factors and models to "
+                "ensure there are no values of 0 that can appear in these functions."
+            )
+        return [numerator / denominator]
+
+    def _get_nominal_value_for_power(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 2
+
+        # Use the absolute value of the base term to avoid possible complex numbers
+        base = abs(
+            self._get_nominal_value_for_sum_subexpression(child_nominal_values[0])
+        )
+        exponent = self._get_nominal_value_for_sum_subexpression(
+            child_nominal_values[1]
+        )
+
+        return [base**exponent]
+
+    def _get_nominal_value_single_child(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 1
+        return child_nominal_values[0]
+
+    def _get_nominal_value_abs(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 1
+        return [abs(i) for i in child_nominal_values[0]]
+
+    def _get_nominal_value_negation(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 1
+        return [-i for i in child_nominal_values[0]]
+
+    def _get_nominal_value_for_unary_function(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 1
+        func_name = node.getname()
+        # TODO: Some of these need the absolute value of the nominal value (e.g. sqrt)
+        func_nominal = self._get_nominal_value_for_sum_subexpression(
+            child_nominal_values[0]
+        )
+        func = getattr(math, func_name)
+        try:
+            return [func(func_nominal)]
+        except ValueError:
+            raise ValueError(
+                f"Evaluation error occurred when getting nominal value in {func_name} "
+                f"expression with input {func_nominal}. You should check you scaling factors "
+                f"and model to address any numerical issues or scale this constraint manually."
+            )
+
+    def _get_nominal_value_expr_if(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 3
+        return child_nominal_values[1] + child_nominal_values[2]
+
+    def _get_nominal_value_external_function(self, node, child_nominal_values):
+        # First, need to get expected magnitudes of input terms, which may be sub-expressions
+        input_mag = [
+            self._get_nominal_value_for_sum_subexpression(i)
+            for i in child_nominal_values
+        ]
+
+        # Next, create a copy of the external function with expected magnitudes as inputs
+        newfunc = node.create_node_with_local_data(input_mag)
+
+        # Evaluate new function and return the absolute value
+        return [pyo.value(newfunc)]
+
+    node_type_method_map = {
+        EXPR.EqualityExpression: _get_nominal_value_for_sum,
+        EXPR.InequalityExpression: _get_nominal_value_for_sum,
+        EXPR.RangedExpression: _get_nominal_value_for_sum,
+        EXPR.SumExpression: _get_nominal_value_for_sum,
+        EXPR.NPV_SumExpression: _get_nominal_value_for_sum,
+        EXPR.ProductExpression: _get_nominal_value_for_product,
+        EXPR.MonomialTermExpression: _get_nominal_value_for_product,
+        EXPR.NPV_ProductExpression: _get_nominal_value_for_product,
+        EXPR.DivisionExpression: _get_nominal_value_for_division,
+        EXPR.NPV_DivisionExpression: _get_nominal_value_for_division,
+        EXPR.PowExpression: _get_nominal_value_for_power,
+        EXPR.NPV_PowExpression: _get_nominal_value_for_power,
+        EXPR.NegationExpression: _get_nominal_value_negation,
+        EXPR.NPV_NegationExpression: _get_nominal_value_negation,
+        EXPR.AbsExpression: _get_nominal_value_abs,
+        EXPR.NPV_AbsExpression: _get_nominal_value_abs,
+        EXPR.UnaryFunctionExpression: _get_nominal_value_for_unary_function,
+        EXPR.NPV_UnaryFunctionExpression: _get_nominal_value_for_unary_function,
+        EXPR.Expr_ifExpression: _get_nominal_value_expr_if,
+        EXPR.ExternalFunctionExpression: _get_nominal_value_external_function,
+        EXPR.NPV_ExternalFunctionExpression: _get_nominal_value_external_function,
+        EXPR.LinearExpression: _get_nominal_value_for_sum,
+    }
+
+    def exitNode(self, node, data):
+        """Callback for :class:`pyomo.core.current.StreamBasedExpressionVisitor`. This
+        method is called when moving back up the tree in a depth first search."""
+
+        # first check if the node is a leaf
+        nodetype = type(node)
+
+        if nodetype in native_types or nodetype in pyomo_constant_types:
+            return [node]
+
+        node_func = self.node_type_method_map.get(nodetype, None)
+        if node_func is not None:
+            return node_func(self, node, data)
+
+        elif not node.is_expression_type():
+            # this is a leaf, but not a native type
+            if nodetype is _PyomoUnit:
+                return [1]
+            else:
+                return self._get_magnitude_base_type(node)
+                # might want to add other common types here
+
+        # not a leaf - check if it is a named expression
+        if (
+            hasattr(node, "is_named_expression_type")
+            and node.is_named_expression_type()
+        ):
+            return self._get_nominal_value_single_child(node, data)
+
+        raise TypeError(
+            f"An unhandled expression node type: {str(nodetype)} was encountered while "
+            f"retrieving the scaling factor of expression {str(node)}"
+        )
+
+
+def set_constraint_scaling_max_magnitude(
+    component, warning: bool = True, overwrite: bool = False, descend_into: bool = True
+):
+    """
+    Set scaling factors for constraints using maximum expected magnitude of additive terms in expression.
+    Scaling factor for constraints will be 1 / max(abs(nominal value)).
+
+    Args:
+        component: a Pyomo component to set constraint scaling factors for.
+        warning: bool indicating whether to log a warning if a missing variable scaling factor is
+            found (default=True).
+        overwrite: bool indicating whether to overwrite existing scaling factors (default=False).
+        descend_into: bool indicating whether function should descend into child Blocks
+            if component is a Pyomo Block (default=True).
+
+    Returns:
+        None
+    """
+
+    def _set_sf_max_mag(c):
+        nominal = NominalValueExtractionVisitor(warning=warning).walk_expression(c.expr)
+        # 0 terms will never be the largest absolute magnitude, so we can ignore them
+        max_mag = max(abs(i) for i in nominal)
+        set_scaling_factor(c, max_mag, overwrite=overwrite)
+
+    if isinstance(component, pyo.Block):
+        # Iterate over all constraint datas and call this method on each
+        for c in component.component_data_objects(
+            pyo.Constraint, descend_into=descend_into
+        ):
+            set_constraint_scaling_max_magnitude(
+                c, warning=warning, overwrite=overwrite
+            )
+    elif component.is_indexed():
+        for i in component:
+            _set_sf_max_mag(component[i])
+    else:
+        _set_sf_max_mag(component)
+
+
+def set_constraint_scaling_min_magnitude(
+    component, warning: bool = True, overwrite: bool = False, descend_into: bool = True
+):
+    """
+    Set scaling factors for constraints using minimum expected magnitude of additive terms in expression.
+    Scaling factor for constraints will be 1 / min(abs(nominal value)).
+
+    Args:
+        component: a Pyomo component to set constraint scaling factors for.
+        warning: bool indicating whether to log a warning if a missing variable scaling factor is
+            found (default=True).
+        overwrite: bool indicating whether to overwrite existing scaling factors (default=False).
+        descend_into: bool indicating whether function should descend into child Blocks
+            if component is a Pyomo Block (default=True).
+
+    Returns:
+        None
+    """
+
+    def _set_sf_min_mag(c):
+        nominal = NominalValueExtractionVisitor(warning=warning).walk_expression(c.expr)
+        # Ignore any 0 terms - we will assume they do not contribute to scaling
+        min_mag = min(abs(i) for i in [j for j in nominal if j != 0])
+        set_scaling_factor(c, min_mag, overwrite=overwrite)
+
+    if isinstance(component, pyo.Block):
+        # Iterate over all constraint datas and call this method on each
+        for c in component.component_data_objects(
+            pyo.Constraint, descend_into=descend_into
+        ):
+            set_constraint_scaling_min_magnitude(
+                c, warning=warning, overwrite=overwrite
+            )
+    elif component.is_indexed():
+        for i in component:
+            _set_sf_min_mag(component[i])
+    else:
+        _set_sf_min_mag(component)
+
+
+def set_constraint_scaling_harmonic_magnitude(
+    component, warning: bool = True, overwrite: bool = False, descend_into: bool = True
+):
+    """
+    Set scaling factors for constraints using the harmonic sum of the expected magnitude of
+    additive terms in expression. Scaling factor for constraints will be 1 / sum(1/abs(nominal value)).
+
+    Args:
+        component: a Pyomo component to set constraint scaling factors for.
+        warning: bool indicating whether to log a warning if a missing variable scaling factor is
+            found (default=True).
+        overwrite: bool indicating whether to overwrite existing scaling factors (default=False).
+        descend_into: bool indicating whether function should descend into child Blocks
+            if component is a Pyomo Block (default=True).
+
+    Returns:
+        None
+    """
+
+    def _set_sf_har_mag(c):
+        nominal = NominalValueExtractionVisitor(warning=warning).walk_expression(c.expr)
+        # Ignore any 0 terms - we will assume they do not contribute to scaling
+        harm_sum = sum(1 / abs(i) for i in [j for j in nominal if j != 0])
+        set_scaling_factor(c, harm_sum, overwrite=overwrite)
+
+    if isinstance(component, pyo.Block):
+        # Iterate over all constraint datas and call this method on each
+        for c in component.component_data_objects(
+            pyo.Constraint, descend_into=descend_into
+        ):
+            set_constraint_scaling_harmonic_magnitude(
+                c, warning=warning, overwrite=overwrite
+            )
+    elif component.is_indexed():
+        for i in component:
+            _set_sf_har_mag(component[i])
+    else:
+        _set_sf_har_mag(component)
+
+
+def report_scaling_issues(
+    blk,
+    ostream: "Stream" = None,
+    prefix: str = "",
+    large: float = 1e4,
+    small: float = 1e-3,
+    zero: float = 1e-10,
+    descend_into: bool = True,
+    include_fixed: bool = False,
+):
+    """
+    Write a report on potential scaling issues to a stream.
+
+    Args:
+        blk: block to check for scaling issues
+        ostream: stream object to write results to (default=stdout)
+        prefix: string to prefix output with
+        large: Magnitude that is considered to be too large
+        small: Magnitude that is considered to be too small
+        zero: Magnitude that is considered to be zero, variables with a value of
+            zero are okay, and not reported.
+        descend_into: bool indicating whether to check constraints in sub-blocks
+        include_fixed: bool indicating whether to include fixed Vars in list
+
+    Returns:
+        None
+    """
+    if ostream is None:
+        ostream = sys.stdout
+
+    # Write output
+    max_str_length = 84
+    tab = " " * 4
+    ostream.write("\n" + "=" * max_str_length + "\n")
+    ostream.write(f"{prefix}Potential Scaling Issues")
+    ostream.write("\n" * 2)
+
+    ostream.write(f"{prefix}{tab}Unscaled Variables")
+    ostream.write("\n" * 2)
+    for v in unscaled_variables_generator(blk, descend_into, include_fixed):
+        ostream.write(f"{prefix}{tab*2}{v.name}")
+    ostream.write("\n" * 2)
+    ostream.write(f"{prefix}{tab}Badly Scaled Variables")
+    ostream.write("\n" * 2)
+    for v in badly_scaled_var_generator(
+        blk, large, small, zero, descend_into, include_fixed
+    ):
+        ostream.write(f"{prefix}{tab*2}{v[0].name}: {v[1]}")
+    ostream.write("\n" * 2)
+    ostream.write(f"{prefix}{tab}Unscaled Constraints")
+    ostream.write("\n" * 2)
+    for c in unscaled_constraints_generator(blk, descend_into):
+        ostream.write(f"{prefix}{tab * 2}{c.name}")
+    ostream.write("\n")
+    ostream.write("\n" + "=" * max_str_length + "\n")

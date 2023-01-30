@@ -19,7 +19,7 @@ except ImportError:
     import importlib_resources as resources
 from numbers import Number
 from pathlib import Path
-from typing import Dict, Union, List
+from typing import Dict, Union
 
 import pytest
 import pandas as pd

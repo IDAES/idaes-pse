@@ -44,6 +44,8 @@ Contents
      - Reference Guides
          * :doc:`IDAES Model Libraries <reference_guides/model_libraries/index>`
          * :doc:`IDAES Core <reference_guides/core/index>`
+         * :doc:`Model Scaling Toolbox <reference_guides/scaling>`
+         * :doc:`Initializing Models <reference_guides/initialization/index>`
          * :doc:`Command-line interface tools <reference_guides/commands/index>`
          * :doc:`Configuring IDAES <reference_guides/configuration>`
          * :doc:`Logging Processing & Outputs <reference_guides/logging>`

@@ -27,37 +27,41 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # -----------------------------------------------------------------------------
-# Create a flowsheet for test
-m = ConcreteModel()
-m.fs = FlowsheetBlock(dynamic=False)
+@pytest.fixture(scope="module")
+def m():
+    # Create a flowsheet for test
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
 
-# vapor-liquid (Wilson)
-m.fs.properties_Wilson_vl = BTXParameterBlock(
-    valid_phase=("Liq", "Vap"), activity_coeff_model="Wilson"
-)
-m.fs.state_block_Wilson_vl = m.fs.properties_Wilson_vl.build_state_block(
-    defined_state=True
-)
+    # vapor-liquid (Wilson)
+    m.fs.properties_Wilson_vl = BTXParameterBlock(
+        valid_phase=("Liq", "Vap"), activity_coeff_model="Wilson"
+    )
+    m.fs.state_block_Wilson_vl = m.fs.properties_Wilson_vl.build_state_block(
+        defined_state=True
+    )
 
-# liquid only (Wilson)
-m.fs.properties_Wilson_l = BTXParameterBlock(
-    valid_phase="Liq", activity_coeff_model="Wilson"
-)
-m.fs.state_block_Wilson_l = m.fs.properties_Wilson_l.build_state_block(
-    has_phase_equilibrium=False, defined_state=True
-)
+    # liquid only (Wilson)
+    m.fs.properties_Wilson_l = BTXParameterBlock(
+        valid_phase="Liq", activity_coeff_model="Wilson"
+    )
+    m.fs.state_block_Wilson_l = m.fs.properties_Wilson_l.build_state_block(
+        has_phase_equilibrium=False, defined_state=True
+    )
 
-# vapour only (Wilson)
-m.fs.properties_Wilson_v = BTXParameterBlock(
-    valid_phase="Vap", activity_coeff_model="Wilson"
-)
-m.fs.state_block_Wilson_v = m.fs.properties_Wilson_v.build_state_block(
-    has_phase_equilibrium=False, defined_state=True
-)
+    # vapour only (Wilson)
+    m.fs.properties_Wilson_v = BTXParameterBlock(
+        valid_phase="Vap", activity_coeff_model="Wilson"
+    )
+    m.fs.state_block_Wilson_v = m.fs.properties_Wilson_v.build_state_block(
+        has_phase_equilibrium=False, defined_state=True
+    )
+
+    return m
 
 
 @pytest.mark.unit
-def test_build_inlet_state_block():
+def test_build_inlet_state_block(m):
 
     assert len(m.fs.properties_Wilson_vl.config) == 4
 
@@ -97,7 +101,7 @@ def test_build_inlet_state_block():
 
 
 @pytest.mark.unit
-def test_setInputs_inlet_state_block():
+def test_setInputs_inlet_state_block(m):
 
     # vapor-liquid (Wilson)
     m.fs.state_block_Wilson_vl.flow_mol.fix(1)
@@ -133,36 +137,69 @@ def test_setInputs_inlet_state_block():
     assert degrees_of_freedom(m.fs.state_block_Wilson_v) == 0
 
 
-# Create a flowsheet object to test outlet state blocks
-m.fs1 = FlowsheetBlock(dynamic=False)
+@pytest.fixture(scope="module")
+def m2():
+    # Create a flowsheet for test
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
 
-# vapor-liquid (Wilson)
-m.fs1.properties_Wilson_vl = BTXParameterBlock(
-    valid_phase=("Liq", "Vap"), activity_coeff_model="Wilson"
-)
-m.fs1.state_block_Wilson_vl = m.fs1.properties_Wilson_vl.build_state_block(
-    defined_state=False
-)
+    # vapor-liquid (Wilson)
+    m.fs.properties_Wilson_vl = BTXParameterBlock(
+        valid_phase=("Liq", "Vap"), activity_coeff_model="Wilson"
+    )
+    m.fs.state_block_Wilson_vl = m.fs.properties_Wilson_vl.build_state_block(
+        defined_state=True
+    )
 
-# liquid only (Wilson)
-m.fs1.properties_Wilson_l = BTXParameterBlock(
-    valid_phase="Liq", activity_coeff_model="Wilson"
-)
-m.fs1.state_block_Wilson_l = m.fs1.properties_Wilson_l.build_state_block(
-    has_phase_equilibrium=False, defined_state=False
-)
+    # liquid only (Wilson)
+    m.fs.properties_Wilson_l = BTXParameterBlock(
+        valid_phase="Liq", activity_coeff_model="Wilson"
+    )
+    m.fs.state_block_Wilson_l = m.fs.properties_Wilson_l.build_state_block(
+        has_phase_equilibrium=False, defined_state=True
+    )
 
-# vapour only (Wilson)
-m.fs1.properties_Wilson_v = BTXParameterBlock(
-    valid_phase="Vap", activity_coeff_model="Wilson"
-)
-m.fs1.state_block_Wilson_v = m.fs1.properties_Wilson_v.build_state_block(
-    has_phase_equilibrium=False, defined_state=False
-)
+    # vapour only (Wilson)
+    m.fs.properties_Wilson_v = BTXParameterBlock(
+        valid_phase="Vap", activity_coeff_model="Wilson"
+    )
+    m.fs.state_block_Wilson_v = m.fs.properties_Wilson_v.build_state_block(
+        has_phase_equilibrium=False, defined_state=True
+    )
+
+    # Create a flowsheet object to test outlet state blocks
+    m.fs1 = FlowsheetBlock(dynamic=False)
+
+    # vapor-liquid (Wilson)
+    m.fs1.properties_Wilson_vl = BTXParameterBlock(
+        valid_phase=("Liq", "Vap"), activity_coeff_model="Wilson"
+    )
+    m.fs1.state_block_Wilson_vl = m.fs1.properties_Wilson_vl.build_state_block(
+        defined_state=False
+    )
+
+    # liquid only (Wilson)
+    m.fs1.properties_Wilson_l = BTXParameterBlock(
+        valid_phase="Liq", activity_coeff_model="Wilson"
+    )
+    m.fs1.state_block_Wilson_l = m.fs1.properties_Wilson_l.build_state_block(
+        has_phase_equilibrium=False, defined_state=False
+    )
+
+    # vapour only (Wilson)
+    m.fs1.properties_Wilson_v = BTXParameterBlock(
+        valid_phase="Vap", activity_coeff_model="Wilson"
+    )
+    m.fs1.state_block_Wilson_v = m.fs1.properties_Wilson_v.build_state_block(
+        has_phase_equilibrium=False, defined_state=False
+    )
+
+    return m
 
 
 @pytest.mark.unit
-def test_build_outlet_state_block():
+def test_build_outlet_state_block(m2):
+    m = m2
     assert len(m.fs.properties_Wilson_vl.config) == 4
 
     # vapor-liquid (Wilson)
@@ -201,7 +238,8 @@ def test_build_outlet_state_block():
 
 
 @pytest.mark.unit
-def test_setInputs_outlet_state_block():
+def test_setInputs_outlet_state_block(m2):
+    m = m2
 
     # vapor-liquid (Wilson)
     m.fs1.state_block_Wilson_vl.flow_mol.fix(1)
@@ -229,6 +267,7 @@ def test_setInputs_outlet_state_block():
 
 
 @pytest.mark.integration
-def test_units_consistent():
+def test_units_consistent(m2):
+    m = m2
     assert_units_consistent(m.fs)
     assert_units_consistent(m.fs1)

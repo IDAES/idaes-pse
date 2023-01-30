@@ -22,7 +22,6 @@ import pytest
 from pyomo.environ import (
     ConcreteModel,
     value,
-    Constraint,
     assert_optimal_termination,
     units as pyunits,
 )

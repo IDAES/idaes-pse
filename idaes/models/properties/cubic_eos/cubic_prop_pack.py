@@ -25,8 +25,6 @@ All results have been cross-referenced against other sources.
 """
 # Import Python libraries
 import math
-import os
-from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -34,7 +32,6 @@ from pyomo.environ import (
     Constraint,
     exp,
     Expression,
-    ExternalFunction,
     log,
     NonNegativeReals,
     sqrt,
@@ -77,7 +74,6 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-from idaes.core.util.functions import functions_lib
 from idaes.models.properties.modular_properties.eos.ceos_common import (
     EoS_param,
     cubic_roots_available,

@@ -49,7 +49,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.core.base.expression import ScalarExpression
-from pyomo.core.base.units_container import InconsistentUnitsError
+from pyomo.core.base.units_container import InconsistentUnitsError, UnitsError
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 import idaes.core.util.scaling as iscale
@@ -477,6 +477,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         ccs="B",
         CE_index_year="2018",
         additional_costing_params=None,
+        use_additional_costing_params=False,
     ):
         """
         Power Plant Costing Method
@@ -548,6 +549,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             CE_index_year: year for cost basis, e.g. "2018" to use 2018 dollars
             additional_costing_params: user-defined dictionary to append to
                 existing cost accounts dictionary
+            use_additional_costing_params: Boolean flag to use additional costing
+                parameters when account names conflict with existing accounts data
 
         The appropriate scaling parameters for various cost accounts can be
         found in the QGESS on capital cost scaling (Report
@@ -683,18 +686,24 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             ].items():
                                 if (
                                     accountkey in frozen_dict[techkey][ccskey].keys()
-                                ):  # this is not allowed
-                                    raise ValueError(
-                                        "Data already exists for Account {} "
-                                        "using technology {} with CCS {}. "
-                                        "Please confirm that the custom "
-                                        "account dictionary is correct, or "
-                                        "add the new parameters as a new "
-                                        "account.".format(
-                                            accountkey, str(techkey), ccskey
+                                ) and not use_additional_costing_params:
+                                    if accountkey not in cost_accounts:
+                                        pass  # not the current account, don't fail here
+                                    else:  # this is not allowed
+                                        raise ValueError(
+                                            "Data already exists for Account {} "
+                                            "using technology {} with CCS {}. "
+                                            "Please confirm that the custom "
+                                            "account dictionary is correct, or "
+                                            "add the new parameters as a new "
+                                            "account. To use the custom account "
+                                            "dictionary for all conflicts, please "
+                                            "pass the argument use_additional_costing_params "
+                                            "as True.".format(
+                                                accountkey, str(techkey), ccskey
+                                            )
                                         )
-                                    )
-                                else:
+                                else:  # conflict is the account passed, and overwrite it
                                     frozen_dict[techkey][ccskey][
                                         accountkey
                                     ] = accountval
@@ -892,23 +901,36 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                                 )
                             )
             else:
-                if scaled_param.get_units() is None:
-                    raise ValueError(
-                        "Account %s uses units of %s. "
-                        "Units of %s were passed. "
-                        "Scaled_param must have units."
-                        % (cost_accounts[0], ref_units, scaled_param.get_units())
-                    )
-                else:
-                    try:
-                        pyunits.convert(scaled_param, ref_units)
-                    except InconsistentUnitsError:
-                        raise Exception(
+                try:
+                    if pyunits.get_units(scaled_param) is None:
+                        raise UnitsError(
                             "Account %s uses units of %s. "
                             "Units of %s were passed. "
-                            "Cannot convert unit containers."
-                            % (cost_accounts[0], ref_units, scaled_param.get_units())
+                            "Scaled_param must have units."
+                            % (
+                                cost_accounts[0],
+                                ref_units,
+                                pyunits.get_units(scaled_param),
+                            )
                         )
+                    else:
+                        try:
+                            pyunits.convert(scaled_param, ref_units)
+                        except InconsistentUnitsError:
+                            raise UnitsError(
+                                "Account %s uses units of %s. "
+                                "Units of %s were passed. "
+                                "Cannot convert unit containers."
+                                % (
+                                    cost_accounts[0],
+                                    ref_units,
+                                    pyunits.get_units(scaled_param),
+                                )
+                            )
+                except InconsistentUnitsError:
+                    raise UnitsError(
+                        f"The expression {scaled_param.name} has inconsistent units."
+                    )
 
         # Used by other functions for reporting results
         blk.account_names = account_names

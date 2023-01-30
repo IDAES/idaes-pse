@@ -38,7 +38,7 @@ _log = idaeslog.getLogger(__name__)
 alamo = Executable("alamo")
 
 # Define mapping of Pyomo function names for expression evaluation
-GLOBAL_FUNCS = {"sin": sin, "cos": cos, "log": log, "exp": exp}
+GLOBAL_FUNCS = {"sin": sin, "cos": cos, "ln": log, "exp": exp}
 
 
 # The values associated with these must match those expected in the .alm file
@@ -1187,8 +1187,7 @@ class AlamoSurrogate(SurrogateBase):
 
     def evaluate_surrogate(self, inputs):
         """
-        Method to method to evaluate the ALAMO surrogate model at a set of user
-        provided values.
+        Method to evaluate the ALAMO surrogate model at a set of user provided values.
 
         Args:
            dataframe: pandas DataFrame
@@ -1198,7 +1197,7 @@ class AlamoSurrogate(SurrogateBase):
 
         Returns:
             output: pandas Dataframe
-              Returns a dataframe of the the output values evaluated at the provided inputs.
+              Returns a dataframe of the output values evaluated at the provided inputs.
               The index of the output dataframe should match the index of the provided inputs.
         """
         # Create a set of lambda functions for evaluating the surrogate.
