@@ -37,6 +37,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 )
 
 from idaes.models.properties.modular_properties.examples.BT_ideal import configuration
+import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -101,6 +102,8 @@ def build_model_btx_ftpz():
 
     m.fs.unit.reboiler.boilup_ratio.fix(1.3)
 
+    # iscale.calculate_scaling_factors(m)
+
     return m
 
 
@@ -147,6 +150,8 @@ class TestBTXIdeal:
         m.fs.unit.condenser.condenser_pressure.fix(101325)
 
         m.fs.unit.reboiler.boilup_ratio.fix(1.3)
+
+        iscale.calculate_scaling_factors(m)
 
         return m
 
@@ -205,6 +210,33 @@ class TestBTXIdeal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx_ftpz, btx_fctp):
+
+        from idaes.core.util.scaling import (
+            unscaled_constraints_generator,
+            unscaled_variables_generator,
+            badly_scaled_var_generator,
+        )
+
+        print("\nUnscaled Constraints 1")
+        for i in unscaled_constraints_generator(btx_ftpz):
+            print(i)
+        print("\nUnscaled Vars 1")
+        for i in unscaled_variables_generator(btx_ftpz):
+            print(i)
+        print("\nBadly Scaled Vars 1")
+        for i in badly_scaled_var_generator(btx_ftpz):
+            print(i)
+        print("\nUnscaled Constraints 2")
+        for i in unscaled_constraints_generator(btx_fctp):
+            print(i)
+        print("\nUnscaled Vars 2")
+        for i in unscaled_variables_generator(btx_fctp):
+            print(i)
+        print("\nBadly Scaled Vars 2")
+        for i in badly_scaled_var_generator(btx_fctp):
+            print(i)
+        assert False
+        assert False
 
         # Distillate port - btx_ftpz
         assert pytest.approx(18.978, rel=1e-2) == value(
@@ -298,8 +330,6 @@ class TestBTXIdealGeneric:
         m.fs.unit.condenser.condenser_pressure.fix(101325)
 
         m.fs.unit.reboiler.boilup_ratio.fix(1.3)
-
-        iscale.calculate_scaling_factors(m.fs.unit)
 
         return m
 
