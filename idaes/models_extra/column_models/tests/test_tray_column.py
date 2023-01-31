@@ -151,7 +151,7 @@ class TestBTXIdeal:
 
         m.fs.unit.reboiler.boilup_ratio.fix(1.3)
 
-        iscale.calculate_scaling_factors(m)
+        # iscale.calculate_scaling_factors(m)
 
         return m
 
@@ -235,8 +235,7 @@ class TestBTXIdeal:
         print("\nBadly Scaled Vars 2")
         for i in badly_scaled_var_generator(btx_fctp):
             print(i)
-        assert False
-        assert False
+        # assert False
 
         # Distillate port - btx_ftpz
         assert pytest.approx(18.978, rel=1e-2) == value(
