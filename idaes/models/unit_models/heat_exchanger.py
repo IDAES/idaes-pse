@@ -21,6 +21,7 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
+    Param,
     log,
     Reference,
     PositiveReals,
@@ -119,6 +120,45 @@ This config can be given by the cold side name instead of cold_side.""",
 countercurrent temperature difference.}""",
         ),
     )
+
+
+def delta_temperature_lmtd_smooth_callback(b):
+    r"""
+    This is a callback for a temperature difference expression to calculate
+    :math:`\Delta T` in the heat exchanger model using log-mean temperature
+    difference (LMTD) approximation from Kazi, S., M. Short, A.J. Isafiade,
+    L.T. Biegler. "Heat exchanger network synthesus with detailed exchanger
+    designs - 2. Hybrid optimization strategy for synthesis of heat exchanger
+    networks". AIChE Journal, 2020.
+
+    .. math::
+
+        \alpha = \frac{\Delta T_2}{\Delta T_1}
+
+    .. math::
+
+        \Delta T = \frac{\Delta T_1 \sqrt{(\alpha - 1)^2 + \varepsilon}}{\sqrt{(\log_e{\alpha})^2 + \varepsilon}}
+
+    where :math:`\Delta T_1` is the temperature difference at the hot inlet end,
+    :math:`\Delta T_2` is the temperature difference at the hot outlet end, and
+    :math:`\varepsilon` is the smoothing parameter.
+
+    The smoothing parameter (``eps_lmtd_smoothing``) is mutable and the
+    default is 1e-10.
+    """
+    b.eps_lmtd_smoothing = Param(mutable=True, initialize=1e-10)
+    eps = b.eps_lmtd_smoothing
+    dT1 = b.delta_temperature_in
+    dT2 = b.delta_temperature_out
+
+    @b.Expression(b.flowsheet().time)
+    def delta_temperature(b, t):
+        alpha = dT2[t] / dT1[t]
+        return (
+            dT1[t]
+            * ((alpha - 1) ** 2 + eps) ** (1 / 2)
+            / (log(alpha) ** 2 + eps) ** (1 / 2)
+        )
 
 
 def delta_temperature_lmtd_callback(b):

@@ -12,7 +12,6 @@
 #################################################################################
 import pyomo.environ as pyo
 import pytest
-import idaes.core.plugins
 from idaes.core.solvers.features import lp, milp, nlp, minlp, nle, dae
 from idaes.core.solvers import ipopt_has_linear_solver
 from idaes.core.solvers import petsc

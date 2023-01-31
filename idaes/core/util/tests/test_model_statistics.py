@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-This module contains miscalaneous utility functions for use in IDAES models.
+This module contains miscellaneous utility functions for use in IDAES models.
 """
 
 import pytest
@@ -337,6 +337,16 @@ def test_variables_in_activated_constraints_set(m):
 @pytest.mark.unit
 def test_number_variables_in_activated_constraints(m):
     assert number_variables_in_activated_constraints(m) == 22
+
+
+@pytest.mark.unit
+def test_variables_not_in_activated_constraints_set(m):
+    assert len(variables_not_in_activated_constraints_set(m)) == 6
+
+
+@pytest.mark.unit
+def test_number_variables_not_in_activated_constraints(m):
+    assert number_variables_not_in_activated_constraints(m) == 6
 
 
 @pytest.mark.unit
