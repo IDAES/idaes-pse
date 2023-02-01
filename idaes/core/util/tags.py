@@ -178,7 +178,7 @@ class ModelTag:
         if format_string is None:
             format_string = self._format
         units = self.get_unit_str(index=index)
-        if units == "None" or units == "" or units is None:
+        if units in ["None", "", "dimensionless"] or units is None:
             return format_string
         if units == "%":
             return "".join([format_string, units])
@@ -413,10 +413,11 @@ class ModelTag:
         if in_display_units is None:
             in_display_units = self.set_in_display_units
 
-        if in_display_units and pyo.units.get_units(val) is None:
+        vu = pyo.units.get_units(val)
+        if in_display_units and (vu is None or vu == pyo.units.dimensionless):
             if self._display_units is not None:
                 val *= self._display_units
-
+                print(pyo.units.get_units(val))
         try:
             try:
                 self.expression.set_value(val)
@@ -443,7 +444,8 @@ class ModelTag:
         if in_display_units is None:
             in_display_units = self.set_in_display_units
 
-        if in_display_units and pyo.units.get_units(val) is None:
+        vu = pyo.units.get_units(val)
+        if in_display_units and (vu is None or vu == pyo.units.dimensionless):
             if self._display_units is not None:
                 val *= self._display_units
 
@@ -473,7 +475,8 @@ class ModelTag:
         if in_display_units is None:
             in_display_units = self.set_in_display_units
 
-        if in_display_units and pyo.units.get_units(val) is None:
+        vu = pyo.units.get_units(val)
+        if in_display_units and (vu is None or vu == pyo.units.dimensionless):
             if self._display_units is not None:
                 val *= self._display_units
 
@@ -503,7 +506,8 @@ class ModelTag:
         if in_display_units is None:
             in_display_units = self.set_in_display_units
 
-        if in_display_units and pyo.units.get_units(val) is None:
+        vu = pyo.units.get_units(val)
+        if in_display_units and (vu is None or vu == pyo.units.dimensionless):
             if self._display_units is not None:
                 val *= self._display_units
 
