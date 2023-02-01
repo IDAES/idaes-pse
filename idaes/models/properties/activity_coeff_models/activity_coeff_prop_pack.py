@@ -17,9 +17,11 @@ options include ideal liquid or non-ideal liquid using an activity
 coefficient model; options include Non-Random Two Liquid Model (NRTL) or the
 Wilson model to compute the activity coefficient. This property package
 supports the following combinations for gas-liquid mixtures:
+
 1. Ideal (vapor) - Ideal (liquid)
 2. Ideal (vapor) - NRTL (liquid)
 3. Ideal (vapor) - Wilson (liquid)
+
 This property package currently supports the flow_mol, temperature, pressure
 and mole_frac_comp as state variables (mole basis). Support for other
 combinations will be available in the future.
@@ -28,11 +30,14 @@ for the component needs to be provided by the user in the parameter block or
 can be estimated by the user if VLE data is available. Please see the
 documentation for more details.
 SI units.
+
 References:
+
 1. "The properties of gases and liquids by Robert C. Reid"
 2. "Perry's Chemical Engineers Handbook by Robert H. Perry".
 3. H. Renon and J.M. Prausnitz, "Local compositions in thermodynamic excess
-   functions for liquid mixtures.", AIChE Journal Vol. 14, No.1, 1968.
+functions for liquid mixtures.", AIChE Journal Vol. 14, No.1, 1968.
+
 """
 
 # Import Pyomo libraries
@@ -1450,12 +1455,6 @@ class ActivityCoeffStateBlockData(StateBlockData):
     def get_material_flow_basis(self):
         """Declare material flow basis."""
         return MaterialFlowBasis.molar
-
-    def default_material_balance_type(self):
-        return MaterialBalanceType.componentTotal
-
-    def default_energy_balance_type(self):
-        return EnergyBalanceType.enthalpyTotal
 
     def define_state_vars(self):
         """Define state vars."""
