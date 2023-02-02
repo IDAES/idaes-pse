@@ -386,7 +386,7 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
     model.dof_v = Suffix(direction=Suffix.EXPORT)  #: SUFFIX FOR K_AUG
     model.rh_name = Suffix(direction=Suffix.IMPORT)  #: SUFFIX FOR K_AUG AS WELL
     kaug.options["print_kkt"] = ""
-    results = ipopt.solve(model, tee=True)
+    results = ipopt.solve(model, tee=tee)
 
     # Raise Exception if ipopt fails
     if not check_optimal_termination(results):

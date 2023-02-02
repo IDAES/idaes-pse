@@ -506,7 +506,6 @@ class TestUncertaintyPropagation:
                 data,
                 variable_name,
                 SSE,
-                solver_options={"max_iter": 2},
             )
 
     @pytest.mark.unit
