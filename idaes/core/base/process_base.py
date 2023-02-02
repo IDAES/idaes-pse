@@ -28,6 +28,7 @@ from pyomo.common.config import ConfigBlock
 from enum import Enum
 
 from idaes.core.base.process_block import declare_process_block_class
+from idaes.core.initialization import BlockTriangularizationInitializer
 from idaes.core.util.exceptions import (
     ConfigurationError,
     DynamicError,
@@ -79,6 +80,9 @@ class ProcessBlockData(_BlockData):
 
     CONFIG = ConfigBlock("ProcessBlockData", implicit=False)
 
+    # Set default initializer
+    default_initializer = BlockTriangularizationInitializer
+
     def __init__(self, component):
         """
         Initialize a ProcessBlockData object.
@@ -114,6 +118,9 @@ class ProcessBlockData(_BlockData):
             None
         """
         self._get_config_args()
+
+        # Add initialization order list, and populate with current model
+        self.initialization_order = [self]
 
         # This is a dict to store default property scaling factors. They are
         # defined in the parameter block to provide a universal default for
