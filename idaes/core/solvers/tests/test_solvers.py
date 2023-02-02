@@ -18,7 +18,6 @@ from idaes.core.solvers import petsc
 from idaes.core.solvers import ipopt_l1
 
 
-
 @pytest.mark.unit
 def test_petsc_available():
     if not pyo.SolverFactory("petsc_snes").available():
@@ -56,10 +55,12 @@ def test_ipopt_idaes_available():
             "documentation for instructions on how to get IPOPT."
         )
 
+
 @pytest.mark.unit
 def test_ipopt_l1_available():
     if not pyo.SolverFactory("ipopt_l1").available():
         raise RuntimeError("Could not find ipopt_l1.")
+
 
 @pytest.mark.unit
 def test_cbc_available():
@@ -95,6 +96,7 @@ def test_ipopt_idaes_solve():
     solver = pyo.SolverFactory("ipopt")
     solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
+
 
 @pytest.mark.unit
 def test_ipopt_l1_idaes_solve():

@@ -35,7 +35,10 @@ def test_ipopt_idaes_config():
         solver = pyo.SolverFactory("ipopt")
         assert solver.options["tol"] == 1
 
-@pytest.mark.skipif(not pyo.SolverFactory("ipopt_l1").available(False), reason="no Ipopt_l1")
+
+@pytest.mark.skipif(
+    not pyo.SolverFactory("ipopt_l1").available(False), reason="no Ipopt_l1"
+)
 @pytest.mark.unit
 def test_ipopt_l1_idaes_config():
     """
