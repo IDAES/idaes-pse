@@ -11,6 +11,7 @@
     physical_property_class
     reaction_property_class
     unit_model_block
+    property_metadata
     comp
     phase
     util/index

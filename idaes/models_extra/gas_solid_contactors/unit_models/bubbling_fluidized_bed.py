@@ -1296,7 +1296,7 @@ see reaction package for documentation.}""",
                 == 34.2225
                 * (
                     pyunits.convert(
-                        b.gas_emulsion.properties[t, x].diffusion_comp[j],
+                        b.gas_emulsion.properties[t, x].diffus_comp[j],
                         to_units=units_meta_gas("area") / units_meta_gas("time"),
                     )
                 )
@@ -2734,7 +2734,7 @@ see reaction package for documentation.}""",
                         / value(
                             34.2225
                             * pyunits.convert(
-                                self.gas_emulsion.properties[t, x].diffusion_comp[j],
+                                self.gas_emulsion.properties[t, x].diffus_comp[j],
                                 to_units=units_meta_gas("area")
                                 / units_meta_gas("time"),
                             )

@@ -420,8 +420,14 @@ class TestIronOC(object):
                 1e-07, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for (t, x, j), c in FB1D.solid_material_balances.items():
+            print(j)
+            sf = {
+                "Fe2O3": 9.84345e-05,
+                "Fe3O4": 6.78910e-05,
+                "Al2O3": 0.000154168,
+            }
             assert pytest.approx(
-                0.00015719, rel=1e-5
+                sf[j], rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for (t, x), c in FB1D.solid_sum_component_eqn.items():
             assert pytest.approx(

@@ -154,11 +154,11 @@ class TestNaturalGasPropertyPackage(unittest.TestCase):
             pyo.units.kg / pyo.units.m**3,
         )
 
-    def test_compressibility(self):
+    def test_compress_fact(self):
         m = pyo.ConcreteModel()
         m.properties = NaturalGasParameterBlock()
         m.state = m.properties.build_state_block()
-        self.assertEqual(m.state.compressibility.value, 0.80)
+        self.assertEqual(m.state.compress_fact.value, 0.80)
 
     def test_temperature_ref(self):
         m = pyo.ConcreteModel()
