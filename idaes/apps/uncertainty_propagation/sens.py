@@ -385,9 +385,13 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
     model.dof_v = Suffix(direction=Suffix.EXPORT)  #: SUFFIX FOR K_AUG
     model.rh_name = Suffix(direction=Suffix.IMPORT)  #: SUFFIX FOR K_AUG AS WELL
     kaug.options["print_kkt"] = ""
-    results = ipopt.solve(model, tee=tee)
+    results = ipopt.solve(model, tee=True)  # TODO: Revert this
 
     # Raise Exception if ipopt fails
+    print(f"Solver Status {str(results.solver.status)}")  # TODO: Revert this
+    print(
+        f"Termination {str(results.solver.termination_condition)}"
+    )  # TODO: Revert this
     if results.solver.status == SolverStatus.warning:
         raise Exception(results.solver.Message)
 
