@@ -495,10 +495,11 @@ class TestUncertaintyPropagation:
             ) ** 2
             return expr * 1e4
 
-        # with pytest.raises(Exception):
-        results = quantify_propagate_uncertainty(
-            NRTL_model, NRTL_model_opt_infeasible, data, variable_name, SSE
-        )
+        with pytest.raises(Exception):
+            results = quantify_propagate_uncertainty(
+                NRTL_model, NRTL_model_opt_infeasible, data, variable_name, SSE
+            )
+        assert False  # TODO: Revert this
 
     @pytest.mark.unit
     def test_Exception1(self):
