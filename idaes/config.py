@@ -250,6 +250,44 @@ def _new_idaes_config_block():
     )
 
     cfg.declare(
+        "ipopt_l1",
+        pyomo.common.config.ConfigBlock(
+            implicit=False,
+            description="Default config for 'ipopt' solver",
+            doc="Default config for 'ipopt' solver",
+        ),
+    )
+
+    cfg["ipopt_l1"].declare(
+        "options",
+        pyomo.common.config.ConfigBlock(
+            implicit=True,
+            description="Default solver options for 'ipopt'",
+            doc="Default solver options for 'ipopt' solver",
+        ),
+    )
+
+    cfg["ipopt_l1"]["options"].declare(
+        "nlp_scaling_method",
+        pyomo.common.config.ConfigValue(
+            domain=str,
+            default="gradient-based",
+            description="Ipopt NLP scaling method",
+            doc="Ipopt NLP scaling method",
+        ),
+    )
+
+    cfg["ipopt_l1"]["options"].declare(
+        "tol",
+        pyomo.common.config.ConfigValue(
+            domain=float,
+            default=1e-6,
+            description="Ipopt tol option",
+            doc="Ipopt tol option",
+        ),
+    )
+
+    cfg.declare(
         "petsc_ts",
         pyomo.common.config.ConfigBlock(
             implicit=False,
