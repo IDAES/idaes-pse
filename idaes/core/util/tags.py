@@ -417,7 +417,6 @@ class ModelTag:
         if in_display_units and (vu is None or vu == pyo.units.dimensionless):
             if self._display_units is not None:
                 val *= self._display_units
-                print(pyo.units.get_units(val))
         try:
             try:
                 self.expression.set_value(val)
