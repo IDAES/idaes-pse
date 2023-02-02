@@ -16,9 +16,7 @@ This module tests for the VarLikeExpression component.
 
 import pytest
 
-from pyomo.environ import ConcreteModel, Expression, Block, Var, units
-from pyomo.common.config import ConfigBlock
-from pyomo.core.base.units_container import UnitsError
+from pyomo.environ import ConcreteModel, Expression, Var
 
 from idaes.core.base.var_like_expression import VarLikeExpression
 

@@ -24,7 +24,6 @@ __author__ = "Oluwamayowa Amusat, John Siirola"
 
 from pyomo.core.expr import current as EXPR, native_types
 from pyomo.core.expr.numvalue import value
-from pyomo.common.collections import ComponentMap
 
 _numpy_available = True
 try:

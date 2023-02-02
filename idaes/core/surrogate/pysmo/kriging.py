@@ -15,7 +15,6 @@ __author__ = "Oluwamayowa Amusat"
 
 # Imports from the python standard library
 import os.path
-import pprint
 
 # Imports from third parties
 from matplotlib import pyplot as plt

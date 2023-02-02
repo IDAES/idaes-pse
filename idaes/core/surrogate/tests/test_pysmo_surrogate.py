@@ -16,7 +16,6 @@ Tests for PySMO's family of SurrogateTrainer (PysmoPolyTrainer, PysmoRBFTrainer 
 import pytest
 import numpy as np
 import pandas as pd
-import io
 import os
 from math import sin, cos, log, exp
 
@@ -35,7 +34,6 @@ from idaes.core.surrogate.pysmo import (
 )
 
 from idaes.core.surrogate.pysmo_surrogate import (
-    PysmoTrainer,
     PysmoPolyTrainer,
     PysmoRBFTrainer,
     PysmoKrigingTrainer,
@@ -45,7 +43,6 @@ from idaes.core.surrogate.pysmo_surrogate import (
 )
 
 from idaes.core.surrogate.surrogate_block import SurrogateBlock
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.surrogate.metrics import compute_fit_metrics
 
 

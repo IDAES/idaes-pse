@@ -34,7 +34,6 @@ from idaes.models.properties.modular_properties.state_definitions.FcTP import (
     FcTP,
     define_state,
     set_metadata,
-    define_default_scaling_factors,
 )
 from idaes.core import (
     MaterialFlowBasis,

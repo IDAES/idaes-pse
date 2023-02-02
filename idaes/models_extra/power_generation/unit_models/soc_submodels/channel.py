@@ -55,8 +55,6 @@ __author__ = "John Eslick, Douglas Allan"
 from pyomo.common.config import ConfigValue, In, ListOf, Bool
 from pyomo.dae import DerivativeVar
 import pyomo.environ as pyo
-from pyomo.network import Port
-
 
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 from idaes.core.util.constants import Constants

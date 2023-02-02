@@ -16,7 +16,6 @@ Tests for Shell and Tube 1D unit model.
 Author: Jaffer Ghouse
 """
 import pytest
-from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,
