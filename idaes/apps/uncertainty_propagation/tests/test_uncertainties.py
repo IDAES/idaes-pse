@@ -469,6 +469,10 @@ class TestUncertaintyPropagation:
         assert results.propagation_f == pytest.approx(0.0021199499778127204)
 
     @pytest.mark.integration
+    @pytest.mark.xfail
+    # TODO: This test fails as the problem being tested is in fact feasible
+    # This should be replaced with unit testing of the underlying methods which
+    # can test the expected fail in more controlled circumstances (and faster)
     def test_quantify_propagate_uncertainty_NRTL_exception(self):
         """
         It tests an exception error when the ipopt fails for the function quantify_propagate_uncertainty with IDAES NRTL model.
@@ -495,11 +499,15 @@ class TestUncertaintyPropagation:
             ) ** 2
             return expr * 1e4
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             results = quantify_propagate_uncertainty(
-                NRTL_model, NRTL_model_opt_infeasible, data, variable_name, SSE
+                NRTL_model,
+                NRTL_model_opt_infeasible,
+                data,
+                variable_name,
+                SSE,
+                solver_options={"max_iter": 2},
             )
-        assert False  # TODO: Revert this
 
     @pytest.mark.unit
     def test_Exception1(self):

@@ -30,6 +30,7 @@ from pyomo.environ import (
     Suffix,
     value,
     ComponentUID,
+    check_optimal_termination,
 )
 from pyomo.common.sorting import sorted_robust
 from pyomo.core.expr.current import ExpressionReplacementVisitor
@@ -385,15 +386,14 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
     model.dof_v = Suffix(direction=Suffix.EXPORT)  #: SUFFIX FOR K_AUG
     model.rh_name = Suffix(direction=Suffix.IMPORT)  #: SUFFIX FOR K_AUG AS WELL
     kaug.options["print_kkt"] = ""
-    results = ipopt.solve(model, tee=True)  # TODO: Revert this
+    results = ipopt.solve(model, tee=True)
 
     # Raise Exception if ipopt fails
-    print(f"Solver Status {str(results.solver.status)}")  # TODO: Revert this
-    print(
-        f"Termination {str(results.solver.termination_condition)}"
-    )  # TODO: Revert this
-    if results.solver.status == SolverStatus.warning:
-        raise Exception(results.solver.Message)
+    if not check_optimal_termination(results):
+        raise RuntimeError(
+            f"Solver failed to return an optimal solution. Please check the solver output. "
+            f"{results.solver.Message}"
+        )
 
     for o in model.component_objects(Objective, active=True):
         f_mean = value(o)
