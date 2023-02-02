@@ -362,7 +362,7 @@ class LinAlgandPyomo:
             nb = np.dot(self.Q.T, self.b)
             c = nb[
                 : np.count_nonzero(self.regressors)
-            ]  # Takes the first 'p' rows of nb vector
+            ]  # Takes the first 'p' rows of notebooks vector
             d = nb[np.count_nonzero(self.regressors) :]
             self.B_ols = linalg.solve_triangular(Rp, c)
             self.SSRols = sum(
