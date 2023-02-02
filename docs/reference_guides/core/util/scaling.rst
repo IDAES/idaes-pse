@@ -1,7 +1,13 @@
 Scaling Methods
 ===============
 
+.. note::
+
+  In v2.0, IDAES is beginning to deploy a new suite of scaling tools. This documentation refers to the older scaling tools.
+  For documentation of the new scaling toolbox, :ref:`see here<reference_guides/scaling:Scaling Toolbox>`.
+
 .. module:: idaes.core.util.scaling
+  :noindex:
 
 This section describes scaling utility functions and methods.
 
@@ -56,10 +62,13 @@ suffixes, and ensures that scaling factors are stored in the IDAES standard
 location.
 
 .. autofunction:: set_scaling_factor
+  :noindex:
 
 .. autofunction:: get_scaling_factor
+  :noindex:
 
 .. autofunction:: unset_scaling_factor
+  :noindex:
 
 
 Constraint Transformation
@@ -110,14 +119,19 @@ described above can provide Jacobian information at the current variable values.
 
 
 .. autofunction:: extreme_jacobian_columns
+  :noindex:
 
 .. autofunction:: extreme_jacobian_rows
+  :noindex:
 
 .. autofunction:: badly_scaled_var_generator
+  :noindex:
 
 .. autofunction:: unscaled_variables_generator
+  :noindex:
 
 .. autofunction:: unscaled_constraints_generator
+  :noindex:
 
 .. autofunction:: map_scaling_factor
 
@@ -126,6 +140,7 @@ described above can provide Jacobian information at the current variable values.
 .. autofunction:: get_jacobian
 
 .. autofunction:: jacobian_cond
+  :noindex:
 
 Applying Scaling
 ----------------

@@ -946,6 +946,7 @@ class _NoPressureParameterBlock(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
+        obj.add_properties({})
         obj.add_default_units(
             {
                 "time": pyunits.s,

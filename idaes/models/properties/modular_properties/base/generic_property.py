@@ -38,6 +38,7 @@ from idaes.core import (
     StateBlockData,
     StateBlock,
     MaterialFlowBasis,
+    ElectrolytePropertySet,
 )
 from idaes.core.base.components import Component, __all_components__
 from idaes.core.base.phases import (
@@ -1015,6 +1016,9 @@ class GenericParameterData(PhysicalParameterBlock):
         """Define properties supported and units."""
         # TODO : Need to fix to have methods for things that may or may not be
         # created by state var methods
+        # TODO: Leverage new metadata to define what is supported by a given instance?
+        # TODO: Add code to determine whether a StandardPropertySet or ElectrolytePropertySet is needed.
+        obj.define_property_set(ElectrolytePropertySet)
         obj.add_properties(
             {
                 "flow_mol": {"method": "_flow_mol"},

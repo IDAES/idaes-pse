@@ -1276,9 +1276,7 @@ class TestAlamoSurrogate:
     @pytest.fixture
     def alm_surr3(self):
         surrogate_expressions = {
-            "z1": (
-                " z1 == 2*sin(x1**2) - 3*cos(x2**3) - " "4*log(x1**4) + 5*exp(x2**5)"
-            )
+            "z1": (" z1 == 2*sin(x1**2) - 3*cos(x2**3) - " "4*ln(x1**4) + 5*exp(x2**5)")
         }
         input_labels = ["x1", "x2"]
         output_labels = ["z1"]
