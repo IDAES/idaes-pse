@@ -21,6 +21,9 @@ import pyomo.environ as pyo
 import numpy as np
 import idaes.core.util.scaling as iscale
 
+from idaes.core import FlowsheetBlock
+from idaes.core.util.testing import PhysicalParameterTestBlock
+
 # TODO: Add pyomo.dae test case
 """
 from pyomo.environ import TransformationFactory
@@ -28,7 +31,11 @@ from pyomo.dae import ContinuousSet, DerivativeVar
 """
 
 # Need to update
-from idaes.core.util.model_diagnostics import DegeneracyHunter
+from idaes.core.util.model_diagnostics import (
+    DegeneracyHunter,
+    get_valid_range_of_component,
+    set_bounds_from_valid_range,
+)
 
 __author__ = "Alex Dowling, Douglas Allan"
 
@@ -417,3 +424,54 @@ def test_problem2_with_degenerate_constraint():
     assert n_rank_deficient == 1
 
     # TODO: Add MILP solver to idaes get-extensions and add more tests
+
+
+@pytest.mark.unit
+def test_get_valid_range_of_component():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock()
+
+    m.fs.params = PhysicalParameterTestBlock()
+    m.fs.state = m.fs.params.build_state_block(m.fs.time)
+
+    # No valid range set yet, should return None
+    assert get_valid_range_of_component(m.fs.state[0].flow_vol) is None
+
+    # Set valid_range for flow_vol
+    meta = m.fs.params.get_metadata().properties
+    meta.flow_vol[None]._set_valid_range((0, 1))
+
+    assert get_valid_range_of_component(m.fs.state[0].flow_vol) == (0, 1)
+
+
+@pytest.mark.unit
+def test_get_valid_range_of_component_no_metadata():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock()
+
+    with pytest.raises(
+        AttributeError, match="Could not find metadata for component fs"
+    ):
+        get_valid_range_of_component(m.fs)
+
+
+@pytest.mark.unit
+def test_set_bounds_from_valid_range():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock()
+
+    m.fs.params = PhysicalParameterTestBlock()
+    m.fs.state = m.fs.params.build_state_block(m.fs.time)
+
+    # Set valid_range for flow_vol
+    meta = m.fs.params.get_metadata().properties
+    meta.flow_vol[None]._set_valid_range((0, 1))
+
+    assert m.fs.state[0].flow_vol.bounds == (None, None)
+
+    set_bounds_from_valid_range(m.fs.state[0].flow_vol)
+    assert m.fs.state[0].flow_vol.bounds == (0, 1)
+
+    meta.flow_vol[None]._set_valid_range(None)
+    set_bounds_from_valid_range(m.fs.state[0].flow_vol)
+    assert m.fs.state[0].flow_vol.bounds == (None, None)

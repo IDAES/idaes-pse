@@ -15,7 +15,7 @@
 modeling in Pyomo.
 """
 
-__author__ = "Alexander Dowling, Douglas Allan"
+__author__ = "Alexander Dowling, Douglas Allan, Andrew Lee"
 
 
 from operator import itemgetter
@@ -701,3 +701,36 @@ class DegeneracyHunter:
             nothing
         """
         print(v, "\t\t", v.lb, "\t", v.value, "\t", v.ub)
+
+
+def get_valid_range_of_component(component):
+    # Get metadata for component
+    parent = component.parent_block()
+
+    try:
+        if hasattr(parent, "params"):
+            meta = parent.params.get_metadata().properties
+        else:
+            meta = parent.get_metadata().properties
+    except AttributeError:
+        raise AttributeError(f"Could not find metadata for component {component.name}")
+
+    # Get valid range from metadata
+    n, i = meta.get_name_and_index(component.local_name)
+    cmeta = getattr(meta, n)[i]
+
+    return cmeta.valid_range
+
+
+def set_bounds_from_valid_range(component):
+    # If block, iterate over Vars and Params
+    # Else check that is Var or Param
+
+    valid_range = get_valid_range_of_component(component)
+
+    print(valid_range)
+    if valid_range is None:
+        valid_range = (None, None)
+    print(valid_range)
+    component.setlb(valid_range[0])
+    component.setub(valid_range[1])
