@@ -11,8 +11,8 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-"""Degeneracy Hunter is a collection of utility functions to assist in mathematical
-modeling in Pyomo.
+"""
+This module contains a collection of tools for diagnosing modelling issues.
 """
 
 __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee"
@@ -40,6 +40,11 @@ _log = idaeslog.getLogger(__name__)
 
 
 class DegeneracyHunter:
+    """
+    Degeneracy Hunter is a collection of utility functions to assist in mathematical
+    modeling in Pyomo.
+    """
+
     def __init__(self, block_or_jac, solver=None):
         """Initialize Degeneracy Hunter Object
 
@@ -121,6 +126,7 @@ class DegeneracyHunter:
         """
         Method to return a ComponentSet of all Constraint components with a
         residual greater than a given threshold which appear in a model.
+
         Args:
             block : model to be studied
             tol : residual threshold for inclusion in ComponentSet
@@ -129,10 +135,13 @@ class DegeneracyHunter:
                 1: only name of constraint printed
                 2: each constraint is pretty printed
                 3: pretty print each constraint, then print value for included variable
+
             sort: sort residuals in descending order for printing
+
         Returns:
             A ComponentSet including all Constraint components with a residual
             greater than tol which appear in block
+
         """
 
         if print_level > 0:
@@ -175,6 +184,7 @@ class DegeneracyHunter:
     ):
         """
         Return a ComponentSet of all variables within a tolerance of their bounds.
+
         Args:
             block : model to be studied
             tol : residual threshold for inclusion in ComponentSet (default = 1e-5)
@@ -182,9 +192,11 @@ class DegeneracyHunter:
             skip_lb: Boolean to skip lower bound (default = False)
             skip_ub: Boolean to skip upper bound (default = False)
             verbose: Boolean to toggle on printing to screen (default = True)
+
         Returns:
             A ComponentSet including all Constraint components with a residual
             greater than tol which appear in block
+
         """
         vnbs = variables_near_bounds_set(self.block, tol, relative, skip_lb, skip_ub)
 
@@ -258,6 +270,7 @@ class DegeneracyHunter:
 
         Returns:
             m_dh: Pyomo model to calculate irreducible degenerate sets
+
         """
 
         n_eq = jac_eq.shape[0]
@@ -320,6 +333,7 @@ class DegeneracyHunter:
 
         Returns:
             m_fc: Pyomo model to find candidates
+
         """
 
         n_eq = jac_eq.shape[0]
@@ -439,6 +453,7 @@ class DegeneracyHunter:
 
         Returns:
             ids: either None or dictionary containing the IDS
+
         """
 
         # Fix weight on candidate equation
@@ -482,6 +497,7 @@ class DegeneracyHunter:
         Returns:
             candidate_eqns: either None or list of indicies
             degenerate_set: either None or dictionary containing the degenerate_set
+
         """
 
         results = solver.solve(candidates_milp, tee=tee)
@@ -585,9 +601,8 @@ class DegeneracyHunter:
             dense: If True, use a dense svd to perform singular value analysis,
             which tends to be slower but more reliable than svds
 
-        Returns
-        -------
-        None.
+        Returns:
+            None
 
         """
         if self.s is None:
@@ -698,11 +713,15 @@ class DegeneracyHunter:
     # Note: This makes sense as a static method
     @staticmethod
     def print_variable_bounds(v):
-        """Print variable, bounds, and value
+        """
+        Print variable, bounds, and value
+
         Argument:
             v: variable
+
         Return:
             nothing
+
         """
         print(v, "\t\t", v.lb, "\t", v.value, "\t", v.ub)
 
