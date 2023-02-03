@@ -48,7 +48,7 @@ class TestNaturalGasPropertyPackage(unittest.TestCase):
         assert_units_equivalent(state.temperature.get_units(), pyo.units.K)
         component_list = m.state.config.parameters.component_list
         j = next(iter(component_list))
-        self.assertIs(state.mole_frac_comp[j].get_units(), None)
+        self.assertIs(str(state.mole_frac_comp[j].get_units()), "dimensionless")
 
         mw = m.state.mw
         assert_units_equivalent(pyo.units.get_units(mw), pyo.units.kg / pyo.units.kmol)
