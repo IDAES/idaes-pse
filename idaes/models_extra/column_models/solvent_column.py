@@ -389,11 +389,13 @@ and used when constructing these
             expr=4 * self.eps_ref / self.packing_specific_area, doc="Hydraulic diameter"
         )
 
+        # TODO Change this to specific_interfacial_area
         self.area_interfacial = Var(
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             initialize=0.9,
-            units=(pyunits.m) ** 2 / (pyunits.m) ** 3,
+            units=lunits("length") ** 2 / lunits("length") ** 3,
+            # TODO this description is wrong
             doc="Packing interfacial area per unit of column volume",
         )
 

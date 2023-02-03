@@ -20,7 +20,7 @@ the method used to calculate their vapor pressure:
     Monoethanolamine (MEA) - non-volatile,
     Water (H2O) - Raoult's Law
 
-Additionally, the following true ionic species are requried for calculating
+Additionally, the following true ionic species are required for calculating
 transport properties:
 
     MEA+, MEACOO-, HCO3-
