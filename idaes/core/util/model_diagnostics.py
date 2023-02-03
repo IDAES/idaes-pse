@@ -708,6 +708,19 @@ class DegeneracyHunter:
 
 
 def get_valid_range_of_component(component):
+    """
+    Return the valid range for a component as specified in the model metadata.
+
+    Args:
+        component - Pyomo component to get valid range for
+
+    Returns:
+        valid range for component if found. This will either be a 2-tuple (low, high) or None.
+
+    Raises:
+        AttributeError if metadata object not found
+
+    """
     # Get metadata for component
     parent = component.parent_block()
 
@@ -733,6 +746,20 @@ def get_valid_range_of_component(component):
 
 
 def set_bounds_from_valid_range(component, descend_into=True):
+    """
+    Set bounds on Pyomo components based on valid range recorded in model metadata.
+    WARNING - this function will overwrite any bounds already set on the component/model.
+
+    This function will iterate over component data objects in Blocks and indexed components.
+
+    Args:
+        component - Pyomo component to set bounds on. This can be a Block, Var or Param.
+        descend_into - (optional) Whether to descend into components on child Blocks (default=True)
+
+    Returns:
+         None
+
+    """
     if component.is_indexed():
         for k in component:
             set_bounds_from_valid_range(component[k])
@@ -756,6 +783,20 @@ def set_bounds_from_valid_range(component, descend_into=True):
 
 
 def list_components_with_values_outside_valid_range(component, descend_into=True):
+    """
+    Return a list of component objects with values outside the valid range specified in the model
+    metadata.
+
+    This function will iterate over component data objects in Blocks and indexed components.
+
+    Args:
+        component - Pyomo component to search for component outside of range on.
+            This can be a Block, Var or Param.
+        descend_into - (optional) Whether to descend into components on child Blocks (default=True)
+
+    Returns:
+         list of component objects found with vlaues outside the valid range.
+    """
     comp_list = []
 
     if component.is_indexed():
@@ -773,7 +814,7 @@ def list_components_with_values_outside_valid_range(component, descend_into=True
 
         if valid_range is not None:
             cval = pyo.value(component)
-            if cval < valid_range[0] or cval > valid_range[1]:
+            if cval is not None and (cval < valid_range[0] or cval > valid_range[1]):
                 comp_list.append(component)
 
     return comp_list
