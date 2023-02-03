@@ -37,6 +37,7 @@ from idaes.core.util.model_diagnostics import (
     get_valid_range_of_component,
     set_bounds_from_valid_range,
     list_components_with_values_outside_valid_range,
+    ipopt_solve_halt_on_error,
 )
 
 __author__ = "Alex Dowling, Douglas Allan"
@@ -649,3 +650,19 @@ def test_list_components_with_values_outside_valid_range_block():
             "fs.state[0.0].flow_mol_phase_comp[p1,c1]",
             "fs.state[0.0].flow_mol_phase_comp[p2,c2]",
         ]
+
+
+@pytest.mark.component
+def test_ipopt_solve_halt_on_error(capsys):
+    m = pyo.ConcreteModel()
+
+    m.v = pyo.Var(initialize=-5, bounds=(None, -1))
+    m.c = pyo.Constraint(expr=pyo.log(m.v) == 1)
+
+    try:
+        results = ipopt_solve_halt_on_error(m)
+    except Exception:  # we expect this to fail
+        pass
+
+    captured = capsys.readouterr()
+    assert "Error evaluating constraint c: can't evaluate log(-5)." in captured.out

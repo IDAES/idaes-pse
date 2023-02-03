@@ -837,3 +837,28 @@ def list_components_with_values_outside_valid_range(component, descend_into=True
                 comp_list.append(component)
 
     return comp_list
+
+
+def ipopt_solve_halt_on_error(model, options=None):
+    """
+    Run IPOPT to solve model with debugging output enabled.
+
+    This function calls IPOPT to solve the model provided with settings
+    to halt on AMPL evaluation errors and report these with symbolic names.
+
+    Args:
+        model - Pyomo model to be solved.
+        options - solver options ot be passed to IPOPT
+
+    Returns:
+        Pyomo solver results dict
+
+    """
+    if options is None:
+        options = {}
+
+    solver = pyo.SolverFactory("ipopt")
+    solver.options = options
+    solver.options["halt_on_ampl_error"] = "yes"
+
+    return solver.solve(model, tee=True, symbolic_solver_labels=True)
