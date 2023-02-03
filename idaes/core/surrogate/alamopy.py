@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 import json
 
-from pyomo.environ import Constraint, value, sin, cos, log, exp, Set, Reals
+from pyomo.environ import Constraint, Expression, value, sin, cos, log, exp, Set, Reals
 from pyomo.common.config import ConfigValue, In, Path, ListOf, Bool
 from pyomo.common.tee import TeeStream
 from pyomo.common.fileutils import Executable
@@ -1226,12 +1226,17 @@ class AlamoSurrogate(SurrogateBase):
 
     def populate_block(self, block, additional_options=None):
         """
-        Method to populate a Pyomo Block with surrogate model constraints.
+        Method to populate a Pyomo Block with surrogate model constraints
+        or expressions.
 
         Args:
             block: Pyomo Block component to be populated with constraints.
-            additional_options: None
-               No additional options are required for this surrogate object
+            additional_options (dict): optional keyword arguments passes along
+                from build model. There is one optional argument, as_expression
+                (bool) if True, write the model as an expressions, if False or
+                not provided write model as constraints. If as_expression is
+                True, the output_variables argument to build_model() is not
+                required.
         Returns:
             None
         """
@@ -1239,12 +1244,28 @@ class AlamoSurrogate(SurrogateBase):
         # TODO: do we need to add the index_set stuff back in?
         output_set = Set(initialize=self._output_labels, ordered=True)
 
-        def alamo_rule(b, o):
-            lvars = block.input_vars_as_dict()
-            lvars.update(block.output_vars_as_dict())
-            return eval(self._surrogate_expressions[o], GLOBAL_FUNCS, lvars)
+        if additional_options is not None:
+            as_expression = additional_options.pop("as_expression", False)
+        else:
+            as_expression = False
 
-        block.alamo_constraint = Constraint(output_set, rule=alamo_rule)
+        if not as_expression:
+
+            def alamo_rule(b, o):
+                lvars = block.input_vars_as_dict()
+                lvars.update(block.output_vars_as_dict())
+                return eval(self._surrogate_expressions[o], GLOBAL_FUNCS, lvars)
+
+            block.alamo_constraint = Constraint(output_set, rule=alamo_rule)
+        else:
+
+            def alamo_rule(b, o):
+                lvars = block.input_vars_as_dict()
+                return eval(
+                    self._surrogate_expressions[o].split("==")[1], GLOBAL_FUNCS, lvars
+                )
+
+            block.alamo_expression = Expression(output_set, rule=alamo_rule)
 
     def save(self, strm):
         """
