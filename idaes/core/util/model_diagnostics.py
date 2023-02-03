@@ -23,6 +23,7 @@ from operator import itemgetter
 import pyomo.environ as pyo
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+from pyomo.core.base.block import _BlockData
 import numpy as np
 from scipy.linalg import svd
 from scipy.sparse.linalg import svds, norm
@@ -33,6 +34,9 @@ from idaes.core.util.model_statistics import (
     variables_near_bounds_set,
 )
 import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 
 class DegeneracyHunter:
@@ -716,32 +720,60 @@ def get_valid_range_of_component(component):
         raise AttributeError(f"Could not find metadata for component {component.name}")
 
     # Get valid range from metadata
-    n, i = meta.get_name_and_index(component.parent_component().local_name)
-    cmeta = getattr(meta, n)[i]
+    try:
+        n, i = meta.get_name_and_index(component.parent_component().local_name)
+        cmeta = getattr(meta, n)[i]
+        valid_range = cmeta.valid_range
+    except ValueError:
+        # Assume no metadata for this property
+        _log.debug(f"No metadata entry for component {component.name}; returning None")
+        valid_range = None
 
-    return cmeta.valid_range
+    return valid_range
 
 
 def set_bounds_from_valid_range(component, descend_into=True):
-    # If block, iterate over Vars and Params
-    # Else check that is Var or Param
-    if isinstance(component, pyo.Block):
-        for i in component.component_data_objects(
-            [pyo.Var, pyo.Param], descend_into=descend_into
-        ):
-            set_bounds_from_valid_range(i)
-    elif component.is_indexed():
+    if component.is_indexed():
         for k in component:
             set_bounds_from_valid_range(component[k])
+    elif isinstance(component, _BlockData):
+        for i in component.component_data_objects(
+            ctype=[pyo.Var, pyo.Param], descend_into=descend_into
+        ):
+            set_bounds_from_valid_range(i)
     elif not hasattr(component, "bounds"):
         raise TypeError(
             f"Component {component.name} does not have bounds. Only Vars and Params have bounds."
         )
+    else:
+        valid_range = get_valid_range_of_component(component)
 
-    valid_range = get_valid_range_of_component(component)
+        if valid_range is None:
+            valid_range = (None, None)
 
-    if valid_range is None:
-        valid_range = (None, None)
+        component.setlb(valid_range[0])
+        component.setub(valid_range[1])
 
-    component.setlb(valid_range[0])
-    component.setub(valid_range[1])
+
+def list_components_with_values_outside_valid_range(component, descend_into=True):
+    comp_list = []
+
+    if component.is_indexed():
+        for k in component:
+            comp_list.extend(
+                list_components_with_values_outside_valid_range(component[k])
+            )
+    elif isinstance(component, _BlockData):
+        for i in component.component_data_objects(
+            ctype=[pyo.Var, pyo.Param], descend_into=descend_into
+        ):
+            comp_list.extend(list_components_with_values_outside_valid_range(i))
+    else:
+        valid_range = get_valid_range_of_component(component)
+
+        if valid_range is not None:
+            cval = pyo.value(component)
+            if cval < valid_range[0] or cval > valid_range[1]:
+                comp_list.append(component)
+
+    return comp_list
