@@ -456,7 +456,7 @@ def test_get_valid_range_of_component_no_metadata():
 
 
 @pytest.mark.unit
-def test_set_bounds_from_valid_range():
+def test_set_bounds_from_valid_range_scalar():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock()
 
@@ -475,3 +475,42 @@ def test_set_bounds_from_valid_range():
     meta.flow_vol[None]._set_valid_range(None)
     set_bounds_from_valid_range(m.fs.state[0].flow_vol)
     assert m.fs.state[0].flow_vol.bounds == (None, None)
+
+
+@pytest.mark.unit
+def test_set_bounds_from_valid_range_indexed():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock()
+
+    m.fs.params = PhysicalParameterTestBlock()
+    m.fs.state = m.fs.params.build_state_block(m.fs.time)
+
+    # Set valid_range for flow_vol
+    meta = m.fs.params.get_metadata().properties
+    meta.flow_mol["phase_comp"]._set_valid_range((0, 1))
+
+    for k in m.fs.state[0].flow_mol_phase_comp:
+        assert m.fs.state[0].flow_mol_phase_comp[k].bounds == (None, None)
+
+    set_bounds_from_valid_range(m.fs.state[0].flow_mol_phase_comp)
+    for k in m.fs.state[0].flow_mol_phase_comp:
+        assert m.fs.state[0].flow_mol_phase_comp[k].bounds == (0, 1)
+
+    meta.flow_mol["phase_comp"]._set_valid_range(None)
+    set_bounds_from_valid_range(m.fs.state[0].flow_mol_phase_comp)
+    for k in m.fs.state[0].flow_mol_phase_comp:
+        assert m.fs.state[0].flow_mol_phase_comp[k].bounds == (None, None)
+
+
+@pytest.mark.unit
+def test_set_bounds_from_valid_range_invlaid_type():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock()
+
+    m.fs.foo = pyo.Expression(expr=1)
+
+    with pytest.raises(
+        TypeError,
+        match="Component fs.foo does not have bounds. Only Vars and Params have bounds.",
+    ):
+        set_bounds_from_valid_range(m.fs.foo)

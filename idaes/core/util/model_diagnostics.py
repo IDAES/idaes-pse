@@ -716,21 +716,32 @@ def get_valid_range_of_component(component):
         raise AttributeError(f"Could not find metadata for component {component.name}")
 
     # Get valid range from metadata
-    n, i = meta.get_name_and_index(component.local_name)
+    n, i = meta.get_name_and_index(component.parent_component().local_name)
     cmeta = getattr(meta, n)[i]
 
     return cmeta.valid_range
 
 
-def set_bounds_from_valid_range(component):
+def set_bounds_from_valid_range(component, descend_into=True):
     # If block, iterate over Vars and Params
     # Else check that is Var or Param
+    if isinstance(component, pyo.Block):
+        for i in component.component_data_objects(
+            [pyo.Var, pyo.Param], descend_into=descend_into
+        ):
+            set_bounds_from_valid_range(i)
+    elif component.is_indexed():
+        for k in component:
+            set_bounds_from_valid_range(component[k])
+    elif not hasattr(component, "bounds"):
+        raise TypeError(
+            f"Component {component.name} does not have bounds. Only Vars and Params have bounds."
+        )
 
     valid_range = get_valid_range_of_component(component)
 
-    print(valid_range)
     if valid_range is None:
         valid_range = (None, None)
-    print(valid_range)
+
     component.setlb(valid_range[0])
     component.setub(valid_range[1])
