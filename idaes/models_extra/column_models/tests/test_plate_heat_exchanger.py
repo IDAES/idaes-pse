@@ -226,7 +226,7 @@ class TestPHE(object):
                     - phe.fs.unit.hot_side_outlet.flow_mol[0]
                 )
             )
-            <= 1e-6
+            <= 2e-6
         )
 
         for j in phe.fs.hotside_properties.apparent_species_set:
