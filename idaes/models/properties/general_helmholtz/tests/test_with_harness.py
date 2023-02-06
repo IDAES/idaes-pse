@@ -349,6 +349,7 @@ class TestBasicVUPMass(PropertyTestHarness):
         # Helmholtz package initialization has no solver calls, so can't fail
         self.skip_initialization_raises_exception_test = True
 
+
 class TestBasicMixTPXMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock

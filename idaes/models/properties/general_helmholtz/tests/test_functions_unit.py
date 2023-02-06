@@ -1224,7 +1224,6 @@ def test_expression_writter_mole():
     )
 
 
-
 @pytest.mark.unit
 @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
 def test_expression_writter_sat():
