@@ -120,23 +120,24 @@ class SurrogateBlockData(_BlockData):
         surrogate_object.populate_block(self, additional_options=kwargs)
 
         # input/output variables need to be constrained to be equal
-        # auto-created variables within surrogate object 
-        m = self.parent_block()
-        input_vars_as_enum_dict = dict(enumerate(input_vars_as_dict.keys()))
-        input_labels_enum = {v: k for k,v in input_vars_as_enum_dict.items()}
+        # auto-created variables within surrogate object        
+        # only applies for surrogates with nn blocks (i.e., OMLT blocks)
+        if self.find_component('nn'):
+            input_vars_as_enum_dict = dict(enumerate(input_vars_as_dict.keys()))
+            input_labels_enum = {v: k for k,v in input_vars_as_enum_dict.items()}
 
-        output_vars_as_dict = self.output_vars_as_dict()
-        output_vars_as_enum_dict = dict(enumerate(output_vars_as_dict.keys()))
-        output_labels_enum = {v: k for k,v in output_vars_as_enum_dict.items()}
+            output_vars_as_dict = self.output_vars_as_dict()
+            output_vars_as_enum_dict = dict(enumerate(output_vars_as_dict.keys()))
+            output_labels_enum = {v: k for k,v in output_vars_as_enum_dict.items()}
 
-        @m.Constraint(self._input_labels)
-        def input_surrogate_ties(m, input_label):
-            return input_vars_as_dict[input_label] == self.nn.inputs[input_labels_enum.get(input_label)]
+            @m.Constraint(self._input_labels)
+            def input_surrogate_ties(m, input_label):
+                return input_vars_as_dict[input_label] == self.nn.inputs[input_labels_enum.get(input_label)]
 
 
-        @m.Constraint(self._output_labels)
-        def output_surrogate_ties(m, output_label):
-            return output_vars_as_dict[output_label] == self.nn.outputs[output_labels_enum.get(output_label)]
+            @m.Constraint(self._output_labels)
+            def output_surrogate_ties(m, output_label):
+                return output_vars_as_dict[output_label] == self.nn.outputs[output_labels_enum.get(output_label)]
 
         # test that kwargs is empty
         # derived classes should call .pop when they use a keyword argument

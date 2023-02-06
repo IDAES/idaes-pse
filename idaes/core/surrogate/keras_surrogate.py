@@ -24,7 +24,6 @@ from pyomo.common.dependencies import attempt_import
 
 keras, keras_available = attempt_import("tensorflow.keras")
 omlt, omlt_available = attempt_import("omlt")
-#onnx, onnx_available = attempt_import("onnx")
 
 if omlt_available:
     from omlt import OmltBlock, OffsetScaling
@@ -275,7 +274,6 @@ class KerasSurrogate(SurrogateBase):
         y = pd.DataFrame(data=y, columns=self.output_labels(), index=inputs.index, dtype='float64')
         if self._output_scaler is not None:
             y = self._output_scaler.unscale(y)
-        print(y.dtypes)
         return y
 
     def save_to_folder(self, keras_folder_name):
