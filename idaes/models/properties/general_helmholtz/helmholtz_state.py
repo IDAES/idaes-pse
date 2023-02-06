@@ -174,7 +174,7 @@ class _StateBlock(StateBlock):
                         v.vapor_frac, state_args, "vapor_frac", hold_state
                     )
                 else:
-                    flags[i] = (v.flow_mol.fixed, v.temperature.fixed, v.pressure.fixed)
+                    flags[i] = (v.flow_mass.fixed, v.temperature.fixed, v.pressure.fixed)
                     self._set_not_fixed(
                         v.flow_mass, state_args, "flow_mass", hold_state
                     )

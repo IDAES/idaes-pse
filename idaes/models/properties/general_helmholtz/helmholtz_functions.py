@@ -869,7 +869,7 @@ class HelmholtzThermoExpressions(object):
         elif sv == StateVars.PU:
             pass
         elif sv == StateVars.PS:
-            self.add_funcs(names=["h_sp_func"])
+            self.add_funcs(names=["u_sp_func"])
             u = blk.u_sp_func(c, u, p, _data_dir)
         else:
             blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
