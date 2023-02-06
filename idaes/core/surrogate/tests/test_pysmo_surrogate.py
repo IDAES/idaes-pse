@@ -1645,9 +1645,7 @@ class TestPysmoSurrogate:
         m.surrogate.build_model(
             pysmo_surr1, input_vars=[m.x1, m.x2], output_vars=[m.z1]
         )
-        print(m)
         assert len(m.surrogate.pysmo_constraint) == 1
-        m.display()
 
     @pytest.mark.parametrize(
         "confidence_dict", [{0.99: 3.2498355440153697}, {0.90: 1.8331129326536335}]
