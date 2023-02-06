@@ -345,10 +345,14 @@ class TestUncertaintyPropagation:
         # regardless of the order. In other words, the analytic solution needs to be
         # reordered to match the variable/constraint order from
         # this package. Alternately, the results could be converted into a Pandas dataframe
-        assert results.col == ["x1", "x2", "p1", "p2", "x3"]
-        assert results.row == ["con1", "con2", "obj"]
-        var_idx = np.array([True, True, False, False, True])
-        theta_idx = np.array([False, False, True, True, False])
+
+        # Build var_idx and theta_idx dynamically from results ordering
+        # This should be robust to changes in ordering as long as the x's and p's remain in
+        # the same relative order
+        var_idx = np.array([False if c in ["p1", "p2"] else True for c in results.col])
+        theta_idx = np.array(
+            [True if c in ["p1", "p2"] else False for c in results.col]
+        )
 
         # Check the gradient of the objective w.r.t. x matches
         np.testing.assert_array_almost_equal(
@@ -465,6 +469,10 @@ class TestUncertaintyPropagation:
         assert results.propagation_f == pytest.approx(0.0021199499778127204)
 
     @pytest.mark.integration
+    @pytest.mark.xfail
+    # TODO: This test fails as the problem being tested is in fact feasible
+    # This should be replaced with unit testing of the underlying methods which
+    # can test the expected fail in more controlled circumstances (and faster)
     def test_quantify_propagate_uncertainty_NRTL_exception(self):
         """
         It tests an exception error when the ipopt fails for the function quantify_propagate_uncertainty with IDAES NRTL model.
@@ -491,9 +499,13 @@ class TestUncertaintyPropagation:
             ) ** 2
             return expr * 1e4
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             results = quantify_propagate_uncertainty(
-                NRTL_model, NRTL_model_opt_infeasible, data, variable_name, SSE
+                NRTL_model,
+                NRTL_model_opt_infeasible,
+                data,
+                variable_name,
+                SSE,
             )
 
     @pytest.mark.unit
