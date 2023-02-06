@@ -154,7 +154,10 @@ and to "LAGRANGE-RADAU" for collocation transformation method,
             domain=In([None, "BACKWARD", "FORWARD"]),
             description="Scheme to use for DAE transformation",
             doc="""Scheme to use when transforming length domain of the gas
-phase. See Pyomo documentation for supported schemes,
+phase. If this option is supplied, ``solid_transformation_scheme`` must be
+supplied as well. This cannot be set (other than to ``None``) if the
+``transformation_scheme`` option is set.
+See Pyomo documentation for supported schemes.
 **default** - None.
 **Valid values:** {
 **None** - defaults to the value of the ``transformation_scheme`` option,
@@ -169,7 +172,10 @@ phase. See Pyomo documentation for supported schemes,
             domain=In([None, "BACKWARD", "FORWARD"]),
             description="Scheme to use for DAE transformation",
             doc="""Scheme to use when transforming length domain of the solid
-phase. See Pyomo documentation for supported schemes,
+phase. If this option is supplied, ``gas_transformation_scheme`` must be
+supplied as well. This cannot be set (other than to ``None``) if the
+``transformation_scheme`` option is set.
+See Pyomo documentation for supported schemes,
 **default** - None.
 **Valid values:** {
 **None** - defaults to the value of the ``transformation_scheme`` option,
