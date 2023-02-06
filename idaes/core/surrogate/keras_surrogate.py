@@ -24,19 +24,75 @@ from pyomo.common.dependencies import attempt_import
 
 keras, keras_available = attempt_import("tensorflow.keras")
 omlt, omlt_available = attempt_import("omlt")
+#onnx, onnx_available = attempt_import("onnx")
 
 if omlt_available:
     from omlt import OmltBlock, OffsetScaling
     from omlt.neuralnet import (
-        FullSpaceContinuousFormulation,
-        ReducedSpaceContinuousFormulation,
-        ReLUBigMFormulation,
-        ReLUComplementarityFormulation,
-        load_keras_sequential,
+        FullSpaceSmoothNNFormulation,
+        ReducedSpaceSmoothNNFormulation,
+        ReluBigMFormulation,
+        ReluComplementarityFormulation,
     )
+    from omlt.neuralnet.layer import DenseLayer, InputLayer
+    from omlt.neuralnet.network_definition import NetworkDefinition
+    
 
 from idaes.core.surrogate.base.surrogate_base import SurrogateBase
 from idaes.core.surrogate.sampling.scaling import OffsetScaler
+
+
+### OMLT code for load_keras_sequential which is no longer accessible without also importing onnx
+### Can return to importing when OMLT issue #96 is resolved
+
+def load_keras_sequential(nn, scaling_object=None, scaled_input_bounds=None):
+    """
+    Load a keras neural network model (built with Sequential) into
+    an OMLT network definition object. This network definition object
+    can be used in different formulations.
+    Parameters
+    ----------
+    nn : keras.model
+        A keras model that was built with Sequential
+    scaling_object : instance of ScalingInterface or None
+        Provide an instance of a scaling object to use to scale iputs --> scaled_inputs
+        and scaled_outputs --> outputs. If None, no scaling is performed. See scaling.py.
+    scaled_input_bounds : dict or None
+        A dict that contains the bounds on the scaled variables (the
+        direct inputs to the neural network). If None, then no bounds
+        are specified.
+    
+    Returns
+    -------
+    NetworkDefinition
+    """
+    # TODO: Add exceptions for unsupported layer types
+    n_inputs = len(nn.layers[0].get_weights()[0])
+
+    net = NetworkDefinition(scaling_object=scaling_object, scaled_input_bounds=scaled_input_bounds)
+
+    prev_layer = InputLayer([n_inputs])
+    net.add_layer(prev_layer)
+
+    for l in nn.layers:
+        cfg = l.get_config()
+        if not isinstance(l, keras.layers.Dense):
+            raise ValueError('Layer type {} encountered. The function load_keras_sequential '
+                             'only supports dense layers at this time. Consider using '
+                             'ONNX and the ONNX parser'.format(type(l)))
+        weights, biases = l.get_weights()
+        n_layer_inputs, n_layer_nodes = weights.shape
+
+        dense_layer = DenseLayer([n_layer_inputs],
+                [n_layer_nodes],
+                activation=cfg["activation"],
+                weights=weights,
+                biases=biases)
+        net.add_layer(dense_layer)
+        net.add_edge(prev_layer, dense_layer)
+        prev_layer = dense_layer
+
+    return net
 
 
 class KerasSurrogate(SurrogateBase):
@@ -170,19 +226,22 @@ class KerasSurrogate(SurrogateBase):
             factor_outputs=factor_outputs,
         )
 
-        # omlt takes input bounds as a list
-        input_bounds = self.input_bounds()
-        input_bounds = [input_bounds[k] for k in self.input_labels()]
-        net = load_keras_sequential(self._keras_model, omlt_scaling, input_bounds)
+        # omlt takes *scaled* input bounds as a dictionary with int keys
+        input_bounds = dict(enumerate(self.input_bounds().values()))
+        scaled_input_bounds = omlt_scaling.get_scaled_input_expressions(input_bounds)
+        scaled_input_bounds = {i: tuple(bnd) for i, bnd in scaled_input_bounds.items()}
+        
+        net = load_keras_sequential(self._keras_model, omlt_scaling, scaled_input_bounds)
 
         if formulation == KerasSurrogate.Formulation.FULL_SPACE:
-            formulation_object = FullSpaceContinuousFormulation(net)
+            formulation_object = FullSpaceSmoothNNFormulation(net)
+            
         elif formulation == KerasSurrogate.Formulation.REDUCED_SPACE:
-            formulation_object = ReducedSpaceContinuousFormulation(net)
+            formulation_object = ReducedSpaceSmoothNNFormulation(net)
         elif formulation == KerasSurrogate.Formulation.RELU_BIGM:
-            formulation_object = ReLUBigMFormulation(net)
+            formulation_object = ReluBigMFormulation(net)
         elif formulation == KerasSurrogate.Formulation.RELU_COMPLEMENTARITY:
-            formulation_object = ReLUComplementarityFormulation(net)
+            formulation_object = ReluComplementarityFormulation(net)
         else:
             raise ValueError(
                 'An unrecognized formulation "{}" was passed to '
@@ -192,9 +251,8 @@ class KerasSurrogate(SurrogateBase):
         block.nn = OmltBlock()
         block.nn.build_formulation(
             formulation_object,
-            input_vars=block._input_vars_as_list(),
-            output_vars=block._output_vars_as_list(),
         )
+        
 
     def evaluate_surrogate(self, inputs):
         """
@@ -214,9 +272,10 @@ class KerasSurrogate(SurrogateBase):
         y = self._keras_model.predict(x.to_numpy())
 
         # y is a numpy array, make it a dataframe
-        y = pd.DataFrame(data=y, columns=self.output_labels(), index=inputs.index)
+        y = pd.DataFrame(data=y, columns=self.output_labels(), index=inputs.index, dtype='float64')
         if self._output_scaler is not None:
             y = self._output_scaler.unscale(y)
+        print(y.dtypes)
         return y
 
     def save_to_folder(self, keras_folder_name):
