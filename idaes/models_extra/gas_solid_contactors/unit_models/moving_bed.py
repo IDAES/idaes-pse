@@ -136,8 +136,10 @@ by the Pyomo TransformationFactory,
             default=None,
             domain=In([None, "BACKWARD", "FORWARD", "LAGRANGE-RADAU"]),
             description="Scheme to use for DAE transformation",
-            doc="""Scheme to use when transforming domain. See Pyomo
-documentation for supported schemes,
+            doc="""Scheme to use when transforming domain. If specified,
+this scheme is applied to discretizations in both the gas and solid phases.
+In this case, ``gas_transformation_scheme`` and ``solid_transformation_scheme``
+cannot be specified. See Pyomo documentation for supported schemes.
 **default** - None.
 **Valid values:** {
 **None** - defaults to "BACKWARD" for finite difference transformation method,
