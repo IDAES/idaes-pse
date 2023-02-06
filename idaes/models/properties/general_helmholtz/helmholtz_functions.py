@@ -163,7 +163,7 @@ _external_function_map = {
     "v_func": {  # specific volume
         "fname": "v",
         "units": pyo.units.m**3 / pyo.units.kg,
-        "arg_units": [dimensionless, pyo.units.kg / pyo.units.kg, pyo.units.kPa],
+        "arg_units": [dimensionless, dimensionless, dimensionless],
         "doc": "v(comp, delta, tau)",
     },
     # Functions of (h, p)
@@ -219,49 +219,81 @@ _external_function_map = {
     "u_sp_func": {  # internal energy
         "fname": "u_sp",
         "units": pyo.units.kJ / pyo.units.kg,
-        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg/ pyo.units.K, pyo.units.kPa],
+        "arg_units": [
+            dimensionless,
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kPa,
+        ],
         "doc": "u(comp, entropy, pressure)",
     },
     "h_sp_func": {  # enthalpy
         "fname": "h_sp",
         "units": pyo.units.kJ / pyo.units.kg,
-        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg/ pyo.units.K, pyo.units.kPa],
+        "arg_units": [
+            dimensionless,
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kPa,
+        ],
         "doc": "h(comp, entropy, pressure)",
     },
     "g_sp_func": {  # Gibbs free energy
         "fname": "g_sp",
         "units": pyo.units.kJ / pyo.units.kg,
-        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg/ pyo.units.K, pyo.units.kPa],
-        "doc": "g(comp, delta, tau)",
+        "arg_units": [
+            dimensionless,
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kPa,
+        ],
+        "doc": "g(comp, entropy, pressure)",
     },
     "f_sp_func": {  # Helmholtz free energy
         "fname": "f_sp",
         "units": pyo.units.kJ / pyo.units.kg,
-        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg/ pyo.units.K, pyo.units.kPa],
+        "arg_units": [
+            dimensionless,
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kPa,
+        ],
         "doc": "f(comp, entropy, pressure)",
     },
     "cv_sp_func": {  # constant volume heat capacity
         "fname": "cv_sp",
         "units": pyo.units.kJ / pyo.units.kg / pyo.units.K,
-        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg/ pyo.units.K, pyo.units.kPa],
+        "arg_units": [
+            dimensionless,
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kPa,
+        ],
         "doc": "cv(comp, entropy, pressure)",
     },
     "cp_sp_func": {  # constant pressure heat capacity
         "fname": "cp_sp",
         "units": pyo.units.kJ / pyo.units.kg / pyo.units.K,
-        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg/ pyo.units.K, pyo.units.kPa],
+        "arg_units": [
+            dimensionless,
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kPa,
+        ],
         "doc": "cp(comp, entropy, pressure)",
     },
     "w_sp_func": {  # speed of sound
         "fname": "w_sp",
         "units": pyo.units.m / pyo.units.s,
-        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg/ pyo.units.K, pyo.units.kPa],
+        "arg_units": [
+            dimensionless,
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kPa,
+        ],
         "doc": "w(comp, entropy, pressure)",
     },
     "v_sp_func": {  # specific volume
         "fname": "v_sp",
         "units": pyo.units.m**3 / pyo.units.kg,
-        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg / pyo.units.K, pyo.units.kPa],
+        "arg_units": [
+            dimensionless,
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kPa,
+        ],
         "doc": "v(comp, entropy, pressure)",
     },
     # Functions of (u, p)
@@ -635,8 +667,18 @@ class HelmholtzThermoExpressions(object):
         add_helmholtz_external_functions(self.blk, names=names)
 
     def _state_vars(self, **kwargs):
-        c = self.param.pure_component
-        blk = self.blk
+        """
+        This function takes the state varaible args, and if they are in
+        one of the sets (h, p), (s, p) or (u, p), it returns
+        (enum for state varaible set, block with external function objects,
+        the component string, the first state varaible with units for
+        external function, and the second state variable with units for
+        the external functions).  If the state varaible set is not one
+        of the above, this function returns None for all but the block and
+        component.
+        """
+        c = self.param.pure_component  # string for chemical component
+        blk = self.blk  # block with external functions
         if "p" in kwargs and kwargs["p"] is not None:
             p = kwargs["p"] * self.param.uc["Pa to kPa"]
             if "h" in kwargs and kwargs["h"] is not None:
@@ -994,13 +1036,13 @@ class HelmholtzThermoExpressions(object):
         sv, blk, c, u, p = self._state_vars(**kwargs)
         if sv == StateVars.PH:
             self.add_funcs(names=["v_hp_func"])
-            v = blk.v_hp_func(c, u, p, _data_dir) 
+            v = blk.v_hp_func(c, u, p, _data_dir)
         elif sv == StateVars.PU:
             self.add_funcs(names=["v_up_func"])
-            v = blk.v_up_func(c, u, p, _data_dir) 
+            v = blk.v_up_func(c, u, p, _data_dir)
         elif sv == StateVars.PS:
             self.add_funcs(names=["v_sp_func"])
-            v = blk.v_sp_func(c, u, p, _data_dir) 
+            v = blk.v_sp_func(c, u, p, _data_dir)
         else:
             blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
             v = ((1 - x) / delta_liq + x / delta_vap) / self.param.dens_mass_star
@@ -1028,13 +1070,13 @@ class HelmholtzThermoExpressions(object):
         sv, blk, c, u, p = self._state_vars(**kwargs)
         if sv == StateVars.PH:
             self.add_funcs(names=["tau_func"])
-            tau = blk.tau_func(c, u, p, _data_dir) 
+            tau = blk.tau_func(c, u, p, _data_dir)
         elif sv == StateVars.PU:
             self.add_funcs(names=["tauu_func"])
-            tau = blk.tauu_func(c, u, p, _data_dir) 
+            tau = blk.tauu_func(c, u, p, _data_dir)
         elif sv == StateVars.PS:
             self.add_funcs(names=["taus_func"])
-            tau = blk.taus_func(c, u, p, _data_dir) 
+            tau = blk.taus_func(c, u, p, _data_dir)
         else:
             blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         return self.param.temperature_star / tau
@@ -1044,14 +1086,14 @@ class HelmholtzThermoExpressions(object):
         sv, blk, c, u, p = self._state_vars(**kwargs)
         if sv == StateVars.PH:
             self.add_funcs(names=["tau_func"])
-            tau = blk.tau_func(c, u, p, _data_dir) 
+            tau = blk.tau_func(c, u, p, _data_dir)
         elif sv == StateVars.PU:
             self.add_funcs(names=["tauu_func"])
-            tau = blk.tauu_func(c, u, p, _data_dir) 
+            tau = blk.tauu_func(c, u, p, _data_dir)
         elif sv == StateVars.PS:
             self.add_funcs(names=["taus_func"])
-            tau = blk.taus_func(c, u, p, _data_dir) 
-        else:        
+            tau = blk.taus_func(c, u, p, _data_dir)
+        else:
             blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         return tau
 
@@ -1156,13 +1198,13 @@ class HelmholtzThermoExpressions(object):
         sv, blk, c, u, p = self._state_vars(**kwargs)
         if sv == StateVars.PH:
             self.add_funcs(names=["w_hp_func"])
-            return blk.w_hp_func(c, u, p, _data_dir) 
+            return blk.w_hp_func(c, u, p, _data_dir)
         elif sv == StateVars.PU:
             self.add_funcs(names=["w_up_func"])
-            return blk.w_up_func(c, u, p, _data_dir) 
+            return blk.w_up_func(c, u, p, _data_dir)
         elif sv == StateVars.PS:
             self.add_funcs(names=["w_sp_func"])
-            return blk.w_sp_func(c, u, p, _data_dir) 
+            return blk.w_sp_func(c, u, p, _data_dir)
         else:
             blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
             self.add_funcs(names=["w_func"])

@@ -942,8 +942,7 @@ class HelmholtzStateBlockData(StateBlockData):
                 expr=1.0 / self.v_hp_func(cmp, h, P, _data_dir)
             )
             self.dens_mol = pyo.Expression(
-                expr= params.uc["kg/m3 to mol/m3"] 
-                / self.v_hp_func(cmp, h, P, _data_dir)
+                expr=params.uc["kg/m3 to mol/m3"] / self.v_hp_func(cmp, h, P, _data_dir)
             )
         # Entropy is a state variable
         elif self.state_vars == StateVars.PS:
@@ -958,12 +957,10 @@ class HelmholtzStateBlockData(StateBlockData):
                     expr=self.entr_mass * params.uc["J/kg/K to J/mol/K"]
                 )
             self.enth_mass = pyo.Expression(
-                expr=self.h_sp_func(cmp, s, P, _data_dir)
-                * params.uc["kJ/kg to J/kg"]
+                expr=self.h_sp_func(cmp, s, P, _data_dir) * params.uc["kJ/kg to J/kg"]
             )
             self.enth_mol = pyo.Expression(
-                expr=self.h_sp_func(cmp, s, P, _data_dir)
-                * params.uc["kJ/kg to J/mol"]
+                expr=self.h_sp_func(cmp, s, P, _data_dir) * params.uc["kJ/kg to J/mol"]
             )
             self.energy_internal_mass = pyo.Expression(
                 expr=self.u_sp_func(cmp, s, P, _data_dir) * params.uc["kJ/kg to J/kg"]
@@ -991,8 +988,7 @@ class HelmholtzStateBlockData(StateBlockData):
                 expr=1.0 / self.v_sp_func(cmp, s, P, _data_dir)
             )
             self.dens_mol = pyo.Expression(
-                expr= params.uc["kg/m3 to mol/m3"] 
-                / self.v_sp_func(cmp, s, P, _data_dir)
+                expr=params.uc["kg/m3 to mol/m3"] / self.v_sp_func(cmp, s, P, _data_dir)
             )
         # Internal energy is a state variable
         elif self.state_vars == StateVars.PU:
@@ -1007,18 +1003,18 @@ class HelmholtzStateBlockData(StateBlockData):
                     expr=self.energy_internal_mass * params.uc["J/kg to J/mol"]
                 )
             self.enth_mass = pyo.Expression(
-                expr=self.h_up_func(cmp, u, P, _data_dir)
-                * params.uc["kJ/kg to J/kg"]
+                expr=self.h_up_func(cmp, u, P, _data_dir) * params.uc["kJ/kg to J/kg"]
             )
             self.enth_mol = pyo.Expression(
-                expr=self.h_up_func(cmp, u, P, _data_dir)
-                * params.uc["kJ/kg to J/mol"]
+                expr=self.h_up_func(cmp, u, P, _data_dir) * params.uc["kJ/kg to J/mol"]
             )
             self.entr_mass = pyo.Expression(
-                expr=self.s_up_func(cmp, u, P, _data_dir) * params.uc["kJ/kg/K to J/kg/K"]
+                expr=self.s_up_func(cmp, u, P, _data_dir)
+                * params.uc["kJ/kg/K to J/kg/K"]
             )
             self.entr_mol = pyo.Expression(
-                expr=self.s_up_func(cmp, u, P, _data_dir) * params.uc["kJ/kg/K to J/mol/K"]
+                expr=self.s_up_func(cmp, u, P, _data_dir)
+                * params.uc["kJ/kg/K to J/mol/K"]
             )
             self.cp_mass = pyo.Expression(
                 expr=self.cp_up_func(cmp, u, P, _data_dir)
@@ -1040,8 +1036,7 @@ class HelmholtzStateBlockData(StateBlockData):
                 expr=1.0 / self.v_up_func(cmp, u, P, _data_dir)
             )
             self.dens_mol = pyo.Expression(
-                expr= params.uc["kg/m3 to mol/m3"] 
-                / self.v_up_func(cmp, u, P, _data_dir)
+                expr=params.uc["kg/m3 to mol/m3"] / self.v_up_func(cmp, u, P, _data_dir)
             )
         else:  # T, P, x
             # enthalpy

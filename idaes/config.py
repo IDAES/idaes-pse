@@ -40,6 +40,7 @@ base_platforms = (
 )
 # Map some platform names to others for get-extensions
 binary_distro_map = {
+    "macos": "darwin",
     "rhel7": "el7",
     "rhel8": "el8",
     "scientific7": "el7",
