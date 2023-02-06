@@ -123,6 +123,7 @@ class SurrogateBlockData(_BlockData):
         # auto-created variables within surrogate object        
         # only applies for surrogates with nn blocks (i.e., OMLT blocks)
         if self.find_component('nn'):
+            m = self.parent_block()
             input_vars_as_enum_dict = dict(enumerate(input_vars_as_dict.keys()))
             input_labels_enum = {v: k for k,v in input_vars_as_enum_dict.items()}
 
