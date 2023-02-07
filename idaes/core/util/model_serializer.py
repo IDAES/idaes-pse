@@ -197,20 +197,20 @@ class StoreSpec(object):
             attributes that were written. Based on the state of the component
             and the stored state of the component, the filter function returns
             a list of attributes to read.  For example, a filter function can be
-            used to only read the values of varaibles that were fixed when they
+            used to only read the values of variables that were fixed when they
             were written. The order of the class keys is important and should
             go from specific classes to general ones. For example, if a
             UnitModel is a Block, but you want to store extra attributes for a
             UnitModel, UnitModel should come before Block in the key set.
         data_classes: This takes the same form as the classes argument, the
-            classes should be compoent data types.
+            classes should be component data types.
         ignore_missing: If True will ignore a component or attribute that exists
-            in the model, but not in the stored state. If false an excpetion
+            in the model, but not in the stored state. If false an exception
             will be raised for things in the model that should be loaded but
             aren't in the stored state. Extra items in the stored state will not
-            raise an exception regaurdless of this argument.
+            raise an exception regardless of this argument.
         suffix: If True store suffixes and component ids.  If false, don't store
-            suffixes. This is a legacy option. The prefered way to store a Suffix
+            suffixes. This is a legacy option. The preferred way to store a Suffix
             of not is just to include Suffix in classes or not.
         suffix_filter: None to store all suffixes or a list of suffixes to store.
     """
@@ -430,7 +430,7 @@ class StoreSpec(object):
     @classmethod
     def value_isfixed_isactive(cls, only_fixed):
         """
-        Retur a StoreSpec object to store variable values, if variables are
+        Return a StoreSpec object to store variable values, if variables are
         fixed and if components are active.
 
         Args:
@@ -805,7 +805,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
         sd: dictionary to read from
         o: Pyomo component whoes data to read
         wts: StoreSpec object specifying what to read in
-        lookup: a lookup table for id to componet for reading suffixes
+        lookup: a lookup table for id to component for reading suffixes
         suffixes: a list of suffixes put off reading until end
 
     Returns:
@@ -841,7 +841,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
                 raise (e)  # else raise exception
         if ff is not None:  # if a filer function was given, use it to make a
             # new a list based on the model and whats stored for the state
-            # this lets you contionally load things, for example only load
+            # this lets you condionally load things, for example only load
             # values for unfixed variables.
             alist = ff(el, edict)
         if Suffix in wts.classes:  # if loading suffixes make lookup table id
@@ -928,8 +928,8 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=None, root_name=None)
     Load the state of a Pyomo component state from a dictionary, json file, or
     json string.  Must only specify one of sd, fname, or s as a non-None value.
     This works by going through the model and loading the state of each
-    sub-compoent of o. If the saved state contains extra information, it is
-    ignored.  If the save state doesn't contain an enetry for a model component
+    sub-component of o. If the saved state contains extra information, it is
+    ignored.  If the save state doesn't contain an entry for a model component
     that is to be loaded an error will be raised, unless ignore_missing = True.
 
     Args:
@@ -942,7 +942,7 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=None, root_name=None)
             True if fname ends with '.gz' otherwise False.
 
     Returns:
-        Dictionary with some perfomance information. The keys are
+        Dictionary with some performance information. The keys are
         "etime_load_file", how long in seconds it took to load the json file
         "etime_read_dict", how long in seconds it took to read models state
         "etime_read_suffixes", how long in seconds it took to read suffixes
@@ -973,10 +973,10 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=None, root_name=None)
         raise Exception("Need to specify a data source to load from")
     dict_time = time.time()  # To calculate how long it took to read file
     if wts is None:  # if no StoreSpec object given use the default, which should
-        wts = StoreSpec()  # be the typlical save everything important
+        wts = StoreSpec()  # be the typical save everything important
     lookup = {}  # A dict to use for a lookup tables
     suffixes = {}  # A list of suffixes delayed to end so lookup is complete
-    # Read toplevel componet (is recursive)
+    # Read toplevel component (is recursive)
     if root_name is None:
         for k in sd:
             if k.startswith("__") and k.endswith("__"):

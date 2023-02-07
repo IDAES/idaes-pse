@@ -29,7 +29,10 @@ from idaes.core.util.model_statistics import (
     fixed_variables_set,
     activated_constraints_set,
 )
+
 from idaes.core.solvers import get_solver
+import idaes.core.util.scaling as iscale
+
 
 solver = get_solver()
 
@@ -53,6 +56,8 @@ class TestFcTP_LV_inlet:
         m.fs.state_block_ideal_vl[0].flow_mol_comp["toluene"].fix(0.5)
         m.fs.state_block_ideal_vl[0].temperature.fix(368)
         m.fs.state_block_ideal_vl[0].pressure.fix(101325)
+
+        iscale.calculate_scaling_factors(m)
 
         return m
 
@@ -299,6 +304,8 @@ class TestFcTP_LV_outlet:
         m.fs.state_block_ideal_vl[0].flow_mol_comp["toluene"].fix(0.5)
         m.fs.state_block_ideal_vl[0].temperature.fix(368)
         m.fs.state_block_ideal_vl[0].pressure.fix(101325)
+
+        iscale.calculate_scaling_factors(m)
 
         return m
 
