@@ -246,7 +246,9 @@ see property package for documentation.}""",
         def rule_reflux(self):
             return self.reflux_ratio * (1 + self.reflux_ratio) ** -1
 
-        self.expr1 = Expression(rule=rule_reflux)
+        @self.Expression(doc="Reflux calculations")
+        def rule_reflux(self):
+            return self.reflux_ratio * (1 + self.reflux_ratio) ** -1
 
         if self.config.condenser_type == CondenserType.totalCondenser:
 
@@ -254,7 +256,7 @@ see property package for documentation.}""",
                 self.control_volume,
                 port=self.reflux,
                 phase=self._liquid_set,
-                side_sf=(self.expr1),
+                side_sf=(self.reflux_r),
                 equipmentType=CondenserType.totalCondenser,
             )
 
@@ -262,7 +264,7 @@ see property package for documentation.}""",
                 self.control_volume,
                 port=self.distillate,
                 phase=self._liquid_set,
-                side_sf=(1 - self.expr1),
+                side_sf=(1 - self.reflux_r),
                 equipmentType=CondenserType.totalCondenser,
             )
 
@@ -303,7 +305,7 @@ see property package for documentation.}""",
                 self.control_volume,
                 port=self.reflux,
                 phase=self._liquid_set,
-                side_sf=(self.expr1),
+                side_sf=(self.reflux_r),
                 equipmentType=CondenserType.partialCondenser,
             )
 
@@ -311,7 +313,7 @@ see property package for documentation.}""",
                 self.control_volume,
                 port=self.distillate,
                 phase=self._liquid_set,
-                side_sf=(1 - self.expr1),
+                side_sf=(1 - self.reflux_r),
                 equipmentType=CondenserType.partialCondenser,
             )
             make_phase_split(

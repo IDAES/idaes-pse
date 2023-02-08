@@ -158,9 +158,14 @@ def test_make_phase_split_mass(m):
     for i in m.time:
         for p in m.config.property_package.phase_list:
             for j in m.config.property_package.component_list:
-                assert m.port.flow_mass_phase[i, p, j].is_expression_type()
+                assert (
+                    m.port.flow_mass_phase[i, p, j] is m.e_flow_mass_phaseport[i, p, j]
+                )
                 assert value(m.port.flow_mass_phase[i, p, j]) == 1e-8
-                assert m.port.flow_mass_phase_comp[i, p, j].is_expression_type()
+                assert (
+                    m.port.flow_mass_phase_comp[i, p, j]
+                    is m.e_flow_mass_phase_compport[i, p, j]
+                )
                 assert value(m.port.flow_mass_phase_comp[i, p, j]) == 1e-8
 
 
@@ -253,7 +258,9 @@ def test_make_phase_split_frac(m):
     for i in m.time:
         for p in m.config.property_package.phase_list:
             for j in m.config.property_package.component_list:
-                assert m.port.flow_mass_phase[i, p, j].is_expression_type()
+                assert (
+                    m.port.flow_mass_phase[i, p, j] is m.e_flow_mass_phaseport[i, p, j]
+                )
                 assert value(m.port.flow_mass_phase[i, p, j]) == 1e-8
                 assert (
                     m.port.mass_frac_phase_comp[i, p, j]
@@ -302,7 +309,9 @@ def test_make_phase_split_frac_comp(m):
     for i in m.time:
         for p in m.config.property_package.phase_list:
             for j in m.config.property_package.component_list:
-                assert m.port.flow_mol_phase_comp[i, p, j].is_expression_type()
+                m.port.flow_mol_phase_comp[i, p, j] is m.e_flow_mol_phase_compport[
+                    i, p, j
+                ]
                 assert value(m.port.flow_mol_phase_comp[i, p, j]) == 1e-8
                 assert (
                     m.port.mass_frac_phase_comp[i, p, j]
@@ -312,7 +321,7 @@ def test_make_phase_split_frac_comp(m):
 
 class DummyData:
     """
-    Class containing necessary data to generate ccomponent list
+    Class containing necessary data to generate component list
     """
 
     def __init__(self):
@@ -323,8 +332,8 @@ class DummyData:
             self.property_package = self.property_package()
 
         class property_package:
-            def component_list(self, list):
-                self.component_list = list
+            def component_list(self, component_list):
+                self.component_list = component_list
 
-            def phase_list(self, list1):
-                self.component_list = list1
+            def phase_list(self, phase_list):
+                self.phase_list = phase_list
