@@ -657,16 +657,6 @@ argument).""",
             )
 
         # Create rules to substitute material balance terms
-        # Accumulation term
-        def accumulation_term(b, t, x, p, j):
-            return (
-                pyunits.convert(
-                    b.material_accumulation[t, x, p, j], to_units=flow_l_units
-                )
-                if dynamic
-                else 0
-            )
-
         def phase_equilibrium_term(b, t, x, p, j):
             if (
                 has_phase_equilibrium
@@ -920,6 +910,14 @@ argument).""",
                     return Constraint.Skip
                 else:
                     if (p, j) in pc_set:
+                        if dynamic:
+                            lhs = b.length * pyunits.convert(
+                                b.material_accumulation[t, x, p, j],
+                                to_units=flow_l_units,
+                            )
+                        else:
+                            lhs = 0
+
                         rhs = b._flow_direction_term * b.material_flow_dx[t, x, p, j]
 
                         if has_rate_reactions:
@@ -952,7 +950,7 @@ argument).""",
                         if custom_mass_term is not None:
                             rhs += b.length * user_term_mass(b, t, x, p, j)
 
-                        return b.length * accumulation_term(b, t, x, p, j) == rhs
+                        return lhs == rhs
 
                     else:
                         return Constraint.Skip
@@ -1041,6 +1039,14 @@ argument).""",
                         if (p, j) in pc_set:
                             cplist.append(p)
 
+                    if dynamic:
+                        lhs = b.length * pyunits.convert(
+                            sum(b.material_accumulation[t, x, p, j] for p in cplist),
+                            to_units=flow_l_units,
+                        )
+                    else:
+                        lhs = 0
+
                     rhs = b._flow_direction_term * sum(
                         b.material_flow_dx[t, x, p, j] for p in cplist
                     )
@@ -1076,10 +1082,7 @@ argument).""",
                     if custom_mass_term is not None:
                         rhs += b.length * user_term_mass(b, t, x, j)
 
-                    return (
-                        b.length * sum(accumulation_term(b, t, x, p, j) for p in cplist)
-                        == rhs
-                    )
+                    return lhs == rhs
 
     def add_phase_component_balances(
         self,
@@ -1405,15 +1408,6 @@ argument).""",
                 units=flow_l_units,
             )
 
-        # Create rules to substitute material balance terms
-        # Accumulation term
-        def accumulation_term(b, t, x, e):
-            return (
-                pyunits.convert(b.element_accumulation[t, x, e], to_units=flow_l_units)
-                if dynamic
-                else 0
-            )
-
         # Element balances
         @self.Constraint(
             self.flowsheet().time,
@@ -1431,6 +1425,12 @@ argument).""",
             ):
                 return Constraint.Skip
             else:
+                if dynamic:
+                    lhs = b.length * pyunits.convert(
+                        b.element_accumulation[t, x, e], to_units=flow_l_units
+                    )
+                else:
+                    lhs = 0
                 rhs = b._flow_direction_term * b.elemental_flow_dx[t, x, e]
 
                 if has_mass_transfer:
@@ -1441,7 +1441,7 @@ argument).""",
 
                 # TODO : Add diffusion terms
 
-                return b.length * accumulation_term(b, t, x, e) == rhs
+                return lhs == rhs
 
         # Elemental Holdup
         if has_holdup:
@@ -1657,15 +1657,6 @@ argument).""",
 
                 return rate_heat + equil_heat
 
-        # Create rules to substitute energy balance terms
-        # Accumulation term
-        def accumulation_term(b, t, x, p):
-            return (
-                pyunits.convert(b.energy_accumulation[t, x, p], to_units=power_l_units)
-                if dynamic
-                else 0
-            )
-
         # Energy balance equation
         @self.Constraint(
             self.flowsheet().time, self.length_domain, doc="Energy balances"
@@ -1680,6 +1671,14 @@ argument).""",
             ):
                 return Constraint.Skip
             else:
+                if dynamic:
+                    lhs = b.length * pyunits.convert(
+                        sum(b.energy_accumulation[t, x, p] for p in phase_list),
+                        to_units=power_l_units,
+                    )
+                else:
+                    lhs = 0
+
                 rhs = b._flow_direction_term * sum(
                     b.enthalpy_flow_dx[t, x, p] for p in phase_list
                 )
@@ -1699,12 +1698,9 @@ argument).""",
                 if custom_term is not None:
                     rhs += b.length * custom_term(t, x)
 
-                return (
-                    b.length * sum(accumulation_term(b, t, x, p) for p in phase_list)
-                    == rhs
-                )
-
                 # TODO : Add conduction/dispersion term
+
+                return lhs == rhs
 
         # Energy Holdup
         if has_holdup:
