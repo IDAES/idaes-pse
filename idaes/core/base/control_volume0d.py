@@ -1480,6 +1480,15 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     "ReactionBlock class.".format(blk.name)
                 )
 
+    def estimate_outlet_state(self, always_estimate=False):
+        for t in self.flowsheet().time:
+            self._estimate_next_state(
+                self.properties_in,
+                self.properties_out,
+                index=t,
+                always_estimate=always_estimate,
+            )
+
     def initialize(
         blk,
         state_args=None,
@@ -1538,6 +1547,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             hold_state=hold_state,
             state_args=state_args,
         )
+        # if state_args is None:
+        #     blk.estimate_outlet_state(always_estimate=False)
         out_flags = blk.properties_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
