@@ -18,6 +18,7 @@ Base class for control volumes
 from enum import Enum
 
 # Import Pyomo libraries
+from pyomo.environ import value
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
@@ -964,3 +965,55 @@ have a config block which derives from CONFIG_Base,
                     "the IDAES developers with this bug.".format(self.name)
                 )
         return rep_blk
+
+    def _estimate_next_state(self, state1, state2, index, always_estimate=False):
+        state_vars = state2.define_state_vars()
+
+        for n, v2 in state_vars:
+            v1 = state1.get_component(n)
+            if v.is_indexed():
+                for k in v.keys():
+                    self._estiamte_state_var(v1[k], v2[k], index, always_estimate)
+            else:
+                self._estiamte_state_var(v1, v2, index, always_estimate)
+
+    def _estimate_state_var(self, v1, v2, index, always_estimate=False):
+        if v2.fixed:
+            # Do not touch fixed Vars
+            pass
+        elif v2.value is not None and not always_estimate:
+            # Var has a value and we are not always estimating - do nothing
+            pass
+        else:
+            # Estimate value for v2 from v1
+            # If no better guess, use v1
+            v2val = v1
+
+            # Check for known special cases
+            n = v2.local_name
+            # Material flows are too hard ot deal with generically, as they
+            # can be defined as bilinear terms, can have various indexing and
+            # can be on different bases.
+            # Similarly, mass and mole fractions are hard ot deal with.
+            if n.startswith(("enth", "internal_energy")):
+                # Enthalpy or internal energy, need to look for heat and work
+                # We will ignore PV effects on internal energy
+                if hasattr(self, "heat") and self.heat[index].fixed:
+                    q = self.heat[index]
+                else:
+                    q = 0
+                if hasattr(self, "work") and self.work[index].fixed:
+                    w = self.work[index]
+                else:
+                    w = 0
+                v2val = value(v1 + q + w)
+            elif n.startswith("pressure"):
+                # Pressure, see if there is a fixed deltaP
+                if hasattr(self, "deltaP") and self.deltaP[index].fixed:
+                    v2val = value(v1 + self.deltaP[index])
+            elif n.startswith("temperature"):
+                # Temperature, see if there is a fixed deltaT
+                if hasattr(self, "deltaT") and self.deltaT[index].fixed:
+                    v2val = value(v1 + self.deltaT[index])
+
+            v2.set_value(v2val)

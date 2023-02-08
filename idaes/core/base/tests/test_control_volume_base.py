@@ -17,7 +17,7 @@ Author: Andrew Lee
 """
 import inspect
 import pytest
-from pyomo.environ import ConcreteModel, Block, Set, units
+from pyomo.environ import ConcreteModel, Block, Set, units, value, Var
 from pyomo.common.config import ConfigBlock, ConfigValue
 from idaes.core import (
     ControlVolumeBlockData,
@@ -524,3 +524,198 @@ def test_add_momentum_balances():
         else:
             with pytest.raises(NotImplementedError):
                 m.cv.add_momentum_balances(t)
+
+
+@pytest.mark.unit
+def test_estimate_state_var_generic():
+    m = ConcreteModel()
+    m.cv = CVFrame()
+
+    m.cv.b1 = Block()
+    m.cv.b1.state_var = Var(initialize=16)
+
+    m.cv.b2 = Block()
+    m.cv.b2.state_var = Var(initialize=17)
+
+    # Has value and always_estimate False, expect no effect
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.state_var, index=None, always_estimate=False
+    )
+    assert value(m.cv.b2.state_var) == 17
+
+    # Has value but always_estimate True, expect value equals b1.state_var
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.state_var, index=None, always_estimate=True
+    )
+    assert value(m.cv.b2.state_var) == 16
+
+    # Fixed and always_estimate True, expect value to remain fixed
+    m.cv.b2.state_var.fix(24)
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.state_var, index=None, always_estimate=True
+    )
+    assert value(m.cv.b2.state_var) == 24
+
+
+@pytest.mark.unit
+def test_estimate_state_var_temperature():
+    m = ConcreteModel()
+    m.cv = CVFrame()
+    m.cv.myset = Set(initialize=["a", "b"])
+
+    m.cv.b1 = Block()
+    m.cv.b1.state_var = Var(initialize=16)
+
+    m.cv.b2 = Block()
+    m.cv.b2.temperature = Var(initialize=17)
+
+    # Has value and always_estimate False, expect no effect
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.temperature, index="a", always_estimate=False
+    )
+    assert value(m.cv.b2.temperature) == 17
+
+    # Has value but always_estimate True, expect to estimate
+    # No deltaT defined, should have value of b1.state_var
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.temperature, index="a", always_estimate=True
+    )
+    assert value(m.cv.b2.temperature) == 16
+
+    # deltaT defined but not fixed, should keep value of b1.state_var
+    m.cv.b2.temperature.set_value(17)
+    m.cv.deltaT = Var(m.cv.myset)
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.temperature, index="a", always_estimate=True
+    )
+    assert value(m.cv.b2.temperature) == 16
+
+    # deltaT defined and now fixed, should keep value of b1.state_var+deltaT
+    m.cv.b2.temperature.set_value(17)
+    m.cv.deltaT["a"].fix(10)
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.temperature, index="a", always_estimate=True
+    )
+    assert value(m.cv.b2.temperature) == 26
+
+    # Fixed and always_estimate True, expect value to remain fixed
+    m.cv.b2.temperature.fix(24)
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.temperature, index="a", always_estimate=True
+    )
+    assert value(m.cv.b2.temperature) == 24
+
+
+@pytest.mark.unit
+def test_estimate_state_var_pressure():
+    m = ConcreteModel()
+    m.cv = CVFrame()
+    m.cv.myset = Set(initialize=["a", "b"])
+
+    m.cv.b1 = Block()
+    m.cv.b1.state_var = Var(initialize=16)
+
+    m.cv.b2 = Block()
+    m.cv.b2.pressure = Var(initialize=17)
+
+    # Has value and always_estimate False, expect no effect
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.pressure, index="a", always_estimate=False
+    )
+    assert value(m.cv.b2.pressure) == 17
+
+    # Has value but always_estimate True, expect to estimate
+    # No deltaP defined, should have value of b1.state_var
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.pressure, index="a", always_estimate=True
+    )
+    assert value(m.cv.b2.pressure) == 16
+
+    # deltaP defined but not fixed, should keep value of b1.state_var
+    m.cv.b2.pressure.set_value(17)
+    m.cv.deltaP = Var(m.cv.myset)
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.pressure, index="a", always_estimate=True
+    )
+    assert value(m.cv.b2.pressure) == 16
+
+    # deltaP defined and now fixed, should keep value of b1.state_var+deltaT
+    m.cv.b2.pressure.set_value(17)
+    m.cv.deltaP["a"].fix(10)
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.pressure, index="a", always_estimate=True
+    )
+    assert value(m.cv.b2.pressure) == 26
+
+    # Fixed and always_estimate True, expect value to remain fixed
+    m.cv.b2.pressure.fix(24)
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.pressure, index="a", always_estimate=True
+    )
+    assert value(m.cv.b2.pressure) == 24
+
+
+@pytest.mark.unit
+def test_estimate_state_var_enthalpy():
+    m = ConcreteModel()
+    m.cv = CVFrame()
+    m.cv.myset = Set(initialize=["a", "b"])
+
+    m.cv.b1 = Block()
+    m.cv.b1.state_var = Var(initialize=16)
+
+    m.cv.b2 = Block()
+    m.cv.b2.enth_mol = Var(initialize=17)
+
+    # Has value and always_estimate False, expect no effect
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.enth_mol, index="a", always_estimate=False
+    )
+    assert value(m.cv.b2.enth_mol) == 17
+
+    # Has value but always_estimate True, expect to estimate
+    # No heat or work defined, should have value of b1.state_var
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.enth_mol, index="a", always_estimate=True
+    )
+    assert value(m.cv.b2.enth_mol) == 16
+
+    # heat and work defined but not fixed, should keep value of b1.state_var
+    m.cv.b2.enth_mol.set_value(17)
+    m.cv.heat = Var(m.cv.myset)
+    m.cv.work = Var(m.cv.myset)
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.enth_mol, index="a", always_estimate=True
+    )
+    assert value(m.cv.b2.enth_mol) == 16
+
+    # heat fixed, should keep value of b1.state_var+heat
+    m.cv.b2.enth_mol.set_value(17)
+    m.cv.heat["a"].fix(10)
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.enth_mol, index="a", always_estimate=True
+    )
+    assert value(m.cv.b2.enth_mol) == 26
+
+    # heat and work fixed, should keep value of b1.state_var+heat_work
+    m.cv.b2.enth_mol.set_value(17)
+    m.cv.work["a"].fix(10)
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.enth_mol, index="a", always_estimate=True
+    )
+    assert value(m.cv.b2.enth_mol) == 36
+
+    # only work fixed, should keep value of b1.state_var+work
+    m.cv.b2.enth_mol.set_value(17)
+    m.cv.heat.unfix()
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.enth_mol, index="a", always_estimate=True
+    )
+    assert value(m.cv.b2.enth_mol) == 26
+
+    # Fixed and always_estimate True, expect value to remain fixed
+    m.cv.b2.enth_mol.fix(24)
+    m.cv._estimate_state_var(
+        m.cv.b1.state_var, m.cv.b2.enth_mol, index="a", always_estimate=True
+    )
+    assert value(m.cv.b2.enth_mol) == 24

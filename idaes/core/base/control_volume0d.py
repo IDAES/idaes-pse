@@ -361,7 +361,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 pc_set,
                 domain=Reals,
                 initialize=0.0,
-                doc="Amount of component generated in " "unit by kinetic reactions",
+                doc="Amount of component generated in unit by kinetic reactions",
                 units=rxn_flow_units,
             )  # use reaction package flow basis
 
