@@ -96,7 +96,7 @@ def make_phase_split(
                         raise PropertyNotSupportedError(
                             "No mole_frac_phase_comp or flow_mol_phase or"
                             " flow_mol_phase_comp variables encountered "
-                            "while building ports for the condenser. "
+                            "while building ports. "
                         )
                 elif "mass" in local_name:
                     if hasattr(
@@ -112,12 +112,12 @@ def make_phase_split(
                         raise PropertyNotSupportedError(
                             "No mass_frac_phase_comp or flow_mass_phase or"
                             " flow_mass_phase_comp variables encountered "
-                            "while building ports for the condenser."
+                            "while building ports."
                         )
                 else:
                     raise PropertyNotSupportedError(
                         "No mass frac or mole frac variables encountered "
-                        " while building ports for the condenser. "
+                        " while building ports. "
                         "phase_frac as a state variable is not "
                         "supported with distillation unit models."
                     )

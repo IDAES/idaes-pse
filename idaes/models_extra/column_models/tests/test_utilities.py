@@ -23,6 +23,8 @@ from pyomo.network import Port
 
 from idaes.models_extra.column_models.util import make_phase_split
 
+from idaes.core.util.exceptions import PropertyPackageError, PropertyNotSupportedError
+
 # Mark module as all unit tests
 pytestmark = pytest.mark.unit
 
@@ -317,6 +319,78 @@ def test_make_phase_split_frac_comp(m):
                     m.port.mass_frac_phase_comp[i, p, j]
                     is m.properties_out[i].mass_frac_phase_comp[p, j]
                 )
+
+
+def test_make_phase_enth_error(m):
+    # Mock define_port_members method
+    def define_port_members(m):
+        return {
+            "enth_mol": m.enth_mol,
+        }
+
+    m.phases = Set(initialize=["L", "V"])
+
+    m.config.property_package = DummyData()
+
+    # Add variables and define_port_members method to dummy state block
+    for i in m.time:
+        m.properties_out[i].enth_mol = Var(m.phases)
+
+        m.properties_out[i].define_port_members = MethodType(
+            define_port_members, m.properties_out[i]
+        )
+
+    # Check for expected results
+    with pytest.raises(
+        PropertyPackageError,
+        match="Enthalpy is indexed but the variable "
+        "name does not reflect the presence of an index. "
+        "Please follow the naming convention outlined "
+        "in the documentation for state variables.",
+    ):
+        make_phase_split(m, m.port)
+
+
+def test_make_phase_mass_error(m):
+    # Mock define_port_members method
+    def define_port_members(m):
+        return {
+            "mass_frac_comp": m.mass_frac_comp,
+        }
+
+    def _liquid_set(m):
+        return ["a1", "b1"]
+
+    def _vapor_set(m):
+        return ["a1", "b1"]
+
+    m.components = Set(initialize=["a1", "b1"])
+    m.phases = Set(initialize=["L", "V"])
+
+    m.config.property_package = DummyData()
+    m.config.property_package.component_list = m.components
+    m.config.property_package.phase_list = m.phases
+
+    m._liquid_set = MethodType(_liquid_set, m)
+
+    m._vapor_set = MethodType(_vapor_set, m)
+
+    # Add variables and define_port_members method to dummy state block
+    for i in m.time:
+        m.properties_out[i].mass_frac_comp = Var(m.phases, m.components)
+
+        m.properties_out[i].define_port_members = MethodType(
+            define_port_members, m.properties_out[i]
+        )
+
+    # Check for expected results
+    with pytest.raises(
+        PropertyNotSupportedError,
+        match="No mass_frac_phase_comp or flow_mass_phase or"
+        " flow_mass_phase_comp variables encountered "
+        "while building ports.",
+    ):
+        make_phase_split(m, m.port)
 
 
 class DummyData:
