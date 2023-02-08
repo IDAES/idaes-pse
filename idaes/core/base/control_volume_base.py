@@ -967,17 +967,53 @@ have a config block which derives from CONFIG_Base,
         return rep_blk
 
     def _estimate_next_state(self, state1, state2, index, always_estimate=False):
-        state_vars = state2.define_state_vars()
+        """
+        Common method to estimate values for state variables in one state based on
+        previous state. This method will not change values of fixed variables.
+        Works for both 0D and 1D control volumes.
 
-        for n, v2 in state_vars:
-            v1 = state1.get_component(n)
-            if v.is_indexed():
-                for k in v.keys():
-                    self._estiamte_state_var(v1[k], v2[k], index, always_estimate)
+        Args:
+            state1 - StateBlock (indexed) to use as the source for values
+            state2 - StateBlock (indexed) on which to set estimated values
+            index - index to use for states and other indexed CV level variables
+            always_estimate - bool indicating whether method should overwrite existing values
+                on unfixed variables
+
+        Returns:
+            None
+
+        """
+        state_vars = state2[index].define_state_vars()
+
+        for v2 in state_vars.values():
+            v1 = state1[index].find_component(v2.parent_component().local_name)
+            if v2.is_indexed():
+                for k in v2.keys():
+                    self._estimate_state_var(v1[k], v2[k], index, always_estimate)
             else:
-                self._estiamte_state_var(v1, v2, index, always_estimate)
+                self._estimate_state_var(v1, v2, index, always_estimate)
 
     def _estimate_state_var(self, v1, v2, index, always_estimate=False):
+        """
+        Method to set value of a given state variable (scalar or indexed) based
+        on value from another state variable.
+
+        This method contains some logic for incorporating control volume level
+        transfer terms into the estimates. Transfer terms supported include deltaT,
+        deltaP, heat and work. Material flow and concentration terms do not include
+        additional terms due to complexity in determining how to interpret these.
+
+        Args:
+            v1 - state variable to use as source for values
+            v2 - state variable to set estimate values on
+            index - index for getting values from control volume level terms
+            always_estimate - bool indicating whether method should overwrite existing values
+                on unfixed variables
+
+        Returns:
+            None
+
+        """
         if v2.fixed:
             # Do not touch fixed Vars
             pass
@@ -995,7 +1031,7 @@ have a config block which derives from CONFIG_Base,
             # can be defined as bilinear terms, can have various indexing and
             # can be on different bases.
             # Similarly, mass and mole fractions are hard ot deal with.
-            if n.startswith(("enth", "internal_energy")):
+            if n.startswith(("enth", "energy_internal")):
                 # Enthalpy or internal energy, need to look for heat and work
                 # We will ignore PV effects on internal energy
                 if hasattr(self, "heat") and self.heat[index].fixed:

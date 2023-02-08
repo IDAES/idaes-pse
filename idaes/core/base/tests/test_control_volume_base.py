@@ -17,6 +17,8 @@ Author: Andrew Lee
 """
 import inspect
 import pytest
+from types import MethodType
+
 from pyomo.environ import ConcreteModel, Block, Set, units, value, Var
 from pyomo.common.config import ConfigBlock, ConfigValue
 from idaes.core import (
@@ -719,3 +721,156 @@ def test_estimate_state_var_enthalpy():
         m.cv.b1.state_var, m.cv.b2.enth_mol, index="a", always_estimate=True
     )
     assert value(m.cv.b2.enth_mol) == 24
+
+
+@pytest.mark.unit
+def test_estimate_next_state_no_values():
+    m = ConcreteModel()
+    m.cv = CVFrame()
+    m.cv.myset = Set(initialize=["a", "b"])
+
+    m.cv.b1 = Block(m.cv.myset)
+    m.cv.b1["a"].state_var = Var(m.cv.myset, initialize={"a": 12, "b": 13})
+    m.cv.b1["a"].temperature = Var(initialize=14)
+    m.cv.b1["a"].pressure = Var(initialize=15)
+    m.cv.b1["a"].energy_internal = Var(initialize=16)
+    m.cv.b1["b"].state_var = Var(m.cv.myset, initialize={"a": 22, "b": 23})
+    m.cv.b1["b"].temperature = Var(initialize=24)
+    m.cv.b1["b"].pressure = Var(initialize=25)
+    m.cv.b1["b"].energy_internal = Var(initialize=26)
+
+    m.cv.b2 = Block(m.cv.myset)
+    m.cv.b2["a"].state_var = Var(m.cv.myset)
+    m.cv.b2["a"].temperature = Var()
+    m.cv.b2["a"].pressure = Var()
+    m.cv.b2["a"].energy_internal = Var()
+    m.cv.b2["b"].state_var = Var(m.cv.myset)
+    m.cv.b2["b"].temperature = Var()
+    m.cv.b2["b"].pressure = Var()
+    m.cv.b2["b"].energy_internal = Var()
+
+    def define_state_vars(blk):
+        return {
+            "foo": blk.state_var,
+            "bar": blk.temperature,
+            "baz": blk.pressure,
+            "baz2": blk.energy_internal,
+        }
+
+    m.cv.b2["a"].define_state_vars = MethodType(define_state_vars, m.cv.b2["a"])
+
+    m.cv._estimate_next_state(m.cv.b1, m.cv.b2, "a", False)
+
+    assert value(m.cv.b2["a"].state_var["a"]) == 12
+    assert value(m.cv.b2["a"].state_var["b"]) == 13
+    assert value(m.cv.b2["a"].temperature) == 14
+    assert value(m.cv.b2["a"].pressure) == 15
+    assert value(m.cv.b2["a"].energy_internal) == 16
+
+    assert m.cv.b2["b"].state_var["a"]._value is None
+    assert m.cv.b2["b"].state_var["b"]._value is None
+    assert m.cv.b2["b"].temperature._value is None
+    assert m.cv.b2["b"].pressure._value is None
+    assert m.cv.b2["b"].energy_internal._value is None
+
+
+@pytest.mark.unit
+def test_estimate_next_state_always_estimate_false():
+    m = ConcreteModel()
+    m.cv = CVFrame()
+    m.cv.myset = Set(initialize=["a", "b"])
+
+    m.cv.b1 = Block(m.cv.myset)
+    m.cv.b1["a"].state_var = Var(m.cv.myset, initialize={"a": 12, "b": 13})
+    m.cv.b1["a"].temperature = Var(initialize=14)
+    m.cv.b1["a"].pressure = Var(initialize=15)
+    m.cv.b1["a"].energy_internal = Var(initialize=16)
+    m.cv.b1["b"].state_var = Var(m.cv.myset, initialize={"a": 22, "b": 23})
+    m.cv.b1["b"].temperature = Var(initialize=24)
+    m.cv.b1["b"].pressure = Var(initialize=25)
+    m.cv.b1["b"].energy_internal = Var(initialize=26)
+
+    m.cv.b2 = Block(m.cv.myset)
+    m.cv.b2["a"].state_var = Var(m.cv.myset, initialize=1)
+    m.cv.b2["a"].temperature = Var(initialize=1)
+    m.cv.b2["a"].pressure = Var(initialize=1)
+    m.cv.b2["a"].energy_internal = Var(initialize=1)
+    m.cv.b2["b"].state_var = Var(m.cv.myset, initialize=1)
+    m.cv.b2["b"].temperature = Var(initialize=1)
+    m.cv.b2["b"].pressure = Var(initialize=1)
+    m.cv.b2["b"].energy_internal = Var(initialize=1)
+
+    def define_state_vars(blk):
+        return {
+            "foo": blk.state_var,
+            "bar": blk.temperature,
+            "baz": blk.pressure,
+            "baz2": blk.energy_internal,
+        }
+
+    m.cv.b2["a"].define_state_vars = MethodType(define_state_vars, m.cv.b2["a"])
+
+    m.cv._estimate_next_state(m.cv.b1, m.cv.b2, "a", False)
+
+    assert value(m.cv.b2["a"].state_var["a"]) == 1
+    assert value(m.cv.b2["a"].state_var["b"]) == 1
+    assert value(m.cv.b2["a"].temperature) == 1
+    assert value(m.cv.b2["a"].pressure) == 1
+    assert value(m.cv.b2["a"].energy_internal) == 1
+
+    assert value(m.cv.b2["b"].state_var["a"]) == 1
+    assert value(m.cv.b2["b"].state_var["b"]) == 1
+    assert value(m.cv.b2["b"].temperature) == 1
+    assert value(m.cv.b2["b"].pressure) == 1
+    assert value(m.cv.b2["b"].energy_internal) == 1
+
+
+@pytest.mark.unit
+def test_estimate_next_state_always_estimate_true():
+    m = ConcreteModel()
+    m.cv = CVFrame()
+    m.cv.myset = Set(initialize=["a", "b"])
+
+    m.cv.b1 = Block(m.cv.myset)
+    m.cv.b1["a"].state_var = Var(m.cv.myset, initialize={"a": 12, "b": 13})
+    m.cv.b1["a"].temperature = Var(initialize=14)
+    m.cv.b1["a"].pressure = Var(initialize=15)
+    m.cv.b1["a"].energy_internal = Var(initialize=16)
+    m.cv.b1["b"].state_var = Var(m.cv.myset, initialize={"a": 22, "b": 23})
+    m.cv.b1["b"].temperature = Var(initialize=24)
+    m.cv.b1["b"].pressure = Var(initialize=25)
+    m.cv.b1["b"].energy_internal = Var(initialize=26)
+
+    m.cv.b2 = Block(m.cv.myset)
+    m.cv.b2["a"].state_var = Var(m.cv.myset, initialize=1)
+    m.cv.b2["a"].temperature = Var(initialize=1)
+    m.cv.b2["a"].pressure = Var(initialize=1)
+    m.cv.b2["a"].energy_internal = Var(initialize=1)
+    m.cv.b2["b"].state_var = Var(m.cv.myset, initialize=1)
+    m.cv.b2["b"].temperature = Var(initialize=1)
+    m.cv.b2["b"].pressure = Var(initialize=1)
+    m.cv.b2["b"].energy_internal = Var(initialize=1)
+
+    def define_state_vars(blk):
+        return {
+            "foo": blk.state_var,
+            "bar": blk.temperature,
+            "baz": blk.pressure,
+            "baz2": blk.energy_internal,
+        }
+
+    m.cv.b2["b"].define_state_vars = MethodType(define_state_vars, m.cv.b2["b"])
+
+    m.cv._estimate_next_state(m.cv.b1, m.cv.b2, "b", True)
+
+    assert value(m.cv.b2["a"].state_var["a"]) == 1
+    assert value(m.cv.b2["a"].state_var["b"]) == 1
+    assert value(m.cv.b2["a"].temperature) == 1
+    assert value(m.cv.b2["a"].pressure) == 1
+    assert value(m.cv.b2["a"].energy_internal) == 1
+
+    assert value(m.cv.b2["b"].state_var["a"]) == 22
+    assert value(m.cv.b2["b"].state_var["b"]) == 23
+    assert value(m.cv.b2["b"].temperature) == 24
+    assert value(m.cv.b2["b"].pressure) == 25
+    assert value(m.cv.b2["b"].energy_internal) == 26
