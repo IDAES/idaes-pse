@@ -41,12 +41,14 @@ class ThermalConductivityWMS(object):
             # Properties of Gases and Liquids, Eq. 9-5.14
             # and Eq. 10-6.4
             ViscosityWilke.build_phi_ij(b, p)
+            if not hasattr(b, "_therm_cond_phase_comp"):
+                b._make_therm_cond_phase_comp()
 
             # Properties of Gases and Liquids, Eq. 10-6.2
             return sum(
                 [
                     b.mole_frac_phase_comp[p, i]
-                    * b.therm_cond_phase_comp[p, i]
+                    * b._therm_cond_phase_comp[p, i]
                     / sum(
                         [
                             b.mole_frac_phase_comp[p, j] * b.visc_d_phi_ij[i, j]

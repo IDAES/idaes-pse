@@ -59,7 +59,7 @@ class Eucken(object):
                 cp_func = cp_mol_ig_comp.cp_mol_ig_comp.return_expression
 
             therm_cond = (
-                b.visc_d_phase_comp[p, cobj.local_name]
+                b._visc_d_phase_comp[p, cobj.local_name]
                 / M
                 * (f_int * cp_func(b, cobj, T) + (15 / 4 - 5 * f_int / 2) * R)
             )

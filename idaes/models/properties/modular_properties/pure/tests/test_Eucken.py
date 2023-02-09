@@ -78,7 +78,7 @@ def construct_dummy_model(param_dict):
 
     m.props[1].temperature = Var(initialize=298, units=pyunits.K)
     # Have to trick the block into considering "params" as the component name
-    m.props[1].visc_d_phase_comp = Var(
+    m.props[1]._visc_d_phase_comp = Var(
         ["Vap"], ["params"], initialize=1e-7, units=pyunits.Pa * pyunits.s
     )
     return m
@@ -114,7 +114,7 @@ def test_therm_cond_phase_comp_acetone():
     ]  # Stiel and Thodos percent error
     for i in range(3):
         m.props[1].temperature.value = T_list[i]
-        m.props[1].visc_d_phase_comp["Vap", "params"].value = visc_list[i]
+        m.props[1]._visc_d_phase_comp["Vap", "params"].value = visc_list[i]
         m.params.cp_mol_pure.value = Cv_list[i] + 8.314
         for j in range(3):
             m.params.f_int_eucken.value = f_int_list[j]
@@ -170,7 +170,7 @@ def test_therm_cond_phase_comp_CO2():
     ]  # Stiel and Thodos percent error
     for i in range(5):
         m.props[1].temperature.value = T_list[i]
-        m.props[1].visc_d_phase_comp["Vap", "params"].value = visc_list[i]
+        m.props[1]._visc_d_phase_comp["Vap", "params"].value = visc_list[i]
         m.params.cp_mol_pure.value = Cv_list[i] + 8.314
         for j in range(3):
             m.params.f_int_eucken.value = f_int_list[j]
@@ -208,7 +208,7 @@ def test_therm_cond_phase_comp_ammonia():
     ]  # Stiel and Thodos percent error
     for i in range(2):
         m.props[1].temperature.value = T_list[i]
-        m.props[1].visc_d_phase_comp["Vap", "params"].value = visc_list[i]
+        m.props[1]._visc_d_phase_comp["Vap", "params"].value = visc_list[i]
         m.params.cp_mol_pure.value = Cv_list[i] + 8.314
         for j in range(3):
             m.params.f_int_eucken.value = f_int_list[j]

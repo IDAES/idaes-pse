@@ -167,23 +167,23 @@ def construct_dummy_model(component_dict, chapman_enskog=False):
         else:
             return pyo.Expression.Skip
 
-    m.props[1].visc_d_phase_comp = pyo.Expression(
+    m.props[1]._visc_d_phase_comp = pyo.Expression(
         m.props[1].phase_list,
         m.props[1].component_list,
         doc="Viscosity for each phase-component pair",
         rule=rule_visc_d_phase_comp,
     )
 
-    m.props[1].therm_cond_phase_comp = Var(
+    m.props[1]._therm_cond_phase_comp = Var(
         m.props[1].phase_list,
         m.props[1].component_list,
         initialize=0,
         units=pyunits.W / pyunits.m / pyunits.K,
     )
-    m.props[1].therm_cond_phase_comp["Vap", comp1].value = component_dict[comp1][
+    m.props[1]._therm_cond_phase_comp["Vap", comp1].value = component_dict[comp1][
         "therm_cond_Vap"
     ]
-    m.props[1].therm_cond_phase_comp["Vap", comp2].value = component_dict[comp2][
+    m.props[1]._therm_cond_phase_comp["Vap", comp2].value = component_dict[comp2][
         "therm_cond_Vap"
     ]
 

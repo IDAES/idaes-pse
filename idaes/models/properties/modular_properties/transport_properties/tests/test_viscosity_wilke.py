@@ -110,17 +110,17 @@ def construct_dummy_model(component_dict):
     m.props[1].mole_frac_phase_comp = Var(
         m.params.phase_list, m.params.component_list, initialize=0.5
     )
-    m.props[1].visc_d_phase_comp = Var(
+    m.props[1]._visc_d_phase_comp = Var(
         m.props[1].phase_list,
         m.props[1].component_list,
         initialize=0,
         units=pyunits.Pa * pyunits.s,
     )
-    m.props[1].visc_d_phase_comp["Vap", comp1].value = pyunits.convert(
+    m.props[1]._visc_d_phase_comp["Vap", comp1].value = pyunits.convert(
         component_dict[comp1]["visc_d_Vap"] * pyunits.micropoise,
         to_units=pyunits.Pa * pyunits.s,
     )
-    m.props[1].visc_d_phase_comp["Vap", comp2].value = pyunits.convert(
+    m.props[1]._visc_d_phase_comp["Vap", comp2].value = pyunits.convert(
         component_dict[comp2]["visc_d_Vap"] * pyunits.micropoise,
         to_units=pyunits.Pa * pyunits.s,
     )
