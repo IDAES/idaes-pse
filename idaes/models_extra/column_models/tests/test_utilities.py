@@ -149,9 +149,8 @@ def test_make_phase_split_flow_phase(m):
 
     # Add variables and define_port_members method to dummy state block
     for i in m.time:
-        m.properties_out[i].flow_phase_comp = Var(m.phases)
         m.properties_out[i].flow_mol_phase_comp = Var(m.phases, m.components)
-
+        m.properties_out[i].flow_phase_comp = Var(m.phases, m.components)
         m.properties_out[i].define_port_members = MethodType(
             define_port_members, m.properties_out[i]
         )
