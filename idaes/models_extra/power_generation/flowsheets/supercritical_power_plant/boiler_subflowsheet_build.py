@@ -101,8 +101,6 @@ def main():
 
     build_boiler(m.fs)
 
-    TransformationFactory("network.expand_arcs").apply_to(m)
-
     # Create a solver
     solver = get_solver()
     return (m, solver)
@@ -207,6 +205,8 @@ def build_boiler(fs):
     fs.fg_rhtomix = Arc(source=fs.RH.hot_side_outlet, destination=fs.mix1.Reheat_out)
     fs.fg_prsh2mix = Arc(source=fs.PrSH.hot_side_outlet, destination=fs.mix1.PrSH_out)
     fs.fg_mix2econ = Arc(source=fs.mix1.outlet, destination=fs.ECON.hot_side_inlet)
+
+    TransformationFactory("network.expand_arcs").apply_to(fs)
 
 
 # Set inputs ==========================

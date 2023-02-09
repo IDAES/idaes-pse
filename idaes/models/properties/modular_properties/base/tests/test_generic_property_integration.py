@@ -203,7 +203,9 @@ class TestInherentReactions(object):
 
         assert check_optimal_termination(results)
 
-        assert value(frame.fs.H101.control_volume.properties_out[0].k_eq["e1"]) == 2
+        assert value(
+            frame.fs.H101.control_volume.properties_out[0].k_eq["e1"]
+        ) == pytest.approx(2, rel=1e-8)
 
         assert value(
             frame.fs.H101.control_volume.properties_out[0].k_eq["e1"]
@@ -260,7 +262,9 @@ class TestInherentReactions(object):
 
         assert check_optimal_termination(results)
 
-        assert value(frame.fs.H101.control_volume.properties_out[0].k_eq["e1"]) == 2
+        assert value(
+            frame.fs.H101.control_volume.properties_out[0].k_eq["e1"]
+        ) == pytest.approx(2, rel=1e-8)
 
         assert value(
             frame.fs.H101.control_volume.properties_out[0].k_eq["e1"]

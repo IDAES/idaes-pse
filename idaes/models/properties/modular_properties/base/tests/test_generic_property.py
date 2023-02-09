@@ -1263,39 +1263,45 @@ class TestGenericStateBlock(object):
         frame.props[1].flow_mol_phase_comp = Var(frame.props[1].phase_component_set)
 
         # Call all properties in metadata and assert they exist.
-        for p in frame.params.get_metadata().properties:
-            if p.endswith(("apparent", "true")):
+        for p in frame.params.get_metadata().properties.list_supported_properties():
+            if p.name.endswith(("apparent", "true")):
                 # True and apparent properties require electrolytes, which are
                 # not tested here
                 # Check that method exists and continue
-                assert hasattr(
-                    frame.props[1], frame.params.get_metadata().properties[p]["method"]
-                )
+                if frame.params.get_metadata().properties[p.name].method is not None:
+                    assert hasattr(
+                        frame.props[1],
+                        frame.params.get_metadata().properties[p.name].method,
+                    )
                 continue
-            elif p.endswith(("bubble", "bub", "dew")):
+            elif p.name.endswith(("bubble", "bub", "dew")):
                 # Bubble and dew properties require phase equilibria, which are
                 # not tested here
                 # Check that method exists and continue
                 assert hasattr(
-                    frame.props[1], frame.params.get_metadata().properties[p]["method"]
+                    frame.props[1],
+                    frame.params.get_metadata().properties[p.name].method,
                 )
                 continue
-            elif p in ["dh_rxn", "log_k_eq"]:
+            elif p.name in ["dh_rxn", "log_k_eq"]:
                 # Not testing inherent reactions here either
                 # Check that method exists and continue
                 assert hasattr(
-                    frame.props[1], frame.params.get_metadata().properties[p]["method"]
+                    frame.props[1],
+                    frame.params.get_metadata().properties[p.name].method,
                 )
                 continue
-            elif p in [
+            elif p.name in {
                 "diffus_phase_comp",
                 "visc_d_phase_comp",
                 "therm_cond_phase_comp",
-            ]:
+            }:
                 # phase indexed properties - these will be tested separately.
                 continue
+            elif p.supported:
+                assert hasattr(frame.props[1], p.name)
             else:
-                assert hasattr(frame.props[1], p)
+                assert not hasattr(frame.props[1], p.name)
 
     @pytest.mark.unit
     def test_flows(self, frame):

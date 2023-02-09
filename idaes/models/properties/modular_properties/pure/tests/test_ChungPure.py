@@ -55,7 +55,7 @@ def test_visc_vap_comp_sulfur_dioxide():
     }
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object._default_units = UnitSet(
+    m.meta_object._default_units.set_units(
         temperature=pyunits.K,
         mass=pyunits.kg,
         length=pyunits.m,
@@ -142,7 +142,7 @@ def test_visc_vap_comp_methanol():
     }
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object._default_units = UnitSet(
+    m.meta_object._default_units.set_units(
         temperature=pyunits.K,
         mass=pyunits.kg,
         length=pyunits.m,
@@ -226,7 +226,7 @@ def test_visc_vap_comp_ethane():
     }
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object._default_units = UnitSet(
+    m.meta_object._default_units.set_units(
         temperature=pyunits.K,
         mass=pyunits.kg,
         length=pyunits.m,

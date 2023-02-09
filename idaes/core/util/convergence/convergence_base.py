@@ -63,21 +63,24 @@ import getpass
 import importlib as il
 import json
 import logging
-import numpy as np
 import sys
 from io import StringIO
+from math import isclose
+
+import numpy as np
 
 # pyomo
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.common.tee import capture_output
 from pyomo.core import Param, Var
-from pyomo.opt import TerminationCondition
 from pyomo.common.log import LoggingIntercept
+from pyomo.environ import check_optimal_termination
 
 # idaes
 import idaes.core.util.convergence.mpi_utils as mpiu
 from idaes.core.dmf import resource
 import idaes.logger as idaeslog
+from idaes.core.solvers import get_solver
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -97,6 +100,10 @@ def register_convergence_class(name):
 
 
 class ConvergenceEvaluationSpecification(object):
+    """
+    Object for defining sample points for convergence evaluations.
+    """
+
     def __init__(self):
         self._inputs = OrderedDict()
 
@@ -151,9 +158,13 @@ class ConvergenceEvaluationSpecification(object):
         return self._inputs
 
 
-class ConvergenceEvaluation(object):
+class ConvergenceEvaluation:
+    """
+    Object for running convergence evaluations.
+    """
+
     def __init__(self):
-        self._sampling_specifications = list()
+        self._sampling_specifications = []
 
     def get_specification(self):
         """
@@ -195,21 +206,120 @@ class ConvergenceEvaluation(object):
 
     def get_solver(self):
         """
-        User should create and return the solver that will be used for the
-        convergence evaluation (including any necessary options)
+        Return the default IDAES solver that will be used for the
+        convergence evaluation (including any necessary options).
+
+        Users may overload this to use a custom solver or options if required.
 
         Returns
         -------
            Pyomo solver
 
         """
-        # ToDo: We may want this to be standardized across all the models
-        # within IDAES (should not need different solver options for different
-        # unit models)
-        raise NotImplementedError(
-            "Not implemented in the base class. This"
-            " should be overridden in the derived class"
+        return get_solver()
+
+    def write_baseline_file(self, filename: str, n_points: int, seed: int = None):
+        """
+        Write a baseline file for convergence evaluation.
+
+        Args:
+            filename - name of output file as a string.
+            n_points - number of sample points ot use for baseline
+            seed - (optional) seed for random sample generator
+
+        Returns:
+            None
+        """
+        jsondict = generate_baseline_statistics(self, n_points, seed)
+
+        with open(filename, "w") as fd:
+            json.dump(jsondict, fd, indent=3)
+
+    def compare_to_baseline(
+        self, baseline_filename: str, rel_tol: float = 0.1, abs_tol: float = 1
+    ):
+        """
+        Compare model convergence to baseline.
+
+        Args:
+            baseline_filename - name of baseline file to use for comparison as string.
+            rel_tol - maximum relative tolerance for iteration comparison (default = 0.1)
+            abs_tol - minimum absolute tolerance for iteration comparison (default = 1)
+
+        Returns:
+            list of samples with different solver status
+            list of samples with different number of iterations
+            list of samples with different number of iterations in restoration
+            list of samples with different number of iterations with regularization
+        """
+        # Read baseline file
+        try:
+            with open(baseline_filename, "r") as fd:
+                basedict = json.load(fd, object_pairs_hook=OrderedDict)
+        except Exception:
+            _log.exception(f"Error reading json file {baseline_filename}")
+            raise ValueError(f"Problem reading json file: {baseline_filename}")
+
+        # Run samples from baseline
+        inputs, samples, results = run_convergence_evaluation(basedict, self)
+
+        return _compare_run_to_baseline(
+            results, basedict["results"], rel_tol=rel_tol, abs_tol=abs_tol
         )
+
+
+def _compare_run_to_baseline(run1, baseline, rel_tol: float = 0.1, abs_tol: float = 1):
+    """
+    Compare results of convergence evaluation run to baseline results.
+
+    Args:
+        run1 - list of OrderedDicts from run_convergence_evaluation for run 1.
+        baseline - OrderedDict of results from baseline run.
+        rel_tol - maximum relative tolerance for iteration comparison (default = 0.1)
+        abs_tol - minimum absolute tolerance for iteration comparison (default = 1)
+
+    Returns:
+        list of samples with different solver status
+        list of samples with different number of iterations
+        list of samples with different number of iterations in restoration
+        list of samples with different number of iterations with regularization
+    """
+    diff_solves = []
+    diff_iters = []
+    diff_rest = []
+    diff_reg = []
+
+    for s1 in run1:
+        sname = s1["name"]
+
+        try:
+            s2 = baseline[sname]
+        except KeyError:
+            raise KeyError(
+                f"baseline does not contain a sample with the name {sname}. Please check that "
+                f"both convergence evaluation runs used the same set of samples."
+            )
+
+        if not s1["solved"] == s2["solved"]:
+            diff_solves.append(sname)
+        if not isclose(s1["iters"], s2["iters"], rel_tol=rel_tol, abs_tol=abs_tol):
+            diff_iters.append(sname)
+        if not isclose(
+            s1["iters_in_restoration"],
+            s2["iters_in_restoration"],
+            rel_tol=rel_tol,
+            abs_tol=abs_tol,
+        ):
+            diff_rest.append(sname)
+        if not isclose(
+            s1["iters_w_regularization"],
+            s2["iters_w_regularization"],
+            rel_tol=rel_tol,
+            abs_tol=abs_tol,
+        ):
+            diff_reg.append(sname)
+
+    return diff_solves, diff_iters, diff_rest, diff_reg
 
 
 def _class_import(class_path):
@@ -221,6 +331,63 @@ def _class_import(class_path):
     mod = il.import_module(modpath)
     ret_class = getattr(mod, tokens[-1])
     return ret_class
+
+
+def _parse_ipopt_output(ipopt_file):
+    """
+    Parse an IPOPT output file and return:
+
+    * number of iterations
+    * time in IPOPT
+
+    Returns
+    -------
+       Returns a tuple with (solve status object, bool (solve successful or
+       not), number of iters, solve time)
+    """
+    # ToDO: Check for final iteration with regularization or restoration
+
+    iters = 0
+    iters_in_restoration = 0
+    iters_w_regularization = 0
+    time = 0
+    # parse the output file to get the iteration count, solver times, etc.
+    with open(ipopt_file, "r") as f:
+        parseline = False
+        for line in f:
+            if line.startswith("iter"):
+                # This marks the start of the iteration logging, set parseline True
+                parseline = True
+            elif line.startswith("Number of Iterations....:"):
+                # Marks end of iteration logging, set parseline False
+                parseline = False
+                tokens = line.split()
+                iters = int(tokens[3])
+            elif parseline:
+                # Line contains details of an iteration, look for restoration or regularization
+                tokens = line.split()
+                try:
+                    if not tokens[6] == "-":
+                        # Iteration with regularization
+                        iters_w_regularization += 1
+                    if tokens[0].endswith("r"):
+                        # Iteration in restoration
+                        iters_in_restoration += 1
+                except IndexError:
+                    # Blank line at end of iteration list, so assume we hit this
+                    pass
+            elif line.startswith(
+                "Total CPU secs in IPOPT (w/o function evaluations)   ="
+            ):
+                tokens = line.split()
+                time += float(tokens[9])
+            elif line.startswith(
+                "Total CPU secs in NLP function evaluations           ="
+            ):
+                tokens = line.split()
+                time += float(tokens[8])
+
+    return iters, iters_in_restoration, iters_w_regularization, time
 
 
 def _run_ipopt_with_stats(model, solver, max_iter=500, max_cpu_time=120):
@@ -245,7 +412,8 @@ def _run_ipopt_with_stats(model, solver, max_iter=500, max_cpu_time=120):
     Returns
     -------
        Returns a tuple with (solve status object, bool (solve successful or
-       not), number of iters, solve time)
+       not), number of iters, number of iters in restoration, number of iters with regularization,
+       solve time)
     """
     # ToDo: Check that the "solver" is, in fact, IPOPT
 
@@ -255,30 +423,15 @@ def _run_ipopt_with_stats(model, solver, max_iter=500, max_cpu_time=120):
 
     status_obj = solver.solve(model, options=opts, tee=True)
     solved = True
-    if status_obj.solver.termination_condition != TerminationCondition.optimal:
+    if not check_optimal_termination(status_obj):
         solved = False
 
-    iters = 0
-    time = 0
-    # parse the output file to get the iteration count, solver times, etc.
-    with open(tempfile, "r") as f:
-        for line in f:
-            if line.startswith("Number of Iterations....:"):
-                tokens = line.split()
-                iters = int(tokens[3])
-            elif line.startswith(
-                "Total CPU secs in IPOPT (w/o function evaluations)   ="
-            ):
-                tokens = line.split()
-                time += float(tokens[9])
-            elif line.startswith(
-                "Total CPU secs in NLP function evaluations           ="
-            ):
-                tokens = line.split()
-                time += float(tokens[8])
+    iters, iters_in_restoration, iters_w_regularization, time = _parse_ipopt_output(
+        tempfile
+    )
 
     TempfileManager.pop(remove=True)
-    return status_obj, solved, iters, time
+    return status_obj, solved, iters, iters_in_restoration, iters_w_regularization, time
 
 
 def _progress_bar(fraction, msg, length=20):
@@ -348,10 +501,49 @@ def _set_model_parameters_from_sample(model, inputs, sample_point):
             comp.set_value(float(v))
         else:
             raise ValueError(
-                "Failed to find a valid input component (must be"
-                " a fixed Var or a mutable Param). Instead,"
-                " pyomo_path: {} returned: {}".format(pyomo_path, comp)
+                f"Failed to find a valid input component (must be"
+                f" a fixed Var or a mutable Param). Instead,"
+                f" pyomo_path: {pyomo_path} returned: {comp}"
             )
+
+
+def generate_samples(eval_spec, n_points, seed=None):
+    """
+    Samples the space of the inputs defined in the eval_spec, and creates an
+    OrderedDict with all the points to be used in executing a convergence
+    evaluation
+
+    Parameters
+    ----------
+    eval_spec : ConvergenceEvaluationSpecification
+       The convergence evaluation specification object that we would like to
+       sample
+    n_points : int
+       The total number of points that should be created
+    seed : int or None
+       The seed to be used when generating samples. If set to None, then the
+       seed is not set
+    Returns
+    -------
+       OrderedDict of samples
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    # build the samples
+    samples = OrderedDict()
+    for i in range(n_points):
+        sample = samples[f"Sample-{i + 1}"] = OrderedDict()
+        for k, v in eval_spec.inputs.items():
+            if v["distribution"] == "normal":
+                s = np.random.normal(loc=v["mean"], scale=v["std"])
+                s = v["lower"] if s < v["lower"] else s
+                s = v["upper"] if s > v["upper"] else s
+            elif v["distribution"] == "uniform":
+                s = np.random.uniform(low=v["lower"], high=v["upper"])
+            sample[k] = s
+
+    return samples
 
 
 def write_sample_file(
@@ -382,21 +574,8 @@ def write_sample_file(
     -------
        N/A
     """
-    if seed is not None:
-        np.random.seed(seed)
-
     # build the samples
-    samples = OrderedDict()
-    for i in range(n_points):
-        sample = samples["Sample-{}".format(i + 1)] = OrderedDict()
-        for k, v in eval_spec.inputs.items():
-            if v["distribution"] == "normal":
-                s = np.random.normal(loc=v["mean"], scale=v["std"])
-                s = v["lower"] if s < v["lower"] else s
-                s = v["upper"] if s > v["upper"] else s
-            elif v["distribution"] == "uniform":
-                s = np.random.uniform(low=v["lower"], high=v["upper"])
-            sample[k] = s
+    samples = generate_samples(eval_spec, n_points, seed)
 
     # create the dictionary storing all the necessary information
     jsondict = OrderedDict()
@@ -411,11 +590,20 @@ def write_sample_file(
 
 
 def run_convergence_evaluation_from_sample_file(sample_file):
+    """
+    Run convergence evaluation using specified sample file.
+
+    Args:
+        sample_file - name of sample file ot use
+
+    Returns:
+        results of convergence evaluation
+    """
     # load the sample file
     try:
         with open(sample_file, "r") as fd:
             jsondict = json.load(fd, object_pairs_hook=OrderedDict)
-    except Exception as e:
+    except Exception:
         _log.exception(f"Error reading json file {sample_file}")
         raise ValueError(f"Problem reading json file: {sample_file}")
 
@@ -424,21 +612,31 @@ def run_convergence_evaluation_from_sample_file(sample_file):
     try:
         convergence_evaluation_class = _class_import(convergence_evaluation_class_str)
         conv_eval = convergence_evaluation_class()
-    except Exception as e:
+    except Exception:
         _log.exception(f"Error creating class: {convergence_evaluation_class_str}")
         raise ValueError(
             f"Invalid value specified for convergence_evaluation_class_str:"
-            "{convergence_evaluation_class_str} in sample file: {sample_file}"
+            f"{convergence_evaluation_class_str} in sample file: {sample_file}"
         )
     return run_convergence_evaluation(jsondict, conv_eval)
 
 
 def run_single_sample_from_sample_file(sample_file, name):
+    """
+    Run single convergence evaluation from sample in provided file.
+
+    Args:
+        sample_file - name of file ot use to look up sample
+        name - name of sample to run from sample_file
+
+    Returns:
+        results of convergence evaluation for specificed sample
+    """
     # load the sample file
     try:
         with open(sample_file, "r") as fd:
             jsondict = json.load(fd, object_pairs_hook=OrderedDict)
-    except Exception as e:
+    except Exception:
         _log.exception(f"Error reading json file {sample_file}")
         raise ValueError(f"Problem reading json file: {sample_file}")
 
@@ -447,18 +645,28 @@ def run_single_sample_from_sample_file(sample_file, name):
     try:
         convergence_evaluation_class = _class_import(convergence_evaluation_class_str)
         conv_eval = convergence_evaluation_class()
-    except Exception as e:
+    except Exception:
         _log.exception(f"Error creating class: {convergence_evaluation_class_str}")
         raise ValueError(
             f"Invalid value specified for convergence_evaluation_class_str:"
-            "{convergence_evaluation_class_str} in sample file: {sample_file}"
+            f"{convergence_evaluation_class_str} in sample file: {sample_file}"
         )
     return run_single_sample(jsondict, conv_eval, name)
 
 
 def run_single_sample(sample_file_dict, conv_eval, name):
+    """
+    Run single sample from dict and return IPOPT stats.
+
+    Args:
+        sample_file_dict - dict of samples
+        conv_eval - convergence evaluation object to use
+        name - name of sample to run
+
+    Returns:
+        IPOPT stats for sample run
+    """
     inputs = sample_file_dict["inputs"]
-    samples = sample_file_dict["samples"]
     model = conv_eval.get_initialized_model()
     _set_model_parameters_from_sample(model, inputs, sample_file_dict["samples"][name])
     solver = conv_eval.get_solver()
@@ -517,7 +725,14 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
                 model = conv_eval.get_initialized_model()
                 _set_model_parameters_from_sample(model, inputs, ss)
                 solver = conv_eval.get_solver()
-                (status_obj, solved, iters, time) = _run_ipopt_with_stats(model, solver)
+                (
+                    status_obj,
+                    solved,
+                    iters,
+                    iters_in_restoration,
+                    iters_w_regularization,
+                    time,
+                ) = _run_ipopt_with_stats(model, solver)
 
         if not solved:
             _log.error(f"Sample: {sample_name} failed to converge.")
@@ -527,11 +742,77 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
         results_dict["sample_point"] = ss
         results_dict["solved"] = solved
         results_dict["iters"] = iters
+        results_dict["iters_in_restoration"] = iters_in_restoration
+        results_dict["iters_w_regularization"] = iters_w_regularization
         results_dict["time"] = time
         results.append(results_dict)
 
     global_results = task_mgr.gather_global_data(results)
     return inputs, samples, global_results
+
+
+def generate_baseline_statistics(
+    conv_eval, n_points: int, seed: int = None, display: bool = True
+):
+    """
+    Generate and run samples to generate baseline convergence statistics.
+
+    Args:
+        conv_eval: convergence evaluation object ot use to generate baseline
+        n_points: number of points to generate for baseline
+        seed: (optional) seed for random sample generator
+        display: print a summary of the baseline
+
+    Returns:
+        OrderedDict containing information defining baseline
+    """
+    jsondict = OrderedDict()
+
+    eval_spec = conv_eval.get_specification()
+
+    jsondict["inputs"] = OrderedDict(eval_spec.inputs)
+    jsondict["n_points"] = n_points
+    jsondict["seed"] = seed
+    jsondict["samples"] = generate_samples(eval_spec, n_points, seed)
+
+    inputs, samples, results = run_convergence_evaluation(jsondict, conv_eval)
+
+    jsondict["results"] = OrderedDict()
+    for r in results:
+        sname = r["name"]
+        jsondict["results"][sname] = OrderedDict()
+        jsondict["results"][sname]["solved"] = r["solved"]
+        jsondict["results"][sname]["iters"] = r["iters"]
+        jsondict["results"][sname]["iters_in_restoration"] = r["iters_in_restoration"]
+        jsondict["results"][sname]["iters_w_regularization"] = r[
+            "iters_w_regularization"
+        ]
+        jsondict["results"][sname]["time"] = r["time"]
+
+    if display:
+        fails = []
+        restoration = []
+        regularization = []
+        for r in results:
+            sname = r["name"]
+            if not r["solved"]:
+                fails.append(sname)
+            if r["iters_in_restoration"] > 0:
+                restoration.append(sname)
+            if r["iters_w_regularization"] > 0:
+                regularization.append(sname)
+        print()
+        print("Failed Samples:")
+        for s in fails:
+            print(f"{' '*4}{s}")
+        print("Samples with Restoration:")
+        for s in restoration:
+            print(f"{' ' * 4}{s}")
+        print("Samples with Regularization:")
+        for s in regularization:
+            print(f"{' ' * 4}{s}")
+
+    return jsondict
 
 
 def save_convergence_statistics(
