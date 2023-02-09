@@ -286,13 +286,7 @@ def make_phase_split(
 
                 model.add_component("e_" + local_name + port.local_name, expr)
                 port.add(expr, k)
-            else:
-                raise PropertyPackageError(
-                    "Unrecognized flow state variable encountered "
-                    "while building ports for the tray. Please follow "
-                    "the naming convention outlined in the documentation "
-                    "for state variables."
-                )
+
         elif "enth" in local_name:
             if "phase" not in local_name:
                 # assumes total mixture enthalpy (enth_mol or enth_mass)
@@ -336,9 +330,3 @@ def make_phase_split(
                 ref = Reference(var)
                 setattr(model, "_" + k + "_" + port.local_name + "_ref", ref)
                 port.add(ref, k)
-            else:
-                raise PropertyNotSupportedError(
-                    "Unrecognized enthalpy state variable encountered "
-                    "while building ports for the tray. Only total "
-                    "mixture enthalpy or enthalpy by phase are supported."
-                )
