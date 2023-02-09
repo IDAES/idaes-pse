@@ -834,64 +834,53 @@ argument).""",
         if balance_type == MaterialBalanceType.componentPhase:
 
             def user_term_mol(b, t, x, p, j):
-                if custom_molar_term is not None:
-                    flow_basis = b.properties[t, x].get_material_flow_basis()
-                    if flow_basis == MaterialFlowBasis.molar:
-                        return custom_molar_term(t, x, p, j)
-                    elif flow_basis == MaterialFlowBasis.mass:
-                        try:
-                            return (
-                                custom_molar_term(t, x, p, j)
-                                * b.properties[t, x].mw_comp[j]
-                            )
-                        except AttributeError:
-                            raise PropertyNotSupportedError(
-                                "{} property package does not support "
-                                "molecular weight (mw), which is required for "
-                                "using custom terms in material balances.".format(
-                                    self.name
-                                )
-                            )
-                    else:
-                        raise ConfigurationError(
-                            "{} contained a custom_molar_term argument, but "
-                            "the property package used an undefined basis "
-                            "(MaterialFlowBasis.other). Custom terms can "
-                            "only be used when the property package declares "
-                            "a molar or mass flow basis.".format(self.name)
+                flow_basis = b.properties[t, x].get_material_flow_basis()
+                if flow_basis == MaterialFlowBasis.molar:
+                    return custom_molar_term(t, x, p, j)
+                elif flow_basis == MaterialFlowBasis.mass:
+                    try:
+                        return (
+                            custom_molar_term(t, x, p, j)
+                            * b.properties[t, x].mw_comp[j]
+                        )
+                    except AttributeError:
+                        raise PropertyNotSupportedError(
+                            "{} property package does not support "
+                            "molecular weight (mw), which is required for "
+                            "using custom terms in material balances.".format(self.name)
                         )
                 else:
-                    return 0
+                    raise ConfigurationError(
+                        "{} contained a custom_molar_term argument, but "
+                        "the property package used an undefined basis "
+                        "(MaterialFlowBasis.other). Custom terms can "
+                        "only be used when the property package declares "
+                        "a molar or mass flow basis.".format(self.name)
+                    )
 
             def user_term_mass(b, t, x, p, j):
-                if custom_mass_term is not None:
-                    flow_basis = b.properties[t, x].get_material_flow_basis()
-                    if flow_basis == MaterialFlowBasis.mass:
-                        return custom_mass_term(t, x, p, j)
-                    elif flow_basis == MaterialFlowBasis.molar:
-                        try:
-                            return (
-                                custom_mass_term(t, x, p, j)
-                                / b.properties[t, x].mw_comp[j]
-                            )
-                        except AttributeError:
-                            raise PropertyNotSupportedError(
-                                "{} property package does not support "
-                                "molecular weight (mw), which is required for "
-                                "using custom terms in material balances.".format(
-                                    self.name
-                                )
-                            )
-                    else:
-                        raise ConfigurationError(
-                            "{} contained a custom_mass_term argument, but "
-                            "the property package used an undefined basis "
-                            "(MaterialFlowBasis.other). Custom terms can "
-                            "only be used when the property package declares "
-                            "a molar or mass flow basis.".format(self.name)
+                flow_basis = b.properties[t, x].get_material_flow_basis()
+                if flow_basis == MaterialFlowBasis.mass:
+                    return custom_mass_term(t, x, p, j)
+                elif flow_basis == MaterialFlowBasis.molar:
+                    try:
+                        return (
+                            custom_mass_term(t, x, p, j) / b.properties[t, x].mw_comp[j]
+                        )
+                    except AttributeError:
+                        raise PropertyNotSupportedError(
+                            "{} property package does not support "
+                            "molecular weight (mw), which is required for "
+                            "using custom terms in material balances.".format(self.name)
                         )
                 else:
-                    return 0
+                    raise ConfigurationError(
+                        "{} contained a custom_mass_term argument, but "
+                        "the property package used an undefined basis "
+                        "(MaterialFlowBasis.other). Custom terms can "
+                        "only be used when the property package declares "
+                        "a molar or mass flow basis.".format(self.name)
+                    )
 
             @self.Constraint(
                 self.flowsheet().time,
@@ -924,7 +913,7 @@ argument).""",
                             rhs += (
                                 b.length
                                 * b.rate_reaction_generation[t, x, p, j]
-                                * b._rxn_rate_conv(t, x, j, has_rate_reactions)
+                                * b._rxn_rate_conv(t, x, j)
                             )
 
                         if has_equilibrium_reactions:
@@ -958,64 +947,50 @@ argument).""",
         elif balance_type == MaterialBalanceType.componentTotal:
 
             def user_term_mol(b, t, x, j):
-                if custom_molar_term is not None:
-                    flow_basis = b.properties[t, x].get_material_flow_basis()
-                    if flow_basis == MaterialFlowBasis.molar:
-                        return custom_molar_term(t, x, j)
-                    elif flow_basis == MaterialFlowBasis.mass:
-                        try:
-                            return (
-                                custom_molar_term(t, x, j)
-                                * b.properties[t, x].mw_comp[j]
-                            )
-                        except AttributeError:
-                            raise PropertyNotSupportedError(
-                                "{} property package does not support "
-                                "molecular weight (mw), which is required for "
-                                "using custom terms in material balances.".format(
-                                    self.name
-                                )
-                            )
-                    else:
-                        raise ConfigurationError(
-                            "{} contained a custom_molar_term argument, but "
-                            "the property package used an undefined basis "
-                            "(MaterialFlowBasis.other). Custom terms can "
-                            "only be used when the property package declares "
-                            "a molar or mass flow basis.".format(self.name)
+                flow_basis = b.properties[t, x].get_material_flow_basis()
+                if flow_basis == MaterialFlowBasis.molar:
+                    return custom_molar_term(t, x, j)
+                elif flow_basis == MaterialFlowBasis.mass:
+                    try:
+                        return (
+                            custom_molar_term(t, x, j) * b.properties[t, x].mw_comp[j]
+                        )
+                    except AttributeError:
+                        raise PropertyNotSupportedError(
+                            "{} property package does not support "
+                            "molecular weight (mw), which is required for "
+                            "using custom terms in material balances.".format(self.name)
                         )
                 else:
-                    return 0
+                    raise ConfigurationError(
+                        "{} contained a custom_molar_term argument, but "
+                        "the property package used an undefined basis "
+                        "(MaterialFlowBasis.other). Custom terms can "
+                        "only be used when the property package declares "
+                        "a molar or mass flow basis.".format(self.name)
+                    )
 
             def user_term_mass(b, t, x, j):
-                if custom_mass_term is not None:
-                    flow_basis = b.properties[t, x].get_material_flow_basis()
-                    if flow_basis == MaterialFlowBasis.mass:
-                        return custom_mass_term(t, x, j)
-                    elif flow_basis == MaterialFlowBasis.molar:
-                        try:
-                            return (
-                                custom_mass_term(t, x, j)
-                                / b.properties[t, x].mw_comp[j]
-                            )
-                        except AttributeError:
-                            raise PropertyNotSupportedError(
-                                "{} property package does not support "
-                                "molecular weight (mw), which is required for "
-                                "using custom terms in material balances.".format(
-                                    self.name
-                                )
-                            )
-                    else:
-                        raise ConfigurationError(
-                            "{} contained a custom_mass_term argument, but "
-                            "the property package used an undefined basis "
-                            "(MaterialFlowBasis.other). Custom terms can "
-                            "only be used when the property package declares "
-                            "a molar or mass flow basis.".format(self.name)
+                flow_basis = b.properties[t, x].get_material_flow_basis()
+                if flow_basis == MaterialFlowBasis.mass:
+                    return custom_mass_term(t, x, j)
+                elif flow_basis == MaterialFlowBasis.molar:
+                    try:
+                        return custom_mass_term(t, x, j) / b.properties[t, x].mw_comp[j]
+                    except AttributeError:
+                        raise PropertyNotSupportedError(
+                            "{} property package does not support "
+                            "molecular weight (mw), which is required for "
+                            "using custom terms in material balances.".format(self.name)
                         )
                 else:
-                    return 0
+                    raise ConfigurationError(
+                        "{} contained a custom_mass_term argument, but "
+                        "the property package used an undefined basis "
+                        "(MaterialFlowBasis.other). Custom terms can "
+                        "only be used when the property package declares "
+                        "a molar or mass flow basis.".format(self.name)
+                    )
 
             # Add component balances
             @self.Constraint(
@@ -1057,7 +1032,7 @@ argument).""",
                             * sum(
                                 b.rate_reaction_generation[t, x, p, j] for p in cplist
                             )
-                            * b._rxn_rate_conv(t, x, j, has_rate_reactions)
+                            * b._rxn_rate_conv(t, x, j)
                         )
 
                     if has_equilibrium_reactions:
