@@ -82,7 +82,7 @@ kwargs = dict(
         "nbformat",
         "numpy",
         "networkx",
-        "omlt==0.3.1",  # fix the version for now as package evolves
+        "omlt==1.0",  # fix the version for now as package evolves
         "pandas<1.5",
         "pint",
         "psutil",
