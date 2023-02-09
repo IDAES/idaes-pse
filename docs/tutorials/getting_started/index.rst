@@ -43,10 +43,10 @@ the Miniconda install section.
    * - Mac OSX
      - :ref:`Mac Installation<tutorials/getting_started/mac_osx:Mac/OSX Installation Guide>`
 
-.. warning:: If you are using Python for other complex projects, you may want to
-            consider using environments of some sort to avoid conflicting
-            dependencies.  There are several good options including conda
-            environments if you use Anaconda.
+.. warning:: If you are using Python for other complex projects or installing 
+            multiple versions of IDAES, you may want to consider using environments 
+            of some sort to avoid conflicting dependencies.  There are several good
+            options including conda environments if you use Anaconda.
 
 .. _min_updating_install:
 
@@ -75,9 +75,9 @@ assuming that the installation was done using one of the methods described earli
 
         idaes --version
 
-3. Run the ``idaes get-extension`` command to install compiled binaries compatible with the newly upgraded IDAES version.  These binaries include solvers and function libraries.  See :ref:`Binary Packages <tutorials/getting_started/binaries:Binary Packages>` for more details.::
+3. Run the ``idaes get-extension`` command to install compiled binaries compatible with the newly upgraded IDAES version. The ``--extra petsc`` argument installs the optional PETSc solver. These binaries include solvers and function libraries.  See :ref:`Binary Packages <tutorials/getting_started/binaries:Binary Packages>` for more details.::
 
-    idaes get-extensions
+    idaes get-extensions --extra petsc
 
 4. Finally, use the ``idaes get-examples`` command to install the most recent version of the IDAES examples compatible with the upgraded IDAES version.
 

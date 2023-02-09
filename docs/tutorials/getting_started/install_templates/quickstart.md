@@ -9,9 +9,9 @@ conda create --yes --name my-idaes-env -c conda-forge -c IDAES-PSE python=3.10 i
 conda activate my-idaes-env
 
 # Install IDAES Extensions
-.. Windows&Linux
-idaes get-extensions
-.. MacOSX
+.. Windows&Linux&MacOSX_arm
+idaes get-extensions --extra petsc
+.. MacOSX_intel
 conda install -c conda-forge ipopt
 
 # Install IDAES Examples (optional)

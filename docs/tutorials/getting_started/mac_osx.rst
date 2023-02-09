@@ -15,6 +15,17 @@ The following commands should be sufficient to get you started with installing a
    * `Run IDAES Tests`_
 
 .. Import quick start guide, including OS specific lines & skipping non-OS lines & comments
+
+Apple Silicon (aarch64)
+^^^^^^^^^^^^^^^^^^^^^^^
+.. literalinclude:: install_templates/quickstart.md
+   :language: bash
+   :linenos:
+   :start-after: modification warning
+   :lines: 1-6,8,11-
+
+Intel (x86_64)
+^^^^^^^^^^^^^^
 .. literalinclude:: install_templates/quickstart.md
    :language: bash
    :linenos:
@@ -26,6 +37,8 @@ The following commands should be sufficient to get you started with installing a
 Installing IDAES
 ----------------
 To get IDAES fully set up on your machine, we'll go through the steps to get idaes-pse package installed as well as setting up the IDAES extensions, which includes some extra solvers and function libraries, the IDAES example files, and the IDAES tests.
+
+.. include:: install_templates/idaes_data.md
 
 Install Prerequisites
 ^^^^^^^^^^^^^^^^^^^^^
@@ -48,7 +61,7 @@ Install IDAES Extensions
 
 .. warning:: 
 
-   The IDAES binary extensions are not yet supported on Mac/OSX.
+   The IDAES binary extensions are not yet supported on Mac/OSX with an Intel processor.
 
    .. container:: collapsible
 
