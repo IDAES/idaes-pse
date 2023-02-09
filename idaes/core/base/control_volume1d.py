@@ -657,33 +657,6 @@ argument).""",
             )
 
         # Create rules to substitute material balance terms
-        # Accumulation term
-        def accumulation_term(b, t, x, p, j):
-            return (
-                pyunits.convert(
-                    b.material_accumulation[t, x, p, j], to_units=flow_l_units
-                )
-                if dynamic
-                else 0
-            )
-
-        def kinetic_term(b, t, x, p, j):
-            return b.rate_reaction_generation[t, x, p, j] if has_rate_reactions else 0
-
-        def equilibrium_term(b, t, x, p, j):
-            return (
-                b.equilibrium_reaction_generation[t, x, p, j]
-                if has_equilibrium_reactions
-                else 0
-            )
-
-        def inherent_term(b, t, x, p, j):
-            return (
-                b.inherent_reaction_generation[t, x, p, j]
-                if b.properties.include_inherent_reactions
-                else 0
-            )
-
         def phase_equilibrium_term(b, t, x, p, j):
             if (
                 has_phase_equilibrium
@@ -713,9 +686,6 @@ argument).""",
                 )
             else:
                 return 0
-
-        def transfer_term(b, t, x, p, j):
-            return b.mass_transfer_term[t, x, p, j] if has_mass_transfer else 0
 
         # TODO: Need to set material_holdup = 0 for non-present component-phase
         # pairs. Not ideal, but needed to close DoF. Is there a better way?
@@ -864,64 +834,53 @@ argument).""",
         if balance_type == MaterialBalanceType.componentPhase:
 
             def user_term_mol(b, t, x, p, j):
-                if custom_molar_term is not None:
-                    flow_basis = b.properties[t, x].get_material_flow_basis()
-                    if flow_basis == MaterialFlowBasis.molar:
-                        return custom_molar_term(t, x, p, j)
-                    elif flow_basis == MaterialFlowBasis.mass:
-                        try:
-                            return (
-                                custom_molar_term(t, x, p, j)
-                                * b.properties[t, x].mw_comp[j]
-                            )
-                        except AttributeError:
-                            raise PropertyNotSupportedError(
-                                "{} property package does not support "
-                                "molecular weight (mw), which is required for "
-                                "using custom terms in material balances.".format(
-                                    self.name
-                                )
-                            )
-                    else:
-                        raise ConfigurationError(
-                            "{} contained a custom_molar_term argument, but "
-                            "the property package used an undefined basis "
-                            "(MaterialFlowBasis.other). Custom terms can "
-                            "only be used when the property package declares "
-                            "a molar or mass flow basis.".format(self.name)
+                flow_basis = b.properties[t, x].get_material_flow_basis()
+                if flow_basis == MaterialFlowBasis.molar:
+                    return custom_molar_term(t, x, p, j)
+                elif flow_basis == MaterialFlowBasis.mass:
+                    try:
+                        return (
+                            custom_molar_term(t, x, p, j)
+                            * b.properties[t, x].mw_comp[j]
+                        )
+                    except AttributeError:
+                        raise PropertyNotSupportedError(
+                            "{} property package does not support "
+                            "molecular weight (mw), which is required for "
+                            "using custom terms in material balances.".format(self.name)
                         )
                 else:
-                    return 0
+                    raise ConfigurationError(
+                        "{} contained a custom_molar_term argument, but "
+                        "the property package used an undefined basis "
+                        "(MaterialFlowBasis.other). Custom terms can "
+                        "only be used when the property package declares "
+                        "a molar or mass flow basis.".format(self.name)
+                    )
 
             def user_term_mass(b, t, x, p, j):
-                if custom_mass_term is not None:
-                    flow_basis = b.properties[t, x].get_material_flow_basis()
-                    if flow_basis == MaterialFlowBasis.mass:
-                        return custom_mass_term(t, x, p, j)
-                    elif flow_basis == MaterialFlowBasis.molar:
-                        try:
-                            return (
-                                custom_mass_term(t, x, p, j)
-                                / b.properties[t, x].mw_comp[j]
-                            )
-                        except AttributeError:
-                            raise PropertyNotSupportedError(
-                                "{} property package does not support "
-                                "molecular weight (mw), which is required for "
-                                "using custom terms in material balances.".format(
-                                    self.name
-                                )
-                            )
-                    else:
-                        raise ConfigurationError(
-                            "{} contained a custom_mass_term argument, but "
-                            "the property package used an undefined basis "
-                            "(MaterialFlowBasis.other). Custom terms can "
-                            "only be used when the property package declares "
-                            "a molar or mass flow basis.".format(self.name)
+                flow_basis = b.properties[t, x].get_material_flow_basis()
+                if flow_basis == MaterialFlowBasis.mass:
+                    return custom_mass_term(t, x, p, j)
+                elif flow_basis == MaterialFlowBasis.molar:
+                    try:
+                        return (
+                            custom_mass_term(t, x, p, j) / b.properties[t, x].mw_comp[j]
+                        )
+                    except AttributeError:
+                        raise PropertyNotSupportedError(
+                            "{} property package does not support "
+                            "molecular weight (mw), which is required for "
+                            "using custom terms in material balances.".format(self.name)
                         )
                 else:
-                    return 0
+                    raise ConfigurationError(
+                        "{} contained a custom_mass_term argument, but "
+                        "the property package used an undefined basis "
+                        "(MaterialFlowBasis.other). Custom terms can "
+                        "only be used when the property package declares "
+                        "a molar or mass flow basis.".format(self.name)
+                    )
 
             @self.Constraint(
                 self.flowsheet().time,
@@ -940,84 +899,98 @@ argument).""",
                     return Constraint.Skip
                 else:
                     if (p, j) in pc_set:
-                        return b.length * accumulation_term(b, t, x, p, j) == (
-                            b._flow_direction_term * b.material_flow_dx[t, x, p, j]
-                            + b.length
-                            * kinetic_term(b, t, x, p, j)
-                            * b._rxn_rate_conv(t, x, j, has_rate_reactions)
-                            + b.length * equilibrium_term(b, t, x, p, j)
-                            + b.length * inherent_term(b, t, x, p, j)
-                            + b.length * phase_equilibrium_term(b, t, x, p, j)
-                            + b.length * transfer_term(b, t, x, p, j)
-                            +
-                            # b.area*diffusion_term(b, t, x, p, j)/b.length +
-                            b.length * user_term_mol(b, t, x, p, j)
-                            + b.length * user_term_mass(b, t, x, p, j)
-                        )
+                        if dynamic:
+                            lhs = b.length * pyunits.convert(
+                                b.material_accumulation[t, x, p, j],
+                                to_units=flow_l_units,
+                            )
+                        else:
+                            lhs = 0
+
+                        rhs = b._flow_direction_term * b.material_flow_dx[t, x, p, j]
+
+                        if has_rate_reactions:
+                            rhs += (
+                                b.length
+                                * b.rate_reaction_generation[t, x, p, j]
+                                * b._rxn_rate_conv(t, x, j)
+                            )
+
+                        if has_equilibrium_reactions:
+                            rhs += (
+                                b.length * b.equilibrium_reaction_generation[t, x, p, j]
+                            )
+
+                        if b.properties.include_inherent_reactions:
+                            rhs += b.length * b.inherent_reaction_generation[t, x, p, j]
+
+                        if (
+                            has_phase_equilibrium
+                            and balance_type == MaterialBalanceType.componentPhase
+                        ):
+                            rhs += b.length * phase_equilibrium_term(b, t, x, p, j)
+
+                        if has_mass_transfer:
+                            rhs += b.length * b.mass_transfer_term[t, x, p, j]
+
+                        if custom_molar_term is not None:
+                            rhs += b.length * user_term_mol(b, t, x, p, j)
+
+                        if custom_mass_term is not None:
+                            rhs += b.length * user_term_mass(b, t, x, p, j)
+
+                        return lhs == rhs
+
                     else:
                         return Constraint.Skip
 
         elif balance_type == MaterialBalanceType.componentTotal:
 
             def user_term_mol(b, t, x, j):
-                if custom_molar_term is not None:
-                    flow_basis = b.properties[t, x].get_material_flow_basis()
-                    if flow_basis == MaterialFlowBasis.molar:
-                        return custom_molar_term(t, x, j)
-                    elif flow_basis == MaterialFlowBasis.mass:
-                        try:
-                            return (
-                                custom_molar_term(t, x, j)
-                                * b.properties[t, x].mw_comp[j]
-                            )
-                        except AttributeError:
-                            raise PropertyNotSupportedError(
-                                "{} property package does not support "
-                                "molecular weight (mw), which is required for "
-                                "using custom terms in material balances.".format(
-                                    self.name
-                                )
-                            )
-                    else:
-                        raise ConfigurationError(
-                            "{} contained a custom_molar_term argument, but "
-                            "the property package used an undefined basis "
-                            "(MaterialFlowBasis.other). Custom terms can "
-                            "only be used when the property package declares "
-                            "a molar or mass flow basis.".format(self.name)
+                flow_basis = b.properties[t, x].get_material_flow_basis()
+                if flow_basis == MaterialFlowBasis.molar:
+                    return custom_molar_term(t, x, j)
+                elif flow_basis == MaterialFlowBasis.mass:
+                    try:
+                        return (
+                            custom_molar_term(t, x, j) * b.properties[t, x].mw_comp[j]
+                        )
+                    except AttributeError:
+                        raise PropertyNotSupportedError(
+                            "{} property package does not support "
+                            "molecular weight (mw), which is required for "
+                            "using custom terms in material balances.".format(self.name)
                         )
                 else:
-                    return 0
+                    raise ConfigurationError(
+                        "{} contained a custom_molar_term argument, but "
+                        "the property package used an undefined basis "
+                        "(MaterialFlowBasis.other). Custom terms can "
+                        "only be used when the property package declares "
+                        "a molar or mass flow basis.".format(self.name)
+                    )
 
             def user_term_mass(b, t, x, j):
-                if custom_mass_term is not None:
-                    flow_basis = b.properties[t, x].get_material_flow_basis()
-                    if flow_basis == MaterialFlowBasis.mass:
-                        return custom_mass_term(t, x, j)
-                    elif flow_basis == MaterialFlowBasis.molar:
-                        try:
-                            return (
-                                custom_mass_term(t, x, j)
-                                / b.properties[t, x].mw_comp[j]
-                            )
-                        except AttributeError:
-                            raise PropertyNotSupportedError(
-                                "{} property package does not support "
-                                "molecular weight (mw), which is required for "
-                                "using custom terms in material balances.".format(
-                                    self.name
-                                )
-                            )
-                    else:
-                        raise ConfigurationError(
-                            "{} contained a custom_mass_term argument, but "
-                            "the property package used an undefined basis "
-                            "(MaterialFlowBasis.other). Custom terms can "
-                            "only be used when the property package declares "
-                            "a molar or mass flow basis.".format(self.name)
+                flow_basis = b.properties[t, x].get_material_flow_basis()
+                if flow_basis == MaterialFlowBasis.mass:
+                    return custom_mass_term(t, x, j)
+                elif flow_basis == MaterialFlowBasis.molar:
+                    try:
+                        return custom_mass_term(t, x, j) / b.properties[t, x].mw_comp[j]
+                    except AttributeError:
+                        raise PropertyNotSupportedError(
+                            "{} property package does not support "
+                            "molecular weight (mw), which is required for "
+                            "using custom terms in material balances.".format(self.name)
                         )
                 else:
-                    return 0
+                    raise ConfigurationError(
+                        "{} contained a custom_mass_term argument, but "
+                        "the property package used an undefined basis "
+                        "(MaterialFlowBasis.other). Custom terms can "
+                        "only be used when the property package declares "
+                        "a molar or mass flow basis.".format(self.name)
+                    )
 
             # Add component balances
             @self.Constraint(
@@ -1040,25 +1013,51 @@ argument).""",
                     for p in phase_list:
                         if (p, j) in pc_set:
                             cplist.append(p)
-                    return b.length * sum(
-                        accumulation_term(b, t, x, p, j) for p in cplist
-                    ) == b._flow_direction_term * sum(
+
+                    if dynamic:
+                        lhs = b.length * pyunits.convert(
+                            sum(b.material_accumulation[t, x, p, j] for p in cplist),
+                            to_units=flow_l_units,
+                        )
+                    else:
+                        lhs = 0
+
+                    rhs = b._flow_direction_term * sum(
                         b.material_flow_dx[t, x, p, j] for p in cplist
-                    ) + b.length * sum(
-                        kinetic_term(b, t, x, p, j) for p in cplist
-                    ) * b._rxn_rate_conv(
-                        t, x, j, has_rate_reactions
-                    ) + b.length * sum(
-                        equilibrium_term(b, t, x, p, j) for p in cplist
-                    ) + b.length * sum(
-                        inherent_term(b, t, x, p, j) for p in cplist
-                    ) + b.length * sum(
-                        transfer_term(b, t, x, p, j) for p in cplist
-                    ) + b.length * user_term_mol(
-                        b, t, x, j
-                    ) + b.length * user_term_mass(
-                        b, t, x, j
                     )
+
+                    if has_rate_reactions:
+                        rhs += (
+                            b.length
+                            * sum(
+                                b.rate_reaction_generation[t, x, p, j] for p in cplist
+                            )
+                            * b._rxn_rate_conv(t, x, j)
+                        )
+
+                    if has_equilibrium_reactions:
+                        rhs += b.length * sum(
+                            b.equilibrium_reaction_generation[t, x, p, j]
+                            for p in cplist
+                        )
+
+                    if b.properties.include_inherent_reactions:
+                        rhs += b.length * sum(
+                            b.inherent_reaction_generation[t, x, p, j] for p in cplist
+                        )
+
+                    if has_mass_transfer:
+                        rhs += b.length * sum(
+                            b.mass_transfer_term[t, x, p, j] for p in cplist
+                        )
+
+                    if custom_molar_term is not None:
+                        rhs += b.length * user_term_mol(b, t, x, j)
+
+                    if custom_mass_term is not None:
+                        rhs += b.length * user_term_mass(b, t, x, j)
+
+                    return lhs == rhs
 
     def add_phase_component_balances(
         self,
@@ -1384,26 +1383,6 @@ argument).""",
                 units=flow_l_units,
             )
 
-        # Create rules to substitute material balance terms
-        # Accumulation term
-        def accumulation_term(b, t, x, e):
-            return (
-                pyunits.convert(b.element_accumulation[t, x, e], to_units=flow_l_units)
-                if dynamic
-                else 0
-            )
-
-        # Mass transfer term
-        def transfer_term(b, t, x, e):
-            return b.elemental_mass_transfer_term[t, x, e] if has_mass_transfer else 0
-
-        # Custom term
-        def user_term(t, x, e):
-            if custom_elemental_term is not None:
-                return custom_elemental_term(t, x, e)
-            else:
-                return 0
-
         # Element balances
         @self.Constraint(
             self.flowsheet().time,
@@ -1421,13 +1400,23 @@ argument).""",
             ):
                 return Constraint.Skip
             else:
-                return b.length * accumulation_term(b, t, x, e) == (
-                    b._flow_direction_term * b.elemental_flow_dx[t, x, e]
-                    + b.length * transfer_term(b, t, x, e)
-                    + b.length * user_term(t, x, e)
-                )  # +
+                if dynamic:
+                    lhs = b.length * pyunits.convert(
+                        b.element_accumulation[t, x, e], to_units=flow_l_units
+                    )
+                else:
+                    lhs = 0
+                rhs = b._flow_direction_term * b.elemental_flow_dx[t, x, e]
+
+                if has_mass_transfer:
+                    rhs += b.length * b.elemental_mass_transfer_term[t, x, e]
+
+                if custom_elemental_term is not None:
+                    rhs += b.length * custom_elemental_term(t, x, e)
+
                 # TODO : Add diffusion terms
-                # b.area*diffusion_term(b, t, x, e)/b.length)
+
+                return lhs == rhs
 
         # Elemental Holdup
         if has_holdup:
@@ -1643,34 +1632,6 @@ argument).""",
 
                 return rate_heat + equil_heat
 
-        # Create rules to substitute energy balance terms
-        # Accumulation term
-        def accumulation_term(b, t, x, p):
-            return (
-                pyunits.convert(b.energy_accumulation[t, x, p], to_units=power_l_units)
-                if dynamic
-                else 0
-            )
-
-        def heat_term(b, t, x):
-            return b.heat[t, x] if has_heat_transfer else 0
-
-        def work_term(b, t, x):
-            return b.work[t, x] if has_work_transfer else 0
-
-        def enthalpy_transfer_term(b, t, x):
-            return b.enthalpy_transfer[t, x] if has_enthalpy_transfer else 0
-
-        def rxn_heat_term(b, t, x):
-            return b.heat_of_reaction[t, x] if has_heat_of_reaction else 0
-
-        # Custom term
-        def user_term(t, x):
-            if custom_term is not None:
-                return custom_term(t, x)
-            else:
-                return 0
-
         # Energy balance equation
         @self.Constraint(
             self.flowsheet().time, self.length_domain, doc="Energy balances"
@@ -1685,18 +1646,36 @@ argument).""",
             ):
                 return Constraint.Skip
             else:
-                return b.length * sum(
-                    accumulation_term(b, t, x, p) for p in phase_list
-                ) == (
-                    b._flow_direction_term
-                    * sum(b.enthalpy_flow_dx[t, x, p] for p in phase_list)
-                    + b.length * heat_term(b, t, x)
-                    + b.length * work_term(b, t, x)
-                    + b.length * enthalpy_transfer_term(b, t, x)
-                    + b.length * rxn_heat_term(b, t, x)
-                    + b.length * user_term(t, x)
+                if dynamic:
+                    lhs = b.length * pyunits.convert(
+                        sum(b.energy_accumulation[t, x, p] for p in phase_list),
+                        to_units=power_l_units,
+                    )
+                else:
+                    lhs = 0
+
+                rhs = b._flow_direction_term * sum(
+                    b.enthalpy_flow_dx[t, x, p] for p in phase_list
                 )
+
+                if has_heat_transfer:
+                    rhs += b.length * b.heat[t, x]
+
+                if has_work_transfer:
+                    rhs += b.length * b.work[t, x]
+
+                if has_enthalpy_transfer:
+                    rhs += b.length * b.enthalpy_transfer[t, x]
+
+                if has_heat_of_reaction:
+                    rhs += b.length * b.heat_of_reaction[t, x]
+
+                if custom_term is not None:
+                    rhs += b.length * custom_term(t, x)
+
                 # TODO : Add conduction/dispersion term
+
+                return lhs == rhs
 
         # Energy Holdup
         if has_holdup:
@@ -1783,18 +1762,6 @@ argument).""",
                 units=pressure_l_units,
             )
 
-        # Create rules to substitute energy balance terms
-        # Pressure change term
-        def deltaP_term(b, t, x):
-            return b.deltaP[t, x] if has_pressure_change else 0
-
-        # Custom term
-        def user_term(t, x):
-            if custom_term is not None:
-                return custom_term(t, x)
-            else:
-                return 0
-
         # Momentum balance equation
         @self.Constraint(
             self.flowsheet().time, self.length_domain, doc="Momentum balance"
@@ -1809,11 +1776,15 @@ argument).""",
             ):
                 return Constraint.Skip
             else:
-                return 0 == (
-                    b._flow_direction_term * b.pressure_dx[t, x]
-                    + b.length * deltaP_term(b, t, x)
-                    + b.length * user_term(t, x)
-                )
+                rhs = b._flow_direction_term * b.pressure_dx[t, x]
+
+                if has_pressure_change:
+                    rhs += b.length * b.deltaP[t, x]
+
+                if custom_term is not None:
+                    rhs += b.length * custom_term(t, x)
+
+                return 0 == rhs
 
         return self.pressure_balance
 
