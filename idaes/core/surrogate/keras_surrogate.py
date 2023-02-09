@@ -35,7 +35,7 @@ if omlt_available:
     )
     from omlt.neuralnet.layer import DenseLayer, InputLayer
     from omlt.neuralnet.network_definition import NetworkDefinition
-    
+
 
 from idaes.core.surrogate.base.surrogate_base import SurrogateBase
 from idaes.core.surrogate.sampling.scaling import OffsetScaler
@@ -43,6 +43,7 @@ from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
 ### OMLT code for load_keras_sequential which is no longer accessible without also importing onnx
 ### Can return to importing when OMLT issue #96 is resolved
+
 
 def load_keras_sequential(nn, scaling_object=None, scaled_input_bounds=None):
     """
@@ -60,7 +61,7 @@ def load_keras_sequential(nn, scaling_object=None, scaled_input_bounds=None):
         A dict that contains the bounds on the scaled variables (the
         direct inputs to the neural network). If None, then no bounds
         are specified.
-    
+
     Returns
     -------
     NetworkDefinition
@@ -68,7 +69,9 @@ def load_keras_sequential(nn, scaling_object=None, scaled_input_bounds=None):
     # TODO: Add exceptions for unsupported layer types
     n_inputs = len(nn.layers[0].get_weights()[0])
 
-    net = NetworkDefinition(scaling_object=scaling_object, scaled_input_bounds=scaled_input_bounds)
+    net = NetworkDefinition(
+        scaling_object=scaling_object, scaled_input_bounds=scaled_input_bounds
+    )
 
     prev_layer = InputLayer([n_inputs])
     net.add_layer(prev_layer)
@@ -76,17 +79,21 @@ def load_keras_sequential(nn, scaling_object=None, scaled_input_bounds=None):
     for l in nn.layers:
         cfg = l.get_config()
         if not isinstance(l, keras.layers.Dense):
-            raise ValueError('Layer type {} encountered. The function load_keras_sequential '
-                             'only supports dense layers at this time. Consider using '
-                             'ONNX and the ONNX parser'.format(type(l)))
+            raise ValueError(
+                "Layer type {} encountered. The function load_keras_sequential "
+                "only supports dense layers at this time. Consider using "
+                "ONNX and the ONNX parser".format(type(l))
+            )
         weights, biases = l.get_weights()
         n_layer_inputs, n_layer_nodes = weights.shape
 
-        dense_layer = DenseLayer([n_layer_inputs],
-                [n_layer_nodes],
-                activation=cfg["activation"],
-                weights=weights,
-                biases=biases)
+        dense_layer = DenseLayer(
+            [n_layer_inputs],
+            [n_layer_nodes],
+            activation=cfg["activation"],
+            weights=weights,
+            biases=biases,
+        )
         net.add_layer(dense_layer)
         net.add_edge(prev_layer, dense_layer)
         prev_layer = dense_layer
@@ -229,12 +236,14 @@ class KerasSurrogate(SurrogateBase):
         input_bounds = dict(enumerate(self.input_bounds().values()))
         scaled_input_bounds = omlt_scaling.get_scaled_input_expressions(input_bounds)
         scaled_input_bounds = {i: tuple(bnd) for i, bnd in scaled_input_bounds.items()}
-        
-        net = load_keras_sequential(self._keras_model, omlt_scaling, scaled_input_bounds)
+
+        net = load_keras_sequential(
+            self._keras_model, omlt_scaling, scaled_input_bounds
+        )
 
         if formulation == KerasSurrogate.Formulation.FULL_SPACE:
             formulation_object = FullSpaceSmoothNNFormulation(net)
-            
+
         elif formulation == KerasSurrogate.Formulation.REDUCED_SPACE:
             formulation_object = ReducedSpaceSmoothNNFormulation(net)
         elif formulation == KerasSurrogate.Formulation.RELU_BIGM:
@@ -251,7 +260,6 @@ class KerasSurrogate(SurrogateBase):
         block.nn.build_formulation(
             formulation_object,
         )
-        
 
     def evaluate_surrogate(self, inputs):
         """
@@ -271,7 +279,9 @@ class KerasSurrogate(SurrogateBase):
         y = self._keras_model.predict(x.to_numpy())
 
         # y is a numpy array, make it a dataframe
-        y = pd.DataFrame(data=y, columns=self.output_labels(), index=inputs.index, dtype='float64')
+        y = pd.DataFrame(
+            data=y, columns=self.output_labels(), index=inputs.index, dtype="float64"
+        )
         if self._output_scaler is not None:
             y = self._output_scaler.unscale(y)
         return y
