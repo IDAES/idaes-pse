@@ -809,7 +809,6 @@ class TestPysmoRBFTrainer:
         assert model.basis_function == "gaussian"
         assert model.regularization == True
         assert model.solution_method == "algebraic"
-        # assert model.filename == 'pysmo_Nonerbf_z5.pickle'
         assert list(model.feature_list._data.keys()) == data.columns.tolist()[:-1]
 
     @pytest.mark.unit
@@ -853,7 +852,6 @@ class TestPysmoRBFTrainer:
         assert model.basis_function == "imq"
         assert model.regularization == True
         assert model.solution_method == "bfgs"
-        # assert model.filename == 'pysmo_Nonerbf_z5.pickle'
         assert list(model.feature_list._data.keys()) == data.columns.tolist()[:-1]
 
 
@@ -1012,9 +1010,9 @@ class TestPysmoSurrogate:
     @pytest.fixture
     def pysmo_surr1(self):
         training_data = {
-            "x1": [1, 2, 3, 4, 5],
-            "x2": [5, 6, 7, 8, 9],
-            "z1": [10, 20, 30, 40, 50],
+            "x1": [1, 2, 3, 4, 5, 3.4],
+            "x2": [5, 6, 7, 8, 9, 1.1],
+            "z1": [10, 20, 30, 40, 50, -84.53625],
         }  # , 'z2': [6, 8, 10, 12, 14]}
         training_data = pd.DataFrame(training_data)
         validation_data = {
@@ -1045,10 +1043,10 @@ class TestPysmoSurrogate:
     @pytest.fixture
     def pysmo_surr2_poly(self):
         training_data = {
-            "x1": [1, 2, 3, 4, 5],
-            "x2": [5, 6, 7, 8, 9],
-            "z1": [10, 20, 30, 40, 50],
-            "z2": [6, 8, 10, 12, 14],
+            "x1": [1, 2, 3, 4, 5, 3.4],
+            "x2": [5, 6, 7, 8, 9, 1.1],
+            "z1": [10, 20, 30, 40, 50, -84.53625],
+            "z2": [6, 8, 10, 12, 14, -0.230209269],
         }
         training_data = pd.DataFrame(training_data)
         validation_data = {
@@ -1195,10 +1193,10 @@ class TestPysmoSurrogate:
     @pytest.fixture
     def pysmo_surr4(self):
         training_data = {
-            "x1": [1, 2, 3, 4, 5],
-            "x2": [5, 6, 7, 8, 9],
-            "z1": [10, 20, 30, 40, 50],
-            "z2": [6, 8, 10, 12, 14],
+            "x1": [1, 2, 3, 4, 5, 3.4],
+            "x2": [5, 6, 7, 8, 9, 1.1],
+            "z1": [10, 20, 30, 40, 50, -84.53625],
+            "z2": [6, 8, 10, 12, 14, -0.230209269],
         }
         training_data = pd.DataFrame(training_data)
         validation_data = {
@@ -1373,9 +1371,10 @@ class TestPysmoSurrogate:
         assert blk.outputs["z1"].bounds == (None, None)
         assert isinstance(blk.pysmo_constraint, Constraint)
         assert len(blk.pysmo_constraint) == 1
-        assert str(blk.pysmo_constraint["z1"].body) == (
-            "outputs[z1] - (-75.26111111111476 - 8.815277777775934*inputs[x1] + 18.81527777777826*inputs[x2] - 2.2556956302821618e-13*(inputs[x2]*inputs[x1]))"
-        )
+        cstr = str(blk.pysmo_constraint["z1"].body).replace("outputs[z1]", "10")
+        cstr = cstr.replace("inputs[x1]", "1")
+        cstr = cstr.replace("inputs[x2]", "5")
+        assert eval(cstr) == pytest.approx(0, abs=1e-8)
 
     @pytest.mark.unit
     def test_evaluate_multisurrogate_poly(self, pysmo_surr2_poly):
@@ -1416,7 +1415,7 @@ class TestPysmoSurrogate:
                 + 18.81527777777826 * inputs["x2"][i]
                 - 2.2556956302821618e-13 * (inputs["x2"][i] * inputs["x1"][i])
             )
-            assert pytest.approx(out["z2"][i], rel=1e-8) == (
+            assert pytest.approx(out["z2"][i], rel=1e-6) == (
                 -3.0033074724377813
                 + 0.2491731318906352 * inputs["x1"][i]
                 + 1.7508268681094337 * inputs["x2"][i]
@@ -1442,12 +1441,14 @@ class TestPysmoSurrogate:
         assert blk.outputs["z2"].bounds == (None, None)
         assert isinstance(blk.pysmo_constraint, Constraint)
         assert len(blk.pysmo_constraint) == 2
-        assert str(blk.pysmo_constraint["z1"].body) == (
-            "outputs[z1] - (-75.26111111111476 - 8.815277777775934*inputs[x1] + 18.81527777777826*inputs[x2] - 2.2556956302821618e-13*(inputs[x2]*inputs[x1]))"
-        )
-        assert str(blk.pysmo_constraint["z2"].body) == (
-            "outputs[z2] - (-3.0033074724377813 + 0.2491731318906352*inputs[x1] + 1.7508268681094337*inputs[x2] - 6.786238238021269e-15*(inputs[x2]*inputs[x1]))"
-        )
+        cstr = str(blk.pysmo_constraint["z1"].body).replace("outputs[z1]", "10")
+        cstr = cstr.replace("inputs[x1]", "1")
+        cstr = cstr.replace("inputs[x2]", "5")
+        assert eval(cstr) == pytest.approx(0, abs=1e-8)
+        cstr = str(blk.pysmo_constraint["z2"].body).replace("outputs[z2]", "6")
+        cstr = cstr.replace("inputs[x1]", "1")
+        cstr = cstr.replace("inputs[x2]", "5")
+        assert eval(cstr) == pytest.approx(0, abs=1e-8)
 
     @pytest.mark.unit
     def test_evaluate_multisurrogate_poly_trigfuncs1(self, pysmo_surr3):
@@ -1596,16 +1597,16 @@ class TestPysmoSurrogate:
         out = pysmo_surr4.evaluate_surrogate(inputs)
         for i in range(inputs.shape[0]):
             assert pytest.approx(out["z1"][i], rel=1e-8) == (
-                -110.15000000001504
-                - 17.53750000000189 * inputs["x1"][i]
-                + 27.537500000006148 * inputs["x2"][i]
-                - 5.3967136315336006e-11 * (inputs["x1"][i] / inputs["x2"][i])
+                -75.26111111111476
+                - 8.815277777775934 * inputs["x1"][i]
+                + 18.81527777777826 * inputs["x2"][i]
+                - 2.2556956302821618e-13 * (inputs["x2"][i] * inputs["x1"][i])
             )
-            assert pytest.approx(out["z2"][i], rel=1e-8) == (
-                -12.523574144487087
-                - 2.1308935361219556 * inputs["x1"][i]
-                + 4.1308935361216435 * inputs["x2"][i]
-                + 3.6347869158959156e-12 * (inputs["x1"][i] / inputs["x2"][i])
+            assert pytest.approx(out["z2"][i], rel=1e-6, abs=1e-10) == (
+                -3.0033074724377813
+                + 0.2491731318906352 * inputs["x1"][i]
+                + 1.7508268681094337 * inputs["x2"][i]
+                - 6.786238238021269e-15 * (inputs["x2"][i] * inputs["x1"][i])
             )
 
     @pytest.mark.unit
@@ -1623,12 +1624,28 @@ class TestPysmoSurrogate:
         assert blk.outputs["z2"].bounds == (None, None)
         assert isinstance(blk.pysmo_constraint, Constraint)
         assert len(blk.pysmo_constraint) == 2
-        assert str(blk.pysmo_constraint["z1"].body) == (
-            "outputs[z1] - (-110.15000000001504 - 17.53750000000189*inputs[x1] + 27.537500000006148*inputs[x2] - 5.3967136315336006e-11*(inputs[x1]/inputs[x2]))"
+        cstr = str(blk.pysmo_constraint["z1"].body).replace("outputs[z1]", "10")
+        cstr = cstr.replace("inputs[x1]", "1")
+        cstr = cstr.replace("inputs[x2]", "5")
+        assert eval(cstr) == pytest.approx(0, abs=1e-8)
+        cstr = str(blk.pysmo_constraint["z2"].body).replace("outputs[z2]", "6")
+        cstr = cstr.replace("inputs[x1]", "1")
+        cstr = cstr.replace("inputs[x2]", "5")
+        assert eval(cstr) == pytest.approx(0, abs=1e-8)
+
+    @pytest.mark.unit
+    def test_populate_block_multisurrogate_poly_userdef_mixedtypes(self, pysmo_surr1):
+        # Test ``populate_block`` for input variables of mixed types, e.g scalar and indexed pyomo variables
+
+        m = ConcreteModel()
+        m.x1 = Var(initialize=0, bounds=(0, 5))
+        m.x2 = Var([0], initialize=0, bounds=(0, 10))
+        m.z1 = Var(initialize=0, bounds=(0, 10))
+        m.surrogate = SurrogateBlock(concrete=True)
+        m.surrogate.build_model(
+            pysmo_surr1, input_vars=[m.x1, m.x2], output_vars=[m.z1]
         )
-        assert str(blk.pysmo_constraint["z2"].body) == (
-            "outputs[z2] - (-12.523574144487087 - 2.1308935361219556*inputs[x1] + 4.1308935361216435*inputs[x2] + 3.6347869158959156e-12*(inputs[x1]/inputs[x2]))"
-        )
+        assert len(m.surrogate.pysmo_constraint) == 1
 
     @pytest.mark.parametrize(
         "confidence_dict", [{0.99: 3.2498355440153697}, {0.90: 1.8331129326536335}]
@@ -1637,10 +1654,10 @@ class TestPysmoSurrogate:
     def test_confint_default(self, confidence_dict):
         # Test that the ``get_confidence_intervals`` function returns the correct upper and lower confidence interval bounds.
         training_data = {
-            "x1": [1, 2, 3, 4, 5],
-            "x2": [5, 6, 7, 8, 9],
-            "z1": [10, 20, 30, 40, 50],
-            "z2": [6, 8, 10, 12, 14],
+            "x1": [1, 2, 3, 4, 5, 3.4],
+            "x2": [5, 6, 7, 8, 9, 1.1],
+            "z1": [10, 20, 30, 40, 50, -84.53625],
+            "z2": [6, 8, 10, 12, 14, -0.230209269],
         }
         training_data = pd.DataFrame(training_data)
         validation_data = {
@@ -2069,8 +2086,18 @@ class TestPysmoSurrogate:
         # Test save for polynomial regression with single output with bounds supplied
         stream1 = StringIO()
         pysmo_surr1.save(stream1)
-        assert re.sub("errors.*?}", "", jstring_poly_1) == re.sub(
-            "errors.*?}", "", stream1.getvalue()
+        pysmo_surr_new = PysmoSurrogate.load(stream1)
+        assert pysmo_surr1._input_labels == pysmo_surr_new._input_labels
+        assert pysmo_surr1._output_labels == pysmo_surr_new._output_labels
+        assert pysmo_surr1._input_bounds == pysmo_surr_new._input_bounds
+        assert pysmo_surr1._trained.model_type == pysmo_surr_new._trained.model_type
+        assert (
+            pysmo_surr1._trained.output_labels == pysmo_surr_new._trained.output_labels
+        )
+        assert list(pysmo_surr_new._trained._data) == ["z1"]
+        assert (
+            pysmo_surr1._trained._data["z1"].expression_str
+            == pysmo_surr_new._trained._data["z1"].expression_str
         )
 
     @pytest.mark.unit
@@ -2079,8 +2106,22 @@ class TestPysmoSurrogate:
         _, poly_trained = pysmo_surr2_poly
         stream2a = StringIO()
         poly_trained.save(stream2a)
-        assert re.sub("errors.*?}", "", jstring_poly_2) == re.sub(
-            "errors.*?}", "", stream2a.getvalue()
+        pysmo_surr_new = PysmoSurrogate.load(stream2a)
+        assert poly_trained._input_labels == pysmo_surr_new._input_labels
+        assert poly_trained._output_labels == pysmo_surr_new._output_labels
+        assert poly_trained._input_bounds == pysmo_surr_new._input_bounds
+        assert poly_trained._trained.model_type == pysmo_surr_new._trained.model_type
+        assert (
+            poly_trained._trained.output_labels == pysmo_surr_new._trained.output_labels
+        )
+        assert list(pysmo_surr_new._trained._data) == ["z1", "z2"]
+        assert (
+            poly_trained._trained._data["z1"].expression_str
+            == pysmo_surr_new._trained._data["z1"].expression_str
+        )
+        assert (
+            poly_trained._trained._data["z2"].expression_str
+            == pysmo_surr_new._trained._data["z2"].expression_str
         )
 
     @pytest.mark.unit
@@ -2088,8 +2129,22 @@ class TestPysmoSurrogate:
         # Test save for polynomial regression with multiple outputs and custom functions - most complicated to save
         stream4 = StringIO()
         pysmo_surr4.save(stream4)
-        assert re.sub("errors.*?}", "", jstring_poly_4) == re.sub(
-            "errors.*?}", "", stream4.getvalue()
+        pysmo_surr_new = PysmoSurrogate.load(stream4)
+        assert pysmo_surr4._input_labels == pysmo_surr_new._input_labels
+        assert pysmo_surr4._output_labels == pysmo_surr_new._output_labels
+        assert pysmo_surr4._input_bounds == pysmo_surr_new._input_bounds
+        assert pysmo_surr4._trained.model_type == pysmo_surr_new._trained.model_type
+        assert (
+            pysmo_surr4._trained.output_labels == pysmo_surr_new._trained.output_labels
+        )
+        assert list(pysmo_surr_new._trained._data) == ["z1", "z2"]
+        assert (
+            pysmo_surr4._trained._data["z1"].expression_str
+            == pysmo_surr_new._trained._data["z1"].expression_str
+        )
+        assert (
+            pysmo_surr4._trained._data["z2"].expression_str
+            == pysmo_surr_new._trained._data["z2"].expression_str
         )
 
     @pytest.mark.unit

@@ -317,7 +317,7 @@ def test_initialization_cell(model):
 
     cell.initialize_build(
         optarg={"nlp_scaling_method": "user-scaling"},
-        current_density_guess=-2000,
+        current_density_guess=0,
         temperature_guess=1103.15,
     )
     cell.model_check()
@@ -360,7 +360,7 @@ def test_initialization_cell(model):
 
     assert degrees_of_freedom(cell) == 11
 
-    cell.initialize(current_density_guess=-1500, temperature_guess=1103.15)
+    cell.initialize(current_density_guess=0, temperature_guess=1103.15)
 
     assert degrees_of_freedom(cell) == 11
 
@@ -392,7 +392,7 @@ def test_initialization_stack(model_stack):
 
     stack.initialize_build(
         optarg={"nlp_scaling_method": "user-scaling"},
-        current_density_guess=-2000,
+        current_density_guess=0,
         temperature_guess=1103.15,
     )
     cell.model_check()
@@ -437,7 +437,7 @@ def test_initialization_stack(model_stack):
 
     stack.initialize_build(
         optarg={"nlp_scaling_method": "user-scaling"},
-        current_density_guess=-1500,
+        current_density_guess=0,
         temperature_guess=1103.15,
     )
 

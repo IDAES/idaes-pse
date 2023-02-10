@@ -568,12 +568,12 @@ def main_dynamic():
     m_dyn.fs_main.fs_stc.spray_ctrl.mv_ref.value = (
         m_dyn.fs_main.fs_stc.spray_valve.valve_opening[t0].value
     )
-    # For two bounded controllers, set the initial integral_of_error
-    m_dyn.fs_main.fs_stc.makeup_ctrl.integral_of_error[:].value = pyo.value(
-        m_dyn.fs_main.fs_stc.makeup_ctrl.integral_of_error_ref[t0]
+    # For two bounded controllers, set the initial mv_integral_component
+    m_dyn.fs_main.fs_stc.makeup_ctrl.mv_integral_component[:].value = pyo.value(
+        m_dyn.fs_main.fs_stc.makeup_ctrl.mv_integral_component_ref[t0]
     )
-    m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error[:].value = pyo.value(
-        m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error_ref[t0]
+    m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[:].value = pyo.value(
+        m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component_ref[t0]
     )
 
     # Controllers on the main flowsheet
@@ -643,7 +643,7 @@ def main_dynamic():
                 )
             _log.info(
                 "Spray control windup={}".format(
-                    m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error[t].value
+                    m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[t].value
                 )
             )
             mv_unbounded = pyo.value(m_dyn.fs_main.fs_stc.spray_ctrl.mv_unbounded[t])
@@ -651,27 +651,27 @@ def main_dynamic():
                 # Reset spray control windup
                 if (
                     pyo.value(
-                        m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error[t].value
+                        m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[t].value
                     )
-                    > 3000
+                    > 0.3
                 ):
-                    m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error[t].value = 3000
+                    m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[t].value = 0.3
                     _log.info(
-                        "Reached lower bound of manipulated variable and"
-                        " maximum windup of 3000. Reset windup to 3000."
+                        "Reached upper bound of manipulated variable and"
+                        " maximum windup of 0.3. Reset windup to 0.3."
                     )
             if mv_unbounded > pyo.value(m_dyn.fs_main.fs_stc.spray_ctrl.mv_ub):
                 # Reset spray control windup
                 if (
                     pyo.value(
-                        m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error[t].value
+                        m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[t].value
                     )
-                    < -10000
+                    < -1
                 ):
-                    m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error[t].value = -10000
+                    m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[t].value = -1
                     _log.info(
-                        "Reached upper bound of manipulated variable and"
-                        " minimum windup of -1e4. Reset windup to -1e4."
+                        "Reached lower bound of manipulated variable and"
+                        " minimum windup of -1. Reset windup to -1."
                     )
         _log.info("Solving for period number {} from {} s".format(i, tstart[i]))
         # Solve dynamic case for current period of time
@@ -742,14 +742,14 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         m.fs_main.drum_master_ctrl = PIDController(
             process_var=m.fs_main.fs_blr.aDrum.level,
             manipulated_var=m.fs_main.flow_level_ctrl_output,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
         # slave of cascading level controller
         m.fs_main.drum_slave_ctrl = PIDController(
             process_var=m.fs_main.fs_stc.bfp.outlet.flow_mol,
             manipulated_var=m.fs_main.fs_stc.bfp_turb_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
         # turbine master PID controller to control power output in MW
@@ -757,7 +757,7 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         m.fs_main.turbine_master_ctrl = PIDController(
             process_var=m.fs_main.fs_stc.power_output,
             manipulated_var=m.fs_main.fs_stc.turb.throttle_valve[1].valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
         # boiler master PID controller to control main steam pressure in MPa
@@ -765,7 +765,7 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         m.fs_main.boiler_master_ctrl = PIDController(
             process_var=m.fs_main.main_steam_pressure,
             manipulated_var=m.fs_main.fs_blr.aBoiler.flowrate_coal_raw,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -836,10 +836,10 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         m.fs_main.boiler_master_ctrl.mv_ref.fix(29.0)
 
         t0 = m.fs_main.time.first()
-        m.fs_main.drum_master_ctrl.integral_of_error[t0].fix(0)
-        m.fs_main.drum_slave_ctrl.integral_of_error[t0].fix(0)
-        m.fs_main.turbine_master_ctrl.integral_of_error[t0].fix(0)
-        m.fs_main.boiler_master_ctrl.integral_of_error[t0].fix(0)
+        m.fs_main.drum_master_ctrl.mv_integral_component[t0].fix(0)
+        m.fs_main.drum_slave_ctrl.mv_integral_component[t0].fix(0)
+        m.fs_main.turbine_master_ctrl.mv_integral_component[t0].fix(0)
+        m.fs_main.boiler_master_ctrl.mv_integral_component[t0].fix(0)
         m.fs_main.flow_level_ctrl_output.value = 0
     else:
 

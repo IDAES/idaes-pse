@@ -57,11 +57,11 @@ def test_set_metadata():
     m.props = PhysicalParameterTestBlock()
 
     # Set metadata to make sure it is overwritten
-    m.props.get_metadata().properties["enth_mol"] = {"method": "test"}
+    m.props.get_metadata().properties["enth_mol"].set_method("test")
 
     set_metadata(m.props)
 
-    assert m.props.get_metadata().properties["enth_mol"] == {"method": None}
+    assert m.props.get_metadata().properties.enth_mol._none.method is None
 
 
 class TestInvalidBounds(object):

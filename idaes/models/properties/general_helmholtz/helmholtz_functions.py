@@ -2126,13 +2126,9 @@ change.
         obj.add_properties(
             {
                 "temperature_crit": {"method": None, "units": "K"},
-                "temperature_star": {"method": None, "units": "K"},
                 "pressure_crit": {"method": None, "units": "Pa"},
                 "dens_mass_crit": {"method": None, "units": "kg/m^3"},
-                "dens_mass_star": {"method": None, "units": "kg/m^3"},
                 "dens_mol_crit": {"method": None, "units": "mol/m^3"},
-                "dens_mol_star": {"method": None, "units": "mol/m^3"},
-                "specific_gas_constant": {"method": None, "units": "J/kg.K"},
                 "mw": {"method": None, "units": "kg/mol"},
                 "temperature_sat": {"method": "None", "units": "K"},
                 "flow_mol": {"method": None, "units": "mol/s"},
@@ -2140,7 +2136,6 @@ change.
                 "flow_vol": {"method": None, "units": "m^3/s"},
                 "temperature": {"method": None, "units": "K"},
                 "pressure": {"method": None, "units": "Pa"},
-                "vapor_frac": {"method": None, "units": None},
                 "dens_mass_phase": {"method": None, "units": "kg/m^3"},
                 "temperature_red": {"method": None, "units": None},
                 "pressure_sat": {"method": None, "units": "kPa"},
@@ -2154,7 +2149,6 @@ change.
                 "entr_mass_phase": {"method": None, "units": "J/kg.K"},
                 "cp_mass_phase": {"method": None, "units": "J/kg.K"},
                 "cv_mass_phase": {"method": None, "units": "J/kg.K"},
-                "speed_sound_phase": {"method": None, "units": "m/s"},
                 "dens_mol_phase": {"method": None, "units": "mol/m^3"},
                 "therm_cond_phase": {"method": None, "units": "W/m.K"},
                 "visc_d_phase": {"method": None, "units": "Pa.s"},
@@ -2175,8 +2169,34 @@ change.
                 "heat_capacity_ratio": {"method": None, "units": None},
                 "dens_mass": {"method": None, "units": "kg/m^3"},
                 "dens_mol": {"method": None, "units": "mol/m^3"},
-                "dh_vap_mol": {"method": None, "units": "J/mol"},
-                "dh_vap_mass": {"method": None, "units": "J/mass"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
+                "temperature_star": {
+                    "method": None,
+                    "units": obj.derived_units.TEMPERATURE,
+                },
+                "dens_mass_star": {
+                    "method": None,
+                    "units": obj.derived_units.DENSITY_MASS,
+                },
+                "dens_mol_star": {
+                    "method": None,
+                    "units": obj.derived_units.DENSITY_MOLE,
+                },
+                "specific_gas_constant": {
+                    "method": None,
+                    "units": obj.derived_units.ENTROPY_MASS,
+                },
+                "speed_sound_phase": {
+                    "method": None,
+                    "units": obj.derived_units.VELOCITY,
+                },
+                "vapor_frac": {"method": None, "units": pyo.units.dimensionless},
+                "dh_vap_mol": {"method": None, "units": obj.derived_units.ENERGY_MOLE},
+                "dh_vap_mass": {"method": None, "units": obj.derived_units.ENERGY_MASS},
             }
         )
 
