@@ -675,7 +675,7 @@ class TestGibbsEnergy(object):
         assert str(rform1) == ("exp(rxn[1].log_k_eq[r1])")
         assert str(rform2) == (
             "rxn[1].log_k_eq[r1]  ==  "
-            "- rparams.reaction_r1.dh_rxn_ref/("
+            + "-1/("
             + str(
                 pyunits.convert(
                     c.gas_constant,
@@ -686,7 +686,8 @@ class TestGibbsEnergy(object):
                     / pyunits.K,
                 )
             )
-            + "*(300*K)) + 1/("
+            + "*(300*K))*rparams.reaction_r1.dh_rxn_ref"
+            + " + 1/("
             + str(
                 pyunits.convert(
                     c.gas_constant,
