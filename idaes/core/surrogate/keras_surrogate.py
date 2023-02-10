@@ -44,7 +44,6 @@ from idaes.core.surrogate.sampling.scaling import OffsetScaler
 ### OMLT code for load_keras_sequential which is no longer accessible without also importing onnx
 ### Can return to importing when OMLT issue #96 is resolved
 
-
 def load_keras_sequential(nn, scaling_object=None, scaled_input_bounds=None):
     """
     Load a keras neural network model (built with Sequential) into
@@ -243,7 +242,6 @@ class KerasSurrogate(SurrogateBase):
 
         if formulation == KerasSurrogate.Formulation.FULL_SPACE:
             formulation_object = FullSpaceSmoothNNFormulation(net)
-
         elif formulation == KerasSurrogate.Formulation.REDUCED_SPACE:
             formulation_object = ReducedSpaceSmoothNNFormulation(net)
         elif formulation == KerasSurrogate.Formulation.RELU_BIGM:
@@ -260,6 +258,27 @@ class KerasSurrogate(SurrogateBase):
         block.nn.build_formulation(
             formulation_object,
         )
+
+        # input/output variables need to be constrained to be equal
+        # auto-created variables that come from OMLT.
+        input_idx_by_label = {s:i for i,s in enumerate(self._input_labels)}
+        input_vars_as_dict = block.input_vars_as_dict()
+        @block.Constraint(self._input_labels)
+        def input_surrogate_ties(m, input_label):
+            return (
+                input_vars_as_dict[input_label]
+                == block.nn.inputs[input_idx_by_label[input_label]]
+            )
+
+        output_idx_by_label = {s:i for i,s in enumerate(self._output_labels)}
+        output_vars_as_dict = block.output_vars_as_dict()
+        @block.Constraint(self._output_labels)
+        def output_surrogate_ties(m, output_label):
+            return (
+                output_vars_as_dict[output_label]
+                == block.nn.outputs[output_idx_by_label[output_label]]
+            )
+
 
     def evaluate_surrogate(self, inputs):
         """
