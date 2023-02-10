@@ -245,7 +245,7 @@ def make_phase_split(
                         )
                         model.add_component("e_flow_" + port.local_name, expr)
                         port.add(expr, local_name)
-            elif "phase" in local_name:
+            else:
                 # flow is indexed by phase and comp
                 # Get the indexing sets i.e. component list and phase list
                 component_set = model.config.property_package.component_list
@@ -315,7 +315,7 @@ def make_phase_split(
                 # add the reference and variable name to the port
                 port.add(expr, k)
 
-            elif "phase" in local_name:
+            else:
                 # assumes enth_mol_phase or enth_mass_phase.
                 # This is an intensive property, you create a direct
                 # reference irrespective of the reflux, distillate and
