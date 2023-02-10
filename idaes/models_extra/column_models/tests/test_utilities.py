@@ -23,7 +23,11 @@ from pyomo.network import Port
 
 from idaes.models_extra.column_models.util import make_phase_split
 
-from idaes.core.util.exceptions import PropertyPackageError, PropertyNotSupportedError
+from idaes.core.util.exceptions import (
+    PropertyPackageError,
+    PropertyNotSupportedError,
+    PropertyPackageError,
+)
 
 # Mark module as all unit tests
 pytestmark = pytest.mark.unit
@@ -81,10 +85,10 @@ def test_make_phase_split_frac(m):
         }
 
     def _liquid_set(m):
-        return ["a1", "b1"]
+        return ["L", "L1"]
 
     def _vapor_set(m):
-        return ["a1", "b1"]
+        return ["V", "V1"]
 
     m.components = Set(initialize=["a1", "b1"])
     m.phases = Set(initialize=["L", "V"])
@@ -94,7 +98,6 @@ def test_make_phase_split_frac(m):
     m.config.property_package.phase_list = m.phases
 
     m._liquid_set = MethodType(_liquid_set, m)
-
     m._vapor_set = MethodType(_vapor_set, m)
 
     # Add variables and define_port_members method to dummy state block
@@ -123,11 +126,60 @@ def test_make_phase_split_frac(m):
                 )
 
 
-def test_make_phase_split_frac_comp(m):
+def test_make_phase_mole_frac(m):
     # Mock define_port_members method
     def define_port_members(m):
         return {
             "flow_mol_phase_comp": m.flow_mol_phase_comp,
+            "mole_frac_comp": m.mole_frac_comp,
+        }
+
+    def _liquid_set(m):
+        return ["L", "L1"]
+
+    def _vapor_set(m):
+        return ["V", "V1"]
+
+    m.components = Set(initialize=["a1", "b1"])
+    m.phases = Set(initialize=["L", "V"])
+
+    m.config.property_package = DummyData()
+    m.config.property_package.component_list = m.components
+    m.config.property_package.phase_list = m.phases
+
+    m._liquid_set = MethodType(_liquid_set, m)
+    m._vapor_set = MethodType(_vapor_set, m)
+
+    # Add variables and define_port_members method to dummy state block
+    for i in m.time:
+        m.properties_out[i].flow_mol_phase_comp = Var(m.phases, m.components)
+        m.properties_out[i].mole_frac_comp = Var(m.components)
+
+        m.properties_out[i].define_port_members = MethodType(
+            define_port_members, m.properties_out[i]
+        )
+
+    # Call make_phase_split function
+    make_phase_split(m, m.port, m.phases)
+
+    # Check for expected results
+    for i in m.time:
+        for p in m.config.property_package.phase_list:
+            for j in m.config.property_package.component_list:
+                m.port.flow_mol_phase_comp[i, p, j] is m.e_flow_mol_phase_compport[
+                    i, p, j
+                ]
+                assert value(m.port.flow_mol_phase_comp[i, p, j]) == 1e-8
+                assert m.port.mole_frac_comp[i, j] is m.e_mole_frac_port[i, j]
+
+
+def test_make_phase_split_mass_flow(m):
+    # Mock define_port_members method
+    def define_port_members(m):
+        return {
+            # "flow_mass": m.flow_mass,
+            "mass_frac_comp": m.mass_frac_comp,
+            "flow_mass_phase": m.flow_mass_phase,
             "mass_frac_phase_comp": m.mass_frac_phase_comp,
         }
 
@@ -150,182 +202,35 @@ def test_make_phase_split_frac_comp(m):
 
     # Add variables and define_port_members method to dummy state block
     for i in m.time:
-        m.properties_out[i].flow_mol_phase_comp = Var(m.phases)
+        # m.properties_out[i].flow_mass = Var()
+        m.properties_out[i].mass_frac_comp = Var(m.components)
         m.properties_out[i].mass_frac_phase_comp = Var(m.phases, m.components)
+        m.properties_out[i].flow_mass_phase = Var(m.phases)
 
         m.properties_out[i].define_port_members = MethodType(
             define_port_members, m.properties_out[i]
         )
 
     # Call make_phase_split function
-    make_phase_split(m, m.port)
+    make_phase_split(m, m.port, m.phases, side_sf=1)
 
     # Check for expected results
     for i in m.time:
         for p in m.config.property_package.phase_list:
             for j in m.config.property_package.component_list:
-                m.port.flow_mol_phase_comp[i, p, j] is m.e_flow_mol_phase_compport[
-                    i, p, j
-                ]
-                assert value(m.port.flow_mol_phase_comp[i, p, j]) == 1e-8
                 assert (
                     m.port.mass_frac_phase_comp[i, p, j]
-                    is m.properties_out[i].mass_frac_phase_comp[p, j]
+                    is m._mass_frac_phase_comp_port_ref[i, p, j]
                 )
-
-
-def test_make_phase_split_flow(m):
-    # Mock define_port_members method
-    def define_port_members(m):
-        return {
-            "flow_mol_phase": m.flow_mol_phase,
-            "flow_mol_phase_comp": m.flow_mol_phase_comp,
-        }
-
-    def _liquid_set(m):
-        return ["a1", "b1"]
-
-    def _vapor_set(m):
-        return ["a1", "b1"]
-
-    m.components = Set(initialize=["a1", "b1"])
-    m.phases = Set(initialize=["L", "V"])
-
-    m.config.property_package = DummyData()
-    m.config.property_package.component_list = m.components
-    m.config.property_package.phase_list = m.phases
-
-    m._liquid_set = MethodType(_liquid_set, m)
-
-    m._vapor_set = MethodType(_vapor_set, m)
-
-    # Add variables and define_port_members method to dummy state block
-    for i in m.time:
-        m.properties_out[i].flow_mol_phase = Var(m.phases)
-        m.properties_out[i].flow_mol_phase_comp = Var(m.phases, m.components)
-
-        m.properties_out[i].define_port_members = MethodType(
-            define_port_members, m.properties_out[i]
-        )
-
-    # Call make_phase_split function
-    make_phase_split(m, m.port)
-
-    # Check for expected results
-    for i in m.time:
-        for p in m.config.property_package.phase_list:
-            for j in m.config.property_package.component_list:
-                assert m.port.flow_mol_phase[i, p, j] is m.e_flow_mol_phaseport[i, p, j]
-                assert value(m.port.flow_mol_phase[i, p, j]) == 1e-8
-                assert (
-                    m.port.flow_mol_phase_comp[i, p, j]
-                    is m.e_flow_mol_phase_compport[i, p, j]
-                )
-                assert value(m.port.flow_mol_phase_comp[i, p, j]) == 1e-8
-
-
-def test_make_phase_split_only_flow(m):
-    # Mock define_port_members method
-    def define_port_members(m):
-        return {
-            "flow_mol_phase_comp": m.flow_mol_phase_comp,
-        }
-
-    def _liquid_set(m):
-        return ["a1", "b1"]
-
-    def _vapor_set(m):
-        return ["a1", "b1"]
-
-    m.components = Set(initialize=["a1", "b1"])
-    m.phases = Set(initialize=["L", "V"])
-
-    m.config.property_package = DummyData()
-    m.config.property_package.component_list = m.components
-    m.config.property_package.phase_list = m.phases
-
-    m._liquid_set = MethodType(_liquid_set, m)
-
-    m._vapor_set = MethodType(_vapor_set, m)
-
-    # Add variables and define_port_members method to dummy state block
-    for i in m.time:
-        m.properties_out[i].flow_mol_phase_comp = Var(m.phases, m.components)
-
-        m.properties_out[i].define_port_members = MethodType(
-            define_port_members, m.properties_out[i]
-        )
-
-    # Call make_phase_split function
-    make_phase_split(m, m.port)
-
-    # Check for expected results
-    for i in m.time:
-        for p in m.config.property_package.phase_list:
-            for j in m.config.property_package.component_list:
-                assert (
-                    m.port.flow_mol_phase_comp[i, p, j]
-                    is m.e_flow_mol_phase_compport[i, p, j]
-                )
-                assert value(m.port.flow_mol_phase_comp[i, p, j]) == 1e-8
-
-
-def test_make_phase_split_flow_phase(m):
-    # Mock define_port_members method
-    def define_port_members(m):
-        return {
-            "flow_phase_comp": m.flow_phase_comp,
-            "flow_mol_phase_comp": m.flow_mol_phase_comp,
-        }
-
-    def _liquid_set(m):
-        return ["a1", "b1"]
-
-    def _vapor_set(m):
-        return ["a1", "b1"]
-
-    m.components = Set(initialize=["a1", "b1"])
-    m.phases = Set(initialize=["L", "V"])
-
-    m.config.property_package = DummyData()
-    m.config.property_package.component_list = m.components
-    m.config.property_package.phase_list = m.phases
-
-    m._liquid_set = MethodType(_liquid_set, m)
-
-    m._vapor_set = MethodType(_vapor_set, m)
-
-    # Add variables and define_port_members method to dummy state block
-    for i in m.time:
-        m.properties_out[i].flow_mol_phase_comp = Var(m.phases, m.components)
-        m.properties_out[i].flow_phase_comp = Var(m.phases, m.components)
-        m.properties_out[i].define_port_members = MethodType(
-            define_port_members, m.properties_out[i]
-        )
-
-    # Call make_phase_split function
-    make_phase_split(m, m.port)
-
-    # Check for expected results
-    for i in m.time:
-        for p in m.config.property_package.phase_list:
-            for j in m.config.property_package.component_list:
-                assert (
-                    m.port.flow_phase_comp[i, p, j] is m.e_flow_phase_compport[i, p, j]
-                )
-                assert value(m.port.flow_phase_comp[i, p, j]) == 1e-8
-                assert (
-                    m.port.flow_mol_phase_comp[i, p, j]
-                    is m.e_flow_mol_phase_compport[i, p, j]
-                )
-                assert value(m.port.flow_mol_phase_comp[i, p, j]) == 1e-8
+                assert m.port.mass_frac_comp[i, j] is m.e_mole_frac_port[i, j]
 
 
 def test_make_phase_split_mass(m):
     # Mock define_port_members method
     def define_port_members(m):
         return {
-            "flow_mass_phase": m.flow_mass_phase,
+            # "flow_mass": m.flow_mass,
+            "mass_frac_comp": m.mass_frac_comp,
             "flow_mass_phase_comp": m.flow_mass_phase_comp,
         }
 
@@ -348,7 +253,8 @@ def test_make_phase_split_mass(m):
 
     # Add variables and define_port_members method to dummy state block
     for i in m.time:
-        m.properties_out[i].flow_mass_phase = Var(m.phases)
+        # m.properties_out[i].flow_mass = Var()
+        m.properties_out[i].mass_frac_comp = Var(m.components)
         m.properties_out[i].flow_mass_phase_comp = Var(m.phases, m.components)
 
         m.properties_out[i].define_port_members = MethodType(
@@ -356,21 +262,13 @@ def test_make_phase_split_mass(m):
         )
 
     # Call make_phase_split function
-    make_phase_split(m, m.port)
+    make_phase_split(m, m.port, m.phases, side_sf=1)
 
     # Check for expected results
     for i in m.time:
         for p in m.config.property_package.phase_list:
             for j in m.config.property_package.component_list:
-                assert (
-                    m.port.flow_mass_phase[i, p, j] is m.e_flow_mass_phaseport[i, p, j]
-                )
-                assert value(m.port.flow_mass_phase[i, p, j]) == 1e-8
-                assert (
-                    m.port.flow_mass_phase_comp[i, p, j]
-                    is m.e_flow_mass_phase_compport[i, p, j]
-                )
-                assert value(m.port.flow_mass_phase_comp[i, p, j]) == 1e-8
+                assert m.port.mass_frac_comp[i, j] is m.e_mole_frac_port[i, j]
 
 
 def test_make_phase_split_enth(m):
@@ -381,22 +279,12 @@ def test_make_phase_split_enth(m):
             "enth_mol_phase_comp": m.enth_mol_phase_comp,
         }
 
-    def _liquid_set(m):
-        return ["a1", "b1"]
-
-    def _vapor_set(m):
-        return ["a1", "b1"]
-
     m.components = Set(initialize=["a1", "b1"])
     m.phases = Set(initialize=["L", "V"])
 
     m.config.property_package = DummyData()
     m.config.property_package.component_list = m.components
     m.config.property_package.phase_list = m.phases
-
-    m._liquid_set = MethodType(_liquid_set, m)
-
-    m._vapor_set = MethodType(_vapor_set, m)
 
     # Add variables and define_port_members method to dummy state block
     for i in m.time:
@@ -421,18 +309,43 @@ def test_make_phase_split_enth(m):
                 )
 
 
-def test_make_phase_mol_error(m):
+def test_make_phase_split_enth_no_phase(m):
     # Mock define_port_members method
     def define_port_members(m):
         return {
-            "mole_frac_comp": m.mole_frac_comp,
+            "enth_mass": m.enth_mass,
+            "enth_mass_phase": m.enth_mass_phase,
         }
 
-    def _liquid_set(m):
-        return ["a1", "b1"]
+    # m.components = Set(initialize=["a1", "b1"])
+    m.phases = Set(initialize=["L", "V"])
 
-    def _vapor_set(m):
-        return ["a1", "b1"]
+    m.config.property_package = DummyData()
+    # m.config.property_package.component_list = m.components
+    m.config.property_package.phase_list = m.phases
+
+    # Add variables and define_port_members method to dummy state block
+    for i in m.time:
+        m.properties_out[i].enth_mass = Var()
+        m.properties_out[i].enth_mass_phase = Var(m.phases)
+
+        m.properties_out[i].define_port_members = MethodType(
+            define_port_members, m.properties_out[i]
+        )
+
+    # Call make_phase_split function
+    make_phase_split(m, m.port, m.phases)
+    # Check for expected results
+    for i in m.time:
+        assert m.port.enth_mass[i] is m.e_enth_port[i]
+
+
+def test_make_phase_non_mol_error(m):
+    # Mock define_port_members method
+    def define_port_members(m):
+        return {
+            "frac_comp": m.frac_comp,
+        }
 
     m.components = Set(initialize=["a1", "b1"])
     m.phases = Set(initialize=["L", "V"])
@@ -441,9 +354,38 @@ def test_make_phase_mol_error(m):
     m.config.property_package.component_list = m.components
     m.config.property_package.phase_list = m.phases
 
-    m._liquid_set = MethodType(_liquid_set, m)
+    # Add variables and define_port_members method to dummy state block
+    for i in m.time:
+        m.properties_out[i].frac_comp = Var(m.phases, m.components)
 
-    m._vapor_set = MethodType(_vapor_set, m)
+        m.properties_out[i].define_port_members = MethodType(
+            define_port_members, m.properties_out[i]
+        )
+
+    # Check for expected results
+    with pytest.raises(
+        PropertyNotSupportedError,
+        match="No mass frac or mole frac variables encountered "
+        " while building ports. "
+        "phase_frac as a state variable is not "
+        "supported with distillation unit models.",
+    ):
+        make_phase_split(m, m.port)
+
+
+def test_make_phase_mol_error(m):
+    # Mock define_port_members method
+    def define_port_members(m):
+        return {
+            "mole_frac_comp": m.mole_frac_comp,
+        }
+
+    m.components = Set(initialize=["a1", "b1"])
+    m.phases = Set(initialize=["L", "V"])
+
+    m.config.property_package = DummyData()
+    m.config.property_package.component_list = m.components
+    m.config.property_package.phase_list = m.phases
 
     # Add variables and define_port_members method to dummy state block
     for i in m.time:
@@ -500,22 +442,12 @@ def test_make_phase_mass_error(m):
             "mass_frac_comp": m.mass_frac_comp,
         }
 
-    def _liquid_set(m):
-        return ["a1", "b1"]
-
-    def _vapor_set(m):
-        return ["a1", "b1"]
-
     m.components = Set(initialize=["a1", "b1"])
     m.phases = Set(initialize=["L", "V"])
 
     m.config.property_package = DummyData()
     m.config.property_package.component_list = m.components
     m.config.property_package.phase_list = m.phases
-
-    m._liquid_set = MethodType(_liquid_set, m)
-
-    m._vapor_set = MethodType(_vapor_set, m)
 
     # Add variables and define_port_members method to dummy state block
     for i in m.time:
