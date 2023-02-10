@@ -876,16 +876,12 @@ have a config block which derives from CONFIG_Base,
             "developer of the ControlVolume class you are using.".format(self.name)
         )
 
-    def _rxn_rate_conv(b, t, x, j, has_rate_reactions):
+    def _rxn_rate_conv(b, t, x, j):
         """
         Method to determine conversion term for reaction rate terms in material
         balance equations. This method gets the basis of the material flow
         and reaction rate terms and determines the correct conversion factor.
         """
-        # If rate reactions are not required, skip the rest and return 1
-        if not has_rate_reactions:
-            return 1
-
         if x is None:
             # 0D control volume
             flow_basis = b.properties_out[t].get_material_flow_basis()
