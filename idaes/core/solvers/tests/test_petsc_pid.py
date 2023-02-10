@@ -118,7 +118,7 @@ def create_model(
         manipulated_var=m.fs.valve_1.valve_opening,
         calculate_initial_integral=calc_integ,
         mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
-        type=ControllerType.PI,
+        controller_type=ControllerType.PI,
     )
     # The control volume block doesn't assume the two phases are in equilibrium
     # by default, so I'll make that assumption here, I don't actually expect
@@ -274,9 +274,9 @@ def test_petsc_with_pid_model():
         m.fs.tank.control_volume.energy_accumulation[m.fs.time.last(), "Vap"]
     ) == pytest.approx(pyo.value(der))
     der = (
-        m.fs.ctrl.integral_of_error[m.fs.time.last()]
-        - m.fs.ctrl.integral_of_error[m.fs.time.at(5)]
+        m.fs.ctrl.mv_integral_component[m.fs.time.last()]
+        - m.fs.ctrl.mv_integral_component[m.fs.time.at(5)]
     ) / (m.fs.time.last() - m.fs.time.at(5))
     assert pyo.value(
-        m.fs.ctrl.integral_of_error_dot[m.fs.time.last()]
+        m.fs.ctrl.mv_integral_component_dot[m.fs.time.last()]
     ) == pytest.approx(pyo.value(der))

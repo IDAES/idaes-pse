@@ -317,7 +317,7 @@ def add_unit_models(m):
         fs.fwh2_ctrl = PIDController(
             process_var=fs.fwh2.condense.level,
             manipulated_var=fs.fwh2_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -325,7 +325,7 @@ def add_unit_models(m):
         fs.fwh3_ctrl = PIDController(
             process_var=fs.fwh3.condense.level,
             manipulated_var=fs.fwh3_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -333,7 +333,7 @@ def add_unit_models(m):
         fs.fwh5_ctrl = PIDController(
             process_var=fs.fwh5.condense.level,
             manipulated_var=fs.fwh5_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -341,7 +341,7 @@ def add_unit_models(m):
         fs.fwh6_ctrl = PIDController(
             process_var=fs.fwh6.condense.level,
             manipulated_var=fs.fwh6_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -349,7 +349,7 @@ def add_unit_models(m):
         fs.da_ctrl = PIDController(
             process_var=fs.da_tank.tank_level,
             manipulated_var=fs.cond_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -357,7 +357,7 @@ def add_unit_models(m):
         fs.makeup_ctrl = PIDController(
             process_var=fs.hotwell_tank.tank_level,
             manipulated_var=fs.makeup_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
             calculate_initial_integral=False,
         )
@@ -366,7 +366,7 @@ def add_unit_models(m):
         fs.spray_ctrl = PIDController(
             process_var=fs.temperature_main_steam,
             manipulated_var=fs.spray_valve.valve_opening,
-            type=ControllerType.PID,
+            controller_type=ControllerType.PID,
             mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
             calculate_initial_integral=False,
         )
@@ -916,14 +916,14 @@ def set_inputs(m):
 
         # Set initial conditions for controller errors
         t0 = fs.time.first()
-        fs.fwh2_ctrl.integral_of_error[t0].fix(0)
-        fs.fwh3_ctrl.integral_of_error[t0].fix(0)
-        fs.fwh5_ctrl.integral_of_error[t0].fix(0)
-        fs.fwh6_ctrl.integral_of_error[t0].fix(0)
-        fs.da_ctrl.integral_of_error[t0].fix(0)
-        fs.makeup_ctrl.integral_of_error[t0].fix(0)
-        fs.spray_ctrl.integral_of_error[t0].fix(0)
-        fs.spray_ctrl.derivative_of_error[t0].fix(0)
+        fs.fwh2_ctrl.mv_integral_component[t0].fix(0)
+        fs.fwh3_ctrl.mv_integral_component[t0].fix(0)
+        fs.fwh5_ctrl.mv_integral_component[t0].fix(0)
+        fs.fwh6_ctrl.mv_integral_component[t0].fix(0)
+        fs.da_ctrl.mv_integral_component[t0].fix(0)
+        fs.makeup_ctrl.mv_integral_component[t0].fix(0)
+        fs.spray_ctrl.mv_integral_component[t0].fix(0)
+        fs.spray_ctrl.derivative_term[t0].fix(0)
 
     return m
 
@@ -1870,11 +1870,11 @@ def main_dynamic():
     m_dyn.fs_main.fs_stc.spray_ctrl.mv_ref.value = (
         m_dyn.fs_main.fs_stc.spray_valve.valve_opening[t0].value
     )
-    m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error[:].value = pyo.value(
-        m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error_ref[t0]
+    m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[:].value = pyo.value(
+        m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component_ref[t0]
     )
-    m_dyn.fs_main.fs_stc.makeup_ctrl.integral_of_error[:].value = pyo.value(
-        m_dyn.fs_main.fs_stc.makeup_ctrl.integral_of_error_ref[t0]
+    m_dyn.fs_main.fs_stc.makeup_ctrl.mv_integral_component[:].value = pyo.value(
+        m_dyn.fs_main.fs_stc.makeup_ctrl.mv_integral_component_ref[t0]
     )
 
     m_dyn.fs_main.fs_stc.fwh2.condense.level[0].fix()
