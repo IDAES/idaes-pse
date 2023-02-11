@@ -514,7 +514,7 @@ class Cubic(EoSBase):
                         (
                             1
                             + fw[j]
-                            * (1 - sqrt(m.temperature_crit_mix / cobj.temperature_crit))
+                            * (1 - sqrt(m.temperature_crit / cobj.temperature_crit))
                         )
                         ** 2
                     )
@@ -571,8 +571,8 @@ class Cubic(EoSBase):
                 am_crit = getattr(m, "am_crit")
                 return EoS_param[ctype]["omegaA"] == (
                     am_crit
-                    * m.pressure_crit_mix
-                    / (Cubic.gas_constant(b) * m.temperature_crit_mix) ** 2
+                    * m.pressure_crit
+                    / (Cubic.gas_constant(b) * m.temperature_crit) ** 2
                 )
 
             b.add_component("A_crit", Constraint(rule=rule_A_crit))
@@ -581,8 +581,8 @@ class Cubic(EoSBase):
                 bm_crit = getattr(m, "bm_crit")
                 return EoS_param[ctype]["coeff_b"] == (
                     bm_crit
-                    * m.pressure_crit_mix
-                    / (Cubic.gas_constant(b) * m.temperature_crit_mix)
+                    * m.pressure_crit
+                    / (Cubic.gas_constant(b) * m.temperature_crit)
                 )
 
             b.add_component("B_crit", Constraint(rule=rule_B_crit))
@@ -593,7 +593,7 @@ class Cubic(EoSBase):
             return None
         else:
             # Using simple mixing rule from RPP4 to initialize
-            b.temperature_crit_mix.value = value(
+            b.temperature_crit.value = value(
                 sum(
                     b.mole_frac_comp[j] * b.params.get_component(j).temperature_crit
                     for j in b.component_list
@@ -613,8 +613,8 @@ class Cubic(EoSBase):
                 )
             )
 
-            b.pressure_crit_mix.value = value(
-                Z_crit * const.gas_constant * b.temperature_crit_mix / v_crit
+            b.pressure_crit.value = value(
+                Z_crit * const.gas_constant * b.temperature_crit / v_crit
             )
 
             for c in b.component_objects(Constraint):

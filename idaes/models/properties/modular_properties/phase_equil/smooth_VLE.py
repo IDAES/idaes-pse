@@ -188,7 +188,7 @@ class SmoothVLE(object):
                 """
                 P+ = max(0, P - Pc)
                 """
-                return _pp == smooth_max(0, b.pressure - b.pressure_crit_mix, eps)
+                return _pp == smooth_max(0, b.pressure - b.pressure_crit, eps)
 
             b.add_component(
                 "eq_pressure_comparison_1" + suffix,
@@ -200,7 +200,7 @@ class SmoothVLE(object):
                 """
                 P- = max(0, Pc - P)
                 """
-                return _pn == smooth_max(0, b.pressure_crit_mix - b.pressure, eps)
+                return _pn == smooth_max(0, b.pressure_crit - b.pressure, eps)
 
             b.add_component(
                 "eq_pressure_comparison_2" + suffix,
@@ -254,8 +254,8 @@ class SmoothVLE(object):
             _pn = getattr(b, "_pn" + suffix)
             eps = getattr(b, "eps" + suffix)
 
-            _pp.value = max(0, value(b.pressure - b.pressure_crit_mix))
-            _pn.value = max(0, value(b.pressure_crit_mix - b.pressure))
+            _pp.value = max(0, value(b.pressure - b.pressure_crit))
+            _pn.value = max(0, value(b.pressure_crit - b.pressure))
             b._pbar[phase_pair].value = value(b.pressure - _pp - eps / 4)
 
     @staticmethod

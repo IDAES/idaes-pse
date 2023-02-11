@@ -1124,8 +1124,8 @@ class GenericParameterData(PhysicalParameterBlock):
                 "surf_tens_phase": {"method": "_surf_tens_phase"},
                 "temperature_bubble": {"method": "_temperature_bubble"},
                 "temperature_dew": {"method": "_temperature_dew"},
-                "temperature_crit_mix": {"method": "_mixture_critical_properties"},
-                "pressure_crit_mix": {"method": "_mixture_critical_properties"},
+                "temperature_crit": {"method": "_mixture_critical_properties"},
+                "pressure_crit": {"method": "_mixture_critical_properties"},
                 "therm_cond_phase": {"method": "_therm_cond_phase"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
                 "vol_mol_phase": {"method": "_vol_mol_phase"},
@@ -1333,7 +1333,7 @@ class _GenericStateBlock(StateBlock):
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
-        # Initialize temperature_crit_mix and pressure_crit_mix
+        # Initialize temperature_crit and pressure_crit
         for k in blk.keys():
             reference_phase = next(
                 p
@@ -2549,13 +2549,13 @@ class GenericStateBlockData(StateBlockData):
         try:
             t_units = b.params.get_metadata().default_units["temperature"]
             p_units = pyunits.Pa
-            b.temperature_crit_mix = Var(
+            b.temperature_crit = Var(
                 doc="Critical temperature of mixture",
                 bounds=(b.temperature.lb, None),
                 units=t_units,
             )
 
-            b.pressure_crit_mix = Var(
+            b.pressure_crit = Var(
                 doc="Critical pressure of mixture",
                 bounds=(b.pressure.lb, None),
                 units=p_units,
@@ -2566,8 +2566,8 @@ class GenericStateBlockData(StateBlockData):
             # b.params.config.critical_properties.build_critical_properties(b)
 
         except AttributeError:
-            b.del_component(b.temperature_crit_mix)
-            b.del_component(b.pressure_crit_mix)
+            b.del_component(b.temperature_crit)
+            b.del_component(b.pressure_crit)
             raise
 
     # -------------------------------------------------------------------------
