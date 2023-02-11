@@ -274,7 +274,10 @@ class TestVanTHoff(object):
             model.rxn[1], model.rparams.reaction_r1, "r1", 300 * pyunits.K
         )
         assert str(rform1) == str(
-            (model.rxn[1].log_k_eq["r1"] - log(model.rparams.reaction_r1.k_eq_ref))
+            (
+                model.rxn[1].log_k_eq["r1"]
+                - log(1 / pyunits.dimensionless * model.rparams.reaction_r1.k_eq_ref)
+            )
             == (
                 -model.rxn[1].dh_rxn["r1"]
                 / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
@@ -315,7 +318,10 @@ class TestVanTHoff(object):
             model.rxn[1], model.rparams.reaction_r1, "r1", 300 * pyunits.K
         )
         assert str(rform1) == str(
-            (model.rxn[1].log_k_eq["r1"] - log(model.rparams.reaction_r1.k_eq_ref))
+            (
+                model.rxn[1].log_k_eq["r1"]
+                - log(1 / pyunits.dimensionless * model.rparams.reaction_r1.k_eq_ref)
+            )
             == (
                 -model.rxn[1].dh_rxn["r1"]
                 / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
