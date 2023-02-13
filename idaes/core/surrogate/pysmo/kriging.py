@@ -655,7 +655,7 @@ class KrigingModel:
             Pyomo Expression              : Pyomo expression of the Kriging model based on the variables provided in **variable_list**
 
         """
-        t1 = np.array([variable_list])
+        t1 = np.array([variable_list], dtype="object")
         # Reshaping of variable array is necessary when input variables are Pyomo scalar variables
         t1 = t1.reshape(1, len(variable_list)) if t1.ndim > 2 else t1
 
