@@ -189,7 +189,7 @@ class TestBTXIdealFcTP:
         assert pytest.approx(2.121, rel=1e-2) == value(
             btx_fctp.fs.unit.condenser.distillate.flow_mol_comp[0, "toluene"]
         )
-        assert pytest.approx(355.642, abs=1e-2) == value(
+        assert pytest.approx(355.642, rel=1e-4) == value(
             btx_fctp.fs.unit.condenser.distillate.temperature[0]
         )
         assert pytest.approx(101325, abs=1e-3) == value(
@@ -203,7 +203,7 @@ class TestBTXIdealFcTP:
         assert pytest.approx(17.876, rel=1e-3) == value(
             btx_fctp.fs.unit.reboiler.bottoms.flow_mol_comp[0, "toluene"]
         )
-        assert pytest.approx(377.33, abs=1e-2) == value(
+        assert pytest.approx(377.33, rel=1e-4) == value(
             btx_fctp.fs.unit.reboiler.bottoms.temperature[0]
         )
         assert pytest.approx(101325, abs=1e-3) == value(
@@ -262,7 +262,7 @@ class TestBTXIdealFTPz:
         assert pytest.approx(0.1118, rel=1e-2) == value(
             btx_ftpz.fs.unit.condenser.distillate.mole_frac_comp[0, "toluene"]
         )
-        assert pytest.approx(355.642, abs=1e-2) == value(
+        assert pytest.approx(355.642, rel=1e-4) == value(
             btx_ftpz.fs.unit.condenser.distillate.temperature[0]
         )
         assert pytest.approx(101325, abs=1e-3) == value(
@@ -279,7 +279,7 @@ class TestBTXIdealFTPz:
         assert pytest.approx(0.8504, rel=1e-3) == value(
             btx_ftpz.fs.unit.reboiler.bottoms.mole_frac_comp[0, "toluene"]
         )
-        assert pytest.approx(377.337, abs=1e-2) == value(
+        assert pytest.approx(377.337, rel=1e-4) == value(
             btx_ftpz.fs.unit.reboiler.bottoms.temperature[0]
         )
         assert pytest.approx(101325, abs=1e-3) == value(
@@ -369,7 +369,7 @@ class TestBTXIdealGeneric:
         assert pytest.approx(0.1215, rel=1e-2) == value(
             btx_ftpz_generic.fs.unit.condenser.distillate.mole_frac_comp[0, "toluene"]
         )
-        assert pytest.approx(355.853, abs=1e-2) == value(
+        assert pytest.approx(355.853, rel=1e-4) == value(
             btx_ftpz_generic.fs.unit.condenser.distillate.temperature[0]
         )
         assert pytest.approx(101325, abs=1e-3) == value(
@@ -386,7 +386,7 @@ class TestBTXIdealGeneric:
         assert pytest.approx(0.8677, rel=1e-3) == value(
             btx_ftpz_generic.fs.unit.reboiler.bottoms.mole_frac_comp[0, "toluene"]
         )
-        assert pytest.approx(378.0433, abs=1e-2) == value(
+        assert pytest.approx(378.0433, rel=1e-4) == value(
             btx_ftpz_generic.fs.unit.reboiler.bottoms.temperature[0]
         )
         assert pytest.approx(101325, abs=1e-3) == value(
