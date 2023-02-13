@@ -11,6 +11,7 @@
 # license information.
 #################################################################################
 from itertools import zip_longest
+from types import ModuleType
 
 from pyomo.common.dependencies import attempt_import
 from pyomo.common.config import ConfigDict, ConfigValue
@@ -18,6 +19,12 @@ import pyomo.environ as pyo
 from idaes.apps.grid_integration.utils import convert_marginal_costs_to_actual_costs
 
 prescient, prescient_avail = attempt_import("prescient")
+
+
+class PrescientPluginModule(ModuleType):
+    def __init__(self, get_configuration, register_plugins):
+        self.get_configuration = get_configuration
+        self.register_plugins = register_plugins
 
 
 class DoubleLoopCoordinator:
@@ -70,14 +77,21 @@ class DoubleLoopCoordinator:
 
         context.register_initialization_callback(self.initialize_customized_results)
         context.register_for_hourly_stats(self.push_hourly_stats_to_forecaster)
-        context.register_before_ruc_solve_callback(self.pass_static_params_to_DA)
+        context.register_after_get_initial_actuals_model_for_sced_callback(
+            self.update_static_params
+        )
+        context.register_after_get_initial_actuals_model_for_simulation_actuals_callback(
+            self.update_static_params
+        )
+        context.register_after_get_initial_forecast_model_for_ruc_callback(
+            self.update_static_params
+        )
         context.register_before_ruc_solve_callback(self.bid_into_DAM)
         context.register_after_ruc_generation_callback(self.fetch_DA_prices)
         context.register_after_ruc_generation_callback(self.fetch_DA_dispatches)
         context.register_after_ruc_generation_callback(
             self.push_day_ahead_stats_to_forecaster
         )
-        context.register_before_operations_solve_callback(self.pass_static_params_to_RT)
         context.register_before_operations_solve_callback(self.bid_into_RTM)
         context.register_after_operations_callback(self.track_sced_signal)
         context.register_update_operations_stats_callback(self.update_observed_dispatch)
@@ -111,6 +125,10 @@ class DoubleLoopCoordinator:
         ).declare_as_argument("--bidding-generator")
 
         return config
+
+    @property
+    def prescient_plugin_module(self):
+        return PrescientPluginModule(self.get_configuration, self.register_plugins)
 
     def initialize_customized_results(self, options, simulator):
 
@@ -388,7 +406,7 @@ class DoubleLoopCoordinator:
 
         return
 
-    def _update_static_params(self, gen_dict, first_ruc):
+    def _update_static_params(self, gen_dict):
 
         """
         Update static parameters in the Prescient generator parameter data dictionary depending on generator type.
@@ -398,7 +416,6 @@ class DoubleLoopCoordinator:
 
         Args:
             gen_dict: Prescient generator parameter data dictionary.
-            first_ruc: Is this the very first unit commitment problem
 
         Returns:
             None
@@ -414,6 +431,14 @@ class DoubleLoopCoordinator:
         for param, value in self.bidder.bidding_model_object.model_data:
             if param == "gen_name" or value is None:
                 continue
+            elif (
+                param in gen_dict
+                and isinstance(gen_dict[param], dict)
+                and gen_dict[param]["data_type"] == "time_series"
+            ):
+                # don't touch time varying things;
+                # presumably they be updated later
+                continue
             elif param == "p_cost":
                 if is_thermal:
                     curve_value = convert_marginal_costs_to_actual_costs(value)
@@ -428,48 +453,26 @@ class DoubleLoopCoordinator:
                     raise NotImplementedError(
                         "generator_type must be either 'thermal' or 'renewable'"
                     )
-
-                if "p_fuel" in gen_dict:
-                    gen_dict.pop("p_fuel")
-            elif param == "initial_status" or param == "initial_p_output":
-                if first_ruc:
-                    gen_dict[param] = value
             else:
                 gen_dict[param] = value
 
-            if param == "startup_cost" and "startup_fuel" in gen_dict:
-                gen_dict.pop("startup_fuel")
-
-    def pass_static_params_to_DA(
-        self, options, simulator, ruc_instance, ruc_date, ruc_hour
-    ):
+    def update_static_params(self, options, instance):
         """
-        This method pass static generator parameters to RUC model in Prescient
-        before it is solved.
+        This method pass static generator parameters in Prescient
+        immediately after a model is created.
 
         Arguments:
             options: Prescient options from prescient.simulator.config.
 
-            simulator: Prescient simulator.
-
-            ruc_instance: Prescient RUC object.
-
-            ruc_date: the date of the day-ahead market we bid into.
-
-            ruc_hour: the hour the RUC is being solved in the day before.
+            instance: Prescient RUC object or SCED object.
 
         Returns:
             None
         """
 
         gen_name = self.bidder.bidding_model_object.model_data.gen_name
-        gen_dict = ruc_instance.data["elements"]["generator"][gen_name]
-        first_ruc = (
-            simulator.time_manager.current_time is None
-            or simulator.time_manager.current_time
-            == simulator.time_manager.get_first_time_step()
-        )
-        self._update_static_params(gen_dict, first_ruc=first_ruc)
+        gen_dict = instance.data["elements"]["generator"][gen_name]
+        self._update_static_params(gen_dict)
 
         return
 
@@ -622,29 +625,6 @@ class DoubleLoopCoordinator:
         gen_dict = sced_instance.data["elements"]["generator"][gen_name]
 
         self._update_bids(gen_dict, bids, start_hour=hour, horizon=options.sced_horizon)
-
-        return
-
-    def pass_static_params_to_RT(self, options, simulator, sced_instance):
-
-        """
-        This method pass static generator parameters to SCED model in Prescient
-        before it is solved.
-
-        Arguments:
-            options: Prescient options from prescient.simulator.config.
-
-            simulator: Prescient simulator.
-
-            sced_instance: Prescient SCED object.
-
-        Returns:
-            None
-        """
-
-        gen_name = self.bidder.bidding_model_object.model_data.gen_name
-        gen_dict = sced_instance.data["elements"]["generator"][gen_name]
-        self._update_static_params(gen_dict, first_ruc=False)
 
         return
 

@@ -37,6 +37,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 )
 
 from idaes.models.properties.modular_properties.examples.BT_ideal import configuration
+import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -101,6 +102,8 @@ def build_model_btx_ftpz():
 
     m.fs.unit.reboiler.boilup_ratio.fix(1.3)
 
+    # iscale.calculate_scaling_factors(m)
+
     return m
 
 
@@ -143,6 +146,8 @@ class TestBTXIdealFcTP:
         m.fs.unit.condenser.condenser_pressure.fix(101325)
 
         m.fs.unit.reboiler.boilup_ratio.fix(1.3)
+
+        # iscale.calculate_scaling_factors(m)
 
         return m
 
@@ -316,8 +321,6 @@ class TestBTXIdealGeneric:
         m.fs.unit.condenser.condenser_pressure.fix(101325)
 
         m.fs.unit.reboiler.boilup_ratio.fix(1.3)
-
-        iscale.calculate_scaling_factors(m.fs.unit)
 
         return m
 
