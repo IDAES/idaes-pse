@@ -64,7 +64,7 @@ class Unsymmetric(object):
     @staticmethod
     def ndIdn(b, pname, i):
         # Eqn 71
-        return 0
+        return 0.0
 
 
 class Symmetric(object):
@@ -81,7 +81,7 @@ class Symmetric(object):
                     b.mole_frac_phase_comp_true[pname, j] for j in b.params.ion_set
                 )
             else:
-                return 0
+                return 0.0
 
         b.add_component(
             pname + "_x_ref", Expression(b.params.true_species_set, rule=rule_x_ref)
@@ -101,9 +101,9 @@ def ndxdn(b, pname, i, j):
 
     # Delta function used in Eqns 73-76 (not defined in paper)
     if i == j:
-        delta = 1
+        delta = 1.0
     else:
-        delta = 0
+        delta = 0.0
 
     # Eqn 76
     return (delta - x0[j]) / sum(

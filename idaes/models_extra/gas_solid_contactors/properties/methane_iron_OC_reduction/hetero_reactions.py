@@ -116,8 +116,6 @@ class ReactionParameterData(ReactionParameterBlock):
 
         self._reaction_block_class = ReactionBlock
 
-        self.default_scaling_factor = {}
-
         # Reaction Index
         self.rate_reaction_idx = Set(initialize=["R1"])
 
@@ -219,14 +217,18 @@ class ReactionParameterData(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
+        obj.define_custom_properties(
+            {
+                "OC_conv": {"method": "_OC_conv", "units": None},
+                "OC_conv_temp": {"method": "_OC_conv_temp", "units": None},
+            }
+        )
         obj.add_properties(
             {
                 "k_rxn": {
                     "method": "_k_rxn",
                     "units": "mol^(1-rxn_order)m^(3*rxn_order -2)/s]",
                 },
-                "OC_conv": {"method": "_OC_conv", "units": None},
-                "OC_conv_temp": {"method": "_OC_conv_temp", "units": None},
                 "reaction_rate": {"method": "_reaction_rate", "units": "mol_rxn/m3.s"},
             }
         )
