@@ -1473,19 +1473,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         """
         # Get inlet state if not provided
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="control_volume")
-        if state_args is None:
-            state_args = {}
-            state_dict = blk.properties_in[
-                blk.flowsheet().time.first()
-            ].define_port_members()
-
-            for k in state_dict.keys():
-                if state_dict[k].is_indexed():
-                    state_args[k] = {}
-                    for m in state_dict[k].keys():
-                        state_args[k][m] = state_dict[k][m].value
-                else:
-                    state_args[k] = state_dict[k].value
 
         # Initialize state blocks
         in_flags = blk.properties_in.initialize(
@@ -1495,8 +1482,11 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             hold_state=hold_state,
             state_args=state_args,
         )
-        # if state_args is None:
-        #     blk.estimate_outlet_state(always_estimate=False)
+
+        if state_args is None:
+            # If no initial guesses provided, estimate values for states
+            blk.estimate_outlet_state(always_estimate=True)
+
         out_flags = blk.properties_out.initialize(
             outlvl=outlvl,
             optarg=optarg,

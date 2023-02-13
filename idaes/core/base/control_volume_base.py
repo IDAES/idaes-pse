@@ -1026,20 +1026,10 @@ have a config block which derives from CONFIG_Base,
             # Material flows are too hard ot deal with generically, as they
             # can be defined as bilinear terms, can have various indexing and
             # can be on different bases.
-            # Similarly, mass and mole fractions are hard ot deal with.
-            if n.startswith(("enth", "energy_internal")):
-                # Enthalpy or internal energy, need to look for heat and work
-                # We will ignore PV effects on internal energy
-                if hasattr(self, "heat") and self.heat[index].fixed:
-                    q = self.heat[index]
-                else:
-                    q = 0
-                if hasattr(self, "work") and self.work[index].fixed:
-                    w = self.work[index]
-                else:
-                    w = 0
-                v2val = value(v1 + q + w)
-            elif n.startswith("pressure"):
+            # Similarly, mass and mole fractions are hard to deal with.
+            # Energy terms also have problems, as they are defined on ain intensive
+            # basis, so we would need to convert heat and work
+            if n.startswith("pressure"):
                 # Pressure, see if there is a fixed deltaP
                 if hasattr(self, "deltaP") and self.deltaP[index].fixed:
                     v2val = value(v1 + self.deltaP[index])
