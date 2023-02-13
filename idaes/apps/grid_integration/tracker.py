@@ -461,9 +461,6 @@ class Tracker:
         print("")
         print("Saving tracking results to disk...")
 
-        if len(self.result_list) == 0:
-            return
-
         pd.concat(self.result_list).to_csv(
             os.path.join(path, "tracker_detail.csv"), index=False
         )

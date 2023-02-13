@@ -251,11 +251,6 @@ class ThermalGeneratorModelData(GeneratorModelData):
         self.p_cost = self._assemble_default_cost_bids(production_cost_bid_pairs)
         self.startup_cost = self._assemble_default_startup_cost_bids(startup_cost_pairs)
 
-        for k, v in kwargs.items():
-            if hasattr(self, k):
-                raise ValueError(f"Duplicated input {k}")
-            setattr(self, k, v)
-
     def _check_empty_and_sort_cost_pairs(self, pair_description, pairs):
 
         """
@@ -303,7 +298,7 @@ class ThermalGeneratorModelData(GeneratorModelData):
 
         if len(production_cost_bid_pairs) < 2:
             raise ValueError(
-                f"A valid production_cost_bid_pairs requires at least 2 points "
+                f"A valid production_cost_bid_pairs requires at least 2 points"
             )
 
         if (
