@@ -135,7 +135,7 @@ class TestBTXIdealFcTP:
         # Inlet feed conditions
         m.fs.unit.feed.flow_mol_comp[0, "benzene"].fix(20)
         m.fs.unit.feed.flow_mol_comp[0, "toluene"].fix(20)
-        m.fs.unit.feed.temperature.fix(368.001)
+        m.fs.unit.feed.temperature.fix(368)
         m.fs.unit.feed.pressure.fix(101325)
 
         # unit level inputs
@@ -186,10 +186,10 @@ class TestBTXIdealFcTP:
         assert pytest.approx(16.856, rel=1e-2) == value(
             btx_fctp.fs.unit.condenser.distillate.flow_mol_comp[0, "benzene"]
         )
-        assert pytest.approx(2.096, rel=1e-2) == value(
+        assert pytest.approx(2.121, rel=1e-2) == value(
             btx_fctp.fs.unit.condenser.distillate.flow_mol_comp[0, "toluene"]
         )
-        assert pytest.approx(355.617, abs=1e-2) == value(
+        assert pytest.approx(355.642, abs=1e-2) == value(
             btx_fctp.fs.unit.condenser.distillate.temperature[0]
         )
         assert pytest.approx(101325, abs=1e-3) == value(
@@ -197,13 +197,13 @@ class TestBTXIdealFcTP:
         )
 
         # Bottoms port - btx_fctp
-        assert pytest.approx(3.179, rel=1e-2) == value(
+        assert pytest.approx(3.143, rel=1e-2) == value(
             btx_fctp.fs.unit.reboiler.bottoms.flow_mol_comp[0, "benzene"]
         )
-        assert pytest.approx(17.903, rel=1e-3) == value(
+        assert pytest.approx(17.876, rel=1e-3) == value(
             btx_fctp.fs.unit.reboiler.bottoms.flow_mol_comp[0, "toluene"]
         )
-        assert pytest.approx(377.32, abs=1e-2) == value(
+        assert pytest.approx(377.33, abs=1e-2) == value(
             btx_fctp.fs.unit.reboiler.bottoms.temperature[0]
         )
         assert pytest.approx(101325, abs=1e-3) == value(

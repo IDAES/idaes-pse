@@ -28,6 +28,8 @@ from pyomo.environ import (
     TransformationFactory,
     Block,
     Reference,
+    Var,
+    Constraint,
 )
 
 # Import IDAES cores
@@ -37,6 +39,8 @@ from idaes.core import declare_process_block_class, UnitModelBlockData, useDefau
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.solvers import get_solver
+
+import idaes.core.util.scaling as iscale
 
 from idaes.core.util.initialization import propagate_state
 
@@ -294,6 +298,26 @@ see property package for documentation.}""",
         self._make_reboiler_arcs()
 
         TransformationFactory("network.expand_arcs").apply_to(self)
+
+        for var in self.component_data_objects(Var, descend_into=True):
+            if "pressure" in var.name:
+                iscale.set_scaling_factor(var, 1e-5)
+            if "temperature" in var.name:
+                iscale.set_scaling_factor(var, 1e-2)
+            if "enth_mol_phase" in var.name:
+                iscale.set_scaling_factor(var, 1e-4)
+            if "heat" in var.name:
+                iscale.set_scaling_factor(var, 1e-5)
+            if "flow_mol_phase_comp" in var.name:
+                iscale.set_scaling_factor(var, 1e1)
+            if "_t1" in var.name:
+                iscale.set_scaling_factor(var, 1e-2)
+
+        for constr in self.component_data_objects(Constraint, descend_into=True):
+            if "pressure_drop_equation" in constr.name:
+                iscale.constraint_scaling_transform(constr, 1e-2, overwrite=False)
+            if "eq_P_vap" in constr.name:
+                iscale.constraint_scaling_transform(constr, 1e-2, overwrite=False)
 
     def _make_rectification_arcs(self):
         self._rectification_stream_index = RangeSet(
