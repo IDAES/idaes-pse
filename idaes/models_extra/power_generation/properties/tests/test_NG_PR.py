@@ -272,7 +272,7 @@ class Test_CO2_H2O_Properties:
         m = build_model
         assert (
             str(pyunits.get_units(Cubic.heat_capacity_ratio_phase(m.props[1], "Vap")))
-            == "None"
+            == "dimensionless"
         )
 
         assert (

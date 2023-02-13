@@ -15,6 +15,7 @@ import pytest
 from idaes.core.solvers.features import lp, milp, nlp, minlp, nle, dae
 from idaes.core.solvers import ipopt_has_linear_solver
 from idaes.core.solvers import petsc
+from idaes.core.solvers import ipopt_l1
 
 
 @pytest.mark.unit
@@ -56,6 +57,12 @@ def test_ipopt_idaes_available():
 
 
 @pytest.mark.unit
+def test_ipopt_l1_available():
+    if not pyo.SolverFactory("ipopt_l1").available():
+        raise RuntimeError("Could not find ipopt_l1.")
+
+
+@pytest.mark.unit
 def test_cbc_available():
     if not pyo.SolverFactory("cbc").available():
         raise RuntimeError("Could not find cbc.")
@@ -87,6 +94,18 @@ def test_ipopt_idaes_solve():
     """
     m, x = nlp()
     solver = pyo.SolverFactory("ipopt")
+    solver.solve(m)
+    assert pytest.approx(x) == pyo.value(m.x)
+
+
+@pytest.mark.unit
+def test_ipopt_l1_idaes_solve():
+    """
+    Make sure there is no issue with the solver class or default settings that
+    break the solver object.  Passing a bad solver option will result in failure
+    """
+    m, x = nlp()
+    solver = pyo.SolverFactory("ipopt_l1")
     solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
 

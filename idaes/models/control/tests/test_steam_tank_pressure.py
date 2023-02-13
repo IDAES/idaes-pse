@@ -39,6 +39,7 @@ from idaes.models.control.controller import (
     PIDController,
     ControllerType,
     ControllerMVBoundType,
+    ControllerAntiwindupType,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.plot import plot_grid_dynamic
@@ -86,6 +87,22 @@ def _add_inlet_pressure_step(m, time=1, value=6.0e5):
             m.fs.valve_1.inlet.pressure[t].fix(value)
 
 
+def _add_setpoint_step(m, time=1, value=6.0e5):
+    """Easy function to add an inlet pressure step change
+
+    Args:
+        m (ConcreteModel): A valve and tank model
+        time (float): Time for the step to occur
+        value (float): New pressure at time
+
+    Returns:
+        None
+    """
+    for t in m.fs.time:
+        if t >= time:
+            m.fs.ctrl.setpoint[t].fix(value)
+
+
 def create_model(
     steady_state=True,
     time_set=None,
@@ -93,18 +110,21 @@ def create_model(
     nfe=5,
     tee=False,
     calc_integ=True,
+    derivative_on_error=False,
+    antiwindup=ControllerAntiwindupType.NONE,
+    initial_valve1_opening=1.0,
 ):
     """Create a test model and solver
 
     Args:
         steady_state (bool): If True, create a steady state model, otherwise
             create a dynamic model
-        time_set (list): The begining and end point of the time domain
+        time_set (list): The beginning and end point of the time domain
         time_units (Pyomo Unit object): Units of time domain
         nfe (int): Number of finite elements argument for the DAE
             transformation.
         calc_integ (bool): If True, calculate in the initial condition for
-            the integral term, else use a fixed variable (fs.ctrl.err_i0),
+            the integral term, else use a fixed variable (fs.ctrl.integral_of_error[0]),
             False is the better option if you have a value from a previous
             time period
 
@@ -154,7 +174,9 @@ def create_model(
             manipulated_var=m.fs.valve_1.valve_opening,
             calculate_initial_integral=calc_integ,
             mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
-            type=ControllerType.PID,
+            controller_type=ControllerType.PID,  # rather use PI, but testing all terms
+            derivative_on_error=derivative_on_error,
+            antiwindup_type=antiwindup,
         )
 
     # The control volume block doesn't assume the two phases are in equilibrium
@@ -189,7 +211,7 @@ def create_model(
     m.fs.valve_2.outlet.pressure.fix(101325)
     m.fs.valve_1.Cv.fix(0.001)
     m.fs.valve_2.Cv.fix(0.001)
-    m.fs.valve_1.valve_opening.fix(1)
+    m.fs.valve_1.valve_opening.fix(initial_valve1_opening)
     m.fs.valve_2.valve_opening.fix(1)
     m.fs.tank.heat_duty.fix(0)
     m.fs.tank.control_volume.volume.fix(2.0)
@@ -197,7 +219,7 @@ def create_model(
         m.fs.ctrl.gain_p.fix(1e-6)
         m.fs.ctrl.gain_i.fix(1e-5)
         m.fs.ctrl.gain_d.fix(1e-6)
-        m.fs.ctrl.derivative_of_error[m.fs.time.first()].fix(0)
+        m.fs.ctrl.derivative_term[m.fs.time.first()].fix(0)
         m.fs.ctrl.setpoint.fix(3e5)
         m.fs.ctrl.mv_ref.fix(0)
         m.fs.ctrl.mv_lb = 0.0
@@ -236,7 +258,7 @@ def create_model(
 
 
 @pytest.mark.integration
-def test_pid():
+def test_inlet_disturbance():
     """This test is pretty course-grained, but it should cover everything"""
 
     # First calculate the two steady states that should be achieved in the test
@@ -252,7 +274,7 @@ def test_pid():
     solver.solve(m_steady, tee=False)
     s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
 
-    # Next create a model for the 0 to 5 sec time period
+    # Next create a model for the 0 to 12 sec time period
     m_dynamic, solver = create_model(
         steady_state=False, time_set=[0, 12], nfe=30, calc_integ=True, tee=False
     )
@@ -272,8 +294,144 @@ def test_pid():
     return m_dynamic, solver
 
 
+@pytest.mark.integration
+def test_inlet_disturbance_derivative_on_error():
+    """Controller performance with derivative on error should be unchanged for an inlet disturbance"""
+
+    # First calculate the two steady states that should be achieved in the test
+    # don't worry these steady state problems solve super fast
+    m_steady, solver = create_model(tee=False)
+    m_steady.fs.valve_1.inlet.pressure.fix(5.0e5)
+    m_steady.fs.tank.control_volume.properties_out[0].pressure.fix(3e5)
+    m_steady.fs.valve_1.valve_opening[0].unfix()
+    solver.solve(m_steady, tee=False)
+    s1_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
+
+    m_steady.fs.valve_1.inlet.pressure.fix(5.5e5)
+    solver.solve(m_steady, tee=False)
+    s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
+
+    # Next create a model for the 0 to 12 sec time period
+    m_dynamic, solver = create_model(
+        steady_state=False,
+        time_set=[0, 12],
+        nfe=30,
+        calc_integ=True,
+        tee=False,
+        derivative_on_error=True,
+    )
+
+    # Add a step change right in inlet pressure
+    _add_inlet_pressure_step(m_dynamic, time=6, value=5.5e5)
+    solver.solve(m_dynamic, tee=False)
+
+    # Check that we reach the expected steady state (almost) by t = 5.6 and t=12
+    assert pyo.value(
+        m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.at(15)]
+    ) == pytest.approx(s1_valve, abs=0.001)
+    assert pyo.value(
+        m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.last()]
+    ) == pytest.approx(s2_valve, abs=0.001)
+
+    return m_dynamic, solver
+
+
+@pytest.mark.integration
+def test_setpoint_change_derivative_on_pv():
+    """Controller performance with derivative on error should be unchanged for an inlet disturbance"""
+
+    # First calculate the two steady states that should be achieved in the test
+    # don't worry these steady state problems solve super fast
+    m_steady, solver = create_model(tee=False)
+    m_steady.fs.valve_1.inlet.pressure.fix(5.0e5)
+    m_steady.fs.tank.control_volume.properties_out[0].pressure.fix(3e5)
+    m_steady.fs.valve_1.valve_opening[0].unfix()
+    solver.solve(m_steady, tee=False)
+    s1_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
+
+    m_steady.fs.tank.control_volume.properties_out[0].pressure.fix(3.5e5)
+    solver.solve(m_steady, tee=False)
+    s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
+
+    # Next create a model for the 0 to 12 sec time period
+    m_dynamic, solver = create_model(
+        steady_state=False,
+        time_set=[0, 12],
+        nfe=60,
+        calc_integ=True,
+        tee=False,
+        derivative_on_error=False,
+    )
+
+    # Add a step change in outlet setpoint
+    _add_setpoint_step(m_dynamic, time=6, value=3.5e5)
+    solver.solve(m_dynamic, tee=False)
+
+    # Check that we reach the expected steady state (almost) by t = 5.6 and t=12
+    assert pyo.value(
+        m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.at(30)]
+    ) == pytest.approx(s1_valve, abs=0.001)
+    assert pyo.value(
+        m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.last()]
+    ) == pytest.approx(s2_valve, abs=0.001)
+
+    # Check that derivative kick is absent
+    assert pyo.value(
+        m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.at(31)]
+    ) == pytest.approx(0.78949, abs=0.001)
+
+    return m_dynamic, solver
+
+
+@pytest.mark.integration
+def test_setpoint_change_derivative_on_error():
+    """Controller performance with derivative on error should be unchanged for an inlet disturbance"""
+
+    # First calculate the two steady states that should be achieved in the test
+    # don't worry these steady state problems solve super fast
+    m_steady, solver = create_model(tee=False)
+    m_steady.fs.valve_1.inlet.pressure.fix(5.0e5)
+    m_steady.fs.tank.control_volume.properties_out[0].pressure.fix(3e5)
+    m_steady.fs.valve_1.valve_opening[0].unfix()
+    solver.solve(m_steady, tee=False)
+    s1_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
+
+    m_steady.fs.tank.control_volume.properties_out[0].pressure.fix(3.5e5)
+    solver.solve(m_steady, tee=False)
+    s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
+
+    # Next create a model for the 0 to 12 sec time period
+    m_dynamic, solver = create_model(
+        steady_state=False,
+        time_set=[0, 12],
+        nfe=60,
+        calc_integ=True,
+        tee=False,
+        derivative_on_error=True,
+    )
+
+    # Add a step change in outlet setpoint
+    _add_setpoint_step(m_dynamic, time=6, value=3.5e5)
+    solver.solve(m_dynamic, tee=False)
+
+    # Check that we reach the expected steady state (almost) by t = 5.6 and t=12
+    assert pyo.value(
+        m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.at(30)]
+    ) == pytest.approx(s1_valve, abs=0.001)
+    assert pyo.value(
+        m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.last()]
+    ) == pytest.approx(s2_valve, abs=0.001)
+
+    # Check that derivative kick is present
+    assert pyo.value(
+        m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.at(31)]
+    ) == pytest.approx(0.93196, abs=0.001)
+
+    return m_dynamic, solver
+
+
 if __name__ == "__main__":
-    m, solver = test_pid()
+    m, solver = test_setpoint_change_derivative_on_pv()
 
     plot_grid_dynamic(
         x=m.fs.time,
@@ -295,5 +453,5 @@ if __name__ == "__main__":
         ],
         cols=3,
         rows=1,
-        to_file="pid_steam_tank_pressure.pdf",
+        # to_file="pid_steam_tank_pressure.pdf",
     )
