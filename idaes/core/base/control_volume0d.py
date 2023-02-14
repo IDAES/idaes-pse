@@ -1431,8 +1431,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
     def estimate_outlet_state(self, always_estimate=False):
         for t in self.flowsheet().time:
             self._estimate_next_state(
-                self.properties_in,
-                self.properties_out,
+                self.properties_in[t],
+                self.properties_out[t],
                 index=t,
                 always_estimate=always_estimate,
             )

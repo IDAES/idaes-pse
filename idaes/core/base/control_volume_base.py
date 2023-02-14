@@ -969,8 +969,8 @@ have a config block which derives from CONFIG_Base,
         Works for both 0D and 1D control volumes.
 
         Args:
-            state1 - StateBlock (indexed) to use as the source for values
-            state2 - StateBlock (indexed) on which to set estimated values
+            state1 - StateBlockData to use as the source for values
+            state2 - StateBlockData on which to set estimated values
             index - index to use for states and other indexed CV level variables
             always_estimate - bool indicating whether method should overwrite existing values
                 on unfixed variables
@@ -979,10 +979,10 @@ have a config block which derives from CONFIG_Base,
             None
 
         """
-        state_vars = state2[index].define_state_vars()
+        state_vars = state2.define_state_vars()
 
         for v2 in state_vars.values():
-            v1 = state1[index].find_component(v2.parent_component().local_name)
+            v1 = state1.find_component(v2.parent_component().local_name)
             if v2.is_indexed():
                 for k in v2.keys():
                     self._estimate_state_var(v1[k], v2[k], index, always_estimate)

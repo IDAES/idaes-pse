@@ -693,7 +693,7 @@ def test_estimate_next_state_no_values():
 
     m.cv.b2["a"].define_state_vars = MethodType(define_state_vars, m.cv.b2["a"])
 
-    m.cv._estimate_next_state(m.cv.b1, m.cv.b2, "a", False)
+    m.cv._estimate_next_state(m.cv.b1["a"], m.cv.b2["a"], "a", False)
 
     assert value(m.cv.b2["a"].state_var["a"]) == 12
     assert value(m.cv.b2["a"].state_var["b"]) == 13
@@ -744,7 +744,7 @@ def test_estimate_next_state_always_estimate_false():
 
     m.cv.b2["a"].define_state_vars = MethodType(define_state_vars, m.cv.b2["a"])
 
-    m.cv._estimate_next_state(m.cv.b1, m.cv.b2, "a", False)
+    m.cv._estimate_next_state(m.cv.b1["a"], m.cv.b2["a"], "a", False)
 
     assert value(m.cv.b2["a"].state_var["a"]) == 1
     assert value(m.cv.b2["a"].state_var["b"]) == 1
@@ -795,7 +795,7 @@ def test_estimate_next_state_always_estimate_true():
 
     m.cv.b2["b"].define_state_vars = MethodType(define_state_vars, m.cv.b2["b"])
 
-    m.cv._estimate_next_state(m.cv.b1, m.cv.b2, "b", True)
+    m.cv._estimate_next_state(m.cv.b1["b"], m.cv.b2["b"], "b", True)
 
     assert value(m.cv.b2["a"].state_var["a"]) == 1
     assert value(m.cv.b2["a"].state_var["b"]) == 1

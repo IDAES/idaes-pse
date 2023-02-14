@@ -1445,7 +1445,7 @@ argument).""",
 
     def add_total_material_balances(self, *args, **kwargs):
         raise BalanceTypeNotSupportedError(
-            "{} OD control volumes do not support "
+            "{} 1D control volumes do not support "
             "add_total_material_balances (yet).".format(self.name)
         )
 
@@ -1547,7 +1547,7 @@ argument).""",
         self.enthalpy_flow_dx = DerivativeVar(
             self._enthalpy_flow,
             wrt=self.length_domain,
-            doc="Partial derivative of " "enthalpy flow wrt normalized " "length",
+            doc="Partial derivative of enthalpy flow wrt normalized length",
             units=units("power"),
         )
 
@@ -1589,7 +1589,7 @@ argument).""",
                 self.length_domain,
                 domain=Reals,
                 initialize=0.0,
-                doc="Work transfered per unit length",
+                doc="Work transferred per unit length",
                 units=power_l_units,
             )
 
@@ -1747,7 +1747,7 @@ argument).""",
         self.pressure_dx = DerivativeVar(
             self.pressure,
             wrt=self.length_domain,
-            doc="Partial derivative of pressure wrt " "normalized length domain",
+            doc="Partial derivative of pressure wrt normalized length domain",
             units=units("pressure"),
         )
 
@@ -1758,7 +1758,7 @@ argument).""",
                 self.length_domain,
                 domain=Reals,
                 initialize=0.0,
-                doc="Pressure difference per unit length " "of domain",
+                doc="Pressure difference per unit length of domain",
                 units=pressure_l_units,
             )
 
@@ -1865,6 +1865,30 @@ argument).""",
                 "TransformationFactory.".format(self.name)
             )
 
+    def estimate_states(self, always_estimate=False):
+        for t in self.flowsheet().time:
+            if self._flow_direction == FlowDirection.forward:
+                for x in self.length_domain:
+                    if not x == self.length_domain.first():
+                        x_prev = self.length_domain.prev(x)
+                        self._estimate_next_state(
+                            self.properties[t, x_prev],
+                            self.properties[t, x],
+                            index=(t, x),
+                            always_estimate=always_estimate,
+                        )
+            else:
+                # Need to go backwards here
+                for x in reversed(self.length_domain):
+                    if not x == self.length_domain.last():
+                        x_next = self.length_domain.next(x)
+                        self._estimate_next_state(
+                            self.properties[t, x_next],
+                            self.properties[t, x],
+                            index=(t, x),
+                            always_estimate=always_estimate,
+                        )
+
     def model_check(blk):
         """
         This method executes the model_check methods on the associated state
@@ -1949,55 +1973,19 @@ argument).""",
 
         # Fix source state and get state_args if not provided
         source_flags = {}
-        if state_args is None:
-            # No state args, create whilst fixing vars
-            state_args = {}
-            # Should be checking flow direction
-            state_dict = source.define_port_members()
+        state_dict = source.define_port_members()
 
-            for k in state_dict.keys():
-                if state_dict[k].is_indexed():
-                    state_args[k] = {}
-                    source_flags[k] = {}
-                    for m in state_dict[k].keys():
-                        source_flags[k][m] = state_dict[k][m].fixed
-                        if state_dict[k][m].value is not None:
-                            state_dict[k][m].fix()
-                            state_args[k][m] = state_dict[k][m].value
-                        else:
-                            raise Exception(
-                                "State variables have not been "
-                                "fixed nor have been given "
-                                "initial values."
-                            )
-                else:
-                    source_flags[k] = state_dict[k].fixed
-                    if state_dict[k].value is not None:
-                        state_dict[k].fix()
-                        state_args[k] = state_dict[k].value
-                    else:
-                        raise Exception(
-                            "State variables have not been "
-                            "fixed nor have been given "
-                            "initial values."
-                        )
-        else:
-            # State  args provided
-            state_dict = source.define_port_members()
-
-            for k in state_dict.keys():
+        for k in state_dict.keys():
+            if state_dict[k].is_indexed():
                 source_flags[k] = {}
-                if state_dict[k].is_indexed():
-                    for m in state_dict[k].keys():
-                        source_flags[k][m] = state_dict[k][m].fixed
-                        if not state_dict[k][m].fixed:
-                            state_dict[k][m].fix(state_args[k][m])
-                else:
-                    source_flags[k] = state_dict[k].fixed
-                    if state_dict[k].value is not None:
-                        state_dict[k].fix()
-                        if not state_dict[k].fixed:
-                            state_dict[k].fix(state_args[k])
+                for m in state_dict[k].keys():
+                    source_flags[k][m] = state_dict[k][m].fixed
+            else:
+                source_flags[k] = state_dict[k].fixed
+
+        if state_args is None:
+            # If no initial guesses provided, estimate values for states
+            blk.estimate_states(always_estimate=True)
 
         # Initialize state blocks
         flags = blk.properties.initialize(
