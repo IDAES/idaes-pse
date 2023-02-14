@@ -134,7 +134,7 @@ def Txy_data(
     # Add properties parameter blocks to the flowsheet with specifications
 
     model.props = model.params.build_state_block([1], defined_state=True)
-    
+
     # Check tbub etc
     property_exists = False
     try:
@@ -142,7 +142,7 @@ def Txy_data(
             property_exists = True
     except PropertyNotSupportedError:
         pass
-        
+
     try:
         if hasattr(model.props[1], "temperature_dew"):
             property_exists = True
@@ -155,7 +155,6 @@ def Txy_data(
             "dew point calculations."
         )
 
-    
     # Set intial concentration of component 1 close to 1
     x = 0.99
 
@@ -190,7 +189,7 @@ def Txy_data(
     # Obtain pressure and temperature units from the unit model
     Punit = pyunits.get_units(model.props[1].pressure)
     Tunit = pyunits.get_units(model.props[1].temperature)
-    
+
     # import pdb; pdb.set_trace()
     count = 1
     # Create and run loop to calculate temperatures at every composition

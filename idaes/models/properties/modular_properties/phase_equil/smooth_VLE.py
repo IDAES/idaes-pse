@@ -74,10 +74,7 @@ class SmoothVLE(object):
                 vapor_phase = phase_pair[1]
                 liquid_phase = phase_pair[0]
             return (
-                b._tbar[phase_pair]
-                - b.temperature
-                - s[vapor_phase]
-                + s[liquid_phase]
+                b._tbar[phase_pair] - b.temperature - s[vapor_phase] + s[liquid_phase]
                 == 0
             )
 
@@ -129,25 +126,27 @@ class SmoothVLE(object):
                 rule=rule_temperature_slack_complementarity,
             ),
         )
-        
+
         # pobj = b.params.get_phase(phase_pair[0])
         # eos = pobj.config.equation_of_state
         # if eos == Cubic:
         try:
+
             def rule_cubic_root_complementarity(b, p):
                 p1, p2 = phase_pair
                 pobj = b.params.get_phase(p)
                 cname = pobj.config.equation_of_state_options["type"].name
                 cubic_second_derivative = getattr(
-                    b, "_" + cname + "_cubic_second_derivative",
+                    b,
+                    "_" + cname + "_cubic_second_derivative",
                 )
                 return cubic_second_derivative[p1, p2, p] == gp[p] - gn[p]
-    
+
             b.add_component(
                 "cubic_root_complementarity" + suffix,
                 Constraint(b.params.phase_list, rule=rule_cubic_root_complementarity),
             )
-    
+
             def rule_cubic_slack_complementarity(b, p):
                 flow_phase = b.flow_mol_phase[p]
                 if b.params.get_phase(p).is_vapor_phase():
@@ -157,7 +156,7 @@ class SmoothVLE(object):
                         return smooth_min(gp[p] + s[p], flow_phase, eps) == 0
                     else:
                         return smooth_min(gp[p], flow_phase, eps) == 0
-    
+
             b.add_component(
                 "cubic_slack_complementarity" + suffix,
                 Constraint(b.params.phase_list, rule=rule_cubic_slack_complementarity),
@@ -297,18 +296,18 @@ class SmoothVLE(object):
         # eos = pobj.config.equation_of_state
         # if not eos == Cubic:
         #     return None
-        
+
         try:
             gp = getattr(b, "gp" + suffix)
             gn = getattr(b, "gn" + suffix)
-    
+
             if b.params.get_phase(phase_pair[0]).is_vapor_phase():
                 vapor_phase = phase_pair[0]
                 liquid_phase = phase_pair[1]
             else:
                 vapor_phase = phase_pair[1]
                 liquid_phase = phase_pair[0]
-    
+
             vapobj = b.params.get_phase(vapor_phase)
             liqobj = b.params.get_phase(liquid_phase)
             cname_vap = vapobj.config.equation_of_state_options["type"].name
@@ -319,7 +318,7 @@ class SmoothVLE(object):
             cubic_second_derivative_liq = getattr(
                 b, "_" + cname_liq + "_cubic_second_derivative"
             )
-    
+
             if value(cubic_second_derivative_liq[p1, p2, liquid_phase]) < 0:
                 gp[liquid_phase].value = 0
                 gn[liquid_phase].value = value(
@@ -330,6 +329,6 @@ class SmoothVLE(object):
                     cubic_second_derivative_vap[p1, p2, vapor_phase]
                 )
                 gn[vapor_phase].value = 0
-        
+
         except:
             return None
