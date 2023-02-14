@@ -22,7 +22,7 @@ Day-Ahead Bidding Problem for Wind + PEM IES
 The objective function is the expected profit, which equals the revenue substracts the cost. 
 We want to consider the revenue from the electricity market and the hydrogen market.
 
-.. math:: \max \quad \sum_{s \in S, t \in T^{DA}}\omega_{s}[{(\pi_{t,s}^{DA}P_{t,s}^{DA} + \pi_{t,s}^{RT}(P_{t,s}^{RT}-P_{t,s}^{DA}))\Delta t  + Pr^{H2}f_{t,s}^{H2}- c_{t,s}}] - C_{fix}
+.. math:: \max \quad \sum_{s \in S, t \in T^{DA}}\omega_{s}[{(\pi_{t,s}^{DA}P_{t,s}^{DA} + \pi_{t,s}^{RT}(P_{t,s}^{RT}-P_{t,s}^{DA}))\Delta t  + Pr^{H}m_{t,s}^{H}- c_{t,s}}] - C_{fix}
 
 s.t.
 
@@ -34,7 +34,7 @@ s.t.
 .. math:: P_{t,s}^{wind} \leq f_{t} P_{max}^{wind} \quad \forall t \quad \quad (6)
 .. math:: P_{t,s}^{DA} + P_{t,s}^{PEM} \leq P_{max}^{wind} \quad \forall t, s \quad \quad (7)
 .. math:: P_{t,s}^{PEM} \leq P_{max}^{PEM} \quad \forall t, s \quad \quad (8)
-.. math:: f_{t,s}^{H2} = P_{t,s}^{PEM}C_{H2}\Delta t \quad \forall t, s \quad \quad (9)
+.. math:: m_{t,s}^{H} = P_{t,s}^{PEM}C_{H}\Delta t \quad \forall t, s \quad \quad (9)
 .. math:: c_{t,s} = C^{op} P_{t,s}^{PEM}\quad \forall t, s \quad \quad (10)
 .. math:: C_{fix} = C_{fix}^{wind}P_{max}^{wind} + C_{fix}^{PEM}P_{max}^{PEM} \quad \quad (11)
 
@@ -53,7 +53,7 @@ and equation (11) calculate the fixed cost for IES.
 
 :math:`\pi^{RT}_{t,s}`: Real-time LMP forecasting from forecaster at hour t for scenario s, \$/MWh.
 
-:math:`Pr^{H2}`: Market price for hydrogen. \$/kg.
+:math:`Pr^{H}`: Market price for hydrogen. \$/kg.
 
 :math:`P_{max}^{PEM}`: PEM max capacity, MW.
 
@@ -67,7 +67,7 @@ and equation (11) calculate the fixed cost for IES.
 
 :math:`C_{fix}^{PEM}`:  PEM fixed cost coefficient, \$/MW.
 
-:math:`C_{H2}`: Electricity to hydrogen conversion rate. kg/MWh.
+:math:`C_{H}`: Electricity to hydrogen conversion rate. kg/MWh.
 
 
 **Variables**
@@ -82,7 +82,7 @@ and equation (11) calculate the fixed cost for IES.
 
 :math:`P_{t,s}^{PEM}`:  Power delivered to PEM at hour t in scenario 0, MW.
 
-:math:`f_{t,s}^{H2}`: Hydrogen production mass at hour t in scenario s, kg.
+:math:`m_{t,s}^{H}`: Hydrogen production mass at hour t in scenario s, kg.
 
 :math:`c_{t,s}`: IES operational cost at hour t in scenario s, \$.
 
@@ -90,7 +90,7 @@ and equation (11) calculate the fixed cost for IES.
 Real-time Bidding Problem for Wind+PEM IES
 ------------------------------------------
 
-.. math:: \max \quad \sum_{t \in T_{DA}}\hat{\pi}_{t}^{DA}\hat{P}_{t}^{DA}\Delta t + \sum_{t\in T_{RT}, s\in S}\omega_{s}[\pi_{t,s}^{RT}(P_{t,s}^{RT} -\hat{P}_{t}^{DA})\Delta t + Pr^{H2}f_{t,s}^{H2} - c_{t,s} - \omega_{t}^{RT} P_{t,s}^{underbid}] - C_{fix}
+.. math:: \max \quad \sum_{t \in T_{DA}}\hat{\pi}_{t}^{DA}\hat{P}_{t}^{DA}\Delta t + \sum_{t\in T_{RT}, s\in S}\omega_{s}[\pi_{t,s}^{RT}(P_{t,s}^{RT} -\hat{P}_{t}^{DA})\Delta t + Pr^{H}m_{t,s}^{H} - c_{t,s} - \omega_{t}^{RT} P_{t,s}^{underbid}] - C_{fix}
 
 s.t.
 
@@ -101,7 +101,7 @@ s.t.
 .. math:: P_{t,s}^{wind} \leq f_{t}P_{wind}^{max} \quad \forall t \quad \quad (16)
 .. math:: P_{t,s}^{RT} + P_{t,s}^{PEM} \leq P_{t,s}^{wind} \quad \forall t, s \quad \quad (17)
 .. math:: P_{t,s}^{PEM} \leq P_{max}^{PEM} \quad \forall t, s \quad \quad (18)
-.. math:: f_{t,s}^{H2} = P_{t,s}^{PEM}C_{H2}\Delta t \quad \forall t, s \quad \quad (19)
+.. math:: m_{t,s}^{H} = P_{t,s}^{PEM}C_{H}\Delta t \quad \forall t, s \quad \quad (19)
 .. math:: c_{t,s} = C^{op} P_{t,s}^{PEM}\quad \forall t, s \quad \quad (20)
 .. math:: C_{fix} = C_{fix}^{wind}P_{max}^{wind} + C_{fix}^{PEM}P_{max}^{PEM} \quad \quad (21)
 
@@ -126,7 +126,7 @@ variable :math:`P_{t,s}^{underbid}` for underbidding in equation (12) and penali
 
 :math:`\pi^{RT}_{t,s}`: Real-time LMP forecasting from forecaster at hour t for scenario s, \$/MWh.
 
-:math:`Pr^{H2}`: Market price for hydrogen, \$/kg.
+:math:`Pr^{H}`: Market price for hydrogen, \$/kg.
 
 :math:`P^{PEM}_{max}`: PEM max capacity, MW.
 
@@ -140,7 +140,7 @@ variable :math:`P_{t,s}^{underbid}` for underbidding in equation (12) and penali
 
 :math:`C_{fix}^{PEM}`:  PEM fixed cost coefficient, \$/MW.
 
-:math:`C_{H2}`: Electricity to hydrogen conversion rate. kg/MWh.
+:math:`C_{H}`: Electricity to hydrogen conversion rate. kg/MWh.
 
 **Variables**
 
@@ -154,7 +154,7 @@ variable :math:`P_{t,s}^{underbid}` for underbidding in equation (12) and penali
 
 :math:`P_{t,s}^{PEM}`: Power delivered to PEM at hour t in scenario s, MW.
 
-:math:`f_{t,s}^{H2}`: Hydrogen production mass at hour t in scenario s, kg.
+:math:`m_{t,s}^{H}`: Hydrogen production mass at hour t in scenario s, kg.
 
 :math:`c_{t,s}`: IES operational cost at hour t in scenario s, \$.
 

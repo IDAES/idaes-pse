@@ -26,7 +26,7 @@ s.t.
 
 .. math:: P_{t,0}^{PEM} \leq P_{max}^{PEM} \quad \forall t
 
-.. math:: f_{t,0}^{H2} = P_{t,0}^{PEM}C_{H2}\Delta t \quad \forall t
+.. math:: m_{t,0}^{H} = P_{t,0}^{PEM}C_{H}\Delta t \quad \forall t
 
 .. math:: c_{t,0} = C^{op} P_{t,0}^{PEM}\quad \forall t
 
@@ -46,7 +46,7 @@ s.t.
 
 :math:`C_{fix}^{PEM}`:  PEM fixed cost coefficient, \$/MW.
 
-:math:`C_{H2}`: Electricity to hydrogen conversion rate. kg/MWh.
+:math:`C_{H}`: Electricity to hydrogen conversion rate. kg/MWh.
 
 **Variables**
 
@@ -58,7 +58,7 @@ s.t.
 
 :math:`P_{t,0}^{-}`: Power under-delivered by the IES to the grid at hour t in scenario 0, MW.
 
-:math:`f_{t,0}^{H2}`: Hydrogen production mass at hour t in scenario 0, kg.
+:math:`m_{t,0}^{H}`: Hydrogen production mass at hour t in scenario 0, kg.
 
 :math:`c_{t,0}`: IES operational cost at hour t in scenario 0, \$
 
