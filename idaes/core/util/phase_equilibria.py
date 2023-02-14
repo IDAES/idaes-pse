@@ -26,6 +26,7 @@ from pyomo.environ import (
 )
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
+from idaes.core.util.exceptions import PropertyNotSupportedError
 
 import idaes.logger as idaeslog
 
@@ -133,7 +134,28 @@ def Txy_data(
     # Add properties parameter blocks to the flowsheet with specifications
 
     model.props = model.params.build_state_block([1], defined_state=True)
+    
+    # Check tbub etc
+    property_exists = False
+    try:
+        if hasattr(model.props[1], "temperature_bubble"):
+            property_exists = True
+    except PropertyNotSupportedError:
+        pass
+        
+    try:
+        if hasattr(model.props[1], "temperature_dew"):
+            property_exists = True
+    except PropertyNotSupportedError:
+        pass
 
+    if not property_exists:
+        raise PropertyNotSupportedError(
+            "Txy_data require property package to support bubble and/or "
+            "dew point calculations."
+        )
+
+    
     # Set intial concentration of component 1 close to 1
     x = 0.99
 
@@ -168,13 +190,15 @@ def Txy_data(
     # Obtain pressure and temperature units from the unit model
     Punit = pyunits.get_units(model.props[1].pressure)
     Tunit = pyunits.get_units(model.props[1].temperature)
-
+    
+    # import pdb; pdb.set_trace()
     count = 1
     # Create and run loop to calculate temperatures at every composition
     for i in range(len(x_d)):
         model.props[1].mole_frac_comp[component_1].fix(x_d[i])
         model.props[1].mole_frac_comp[component_2].fix(1 - x_d[i] - xs)
         # solve the model
+        model.display()
         status = solver.solve(model, tee=False)
         # If solution is optimal store the concentration, and calculated temperatures in the created arrays
         if check_optimal_termination(status):
@@ -183,17 +207,17 @@ def Txy_data(
                 "Case: ", count, " Optimal. ", component_1, "x = {:.2f}".format(x_d[i])
             )
 
-            if hasattr(model.props[1], "_mole_frac_tdew") and hasattr(
-                model.props[1], "_mole_frac_tbub"
+            if hasattr(model.props[1], "temperature_dew") and hasattr(
+                model.props[1], "temperature_bubble"
             ):
                 Tbubb.append(value(model.props[1].temperature_bubble["Vap", "Liq"]))
                 Tdew.append(value(model.props[1].temperature_dew["Vap", "Liq"]))
 
-            elif hasattr(model.props[1], "_mole_frac_tdew"):
+            elif hasattr(model.props[1], "temperature_dew"):
                 print("One of the components only exists in vapor phase.")
                 Tdew.append(value(model.props[1].temperature_dew["Vap", "Liq"]))
 
-            elif hasattr(model.props[1], "_mole_frac_tbub"):
+            elif hasattr(model.props[1], "temperature_bubble"):
                 print("One of the components only exists in liquid phase.")
                 Tbubb.append(value(model.props[1].temperature_bubble["Vap", "Liq"]))
 
