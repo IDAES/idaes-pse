@@ -1980,8 +1980,10 @@ argument).""",
                 source_flags[k] = {}
                 for m in state_dict[k].keys():
                     source_flags[k][m] = state_dict[k][m].fixed
+                    state_dict[k][m].fix()
             else:
                 source_flags[k] = state_dict[k].fixed
+                state_dict[k].fix()
 
         if state_args is None:
             # If no initial guesses provided, estimate values for states
