@@ -158,6 +158,10 @@ variable :math:`P_{t,s}^{underbid}` for underbidding in equation (12) and penali
 
 :math:`c_{t,s}`: IES operational cost at hour t in scenario s, \$.
 
+Some wind, battery, PEM models and the double-loop simulation example can be found in Dispatches GitHub repository.
+
+https://dispatches.readthedocs.io/en/main/models/renewables/index.html
+
 .. |example_bid| image:: images/example_bid.png
   :width: 800
   :alt: Alternative text
