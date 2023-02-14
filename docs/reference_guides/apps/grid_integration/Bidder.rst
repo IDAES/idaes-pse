@@ -15,8 +15,10 @@ bidding curves.
 
 Here we present a stochastic bidding model for a renewable integated energy system (Wind generator + PEM).
 
+
 Day-Ahead Bidding Problem for Wind + PEM IES
 ---------------------------------------------
+
 The objective function is the expected profit, which equals the revenue substracts the cost. 
 We want to consider the revenue from the electricity market and the hydrogen market.
 
@@ -83,8 +85,6 @@ and equation (11) calculate the fixed cost for IES.
 :math:`f_{t,s}^{H2}`: Hydrogen production mass at hour t in scenario s, kg.
 
 :math:`c_{t,s}`: IES operational cost at hour t in scenario s, \$.
-
-
 
 
 Real-time Bidding Problem for Wind+PEM IES

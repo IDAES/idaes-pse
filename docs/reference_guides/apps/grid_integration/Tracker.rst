@@ -9,9 +9,12 @@ integrated energy system which consists of a thermal generator and an energy sto
 The figure shows that to track the dispatch (load) the energy system can optimally
 use power output from charging and discharging cycle.
 
+
 Tracking Problem for Wind+PEM IES
 ----------------------------------
+
 Here we present a tracking problem example for wind + PEM IES.
+
 
 .. math:: \min \quad \sum_{t \in T^{RT}} (c_{t,0} + \omega_{t}(P^{+}_{t,0} + P^{-}_{t,0})) - C_{fix}
 
