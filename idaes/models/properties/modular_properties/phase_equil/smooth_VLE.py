@@ -54,36 +54,37 @@ class SmoothVLE(object):
 
         # Definition of equilibrium temperature for smooth VLE
         t_units = b.params.get_metadata().default_units.TEMPERATURE
-        if v_only_comps == []:
-            s = Var(
-                b.params.phase_list,
-                initialize=0.0,
-                bounds=(0, None),
-                doc="Slack variable for equilibrium temperature",
-                units=t_units,
+        # import pdb; pdb.set_trace()
+        # if v_only_comps == []:
+        s = Var(
+            b.params.phase_list,
+            initialize=0.0,
+            bounds=(0, None),
+            doc="Slack variable for equilibrium temperature",
+            units=t_units,
+        )
+        b.add_component("s" + suffix, s)
+
+        # Equilibrium temperature
+        def rule_tbar(b):
+            if b.params.get_phase(phase_pair[0]).is_vapor_phase():
+                vapor_phase = phase_pair[0]
+                liquid_phase = phase_pair[1]
+            else:
+                vapor_phase = phase_pair[1]
+                liquid_phase = phase_pair[0]
+            return (
+                b._tbar[phase_pair]
+                - b.temperature
+                - s[vapor_phase]
+                + s[liquid_phase]
+                == 0
             )
-            b.add_component("s" + suffix, s)
 
-            # Equilibrium temperature
-            def rule_tbar(b):
-                if b.params.get_phase(phase_pair[0]).is_vapor_phase():
-                    vapor_phase = phase_pair[0]
-                    liquid_phase = phase_pair[1]
-                else:
-                    vapor_phase = phase_pair[1]
-                    liquid_phase = phase_pair[0]
-                return (
-                    b._tbar[phase_pair]
-                    - b.temperature
-                    - s[vapor_phase]
-                    + s[liquid_phase]
-                    == 0
-                )
+        b.add_component("_tbar_constraint" + suffix, Constraint(rule=rule_tbar))
 
-            b.add_component("_tbar_constraint" + suffix, Constraint(rule=rule_tbar))
-
-        else:
-            b._tbar[phase_pair] = b.temperature
+        # else:
+        #     b._tbar[phase_pair] = b.temperature
 
         eps = Param(
             default=1e-04,
@@ -128,35 +129,41 @@ class SmoothVLE(object):
                 rule=rule_temperature_slack_complementarity,
             ),
         )
-
-        def rule_cubic_root_complementarity(b, p):
-            p1, p2 = phase_pair
-            pobj = b.params.get_phase(p)
-            cname = pobj.config.equation_of_state_options["type"].name
-            cubic_second_derivative = getattr(
-                b, "_" + cname + "_cubic_second_derivative"
+        
+        # pobj = b.params.get_phase(phase_pair[0])
+        # eos = pobj.config.equation_of_state
+        # if eos == Cubic:
+        try:
+            def rule_cubic_root_complementarity(b, p):
+                p1, p2 = phase_pair
+                pobj = b.params.get_phase(p)
+                cname = pobj.config.equation_of_state_options["type"].name
+                cubic_second_derivative = getattr(
+                    b, "_" + cname + "_cubic_second_derivative",
+                )
+                return cubic_second_derivative[p1, p2, p] == gp[p] - gn[p]
+    
+            b.add_component(
+                "cubic_root_complementarity" + suffix,
+                Constraint(b.params.phase_list, rule=rule_cubic_root_complementarity),
             )
-            return cubic_second_derivative[p1, p2, p] == gp[p] - gn[p]
-
-        b.add_component(
-            "cubic_root_complementarity" + suffix,
-            Constraint(b.params.phase_list, rule=rule_cubic_root_complementarity),
-        )
-
-        def rule_cubic_slack_complementarity(b, p):
-            flow_phase = b.flow_mol_phase[p]
-            if b.params.get_phase(p).is_vapor_phase():
-                return smooth_min(gn[p], flow_phase, eps) == 0
-            else:
-                if b.params.config.supercritical_extension:
-                    return smooth_min(gp[p] + s[p], flow_phase, eps) == 0
+    
+            def rule_cubic_slack_complementarity(b, p):
+                flow_phase = b.flow_mol_phase[p]
+                if b.params.get_phase(p).is_vapor_phase():
+                    return smooth_min(gn[p], flow_phase, eps) == 0
                 else:
-                    return smooth_min(gp[p], flow_phase, eps) == 0
-
-        b.add_component(
-            "cubic_slack_complementarity" + suffix,
-            Constraint(b.params.phase_list, rule=rule_cubic_slack_complementarity),
-        )
+                    if b.params.config.supercritical_extension:
+                        return smooth_min(gp[p] + s[p], flow_phase, eps) == 0
+                    else:
+                        return smooth_min(gp[p], flow_phase, eps) == 0
+    
+            b.add_component(
+                "cubic_slack_complementarity" + suffix,
+                Constraint(b.params.phase_list, rule=rule_cubic_slack_complementarity),
+            )
+        except:
+            pass
 
         if b.params.config.supercritical_extension:
             _pp = Var(
@@ -286,34 +293,43 @@ class SmoothVLE(object):
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
         p1, p2 = phase_pair
 
-        gp = getattr(b, "gp" + suffix)
-        gn = getattr(b, "gn" + suffix)
-
-        if b.params.get_phase(phase_pair[0]).is_vapor_phase():
-            vapor_phase = phase_pair[0]
-            liquid_phase = phase_pair[1]
-        else:
-            vapor_phase = phase_pair[1]
-            liquid_phase = phase_pair[0]
-
-        vapobj = b.params.get_phase(vapor_phase)
-        liqobj = b.params.get_phase(liquid_phase)
-        cname_vap = vapobj.config.equation_of_state_options["type"].name
-        cname_liq = liqobj.config.equation_of_state_options["type"].name
-        cubic_second_derivative_vap = getattr(
-            b, "_" + cname_vap + "_cubic_second_derivative"
-        )
-        cubic_second_derivative_liq = getattr(
-            b, "_" + cname_liq + "_cubic_second_derivative"
-        )
-
-        if value(cubic_second_derivative_liq[p1, p2, liquid_phase]) < 0:
-            gp[liquid_phase].value = 0
-            gn[liquid_phase].value = value(
-                -cubic_second_derivative_liq[p1, p2, liquid_phase]
+        # pobj = b.params.get_phase(p1)
+        # eos = pobj.config.equation_of_state
+        # if not eos == Cubic:
+        #     return None
+        
+        try:
+            gp = getattr(b, "gp" + suffix)
+            gn = getattr(b, "gn" + suffix)
+    
+            if b.params.get_phase(phase_pair[0]).is_vapor_phase():
+                vapor_phase = phase_pair[0]
+                liquid_phase = phase_pair[1]
+            else:
+                vapor_phase = phase_pair[1]
+                liquid_phase = phase_pair[0]
+    
+            vapobj = b.params.get_phase(vapor_phase)
+            liqobj = b.params.get_phase(liquid_phase)
+            cname_vap = vapobj.config.equation_of_state_options["type"].name
+            cname_liq = liqobj.config.equation_of_state_options["type"].name
+            cubic_second_derivative_vap = getattr(
+                b, "_" + cname_vap + "_cubic_second_derivative"
             )
-        if value(cubic_second_derivative_vap[p1, p2, vapor_phase]) > 0:
-            gp[vapor_phase].value = value(
-                cubic_second_derivative_vap[p1, p2, vapor_phase]
+            cubic_second_derivative_liq = getattr(
+                b, "_" + cname_liq + "_cubic_second_derivative"
             )
-            gn[vapor_phase].value = 0
+    
+            if value(cubic_second_derivative_liq[p1, p2, liquid_phase]) < 0:
+                gp[liquid_phase].value = 0
+                gn[liquid_phase].value = value(
+                    -cubic_second_derivative_liq[p1, p2, liquid_phase]
+                )
+            if value(cubic_second_derivative_vap[p1, p2, vapor_phase]) > 0:
+                gp[vapor_phase].value = value(
+                    cubic_second_derivative_vap[p1, p2, vapor_phase]
+                )
+                gn[vapor_phase].value = 0
+        
+        except:
+            return None
