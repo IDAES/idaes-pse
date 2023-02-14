@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-This module contains miscalaneous utility functions for use in IDAES models.
+This module contains miscellaneous utility functions for use in IDAES models.
 """
 
 import pytest
@@ -60,8 +60,8 @@ def m():
     m.b1.sb.v2 = Var(m.s, initialize=1)
     m.b1.sb.v1.fix(1)
     m.b1.sb.e1 = Expression(expr=m.b1.sb.v1)
-    m.b1.sb.o1 = Objective(expr=1 <= m.b1.sb.v1)
-    m.b1.sb.o2 = Objective(expr=1 <= m.b1.sb.v1)
+    m.b1.sb.o1 = Objective(expr=m.b1.sb.v1)
+    m.b1.sb.o2 = Objective(expr=m.b1.sb.v1)
     m.b1.sb.o2.deactivate()
     m.b1.sb.c1 = Constraint(expr=1 == m.b1.sb.v1)
     m.b1.sb.c2 = Constraint(expr=1 >= m.b1.sb.v1)
@@ -78,8 +78,8 @@ def m():
         m.b2[i].c2 = Constraint(expr=2 <= m.b2[i].v1)
 
         if i == "a":
-            m.b2[i].o1 = Objective(expr=1 <= m.b2[i].v1)
-            m.b2[i].o2 = Objective(expr=1 <= m.b2[i].v1)
+            m.b2[i].o1 = Objective(expr=m.b2[i].v1)
+            m.b2[i].o2 = Objective(expr=m.b2[i].v1)
             m.b2[i].o2.deactivate()
             m.b2[i].c1.deactivate()
             m.b2[i].c2.deactivate()
@@ -337,6 +337,16 @@ def test_variables_in_activated_constraints_set(m):
 @pytest.mark.unit
 def test_number_variables_in_activated_constraints(m):
     assert number_variables_in_activated_constraints(m) == 22
+
+
+@pytest.mark.unit
+def test_variables_not_in_activated_constraints_set(m):
+    assert len(variables_not_in_activated_constraints_set(m)) == 6
+
+
+@pytest.mark.unit
+def test_number_variables_not_in_activated_constraints(m):
+    assert number_variables_not_in_activated_constraints(m) == 6
 
 
 @pytest.mark.unit

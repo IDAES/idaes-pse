@@ -141,49 +141,16 @@ class GeneratorModelData:
 
     gen_name = StrValidator()
     bus = StrValidator()
+
     p_min = RealValueValidator(min_val=0)
-    p_min_agc = RealValueValidator(min_val=0)
-    min_down_time = RealValueValidator(min_val=0)
-    min_up_time = RealValueValidator(min_val=0)
-    ramp_up_60min = RealValueValidator(min_val=0)
-    ramp_down_60min = RealValueValidator(min_val=0)
-
     p_max = AtLeastPminValidator()
-    p_max_agc = AtLeastPminValidator()
-    shutdown_capacity = AtLeastPminValidator()
-    startup_capacity = AtLeastPminValidator()
 
-    def __init__(
-        self,
-        gen_name,
-        bus,
-        generator_type,
-        p_min,
-        p_max,
-        min_down_time,
-        min_up_time,
-        ramp_up_60min,
-        ramp_down_60min,
-        shutdown_capacity,
-        startup_capacity,
-        production_cost_bid_pairs=None,
-        startup_cost_pairs=None,
-        fixed_commitment=None,
-    ):
+    def __init__(self, gen_name, bus, p_min, p_max, fixed_commitment=None):
 
         self.gen_name = gen_name
         self.bus = bus
-        self.generator_type = generator_type
         self.p_min = p_min
         self.p_max = p_max
-        self.p_min_agc = p_min
-        self.p_max_agc = p_max
-        self.min_down_time = min_down_time
-        self.min_up_time = min_up_time
-        self.ramp_up_60min = ramp_up_60min
-        self.ramp_down_60min = ramp_down_60min
-        self.shutdown_capacity = shutdown_capacity
-        self.startup_capacity = startup_capacity
 
         fixed_commitment_allowed_values = [0, 1, None]
         if fixed_commitment not in fixed_commitment_allowed_values:
@@ -192,24 +159,21 @@ class GeneratorModelData:
             )
         self.fixed_commitment = fixed_commitment
 
-        self.p_cost = self._assemble_default_cost_bids(production_cost_bid_pairs)
-        self.startup_cost = self._assemble_default_startup_cost_bids(startup_cost_pairs)
-
-        # initialization for iterator
-        # get the collection of the params
-        self._collection = [
-            name
-            for name in dir(self)
-            if not name.startswith("__")
-            and not name.startswith("_")
-            and not callable(getattr(self, name))
-        ]
-        self._index = -1
-
     def __iter__(self):
         """
         Make it iteratble.
         """
+
+        if not hasattr(self, "_collection"):
+            self._collection = [
+                name
+                for name in dir(self)
+                if not name.startswith("__")
+                and not name.startswith("_")
+                and not callable(getattr(self, name))
+            ]
+            self._index = -1
+
         return self
 
     def __next__(self):
@@ -225,37 +189,67 @@ class GeneratorModelData:
             name = self._collection[self._index]
             return name, getattr(self, name)
 
-    @property
-    def generator_type(self):
 
-        """
-        Property getter for generator's type.
+class ThermalGeneratorModelData(GeneratorModelData):
 
-        Returns:
-            str: generator's type
-        """
+    """
+    Adds run time, ramping, shutdown and startup information for thermal generators.
+    Requires as initial status and power production.
+    Bids are in ( MWh, $ ) pairs
 
-        return self._generator_type
+    if `include_default_p_cost` is True, then the `production_cost_bid_pairs` provided during init
+    will always be included in future production cost curves (see bidder.py:1221)
+    """
 
-    @generator_type.setter
-    def generator_type(self, value):
+    min_down_time = RealValueValidator(min_val=0)
+    min_up_time = RealValueValidator(min_val=0)
+    ramp_up_60min = RealValueValidator(min_val=0)
+    ramp_down_60min = RealValueValidator(min_val=0)
 
-        """
-        Property setter for generator's type.
+    shutdown_capacity = AtLeastPminValidator()
+    startup_capacity = AtLeastPminValidator()
 
-        Args:
-            value: generator's type in str
+    def __init__(
+        self,
+        gen_name,
+        bus,
+        p_min,
+        p_max,
+        min_down_time,
+        min_up_time,
+        ramp_up_60min,
+        ramp_down_60min,
+        shutdown_capacity,
+        startup_capacity,
+        initial_status,
+        initial_p_output,
+        fixed_commitment=None,
+        production_cost_bid_pairs=None,
+        startup_cost_pairs=None,
+        include_default_p_cost=True,
+        **kwargs,
+    ):
 
-        Returns:
-            None
-        """
+        super().__init__(
+            gen_name=gen_name,
+            bus=bus,
+            p_min=p_min,
+            p_max=p_max,
+            fixed_commitment=fixed_commitment,
+        )
 
-        allowed_types = ["thermal", "renewable"]
-        if value not in allowed_types:
-            raise ValueError(
-                f"Value for generator types must be one of {allowed_types}, but {value} is provided."
-            )
-        self._generator_type = value
+        self.min_down_time = min_down_time
+        self.min_up_time = min_up_time
+        self.ramp_up_60min = ramp_up_60min
+        self.ramp_down_60min = ramp_down_60min
+        self.shutdown_capacity = shutdown_capacity
+        self.startup_capacity = startup_capacity
+        self.initial_status = initial_status
+        self.initial_p_output = initial_p_output
+        self.include_default_p_cost = include_default_p_cost
+
+        self.p_cost = self._assemble_default_cost_bids(production_cost_bid_pairs)
+        self.startup_cost = self._assemble_default_startup_cost_bids(startup_cost_pairs)
 
     def _check_empty_and_sort_cost_pairs(self, pair_description, pairs):
 
@@ -302,7 +296,15 @@ class GeneratorModelData:
                 f"The first power output in the bid should be the Pmin {self.p_min}, but {production_cost_bid_pairs[0][0]} is provided."
             )
 
-        if production_cost_bid_pairs[-1][0] != self.p_max:
+        if len(production_cost_bid_pairs) < 2:
+            raise ValueError(
+                f"A valid production_cost_bid_pairs requires at least 2 points"
+            )
+
+        if (
+            self.include_default_p_cost
+            and production_cost_bid_pairs[-1][0] != self.p_max
+        ):
             raise ValueError(
                 f"The last power output in the bid should be the Pmax {self.p_max}, but {production_cost_bid_pairs[-1][0]} is provided."
             )
@@ -332,3 +334,97 @@ class GeneratorModelData:
             )
 
         return startup_cost_pairs
+
+    @property
+    def generator_type(self):
+        """
+        Generator type property: fixed to thermal.
+        """
+        return "thermal"
+
+    @property
+    def initial_status(self):
+
+        """
+        Generator initial status proptery. If positive, the number of hours prior
+        to (and including) t=0 that the unit has been on. If negative, the number
+        of hours prior to (and including) t=0 that the unit has been off. The value
+        cannot be 0, by definition.
+        """
+
+        return self._initial_status
+
+    @initial_status.setter
+    def initial_status(self, value):
+
+        """
+        Generator initial status proptery setter. Validate the value before setting.
+        """
+
+        if not isinstance(value, Real):
+            raise TypeError("Value for initial_status shoulde be real numbers.")
+
+        if isclose(value, 0):
+            raise ValueError("Value for initial_status cannot be zero.")
+
+        self._initial_status = value
+
+    @property
+    def initial_p_output(self):
+        """
+        Generator initial power output proptery.
+        """
+        return self._initial_p_output
+
+    @initial_p_output.setter
+    def initial_p_output(self, value):
+
+        """
+        Generator initial power output proptery setter.
+        """
+
+        if not isinstance(value, Real):
+            raise TypeError("Value for initial_p_output shoulde be real numbers.")
+
+        if (
+            self.initial_status > 0
+            and value < self.p_min
+            and not isclose(value, self.p_min)
+        ):
+            raise ValueError(
+                f"The initial status of the generator was on before T0, so the initial power output should at least be p_min {self.p_min}, but {value} is provided."
+            )
+
+        if self.initial_status < 0 and (value > 0 and not isclose(value, 0)):
+            raise ValueError(
+                f"The initial status of the generator was off before T0, so the initial power output should at 0, but {value} is provided."
+            )
+
+        self._initial_p_output = value
+
+
+class RenewableGeneratorModelData(GeneratorModelData):
+
+    """
+    Adds a single production cost for renewable generators.
+    """
+
+    p_cost = RealValueValidator(min_val=0)
+
+    def __init__(self, gen_name, bus, p_min, p_max, p_cost, fixed_commitment=None):
+
+        super().__init__(
+            gen_name=gen_name,
+            bus=bus,
+            p_min=p_min,
+            p_max=p_max,
+            fixed_commitment=fixed_commitment,
+        )
+        self.p_cost = p_cost
+
+    @property
+    def generator_type(self):
+        """
+        Generator type property: fixed to renewable.
+        """
+        return "renewable"

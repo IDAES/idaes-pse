@@ -13,13 +13,11 @@
 import pyomo.common.config
 import logging.config
 import json
-import yaml
 import os
-import importlib
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
-default_binary_release = "3.0.0"
+default_binary_release = "3.1.0"
 # Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums
@@ -248,6 +246,44 @@ def _new_idaes_config_block():
             default=1e-6,
             description="Ipopt tol option",
             doc="Ipopt tol option",
+        ),
+    )
+
+    cfg.declare(
+        "ipopt_l1",
+        pyomo.common.config.ConfigBlock(
+            implicit=False,
+            description="Default config for 'ipopt_l1' solver",
+            doc="Default config for 'ipopt_l1' solver",
+        ),
+    )
+
+    cfg["ipopt_l1"].declare(
+        "options",
+        pyomo.common.config.ConfigBlock(
+            implicit=True,
+            description="Default solver options for 'ipopt_l1'",
+            doc="Default solver options for 'ipopt_l1' solver",
+        ),
+    )
+
+    cfg["ipopt_l1"]["options"].declare(
+        "nlp_scaling_method",
+        pyomo.common.config.ConfigValue(
+            domain=str,
+            default="gradient-based",
+            description="Ipopt_l1 NLP scaling method",
+            doc="Ipopt_l1 NLP scaling method",
+        ),
+    )
+
+    cfg["ipopt_l1"]["options"].declare(
+        "tol",
+        pyomo.common.config.ConfigValue(
+            domain=float,
+            default=1e-6,
+            description="Ipopt_l1 tol option",
+            doc="Ipopt_l1 tol option",
         ),
     )
 

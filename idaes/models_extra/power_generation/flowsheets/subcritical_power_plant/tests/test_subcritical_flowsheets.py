@@ -13,8 +13,6 @@
 # Import Pyomo libraries
 import pyomo.environ as pyo
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.models.properties import iapws95
-
 
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.subcritical_power_plant as subcrit_plant
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.steam_cycle_flowsheet as steam_cycle
@@ -140,7 +138,9 @@ def test_dynamic_power_plant_build():
     # not solving due to simulation time >20 min
     m = subcrit_plant.get_model(dynamic=True, init=False)
     assert m.dynamic is True
-    assert degrees_of_freedom(m) == 168
+    # Lost 11 degrees of freedom because PIDControllers.mv_eqn[t0]
+    # is no longer deactivated if calculate_initial_integral=False
+    assert degrees_of_freedom(m) == 157
 
 
 @pytest.mark.component
@@ -157,7 +157,9 @@ def test_dynamic_steam_cycle():
     # constructing and initializing dynamic steam cycle flowsheet
     m = steam_cycle.get_model(dynamic=True)
     assert m.dynamic is True
-    assert degrees_of_freedom(m) == 7
+    # Lost 7 degrees of freedom because PIDControllers.mv_eqn[t0]
+    # is no longer deactivated if calculate_initial_integral=False
+    assert degrees_of_freedom(m) == 0
 
 
 @pytest.mark.component

@@ -48,7 +48,7 @@ def _assert_properties(pb):
         assert pb.config.state_vars == hltz.StateVars.PH
     except AssertionError:
         _log.error(
-            "helm.HelmIsentropicTurbine requires a Helmholtz EOS with "
+            "helm.HelmValve requires a Helmholtz EOS with "
             "a single or mixed phase and pressure-enthalpy state vars."
         )
         raise

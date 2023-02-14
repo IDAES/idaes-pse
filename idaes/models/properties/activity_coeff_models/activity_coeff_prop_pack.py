@@ -12,12 +12,12 @@
 #################################################################################
 """
 Ideal gas + Ideal/Non-ideal liquid property package.
-
-VLE calucations assuming an ideal gas for the gas phase. For the liquid phase,
+VLE calculations assuming an ideal gas for the gas phase. For the liquid phase,
 options include ideal liquid or non-ideal liquid using an activity
-coefficient model; options include Non Random Two Liquid Model (NRTL) or the
+coefficient model; options include Non-Random Two Liquid Model (NRTL) or the
 Wilson model to compute the activity coefficient. This property package
 supports the following combinations for gas-liquid mixtures:
+
 1. Ideal (vapor) - Ideal (liquid)
 2. Ideal (vapor) - NRTL (liquid)
 3. Ideal (vapor) - Wilson (liquid)
@@ -25,20 +25,18 @@ supports the following combinations for gas-liquid mixtures:
 This property package currently supports the flow_mol, temperature, pressure
 and mole_frac_comp as state variables (mole basis). Support for other
 combinations will be available in the future.
-
 Please note that the parameters required to compute the activity coefficient
 for the component needs to be provided by the user in the parameter block or
 can be estimated by the user if VLE data is available. Please see the
 documentation for more details.
-
 SI units.
 
 References:
 
 1. "The properties of gases and liquids by Robert C. Reid"
 2. "Perry's Chemical Engineers Handbook by Robert H. Perry".
-3. H. Renon and J.M. Prausnitz, "Local compositions in thermodynamic excess
-   functions for liquid mixtures.", AIChE Journal Vol. 14, No.1, 1968.
+3. H. Renon and J.M. Prausnitz, "Local compositions in thermodynamic excess functions for liquid mixtures.", AIChE Journal Vol. 14, No.1, 1968.
+
 """
 
 # Import Pyomo libraries
@@ -78,6 +76,7 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants as const
 from idaes.core.solvers import get_solver
+import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 
@@ -209,6 +208,30 @@ conditions, and thus corresponding constraints  should be included,
                     initialize=1.0,
                     doc="Binary interaction parameter for " "Wilson model",
                 )
+        self.set_default_scaling("flow_mol", 1e-3)
+        self.set_default_scaling("mole_frac_comp", 10)
+        self.set_default_scaling("temperature", 1e-1)
+        self.set_default_scaling("temperature_dew", 1e-1)
+        self.set_default_scaling("temperature_bubble", 1e-1)
+        self.set_default_scaling("flow_mol_phase", 1e-2)
+        self.set_default_scaling("density_mol", 1)
+        self.set_default_scaling("pressure", 1e-6)
+        self.set_default_scaling("pressure_sat", 1e-6)
+        self.set_default_scaling("pressure_dew", 1e-6)
+        self.set_default_scaling("pressure_bubble", 1e-6)
+        self.set_default_scaling("mole_frac_phase_comp", 10)
+        self.set_default_scaling("enth_mol_phase_comp", 1e-3, index="Liq")
+        self.set_default_scaling("enth_mol_phase_comp", 1e-4, index="Vap")
+        self.set_default_scaling("enth_mol_phase", 1e-3, index="Liq")
+        self.set_default_scaling("enth_mol_phase", 1e-4, index="Vap")
+        self.set_default_scaling("entr_mol_phase_comp", 1e-2)
+        self.set_default_scaling("entr_mol_phase", 1e-2)
+        self.set_default_scaling("mw", 100)
+        self.set_default_scaling("mw_phase", 100)
+        self.set_default_scaling("gibbs_mol_phase_comp", 1e-3)
+        self.set_default_scaling("fug_vap", 1e-6)
+        self.set_default_scaling("fug_liq", 1e-6)
+        self.set_default_scaling("ds_form", 100)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -220,8 +243,8 @@ conditions, and thus corresponding constraints  should be included,
                 "temperature": {"method": None, "units": "K"},
                 "pressure": {"method": None, "units": "Pa"},
                 "flow_mol_phase": {"method": None, "units": "mol/s"},
-                "density_mol": {"method": "_density_mol", "units": "mol/m^3"},
-                "pressure_sat": {"method": "_pressure_sat", "units": "Pa"},
+                "dens_mol": {"method": "_density_mol", "units": "mol/m^3"},
+                "pressure_sat_comp": {"method": "_pressure_sat_comp", "units": "Pa"},
                 "mole_frac_phase_comp": {
                     "method": "_mole_frac_phase",
                     "units": "no unit",
@@ -252,8 +275,12 @@ conditions, and thus corresponding constraints  should be included,
                 "temperature_dew": {"method": "_temperature_dew", "units": "K"},
                 "pressure_bubble": {"method": "_pressure_bubble", "units": "Pa"},
                 "pressure_dew": {"method": "_pressure_dew", "units": "Pa"},
-                "fug_vap": {"method": "_fug_vap", "units": "Pa"},
-                "fug_liq": {"method": "_fug_liq", "units": "Pa"},
+                "fug_phase_comp": {"method": "_fug_phase_comp", "units": "Pa"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
                 "ds_form": {"method": "_ds_form", "units": "J/mol.K"},
             }
         )
@@ -293,15 +320,12 @@ class _ActivityCoeffStateBlock(StateBlock):
                          were not provided at the unit model level, the
                          control volume passes the inlet values as initial
                          guess.
-
                          If FTPz are chosen as state_vars, then keys for
                          the state_args dictionary are:
                          flow_mol, temperature, pressure and mole_frac_comp
-
                          If FcTP are chose as the state_vars, then keys for
                          the state_args dictionary are:
                          flow_mol_comp, temperature, pressure.
-
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default=None, use
                      default solver options)
@@ -324,7 +348,6 @@ class _ActivityCoeffStateBlock(StateBlock):
                                        about fixing and unfixing variables.
                              - False - states have not been fixed. The state
                                        block will deal with fixing/unfixing.
-
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -831,7 +854,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         self._teq_constraint = Constraint(rule=rule_teq)
 
         def rule_phase_eq(self, i):
-            return self.fug_vap[i] == self.fug_liq[i]
+            return self.fug_phase_comp["Vap", i] == self.fug_phase_comp["Liq", i]
 
         self.eq_phase_equilibrium = Constraint(
             self.params.component_list, rule=rule_phase_eq
@@ -1012,8 +1035,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
             self.params.component_list, rule=rule_activity_coeff
         )
 
-    def _pressure_sat(self):
-        self.pressure_sat = Var(
+    def _pressure_sat_comp(self):
+        self.pressure_sat_comp = Var(
             self.params.component_list,
             initialize=101325,
             doc="vapor pressure",
@@ -1032,7 +1055,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         def rule_P_vap(self, j):
             return (1 - self._reduced_temp[j]) * log(
-                self.pressure_sat[j] / self.params.pressure_critical[j]
+                self.pressure_sat_comp[j] / self.params.pressure_critical[j]
             ) == (
                 self.params.pressure_sat_coeff[j, "A"] * self._reduced_temp[j]
                 + self.params.pressure_sat_coeff[j, "B"] * self._reduced_temp[j] ** 1.5
@@ -1042,27 +1065,25 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         self.eq_P_vap = Constraint(self.params.component_list, rule=rule_P_vap)
 
-    def _fug_vap(self):
-        def rule_fug_vap(self, i):
-            return self.mole_frac_phase_comp["Vap", i] * self.pressure
-
-        self.fug_vap = Expression(self.params.component_list, rule=rule_fug_vap)
-
-    def _fug_liq(self):
-        def rule_fug_liq(self, i):
-            if self.config.parameters.config.activity_coeff_model == "Ideal":
-                return self.mole_frac_phase_comp["Liq", i] * self.pressure_sat[i]
+    def _fug_phase_comp(self):
+        def rule_fug_phase_comp(self, p, i):
+            if p == "Vap":
+                return self.mole_frac_phase_comp["Vap", i] * self.pressure
+            elif self.config.parameters.config.activity_coeff_model == "Ideal":
+                return self.mole_frac_phase_comp["Liq", i] * self.pressure_sat_comp[i]
             else:
                 return (
                     self.mole_frac_phase_comp["Liq", i]
                     * self.activity_coeff_comp[i]
-                    * self.pressure_sat[i]
+                    * self.pressure_sat_comp[i]
                 )
 
-        self.fug_liq = Expression(self.params.component_list, rule=rule_fug_liq)
+        self.fug_phase_comp = Expression(
+            self.params.phase_list, self.params.component_list, rule=rule_fug_phase_comp
+        )
 
     def _density_mol(self):
-        self.density_mol = Var(
+        self.dens_mol = Var(
             self.params.phase_list,
             doc="Molar density",
             units=pyunits.mol / pyunits.m**3,
@@ -1071,7 +1092,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         def density_mol_calculation(self, p):
             if p == "Vap":
                 return self.pressure == (
-                    self.density_mol[p] * const.gas_constant * self.temperature
+                    self.dens_mol[p] * const.gas_constant * self.temperature
                 )
             elif p == "Liq":  # TODO: Add a correlation to compute liq density
                 _log.warning(
@@ -1079,7 +1100,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                     "{}. Please provide value or expression to "
                     "compute the liquid density".format(self.name)
                 )
-                return self.density_mol[p] == 11.1e3  # mol/m3
+                return self.dens_mol[p] == 11.1e3  # mol/m3
 
         try:
             # Try to build constraint
@@ -1088,7 +1109,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
             )
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
-            self.del_component(self.density_mol)
+            self.del_component(self.dens_mol)
             self.del_component(self.density_mol_calculation)
             raise
 
@@ -1302,63 +1323,133 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
-        if (p == "Vap") and (j in self.params.component_list):
-            if self.params.config.state_vars == "FTPz":
-                return self.flow_mol_phase["Vap"] * self.mole_frac_phase_comp["Vap", j]
-            else:
-                return self.flow_mol_phase_comp["Vap", j]
-        elif (p == "Liq") and (j in self.params.component_list):
-            if self.params.config.state_vars == "FTPz":
-                return self.flow_mol_phase["Liq"] * self.mole_frac_phase_comp["Liq", j]
-            else:
-                return self.flow_mol_phase_comp["Liq", j]
-        else:
-            return 0
+        if not self.is_property_constructed("material_flow_terms"):
+            try:
+
+                def rule_material_flow_terms(b, p, j):
+                    if (p == "Vap") and (j in self.params.component_list):
+                        if self.params.config.state_vars == "FTPz":
+                            return (
+                                self.flow_mol_phase["Vap"]
+                                * self.mole_frac_phase_comp["Vap", j]
+                            )
+                        else:
+                            return self.flow_mol_phase_comp["Vap", j]
+                    elif (p == "Liq") and (j in self.params.component_list):
+                        if self.params.config.state_vars == "FTPz":
+                            return (
+                                self.flow_mol_phase["Liq"]
+                                * self.mole_frac_phase_comp["Liq", j]
+                            )
+                        else:
+                            return self.flow_mol_phase_comp["Liq", j]
+                    else:
+                        return 0
+
+                self.material_flow_terms = Expression(
+                    self.params.phase_list,
+                    self.params.component_list,
+                    rule=rule_material_flow_terms,
+                )
+
+            except AttributeError:
+                self.del_component(self.material_flow_terms)
+
+        return self.material_flow_terms[p, j]
 
     def get_enthalpy_flow_terms(self, p):
         """Create enthalpy flow terms."""
-        if p == "Vap":
-            if self.params.config.state_vars == "FTPz":
-                return self.flow_mol_phase["Vap"] * self.enth_mol_phase["Vap"]
-            else:
-                return (
-                    sum(
-                        self.flow_mol_phase_comp["Vap", j]
-                        for j in self.params.component_list
-                    )
-                    * self.enth_mol_phase["Vap"]
+        if not self.is_property_constructed("enthalpy_flow_terms"):
+            try:
+
+                def rule_enthalpy_flow_terms(b, p):
+                    if p == "Vap":
+                        if self.params.config.state_vars == "FTPz":
+                            return (
+                                self.flow_mol_phase["Vap"] * self.enth_mol_phase["Vap"]
+                            )
+                        else:
+                            return (
+                                sum(
+                                    self.flow_mol_phase_comp["Vap", j]
+                                    for j in self.params.component_list
+                                )
+                                * self.enth_mol_phase["Vap"]
+                            )
+                    elif p == "Liq":
+                        if self.params.config.state_vars == "FTPz":
+                            return (
+                                self.flow_mol_phase["Liq"] * self.enth_mol_phase["Liq"]
+                            )
+                        else:
+                            return (
+                                sum(
+                                    self.flow_mol_phase_comp["Liq", j]
+                                    for j in self.params.component_list
+                                )
+                                * self.enth_mol_phase["Liq"]
+                            )
+
+                self.enthalpy_flow_terms = Expression(
+                    self.params.phase_list, rule=rule_enthalpy_flow_terms
                 )
-        elif p == "Liq":
-            if self.params.config.state_vars == "FTPz":
-                return self.flow_mol_phase["Liq"] * self.enth_mol_phase["Liq"]
-            else:
-                return (
-                    sum(
-                        self.flow_mol_phase_comp["Liq", j]
-                        for j in self.params.component_list
-                    )
-                    * self.enth_mol_phase["Liq"]
-                )
+            except AttributeError:
+                self.del_component(self.enthalpy_flow_terms)
+        return self.enthalpy_flow_terms[p]
 
     def get_material_density_terms(self, p, j):
         """Create material density terms."""
-        if p == "Liq":
-            if j in self.params.component_list:
-                return self.density_mol[p] * self.mole_frac_phase_comp["Liq", j]
-            else:
-                return 0
-        elif p == "Vap":
-            if j in self.params.component_list:
-                return self.density_mol[p] * self.mole_frac_phase_comp["Vap", j]
-            else:
-                return 0
+        if not self.is_property_constructed("material_density_terms"):
+            try:
+
+                def rule_material_density_terms(b, p, j):
+                    if p == "Liq":
+                        if j in self.params.component_list:
+                            return (
+                                self.density_mol[p]
+                                * self.mole_frac_phase_comp["Liq", j]
+                            )
+                        else:
+                            return 0
+                    elif p == "Vap":
+                        if j in self.params.component_list:
+                            return (
+                                self.density_mol[p]
+                                * self.mole_frac_phase_comp["Vap", j]
+                            )
+                        else:
+                            return 0
+
+                self.material_density_terms = Expression(
+                    self.params.phase_list,
+                    self.params.component_list,
+                    rule=rule_material_density_terms,
+                )
+            except AttributeError:
+                self.del_component(self.material_density_terms)
+        return self.material_density_terms[p, j]
 
     def get_energy_density_terms(self, p):
         """Create enthalpy density terms."""
-        if p == "Liq":
-            return self.density_mol[p] * self.energy_internal_mol_phase["Liq"]
-        elif p == "Vap":
-            return self.density_mol[p] * self.energy_internal_mol_phase["Vap"]
+        if not self.is_property_constructed("energy_density_terms"):
+            try:
+
+                def rule_energy_density_terms(b, p):
+                    if p == "Liq":
+                        return (
+                            self.density_mol[p] * self.energy_internal_mol_phase["Liq"]
+                        )
+                    elif p == "Vap":
+                        return (
+                            self.density_mol[p] * self.energy_internal_mol_phase["Vap"]
+                        )
+
+                self.energy_density_terms = Expression(
+                    self.params.phase_list, rule=rule_energy_density_terms
+                )
+            except AttributeError:
+                self.del_component(self.energy_density_terms)
+        return self.energy_density_terms[p]
 
     def get_material_flow_basis(self):
         """Declare material flow basis."""
@@ -1800,3 +1891,144 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
+
+    def calculate_scaling_factors(self):
+        # Get default scale factors and do calculations from base classes
+        super().calculate_scaling_factors()
+
+        phases = self.params.config.valid_phase
+        is_two_phase = len(phases) == 2  # possibly {Liq}, {Vap}, or {Liq, Vap}
+        if self.is_property_constructed("flow_mol_phase_comp"):
+            sf_flow = iscale.get_scaling_factor(
+                self.flow_mol_phase_comp, default=1, warning=True
+            )
+        else:
+            sf_flow = iscale.get_scaling_factor(
+                self.flow_mol_phase, default=1, warning=True
+            )
+        sf_T = iscale.get_scaling_factor(self.temperature, default=1, warning=True)
+
+        if self.is_property_constructed("_temperature_equilibrium"):
+            iscale.set_scaling_factor(self._temperature_equilibrium, sf_T)
+
+        if self.is_property_constructed("_teq"):
+            iscale.set_scaling_factor(self._teq, sf_T)
+        if self.is_property_constructed("_teq_constraint"):
+            iscale.constraint_scaling_transform(
+                self._teq_constraint, sf_T, overwrite=False
+            )
+
+        if self.is_property_constructed("_t1"):
+            iscale.set_scaling_factor(self._t1, sf_T)
+        if self.is_property_constructed("_t1_constraint"):
+            iscale.constraint_scaling_transform(
+                self._t1_constraint, sf_T, overwrite=False
+            )
+
+        if self.is_property_constructed("temperature_bubble"):
+            iscale.set_scaling_factor(self.temperature_bubble, sf_T)
+        if self.is_property_constructed("eq_temperature_bubble"):
+            iscale.constraint_scaling_transform(
+                self.eq_temperature_bubble, sf_T, overwrite=False
+            )
+
+        if self.is_property_constructed("temperature_dew"):
+            iscale.set_scaling_factor(self.temperature_dew, sf_T)
+        if self.is_property_constructed("eq_temperature_dew"):
+            iscale.constraint_scaling_transform(
+                self.eq_temperature_dew, sf_T, overwrite=False
+            )
+
+        if self.is_property_constructed("total_flow_balance"):
+            s = iscale.get_scaling_factor(self.flow_mol, default=1, warning=True)
+            iscale.constraint_scaling_transform(
+                self.total_flow_balance, s, overwrite=False
+            )
+
+        if self.is_property_constructed("flow_mol_phase_comp"):
+            sf_flow = iscale.get_scaling_factor(
+                self.flow_mol_phase_comp, default=1, warning=True
+            )
+            iscale.set_scaling_factor(self.flow_mol_phase_comp, sf_flow)
+
+        if self.is_property_constructed("component_flow_balances"):
+            for i, c in self.component_flow_balances.items():
+                if is_two_phase:
+                    s = iscale.get_scaling_factor(
+                        self.mole_frac_comp[i], default=1, warning=True
+                    )
+                    s *= sf_flow
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)
+                else:
+                    s = iscale.get_scaling_factor(
+                        self.mole_frac_comp[i], default=1, warning=True
+                    )
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+        if self.is_property_constructed("density_mol"):
+            for c in self.eq_density_mol.values():
+                sf = iscale.get_scaling_factor(
+                    self.density_mol, default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("enth_mol_phase_comp"):
+            for p, c in self.eq_enth_mol_phase_comp.items():
+                sf = iscale.get_scaling_factor(
+                    self.enth_mol_phase_comp[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("enth_mol_phase"):
+            for p, c in self.eq_enth_mol_phase.items():
+                sf = iscale.get_scaling_factor(
+                    self.enth_mol_phase[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("entr_mol_phase_comp"):
+            for p, c in self.eq_entr_mol_phase_comp.items():
+                sf = iscale.get_scaling_factor(
+                    self.entr_mol_phase_comp[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("entr_mol_phase"):
+            for p, c in self.eq_entr_mol_phase.items():
+                sf = iscale.get_scaling_factor(
+                    self.entr_mol_phase[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("gibbs_mol_phase_comp"):
+            for p, c in self.eq_gibbs_mol_phase_comp.items():
+                sf = iscale.get_scaling_factor(
+                    self.gibbs_mol_phase_comp[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("eq_comp"):
+            for p, c in self.eq_comp.items():
+                sf = iscale.get_scaling_factor(self.eq_comp[p], default=1, warning=True)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("eq_mole_frac"):
+            for p, c in self.eq_mole_frac.items():
+                sf = iscale.get_scaling_factor(
+                    self.eq_mole_frac[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("eq_phase_equilibrium"):
+            for p, c in self.eq_phase_equilibrium.items():
+                sf = iscale.get_scaling_factor(
+                    self.eq_phase_equilibrium[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("eq_P_vap"):
+            for p, c in self.eq_P_vap.items():
+                sf = iscale.get_scaling_factor(
+                    self.eq_P_vap[p], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)

@@ -20,6 +20,7 @@ from sys import modules
 from types import MethodType
 
 from pyomo.environ import value, Block, ConcreteModel, Param, Set, Var, units as pyunits
+from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterData,
@@ -39,6 +40,7 @@ from idaes.core import (
 )
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
+from idaes.core.base.property_meta import UnitSet
 
 import idaes.logger as idaeslog
 
@@ -96,15 +98,15 @@ class TestGenericParameterBlock(object):
 
         assert m.params.configured
 
-        assert m.params.get_metadata().default_units == {
-            "time": pyunits.s,
-            "length": pyunits.m,
-            "mass": pyunits.kg,
-            "amount": pyunits.mol,
-            "temperature": pyunits.K,
-            "current": None,
-            "luminous intensity": None,
-        }
+        default_units = m.params.get_metadata().default_units
+        assert isinstance(default_units, UnitSet)
+        assert_units_equivalent(default_units.TIME, pyunits.s)
+        assert_units_equivalent(default_units.LENGTH, pyunits.m)
+        assert_units_equivalent(default_units.MASS, pyunits.kg)
+        assert_units_equivalent(default_units.AMOUNT, pyunits.mol)
+        assert_units_equivalent(default_units.TEMPERATURE, pyunits.K)
+        assert_units_equivalent(default_units.CURRENT, pyunits.ampere)
+        assert_units_equivalent(default_units.LUMINOUS_INTENSITY, pyunits.candela)
 
         assert isinstance(m.params.component_list, Set)
         assert len(m.params.component_list) == 3
@@ -150,7 +152,7 @@ class TestGenericParameterBlock(object):
 
         with pytest.raises(
             PropertyPackageError,
-            match="Unrecognized units of measurment for quantity time " "\(foo\)",
+            match="Unrecognized units of measurement for quantity TIME " "\(foo\)",
         ):
             m.params = DummyParameterBlock(
                 components={"a": {}, "b": {}, "c": {}},
@@ -167,35 +169,6 @@ class TestGenericParameterBlock(object):
                 temperature_ref=300,
                 base_units={
                     "time": "foo",
-                    "length": pyunits.m,
-                    "mass": pyunits.kg,
-                    "amount": pyunits.mol,
-                    "temperature": pyunits.K,
-                },
-            )
-
-    @pytest.mark.unit
-    def test_missing_required_quantity(self):
-        m = ConcreteModel()
-
-        with pytest.raises(
-            PropertyPackageError,
-            match="Unrecognized units of measurment for quantity time " "\(None\)",
-        ):
-            m.params = DummyParameterBlock(
-                components={"a": {}, "b": {}, "c": {}},
-                phases={
-                    "p1": {
-                        "type": LiquidPhase,
-                        "component_list": ["a", "b"],
-                        "equation_of_state": DummyEoS,
-                    },
-                    "p2": {"equation_of_state": DummyEoS},
-                },
-                state_definition=modules[__name__],
-                pressure_ref=100000.0,
-                temperature_ref=300,
-                base_units={
                     "length": pyunits.m,
                     "mass": pyunits.kg,
                     "amount": pyunits.mol,
@@ -1284,35 +1257,41 @@ class TestGenericStateBlock(object):
         frame.props[1].flow_mol_phase_comp = Var(frame.props[1].phase_component_set)
 
         # Call all properties in metadata and assert they exist.
-        for p in frame.params.get_metadata().properties:
-            if p.endswith(("apparent", "true")):
+        for p in frame.params.get_metadata().properties.list_supported_properties():
+            if p.name.endswith(("apparent", "true")):
                 # True and apparent properties require electrolytes, which are
                 # not tested here
                 # Check that method exists and continue
-                assert hasattr(
-                    frame.props[1], frame.params.get_metadata().properties[p]["method"]
-                )
+                if frame.params.get_metadata().properties[p.name].method is not None:
+                    assert hasattr(
+                        frame.props[1],
+                        frame.params.get_metadata().properties[p.name].method,
+                    )
                 continue
-            elif p.endswith(("bubble", "bub", "dew")):
+            elif p.name.endswith(("bubble", "bub", "dew")):
                 # Bubble and dew properties require phase equilibria, which are
                 # not tested here
                 # Check that method exists and continue
                 assert hasattr(
-                    frame.props[1], frame.params.get_metadata().properties[p]["method"]
+                    frame.props[1],
+                    frame.params.get_metadata().properties[p.name].method,
                 )
                 continue
-            elif p in ["dh_rxn", "log_k_eq"]:
+            elif p.name in ["dh_rxn", "log_k_eq"]:
                 # Not testing inherent reactions here either
                 # Check that method exists and continue
                 assert hasattr(
-                    frame.props[1], frame.params.get_metadata().properties[p]["method"]
+                    frame.props[1],
+                    frame.params.get_metadata().properties[p.name].method,
                 )
                 continue
-            elif p in ["diffus_phase_comp"]:
+            elif p.name in ["diffus_phase_comp"]:
                 # phase indexed properties - these will be tested separately.
                 continue
+            elif p.supported:
+                assert hasattr(frame.props[1], p.name)
             else:
-                assert hasattr(frame.props[1], p)
+                assert not hasattr(frame.props[1], p.name)
 
     @pytest.mark.unit
     def test_flows(self, frame):

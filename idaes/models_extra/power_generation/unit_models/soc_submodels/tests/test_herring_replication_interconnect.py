@@ -72,6 +72,7 @@ from pyomo.common.fileutils import this_file_dir
 
 from idaes.core import FlowsheetBlock
 from idaes.models.properties import iapws95
+from idaes.models.properties.general_helmholtz import helmholtz_data_dir as hdir
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -334,7 +335,7 @@ def test_initialization_cell(model):
 
     cell.initialize_build(
         optarg={"nlp_scaling_method": "user-scaling"},
-        current_density_guess=-2000,
+        current_density_guess=0,
         temperature_guess=1103.15,
     )
     cell.model_check()
@@ -377,7 +378,7 @@ def test_initialization_cell(model):
 
     assert degrees_of_freedom(cell) == 11
 
-    cell.initialize(current_density_guess=-1500, temperature_guess=1103.15)
+    cell.initialize(current_density_guess=0, temperature_guess=1103.15)
 
     assert degrees_of_freedom(cell) == 11
 
@@ -409,7 +410,7 @@ def test_initialization_stack(model_stack):
 
     stack.initialize_build(
         optarg={"nlp_scaling_method": "user-scaling"},
-        current_density_guess=-2000,
+        current_density_guess=0,
         temperature_guess=1103.15,
     )
     cell.model_check()
@@ -454,7 +455,7 @@ def test_initialization_stack(model_stack):
 
     stack.initialize_build(
         optarg={"nlp_scaling_method": "user-scaling"},
-        current_density_guess=-1500,
+        current_density_guess=0,
         temperature_guess=1103.15,
     )
 
@@ -510,7 +511,9 @@ def kazempoor_braun_replication(model):
         N_H2 = cccm_to_mps(df["sccm_H2"][case])
 
         # IAPWS95 returns psat in kPa
-        p_H2O = 1e3 * pyo.value(m.fs.prop_Iapws95.func_p_sat(647.096 / T_dew))
+        p_H2O = 1e3 * pyo.value(
+            m.fs.prop_Iapws95.p_sat_func("H2O", 647.096 / T_dew, hdir)
+        )
         y_H2O = p_H2O / P
         N_H2O = (N_N2 + N_H2) * y_H2O / (1 - y_H2O)
 

@@ -42,6 +42,7 @@ from idaes.models.unit_models.heat_exchanger import (
     delta_temperature_lmtd2_callback,
     delta_temperature_amtd_callback,
     delta_temperature_underwood_callback,
+    delta_temperature_lmtd_smooth_callback,
     HeatExchanger,
     HeatExchangerFlowPattern,
 )
@@ -349,6 +350,22 @@ def basic_model3(cb=delta_temperature_lmtd_callback):
     assert degrees_of_freedom(m) == 0
     m.fs.unit.initialize()
     return m
+
+
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_lmtd_smooth_cb():
+    m = basic_model(delta_temperature_lmtd_smooth_callback)
+    results = solver.solve(m)
+    assert check_optimal_termination(results)
+    # hot in end
+    assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(0.464879, rel=1e-3)
+    # hot out end
+    assert value(m.fs.unit.delta_temperature_out[0]) == pytest.approx(
+        0.465069, rel=1e-3
+    )
+    assert value(m.fs.unit.heat_duty[0]) == pytest.approx(46497.44)
 
 
 @pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
@@ -1079,53 +1096,44 @@ class TestIAPWS_countercurrent(object):
         expected = pandas.DataFrame.from_dict(
             {
                 "Units": {
-                    "Molar Flow (mol/s)": getattr(pyunits.pint_registry, "mole/second"),
-                    "Mass Flow (kg/s)": getattr(pyunits.pint_registry, "kg/second"),
-                    "T (K)": getattr(pyunits.pint_registry, "K"),
-                    "P (Pa)": getattr(pyunits.pint_registry, "Pa"),
+                    "Molar Flow": getattr(pyunits.pint_registry, "mole/second"),
+                    "Mass Flow": getattr(pyunits.pint_registry, "kg/second"),
+                    "T": getattr(pyunits.pint_registry, "K"),
+                    "P": getattr(pyunits.pint_registry, "Pa"),
                     "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
-                    "Molar Enthalpy (J/mol) Vap": getattr(
-                        pyunits.pint_registry, "J/mole"
-                    ),
-                    "Molar Enthalpy (J/mol) Liq": getattr(
-                        pyunits.pint_registry, "J/mole"
-                    ),
+                    "Molar Enthalpy": getattr(pyunits.pint_registry, "J/mole"),
                 },
                 "Hot Side Inlet": {
-                    "Molar Flow (mol/s)": 100,
-                    "Mass Flow (kg/s)": 1.8015,
-                    "T (K)": 352.67,
-                    "P (Pa)": 101325,
+                    "Molar Flow": 100,
+                    "Mass Flow": 1.8015,
+                    "T": 352.67,
+                    "P": 101325,
                     "Vapor Fraction": 0,
-                    "Molar Enthalpy (J/mol) Vap": 47398,
-                    "Molar Enthalpy (J/mol) Liq": 6000,
+                    "Molar Enthalpy": 6000.0,
                 },
                 "Hot Side Outlet": {
-                    "Molar Flow (mol/s)": 1,
-                    "Mass Flow (kg/s)": 1.8015e-2,
-                    "T (K)": 286.34,
-                    "P (Pa)": 1e5,
+                    "Molar Flow": 1,
+                    "Mass Flow": 1.8015e-2,
+                    "T": 270.4877112932641,
+                    "P": 11032305.8275,
                     "Vapor Fraction": 0,
-                    "Molar Enthalpy (J/mol) Vap": 2168.6,
-                    "Molar Enthalpy (J/mol) Liq": 1000,
+                    "Molar Enthalpy": 0.01102138712926277,
                 },
                 "Cold Side Inlet": {
-                    "Molar Flow (mol/s)": 100,
-                    "Mass Flow (kg/s)": 1.8015,
-                    "T (K)": 339.43,
-                    "P (Pa)": 101325,
+                    "Molar Flow": 100,
+                    "Mass Flow": 1.8015,
+                    "T": 339.43,
+                    "P": 101325,
                     "Vapor Fraction": 0,
-                    "Molar Enthalpy (J/mol) Vap": 46685,
-                    "Molar Enthalpy (J/mol) Liq": 5000,
+                    "Molar Enthalpy": 5000.0,
                 },
                 "Cold Side Outlet": {
-                    "Molar Flow (mol/s)": 1,
-                    "Mass Flow (kg/s)": 1.8015e-2,
-                    "T (K)": 286.34,
-                    "P (Pa)": 1e5,
+                    "Molar Flow": 1,
+                    "Mass Flow": 1.8015e-2,
+                    "T": 270.4877112932641,
+                    "P": 11032305.8275,
                     "Vapor Fraction": 0,
-                    "Molar Enthalpy (J/mol) Vap": 2168.6,
-                    "Molar Enthalpy (J/mol) Liq": 1000,
+                    "Molar Enthalpy": 0.01102138712926277,
                 },
             }
         )

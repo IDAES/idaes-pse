@@ -182,3 +182,18 @@ def test_track_market_dispatch(tracker_object):
         pytest.approx(tracker_object.get_last_delivered_power(), abs=1e-3)
         == last_delivered_power
     )
+
+
+@pytest.mark.component
+def test_track_deviation_penalty(tracker_object):
+
+    large_penalty = 10000
+
+    assert pytest.approx(large_penalty) == pyo.value(
+        tracker_object.model.deviation_penalty[0]
+    )
+
+    for t in range(1, horizon):
+        assert pytest.approx(
+            large_penalty / (horizon - tracker_object.n_tracking_hour)
+        ) == pyo.value(tracker_object.model.deviation_penalty[t])

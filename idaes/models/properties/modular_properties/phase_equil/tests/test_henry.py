@@ -15,7 +15,6 @@ Library of common forms for phase equilibrium constraints
 """
 from pyomo.environ import ConcreteModel, Expression, value, Var, units as pyunits
 
-from pyomo.util.check_units import assert_units_consistent
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
@@ -277,5 +276,6 @@ def test_equilibrium_ratio():
             henry_equilibrium_ratio(m.state[0], "Liq", "H2O")
         )
         assert (
-            pyunits.get_units(henry_equilibrium_ratio(m.state[0], "Liq", "H2O")) is None
+            str(pyunits.get_units(henry_equilibrium_ratio(m.state[0], "Liq", "H2O")))
+            is "dimensionless"
         )

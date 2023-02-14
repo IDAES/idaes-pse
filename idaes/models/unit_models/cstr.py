@@ -16,7 +16,7 @@ Standard IDAES CSTR model.
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-from pyomo.environ import Reference, Block, Var, Constraint
+from pyomo.environ import Reference
 
 # Import IDAES cores
 from idaes.core import (
@@ -32,7 +32,6 @@ from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
 )
-import idaes.core.util.unit_costing as costing
 
 __author__ = "Andrew Lee, Vibhav Dabadghao"
 

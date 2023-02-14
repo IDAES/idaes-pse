@@ -274,10 +274,13 @@ class TestVanTHoff(object):
             model.rxn[1], model.rparams.reaction_r1, "r1", 300 * pyunits.K
         )
         assert str(rform1) == str(
-            (model.rxn[1].log_k_eq["r1"] - log(model.rparams.reaction_r1.k_eq_ref))
+            (
+                model.rxn[1].log_k_eq["r1"]
+                - log(1 / pyunits.dimensionless * model.rparams.reaction_r1.k_eq_ref)
+            )
             == (
                 -model.rxn[1].dh_rxn["r1"]
-                / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+                / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
                 * (1 / (300 * pyunits.K) - 1 / model.rparams.reaction_r1.T_eq_ref)
             )
         )
@@ -315,10 +318,13 @@ class TestVanTHoff(object):
             model.rxn[1], model.rparams.reaction_r1, "r1", 300 * pyunits.K
         )
         assert str(rform1) == str(
-            (model.rxn[1].log_k_eq["r1"] - log(model.rparams.reaction_r1.k_eq_ref))
+            (
+                model.rxn[1].log_k_eq["r1"]
+                - log(1 / pyunits.dimensionless * model.rparams.reaction_r1.k_eq_ref)
+            )
             == (
                 -model.rxn[1].dh_rxn["r1"]
-                / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+                / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
                 * (1 / (300 * pyunits.K) - 1 / model.rparams.reaction_r1.T_eq_ref)
             )
         )
@@ -369,7 +375,7 @@ class TestVanTHoff(object):
             )
             == (
                 -model.rxn[1].dh_rxn["r1"]
-                / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+                / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
                 * (1 / (300 * pyunits.K) - 1 / model.rparams.reaction_r1.T_eq_ref)
             )
         )
@@ -420,7 +426,7 @@ class TestVanTHoff(object):
             )
             == (
                 -model.rxn[1].dh_rxn["r1"]
-                / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+                / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
                 * (1 / (300 * pyunits.K) - 1 / model.rparams.reaction_r1.T_eq_ref)
             )
         )
@@ -469,7 +475,7 @@ class TestVanTHoff(object):
             )
             == (
                 -model.rxn[1].dh_rxn["r1"]
-                / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+                / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
                 * (1 / (300 * pyunits.K) - 1 / model.rparams.reaction_r1.T_eq_ref)
             )
         )
@@ -518,7 +524,7 @@ class TestVanTHoff(object):
             )
             == (
                 -model.rxn[1].dh_rxn["r1"]
-                / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+                / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
                 * (1 / (300 * pyunits.K) - 1 / model.rparams.reaction_r1.T_eq_ref)
             )
         )
@@ -569,7 +575,7 @@ class TestVanTHoff(object):
             )
             == (
                 -model.rxn[1].dh_rxn["r1"]
-                / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+                / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
                 * (1 / (300 * pyunits.K) - 1 / model.rparams.reaction_r1.T_eq_ref)
             )
         )
@@ -620,7 +626,7 @@ class TestVanTHoff(object):
             )
             == (
                 -model.rxn[1].dh_rxn["r1"]
-                / pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
+                / pyunits.convert(c.gas_constant, to_units=units.GAS_CONSTANT)
                 * (1 / (300 * pyunits.K) - 1 / model.rparams.reaction_r1.T_eq_ref)
             )
         )
@@ -667,31 +673,21 @@ class TestGibbsEnergy(object):
         )
 
         assert str(rform1) == ("exp(rxn[1].log_k_eq[r1])")
+        R = pyunits.convert(
+            c.gas_constant,
+            to_units=pyunits.kg
+            * pyunits.m**2
+            / pyunits.s**2
+            / pyunits.mol
+            / pyunits.K,
+        )
+        T = 300 * pyunits.K
         assert str(rform2) == (
             "rxn[1].log_k_eq[r1]  ==  "
-            "- rparams.reaction_r1.dh_rxn_ref/("
             + str(
-                pyunits.convert(
-                    c.gas_constant,
-                    to_units=pyunits.kg
-                    * pyunits.m**2
-                    / pyunits.s**2
-                    / pyunits.mol
-                    / pyunits.K,
-                )
+                (-model.rparams.reaction_r1.dh_rxn_ref / (R * T))
+                + (model.rparams.reaction_r1.ds_rxn_ref / R)
             )
-            + "*(300*K)) + 1/("
-            + str(
-                pyunits.convert(
-                    c.gas_constant,
-                    to_units=pyunits.kg
-                    * pyunits.m**2
-                    / pyunits.s**2
-                    / pyunits.mol
-                    / pyunits.K,
-                )
-            )
-            + ")*rparams.reaction_r1.ds_rxn_ref"
         )
 
         assert value(rform1) == pytest.approx(1, rel=1e-3)

@@ -16,8 +16,6 @@ from __future__ import division
 
 # from builtins import int, str
 import os.path
-import pprint
-import random
 import warnings
 
 # Imports from third parties
@@ -28,7 +26,6 @@ import pickle
 from pyomo.environ import *
 from pyomo.core.expr.visitor import replace_expressions
 import scipy.optimize as opt
-from scipy.special import comb as comb
 from six import string_types
 
 # Imports from IDAES namespace
@@ -1605,7 +1602,7 @@ class PolynomialRegression:
 
         """
         # Reshaping of array necessary when input variables are Pyomo scalar variables
-        vl = np.array([variable_list])
+        vl = np.array([variable_list], dtype="object")
         vl = vl.reshape(1, len(variable_list)) if vl.ndim > 2 else vl
 
         terms = PolynomialRegression.polygeneration(
