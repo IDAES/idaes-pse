@@ -228,7 +228,7 @@ class Ideal(EoSBase):
 
     @staticmethod
     def fug_phase_comp_eq(b, p, j, pp):
-        return _fug_phase_comp(b, p, j, b._teq[pp])
+        return _fug_phase_comp(b, p, j, b._tbar[pp])
 
     @staticmethod
     def log_fug_phase_comp_eq(b, p, j, pp):
