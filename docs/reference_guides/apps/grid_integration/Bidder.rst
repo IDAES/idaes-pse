@@ -31,7 +31,7 @@ s.t.
 .. math:: (\pi_{t,s'}^{DA} - \pi_{t,s}^{DA})(P_{t,s'}^{DA} - P_{t,s}^{DA}) \geq 0 \quad \forall s \in S, \forall s' \in S \backslash s, \forall t \in T^{DA} \quad \quad (3)
 .. math:: P_{t,s}^{DA} \leq P_{t,s}^{wind} \quad \forall t, s \quad \quad (4)
 .. math:: P_{t,s}^{RT} \leq P_{t,s}^{wind} \quad \forall t, s \quad \quad (5)
-.. math:: P_{t,s}^{wind} \leq f_{t} P_{max}^{wind} \quad \forall t \quad \quad (6)
+.. math:: P_{t,s}^{wind} \leq f_{t} P_{max}^{wind} \quad \forall t, s \quad \quad (6)
 .. math:: P_{t,s}^{DA} + P_{t,s}^{PEM} \leq P_{max}^{wind} \quad \forall t, s \quad \quad (7)
 .. math:: P_{t,s}^{PEM} \leq P_{max}^{PEM} \quad \forall t, s \quad \quad (8)
 .. math:: m_{t,s}^{H} = P_{t,s}^{PEM}C_{H}\Delta t \quad \forall t, s \quad \quad (9)
@@ -53,11 +53,11 @@ and equation (11) calculate the fixed cost for IES.
 
 :math:`\pi^{RT}_{t,s}`: Real-time LMP forecasting from forecaster at hour t for scenario s, \$/MWh.
 
-:math:`Pr^{H}`: Market price for hydrogen. \$/kg.
+:math:`Pr^{H}`: Market price for hydrogen， \$/kg.
 
 :math:`P_{max}^{PEM}`: PEM max capacity, MW.
 
-:math:`f_{t}`: Wind power generation capacity factor at hour t MW/MW.
+:math:`f_{t}`: Wind power generation capacity factor at hour t, MW/MW.
 
 :math:`P_{max}^{wind}`: Wind generator max capacity, MW.
 
@@ -67,7 +67,7 @@ and equation (11) calculate the fixed cost for IES.
 
 :math:`C_{fix}^{PEM}`:  PEM fixed cost coefficient, \$/MW.
 
-:math:`C_{H}`: Electricity to hydrogen conversion rate. kg/MWh.
+:math:`C_{H}`: Electricity to hydrogen conversion rate, kg/MWh.
 
 
 **Variables**
@@ -80,7 +80,7 @@ and equation (11) calculate the fixed cost for IES.
 
 :math:`P_{t,s}^{wind}`: Wind power generation at hour t in scenario s, MW.
 
-:math:`P_{t,s}^{PEM}`:  Power delivered to PEM at hour t in scenario 0, MW.
+:math:`P_{t,s}^{PEM}`:  Power delivered to PEM at hour t in scenario s, MW.
 
 :math:`m_{t,s}^{H}`: Hydrogen production mass at hour t in scenario s, kg.
 
@@ -98,7 +98,7 @@ s.t.
 .. math:: P_{t,s}^{RT} = P_{t,s} \quad \forall t, s \quad \quad (13)
 .. math:: (\pi_{t,s'}^{RT} - \pi_{t,s}^{RT})(P_{t,s'}^{RT} - P_{t,s}^{RT}) \geq 0 \quad \forall s \in S, \forall s' \in S \backslash s, \forall t \in T^{RT} \quad \quad (14)
 .. math:: P_{t,s}^{RT} \leq P_{t,s}^{wind} \quad \forall t, s \quad \quad (15)
-.. math:: P_{t,s}^{wind} \leq f_{t}P_{wind}^{max} \quad \forall t \quad \quad (16)
+.. math:: P_{t,s}^{wind} \leq f_{t}P_{wind}^{max} \quad \forall t, s \quad \quad (16)
 .. math:: P_{t,s}^{RT} + P_{t,s}^{PEM} \leq P_{t,s}^{wind} \quad \forall t, s \quad \quad (17)
 .. math:: P_{t,s}^{PEM} \leq P_{max}^{PEM} \quad \forall t, s \quad \quad (18)
 .. math:: m_{t,s}^{H} = P_{t,s}^{PEM}C_{H}\Delta t \quad \forall t, s \quad \quad (19)
@@ -130,7 +130,7 @@ variable :math:`P_{t,s}^{underbid}` for underbidding in equation (12) and penali
 
 :math:`P^{PEM}_{max}`: PEM max capacity, MW.
 
-:math:`f_{t}`: Wind power generation capacity factor at hour t MW/MW.
+:math:`f_{t}`: Wind power generation capacity factor at hour t, MW/MW.
 
 :math:`P_{max}^{wind}`: Wind generator max capacity, MW.
 
@@ -140,7 +140,7 @@ variable :math:`P_{t,s}^{underbid}` for underbidding in equation (12) and penali
 
 :math:`C_{fix}^{PEM}`:  PEM fixed cost coefficient, \$/MW.
 
-:math:`C_{H}`: Electricity to hydrogen conversion rate. kg/MWh.
+:math:`C_{H}`: Electricity to hydrogen conversion rate, kg/MWh.
 
 **Variables**
 

@@ -46,7 +46,7 @@ s.t.
 
 :math:`C_{fix}^{PEM}`:  PEM fixed cost coefficient, \$/MW.
 
-:math:`C_{H}`: Electricity to hydrogen conversion rate. kg/MWh.
+:math:`C_{H}`: Electricity to hydrogen conversion rate, kg/MWh.
 
 **Variables**
 
@@ -60,7 +60,7 @@ s.t.
 
 :math:`m_{t,0}^{H}`: Hydrogen production mass at hour t in scenario 0, kg.
 
-:math:`c_{t,0}`: IES operational cost at hour t in scenario 0, \$
+:math:`c_{t,0}`: IES operational cost at hour t in scenario 0, \$.
 
 .. |tracking_example| image:: images/tracking_example.png
   :width: 1200
