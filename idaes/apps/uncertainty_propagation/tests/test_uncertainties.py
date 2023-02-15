@@ -65,7 +65,7 @@ class TestUncertaintyPropagation:
             rooney_biegler_model, rooney_biegler_model_opt, data, variable_name, SSE
         )
 
-        assert results.obj == pytest.approx(4.331711213656886)
+        assert results.obj == pytest.approx(4.331711213656886, abs=1e-8, rel=1e-8)
         np.testing.assert_array_almost_equal(
             results.theta, [19.142575284617866, 0.53109137696521]
         )
