@@ -1378,7 +1378,7 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
 
                 if return_residual_values:
                     residual_values[c] = r
-        except (AttributeError, ValueError):
+        except (AttributeError, TypeError, ValueError):
             large_residuals_set.add(c)
 
             if return_residual_values:
