@@ -199,23 +199,20 @@ argument).""",
         Method to create spatial domain and volume Var in ControlVolume.
 
         Args:
-            length_domain - (optional) a ContinuousSet to use as the length
-                            domain for the ControlVolume. If not provided, a
-                            new ContinuousSet will be created (default=None).
-                            ContinuousSet should be normalized to run between
-                            0 and 1.
-            length_domain_set - (optional) list of point to use to initialize
-                            a new ContinuousSet if length_domain is not
-                            provided (default = [0.0, 1.0]).
-            length_var - (optional) external variable to use for the length of
-                         the spatial domain,. If a variable is provided, a
-                         reference will be made to this in place of the length
-                         Var.
-            flow_direction - argument indicating direction of material flow
-                            relative to length domain. Valid values:
-                                - FlowDirection.forward (default), flow goes
-                                  from 0 to 1.
-                                - FlowDirection.backward, flow goes from 1 to 0
+            length_domain: (optional) a ContinuousSet to use as the length
+                domain for the ControlVolume. If not provided, a new
+                ContinuousSet will be created (default=None). ContinuousSet
+                should be normalized to run between 0 and 1.
+            length_domain_set: (optional) list of point to use to initialize
+                a new ContinuousSet if length_domain is not provided (default = [0.0, 1.0]).
+            length_var: (optional) external variable to use for the length of
+                the spatial domain. If a variable is provided, a reference
+                will be made to this in place of the length Var.
+            flow_direction: argument indicating direction of material flow
+                relative to length domain. Valid values:
+
+                    * FlowDirection.forward (default), flow goes from 0 to 1.
+                    * FlowDirection.backward, flow goes from 1 to 0
 
         Returns:
             None
@@ -292,17 +289,16 @@ argument).""",
         self, information_flow=FlowDirection.forward, has_phase_equilibrium=None
     ):
         """
-        This method constructs the state blocks for the
-        control volume.
+        This method constructs the state blocks for the control volume.
 
         Args:
             information_flow: a FlowDirection Enum indicating whether
-                               information flows from inlet-to-outlet or
-                               outlet-to-inlet
+                information flows from inlet-to-outlet or outlet-to-inlet
             has_phase_equilibrium: indicates whether equilibrium calculations
-                                    will be required in state blocks
+                will be required in state blocks
             package_arguments: dict-like object of arguments to be passed to
-                                state blocks as construction arguments
+                state blocks as construction arguments
+
         Returns:
             None
         """
@@ -353,9 +349,9 @@ argument).""",
 
         Args:
             has_equilibrium: indicates whether equilibrium calculations
-                              will be required in reaction block
+                will be required in reaction block
             package_arguments: dict-like object of arguments to be passed to
-                                reaction block as construction arguments
+                reaction block as construction arguments
 
         Returns:
             None
@@ -1074,23 +1070,21 @@ argument).""",
 
         Args:
             has_rate_reactions: whether default generation terms for rate
-                    reactions should be included in material balances
+                reactions should be included in material balances
             has_equilibrium_reactions: whether generation terms should for
-                    chemical equilibrium reactions should be included in
-                    material balances
+                chemical equilibrium reactions should be included in
+                material balances
             has_phase_equilibrium: whether generation terms should for phase
-                    equilibrium behaviour should be included in material
-                    balances
+                equilibrium behaviour should be included in material
+                balances
             has_mass_transfer: whether generic mass transfer terms should be
-                    included in material balances
+                included in material balances
             custom_molar_term: a Pyomo Expression representing custom terms to
-                    be included in material balances on a molar basis.
-                    Expression must be indexed by time, length domain, phase
-                    list and component list
+                be included in material balances on a molar basis. Expression
+                must be indexed by time, length domain, phase list and component list
             custom_mass_term: a Pyomo Expression representing custom terms to
-                    be included in material balances on a mass basis.
-                    Expression must be indexed by time, length domain, phase
-                    list and component list
+                be included in material balances on a mass basis. Expression must
+                be indexed by time, length domain, phase list and component list
 
         Returns:
             Constraint object representing material balances
@@ -1122,23 +1116,23 @@ argument).""",
 
         Args:
             has_rate_reactions: whether default generation terms for rate
-                    reactions should be included in material balances
+                reactions should be included in material balances
             has_equilibrium_reactions: whether generation terms should for
-                    chemical equilibrium reactions should be included in
-                    material balances
+                chemical equilibrium reactions should be included in
+                material balances
             has_phase_equilibrium: whether generation terms should for phase
-                    equilibrium behaviour should be included in material
-                    balances
+                equilibrium behaviour should be included in material
+                balances
             has_mass_transfer: whether generic mass transfer terms should be
-                    included in material balances
+                included in material balances
             custom_molar_term: a Pyomo Expression representing custom terms to
-                    be included in material balances on a molar basis.
-                    Expression must be indexed by time, length domain and
-                    component list
+                be included in material balances on a molar basis.
+                Expression must be indexed by time, length domain and
+                component list
             custom_mass_term: a Pyomo Expression representing custom terms to
-                    be included in material balances on a mass basis.
-                    Expression must be indexed by time, length domain and
-                    component list
+                be included in material balances on a mass basis.
+                Expression must be indexed by time, length domain and
+                component list
 
         Returns:
             Constraint object representing material balances
@@ -1168,20 +1162,19 @@ argument).""",
         length.
 
         Args:
-            has_rate_reactions - whether default generation terms for rate
-                    reactions should be included in material balances
-            has_equilibrium_reactions - whether generation terms should for
-                    chemical equilibrium reactions should be included in
-                    material balances
-            has_phase_equilibrium - whether generation terms should for phase
-                    equilibrium behaviour should be included in material
-                    balances
-            has_mass_transfer - whether generic mass transfer terms should be
-                    included in material balances
-            custom_elemental_term - a Pyomo Expression representing custom
-                    terms to be included in material balances on a molar
-                    elemental basis. Expression must be indexed by time, length
-                    and element list
+            has_rate_reactions: whether default generation terms for rate
+                reactions should be included in material balances
+            has_equilibrium_reactions: whether generation terms should for
+                chemical equilibrium reactions should be included in
+                material balances
+            has_phase_equilibrium: whether generation terms should for phase
+                equilibrium behaviour should be included in material balances
+            has_mass_transfer: whether generic mass transfer terms should be
+                included in material balances
+            custom_elemental_term: a Pyomo Expression representing custom
+                terms to be included in material balances on a molar
+                elemental basis. Expression must be indexed by time, length
+                and element list
 
         Returns:
             Constraint object representing material balances
@@ -1444,6 +1437,7 @@ argument).""",
         return self.element_balances
 
     def add_total_material_balances(self, *args, **kwargs):
+        """Not Supported"""
         raise BalanceTypeNotSupportedError(
             "{} OD control volumes do not support "
             "add_total_material_balances (yet).".format(self.name)
@@ -1462,19 +1456,19 @@ argument).""",
         and phase.
 
         Args:
-            has_heat_of_reaction - whether terms for heat of reaction should
-                    be included in enthalpy balance
-            has_heat_transfer - whether terms for heat transfer should be
-                    included in enthalpy balances
-            has_work_transfer - whether terms for work transfer should be
-                    included in enthalpy balances
-            has_enthalpy_transfer - whether terms for enthalpy transfer due to
-                    mass transfer should be included in enthalpy balance. This
-                    should generally be the same as the has_mass_transfer
-                    argument in the material balance methods
-            custom_term - a Python method which returns Pyomo expressions representing
-                    custom terms to be included in enthalpy balances.
-                    Method should accept time, length and phase list as arguments.
+            has_heat_of_reaction: whether terms for heat of reaction should
+                be included in enthalpy balance
+            has_heat_transfer: whether terms for heat transfer should be
+                included in enthalpy balances
+            has_work_transfer: whether terms for work transfer should be
+                included in enthalpy balances
+            has_enthalpy_transfer: whether terms for enthalpy transfer due to
+                mass transfer should be included in enthalpy balance. This
+                should generally be the same as the has_mass_transfer
+                argument in the material balance methods
+            custom_term: a Python method which returns Pyomo expressions representing
+                custom terms to be included in enthalpy balances. Method should
+                accept time, length and phase list as arguments.
 
         Returns:
             Constraint object representing enthalpy balances
@@ -1698,18 +1692,21 @@ argument).""",
         return self.enthalpy_balances
 
     def add_phase_enthalpy_balances(self, *args, **kwargs):
+        """Not Supported"""
         raise BalanceTypeNotSupportedError(
             "{} OD control volumes do not support "
             "add_phase_enthalpy_balances.".format(self.name)
         )
 
     def add_phase_energy_balances(self, *args, **kwargs):
+        """Not Supported"""
         raise BalanceTypeNotSupportedError(
             "{} OD control volumes do not support "
             "add_phase_energy_balances.".format(self.name)
         )
 
     def add_total_energy_balances(self, *args, **kwargs):
+        """Not Supported"""
         raise BalanceTypeNotSupportedError(
             "{} OD control volumes do not support "
             "add_total_energy_balances.".format(self.name)
@@ -1720,14 +1717,14 @@ argument).""",
         This method constructs a set of 1D pressure balances indexed by time.
 
         Args:
-            has_pressure_change - whether terms for pressure change should be
-                    included in enthalpy balances
-            custom_term - a Pyomo Expression representing custom terms to
-                    be included in pressure balances.
-                    Expression must be indexed by time and length domain
-            custom_term - a Python method which returns Pyomo expressions representing
-                    custom terms to be included in enthalpy balances.
-                    Method should accept time and length as arguments.
+            has_pressure_change: whether terms for pressure change should be
+                included in enthalpy balances
+            custom_term: a Pyomo Expression representing custom terms to
+                be included in pressure balances. Expression must be indexed
+                by time and length domain
+            custom_term: a Python method which returns Pyomo expressions representing
+                custom terms to be included in enthalpy balances. Method should accept
+                time and length as arguments.
 
         Returns:
             Constraint object representing pressure balances
@@ -1789,18 +1786,21 @@ argument).""",
         return self.pressure_balance
 
     def add_phase_pressure_balances(self, *args, **kwargs):
+        """Not Supported"""
         raise BalanceTypeNotSupportedError(
             "{} OD control volumes do not support "
             "add_phase_pressure_balances.".format(self.name)
         )
 
     def add_phase_momentum_balances(self, *args, **kwargs):
+        """Not Supported"""
         raise BalanceTypeNotSupportedError(
             "{} OD control volumes do not support "
             "add_phase_momentum_balances.".format(self.name)
         )
 
     def add_total_momentum_balances(self, *args, **kwargs):
+        """Not Supported"""
         raise BalanceTypeNotSupportedError(
             "{} OD control volumes do not support "
             "add_total_momentum_balances.".format(self.name)
@@ -1911,23 +1911,22 @@ argument).""",
         Initialization routine for 1D control volume.
 
         Keyword Arguments:
-            state_args : a dict of arguments to be passed to the property
-                         package(s) to provide an initial state for
-                         initialization (see documentation of the specific
-                         property package) (default = {}).
-            outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None, use
-                     default solver options)
-            solver : str indicating which solver to use during
-                     initialization (default = None)
-            hold_state : flag indicating whether the initialization routine
-                     should unfix any state variables fixed during
-                     initialization, **default** - True. **Valid values:**
-                     **True** - states variables are not unfixed, and a dict of
-                     returned containing flags for which states were fixed
-                     during initialization, **False** - state variables are
-                     unfixed after initialization by calling the release_state
-                     method.
+            state_args: a dict of arguments to be passed to the property
+                package(s) to provide an initial state for initialization
+                (see documentation of the specific property package) (default = {}).
+            outlvl: sets output level of initialization routine
+            optarg: solver options dictionary object (default=None, use
+                default solver options)
+            solver: str indicating which solver to use during initialization
+                (default = None)
+            hold_state: flag indicating whether the initialization routine
+                should unfix any state variables fixed during initialization,
+                (default = True). **Valid values:**
+                **True** - states variables are not unfixed, and a dict of
+                returned containing flags for which states were fixed
+                during initialization, **False** - state variables are
+                unfixed after initialization by calling the release_state
+                method.
 
         Returns:
             If hold_states is True, returns a dict containing flags for which
@@ -2038,11 +2037,11 @@ argument).""",
         Method to release state variables fixed during initialization.
 
         Keyword Arguments:
-            flags : dict containing information of which state variables
-                    were fixed during initialization, and should now be
-                    unfixed. This dict is returned by initialize if
-                    hold_state = True.
-            outlvl : sets output level of logging
+            flags: dict containing information of which state variables
+                were fixed during initialization, and should now be
+                unfixed. This dict is returned by initialize if
+                hold_state = True.
+            outlvl: sets output level of logging
 
         Returns:
             None
