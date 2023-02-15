@@ -704,14 +704,17 @@ class TestSaponification(object):
         assert (
             abs(
                 value(
-                    sapon.fs.unit.outlet.flow_vol[0]
-                    * sapon.fs.properties.dens_mol
-                    * sapon.fs.properties.cp_mol
-                    * (
-                        sapon.fs.unit.inlet.temperature[0]
-                        - sapon.fs.unit.outlet.temperature[0]
+                    (
+                        sapon.fs.unit.outlet.flow_vol[0]
+                        * sapon.fs.properties.dens_mol
+                        * sapon.fs.properties.cp_mol
+                        * (
+                            sapon.fs.unit.inlet.temperature[0]
+                            - sapon.fs.unit.outlet.temperature[0]
+                        )
+                        + sapon.fs.unit.work_mechanical[0]
                     )
-                    + sapon.fs.unit.work_mechanical[0]
+                    / sapon.fs.unit.work_mechanical[0]
                 )
             )
             <= 1e-4

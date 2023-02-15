@@ -364,7 +364,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 pc_set,
                 domain=Reals,
                 initialize=0.0,
-                doc="Amount of component generated in " "unit by kinetic reactions",
+                doc="Amount of component generated in unit by kinetic reactions",
                 units=rxn_flow_units,
             )  # use reaction package flow basis
 
@@ -1433,6 +1433,15 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     "ReactionBlock class.".format(blk.name)
                 )
 
+    def estimate_outlet_state(self, always_estimate=False):
+        for t in self.flowsheet().time:
+            self._estimate_next_state(
+                self.properties_in[t],
+                self.properties_out[t],
+                index=t,
+                always_estimate=always_estimate,
+            )
+
     def initialize(
         blk,
         state_args=None,
@@ -1469,19 +1478,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         """
         # Get inlet state if not provided
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="control_volume")
-        if state_args is None:
-            state_args = {}
-            state_dict = blk.properties_in[
-                blk.flowsheet().time.first()
-            ].define_port_members()
-
-            for k in state_dict.keys():
-                if state_dict[k].is_indexed():
-                    state_args[k] = {}
-                    for m in state_dict[k].keys():
-                        state_args[k][m] = state_dict[k][m].value
-                else:
-                    state_args[k] = state_dict[k].value
 
         # Initialize state blocks
         in_flags = blk.properties_in.initialize(
@@ -1491,6 +1487,11 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             hold_state=hold_state,
             state_args=state_args,
         )
+
+        if state_args is None:
+            # If no initial guesses provided, estimate values for states
+            blk.estimate_outlet_state(always_estimate=True)
+
         out_flags = blk.properties_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
