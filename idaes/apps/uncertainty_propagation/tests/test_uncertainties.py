@@ -12,26 +12,24 @@
 #################################################################################
 import sys
 import os
-from unittest.mock import patch
-
-sys.path.append(os.path.abspath(".."))  # current folder is ~/tests
 import numpy as np
 import pandas as pd
-from scipy import sparse
 import pytest
-from pytest import approx
+
+from pyomo.environ import *
+import pyomo.contrib.parmest.parmest as parmest
+
 from idaes.apps.uncertainty_propagation.uncertainties import (
     quantify_propagate_uncertainty,
     propagate_uncertainty,
     clean_variable_name,
 )
-from pyomo.opt import SolverFactory
-from pyomo.environ import *
-import pyomo.contrib.parmest.parmest as parmest
 
-ipopt_available = SolverFactory("ipopt").available()
-kaug_available = SolverFactory("k_aug").available()
-dotsens_available = SolverFactory("dot_sens").available()
+sys.path.append(os.path.abspath(".."))  # current folder is ~/tests
+
+ipopt_available = SolverFactory("ipopt").available(exception_flag=False)
+kaug_available = SolverFactory("k_aug").available(exception_flag=False)
+dotsens_available = SolverFactory("dot_sens").available(exception_flag=False)
 
 
 @pytest.mark.skipif(not ipopt_available, reason="The 'ipopt' command is not available")
@@ -67,7 +65,7 @@ class TestUncertaintyPropagation:
             rooney_biegler_model, rooney_biegler_model_opt, data, variable_name, SSE
         )
 
-        assert results.obj == approx(4.331711213656886)
+        assert results.obj == pytest.approx(4.331711213656886)
         np.testing.assert_array_almost_equal(
             results.theta, [19.142575284617866, 0.53109137696521]
         )
@@ -118,7 +116,7 @@ class TestUncertaintyPropagation:
             rooney_biegler_model, model_uncertain, data, variable_name, SSE
         )
 
-        assert results.obj == approx(4.331711213656886)
+        assert results.obj == pytest.approx(4.331711213656886)
         np.testing.assert_array_almost_equal(
             results.theta, [19.142575284617866, 0.53109137696521]
         )
