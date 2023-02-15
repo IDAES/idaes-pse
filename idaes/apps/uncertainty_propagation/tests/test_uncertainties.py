@@ -10,13 +10,20 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-import sys
 import os
 import numpy as np
 import pandas as pd
 import pytest
 
-from pyomo.environ import *
+from pyomo.environ import (
+    ConcreteModel,
+    Constraint,
+    exp,
+    Objective,
+    SolverFactory,
+    Suffix,
+    Var,
+)
 import pyomo.contrib.parmest.parmest as parmest
 
 from idaes.apps.uncertainty_propagation.uncertainties import (
@@ -24,8 +31,6 @@ from idaes.apps.uncertainty_propagation.uncertainties import (
     propagate_uncertainty,
     clean_variable_name,
 )
-
-sys.path.append(os.path.abspath(".."))  # current folder is ~/tests
 
 ipopt_available = SolverFactory("ipopt").available(exception_flag=False)
 kaug_available = SolverFactory("k_aug").available(exception_flag=False)
@@ -111,7 +116,6 @@ class TestUncertaintyPropagation:
         model_uncertain.obj = Objective(
             expr=model_uncertain.asymptote
             * (1 - exp(-model_uncertain.rate_constant * 10)),
-            sense=minimize,
         )
 
         results = quantify_propagate_uncertainty(
@@ -165,7 +169,6 @@ class TestUncertaintyPropagation:
         model_uncertain.obj = Objective(
             expr=model_uncertain.asymptote
             * (1 - exp(-model_uncertain.rate_constant * 10)),
-            sense=minimize,
         )
 
         propagate_results = propagate_uncertainty(
@@ -215,9 +218,7 @@ class TestUncertaintyPropagation:
         m.con2 = Constraint(expr=m.x2 + m.x3 - m.p2 == 0)
 
         # Define objective
-        m.obj = Objective(
-            expr=m.p1 * m.x1 + m.p2 * (m.x2**2) + m.p1 * m.p2, sense=minimize
-        )
+        m.obj = Objective(expr=m.p1 * m.x1 + m.p2 * (m.x2**2) + m.p1 * m.p2)
 
         ### Solve optimization model
         opt = SolverFactory("ipopt", tee=True)
@@ -422,7 +423,6 @@ class TestUncertaintyPropagation:
         model_uncertain.obj = Objective(
             expr=model_uncertain.asymptote
             * (1 - exp(-model_uncertain.rate_constant * 10)),
-            sense=minimize,
         )
         with pytest.raises(TypeError):
             propagate_results = propagate_uncertainty(1, theta, cov, variable_name)
