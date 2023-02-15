@@ -1023,11 +1023,11 @@ have a config block which derives from CONFIG_Base,
 
             # Check for known special cases
             n = v2.local_name
-            # Material flows are too hard ot deal with generically, as they
+            # Material flows are too hard to deal with generically, as they
             # can be defined as bilinear terms, can have various indexing and
             # can be on different bases.
             # Similarly, mass and mole fractions are hard to deal with.
-            # Energy terms also have problems, as they are defined on ain intensive
+            # Energy terms also have problems, as they are defined on an intensive
             # basis, so we would need to convert heat and work
             if n.startswith("pressure"):
                 # Pressure, see if there is a fixed deltaP
