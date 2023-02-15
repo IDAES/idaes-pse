@@ -48,7 +48,7 @@ class DegeneracyHunter:
     def __init__(self, block_or_jac, solver=None):
         """Initialize Degeneracy Hunter Object
 
-        Arguments:
+        Args:
             block_or_jac: Pyomo model or Jacobian
             solver: Pyomo SolverFactory
 
@@ -128,13 +128,14 @@ class DegeneracyHunter:
         residual greater than a given threshold which appear in a model.
 
         Args:
-            block : model to be studied
-            tol : residual threshold for inclusion in ComponentSet
-            print_level: controls to extend of output to the screen
-                0: nothing printed
-                1: only name of constraint printed
-                2: each constraint is pretty printed
-                3: pretty print each constraint, then print value for included variable
+            block: model to be studied
+            tol: residual threshold for inclusion in ComponentSet
+            print_level: controls to extend of output to the screen:
+
+                * 0 - nothing printed
+                * 1 - only name of constraint printed
+                * 2 - each constraint is pretty printed
+                * 3 - pretty print each constraint, then print value for included variable
 
             sort: sort residuals in descending order for printing
 
@@ -186,8 +187,8 @@ class DegeneracyHunter:
         Return a ComponentSet of all variables within a tolerance of their bounds.
 
         Args:
-            block : model to be studied
-            tol : residual threshold for inclusion in ComponentSet (default = 1e-5)
+            block: model to be studied
+            tol: residual threshold for inclusion in ComponentSet (default = 1e-5)
             relative : Boolean, use relative tolerance (default = False)
             skip_lb: Boolean to skip lower bound (default = False)
             skip_ub: Boolean to skip upper bound (default = False)
@@ -224,7 +225,7 @@ class DegeneracyHunter:
         Args:
             tol: Tolerance for smallest singular value (default=1E-6)
             dense: If True, use a dense svd to perform singular value analysis,
-            which tends to be slower but more reliable than svds
+                which tends to be slower but more reliable than svds
 
         Returns:
             Number of singular values less than tolerance (-1 means error)
@@ -264,7 +265,7 @@ class DegeneracyHunter:
         """
         Prepare MILP to compute the irreducible degenerate set
 
-        Argument:
+        Args:
             jac_eq Jacobian of equality constraints [matrix]
             M: largest value for nu
 
@@ -326,7 +327,7 @@ class DegeneracyHunter:
         """
         Prepare MILP to find candidate equations for consider for IDS
 
-        Argument:
+        Args:
             jac_eq Jacobian of equality constraints [matrix]
             M: maximum value for nu
             m_small: smallest value for nu to be considered non-zero
@@ -444,7 +445,7 @@ class DegeneracyHunter:
         """Solve MILP to check if equation 'c' is a significant component in an irreducible
         degenerate set
 
-        Arguments:
+        Args:
             ids_milp: Pyomo model to calculate IDS
             solver: Pyomo solver (must support MILP)
             c: index for the constraint to consider [integer]
@@ -533,10 +534,10 @@ class DegeneracyHunter:
         Args:
             n_sv: number of smallest singular values to compute
             dense: If True, use a dense svd to perform singular value analysis,
-            which tends to be slower but more reliable than svds
+                which tends to be slower but more reliable than svds
 
         Returns:
-            Nothing
+            None
 
         Actions:
             Stores SVD results in object
@@ -595,11 +596,11 @@ class DegeneracyHunter:
 
         Args:
             n_calc: The singular value, as ordered from least to greatest
-            starting from 1, to calculate associated constraints and variables
+                starting from 1, to calculate associated constraints and variables
             tol: Size below which to ignore constraints and variables in
-            the singular vector
+                the singular vector
             dense: If True, use a dense svd to perform singular value analysis,
-            which tends to be slower but more reliable than svds
+                which tends to be slower but more reliable than svds
 
         Returns:
             None
@@ -716,11 +717,11 @@ class DegeneracyHunter:
         """
         Print variable, bounds, and value
 
-        Argument:
+        Args:
             v: variable
 
-        Return:
-            nothing
+        Returns:
+            None
 
         """
         print(v, "\t\t", v.lb, "\t", v.value, "\t", v.ub)
@@ -731,7 +732,7 @@ def get_valid_range_of_component(component):
     Return the valid range for a component as specified in the model metadata.
 
     Args:
-        component - Pyomo component to get valid range for
+        component: Pyomo component to get valid range for
 
     Returns:
         valid range for component if found. This will either be a 2-tuple (low, high) or None.
@@ -772,8 +773,8 @@ def set_bounds_from_valid_range(component, descend_into=True):
     This function will iterate over component data objects in Blocks and indexed components.
 
     Args:
-        component - Pyomo component to set bounds on. This can be a Block, Var or Param.
-        descend_into - (optional) Whether to descend into components on child Blocks (default=True)
+        component: Pyomo component to set bounds on. This can be a Block, Var or Param.
+        descend_into: (optional) Whether to descend into components on child Blocks (default=True)
 
     Returns:
          None
@@ -809,12 +810,12 @@ def list_components_with_values_outside_valid_range(component, descend_into=True
     This function will iterate over component data objects in Blocks and indexed components.
 
     Args:
-        component - Pyomo component to search for component outside of range on.
+        component: Pyomo component to search for component outside of range on.
             This can be a Block, Var or Param.
-        descend_into - (optional) Whether to descend into components on child Blocks (default=True)
+        descend_into: (optional) Whether to descend into components on child Blocks (default=True)
 
     Returns:
-         list of component objects found with vlaues outside the valid range.
+         list of component objects found with values outside the valid range.
     """
     comp_list = []
 
@@ -847,8 +848,8 @@ def ipopt_solve_halt_on_error(model, options=None):
     to halt on AMPL evaluation errors and report these with symbolic names.
 
     Args:
-        model - Pyomo model to be solved.
-        options - solver options ot be passed to IPOPT
+        model: Pyomo model to be solved.
+        options: solver options to be passed to IPOPT
 
     Returns:
         Pyomo solver results dict
