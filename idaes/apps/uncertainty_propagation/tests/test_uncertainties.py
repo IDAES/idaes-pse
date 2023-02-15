@@ -78,7 +78,9 @@ class TestUncertaintyPropagation:
         np.testing.assert_array_almost_equal(
             results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]])
         )
-        assert results.propagation_f == pytest.approx(5.45439337747349)
+        assert results.propagation_f == pytest.approx(
+            5.45439337747349, abs=1e-8, rel=1e-8
+        )
 
     @pytest.mark.component
     def test_quantify_propagate_uncertainty2(self):
@@ -116,7 +118,7 @@ class TestUncertaintyPropagation:
             rooney_biegler_model, model_uncertain, data, variable_name, SSE
         )
 
-        assert results.obj == pytest.approx(4.331711213656886)
+        assert results.obj == pytest.approx(4.331711213656886, abs=1e-8, rel=1e-8)
         np.testing.assert_array_almost_equal(
             results.theta, [19.142575284617866, 0.53109137696521]
         )
