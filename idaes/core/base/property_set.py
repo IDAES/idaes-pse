@@ -112,7 +112,7 @@ class _PropertyMetadataIndex:
     def valid_range(self):
         """
         Tuple indicating valid range of values for this property based on the data and method used
-        to calculate it. This should take the form of (lower range, upper range) and can be used
+        to calculate it. This should take the form of (lower range, upper range) and can be used to
         set and verify bounds on properties before and after solving in order to inform users of any
         cases where the property values are being extrapolated.
 

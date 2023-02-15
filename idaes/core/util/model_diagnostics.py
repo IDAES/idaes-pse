@@ -12,7 +12,7 @@
 # license information.
 #################################################################################
 """
-This module contains a collection of tools for diagnosing modelling issues.
+This module contains a collection of tools for diagnosing modeling issues.
 """
 
 __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee"
