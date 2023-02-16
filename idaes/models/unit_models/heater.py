@@ -219,6 +219,7 @@ class HeaterData(UnitModelBlockData):
             self.config.has_pressure_change is True
             and self.config.momentum_balance_type != MomentumBalanceType.none
         ):
+
             self.deltaP = Reference(self.control_volume.deltaP)
 
     def _get_performance_contents(self, time_point=0):

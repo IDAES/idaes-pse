@@ -22,6 +22,7 @@ from idaes.core.util.misc import set_param_from_config
 # -----------------------------------------------------------------------------
 # Heat capacities, enthalpies and entropies
 class Constant(object):
+
     # Ideal liquid properties methods
     class cp_mol_liq_comp(object):
         @staticmethod

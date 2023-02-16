@@ -112,6 +112,7 @@ def test_cp_mol_liq_comp(frame):
 
 @pytest.mark.unit
 def test_enth_mol_liq_comp(frame):
+
     Constant.enth_mol_liq_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.enth_mol_form_liq_comp_ref, Var)
@@ -211,6 +212,7 @@ def test_cp_mol_ig_comp(frame):
 
 @pytest.mark.unit
 def test_enth_mol_ig_comp(frame):
+
     Constant.enth_mol_ig_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.enth_mol_form_ig_comp_ref, Var)
@@ -232,6 +234,7 @@ def test_enth_mol_ig_comp(frame):
 
 @pytest.mark.unit
 def test_enth_mol_ig_comp_no_formation(frame):
+
     frame.config.include_enthalpy_of_formation = False
     frame.params.config.include_enthalpy_of_formation = False
 
@@ -290,6 +293,7 @@ def test_cp_mol_sol_comp(frame):
 
 @pytest.mark.unit
 def test_enth_mol_sol_comp(frame):
+
     Constant.enth_mol_sol_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.enth_mol_form_sol_comp_ref, Var)

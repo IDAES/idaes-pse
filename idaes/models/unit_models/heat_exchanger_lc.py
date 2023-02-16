@@ -29,6 +29,7 @@ from .heat_exchanger import HeatExchangerData
     "HeatExchangerLumpedCapacitance", doc="0D heat exchanger for transient simulations"
 )
 class HeatExchangerLumpedCapacitanceData(HeatExchangerData):
+
     CONFIG = HeatExchangerData.CONFIG(implicit=True)
 
     CONFIG.declare(
@@ -47,6 +48,7 @@ be included in the overall energy balance,
     )
 
     def _add_wall_variables(self):
+
         # Use the hot side as a reference
         s1_metadata = self.config.hot_side.property_package.get_metadata()
 
@@ -196,6 +198,7 @@ be included in the overall energy balance,
         self._add_wall_variable_constraints()
 
         if self.config.dynamic_heat_balance:
+
             s1_metadata = self.config.hot_side.property_package.get_metadata()
             temp_units = s1_metadata.get_derived_units("temperature")
             time_units = s1_metadata.get_derived_units("time")
@@ -229,6 +232,7 @@ be included in the overall energy balance,
             self.dT_wall_dt[:].value = 0
 
     def initialize(self, *args, **kwargs):
+
         if self.config.dynamic_heat_balance:
             # If the time derivative terms are defined, deactivate them first
             # and reactivate after calling the base initialization method

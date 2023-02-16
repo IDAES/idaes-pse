@@ -611,6 +611,7 @@ class GenericParameterData(PhysicalParameterBlock):
 
                 self.element_comp[c] = {}
                 for e in self.element_list:
+
                     if e not in cobj.config.elemental_composition:
                         self.element_comp[c][e] = 0
                     else:
@@ -1396,6 +1397,7 @@ class _GenericStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Initialize flow rates and compositions
         for k in blk.keys():
+
             blk[k].params.config.state_definition.state_initialization(blk[k])
 
             if blk[k].params._electrolyte:
@@ -1975,6 +1977,7 @@ class GenericStateBlockData(StateBlockData):
         if self.params.config.phases_in_equilibrium is not None and (
             not self.config.defined_state or self.always_flash
         ):
+
             t_units = self.params.get_metadata().default_units.TEMPERATURE
             self._teq = Var(
                 self.params._pe_pairs,
@@ -1992,6 +1995,7 @@ class GenericStateBlockData(StateBlockData):
         if self.params.config.phases_in_equilibrium is not None and (
             not self.config.defined_state or self.always_flash
         ):
+
             pe_form_config = self.params.config.phase_equilibrium_state
             for pp in self.params._pe_pairs:
                 pe_form_config[pp].phase_equil(self, pp)
@@ -4339,6 +4343,7 @@ def _valid_VL_component_list(blk, pp):
         pparams.get_phase(pp[0]).is_vapor_phase()
         and pparams.get_phase(pp[1]).is_liquid_phase()
     ):
+
         for j in blk.component_list:
             if (pp[0], j) in blk.phase_component_set and (
                 pp[1],

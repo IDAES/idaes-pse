@@ -431,6 +431,7 @@ def set_dof(m):
 
 
 def initialize_flowsheet(m):
+
     m.fs.M01.initialize(outlvl=idaeslog.WARNING)
 
     propagate_state(m.fs.s01)

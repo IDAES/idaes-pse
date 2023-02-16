@@ -409,6 +409,7 @@ class _ActivityCoeffStateBlock(StateBlock):
             or (blk[k].config.parameters.config.valid_phase == ("Liq", "Vap"))
             or (blk[k].config.parameters.config.valid_phase == ("Vap", "Liq"))
         ):
+
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
 
@@ -602,6 +603,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
             )
 
     def _make_vars(self):
+
         if self.params.config.state_vars == "FTPz":
             self.flow_mol_phase = Var(
                 self.params.phase_list, initialize=0.5, units=pyunits.mol / pyunits.s
@@ -629,6 +631,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         )
 
     def _make_liq_phase_eq(self):
+
         if self.params.config.state_vars == "FTPz":
 
             def rule_total_mass_balance(self):
@@ -676,6 +679,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
             )
 
     def _make_vap_phase_eq(self):
+
         if self.params.config.state_vars == "FTPz":
 
             def rule_total_mass_balance(self):
@@ -723,6 +727,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
             )
 
     def _make_flash_eq(self):
+
         if self.params.config.state_vars == "FTPz":
             # Total mole balance
             def rule_total_mass_balance(self):
@@ -856,6 +861,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         )
 
     def _make_NRTL_eq(self):
+
         # NRTL model variables
         self.Gij_coeff = Var(
             self.params.component_list,
@@ -951,6 +957,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         )
 
     def _make_Wilson_eq(self):
+
         # Wilson model variables
         self.Gij_coeff = Var(
             self.params.component_list,
@@ -1201,6 +1208,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         )
 
     def _enth_mol_comp_vap(self, j):
+
         # Vapor phase component enthalpy (J/mol)
         return self.enth_mol_phase_comp["Vap", j] == self.params.dh_form["Vap", j] + (
             (self.params.cp_mol_vap_comp_coeff_E[j] / 5)
@@ -1529,6 +1537,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
             def rule_temp_bubble(self):
                 if self.config.parameters.config.activity_coeff_model == "Ideal":
+
                     return (
                         sum(
                             self.mole_frac_comp[i] * self._p_sat_bubbleT[i]
@@ -1692,6 +1701,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
             self.del_component(self._p_sat_bubbleT)
 
     def _temperature_dew(self):
+
         self.temperature_dew = Var(
             initialize=298.15, doc="Dew point temperature (K)", units=pyunits.K
         )

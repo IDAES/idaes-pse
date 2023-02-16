@@ -1397,6 +1397,7 @@ objects linked the mixed state and all outlet states,
             # Create dict to store fixed status of state variables
             o_flags = {}
             for t in blk.flowsheet().time:
+
                 # Calculate values for state variables
                 s_vars = o_block[t].define_state_vars()
                 for v in s_vars:
