@@ -734,6 +734,7 @@ class TestIronOC_reverse_flow(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize_by_time(self, iron_oc):
+
         optarg = {
             "tol": 1e-5,
             "bound_push": 1e-22,
@@ -1005,6 +1006,7 @@ class TestIronOC_NoReaction(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize_by_time(self, iron_oc):
+
         optarg = {
             "tol": 1e-5,
             "bound_push": 1e-22,
@@ -1098,6 +1100,7 @@ class TestIronOC_NoReaction(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, iron_oc):
+
         iron_oc.fs.unit.time_set = ContinuousSet(
             bounds=(iron_oc.fs.time.first(), iron_oc.fs.time.last()),
             initialize=iron_oc.fs.time.get_finite_elements(),

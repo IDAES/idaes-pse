@@ -220,6 +220,7 @@ class TestIronOC(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize_by_time_unscaled(self, iron_oc_unscaled):
+
         optarg = {"tol": 1e-6}
         solver = get_solver("ipopt", optarg)  # create solver
 
@@ -256,6 +257,7 @@ class TestIronOC(object):
 
     @pytest.mark.component
     def test_scaling(self, iron_oc):
+
         # Set scaling gas phase for state variables
         iron_oc.fs.gas_props.set_default_scaling("flow_mol", 1e-3)
         iron_oc.fs.gas_props.set_default_scaling("pressure", 1e-5)
@@ -357,6 +359,7 @@ class TestIronOC(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize_by_time(self, iron_oc):
+
         optarg = {"tol": 1e-6}
         solver = get_solver("ipopt", optarg)  # create solver
 
@@ -685,6 +688,7 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize_by_time_unscaled(self, iron_oc_unscaled):
+
         optarg = {"tol": 1e-6}
         solver = get_solver("ipopt", optarg)  # create solver
 
@@ -721,6 +725,7 @@ class TestIronOC_EnergyBalanceType(object):
 
     @pytest.mark.component
     def test_scaling(self, iron_oc):
+
         # Set scaling gas phase for state variables
         iron_oc.fs.gas_props.set_default_scaling("flow_mol", 1e-3)
         iron_oc.fs.gas_props.set_default_scaling("pressure", 1e-5)
@@ -818,6 +823,7 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize_by_time(self, iron_oc):
+
         optarg = {"tol": 1e-6}
         solver = get_solver("ipopt", optarg)  # create solver
 

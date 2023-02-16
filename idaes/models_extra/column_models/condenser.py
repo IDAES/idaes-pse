@@ -332,6 +332,7 @@ see property package for documentation.}""",
         )
 
     def _make_ports(self):
+
         # Add Ports for the condenser
         # Inlet port (the vapor from the top tray)
         self.add_inlet_port()
@@ -354,6 +355,7 @@ see property package for documentation.}""",
     def initialize(
         self, state_args=None, solver=None, optarg=None, outlvl=idaeslog.NOTSET
     ):
+
         # TODO: Fix the inlets to the condenser to the vapor flow from
         # the top tray or take it as an argument to this method.
 

@@ -411,6 +411,7 @@ class _SolidPhaseStateBlock(StateBlock):
                 )
 
             for j in blk[k]._params.component_list:
+
                 if hasattr(blk[k], "cp_shomate_eqn"):
                     calculate_variable_from_constraint(
                         blk[k].cp_mol_comp[j], blk[k].cp_shomate_eqn[j]

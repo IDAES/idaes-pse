@@ -231,6 +231,7 @@ see property package for documentation.}""",
         self._vapor_set = Set(initialize=_vapor_list)
 
         if self.config.has_boilup_ratio is True:
+
             self.boilup_ratio = Var(initialize=0.5, doc="Boilup ratio for reboiler")
 
             def rule_boilup_ratio(self, t):
@@ -303,6 +304,7 @@ see property package for documentation.}""",
             self.deltaP = Reference(self.control_volume.deltaP[:])
 
     def _make_ports(self):
+
         # Add Ports for the reboiler
         # Inlet port (the vapor from the top tray)
         self.add_inlet_port()
@@ -318,6 +320,7 @@ see property package for documentation.}""",
     def initialize(
         self, state_args=None, solver=None, optarg=None, outlvl=idaeslog.NOTSET
     ):
+
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 

@@ -143,6 +143,7 @@ def test_initialize_unscaled(gas_prop_unscaled):
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_solve_unscaled(gas_prop_unscaled):
+
     assert hasattr(gas_prop_unscaled.fs.unit[0], "mw")
     assert hasattr(gas_prop_unscaled.fs.unit[0], "dens_mol")
     assert hasattr(gas_prop_unscaled.fs.unit[0], "dens_mol_comp")
@@ -295,6 +296,7 @@ def test_initialize(gas_prop):
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_solve(gas_prop):
+
     assert hasattr(gas_prop.fs.unit[0], "mw")
     assert hasattr(gas_prop.fs.unit[0], "cp_mol")
     assert hasattr(gas_prop.fs.unit[0], "enth_mol")
@@ -316,6 +318,7 @@ def test_solution(gas_prop):
 
 @pytest.mark.component
 def test_units_consistent(gas_prop):
+
     # Construct property methods to build the constraints
     assert hasattr(gas_prop.fs.unit[0], "mw")
     assert hasattr(gas_prop.fs.unit[0], "dens_mol")

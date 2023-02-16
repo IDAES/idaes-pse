@@ -1721,6 +1721,7 @@ should be constructed,
 
         # =========================================================================
         with TemporarySubsystemManager(to_fix=to_fix, to_deactivate=to_deactivate):
+
             # Check if the system is structurally singular
             igraph = IncidenceGraphInterface(blk)
             N = len(igraph.constraints)
@@ -2085,6 +2086,7 @@ should be constructed,
                 )
 
         if self.config.energy_balance_type != EnergyBalanceType.none:
+
             if hasattr(self, "solid_energy_holdup_calculation"):
                 for (t, x), c in self.solid_energy_holdup_calculation.items():
                     sf1 = iscale.get_scaling_factor(self.solid_phase_area[t, x])
