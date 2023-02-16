@@ -143,6 +143,7 @@ def test_initialize(rxn_prop):
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_solve(rxn_prop):
+
     assert hasattr(rxn_prop.fs.unit[0], "k_rxn")
     assert hasattr(rxn_prop.fs.unit[0], "OC_conv")
     assert hasattr(rxn_prop.fs.unit[0], "reaction_rate")

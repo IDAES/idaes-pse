@@ -530,6 +530,7 @@ see reaction package for documentation.}""",
                 )
 
         if self.config.energy_balance_type != EnergyBalanceType.none:
+
             if hasattr(self, "solids_energy_holdup_constraints"):
                 for t, c in self.solids_energy_holdup_constraints.items():
                     sf1 = iscale.get_scaling_factor(self.volume_bed)
@@ -543,6 +544,7 @@ see reaction package for documentation.}""",
                     iscale.constraint_scaling_transform(c, sf1 * sf2, overwrite=False)
 
         if self.config.energy_balance_type == EnergyBalanceType.none:
+
             if hasattr(self, "isothermal_solid_phase"):
                 for t, c in self.isothermal_solid_phase.items():
                     iscale.constraint_scaling_transform(

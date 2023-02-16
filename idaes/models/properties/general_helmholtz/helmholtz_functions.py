@@ -61,7 +61,7 @@ def helmholtz_available():
     if _flib is None:
         return False
     if not os.path.exists(_data_dir):
-        _log.error(f"The Helmholtz EoS data directory {_dta_dir} does not exist.")
+        _log.error(f"The Helmholtz EoS data directory {_data_dir} does not exist.")
         return False
     return True
 

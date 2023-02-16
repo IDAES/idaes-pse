@@ -139,6 +139,7 @@ def test_initialize_unscaled(solid_prop_unscaled):
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_solve_unscaled(solid_prop_unscaled):
+
     assert hasattr(solid_prop_unscaled.fs.unit[0], "dens_mass_skeletal")
     assert hasattr(solid_prop_unscaled.fs.unit[0], "cp_mass")
     assert hasattr(solid_prop_unscaled.fs.unit[0], "enth_mass")
@@ -243,6 +244,7 @@ def test_initialize(solid_prop):
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_solve(solid_prop):
+
     assert hasattr(solid_prop.fs.unit[0], "dens_mass_skeletal")
     assert hasattr(solid_prop.fs.unit[0], "cp_mass")
     assert hasattr(solid_prop.fs.unit[0], "enth_mass")
@@ -267,6 +269,7 @@ def test_solution(solid_prop):
 
 @pytest.mark.component
 def test_units_consistent(solid_prop):
+
     # Construct property methods to build the constraints
 
     assert hasattr(solid_prop.fs.unit[0], "dens_mass_skeletal")

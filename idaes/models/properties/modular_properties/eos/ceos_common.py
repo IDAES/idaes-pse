@@ -13,7 +13,9 @@
 
 import os
 import enum
+import ctypes
 from pyomo.environ import ExternalFunction, units as pyunits
+from pyomo.common.fileutils import find_library
 from idaes import bin_directory
 
 try:
