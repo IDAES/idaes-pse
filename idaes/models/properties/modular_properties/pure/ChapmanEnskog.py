@@ -77,8 +77,7 @@ class ChapmanEnskogLennardJones(object):
 
 
 def collision_integral_kim_ross_callback(T_dim):
-    """ Equation 9.4.5 from Properties of Gases and Liquids.
-    Let :math:`T^* = k_BT /\\varepsilon`. Then
+    """Equation 9.4.5 from Properties of Gases and Liquids.
 
     .. math::
 
@@ -89,8 +88,7 @@ def collision_integral_kim_ross_callback(T_dim):
 
 
 def collision_integral_neufeld_callback(T_dim):
-    """ Equation 9.4.3 from Properties of Gases and Liquids.
-    Let :math:`T^* = k_BT /\\varepsilon`. Then
+    """Equation 9.4.3 from Properties of Gases and Liquids.
 
     .. math::
 

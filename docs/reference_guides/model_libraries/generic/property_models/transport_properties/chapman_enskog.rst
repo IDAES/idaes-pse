@@ -22,7 +22,7 @@ Pure component gas viscosity is given by the formula
 in which :math:`\mu` is the dynamic viscosity, :math:`M` is the molar mass, :math:`\sigma` is the collision diameter of the molecule 
 (equal to the molecule's diameter for hard spheres and typically taken to be the Lennard-Jones parameter :math:`\sigma` for real molecules), 
 and :math:`\Omega_v(T)` is a dimensionless quantity known as the collision integral (equal to 1 for hard spheres but a function of temperature 
-for real molecules). :math:`C` is a constant with value 26.69 :math:`\mu\text{PÅ}^2/\sqrt{(\text{g}/\text{mol})\text{K}}`.
+for real molecules). :math:`C` is a constant with value :math:`26.69\;\mu\text{PÅ}^2/\sqrt{(\text{g}/\text{mol})\text{K}}`.
 
 The collision integral is specific for the property of viscosity (e.g., there is a different collision integral for diffusivity calculations)
 and is given in terms of the dimensionless temperature
@@ -36,8 +36,8 @@ in which :math:`k_B` is the Boltzmann constant and :math:`\varepsilon` is the Le
 viscosity data (see :ref:`Reichenberg (1973) <reichenberg-1973>` for more details). Several different forms of the collision integral, 
 of varying complexity, are available to use. If no callback is specified, the form proposed by Neufeld is used.
 
-Defined Callbacks for the ``viscosity_collision_integral_callback`` Option
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Defined Collision Integral Callbacks 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These callbacks provide expressions for the viscosity collision integral.
 
@@ -52,6 +52,7 @@ List of Parameters
 .. csv-table::
    :header: "Parameter Name", "Description", "Units"
 
+   "``mw``", "Molecular weight :math:`M`", "Mass/Amount"
    "``lennard_jones_sigma``", "Lennard-Jones 'particle size' :math:`\sigma`", "Length"
    "``lennard_jones_epsilon_reduced``", "Reduced Lennard-Jones well depth :math:`\varepsilon /k_B`", "Temperature"
    "``viscosity_collision_integral_callback``", "Callback to use for viscosity integral", "n/a"
@@ -77,6 +78,7 @@ method.
           "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones, "Liq": None},
           "viscosity_collision_integral_callback": collision_integral_neufeld_callback,
           "parameter_data": {
+            "mw": (0.01801528, pyunits.kg / pyunits.mol),
             "lennard_jones_sigma": (2.641, pyunits.angstrom),
             "lennard_jones_epsilon_reduced": (809.1, pyunits.K),
           }
