@@ -34,7 +34,7 @@ def rglob(path, glob):
 
 
 DEPENDENCIES_FOR_PRERELEASE_VERSION = [
-    "pyomo @ https://github.com/IDAES/pyomo/archive/6.4.5.idaes.2023.01.31.zip"
+    "pyomo @ https://github.com/IDAES/pyomo/archive/6.5.0.zip"
 ]
 
 # For included DMF data
@@ -86,7 +86,7 @@ kwargs = dict(
         "pandas<1.5",
         "pint",
         "psutil",
-        "pyomo @ https://github.com/IDAES/pyomo/archive/6.4.5.idaes.2023.01.31.zip",
+        "pyomo @ https://github.com/IDAES/pyomo/archive/6.5.0.zip",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
