@@ -158,6 +158,9 @@ def tracker_object():
 
 
 @pytest.mark.component
+@pytest.mark.skipif(
+    not pyo.SolverFactory("cbc").available(False), reason="solver not available"
+)
 def test_track_market_dispatch(tracker_object):
     market_dispatch = [30, 40, 50, 70]
     tracker_object.track_market_dispatch(

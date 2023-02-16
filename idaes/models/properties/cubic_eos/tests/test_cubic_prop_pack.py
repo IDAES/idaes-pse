@@ -761,6 +761,9 @@ class TestStateBlock_LV_SRK(object):
                 - model.fs.props[1]._log_equilibrium_cubic("Liq", j)
             )
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_common_cubic(self, model):
         model.fs.props = model.fs.params.build_state_block([1])

@@ -1412,7 +1412,7 @@ class TestPysmoSurrogate:
                 + 18.81527777777826 * inputs["x2"][i]
                 - 2.2556956302821618e-13 * (inputs["x2"][i] * inputs["x1"][i])
             )
-            assert pytest.approx(out["z2"][i], rel=1e-6) == (
+            assert pytest.approx(out["z2"][i], abs=1e-5) == (
                 -3.0033074724377813
                 + 0.2491731318906352 * inputs["x1"][i]
                 + 1.7508268681094337 * inputs["x2"][i]

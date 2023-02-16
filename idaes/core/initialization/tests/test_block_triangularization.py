@@ -17,7 +17,7 @@ import pytest
 import types
 
 from pyomo.environ import ConcreteModel, Constraint, value, Var
-
+from pyomo.contrib.pynumero.asl import AmplInterface
 from idaes.core.initialization.block_triangularization import (
     BlockTriangularizationInitializer,
 )
@@ -36,6 +36,9 @@ __author__ = "Andrew Lee"
 
 
 @pytest.mark.integration
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 def test_workflow():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -129,6 +132,9 @@ class TestBTSubMethods:
 
         return m
 
+    @pytest.mark.skipif(
+        not AmplInterface.available(), reason="pynumero_ASL is not available"
+    )
     @pytest.mark.component
     def test_workflow(self, model):
         initializer = BlockTriangularizationInitializer()
