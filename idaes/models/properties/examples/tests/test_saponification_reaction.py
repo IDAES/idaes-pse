@@ -14,7 +14,6 @@
 Tests for saponification property package example.
 Authors: Andrew Lee
 """
-import logging
 import pytest
 from pyomo.environ import ConcreteModel, Constraint, Param, units, value, Var
 from idaes.core import MaterialFlowBasis

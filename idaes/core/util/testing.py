@@ -41,7 +41,6 @@ from idaes.core.util.model_statistics import (
     fixed_variables_set,
     activated_constraints_set,
 )
-from idaes.core.solvers import get_solver as default_solver
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -191,6 +190,11 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
+        obj.add_properties(
+            {
+                "enth_mol": {"method": None},
+            }
+        )
         obj.add_default_units(
             {
                 "time": units.s,

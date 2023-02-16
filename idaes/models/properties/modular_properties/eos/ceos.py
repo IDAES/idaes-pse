@@ -15,23 +15,18 @@ Methods for cubic equations of state.
 
 Currently only supports liquid and vapor phases
 """
-import os
 from enum import Enum
 from copy import deepcopy
 
 from pyomo.environ import (
     exp,
     Expression,
-    ExternalFunction,
     log,
-    Param,
     Reals,
     sqrt,
     Var,
-    units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from idaes.core import LiquidPhase, VaporPhase
 from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     get_component_object as cobj,
@@ -272,19 +267,16 @@ class Cubic(EoSBase):
                 a = getattr(m, cname + "_a")
                 da_dT = getattr(m, cname + "_da_dT")
                 d2a_dT2 = getattr(m, cname + "_d2a_dT2")
-                # Placeholders for if temperature dependent k is needed
-                dk_dT = 0
-                d2k_dT2 = 0
 
                 # Initialize loop variable
-                d2am_dT2 = 0
+                d2am_dT2 = None
 
                 for i in m.components_in_phase(p):
                     for j in m.components_in_phase(p):
                         d2aij_dT2 = sqrt(a[i] * a[j]) * (
-                            -d2k_dT2
-                            - dk_dT * (da_dT[i] / a[i] + da_dT[j] / a[j])
-                            + (1 - k[i, j])
+                            # -d2k_dT2  # TODO: Placeholder for if temperature dependent k is needed
+                            # - dk_dT * (da_dT[i] / a[i] + da_dT[j] / a[j])
+                            +(1 - k[i, j])
                             / 2
                             * (
                                 d2a_dT2[i] / a[i]
@@ -292,11 +284,15 @@ class Cubic(EoSBase):
                                 - 1 / 2 * (da_dT[i] / a[i] - da_dT[j] / a[j]) ** 2
                             )
                         )
-                        d2am_dT2 += (
+                        d2am_dT2_term = (
                             m.mole_frac_phase_comp[p, i]
                             * m.mole_frac_phase_comp[p, j]
                             * d2aij_dT2
                         )
+                        if d2am_dT2 is None:
+                            d2am_dT2 = d2am_dT2_term
+                        else:
+                            d2am_dT2 += d2am_dT2_term
                 return d2am_dT2
 
             b.add_component(

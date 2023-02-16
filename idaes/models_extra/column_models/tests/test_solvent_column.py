@@ -27,7 +27,6 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 # Import IDAES Libraries
-import idaes
 from idaes.core import FlowsheetBlock
 from idaes.models_extra.column_models.solvent_column import PackedColumn
 from idaes.models.properties.modular_properties.base.generic_property import (

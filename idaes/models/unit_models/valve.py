@@ -30,8 +30,6 @@ from idaes.models.unit_models.pressure_changer import (
     MaterialBalanceType,
 )
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util import from_json, to_json, StoreSpec
-from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
@@ -148,6 +146,7 @@ variables, expressions, or constraints required can also be added by the callbac
         self.valve_opening = pyo.Var(
             self.flowsheet().time,
             initialize=1,
+            bounds=(0, 1),
             doc="Fraction open for valve from 0 to 1",
         )
         self.valve_opening.fix()

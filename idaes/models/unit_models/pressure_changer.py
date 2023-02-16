@@ -22,7 +22,6 @@ from enum import Enum
 from pyomo.environ import (
     value,
     Var,
-    Block,
     Expression,
     Constraint,
     Reference,

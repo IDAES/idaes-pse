@@ -140,8 +140,7 @@ ImpellerType.custom}""",
             default=None,
             domain=In(VaneDiffuserType),
             description="Vane diffuser type," "if custom provide an expression rule",
-            doc="""The type of vane diffuser,"
-            "if custom provide an expression rule
+            doc="""The type of vane diffuser, if custom provide an expression rule
 with the vane_diffuser_rule argument.
 **default** - VaneDiffuserType.vane_diffuser
 **Valid values** - {

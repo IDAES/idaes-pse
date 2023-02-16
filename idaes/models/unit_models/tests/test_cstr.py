@@ -14,10 +14,9 @@
 Tests for CSTR unit model.
 Authors: Andrew Lee, Vibhav Dabadghao
 """
-from io import StringIO
 
 import pytest
-from pyomo.environ import check_optimal_termination, ConcreteModel, units, value, Var
+from pyomo.environ import check_optimal_termination, ConcreteModel, units, value
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,

@@ -16,7 +16,7 @@ Standard IDAES CSTR model.
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-from pyomo.environ import Reference, Block, Var, Constraint
+from pyomo.environ import Reference
 
 # Import IDAES cores
 from idaes.core import (

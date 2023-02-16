@@ -16,12 +16,9 @@ import io
 from unittest.mock import patch
 
 sys.path.append(os.path.abspath(".."))  # current folder is ~/tests
-from idaes.core.surrogate.pysmo.kriging import KrigingModel, MyBounds
+from idaes.core.surrogate.pysmo.kriging import KrigingModel
 import numpy as np
 import pandas as pd
-from scipy.spatial import distance
-import scipy.optimize as opt
-import scipy.stats as stats
 import pytest
 
 

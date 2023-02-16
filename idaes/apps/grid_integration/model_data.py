@@ -196,6 +196,9 @@ class ThermalGeneratorModelData(GeneratorModelData):
     Adds run time, ramping, shutdown and startup information for thermal generators.
     Requires as initial status and power production.
     Bids are in ( MWh, $ ) pairs
+
+    if `include_default_p_cost` is True, then the `production_cost_bid_pairs` provided during init
+    will always be included in future production cost curves (see bidder.py:1221)
     """
 
     min_down_time = RealValueValidator(min_val=0)
@@ -223,6 +226,8 @@ class ThermalGeneratorModelData(GeneratorModelData):
         fixed_commitment=None,
         production_cost_bid_pairs=None,
         startup_cost_pairs=None,
+        include_default_p_cost=True,
+        **kwargs,
     ):
 
         super().__init__(
@@ -241,6 +246,7 @@ class ThermalGeneratorModelData(GeneratorModelData):
         self.startup_capacity = startup_capacity
         self.initial_status = initial_status
         self.initial_p_output = initial_p_output
+        self.include_default_p_cost = include_default_p_cost
 
         self.p_cost = self._assemble_default_cost_bids(production_cost_bid_pairs)
         self.startup_cost = self._assemble_default_startup_cost_bids(startup_cost_pairs)
@@ -290,7 +296,15 @@ class ThermalGeneratorModelData(GeneratorModelData):
                 f"The first power output in the bid should be the Pmin {self.p_min}, but {production_cost_bid_pairs[0][0]} is provided."
             )
 
-        if production_cost_bid_pairs[-1][0] != self.p_max:
+        if len(production_cost_bid_pairs) < 2:
+            raise ValueError(
+                f"A valid production_cost_bid_pairs requires at least 2 points"
+            )
+
+        if (
+            self.include_default_p_cost
+            and production_cost_bid_pairs[-1][0] != self.p_max
+        ):
             raise ValueError(
                 f"The last power output in the bid should be the Pmax {self.p_max}, but {production_cost_bid_pairs[-1][0]} is provided."
             )

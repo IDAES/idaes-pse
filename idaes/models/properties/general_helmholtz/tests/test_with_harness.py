@@ -13,7 +13,6 @@
 
 __author__ = "John Eslick"
 
-import pytest
 from idaes.models.properties.general_helmholtz import (
     HelmholtzParameterBlock,
     PhaseType,

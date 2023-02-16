@@ -14,11 +14,8 @@
 
 # Imports from the python standard library
 from __future__ import division, print_function
-from builtins import int, str
-import itertools
+from builtins import str
 import os.path
-import pprint
-import random
 import warnings
 
 # Imports from third parties
@@ -1166,7 +1163,7 @@ class RadialBasisFunctions:
             Pyomo Expression              : Pyomo expression of the RBF model based on the variables provided in **variable_list**
 
         """
-        t1 = np.array([variable_list])
+        t1 = np.array([variable_list], dtype="object")
         # Reshaping of variable array is necessary when input variables are Pyomo scalar variables
         t1 = t1.reshape(1, len(variable_list)) if t1.ndim > 2 else t1
 

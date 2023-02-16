@@ -16,22 +16,18 @@ __author__ = "John Eslick"
 
 import enum
 import ctypes
-import math
 import os
 
 from matplotlib import pyplot as plt
 import numpy as np
 
 import pyomo.environ as pyo
-from pyomo.core.base.units_container import InconsistentUnitsError
 from pyomo.common.fileutils import find_library
 from pyomo.common.config import ConfigValue, In
 import idaes
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core import declare_process_block_class
 from idaes.core import (
-    StateBlock,
-    StateBlockData,
     PhysicalParameterBlock,
     LiquidPhase,
     VaporPhase,
@@ -39,7 +35,8 @@ from idaes.core import (
     Component,
 )
 from idaes.models.properties.general_helmholtz.components import (
-    get_component_module,
+    get_transport_module,
+    component_registered,
 )
 import idaes.logger as idaeslog
 
@@ -900,23 +897,31 @@ class HelmholtzThermoExpressions(object):
 
     def viscosity_liq(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return get_component_module(c)._viscosity(self.param, delta_liq, tau, blk)
+        tmod = get_transport_module(c)
+        if tmod is None:
+            raise RuntimeError(f"Transport properties not available for {c}")
+        return tmod._viscosity(self.param, delta_liq, tau, blk)
 
     def viscosity_vap(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return get_component_module(c)._viscosity(self.param, delta_vap, tau, blk)
+        tmod = get_transport_module(c)
+        if tmod is None:
+            raise RuntimeError(f"Transport properties not available for {c}")
+        return tmod._viscosity(self.param, delta_vap, tau, blk)
 
     def thermal_conductivity_liq(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return get_component_module(c)._thermal_conductivity(
-            self.param, delta_liq, tau, blk
-        )
+        tmod = get_transport_module(c)
+        if tmod is None:
+            raise RuntimeError(f"Transport properties not available for {c}")
+        return tmod._thermal_conductivity(self.param, delta_liq, tau, blk)
 
     def thermal_conductivity_vap(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        return get_component_module(c)._thermal_conductivity(
-            self.param, delta_vap, tau, blk
-        )
+        tmod = get_transport_module(c)
+        if tmod is None:
+            raise RuntimeError(f"Transport properties not available for {c}")
+        return tmod._thermal_conductivity(self.param, delta_vap, tau, blk)
 
     def p_sat(self, T=None, tau=None):
         """Return saturation pressure as a function of T or tau"""
@@ -1287,7 +1292,7 @@ change.
     def build(self):
         super().build()
         # Check if the specified compoent is supported
-        if get_component_module(self.config.pure_component) is None:
+        if not component_registered(self.config.pure_component):
             raise ConfigurationError(
                 f"Component {self.config.pure_component} not supported."
             )
@@ -2121,11 +2126,9 @@ change.
         obj.add_properties(
             {
                 "temperature_crit": {"method": None, "units": "K"},
-                "temperature_star": {"method": None, "units": "K"},
                 "pressure_crit": {"method": None, "units": "Pa"},
                 "dens_mass_crit": {"method": None, "units": "kg/m^3"},
-                "dens_mass_star": {"method": None, "units": "kg/m^3"},
-                "specific_gas_constant": {"method": None, "units": "J/kg.K"},
+                "dens_mol_crit": {"method": None, "units": "mol/m^3"},
                 "mw": {"method": None, "units": "kg/mol"},
                 "temperature_sat": {"method": "None", "units": "K"},
                 "flow_mol": {"method": None, "units": "mol/s"},
@@ -2133,7 +2136,6 @@ change.
                 "flow_vol": {"method": None, "units": "m^3/s"},
                 "temperature": {"method": None, "units": "K"},
                 "pressure": {"method": None, "units": "Pa"},
-                "vapor_frac": {"method": None, "units": None},
                 "dens_mass_phase": {"method": None, "units": "kg/m^3"},
                 "temperature_red": {"method": None, "units": None},
                 "pressure_sat": {"method": None, "units": "kPa"},
@@ -2147,7 +2149,6 @@ change.
                 "entr_mass_phase": {"method": None, "units": "J/kg.K"},
                 "cp_mass_phase": {"method": None, "units": "J/kg.K"},
                 "cv_mass_phase": {"method": None, "units": "J/kg.K"},
-                "speed_sound_phase": {"method": None, "units": "m/s"},
                 "dens_mol_phase": {"method": None, "units": "mol/m^3"},
                 "therm_cond_phase": {"method": None, "units": "W/m.K"},
                 "visc_d_phase": {"method": None, "units": "Pa.s"},
@@ -2168,8 +2169,34 @@ change.
                 "heat_capacity_ratio": {"method": None, "units": None},
                 "dens_mass": {"method": None, "units": "kg/m^3"},
                 "dens_mol": {"method": None, "units": "mol/m^3"},
-                "dh_vap_mol": {"method": None, "units": "J/mol"},
-                "dh_vap_mass": {"method": None, "units": "J/mass"},
+            }
+        )
+
+        obj.define_custom_properties(
+            {
+                "temperature_star": {
+                    "method": None,
+                    "units": obj.derived_units.TEMPERATURE,
+                },
+                "dens_mass_star": {
+                    "method": None,
+                    "units": obj.derived_units.DENSITY_MASS,
+                },
+                "dens_mol_star": {
+                    "method": None,
+                    "units": obj.derived_units.DENSITY_MOLE,
+                },
+                "specific_gas_constant": {
+                    "method": None,
+                    "units": obj.derived_units.ENTROPY_MASS,
+                },
+                "speed_sound_phase": {
+                    "method": None,
+                    "units": obj.derived_units.VELOCITY,
+                },
+                "vapor_frac": {"method": None, "units": pyo.units.dimensionless},
+                "dh_vap_mol": {"method": None, "units": obj.derived_units.ENERGY_MOLE},
+                "dh_vap_mass": {"method": None, "units": obj.derived_units.ENERGY_MASS},
             }
         )
 

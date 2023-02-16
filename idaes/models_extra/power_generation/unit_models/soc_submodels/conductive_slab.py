@@ -41,7 +41,6 @@ import pyomo.environ as pyo
 from idaes.core import declare_process_block_class, UnitModelBlockData
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 import idaes.core.util.scaling as iscale
-from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
 
@@ -327,9 +326,15 @@ class SocConductiveSlabData(UnitModelBlockData):
 
     def recursive_scaling(self):
         gsf = iscale.get_scaling_factor
-        ssf = common._set_scaling_factor_if_none
-        sgsf = common._set_and_get_scaling_factor
-        cst = lambda c, s: iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+        def ssf(c, s):
+            iscale.set_scaling_factor(c, s, overwrite=False)
+
+        sgsf = iscale.set_and_get_scaling_factor
+
+        def cst(c, s):
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
+
         sR = 1e-1  # Scaling factor for R
         sD = 1e4  # Heuristic scaling factor for diffusion coefficient
         sy_def = 10  # Mole frac comp scaling
