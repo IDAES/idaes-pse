@@ -35,7 +35,6 @@ n_tracking_hour = 1
 
 @pytest.fixture(params=["thermal", "renewable"])
 def coordinator_object(request):
-
     # create solver
     solver = pyo.SolverFactory("cbc")
 
@@ -99,7 +98,6 @@ def test_static_params(coordinator_object):
 
 @pytest.mark.unit
 def test_assemble_sced_tracking_market_signals(coordinator_object):
-
     gen_name = coordinator_object.bidder.generator
     # assumes constant sced dispatch signal in the horizon
     constant_dispatch = 20

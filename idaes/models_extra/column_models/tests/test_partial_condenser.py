@@ -42,7 +42,6 @@ solver = get_solver()
 
 @pytest.mark.unit
 def test_config():
-
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
@@ -219,7 +218,6 @@ class TestBTXIdeal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx_ftpz, btx_fctp):
-
         # Using the FTPz state variables
         # Reflux port
         assert pytest.approx(0.2306, abs=1e-3) == value(

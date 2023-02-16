@@ -102,7 +102,6 @@ class TestSkeletonDefault(object):
 
     @pytest.mark.unit
     def test_ports(self, skeleton_default):
-
         # Check inlet port and port members
         assert hasattr(skeleton_default.fs.skeleton, "inlet")
         assert len(skeleton_default.fs.skeleton.inlet.vars) == 3
@@ -146,7 +145,6 @@ class TestSkeletonDefault(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_default_initialize(self, skeleton_default):
-
         skeleton_default.fs.skeleton.inlet.flow_mol_comp[0, "c1"].fix(2)
         skeleton_default.fs.skeleton.inlet.flow_mol_comp[0, "c2"].fix(2)
         skeleton_default.fs.skeleton.inlet.temperature.fix(325)
@@ -166,7 +164,6 @@ class TestSkeletonDefault(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, skeleton_default):
-
         assert value(
             skeleton_default.fs.skeleton.outlet.flow_mol_comp[0, "c1"]
         ) == pytest.approx(2, abs=1e-3)
@@ -246,7 +243,6 @@ class TestSkeletonCustom(object):
 
     @pytest.mark.unit
     def test_ports(self, skeleton_custom):
-
         # Check inlet port and port members
         assert hasattr(skeleton_custom.fs.skeleton, "inlet")
         assert len(skeleton_custom.fs.skeleton.inlet.vars) == 3
@@ -332,7 +328,6 @@ class TestSkeletonCustom(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, skeleton_custom):
-
         assert value(
             skeleton_custom.fs.skeleton.outlet.flow_mol_comp[0, "c1"]
         ) == pytest.approx(2, abs=1e-3)

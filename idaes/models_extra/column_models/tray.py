@@ -463,7 +463,6 @@ see property package for documentation.}""",
         member_list = self.properties_out[0].define_port_members()
 
         for k in member_list:
-
             local_name = member_list[k].local_name
 
             # Create references and populate the intensive variables
@@ -483,14 +482,12 @@ see property package for documentation.}""",
                 port.add(ref, k)
 
             elif "frac" in local_name:
-
                 # Mole/mass frac is typically indexed
                 index_set = member_list[k].index_set()
 
                 # if state var is not mole/mass frac by phase
                 if "phase" not in local_name:
                     if "mole" in local_name:  # check mole basis/mass basis
-
                         # The following conditionals are required when a
                         # mole frac or mass frac is a state var i.e. will be
                         # a port member. This gets a bit tricky when handling
@@ -571,7 +568,6 @@ see property package for documentation.}""",
                     self.add_component("e_mole_frac_" + port.local_name, expr)
                     port.add(expr, k)
                 else:
-
                     # Assumes mole_frac_phase or mass_frac_phase exist as
                     # state vars in the port and therefore access directly
                     # from the state block.
@@ -583,7 +579,6 @@ see property package for documentation.}""",
                     port.add(ref, k)
             elif "flow" in local_name:
                 if "phase" not in local_name:
-
                     # Assumes that here the var is total flow or component
                     # flow. However, need to extract the flow by phase from
                     # the state block. Expects to find the var
@@ -727,7 +722,6 @@ see property package for documentation.}""",
         optarg=None,
         outlvl=idaeslog.NOTSET,
     ):
-
         # TODO:
         # 1. Initialization for dynamic mode. Currently not supported.
         # 2. Handle unfixed side split fraction vars
@@ -855,7 +849,6 @@ see property package for documentation.}""",
         state_args_mixed = {}
 
         if self.config.is_feed_tray:
-
             # if feed tray, initialize the mixed state block at
             # the same condition.
             state_args_mixed = state_args_feed

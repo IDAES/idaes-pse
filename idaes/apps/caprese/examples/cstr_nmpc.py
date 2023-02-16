@@ -71,7 +71,6 @@ class PlotData(object):
 
 
 def main(plot_switch=False):
-
     # This tests the same model constructed in the test_nmpc_constructor_1 file
     m_controller = make_model(horizon=3, ntfe=30, ntcp=2, bounds=True)
     sample_time = 0.5

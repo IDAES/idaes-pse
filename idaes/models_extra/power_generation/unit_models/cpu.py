@@ -559,7 +559,6 @@ class CarbonProcessingUnitData(UnitModelBlockData):
         super().calculate_scaling_factors()
 
         for t in self.flowsheet().time:
-
             iscale.constraint_scaling_transform(self.mole_frac_comp_pureco2_eqn[t], 1)
 
             iscale.constraint_scaling_transform(self.mole_frac_comp_water_eqn[t], 1)
@@ -611,7 +610,6 @@ class CarbonProcessingUnitData(UnitModelBlockData):
             iscale.constraint_scaling_transform(self.vent_pressure_eq[t], 1e-5)
 
             for c in self.component_list:
-
                 iscale.constraint_scaling_transform(
                     self.flow_mol_comp_inlet_eqn[t, c], 1e-2
                 )

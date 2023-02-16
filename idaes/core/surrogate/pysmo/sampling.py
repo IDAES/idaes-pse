@@ -1124,7 +1124,6 @@ class HammersleySampling(SamplingMethods):
         print("Sampling type: ", self.sampling_type, "\n")
 
         if self.sampling_type == "selection":
-
             if isinstance(data_input, (pd.DataFrame, np.ndarray)):
                 self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:

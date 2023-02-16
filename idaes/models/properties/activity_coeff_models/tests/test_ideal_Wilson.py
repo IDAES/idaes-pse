@@ -26,6 +26,7 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
 
+
 # -----------------------------------------------------------------------------
 @pytest.fixture(scope="module")
 def m():
@@ -62,7 +63,6 @@ def m():
 
 @pytest.mark.unit
 def test_build_inlet_state_block(m):
-
     assert len(m.fs.properties_Wilson_vl.config) == 4
 
     # vapor-liquid (Wilson)
@@ -102,7 +102,6 @@ def test_build_inlet_state_block(m):
 
 @pytest.mark.unit
 def test_setInputs_inlet_state_block(m):
-
     # vapor-liquid (Wilson)
     m.fs.state_block_Wilson_vl.flow_mol.fix(1)
     m.fs.state_block_Wilson_vl.temperature.fix(368)

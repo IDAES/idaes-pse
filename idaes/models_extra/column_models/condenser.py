@@ -244,7 +244,6 @@ see property package for documentation.}""",
         self._make_ports()
 
         if self.config.condenser_type == CondenserType.totalCondenser:
-
             self._make_splits_total_condenser()
 
             if self.config.temperature_spec == TemperatureSpec.atBubblePoint:
@@ -290,7 +289,6 @@ see property package for documentation.}""",
         )
 
     def _make_ports(self):
-
         # Add Ports for the condenser
         # Inlet port (the vapor from the top tray)
         self.add_inlet_port()
@@ -311,13 +309,11 @@ see property package for documentation.}""",
         self.reflux_ratio = Var(initialize=1, doc="Reflux ratio for the condenser")
 
     def _make_splits_total_condenser(self):
-
         # Get dict of Port members and names
         member_list = self.control_volume.properties_out[0].define_port_members()
 
         # Create references and populate the reflux, distillate ports
         for k in member_list:
-
             local_name = member_list[k].local_name
             # Create references and populate the intensive variables
             if "flow" not in local_name:
@@ -398,7 +394,6 @@ see property package for documentation.}""",
 
         # Create references and populate the reflux, distillate ports
         for k in member_list:
-
             local_name = member_list[k].local_name
 
             # Create references and populate the intensive variables
@@ -425,14 +420,12 @@ see property package for documentation.}""",
                 self.vapor_outlet.add(Reference(var), k)
 
             elif "frac" in local_name:
-
                 # Mole/mass frac is typically indexed
                 index_set = member_list[k].index_set()
 
                 # if state var is not mole/mass frac by phase
                 if "phase" not in local_name:
                     if "mole" in local_name:  # check mole basis/mass basis
-
                         # The following conditionals are required when a
                         # mole frac or mass frac is a state var i.e. will be
                         # a port member. This gets a bit tricky when handling
@@ -580,7 +573,6 @@ see property package for documentation.}""",
                     # vapor port
                     self.vapor_outlet.add(self.e_vap_frac, k)
                 else:
-
                     # Assumes mole_frac_phase or mass_frac_phase exist as
                     # state vars in the port and therefore access directly
                     # from the state block.
@@ -595,7 +587,6 @@ see property package for documentation.}""",
                     self.distillate.add(Reference(var), k)
             elif "flow" in local_name:
                 if "phase" not in local_name:
-
                     # Assumes that here the var is total flow or component
                     # flow. However, need to extract the flow by phase from
                     # the state block. Expects to find the var
@@ -818,7 +809,6 @@ see property package for documentation.}""",
     def initialize(
         self, state_args=None, solver=None, optarg=None, outlvl=idaeslog.NOTSET
     ):
-
         # TODO: Fix the inlets to the condenser to the vapor flow from
         # the top tray or take it as an argument to this method.
 

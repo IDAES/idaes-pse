@@ -79,6 +79,8 @@ from idaes.core.util.testing import (
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
+from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
+
 
 # TODO: Should have a test for this that does not requrie models_extra
 from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop
@@ -1440,6 +1442,7 @@ class TestSaponification(object):
         )
 
 
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 @pytest.mark.component
 def test_construction_component_not_in_phase():
     m = ConcreteModel()

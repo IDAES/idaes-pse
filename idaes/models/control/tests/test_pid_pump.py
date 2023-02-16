@@ -31,6 +31,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.properties import iapws95
 from idaes.core.util.dyn_utils import copy_values_at_time, copy_non_time_indexed_values
 from idaes.core.solvers import get_solver
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 import pytest
 
@@ -183,6 +184,7 @@ def run_dynamic(m):
     return m
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_pid(m):
     assert 0.5000 == pytest.approx(pyo.value(m.fs.valve.valve_opening[0.0]), abs=1e-3)

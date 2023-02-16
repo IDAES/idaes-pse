@@ -57,7 +57,6 @@ solver = get_solver()
 
 @pytest.mark.unit
 def test_PinchDataClass():
-
     PD = PinchDataClass(100, 80)
     PD.initQAh = {"fs.H101": 540756, "fs.H102": 719998, "fs.H103": 0, "fs.H104": 59787}
     PD.initQAc = {
@@ -203,7 +202,6 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_dof(self, model):
-
         # add heat integration constraints
         min_utility(
             model.fs, [model.fs.H101, model.fs.H102], [model.fs.H103, model.fs.H104], 20
@@ -240,7 +238,6 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_heat_ex_data(self, model):
-
         CD = heat_ex_data(
             model.fs, [model.fs.H101, model.fs.H102], [model.fs.H103, model.fs.H104]
         )
@@ -260,7 +257,6 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_curve_data(self):
-
         T_test, Q_test = gen_curves([401, 341], [120, 120], [-280, -440])
         Ttest = [120, 120, 341, 401]
         for i in range(len(Ttest)):

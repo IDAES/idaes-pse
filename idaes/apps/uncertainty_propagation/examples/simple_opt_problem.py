@@ -31,7 +31,6 @@ import pytest
 from idaes.apps.uncertainty_propagation.uncertainties import propagate_uncertainty
 
 if __name__ == "__main__":
-
     ### Create optimization model
     m = pyo.ConcreteModel()
     m.dual = pyo.Suffix(direction=pyo.Suffix.IMPORT)

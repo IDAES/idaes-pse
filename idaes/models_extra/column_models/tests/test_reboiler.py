@@ -47,7 +47,6 @@ solver = get_solver()
 
 @pytest.mark.unit
 def test_config():
-
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
@@ -117,7 +116,6 @@ class TestBTXIdeal:
 
     @pytest.mark.unit
     def test_build(self, btx_ftpz, btx_fctp):
-
         assert hasattr(btx_ftpz.fs.unit, "boilup_ratio")
         assert hasattr(btx_ftpz.fs.unit, "eq_boilup_ratio")
 
@@ -200,7 +198,6 @@ class TestBTXIdeal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx_ftpz, btx_fctp):
-
         # from idaes.core.util.scaling import unscaled_constraints_generator, unscaled_variables_generator, badly_scaled_var_generator
         # print("\nUnscaled Constraints")
         # for i in unscaled_constraints_generator(btx_ftpz):

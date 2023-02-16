@@ -48,7 +48,6 @@ def Txy_diagram(
     solver=None,
     solver_op=None,
 ):
-
     """
     This method generates T-x-y plots. Given the components, pressure and property dictionary
     this function calls Txy_data() to generate T-x-y data and once the data has
@@ -178,7 +177,6 @@ def Txy_data(
         status = solver.solve(model, tee=False)
         # If solution is optimal store the concentration, and calculated temperatures in the created arrays
         if check_optimal_termination(status):
-
             print(
                 "Case: ", count, " Optimal. ", component_1, "x = {:.2f}".format(x_d[i])
             )
@@ -341,7 +339,6 @@ def build_txy_diagrams(
             ax.plot(txy_data.x, txy_data.TDew, "b", label="Dew Temp", linewidth=1.5)
 
     elif len(txy_data.TDew) == 0:
-
         if include_pressure == True:
             # Plot results for bubble temperature
 
@@ -362,7 +359,6 @@ def build_txy_diagrams(
             ax.plot(txy_data.x, txy_data.TBubb, "b", label="Dew Temp", linewidth=1.5)
 
     elif len(txy_data.TBubb) == 0:
-
         if include_pressure == True:
             # Plot results for bubble temperature
 

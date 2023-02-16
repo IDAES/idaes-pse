@@ -220,7 +220,6 @@ class TestHXNTU(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, model):
-
         assert hasattr(model.fs.unit, "hot_side_inlet")
         assert len(model.fs.unit.hot_side_inlet.vars) == 4
         assert hasattr(model.fs.unit.hot_side_inlet, "flow_mol")

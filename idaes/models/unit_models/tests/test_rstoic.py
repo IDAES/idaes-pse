@@ -120,7 +120,6 @@ class TestSaponification(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, sapon):
-
         assert hasattr(sapon.fs.unit, "inlet")
         assert len(sapon.fs.unit.inlet.vars) == 4
         assert hasattr(sapon.fs.unit.inlet, "flow_vol")
@@ -152,7 +151,6 @@ class TestSaponification(object):
 
     @pytest.mark.unit
     def test_dof(self, sapon):
-
         assert degrees_of_freedom(sapon) == 0
 
     @pytest.mark.solver

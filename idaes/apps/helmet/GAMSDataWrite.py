@@ -153,7 +153,6 @@ def CPdt(textFile, DataToWrite, Combination=False, PlotData=False):
         i += 1
     i = 1
     for x in DataToWrite:
-
         if Combination:
             textFile.write("delta('%s', '%d') = %.13f ;\n" % ("CP", i, x[0]))
             textFile.write("tau('%s','%d') = %.13f ;\n" % ("CP", i, x[1]))

@@ -34,7 +34,6 @@ Data sources:
 
 @declare_process_block_class("IsothermalCompressor")
 class IsothermalCompressorData(UnitModelBlockData):
-
     CONFIG = UnitModelBlockData.CONFIG()
 
     CONFIG.declare(
@@ -125,6 +124,7 @@ class IsothermalCompressorData(UnitModelBlockData):
 
     def add_state_isothermal_equation(self, state1, state2):
         time = self.flowsheet().time
+
         # NOTE: We assume our states are only indexed by time and that
         # temperature is unindexed.
         def isothermal_rule(b, t):

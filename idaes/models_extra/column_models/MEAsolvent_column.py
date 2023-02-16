@@ -141,7 +141,6 @@ class MEAColumnData(PackedColumnData):
                     )
 
     def build(self):
-
         super().build()
 
         # ---------------------------------------------------------------------
@@ -446,7 +445,6 @@ class MEAColumnData(PackedColumnData):
 
         # CO2 molar concentration at interface
         def rule_co2_conc_interface(blk, t, x):
-
             if x == blk.liquid_phase.length_domain.last():
                 return Expression.Skip
 
@@ -518,7 +516,6 @@ class MEAColumnData(PackedColumnData):
         )
 
         def rule_hatta_number(blk, t, x):
-
             if x == blk.liquid_phase.length_domain.last():
                 return Expression.Skip
             else:
@@ -782,7 +779,6 @@ class MEAColumnData(PackedColumnData):
 
         # Flood point calculations
         def rule_flood_velocity(blk, t, x):
-
             if x == blk.vapor_phase.length_domain.first():
                 return Expression.Skip
 
@@ -984,7 +980,6 @@ class MEAColumnData(PackedColumnData):
                 )
 
     def calculate_scaling_factors_control_vol(blk):
-
         # Scale control volume level variables
         for x in blk.vapor_phase.length_domain:
             iscale.set_scaling_factor(blk.vapor_phase.heat[0, x], 1e-6)
@@ -1158,7 +1153,6 @@ class MEAColumnData(PackedColumnData):
             )
 
     def calculate_scaling_factors_unit_model(blk):
-
         # Scale unit model level variables
         for (t, x, j), v in blk.pressure_equil.items():
             if x != 0:
@@ -1455,7 +1449,6 @@ class MEAColumnData(PackedColumnData):
 
         # Linear Interpolation
         def interpolate_init_values(numdiscretepts, xdata, ydata):
-
             x_interpolate = [i / numdiscretepts for i in range(numdiscretepts)]
             y_interpolate = np.interp(x_interpolate, xdata, ydata)
 

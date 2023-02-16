@@ -27,6 +27,7 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
 
+
 # -----------------------------------------------------------------------------
 @pytest.fixture(scope="module")
 def m():
@@ -102,7 +103,6 @@ def test_build_inlet_state_block(m):
 
 @pytest.mark.unit
 def test_setInputs_inlet_state_block(m):
-
     # vapor-liquid (NRTL)
     m.fs.state_block_NRTL_vl.flow_mol.fix(1)
     m.fs.state_block_NRTL_vl.temperature.fix(368)

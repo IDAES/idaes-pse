@@ -289,7 +289,6 @@ class TestIronOC(object):
 
     @pytest.mark.component
     def test_scaling(self, iron_oc):
-
         # Set scaling gas phase for state variables
         iron_oc.fs.gas_properties.set_default_scaling("flow_mol", 1e-3)
         iron_oc.fs.gas_properties.set_default_scaling("pressure", 1e-5)

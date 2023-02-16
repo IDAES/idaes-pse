@@ -64,7 +64,6 @@ def renewable_generator_data_object(renewable_generator_params):
 
 @pytest.mark.unit
 def test_create_thermal_model_data_object(generator_params, generator_data_object):
-
     # test scalar values
     for param_name in generator_params:
         if param_name not in ["production_cost_bid_pairs", "startup_cost_pairs"]:
@@ -85,7 +84,6 @@ def test_create_thermal_model_data_object(generator_params, generator_data_objec
 def test_create_renewable_model_data_object(
     renewable_generator_params, renewable_generator_data_object
 ):
-
     for name, value in renewable_generator_data_object:
         if name == "generator_type":
             assert value == "renewable"
@@ -224,7 +222,6 @@ def test_invalid_pcost(generator_params):
 
 @pytest.mark.unit
 def test_model_data_iterator(generator_data_object):
-
     expected_param_names = [
         "gen_name",
         "bus",
@@ -263,7 +260,6 @@ def test_model_data_iterator(generator_data_object):
     ],
 )
 def test_invalid_initial_status(value, error, msg, generator_params):
-
     generator_params["initial_status"] = value
     with pytest.raises(error, match=msg):
         ThermalGeneratorModelData(**generator_params)
@@ -286,7 +282,6 @@ def test_invalid_initial_status(value, error, msg, generator_params):
 def test_invalid_initial_p_output(
     initial_status, initial_p_output, error, msg, generator_params
 ):
-
     generator_params["initial_p_output"] = initial_p_output
     generator_params["initial_status"] = initial_status
     with pytest.raises(error, match=msg):

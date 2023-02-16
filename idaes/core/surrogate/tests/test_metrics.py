@@ -52,7 +52,6 @@ def metrics():
 
 @pytest.mark.unit
 def test_compute_metrics(metrics):
-
     # All data should have an offset of ERR, so error is known
     assert metrics["z1"]["SSE"] == pytest.approx(ERR**2 * N, rel=1e-12)
     assert metrics["z1"]["MSE"] == pytest.approx(ERR**2, rel=1e-12)

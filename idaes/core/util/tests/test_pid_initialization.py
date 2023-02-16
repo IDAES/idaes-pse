@@ -57,7 +57,6 @@ solver = get_solver()
 
 
 def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
-
     time_set = [0, horizon]
 
     m = ConcreteModel(name="CSTR with level control")

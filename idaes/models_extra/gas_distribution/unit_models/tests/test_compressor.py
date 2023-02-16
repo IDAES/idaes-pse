@@ -150,7 +150,6 @@ class TestCompressorValues(unittest.TestCase):
             boost_pressure_list,
             flow_list,
         ):
-
             # Redundant unit conversion, for sanity.
             p_val = pyo.value(pyo.units.convert(p, bar))
             dp_val = pyo.value(pyo.units.convert(dp, bar))

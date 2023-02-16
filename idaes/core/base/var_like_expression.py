@@ -170,7 +170,6 @@ class AbstractSimpleVarLikeExpression(SimpleVarLikeExpression):
 
 
 class IndexedVarLikeExpression(VarLikeExpression):
-
     #
     # From Pyomo: Leaving this method for backward compatibility reasons
     # Note: It allows adding members outside of self._index.

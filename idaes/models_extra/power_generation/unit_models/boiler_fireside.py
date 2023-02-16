@@ -247,7 +247,6 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         self._import_surrogate_models()
 
     def _import_surrogate_models(self):
-
         data_dict = self.config.surrogate_dictionary
         if len(data_dict) != (
             len(self.zones)

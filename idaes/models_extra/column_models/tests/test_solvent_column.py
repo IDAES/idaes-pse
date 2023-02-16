@@ -99,7 +99,6 @@ class TestAbsorberColumn:
 
     @pytest.mark.unit
     def test_build(self, model):
-
         assert model.fs.unit.config.dynamic is False
 
         assert hasattr(model.fs.unit, "vapor_inlet")
@@ -344,7 +343,6 @@ class TestStripperColumn:
 
     @pytest.mark.unit
     def test_build(self, model):
-
         assert model.fs.unit.config.dynamic is False
 
         assert hasattr(model.fs.unit, "vapor_inlet")

@@ -54,7 +54,6 @@ def build_rom():
 
 @pytest.mark.unit
 def test_basic_build(build_rom):
-
     m = build_rom
 
     assert degrees_of_freedom(m) == 9
@@ -79,7 +78,6 @@ def test_basic_build(build_rom):
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_initialize(build_rom):
-
     m = build_rom
 
     m.fs.sofc.current_density.fix(4000)

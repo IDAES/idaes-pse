@@ -43,6 +43,7 @@ from idaes.models.control.controller import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.plot import plot_grid_dynamic
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 
 def _valve_pressure_flow_cb(b):
@@ -257,6 +258,7 @@ def create_model(
     return m, solver
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_inlet_disturbance():
     """This test is pretty course-grained, but it should cover everything"""
@@ -294,6 +296,7 @@ def test_inlet_disturbance():
     return m_dynamic, solver
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_inlet_disturbance_derivative_on_error():
     """Controller performance with derivative on error should be unchanged for an inlet disturbance"""
@@ -336,6 +339,7 @@ def test_inlet_disturbance_derivative_on_error():
     return m_dynamic, solver
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_setpoint_change_derivative_on_pv():
     """Controller performance with derivative on error should be unchanged for an inlet disturbance"""
@@ -383,6 +387,7 @@ def test_setpoint_change_derivative_on_pv():
     return m_dynamic, solver
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_setpoint_change_derivative_on_error():
     """Controller performance with derivative on error should be unchanged for an inlet disturbance"""

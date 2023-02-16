@@ -13,10 +13,13 @@
 
 __author__ = "John Eslick"
 
+import pytest
 import idaes.models.properties.swco2 as swco2
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicMix(PropertyTestHarness):
     def configure(self):
         self.prop_pack = swco2.SWCO2ParameterBlock
@@ -27,6 +30,7 @@ class TestBasicMix(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicLV(PropertyTestHarness):
     def configure(self):
         self.prop_pack = swco2.SWCO2ParameterBlock
@@ -37,6 +41,7 @@ class TestBasicLV(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicL(PropertyTestHarness):
     def configure(self):
         self.prop_pack = swco2.SWCO2ParameterBlock
@@ -47,6 +52,7 @@ class TestBasicL(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicV(PropertyTestHarness):
     def configure(self):
         self.prop_pack = swco2.SWCO2ParameterBlock

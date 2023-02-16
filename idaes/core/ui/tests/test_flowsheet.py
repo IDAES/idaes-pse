@@ -31,6 +31,8 @@ from idaes.core import FlowsheetBlock
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
 )
+from idaes.models.properties.general_helmholtz import helmholtz_available
+
 from idaes.models.unit_models import Flash, Mixer
 from .shared import dict_diff
 
@@ -289,6 +291,7 @@ def _canonicalize(d):
             cell.pop("position")
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_flowsheet_serializer_demo(demo_flowsheet, demo_flowsheet_json):
     """Simple regression test vs. stored data."""

@@ -67,7 +67,6 @@ class MultiPeriodModel(pyo.ConcreteModel):
         solver=None,
         outlvl=logging.WARNING,
     ):  # , state_variable_func=None):
-
         super().__init__()
 
         self.n_time_points = n_time_points
@@ -274,7 +273,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
         Create linking constraint on `b1` using `variable_pairs`
         """
         b1.link_constraints = pyo.Constraint(range(len(variable_pairs)))
-        for (i, pair) in enumerate(variable_pairs):
+        for i, pair in enumerate(variable_pairs):
             b1.link_constraints[i] = pair[0] == pair[1]
 
     def _create_periodic_constraints(self, b1, variable_pairs):
@@ -282,7 +281,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
         Create periodic linking constraint on `b1` using `variable_pairs`
         """
         b1.periodic_constraints = pyo.Constraint(range(len(variable_pairs)))
-        for (i, pair) in enumerate(variable_pairs):
+        for i, pair in enumerate(variable_pairs):
             b1.periodic_constraints[i] = pair[0] == pair[1]
 
     def build_stochastic_multi_period(
@@ -639,7 +638,6 @@ class MultiPeriodModel(pyo.ConcreteModel):
         draw_style="steps",
         grid=None,
     ):
-
         """
         The function plots optimal operation schedule as a function of time.
 

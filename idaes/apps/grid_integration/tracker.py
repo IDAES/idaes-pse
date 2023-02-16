@@ -26,7 +26,6 @@ class Tracker:
     def __init__(
         self, tracking_model_object, tracking_horizon, n_tracking_hour, solver
     ):
-
         """
         Initializes the tracker object.
 
@@ -70,7 +69,6 @@ class Tracker:
         self.result_list = []
 
     def _check_inputs(self):
-
         """
         Check if the inputs to construct the tracker is valid. If not raise errors.
         """
@@ -80,7 +78,6 @@ class Tracker:
         self._check_solver()
 
     def _check_tracking_model_object(self):
-
         """
         Check if tracking model object has the necessary methods and attributes.
         """
@@ -119,7 +116,6 @@ class Tracker:
                 )
 
     def _check_n_tracking_hour(self):
-
         """
         Check if the number of hour for tracking is an integer and greater than 0.
         """
@@ -138,7 +134,6 @@ class Tracker:
             )
 
     def _check_solver(self):
-
         """
         Check if provides solver is a valid Pyomo solver object.
         """
@@ -151,7 +146,6 @@ class Tracker:
             )
 
     def formulate_tracking_problem(self):
-
         """
         Formulate the tracking optimization problem by adding necessary
         parameters, constraints, and objective function.
@@ -171,7 +165,6 @@ class Tracker:
         return
 
     def _add_tracking_vars(self):
-
         """
         Add necessary tracking variables to the model, i.e., power under and over
         delivered.
@@ -193,7 +186,6 @@ class Tracker:
         return
 
     def _add_tracking_params(self):
-
         """
         Add necessary tracking parameters to the model, i.e., market dispatch
         signal.
@@ -226,7 +218,6 @@ class Tracker:
         return
 
     def _add_tracking_constraints(self):
-
         """
         Add necessary tracking constraints to the model, e.g., power output needs
         to follow market dispatch signals.
@@ -252,7 +243,6 @@ class Tracker:
         return
 
     def _add_tracking_objective(self):
-
         """
         Add EMPC objective function to the model, i.e., minimizing different costs
         of the energy system.
@@ -279,7 +269,6 @@ class Tracker:
         return
 
     def update_model(self, **profiles):
-
         """
         This method updates the parameters in the model based on the implemented profiles.
 
@@ -293,7 +282,6 @@ class Tracker:
         self.tracking_model_object.update_model(self.model.fs, **profiles)
 
     def track_market_dispatch(self, market_dispatch, date, hour):
-
         """
         Solve the model to track the market dispatch signals. After solving,
         record the results from the solve and update the model.
@@ -326,7 +314,6 @@ class Tracker:
         return profiles
 
     def _record_daily_stats(self, profiles):
-
         """
         Record the stats that are used to update the model in the past 24 hours.
 
@@ -350,7 +337,6 @@ class Tracker:
         return
 
     def _pass_market_dispatch(self, market_dispatch):
-
         """
         Pass the received market signals into model parameters.
 
@@ -362,7 +348,6 @@ class Tracker:
         """
 
         for t in self.time_set:
-
             try:
                 dispatch = market_dispatch[t]
             except IndexError as ex:
@@ -374,7 +359,6 @@ class Tracker:
         return
 
     def get_last_delivered_power(self):
-
         """
         Returns the last delivered power output.
 
@@ -389,7 +373,6 @@ class Tracker:
         )
 
     def _record_tracker_results(self, **kwargs):
-
         """
         Record the tracker stats.
 
@@ -403,7 +386,6 @@ class Tracker:
 
         df_list = []
         for t in self.time_set:
-
             result_dict = {}
 
             result_dict["Date"] = kwargs["date"]
@@ -429,7 +411,6 @@ class Tracker:
         self.result_list.append(pd.concat(df_list))
 
     def record_results(self, **kwargs):
-
         """
         Record the operations stats for the model.
 

@@ -34,7 +34,6 @@ possibly with its own supply and demand streams.
 
 @declare_process_block_class("PipelineNode")
 class PipelineNodeData(UnitModelBlockData):
-
     CONFIG = UnitModelBlockData.CONFIG()
 
     CONFIG.declare(

@@ -410,7 +410,6 @@ class TestTrainedSurrogate:
 class TestPysmoPolyTrainer:
     @pytest.fixture
     def pysmo_poly_trainer(self):
-
         data = {"x1": [1, 2, 3, 4], "x2": [5, 6, 7, 8], "z1": [10, 20, 30, 40]}
         data = pd.DataFrame(data)
         input_labels = ["x1", "x2"]
@@ -674,7 +673,6 @@ class TestPysmoPolyTrainer:
 class TestPysmoRBFTrainer:
     @pytest.fixture
     def pysmo_rbf_trainer(self):
-
         data = {"x1": [1, 2, 3, 4], "x2": [5, 6, 7, 8], "z1": [10, 20, 30, 40]}
         data = pd.DataFrame(data)
         input_labels = ["x1", "x2"]
@@ -858,7 +856,6 @@ class TestPysmoRBFTrainer:
 class TestPysmoKrigingTrainer:
     @pytest.fixture
     def pysmo_krg_trainer(self):
-
         data = {"x1": [1, 2, 3, 4], "x2": [5, 6, 7, 8], "z1": [10, 20, 30, 40]}
         data = pd.DataFrame(data)
         input_labels = ["x1", "x2"]

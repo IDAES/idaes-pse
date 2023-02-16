@@ -46,7 +46,7 @@ _data_dir = os.path.join(idaes.bin_directory, "helm_data")
 _data_dir = os.path.join(_data_dir, "")
 
 try:
-    # When compling these, I don't bother changing the extension based on OS,
+    # When compiling these, I don't bother changing the extension based on OS,
     # so the file name is always ends in .so. It's fine.
     _flib = find_library("general_helmholtz_external.so")
     ctypes.cdll.LoadLibrary(_flib)
@@ -55,14 +55,13 @@ except:
 
 
 def helmholtz_available():
-    """Returns True if the shared library is installed and loads propertly
+    """Returns True if the shared library is installed and loads property
     otherwise returns False
     """
     if _flib is None:
-        _log.error("Shared library 'general_helmholtz_external' not found.")
         return False
     if not os.path.exists(_data_dir):
-        _log.error(f"The Helmholtz EoS data directory {_data_dir} does not exist.")
+        _log.error(f"The Helmholtz EoS data directory {_dta_dir} does not exist.")
         return False
     return True
 
@@ -89,7 +88,7 @@ class PhaseType(enum.Enum):
     MIX = 1  # Looks like a single phase called mixed with a vapor fraction
     LG = 2  # Looks like two phases vapor and liquid
     L = 3  # Assume only liquid is present
-    G = 4  # Assume only vapor is pressent
+    G = 4  # Assume only vapor is present
 
 
 class AmountBasis(enum.Enum):
@@ -124,7 +123,7 @@ _external_function_map = {
         "arg_units": [dimensionless, dimensionless, dimensionless],
         "doc": "s(comp, delta, tau)",
     },
-    "h_func": {  # enthaply
+    "h_func": {  # enthalpy
         "fname": "h",
         "units": pyo.units.kJ / pyo.units.kg,
         "arg_units": [dimensionless, dimensionless, dimensionless],
@@ -451,10 +450,10 @@ class HelmholtzThermoExpressions(object):
     """Class to write thermodynamic property expressions.  Take one of these
     possible sets of state variables: {h, p}, {u, p}, {s, p}, {s, T}, {T, x},
     {P, x}, or {T, P, x}, and return an expression for a thermo property.
-    This works by converting the given state varaibles to temperature, density,
+    This works by converting the given state variables to temperature, density,
     and vapor fraction expressions then using those to write an expression for
     requested property. This writes expressions in a way that looks like a
-    thermodynaic property function.
+    thermodynamic property function.
     """
 
     def __init__(self, blk, parameters, amount_basis=None):
@@ -467,6 +466,8 @@ class HelmholtzThermoExpressions(object):
         Returns:
             HelmholtzThermoExpressions
         """
+        if not helmholtz_available():
+            raise RuntimeError("Helmholtz EoS external functions not available")
         if amount_basis is None:
             amount_basis = parameters.config.amount_basis
         self.param = parameters
@@ -517,7 +518,7 @@ class HelmholtzThermoExpressions(object):
         # 2.) find the block with the external functions
         blk = self.blk
 
-        # 3.) Take given state varaibles and convert to density, T, and x
+        # 3.) Take given state variables and convert to density, T, and x
         if h is not None and p is not None:
             # h, p
             self.add_funcs(names=["tau_func", "vf_func"])
@@ -652,7 +653,7 @@ class HelmholtzThermoExpressions(object):
         return u * self.param.uc["kJ/kg to J/kg"]
 
     def g(self, **kwargs):
-        """Mixed phase Gibb's free energy"""
+        """Mixed phase Gibbs free energy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["g_func"])
         g = (
@@ -664,7 +665,7 @@ class HelmholtzThermoExpressions(object):
         return g * self.param.uc["kJ/kg to J/kg"]
 
     def g_liq(self, **kwargs):
-        """Liquid phase Gibb's free energy"""
+        """Liquid phase Gibbs free energy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["g_func"])
         g = blk.g_func(c, delta_liq, tau, _data_dir)
@@ -673,7 +674,7 @@ class HelmholtzThermoExpressions(object):
         return g * self.param.uc["kJ/kg to J/kg"]
 
     def g_vap(self, **kwargs):
-        """Vapor phase Gibb's free energy"""
+        """Vapor phase Gibbs free energy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["g_func"])
         g = blk.g_func(c, delta_vap, tau, _data_dir)
@@ -834,7 +835,7 @@ class HelmholtzThermoExpressions(object):
         return cv * self.param.uc["kJ/kg/K to J/kg/K"]
 
     def cv_mol_vap(self, **kwargs):
-        """Backward Compatability; Return vapor phase molar cv expression"""
+        """Backward Compatibility; Return vapor phase molar cv expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["cv_func"])
         cv = blk.cv_func(c, delta_vap, tau, _data_dir)
@@ -850,7 +851,7 @@ class HelmholtzThermoExpressions(object):
         return cp * self.param.uc["kJ/kg/K to J/kg/K"]
 
     def cp_mol_liq(self, **kwargs):
-        """Backward Compatability; Return liquid phase molar cp expression"""
+        """Backward Compatibility; Return liquid phase molar cp expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["cp_func"])
         cp = blk.cp_func(c, delta_liq, tau, _data_dir)
@@ -866,7 +867,7 @@ class HelmholtzThermoExpressions(object):
         return cp * self.param.uc["kJ/kg/K to J/kg/K"]
 
     def cp_mol_vap(self, **kwargs):
-        """Backward Compatability; Return liquid phase molar cp expression"""
+        """Backward Compatibility; Return liquid phase molar cp expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["cp_func"])
         cp = blk.cp_func(c, delta_vap, tau, _data_dir)
@@ -977,7 +978,7 @@ class HelmholtzThermoExpressions(object):
 @declare_process_block_class("HelmholtzParameterBlock")
 class HelmholtzParameterBlockData(PhysicalParameterBlock):
     """
-    This is a base clase for Helmholtz equations of state using IDAES standard
+    This is a base class for Helmholtz equations of state using IDAES standard
     Helmholtz EOS external functions written in C++.
     """
 
@@ -989,7 +990,7 @@ class HelmholtzParameterBlockData(PhysicalParameterBlock):
             default=None,
             domain=str,
             description="Pure chemical component",
-            doc="Pure component to calculate properies for",
+            doc="Pure component to calculate properties for",
         ),
     )
     CONFIG.declare(
@@ -1049,7 +1050,7 @@ change.
     )
 
     def available(self):
-        """Returns True if the shared library is installed and loads propertly
+        """Returns True if the shared library is installed and loads properly
         otherwise returns False
         """
         return helmholtz_available()
@@ -1076,9 +1077,9 @@ change.
             x: Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
                 superheated or subcooled
             units: The units to report the result in, if None use the default
-                units appropriate for the ammount basis.
+                units appropriate for the amount basis.
             amount_basis (AmountBasis): Whether to use a mass or mole basis
-            with_units (bool): if Ture return an expression with units
+            with_units (bool): if True return an expression with units
         Returns:
             Total molar enthalpy.
         """
@@ -1120,7 +1121,7 @@ change.
                     f"p = {pyo.value(p)}, ({pmin} kPa <= p <= {pmax} kPa)"
                 )
             if T is not None:
-                # P, T may be underspecified, but assume you know it's clearly a
+                # P, T may be under-specified, but assume you know it's clearly a
                 # vapor or liquid so figure out which and set x.
                 psat = te.p_sat(T)
                 if pyo.value(p) < pyo.value(psat):
@@ -1209,7 +1210,7 @@ change.
         self.set_default_scaling("flow_vol", 100)
         self.set_default_scaling("flow_mass", 1)
 
-        # Set some scalings with reasonable a priori values
+        # Set some scaling with reasonable a priori values
         self.set_default_scaling("temperature_crit", 1e-2)
         self.set_default_scaling("temperature_star", 1e-2)
         self.set_default_scaling("enth_mol", 1e-3)
@@ -1290,8 +1291,10 @@ change.
             self.Vap = VaporPhase()
 
     def build(self):
+        if not self.available():
+            raise RuntimeError("Helmholtz EoS external functions not available")
         super().build()
-        # Check if the specified compoent is supported
+        # Check if the specified component is supported
         if not component_registered(self.config.pure_component):
             raise ConfigurationError(
                 f"Component {self.config.pure_component} not supported."
@@ -1304,8 +1307,8 @@ change.
         self._state_block_class = HelmholtzStateBlock
         # set the component_list as required for the generic IDAES properties
         self.component_list = pyo.Set(initialize=[self.config.pure_component])
-        # sinice this a only a pure component package, have a specific
-        # pure_component attirbute
+        # since this a only a pure component package, have a specific
+        # pure_component attribute
         self.pure_component = self.config.pure_component
         # State var set
         self.state_vars = self.config.state_vars

@@ -217,7 +217,6 @@ def test_cv_mol_phase_comp(m):
 
 @pytest.mark.unit
 def test_heat_capacity_ratio_phase(m):
-
     m.props[1].cp_mol_phase = Var(m.params.phase_list)
     m.props[1].cv_mol_phase = Var(m.params.phase_list)
 

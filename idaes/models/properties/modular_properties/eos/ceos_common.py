@@ -16,14 +16,22 @@ import enum
 from pyomo.environ import ExternalFunction, units as pyunits
 from idaes import bin_directory
 
-cubic_so_path = os.path.join(bin_directory, "cubic_roots.so")
+try:
+    # When compiling these, I don't bother changing the extension based on OS,
+    # so the file name is always ends in .so. It's fine.
+    cubic_so_path = find_library("general_helmholtz_external.so")
+    ctypes.cdll.LoadLibrary(cubic_so_path)
+except:
+    cubic_so_path = None
 
 
 def cubic_roots_available():
     """Make sure the compiled cubic root functions are available. Yes, in
-    Windows the .so extention is still used.
+    Windows the .so extension is still used.
     """
-    return os.path.isfile(cubic_so_path)
+    if cubic_so_path is None:
+        return False
+    return True
 
 
 class CubicType(enum.Enum):
@@ -87,6 +95,8 @@ class CubicThermoExpressions(object):
     }
 
     def __init__(self, blk):
+        if not cubic_roots_available():
+            raise RuntimeError("Cubic root external functions are not available.")
         self.blk = blk
 
     def add_funcs(self, names=None):

@@ -32,7 +32,6 @@ class AbstractBidder(ABC):
 
     @abstractmethod
     def update_day_ahead_model(self, **kwargs):
-
         """
         Update the day-ahead model (advance timesteps) with necessary parameters in kwargs.
 
@@ -47,7 +46,6 @@ class AbstractBidder(ABC):
 
     @abstractmethod
     def update_real_time_model(self, **kwargs):
-
         """
         Update the real-time model (advance timesteps) with necessary parameters in kwargs.
 
@@ -62,7 +60,6 @@ class AbstractBidder(ABC):
 
     @abstractmethod
     def compute_day_ahead_bids(self, date, hour, **kwargs):
-
         """
         Solve the model to bid/self-schedule into the day-ahead market. After solving,
         record the schedule from the solve.
@@ -83,7 +80,6 @@ class AbstractBidder(ABC):
 
     @abstractmethod
     def compute_real_time_bids(self, date, hour, **kwargs):
-
         """
         Solve the model to bid/self-schedule into the real-time market. After solving,
         record the schedule from the solve.
@@ -104,7 +100,6 @@ class AbstractBidder(ABC):
 
     @abstractmethod
     def write_results(self, path):
-
         """
         This methods writes the saved results into an csv file.
 
@@ -119,7 +114,6 @@ class AbstractBidder(ABC):
 
     @abstractmethod
     def formulate_DA_bidding_problem(self):
-
         """
         Formulate the day-ahead bidding optimization problem by adding necessary
         parameters, constraints, and objective function.
@@ -135,7 +129,6 @@ class AbstractBidder(ABC):
 
     @abstractmethod
     def formulate_RT_bidding_problem(self):
-
         """
         Formulate the real-time bidding optimization problem by adding necessary
         parameters, constraints, and objective function.
@@ -151,7 +144,6 @@ class AbstractBidder(ABC):
 
     @abstractmethod
     def record_bids(self, bids, model, date, hour):
-
         """
         This function records the bids (schedule) and the details in the
         underlying bidding model.
@@ -178,7 +170,6 @@ class AbstractBidder(ABC):
         return "AbstractGenerator"
 
     def _check_inputs(self):
-
         """
         Check if the inputs to construct the tracker is valid. If not raise errors.
         """
@@ -188,7 +179,6 @@ class AbstractBidder(ABC):
         self._check_solver()
 
     def _check_bidding_model_object(self):
-
         """
         Check if tracking model object has the necessary methods and attributes.
         """
@@ -214,7 +204,6 @@ class AbstractBidder(ABC):
                 )
 
     def _check_n_scenario(self):
-
         """
         Check if the number of LMP scenarios is an integer and greater than 0.
         """
@@ -231,7 +220,6 @@ class AbstractBidder(ABC):
             )
 
     def _check_solver(self):
-
         """
         Check if provides solver is a valid Pyomo solver object.
         """
@@ -258,7 +246,6 @@ class StochasticProgramBidder(AbstractBidder):
         forecaster,
         real_time_underbid_penalty,
     ):
-
         """
         Initializes the stochastic bidder object.
 
@@ -329,7 +316,6 @@ class StochasticProgramBidder(AbstractBidder):
         return model
 
     def formulate_DA_bidding_problem(self):
-
         """
         Set up the day-ahead stochastic programming bidding problems.
 
@@ -348,7 +334,6 @@ class StochasticProgramBidder(AbstractBidder):
         return model
 
     def formulate_RT_bidding_problem(self):
-
         """
         Set up the real-time stochastic programming bidding problems.
 
@@ -367,7 +352,6 @@ class StochasticProgramBidder(AbstractBidder):
         return model
 
     def _save_power_outputs(self, model):
-
         """
         Create references of the power output variable in each price scenario
         block.
@@ -389,7 +373,6 @@ class StochasticProgramBidder(AbstractBidder):
         return
 
     def _add_bidding_params(self, model):
-
         """
         Add necessary bidding parameters to the model, i.e., market energy price.
 
@@ -415,7 +398,6 @@ class StochasticProgramBidder(AbstractBidder):
         return
 
     def _add_bidding_vars(self, model):
-
         """
         Add necessary bidding parameters to the model, i.e., market energy price.
 
@@ -449,7 +431,6 @@ class StochasticProgramBidder(AbstractBidder):
         return
 
     def _add_bidding_objective(self, model):
-
         """
         Add objective function to the model, i.e., maximizing the expected profit
         of the energy system.
@@ -498,7 +479,6 @@ class StochasticProgramBidder(AbstractBidder):
         energy_price_param_name,
         market,
     ):
-
         """
         Solve the model to bid into the markets. After solving, record the bids from the solve.
 
@@ -541,7 +521,6 @@ class StochasticProgramBidder(AbstractBidder):
         return bids
 
     def compute_day_ahead_bids(self, date, hour=0):
-
         """
         Solve the model to bid into the day-ahead market. After solving, record
         the bids from the solve.
@@ -581,7 +560,6 @@ class StochasticProgramBidder(AbstractBidder):
     def compute_real_time_bids(
         self, date, hour, realized_day_ahead_prices, realized_day_ahead_dispatches
     ):
-
         """
         Solve the model to bid into the real-time market. After solving, record
         the bids from the solve.
@@ -619,7 +597,6 @@ class StochasticProgramBidder(AbstractBidder):
         )
 
     def _pass_realized_day_ahead_prices(self, realized_day_ahead_prices, date, hour):
-
         """
         Pass the realized day-ahead prices into model parameters.
 
@@ -658,7 +635,6 @@ class StochasticProgramBidder(AbstractBidder):
                     self.real_time_model.fs[s].day_ahead_energy_price[t] = price
 
     def _pass_realized_day_ahead_dispatches(self, realized_day_ahead_dispatches, hour):
-
         """
         Pass the realized day-ahead dispatches into model and fix the corresponding variables.
 
@@ -686,7 +662,6 @@ class StochasticProgramBidder(AbstractBidder):
                     self.real_time_model.fs[s].real_time_underbid_power[t].unfix()
 
     def update_day_ahead_model(self, **kwargs):
-
         """
         This method updates the parameters in the day-ahead model based on the implemented profiles.
 
@@ -700,7 +675,6 @@ class StochasticProgramBidder(AbstractBidder):
         self._update_model(self.day_ahead_model, **kwargs)
 
     def update_real_time_model(self, **kwargs):
-
         """
         This method updates the parameters in the real-time model based on the implemented profiles.
 
@@ -714,7 +688,6 @@ class StochasticProgramBidder(AbstractBidder):
         self._update_model(self.real_time_model, **kwargs)
 
     def _update_model(self, model, **kwargs):
-
         """
         Update the flowsheets in all the price scenario blocks to advance time
         step.
@@ -735,7 +708,6 @@ class StochasticProgramBidder(AbstractBidder):
         return
 
     def record_bids(self, bids, model, date, hour, market):
-
         """
         This function records the bids and the details in the underlying bidding model.
 
@@ -765,7 +737,6 @@ class StochasticProgramBidder(AbstractBidder):
         return
 
     def _pass_price_forecasts(self, model, day_ahead_price, real_time_energy_price):
-
         """
         Pass the price forecasts into model parameters.
 
@@ -779,7 +750,6 @@ class StochasticProgramBidder(AbstractBidder):
         """
 
         for i in model.SCENARIOS:
-
             time_index = model.fs[i].real_time_energy_price.index_set()
 
             if day_ahead_price is not None:
@@ -873,7 +843,6 @@ class SelfScheduler(StochasticProgramBidder):
         self.fixed_to_schedule = fixed_to_schedule
 
     def _add_DA_bidding_constraints(self, model):
-
         """
         Add bidding constraints to the model, i.e., power outputs in the first
         stage need to be the same across all the scenarios.
@@ -903,7 +872,6 @@ class SelfScheduler(StochasticProgramBidder):
         return
 
     def _add_RT_bidding_constraints(self, model):
-
         """
         Add bidding constraints to the model, i.e., power outputs in the first
         stage need to be the same across all the scenarios.
@@ -933,7 +901,6 @@ class SelfScheduler(StochasticProgramBidder):
         return
 
     def _assemble_bids(self, model, power_var_name, energy_price_param_name, hour):
-
         """
         This methods extract the bids out of the stochastic programming model and
         organize them into self-schedule bids.
@@ -960,7 +927,6 @@ class SelfScheduler(StochasticProgramBidder):
         time_index = power_output_var.index_set()
 
         for t_idx in time_index:
-
             t = t_idx + hour
 
             bids[t] = {}
@@ -988,7 +954,6 @@ class SelfScheduler(StochasticProgramBidder):
                     ]
 
             if is_thermal:
-
                 bids[t][self.generator]["p_cost"] = [
                     (bids[t][self.generator]["p_min"], 0),
                     (bids[t][self.generator]["p_max"], 0),
@@ -1004,7 +969,6 @@ class SelfScheduler(StochasticProgramBidder):
         return bids
 
     def _record_bids(self, bids, date, hour, **kwargs):
-
         """
         This function records the bids (schedule) we computed for the given date into a
         DataFrame and temporarily stores the DataFrame in an instance attribute
@@ -1025,7 +989,6 @@ class SelfScheduler(StochasticProgramBidder):
         df_list = []
         for t in bids:
             for g in bids[t]:
-
                 result_dict = {}
                 result_dict["Generator"] = g
                 result_dict["Date"] = date
@@ -1063,7 +1026,6 @@ class Bidder(StochasticProgramBidder):
         forecaster,
         real_time_underbid_penalty=10000,
     ):
-
         """
         Initializes the bidder object.
 
@@ -1097,7 +1059,6 @@ class Bidder(StochasticProgramBidder):
         )
 
     def _add_DA_bidding_constraints(self, model):
-
         """
         Add bidding constraints to the model, i.e., the bid curves need to be
         nondecreasing.
@@ -1131,7 +1092,6 @@ class Bidder(StochasticProgramBidder):
         return
 
     def _add_RT_bidding_constraints(self, model):
-
         """
         Add bidding constraints to the model, i.e., the bid curves need to be
         nondecreasing.
@@ -1165,7 +1125,6 @@ class Bidder(StochasticProgramBidder):
         return
 
     def _assemble_bids(self, model, power_var_name, energy_price_param_name, hour):
-
         """
         This methods extract the bids out of the stochastic programming model and
         organize them into ( MWh, $ ) pairs.
@@ -1187,13 +1146,11 @@ class Bidder(StochasticProgramBidder):
         gen = self.generator
 
         for i in model.SCENARIOS:
-
             power_output_var = getattr(model.fs[i], power_var_name)
             energy_price_param = getattr(model.fs[i], energy_price_param_name)
             time_index = power_output_var.index_set()
 
             for t in time_index:
-
                 if t not in bids:
                     bids[t] = {}
                 if gen not in bids[t]:
@@ -1213,7 +1170,6 @@ class Bidder(StochasticProgramBidder):
                     bids[t][gen][power] = marginal_cost
 
         for t in time_index:
-
             # always include pmin in the cost curve, but include the other points if required
             if self.bidding_model_object.model_data.include_default_p_cost:
                 p_cost_add = self.bidding_model_object.model_data.p_cost
@@ -1232,7 +1188,6 @@ class Bidder(StochasticProgramBidder):
             # make sure the curve is nondecreasing
             pre_power = pmin
             for power, marginal_cost in bids[t][gen].items():
-
                 # ignore pmin, because min load cost is special
                 if pre_power == pmin:
                     pre_power = power
@@ -1272,7 +1227,6 @@ class Bidder(StochasticProgramBidder):
         full_bids = {}
 
         for t_idx in bids:
-
             t = t_idx + hour
 
             full_bids[t] = {}
@@ -1295,7 +1249,6 @@ class Bidder(StochasticProgramBidder):
         return full_bids
 
     def _record_bids(self, bids, date, hour, **kwargs):
-
         """
         This method records the bids we computed for the given date into a
         DataFrame. This DataFrame has the following columns: gen, date, hour,
@@ -1319,7 +1272,6 @@ class Bidder(StochasticProgramBidder):
         df_list = []
         for t in bids:
             for gen in bids[t]:
-
                 result_dict = {}
                 result_dict["Generator"] = gen
                 result_dict["Date"] = date

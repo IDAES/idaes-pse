@@ -26,19 +26,16 @@ class BaseValidator(ABC):
         self.prop_name = prop_name
 
     def __set__(self, instance, value):
-
         self._validate(instance, value)
         instance.__dict__[self.prop_name] = value
 
     def __get__(self, instance, cls):
-
         if instance is None:
             return self
         return instance.__dict__.get(self.prop_name, None)
 
     @abstractmethod
     def _validate(self, instance, value):
-
         """
         Validate the provided value.
 
@@ -51,7 +48,6 @@ class BaseValidator(ABC):
 
 class StrValidator(BaseValidator):
     def _validate(self, instance, value):
-
         if not isinstance(value, str):
             raise TypeError(
                 f"Value for {self.prop_name} must be str, but {type(value)} is provided."
@@ -70,7 +66,6 @@ class RealValueValidator(BaseValidator):
         self.max_val = max_val
 
     def _validate(self, instance, value):
-
         """
         Validate whether the provided value is within bounds and is a real number.
 
@@ -108,7 +103,6 @@ class AtLeastPminValidator(BaseValidator):
     """
 
     def _validate(self, instance, value):
-
         """
         Validate whether the provided value is at least Pmin.
 
@@ -146,7 +140,6 @@ class GeneratorModelData:
     p_max = AtLeastPminValidator()
 
     def __init__(self, gen_name, bus, p_min, p_max, fixed_commitment=None):
-
         self.gen_name = gen_name
         self.bus = bus
         self.p_min = p_min
@@ -229,7 +222,6 @@ class ThermalGeneratorModelData(GeneratorModelData):
         include_default_p_cost=True,
         **kwargs,
     ):
-
         super().__init__(
             gen_name=gen_name,
             bus=bus,
@@ -252,7 +244,6 @@ class ThermalGeneratorModelData(GeneratorModelData):
         self.startup_cost = self._assemble_default_startup_cost_bids(startup_cost_pairs)
 
     def _check_empty_and_sort_cost_pairs(self, pair_description, pairs):
-
         """
         Check whether a list of pairs for production and startup costs is empty,
         and then sort them based on power output and startup lag.
@@ -275,7 +266,6 @@ class ThermalGeneratorModelData(GeneratorModelData):
         return
 
     def _assemble_default_cost_bids(self, production_cost_bid_pairs):
-
         """
         Assemble the default production cost bids.
 
@@ -312,7 +302,6 @@ class ThermalGeneratorModelData(GeneratorModelData):
         return production_cost_bid_pairs
 
     def _assemble_default_startup_cost_bids(self, startup_cost_pairs):
-
         """
         Assemble the default startup cost bids.
 
@@ -344,7 +333,6 @@ class ThermalGeneratorModelData(GeneratorModelData):
 
     @property
     def initial_status(self):
-
         """
         Generator initial status proptery. If positive, the number of hours prior
         to (and including) t=0 that the unit has been on. If negative, the number
@@ -356,7 +344,6 @@ class ThermalGeneratorModelData(GeneratorModelData):
 
     @initial_status.setter
     def initial_status(self, value):
-
         """
         Generator initial status proptery setter. Validate the value before setting.
         """
@@ -378,7 +365,6 @@ class ThermalGeneratorModelData(GeneratorModelData):
 
     @initial_p_output.setter
     def initial_p_output(self, value):
-
         """
         Generator initial power output proptery setter.
         """
@@ -412,7 +398,6 @@ class RenewableGeneratorModelData(GeneratorModelData):
     p_cost = RealValueValidator(min_val=0)
 
     def __init__(self, gen_name, bus, p_min, p_max, p_cost, fixed_commitment=None):
-
         super().__init__(
             gen_name=gen_name,
             bus=bus,

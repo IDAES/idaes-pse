@@ -55,7 +55,6 @@ from idaes.core.util.phase_equilibria import TXYDataClass, Txy_data
 
 @pytest.mark.unit
 def test_Txy_dataclass():
-
     TD = TXYDataClass(
         "benzene", "toluene", pyunits.kg / pyunits.m / pyunits.s**2, pyunits.K, 101325
     )

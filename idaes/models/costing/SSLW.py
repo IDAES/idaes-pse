@@ -203,7 +203,6 @@ class BlowerMaterial(StrEnum):
 
 @declare_process_block_class("SSLWCosting")
 class SSLWCostingData(FlowsheetCostingBlockData):
-
     # Register currency and conversion rates based on CE Index
     register_idaes_currency_units()
 
@@ -700,7 +699,6 @@ class SSLWCostingData(FlowsheetCostingBlockData):
     def _cost_distillation_trays(
         blk, tray_material, tray_type, vessel_diameter, number_of_trays
     ):
-
         # Check arguments
         if tray_material not in TrayMaterial:
             raise ConfigurationError(

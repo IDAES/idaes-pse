@@ -47,6 +47,7 @@ from idaes.core.solvers import get_solver
 # Get default solver for testing
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 @pytest.fixture(scope="module")
 def build_watertank_simple():
@@ -156,6 +157,7 @@ def tank_models(
     ]
 
 
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.unit
 def test_basic_build(tank_models):
     """Make a turbine model and make sure it doesn't throw exception"""
@@ -196,7 +198,6 @@ def test_run_watertank(tank_models):
     solver.options = optarg
 
     for i in tank_models:
-
         m = i
 
         # fix inlets

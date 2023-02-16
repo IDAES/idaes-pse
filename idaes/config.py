@@ -89,7 +89,7 @@ default_uom = {
 
 
 def canonical_arch(arch):
-    """Get the offical machine type in {x86_64, aarch64} if possible, otherwise
+    """Get the official machine type in {x86_64, aarch64} if possible, otherwise
     just return arch.lower().
 
     Args:
@@ -103,7 +103,7 @@ def canonical_arch(arch):
 
 
 def canonical_distro(dist):
-    """Get the offical distro name if possible, otherwise just return
+    """Get the official distro name if possible, otherwise just return
     dist.lower(). Distro is used loosely here and includes Windows, Darwin
     (macOS), and other OSs in addition to Linux.
 

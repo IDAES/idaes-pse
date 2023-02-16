@@ -42,7 +42,6 @@ solver = get_solver()
 
 @pytest.mark.unit
 def test_config():
-
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()

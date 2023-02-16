@@ -633,7 +633,6 @@ def copy_non_time_indexed_values(
 
     blk_visited = set()
     for blk_tgt in fs_tgt.component_objects(Block):
-
         if id(blk_tgt) in blk_visited:
             continue
         blk_visited.add(id(blk_tgt))
@@ -644,7 +643,6 @@ def copy_non_time_indexed_values(
             continue
         # block is not even implicitly indexed by time
         for b_index in blk_tgt:
-
             var_visited = set()
             for var_tgt in blk_tgt[b_index].component_objects(Var, descend_into=False):
                 if id(var_tgt) in var_visited:

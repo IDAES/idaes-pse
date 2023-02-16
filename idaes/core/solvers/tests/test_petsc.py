@@ -612,7 +612,6 @@ def test_petsc_read_trajectory_parts():
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 def test_rp_example():
-
     m = rp_example()
     with pytest.raises(RuntimeError):
         petsc.petsc_dae_by_time_element(
@@ -624,7 +623,6 @@ def test_rp_example():
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 def test_rp_example2():
-
     m = rp_example2()
     petsc.petsc_dae_by_time_element(
         m,
@@ -642,7 +640,6 @@ def test_rp_example2():
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 def test_rp_example3():
-
     m = rp_example3()
     with pytest.raises(RuntimeError):
         petsc.petsc_dae_by_time_element(
@@ -654,7 +651,6 @@ def test_rp_example3():
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 def test_rp_example4():
-
     m = rp_example4()
     petsc.petsc_dae_by_time_element(
         m,
@@ -671,7 +667,6 @@ def test_rp_example4():
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 def test_rp_example5a():
-
     m = rp_example5()
     petsc.petsc_dae_by_time_element(
         m,

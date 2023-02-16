@@ -708,7 +708,7 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
     local_samples_list = task_mgr.global_to_local_data(samples_list)
 
     results = list()
-    for (si, ss) in enumerate(local_samples_list):
+    for si, ss in enumerate(local_samples_list):
         sample_name = ss["_name"]
         # print progress on the rank-0 process
         if task_mgr.is_root():

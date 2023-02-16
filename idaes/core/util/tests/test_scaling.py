@@ -268,6 +268,7 @@ def test_calculate_scaling_factors():
           f   g
     """
     o = []  # list of compoent names in the order their calculate_scaling_factors
+
     # method is called
     def rule(blk):
         # This rule for building a block just adds a calculate scaling factor

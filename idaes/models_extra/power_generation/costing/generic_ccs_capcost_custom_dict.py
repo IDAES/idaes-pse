@@ -16,7 +16,6 @@ from pyomo.common.fileutils import this_file_dir
 
 
 def load_generic_ccs_costing_dictionary(path=None):
-
     """
     Custom dictionaries have been added as a way to add new scaling equations
     that are not based on the Bituminous Baseline report.
@@ -644,7 +643,6 @@ def load_generic_ccs_costing_dictionary(path=None):
     if not os.path.exists(
         os.path.join(directory, "generic_ccs_costing_data.json")
     ):  # make the dictionary
-
         generic_ccs_costing_data = generic_ccs_costing_params
 
         for tech in generic_ccs_costing_data.keys():  # do one technology at a time

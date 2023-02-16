@@ -46,7 +46,6 @@ solver = get_solver()
 
 @pytest.mark.unit
 def test_config():
-
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
@@ -214,7 +213,6 @@ class TestBTXIdeal:
     @pytest.mark.component
     @pytest.mark.xfail  # TODO: Remove once model is fixed
     def test_solution(self, btx_ftpz, btx_fctp):
-
         from idaes.core.util.scaling import (
             unscaled_constraints_generator,
             unscaled_variables_generator,
@@ -373,7 +371,6 @@ class TestBTXIdealGeneric:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx_ftpz_generic):
-
         # Distillate port - btx_ftpz
         assert pytest.approx(49.28, rel=1e-2) == value(
             btx_ftpz_generic.fs.unit.condenser.distillate.flow_mol[0]

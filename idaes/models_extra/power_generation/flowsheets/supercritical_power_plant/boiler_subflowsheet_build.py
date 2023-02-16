@@ -107,7 +107,6 @@ def main():
 
 
 def build_boiler(fs):
-
     # Add property packages to flowsheet library
     fs.prop_fluegas = FlueGasParameterBlock()
 
@@ -459,7 +458,6 @@ def initialize(m):
 
 
 def unfix_inlets(m):
-
     # Use FG molar composition to set component flow rates (baseline report)
     m.fs.ECON.hot_side_inlet.flow_mol_comp[0, "H2O"].unfix()
     m.fs.ECON.hot_side_inlet.flow_mol_comp[0, "CO2"].unfix()

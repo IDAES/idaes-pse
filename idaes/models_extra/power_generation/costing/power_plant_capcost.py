@@ -402,7 +402,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         pass
 
     def report(self, export=False):
-
         var_dict = {}
 
         if hasattr(self, "total_TPC"):
@@ -1286,7 +1285,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             "Natural gas-fired heater",
             "Recuperator",
         ]:
-
             if temp_C is None:
                 raise ValueError(
                     "Temperature argument is "
@@ -1859,7 +1857,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         @b.Constraint(b.parent_block().time, resources)
         def variable_cost_rule_power(c, t, r):
-
             return c.variable_operating_costs[t, r] == (
                 pyunits.convert(
                     resource_prices[r] * resource_rates[r][t],
@@ -1891,7 +1888,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
     def initialize_fixed_OM_costs(b):
         # b is the flowsheet-level costing block
         if hasattr(b, "total_fixed_OM_cost"):
-
             calculate_variable_from_constraint(
                 b.annual_operating_labor_cost, b.annual_labor_cost_rule
             )
@@ -1923,7 +1919,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # b is the flowsheet-level costing block
         # initialization for power generation costs
         if hasattr(b, "variable_operating_costs"):
-
             for i in b.variable_operating_costs.keys():
                 if hasattr(b, "variable_cost_rule_power"):
                     calculate_variable_from_constraint(
@@ -1947,7 +1942,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             # look for costing blocks
             if o.name in b._registered_unit_costing and hasattr(o, "library"):
                 if o.library == "sCO2":
-
                     if o.equipment in [
                         "Axial turbine",
                         "Radial turbine",

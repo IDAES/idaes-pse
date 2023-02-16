@@ -1295,7 +1295,6 @@ class TestGenericStateBlock(object):
 
     @pytest.mark.unit
     def test_flows(self, frame):
-
         # Need to set the material flow basis for this test
         def set_flow_basis():
             return MaterialFlowBasis.molar
