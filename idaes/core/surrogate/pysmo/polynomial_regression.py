@@ -439,6 +439,7 @@ class PolynomialRegression:
         self.fit_status = None
 
     def training_test_data_creation(self, additional_features=None):
+
         """
 
         The training_test_data_creation splits data into training and test data sets.
@@ -1756,6 +1757,7 @@ class PolynomialRegression:
         print(s)
 
     def _repr_pretty_(self, p, cycle=False):
+
         s = self._report()
         p.text(s)
 

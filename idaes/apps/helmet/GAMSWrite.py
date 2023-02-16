@@ -610,6 +610,7 @@ def writeDerivatives(props):
         textFile.write("CPvecCV(CP(i),j) = -t(j)*(t(j)-1);\n")
 
     if "SND" in props:
+
         textFile.write("parameter SNDvecA(i,jl), SNDvecB(i,jl), SNDvecCV(i,jl);\n\n")
 
         textFile.write("SNDvecA(SND(i),'0')= 1;\n")

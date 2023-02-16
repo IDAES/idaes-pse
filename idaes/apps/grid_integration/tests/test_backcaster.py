@@ -134,6 +134,7 @@ def test_create_backcaster_with_non_24_entries(
 
 @pytest.mark.unit
 def test_forecast_real_time_prices(base_backcaster):
+
     n_samples = 3
     horizon = 4
 
@@ -151,6 +152,7 @@ def test_forecast_real_time_prices(base_backcaster):
 
 @pytest.mark.unit
 def test_forecast_day_ahead_prices(base_backcaster):
+
     n_samples = 2
     horizon = 48
 
@@ -166,6 +168,7 @@ def test_forecast_day_ahead_prices(base_backcaster):
 
 @pytest.mark.unit
 def test_forecast_day_ahead_and_real_time_prices(base_backcaster):
+
     (
         da_result_forecasts,
         rt_forecasts,
@@ -193,6 +196,7 @@ def test_forecast_day_ahead_and_real_time_prices(base_backcaster):
 
 @pytest.mark.unit
 def test_forecast_nonexistent_bus_prices(base_backcaster):
+
     wrong_bus = "test_bussss"
 
     n_samples = 3
@@ -231,6 +235,7 @@ class MockPrescientHourlyStats:
 
 @pytest.mark.unit
 def test_fetch_hourly_stats_from_prescient(base_backcaster, historical_rt_prices):
+
     prescient_hourly_stats = MockPrescientHourlyStats({"test_bus": 15})
     base_backcaster.fetch_hourly_stats_from_prescient(prescient_hourly_stats)
 
@@ -265,6 +270,7 @@ def test_fetch_hourly_stats_from_prescient(base_backcaster, historical_rt_prices
 def test_fetch_hourly_stats_from_prescient_greater_than_max_historical_days(
     base_backcaster, historical_rt_prices
 ):
+
     days = 8
     target_lmp = []
     for day in range(days):
@@ -302,6 +308,7 @@ class MockPrescientRucPlan:
 
 @pytest.mark.unit
 def test_fetch_day_ahead_stats_from_prescient(base_backcaster, historical_da_prices):
+
     for i in range(base_backcaster.max_historical_days + 1):
         da_price = {"test_bus": [i] * 24}
         day_ahead_result = MockPrescientRucPlan(da_price)

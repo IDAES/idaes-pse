@@ -64,6 +64,7 @@ def data_validation():
 
 @pytest.mark.unit
 def test_scatter2D_pysmo_poly(pysmo_poly_surrogate, data_validation):
+
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
         # being used by another process' could occur if an internal error
@@ -81,6 +82,7 @@ def test_scatter2D_pysmo_poly(pysmo_poly_surrogate, data_validation):
 
 @pytest.mark.unit
 def test_scatter3D_pysmo_poly(pysmo_poly_surrogate, data_validation):
+
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
         # being used by another process' could occur if an internal error
@@ -98,6 +100,7 @@ def test_scatter3D_pysmo_poly(pysmo_poly_surrogate, data_validation):
 
 @pytest.mark.unit
 def test_parity_pysmo_poly(pysmo_poly_surrogate, data_validation):
+
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
         # being used by another process' could occur if an internal error
@@ -115,6 +118,7 @@ def test_parity_pysmo_poly(pysmo_poly_surrogate, data_validation):
 
 @pytest.mark.unit
 def test_residual_pysmo_poly(pysmo_poly_surrogate, data_validation):
+
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
         # being used by another process' could occur if an internal error
@@ -132,6 +136,7 @@ def test_residual_pysmo_poly(pysmo_poly_surrogate, data_validation):
 
 @pytest.mark.unit
 def test_scatter2D_noPDF_pysmo_poly(pysmo_poly_surrogate, data_validation):
+
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
         # being used by another process' could occur if an internal error
@@ -147,6 +152,7 @@ def test_scatter2D_noPDF_pysmo_poly(pysmo_poly_surrogate, data_validation):
 
 @pytest.mark.unit
 def test_scatter3D_noPDF_pysmo_poly(pysmo_poly_surrogate, data_validation):
+
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
         # being used by another process' could occur if an internal error
@@ -162,6 +168,7 @@ def test_scatter3D_noPDF_pysmo_poly(pysmo_poly_surrogate, data_validation):
 
 @pytest.mark.unit
 def test_parity_noPDF_pysmo_poly(pysmo_poly_surrogate, data_validation):
+
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
         # being used by another process' could occur if an internal error
@@ -177,6 +184,7 @@ def test_parity_noPDF_pysmo_poly(pysmo_poly_surrogate, data_validation):
 
 @pytest.mark.unit
 def test_residual_noPDF_pysmo_poly(pysmo_poly_surrogate, data_validation):
+
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
         # being used by another process' could occur if an internal error

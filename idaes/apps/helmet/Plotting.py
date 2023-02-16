@@ -742,6 +742,7 @@ def sseCP(CP1=[], CP1Vals=[], saveFig=False, show=True, report=False):
         print(stats.ttest_1samp(residuals, 0))
 
     if show or saveFig:
+
         fig2 = plt.figure()
         fig2.suptitle("%s Isobaric Heat Capacity Regression" % molecule)
 

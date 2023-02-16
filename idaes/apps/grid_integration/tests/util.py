@@ -29,6 +29,7 @@ class TestingModel:
     """
 
     def __init__(self, model_data):
+
         """
         Initializes the class object by building the thermal generator model.
 
@@ -60,6 +61,7 @@ class TestingModel:
         return self._model_data
 
     def populate_model(self, b, horizon):
+
         """
         This function builds the model for a thermal generator.
 
@@ -123,6 +125,7 @@ class TestingModel:
         return
 
     def update_model(self, b, implemented_power_output):
+
         """
         This method updates the parameters in the model based on
         the implemented power outputs, shut down and start up events.
@@ -141,6 +144,7 @@ class TestingModel:
 
     @staticmethod
     def get_implemented_profile(b, last_implemented_time_step):
+
         """
         This method gets the implemented variable profiles in the last optimization
         solve.
@@ -164,6 +168,7 @@ class TestingModel:
 
     @staticmethod
     def get_last_delivered_power(b, last_implemented_time_step):
+
         """
         Returns the last delivered power output.
 
@@ -177,6 +182,7 @@ class TestingModel:
         return pyo.value(b.P_T[last_implemented_time_step])
 
     def record_results(self, b, date=None, hour=None, **kwargs):
+
         """
         Record the operations stats for the model.
 
@@ -194,6 +200,7 @@ class TestingModel:
         df_list = []
 
         for t in b.HOUR:
+
             result_dict = {}
             result_dict["Generator"] = self.generator
             result_dict["Date"] = date
@@ -235,6 +242,7 @@ class TestingModel:
         return
 
     def write_results(self, path):
+
         """
         This methods writes the saved operation stats into an csv file.
 
@@ -335,6 +343,7 @@ solver = pyo.SolverFactory("cbc")
 
 
 def make_testing_forecaster():
+
     """
     Create a forecaster for testing.
 
@@ -371,6 +380,7 @@ def make_testing_tracker():
 
 
 def make_testing_bidder():
+
     """
     Create a bidder for testing.
 
@@ -397,6 +407,7 @@ def make_testing_bidder():
 
 
 def make_testing_selfscheduler():
+
     """
     Create a self-scheduler for testing.
 

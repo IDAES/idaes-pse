@@ -307,6 +307,7 @@ class ProcessBlockData(_BlockData):
                 pass
 
     def report(self, time_point=0, dof=False, ostream=None, prefix=""):
+
         time_point = float(time_point)
 
         if ostream is None:

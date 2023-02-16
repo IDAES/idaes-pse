@@ -13,6 +13,7 @@
 
 
 def convert_marginal_costs_to_actual_costs(power_marginal_cost_pairs):
+
     """
     Convert a list of power and marginal cost pairs to a list of power and actual
     cost pairs.
@@ -33,6 +34,7 @@ def convert_marginal_costs_to_actual_costs(power_marginal_cost_pairs):
     pre_cost = 0
 
     for power, marginal_cost in power_marginal_cost_pairs:
+
         delta_p = power - pre_power
         cur_cost = pre_cost + marginal_cost * delta_p
         actual_costs.append((power, cur_cost))

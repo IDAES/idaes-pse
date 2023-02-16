@@ -38,6 +38,7 @@ class TestMissingModel:
     }
 
     def __init__(self, missing_method=None, missing_attr=None):
+
         """
         Constructs a model class without the specified missing methods and/or
         missing attributes.
@@ -61,6 +62,7 @@ real_time_horizon = horizon
 
 @pytest.mark.unit
 def test_model_object_missing_methods():
+
     solver = pyo.SolverFactory("cbc")
     forecaster = TestingForecaster(prediction=30)
 
@@ -83,6 +85,7 @@ def test_model_object_missing_methods():
 
 @pytest.mark.unit
 def test_model_object_missing_attr():
+
     solver = pyo.SolverFactory("cbc")
     forecaster = TestingForecaster(prediction=30)
 
@@ -105,6 +108,7 @@ def test_model_object_missing_attr():
 
 @pytest.mark.unit
 def test_n_scenario_checker():
+
     solver = pyo.SolverFactory("cbc")
     forecaster = TestingForecaster(prediction=30)
     bidding_model_object = TestingModel(model_data=testing_model_data)
@@ -134,6 +138,7 @@ def test_n_scenario_checker():
 
 @pytest.mark.unit
 def test_solver_checker():
+
     forecaster = TestingForecaster(prediction=30)
     bidding_model_object = TestingModel(model_data=testing_model_data)
 
@@ -153,6 +158,7 @@ def test_solver_checker():
 
 @pytest.fixture
 def bidder_object():
+
     solver = pyo.SolverFactory("cbc")
     forecaster = TestingForecaster(prediction=30)
 
@@ -174,6 +180,7 @@ def bidder_object():
     not prescient_avail, reason="Prescient (optional dependency) not available"
 )
 def test_compute_DA_bids(bidder_object):
+
     marginal_cost = bidder_object.bidding_model_object.marginal_cost
     gen = bidder_object.generator
     default_bids = bidder_object.bidding_model_object.model_data.p_cost
@@ -215,6 +222,7 @@ def test_compute_DA_bids(bidder_object):
 
     expected_bids = {}
     for t in range(horizon):
+
         expected_bids[t] = {}
         expected_bids[t][gen] = {
             "p_min": pmin,
@@ -291,6 +299,7 @@ def test_compute_RT_bids(bidder_object):
 
 @pytest.fixture
 def bidder_object_pcost():
+
     solver = pyo.SolverFactory("cbc")
     forecaster = TestingForecaster(prediction=30)
 
