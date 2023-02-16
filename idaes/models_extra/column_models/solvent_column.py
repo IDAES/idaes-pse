@@ -396,7 +396,7 @@ and used when constructing these
             initialize=0.9,
             units=lunits("length") ** 2 / lunits("length") ** 3,
             # TODO this description is wrong
-            doc="Packing interfacial area per unit of column volume",
+            doc="Interface area between vapor and liquid per unit of column volume",
         )
 
         # Liquid and vapor holdups
