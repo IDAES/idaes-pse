@@ -253,7 +253,7 @@ see property package for documentation.}""",
                 self.control_volume,
                 port=self.reflux,
                 phase=self._liquid_set,
-                side_sf=(self.reflux_split_fraction),
+                side_sf=self.reflux_split_fraction,
                 equipmentType=CondenserType.totalCondenser,
             )
 
@@ -261,7 +261,7 @@ see property package for documentation.}""",
                 self.control_volume,
                 port=self.distillate,
                 phase=self._liquid_set,
-                side_sf=(1 - self.reflux_split_fraction),
+                side_sf=1 - self.reflux_split_fraction,
                 equipmentType=CondenserType.totalCondenser,
             )
 
@@ -302,7 +302,7 @@ see property package for documentation.}""",
                 self.control_volume,
                 port=self.reflux,
                 phase=self._liquid_set,
-                side_sf=(self.reflux_split_fraction),
+                side_sf=self.reflux_split_fraction,
                 equipmentType=CondenserType.partialCondenser,
             )
 
@@ -310,13 +310,15 @@ see property package for documentation.}""",
                 self.control_volume,
                 port=self.distillate,
                 phase=self._liquid_set,
-                side_sf=(1 - self.reflux_split_fraction),
+                side_sf=1 - self.reflux_split_fraction,
                 equipmentType=CondenserType.partialCondenser,
             )
             make_phase_split(
                 self.control_volume,
                 port=self.vapor_outlet,
                 phase=self._vapor_set,
+                # Split fraction set to 1 as all vapor from condenser
+                # returns to column
                 side_sf=1,
                 equipmentType=CondenserType.partialCondenser,
             )
