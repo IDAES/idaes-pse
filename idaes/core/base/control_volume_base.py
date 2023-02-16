@@ -18,6 +18,7 @@ Base class for control volumes
 from enum import Enum
 
 # Import Pyomo libraries
+from pyomo.environ import value
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
@@ -960,3 +961,81 @@ have a config block which derives from CONFIG_Base,
                     "the IDAES developers with this bug.".format(self.name)
                 )
         return rep_blk
+
+    def _estimate_next_state(self, state1, state2, index, always_estimate=False):
+        """
+        Common method to estimate values for state variables in one state based on
+        previous state. This method will not change values of fixed variables.
+        Works for both 0D and 1D control volumes.
+
+        Args:
+            state1 - StateBlockData to use as the source for values
+            state2 - StateBlockData on which to set estimated values
+            index - index to use for states and other indexed CV level variables
+            always_estimate - bool indicating whether method should overwrite existing values
+                on unfixed variables
+
+        Returns:
+            None
+
+        """
+        state_vars = state2.define_state_vars()
+
+        for v2 in state_vars.values():
+            v1 = state1.find_component(v2.parent_component().local_name)
+            if v2.is_indexed():
+                for k in v2.keys():
+                    self._estimate_state_var(v1[k], v2[k], index, always_estimate)
+            else:
+                self._estimate_state_var(v1, v2, index, always_estimate)
+
+    def _estimate_state_var(self, v1, v2, index, always_estimate=False):
+        """
+        Method to set value of a given state variable (scalar or indexed) based
+        on value from another state variable.
+
+        This method contains some logic for incorporating control volume level
+        transfer terms into the estimates. Transfer terms supported include deltaT,
+        deltaP, heat and work. Material flow and concentration terms do not include
+        additional terms due to complexity in determining how to interpret these.
+
+        Args:
+            v1 - state variable to use as source for values
+            v2 - state variable to set estimate values on
+            index - index for getting values from control volume level terms
+            always_estimate - bool indicating whether method should overwrite existing values
+                on unfixed variables
+
+        Returns:
+            None
+
+        """
+        if v2.fixed:
+            # Do not touch fixed Vars
+            pass
+        elif v2.value is not None and not always_estimate:
+            # Var has a value and we are not always estimating - do nothing
+            pass
+        else:
+            # Estimate value for v2 from v1
+            # If no better guess, use v1
+            v2val = v1
+
+            # Check for known special cases
+            n = v2.local_name
+            # Material flows are too hard to deal with generically, as they
+            # can be defined as bilinear terms, can have various indexing and
+            # can be on different bases.
+            # Similarly, mass and mole fractions are hard to deal with.
+            # Energy terms also have problems, as they are defined on an intensive
+            # basis, so we would need to convert heat and work
+            if n.startswith("pressure"):
+                # Pressure, see if there is a fixed deltaP
+                if hasattr(self, "deltaP") and self.deltaP[index].fixed:
+                    v2val = value(v1 + self.deltaP[index])
+            elif n.startswith("temperature"):
+                # Temperature, see if there is a fixed deltaT
+                if hasattr(self, "deltaT") and self.deltaT[index].fixed:
+                    v2val = value(v1 + self.deltaT[index])
+
+            v2.set_value(v2val)
