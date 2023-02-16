@@ -82,7 +82,7 @@ kwargs = dict(
         "nbformat",
         "numpy",
         "networkx",
-        "omlt==0.3.1",  # fix the version for now as package evolves
+        "omlt==1.1",  # fix the version for now as package evolves
         "pandas<1.5",
         "pint",
         "psutil",
@@ -111,7 +111,7 @@ kwargs = dict(
         "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
         "optional": [
             "tensorflow",  # idaes.core.surrogate.keras_surrogate
-            "gridx-prescient>=2.1",  # idaes.tests.prescient
+            "gridx-prescient>=2.2.1",  # idaes.tests.prescient
             # A Lee 11-Jan-22: no precompiled version of CoolProp available for Pyhton 3.9
             "coolprop; python_version < '3.9'",  # idaes.generic_models.properties.general.coolprop
         ],
