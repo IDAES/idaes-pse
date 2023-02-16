@@ -68,6 +68,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         """
         Build method for ControlVolume0DBlock blocks.
 
+        Args:
+            None
+
         Returns:
             None
         """
@@ -102,12 +105,12 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         Args:
             information_flow: a FlowDirection Enum indicating whether
-                               information flows from inlet-to-outlet or
-                               outlet-to-inlet
+                information flows from inlet-to-outlet or outlet-to-inlet
             has_phase_equilibrium: indicates whether equilibrium calculations
-                                    will be required in state blocks
+                will be required in state blocks
             package_arguments: dict-like object of arguments to be passed to
-                                state blocks as construction arguments
+                state blocks as construction arguments
+
         Returns:
             None
         """
@@ -157,9 +160,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         Args:
             has_equilibrium: indicates whether equilibrium calculations
-                              will be required in reaction block
+                will be required in reaction block
             package_arguments: dict-like object of arguments to be passed to
-                                reaction block as construction arguments
+                reaction block as construction arguments
 
         Returns:
             None
@@ -361,7 +364,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 pc_set,
                 domain=Reals,
                 initialize=0.0,
-                doc="Amount of component generated in " "unit by kinetic reactions",
+                doc="Amount of component generated in unit by kinetic reactions",
                 units=rxn_flow_units,
             )  # use reaction package flow basis
 
@@ -752,23 +755,21 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         Args:
             has_rate_reactions: whether default generation terms for rate
-                    reactions should be included in material balances
+                reactions should be included in material balances
             has_equilibrium_reactions: whether generation terms should for
-                    chemical equilibrium reactions should be included in
-                    material balances
+                chemical equilibrium reactions should be included in
+                material balances
             has_phase_equilibrium: whether generation terms should for phase
-                    equilibrium behaviour should be included in material
-                    balances
+                equilibrium behaviour should be included in material
+                balances
             has_mass_transfer: whether generic mass transfer terms should be
-                    included in material balances
+                included in material balances
             custom_molar_term: a Pyomo Expression representing custom terms to
-                    be included in material balances on a molar basis.
-                    Expression must be indexed by time, phase list and
-                    component list
+                be included in material balances on a molar basis.
+                Expression must be indexed by time, phase list and component list
             custom_mass_term: a Pyomo Expression representing custom terms to
-                    be included in material balances on a mass basis.
-                    Expression must be indexed by time, phase list and
-                    component list
+                be included in material balances on a mass basis.
+                Expression must be indexed by time, phase list and component list
 
         Returns:
             Constraint object representing material balances
@@ -799,24 +800,21 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         and component.
 
         Args:
-            has_rate_reactions - whether default generation terms for rate
-                    reactions should be included in material balances
-            has_equilibrium_reactions - whether generation terms should for
-                    chemical equilibrium reactions should be included in
-                    material balances
-            has_phase_equilibrium - whether generation terms should for phase
-                    equilibrium behaviour should be included in material
-                    balances
-            has_mass_transfer - whether generic mass transfer terms should be
-                    included in material balances
-            custom_molar_term - a Pyomo Expression representing custom terms to
-                    be included in material balances on a molar basis.
-                    Expression must be indexed by time, phase list and
-                    component list
-            custom_mass_term - a Pyomo Expression representing custom terms to
-                    be included in material balances on a mass basis.
-                    Expression must be indexed by time, phase list and
-                    component list
+            has_rate_reactions: whether default generation terms for rate
+                reactions should be included in material balances
+            has_equilibrium_reactions: whether generation terms should for
+                chemical equilibrium reactions should be included in
+                material balances
+            has_phase_equilibrium: whether generation terms should for phase
+                equilibrium behaviour should be included in material balances
+            has_mass_transfer: whether generic mass transfer terms should be
+                included in material balances
+            custom_molar_term: a Pyomo Expression representing custom terms to
+                be included in material balances on a molar basis.
+                Expression must be indexed by time, phase list and component list
+            custom_mass_term: a Pyomo Expression representing custom terms to
+                be included in material balances on a mass basis.
+                Expression must be indexed by time, phase list and component list
 
         Returns:
             Constraint object representing material balances
@@ -845,20 +843,20 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         This method constructs a set of 0D element balances indexed by time.
 
         Args:
-            has_rate_reactions - whether default generation terms for rate
-                    reactions should be included in material balances
-            has_equilibrium_reactions - whether generation terms should for
-                    chemical equilibrium reactions should be included in
-                    material balances
-            has_phase_equilibrium - whether generation terms should for phase
-                    equilibrium behaviour should be included in material
-                    balances
-            has_mass_transfer - whether generic mass transfer terms should be
-                    included in material balances
-            custom_elemental_term - a Pyomo Expression representing custom
-                    terms to be included in material balances on a molar
-                    elemental basis. Expression must be indexed by time and
-                    element list
+            has_rate_reactions: whether default generation terms for rate
+                reactions should be included in material balances
+            has_equilibrium_reactions: whether generation terms should for
+                chemical equilibrium reactions should be included in
+                material balances
+            has_phase_equilibrium: whether generation terms should for phase
+                equilibrium behaviour should be included in material
+                balances
+            has_mass_transfer: whether generic mass transfer terms should be
+                included in material balances
+            custom_elemental_term: a Pyomo Expression representing custom
+                terms to be included in material balances on a molar
+                elemental basis. Expression must be indexed by time and
+                element list
 
         Returns:
             Constraint object representing material balances
@@ -1104,6 +1102,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         return self.element_balances
 
     def add_total_material_balances(self, *args, **kwargs):
+        """Not Supported"""
         raise BalanceTypeNotSupportedError(
             "{} OD control volumes do not support "
             "add_total_material_balances (yet).".format(self.name)
@@ -1122,19 +1121,19 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         and phase.
 
         Args:
-            has_heat_of_reaction - whether terms for heat of reaction should
-                    be included in enthalpy balance
-            has_heat_transfer - whether terms for heat transfer should be
-                    included in enthalpy balances
-            has_work_transfer - whether terms for work transfer should be
-                    included in enthalpy balances
-            has_enthalpy_transfer - whether terms for enthalpy transfer due to
-                    mass transfer should be included in enthalpy balance. This
-                    should generally be the same as the has_mass_transfer
-                    argument in the material balance methods
-            custom_term - a Python method which returns Pyomo expressions representing
-                    custom terms to be included in enthalpy balances.
-                    Method should accept time and phase list as arguments.
+            has_heat_of_reaction: whether terms for heat of reaction should
+                be included in enthalpy balance
+            has_heat_transfer: whether terms for heat transfer should be
+                included in enthalpy balances
+            has_work_transfer: whether terms for work transfer should be
+                included in enthalpy balances
+            has_enthalpy_transfer: whether terms for enthalpy transfer due to
+                mass transfer should be included in enthalpy balance. This
+                should generally be the same as the has_mass_transfer
+                argument in the material balance methods
+            custom_term: a Python method which returns Pyomo expressions representing
+                custom terms to be included in enthalpy balances.
+                Method should accept time and phase list as arguments.
 
         Returns:
             Constraint object representing enthalpy balances
@@ -1309,18 +1308,21 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         return self.enthalpy_balances
 
     def add_phase_enthalpy_balances(self, *args, **kwargs):
+        """Not Supported"""
         raise BalanceTypeNotSupportedError(
             "{} OD control volumes do not support "
             "add_phase_enthalpy_balances.".format(self.name)
         )
 
     def add_phase_energy_balances(self, *args, **kwargs):
+        """Not Supported"""
         raise BalanceTypeNotSupportedError(
             "{} OD control volumes do not support "
             "add_phase_energy_balances.".format(self.name)
         )
 
     def add_total_energy_balances(self, *args, **kwargs):
+        """Not Supported"""
         raise BalanceTypeNotSupportedError(
             "{} OD control volumes do not support "
             "add_total_energy_balances.".format(self.name)
@@ -1369,18 +1371,21 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         return self.pressure_balance
 
     def add_phase_pressure_balances(self, *args, **kwargs):
+        """Not Supported"""
         raise BalanceTypeNotSupportedError(
             "{} OD control volumes do not support "
             "add_phase_pressure_balances.".format(self.name)
         )
 
     def add_phase_momentum_balances(self, *args, **kwargs):
+        """Not Supported"""
         raise BalanceTypeNotSupportedError(
             "{} OD control volumes do not support "
             "add_phase_momentum_balances.".format(self.name)
         )
 
     def add_total_momentum_balances(self, *args, **kwargs):
+        """Not Supported"""
         raise BalanceTypeNotSupportedError(
             "{} OD control volumes do not support "
             "add_total_momentum_balances.".format(self.name)
@@ -1428,6 +1433,15 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     "ReactionBlock class.".format(blk.name)
                 )
 
+    def estimate_outlet_state(self, always_estimate=False):
+        for t in self.flowsheet().time:
+            self._estimate_next_state(
+                self.properties_in[t],
+                self.properties_out[t],
+                index=t,
+                always_estimate=always_estimate,
+            )
+
     def initialize(
         blk,
         state_args=None,
@@ -1464,19 +1478,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         """
         # Get inlet state if not provided
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="control_volume")
-        if state_args is None:
-            state_args = {}
-            state_dict = blk.properties_in[
-                blk.flowsheet().time.first()
-            ].define_port_members()
-
-            for k in state_dict.keys():
-                if state_dict[k].is_indexed():
-                    state_args[k] = {}
-                    for m in state_dict[k].keys():
-                        state_args[k][m] = state_dict[k][m].value
-                else:
-                    state_args[k] = state_dict[k].value
 
         # Initialize state blocks
         in_flags = blk.properties_in.initialize(
@@ -1486,6 +1487,11 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             hold_state=hold_state,
             state_args=state_args,
         )
+
+        if state_args is None:
+            # If no initial guesses provided, estimate values for states
+            blk.estimate_outlet_state(always_estimate=True)
+
         out_flags = blk.properties_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
