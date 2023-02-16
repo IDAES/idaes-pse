@@ -456,6 +456,7 @@ class _GasPhaseStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Initialize values
         for k in blk.keys():
+
             if hasattr(blk[k], "mw_eqn"):
                 calculate_variable_from_constraint(blk[k].mw, blk[k].mw_eqn)
 
@@ -491,6 +492,7 @@ class _GasPhaseStateBlock(StateBlock):
                 )
 
             for j in blk[k]._params.component_list:
+
                 if hasattr(blk[k], "comp_conc_eqn"):
                     calculate_variable_from_constraint(
                         blk[k].dens_mol_comp[j], blk[k].comp_conc_eqn[j]

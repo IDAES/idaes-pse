@@ -467,6 +467,7 @@ see property package for documentation.}""",
         optarg=None,
         outlvl=idaeslog.NOTSET,
     ):
+
         # TODO:
         # 1. Initialization for dynamic mode. Currently not supported.
         # 2. Handle unfixed side split fraction vars
@@ -594,6 +595,7 @@ see property package for documentation.}""",
         state_args_mixed = {}
 
         if self.config.is_feed_tray:
+
             # if feed tray, initialize the mixed state block at
             # the same condition.
             state_args_mixed = state_args_feed

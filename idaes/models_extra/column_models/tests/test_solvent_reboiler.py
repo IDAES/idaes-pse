@@ -82,6 +82,7 @@ class TestAbsorberVaporFlow(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, model):
+
         assert hasattr(model.fs.unit, "inlet")
         assert len(model.fs.unit.inlet.vars) == 4
         assert hasattr(model.fs.unit.inlet, "flow_mol")
@@ -287,6 +288,7 @@ class TestAbsorberHeatDuty(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, model):
+
         assert hasattr(model.fs.unit, "inlet")
         assert len(model.fs.unit.inlet.vars) == 4
         assert hasattr(model.fs.unit.inlet, "flow_mol")

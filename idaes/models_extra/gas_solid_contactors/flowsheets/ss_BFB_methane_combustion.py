@@ -51,6 +51,7 @@ from idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reductio
 
 # -----------------------------------------------------------------------------
 def main():
+
     # ---------------------------------------------------------------------
     # Build model
 

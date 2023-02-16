@@ -344,6 +344,7 @@ see property package for documentation.}""",
         )
 
     def _make_stripping_arcs(self):
+
         self._stripping_stream_index = RangeSet(
             self.config.feed_tray_location + 1, self.config.number_of_trays - 1
         )
@@ -368,6 +369,7 @@ see property package for documentation.}""",
         )
 
     def _make_feed_arcs(self):
+
         self.feed_liq_in = Arc(
             source=self.rectification_section[
                 self.config.feed_tray_location - 1
@@ -395,6 +397,7 @@ see property package for documentation.}""",
         )
 
     def _make_condenser_arcs(self):
+
         self.condenser_vap_in = Arc(
             source=self.rectification_section[1].vap_out,
             destination=self.condenser.inlet,
@@ -406,6 +409,7 @@ see property package for documentation.}""",
         )
 
     def _make_reboiler_arcs(self):
+
         self.reboiler_liq_in = Arc(
             source=self.stripping_section[self.config.number_of_trays].liq_out,
             destination=self.reboiler.inlet,
@@ -425,6 +429,7 @@ see property package for documentation.}""",
         optarg=None,
         outlvl=idaeslog.NOTSET,
     ):
+
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 

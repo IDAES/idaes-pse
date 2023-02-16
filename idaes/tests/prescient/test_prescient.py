@@ -97,6 +97,7 @@ class Test5Bus:
         output_dir: Path,
         name: str = "overall_simulation_output.csv",
     ) -> pd.DataFrame:
+
         path = output_dir / name
         return pd.read_csv(path)
 

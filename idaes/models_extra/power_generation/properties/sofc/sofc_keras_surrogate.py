@@ -152,6 +152,7 @@ class SofcSurrogateData(UnitModelBlockData):
         )
 
     def initialize(self, outlvl=idaeslog.NOTSET, solver="ipopt", optarg={"tol": 1e-6}):
+
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         opt = SolverFactory(solver)
