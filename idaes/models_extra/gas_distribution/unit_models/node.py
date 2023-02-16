@@ -86,7 +86,7 @@ class PipelineNodeData(UnitModelBlockData):
         # model requires.
         #
         property_dict = property_package.get_metadata().properties
-        if "pressure" not in property_dict:
+        if not property_dict["pressure"].supported:
             raise ValueError(
                 "Property package supplied to pipeline must have a property "
                 "for 'pressure', which was not found in %s." % type(property_package)

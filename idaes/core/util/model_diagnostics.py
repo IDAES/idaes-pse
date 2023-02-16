@@ -11,11 +11,11 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-"""Degeneracy Hunter is a collection of utility functions to assist in mathematical
-modeling in Pyomo.
+"""
+This module contains a collection of tools for diagnosing modeling issues.
 """
 
-__author__ = "Alexander Dowling, Douglas Allan"
+__author__ = "Alexander Dowling, Douglas Allan, Andrew Lee"
 
 
 from operator import itemgetter
@@ -23,6 +23,7 @@ from operator import itemgetter
 import pyomo.environ as pyo
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+from pyomo.core.base.block import _BlockData
 import numpy as np
 from scipy.linalg import svd
 from scipy.sparse.linalg import svds, norm
@@ -33,13 +34,21 @@ from idaes.core.util.model_statistics import (
     variables_near_bounds_set,
 )
 import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 
 class DegeneracyHunter:
+    """
+    Degeneracy Hunter is a collection of utility functions to assist in mathematical
+    modeling in Pyomo.
+    """
+
     def __init__(self, block_or_jac, solver=None):
         """Initialize Degeneracy Hunter Object
 
-        Arguments:
+        Args:
             block_or_jac: Pyomo model or Jacobian
             solver: Pyomo SolverFactory
 
@@ -117,18 +126,23 @@ class DegeneracyHunter:
         """
         Method to return a ComponentSet of all Constraint components with a
         residual greater than a given threshold which appear in a model.
+
         Args:
-            block : model to be studied
-            tol : residual threshold for inclusion in ComponentSet
-            print_level: controls to extend of output to the screen
-                0: nothing printed
-                1: only name of constraint printed
-                2: each constraint is pretty printed
-                3: pretty print each constraint, then print value for included variable
+            block: model to be studied
+            tol: residual threshold for inclusion in ComponentSet
+            print_level: controls to extend of output to the screen:
+
+                * 0 - nothing printed
+                * 1 - only name of constraint printed
+                * 2 - each constraint is pretty printed
+                * 3 - pretty print each constraint, then print value for included variable
+
             sort: sort residuals in descending order for printing
+
         Returns:
             A ComponentSet including all Constraint components with a residual
             greater than tol which appear in block
+
         """
 
         if print_level > 0:
@@ -171,16 +185,19 @@ class DegeneracyHunter:
     ):
         """
         Return a ComponentSet of all variables within a tolerance of their bounds.
+
         Args:
-            block : model to be studied
-            tol : residual threshold for inclusion in ComponentSet (default = 1e-5)
+            block: model to be studied
+            tol: residual threshold for inclusion in ComponentSet (default = 1e-5)
             relative : Boolean, use relative tolerance (default = False)
             skip_lb: Boolean to skip lower bound (default = False)
             skip_ub: Boolean to skip upper bound (default = False)
             verbose: Boolean to toggle on printing to screen (default = True)
+
         Returns:
             A ComponentSet including all Constraint components with a residual
             greater than tol which appear in block
+
         """
         vnbs = variables_near_bounds_set(self.block, tol, relative, skip_lb, skip_ub)
 
@@ -208,7 +225,7 @@ class DegeneracyHunter:
         Args:
             tol: Tolerance for smallest singular value (default=1E-6)
             dense: If True, use a dense svd to perform singular value analysis,
-            which tends to be slower but more reliable than svds
+                which tends to be slower but more reliable than svds
 
         Returns:
             Number of singular values less than tolerance (-1 means error)
@@ -248,12 +265,13 @@ class DegeneracyHunter:
         """
         Prepare MILP to compute the irreducible degenerate set
 
-        Argument:
+        Args:
             jac_eq Jacobian of equality constraints [matrix]
             M: largest value for nu
 
         Returns:
             m_dh: Pyomo model to calculate irreducible degenerate sets
+
         """
 
         n_eq = jac_eq.shape[0]
@@ -309,13 +327,14 @@ class DegeneracyHunter:
         """
         Prepare MILP to find candidate equations for consider for IDS
 
-        Argument:
+        Args:
             jac_eq Jacobian of equality constraints [matrix]
             M: maximum value for nu
             m_small: smallest value for nu to be considered non-zero
 
         Returns:
             m_fc: Pyomo model to find candidates
+
         """
 
         n_eq = jac_eq.shape[0]
@@ -426,7 +445,7 @@ class DegeneracyHunter:
         """Solve MILP to check if equation 'c' is a significant component in an irreducible
         degenerate set
 
-        Arguments:
+        Args:
             ids_milp: Pyomo model to calculate IDS
             solver: Pyomo solver (must support MILP)
             c: index for the constraint to consider [integer]
@@ -435,6 +454,7 @@ class DegeneracyHunter:
 
         Returns:
             ids: either None or dictionary containing the IDS
+
         """
 
         # Fix weight on candidate equation
@@ -478,6 +498,7 @@ class DegeneracyHunter:
         Returns:
             candidate_eqns: either None or list of indicies
             degenerate_set: either None or dictionary containing the degenerate_set
+
         """
 
         results = solver.solve(candidates_milp, tee=tee)
@@ -513,10 +534,10 @@ class DegeneracyHunter:
         Args:
             n_sv: number of smallest singular values to compute
             dense: If True, use a dense svd to perform singular value analysis,
-            which tends to be slower but more reliable than svds
+                which tends to be slower but more reliable than svds
 
         Returns:
-            Nothing
+            None
 
         Actions:
             Stores SVD results in object
@@ -575,15 +596,14 @@ class DegeneracyHunter:
 
         Args:
             n_calc: The singular value, as ordered from least to greatest
-            starting from 1, to calculate associated constraints and variables
+                starting from 1, to calculate associated constraints and variables
             tol: Size below which to ignore constraints and variables in
-            the singular vector
+                the singular vector
             dense: If True, use a dense svd to perform singular value analysis,
-            which tends to be slower but more reliable than svds
+                which tends to be slower but more reliable than svds
 
-        Returns
-        -------
-        None.
+        Returns:
+            None
 
         """
         if self.s is None:
@@ -694,10 +714,152 @@ class DegeneracyHunter:
     # Note: This makes sense as a static method
     @staticmethod
     def print_variable_bounds(v):
-        """Print variable, bounds, and value
-        Argument:
+        """
+        Print variable, bounds, and value
+
+        Args:
             v: variable
-        Return:
-            nothing
+
+        Returns:
+            None
+
         """
         print(v, "\t\t", v.lb, "\t", v.value, "\t", v.ub)
+
+
+def get_valid_range_of_component(component):
+    """
+    Return the valid range for a component as specified in the model metadata.
+
+    Args:
+        component: Pyomo component to get valid range for
+
+    Returns:
+        valid range for component if found. This will either be a 2-tuple (low, high) or None.
+
+    Raises:
+        AttributeError if metadata object not found
+
+    """
+    # Get metadata for component
+    parent = component.parent_block()
+
+    try:
+        if hasattr(parent, "params"):
+            meta = parent.params.get_metadata().properties
+        else:
+            meta = parent.get_metadata().properties
+    except AttributeError:
+        raise AttributeError(f"Could not find metadata for component {component.name}")
+
+    # Get valid range from metadata
+    try:
+        n, i = meta.get_name_and_index(component.parent_component().local_name)
+        cmeta = getattr(meta, n)[i]
+        valid_range = cmeta.valid_range
+    except ValueError:
+        # Assume no metadata for this property
+        _log.debug(f"No metadata entry for component {component.name}; returning None")
+        valid_range = None
+
+    return valid_range
+
+
+def set_bounds_from_valid_range(component, descend_into=True):
+    """
+    Set bounds on Pyomo components based on valid range recorded in model metadata.
+    WARNING - this function will overwrite any bounds already set on the component/model.
+
+    This function will iterate over component data objects in Blocks and indexed components.
+
+    Args:
+        component: Pyomo component to set bounds on. This can be a Block, Var or Param.
+        descend_into: (optional) Whether to descend into components on child Blocks (default=True)
+
+    Returns:
+         None
+
+    """
+    if component.is_indexed():
+        for k in component:
+            set_bounds_from_valid_range(component[k])
+    elif isinstance(component, _BlockData):
+        for i in component.component_data_objects(
+            ctype=[pyo.Var, pyo.Param], descend_into=descend_into
+        ):
+            set_bounds_from_valid_range(i)
+    elif not hasattr(component, "bounds"):
+        raise TypeError(
+            f"Component {component.name} does not have bounds. Only Vars and Params have bounds."
+        )
+    else:
+        valid_range = get_valid_range_of_component(component)
+
+        if valid_range is None:
+            valid_range = (None, None)
+
+        component.setlb(valid_range[0])
+        component.setub(valid_range[1])
+
+
+def list_components_with_values_outside_valid_range(component, descend_into=True):
+    """
+    Return a list of component objects with values outside the valid range specified in the model
+    metadata.
+
+    This function will iterate over component data objects in Blocks and indexed components.
+
+    Args:
+        component: Pyomo component to search for component outside of range on.
+            This can be a Block, Var or Param.
+        descend_into: (optional) Whether to descend into components on child Blocks (default=True)
+
+    Returns:
+         list of component objects found with values outside the valid range.
+    """
+    comp_list = []
+
+    if component.is_indexed():
+        for k in component:
+            comp_list.extend(
+                list_components_with_values_outside_valid_range(component[k])
+            )
+    elif isinstance(component, _BlockData):
+        for i in component.component_data_objects(
+            ctype=[pyo.Var, pyo.Param], descend_into=descend_into
+        ):
+            comp_list.extend(list_components_with_values_outside_valid_range(i))
+    else:
+        valid_range = get_valid_range_of_component(component)
+
+        if valid_range is not None:
+            cval = pyo.value(component)
+            if cval is not None and (cval < valid_range[0] or cval > valid_range[1]):
+                comp_list.append(component)
+
+    return comp_list
+
+
+def ipopt_solve_halt_on_error(model, options=None):
+    """
+    Run IPOPT to solve model with debugging output enabled.
+
+    This function calls IPOPT to solve the model provided with settings
+    to halt on AMPL evaluation errors and report these with symbolic names.
+
+    Args:
+        model: Pyomo model to be solved.
+        options: solver options to be passed to IPOPT
+
+    Returns:
+        Pyomo solver results dict
+
+    """
+    if options is None:
+        options = {}
+
+    solver = pyo.SolverFactory("ipopt")
+    solver.options = options
+    solver.options["halt_on_ampl_error"] = "yes"
+
+    return solver.solve(model, tee=True, symbolic_solver_labels=True)

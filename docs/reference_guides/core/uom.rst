@@ -1,7 +1,9 @@
-Defining Units of Measurement
-=============================
+Unit Sets
+=========
 
-All property packages within IDAES are expected to define a metadata class as part of the package's ParameterBlock, which among other things contains a definition of the base units of measurement used by that property package. An example of defining the default units for a property package is shown below.
+All property packages within IDAES are expected to define a metadata class as part of the package's ParameterBlock, which among other things contains a definition of the base units of measurement used by that property package.  The definition of units of measurement is held wihin a `UnitSet` object that defines a number of common quantities of interest in process applications.
+
+An example of defining the default units for a property package is shown below.
 
 .. code-block:: python
 
@@ -22,12 +24,12 @@ Each property package can define a default units for 7 base quantities listed be
 * mass (kilograms)
 * amount of substance (mole)
 * temperature (Kelvin)
-* current (Watts)
+* current (Ampere)
 * luminous intensity (candela)
 
 Units must be defined using Pyomo's Units container (`from pyomo.environ import units`).
 
-Units of measurement are stored in a `UnitSet` object which uses these base units to derive the units of all other quantities that will be used in the property model and any unit operation that uses that property package. In order to avoid the need for unit conversion in all expressions, the IDAES Framework assumes that all quantities within the property package are based on the chosen set of base units. Parameters and correlations may be based on different sets of unit as necessary (e.g., from literature sources using different base units), however the final quantity must be converted to the set of base units defined in the metadata.
+Units of measurement are stored in a `UnitSet` object that uses these base units to derive the units of all other quantities that will be used in the property model and any unit operation that uses that property package. In order to avoid the need for unit conversion in all expressions, the IDAES Framework assumes that all quantities within the property package are based on the chosen set of base units. Parameters and correlations may be based on different sets of unit as necessary (e.g., from literature sources using different base units), however the final quantity must be converted to the set of base units defined in the metadata.
 
 Retrieving Units of Measurement
 -------------------------------
@@ -54,6 +56,7 @@ UnitSet Class
 -------------
 
 .. module:: idaes.core.base.property_meta
+  :noindex:
 
 .. autoclass:: UnitSet
   :members:
