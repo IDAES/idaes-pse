@@ -306,6 +306,7 @@ class SolverLogInfo(object):
         self.tee = tee
         self.thread = thread
 
+
 @contextmanager
 def solver_log(logger, level=logging.ERROR):
     """Context manager to send solver output to a logger."""
