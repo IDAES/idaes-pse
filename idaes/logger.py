@@ -266,45 +266,9 @@ def add_valid_log_tag(tag):
     idaes.cfg.valid_logger_tags.add(tag)
 
 
-class IOToLogThread(threading.Thread):
-    """This is a Thread class that can log solver messages and show them as
-    they are produced, while the main thread is waiting on the solver to finish
-    """
-
-    def __init__(self, stream, logger, sleep=1.0, level=logging.ERROR):
-        super().__init__(daemon=True)
-        self.log = logger
-        self.level = level
-        self.stream = stream
-        self.sleep = sleep
-        self.stop = threading.Event()
-        self.pos = 0
-
-    def log_value(self):
-        try:
-            v = self.stream.getvalue()[self.pos :]
-        except ValueError:
-            self.stop.set()
-            return
-        self.pos += len(v)
-        for l in v.split("\n"):
-            if l:
-                self.log.log(self.level, l.strip())
-
-    def run(self):
-        while True:
-            self.log_value()
-            self.stop.wait(self.sleep)
-            if self.stop.isSet():
-                self.log_value()
-                self.pos = 0
-                return
-
-
 class SolverLogInfo(object):
-    def __init__(self, tee=True, thread=None):
+    def __init__(self, tee=True):
         self.tee = tee
-        self.thread = thread
 
 
 @contextmanager
