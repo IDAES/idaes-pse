@@ -21,6 +21,8 @@ the HSL codes within IPOPT must contain the following acknowledgement: HSL, a
 collection of Fortran codes for large-scale scientific computation. See
 http://www.hsl.rl.ac.uk.
 
+.. note:: Currently the macOS x86_64 binaries to not include HSL.
+
 Main Package
 ~~~~~~~~~~~~
 
@@ -77,7 +79,7 @@ not on the list, you can try to specify a similar distribution.
 +-----------------------------+---------------+--------------------+-------------------+
 | Linux Mint 20               | ubuntu2004    | x86_64, aarch64    | ubuntu2004        |
 +-----------------------------+---------------+--------------------+-------------------+
-| macOS                       | darwin        | aarch64            | darwin            |
+| macOS                       | darwin        | x86_64, aarch64    | darwin            |
 +-----------------------------+---------------+--------------------+-------------------+
 | Red Hat Enterprise Linux 7  | rhel7         | x86_64             | el7               |
 +-----------------------------+---------------+--------------------+-------------------+
