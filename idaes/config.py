@@ -17,7 +17,7 @@ import os
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
-default_binary_release = "3.1.0"
+default_binary_release = "3.2.0"
 # Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums
@@ -40,6 +40,7 @@ base_platforms = (
 )
 # Map some platform names to others for get-extensions
 binary_distro_map = {
+    "macos": "darwin",
     "rhel7": "el7",
     "rhel8": "el8",
     "scientific7": "el7",
