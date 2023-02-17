@@ -166,7 +166,7 @@ def set_param_from_config(b, param, config=None, index=None):
             "units".format(b.name, param)
         )
         p_val = p_data
-    print(p_val)
+
     param_obj.set_value(p_val)
 
 
