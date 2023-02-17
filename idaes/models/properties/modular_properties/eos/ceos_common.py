@@ -21,7 +21,7 @@ from idaes import bin_directory
 try:
     # When compiling these, I don't bother changing the extension based on OS,
     # so the file name is always ends in .so. It's fine.
-    cubic_so_path = find_library("general_helmholtz_external.so")
+    cubic_so_path = find_library("cubic_roots.so")
     ctypes.cdll.LoadLibrary(cubic_so_path)
 except:
     cubic_so_path = None

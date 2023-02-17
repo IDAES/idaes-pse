@@ -55,7 +55,7 @@ except:
 
 
 def helmholtz_available():
-    """Returns True if the shared library is installed and loads property
+    """Returns True if the shared library is installed and loads properly
     otherwise returns False
     """
     if _flib is None:
