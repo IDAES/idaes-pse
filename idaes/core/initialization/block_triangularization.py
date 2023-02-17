@@ -15,8 +15,10 @@ Initializer class for implementing Block Triangularization initialization
 """
 from pyomo.environ import SolverFactory
 from pyomo.common.config import ConfigDict, ConfigValue, add_docstring_list
-from pyomo.contrib.incidence_analysis.util import solve_strongly_connected_components
-from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
+from pyomo.contrib.incidence_analysis import (
+    IncidenceGraphInterface,
+    solve_strongly_connected_components,
+)
 
 from idaes.core.initialization.initializer_base import (
     InitializerBase,
