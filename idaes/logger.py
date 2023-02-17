@@ -25,7 +25,7 @@ ERROR = logging.ERROR  # 40
 WARNING = logging.WARNING  # 30
 INFO_LOW = 21  # Most important info
 INFO = logging.INFO  # 20  #Medium info (default)
-INFO_HIGH = 19  # Less improtant important info
+INFO_HIGH = 19  # Less important important info
 DEBUG = logging.DEBUG  # 10
 NOTSET = logging.NOTSET  # 0
 
@@ -37,7 +37,7 @@ levelname = {  # the level name of all our extra info levels is "INFO"
 
 
 class _TagFilter(logging.Filter):
-    """Filter applied to IDAES loggers returned by this modulue."""
+    """Filter applied to IDAES loggers returned by this module."""
 
     @staticmethod
     def filter(record):
@@ -146,7 +146,7 @@ def getModelLogger(name, level=None, tag=None):
 
 
 def condition(res):
-    """Get the solver termination condition to log.  This isn't a specifc value
+    """Get the solver termination condition to log.  This isn't a specific value
     that you can really depend on, just a message to pass on from the solver for
     the user's benefit. Sometimes the solve is in a try-except, so we'll handle
     None and str for those cases, where you don't have a real result."""
