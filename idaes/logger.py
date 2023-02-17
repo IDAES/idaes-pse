@@ -16,6 +16,7 @@ import threading
 
 from contextlib import contextmanager
 from pyomo.common.tee import capture_output
+from pyomo.common.log import LogStream
 
 
 # Throw the standard levels in here, just let you access it all in one place
@@ -304,8 +305,6 @@ class SolverLogInfo(object):
     def __init__(self, tee=True, thread=None):
         self.tee = tee
         self.thread = thread
-
-from pyomo.common.log import LogStream
 
 @contextmanager
 def solver_log(logger, level=logging.ERROR):
