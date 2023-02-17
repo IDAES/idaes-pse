@@ -429,7 +429,7 @@ class ENRTL(Ideal):
                         -alpha_rule(b, pobj, i, j, T) * tau_rule(b, pobj, i, j, T)
                     )
                 else:
-                    return 1
+                    return 1.0
 
             if (pname, i) not in b.params.true_phase_component_set or (
                 pname,
@@ -476,7 +476,7 @@ class ENRTL(Ideal):
                 else:
                     # This term does not exist for single cation systems
                     # However, need a valid result to calculate tau
-                    return 1
+                    return 1.0
             elif i in b.params.anion_set and j in b.params.cation_set:
                 # Eqn 43
                 if len(b.params.anion_set) > 1:
@@ -490,7 +490,7 @@ class ENRTL(Ideal):
                 else:
                     # This term does not exist for single anion systems
                     # However, need a valid result to calculate tau
-                    return 1
+                    return 1.0
             elif (i in b.params.cation_set and j in b.params.cation_set) or (
                 i in b.params.anion_set and j in b.params.anion_set
             ):

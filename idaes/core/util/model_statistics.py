@@ -1350,34 +1350,39 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
     for c in block.component_data_objects(
         ctype=Constraint, active=True, descend_into=True
     ):
+        try:
+            r = 0.0  # residual
 
-        r = 0.0  # residual
+            # skip if no lower bound set
+            if c.lower is None:
+                r_temp = 0
+            else:
+                r_temp = value(c.lower - c.body())
+            # update the residual
+            if r_temp > r:
+                r = r_temp
 
-        # skip if no lower bound set
-        if c.lower is None:
-            r_temp = 0
-        else:
-            r_temp = value(c.lower - c.body())
-        # update the residual
-        if r_temp > r:
-            r = r_temp
+            # skip if no upper bound set
+            if c.upper is None:
+                r_temp = 0
+            else:
+                r_temp = value(c.body() - c.upper)
 
-        # skip if no upper bound set
-        if c.upper is None:
-            r_temp = 0
-        else:
-            r_temp = value(c.body() - c.upper)
+            # update the residual
+            if r_temp > r:
+                r = r_temp
 
-        # update the residual
-        if r_temp > r:
-            r = r_temp
+            # save residual if it is above threshold
+            if r > tol:
+                large_residuals_set.add(c)
 
-        # save residual if it is above threshold
-        if r > tol:
+                if return_residual_values:
+                    residual_values[c] = r
+        except (AttributeError, TypeError, ValueError):
             large_residuals_set.add(c)
 
             if return_residual_values:
-                residual_values[c] = r
+                residual_values[c] = None
 
     if return_residual_values:
         return residual_values
