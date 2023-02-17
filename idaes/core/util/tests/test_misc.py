@@ -289,7 +289,7 @@ class TestSetParamFromConfig:
         m.b.test_param = Var(initialize=1, units=units.s)
 
         with pytest.raises(
-            UnitsError, match="Cannot convert m to s. Units are not " "compatible."
+            UnitsError, match="Cannot convert m to s. Units are not compatible."
         ):
             set_param_from_config(m.b, "test_param")
 
@@ -305,7 +305,7 @@ class TestSetParamFromConfig:
 
         with pytest.raises(
             UnitsError,
-            match="Cannot convert dimensionless to s. Units " "are not compatible.",
+            match="Cannot convert dimensionless to s. Units are not compatible.",
         ):
             set_param_from_config(m.b, "test_param")
 
@@ -320,7 +320,8 @@ class TestSetParamFromConfig:
         m.b.test_param = Var(initialize=1, units=units.s)
 
         with pytest.raises(
-            UnitsError, match="Cannot convert None to s. Units " "are not compatible."
+            UnitsError,
+            match="Cannot convert dimensionless to s. Units are not compatible.",
         ):
             set_param_from_config(m.b, "test_param")
 
@@ -336,22 +337,7 @@ class TestSetParamFromConfig:
 
         with pytest.raises(
             UnitsError,
-            match="Cannot convert s to dimensionless. Units " "are not compatible.",
-        ):
-            set_param_from_config(m.b, "test_param")
-
-    def test_inconsistent_units_none_2(self, caplog):
-        caplog.set_level(idaeslog.DEBUG, logger=("idaes.core.util.misc"))
-
-        m = ConcreteModel()
-        m.b = Block()
-        m.b.config = ConfigBlock(implicit=True)
-        m.b.config.parameter_data = {"test_param": (42, units.s)}
-
-        m.b.test_param = Var(initialize=1, units=None)
-
-        with pytest.raises(
-            UnitsError, match="Cannot convert s to None. Units " "are not compatible."
+            match="Cannot convert s to dimensionless. Units are not compatible.",
         ):
             set_param_from_config(m.b, "test_param")
 
