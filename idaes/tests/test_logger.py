@@ -14,6 +14,7 @@ import pytest
 import idaes.logger as idaeslog
 import logging
 import pyomo.environ as pyo
+import time
 
 __author__ = "John Eslick"
 
@@ -118,7 +119,7 @@ def test_solver_condition2():
 
 
 @pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
-@pytest.mark.unit
+@pytest.mark.component
 def test_solver_log(caplog):
     solver = pyo.SolverFactory("ipopt")
     model = pyo.ConcreteModel("Solver Result Test Model")
@@ -135,6 +136,7 @@ def test_solver_log(caplog):
     idaeslog.solver_capture_on()
     with idaeslog.solver_log(log, idaeslog.DEBUG) as slc:
         res = solver.solve(model, tee=True)
+    time.sleep(3)  # Delay in the test to compensate for the delay in thread termination
     assert not slc.thread.is_alive()  # make sure logging thread is down
     s = ""
     for record in caplog.records:
@@ -147,4 +149,5 @@ def test_solver_log(caplog):
             res = solver.solve(modelf, tee=True)
     except NameError:
         pass  # expect name error
+    time.sleep(3)  # Delay in the test to compensate for the delay in thread termination
     assert not slc.thread.is_alive()  # make sure logging thread is down
