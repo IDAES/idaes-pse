@@ -16,6 +16,7 @@ import threading
 
 from contextlib import contextmanager
 from pyomo.common.tee import capture_output
+from pyomo.common.log import LogStream
 
 
 # Throw the standard levels in here, just let you access it all in one place
@@ -265,7 +266,7 @@ def add_valid_log_tag(tag):
     idaes.cfg.valid_logger_tags.add(tag)
 
 
-class IOToLogTread(threading.Thread):
+class IOToLogThread(threading.Thread):
     """This is a Thread class that can log solver messages and show them as
     they are produced, while the main thread is waiting on the solver to finish
     """
@@ -308,27 +309,10 @@ class SolverLogInfo(object):
 
 @contextmanager
 def solver_log(logger, level=logging.ERROR):
-    """Context manager to send solver output to a logger. This uses a separate
-    thread to log solver output while the solver is running"""
-    # wait 3 seconds to  join thread.  Should be plenty of time.  In case
-    # something goes horribly wrong though don't want to hang.  The logging
-    # thread is daemonic, so it will shut down with the main process even if it
-    # stays around for some mysterious reason while the model is running.
-    join_timeout = 3
+    """Context manager to send solver output to a logger."""
     tee = logger.isEnabledFor(level)
     if not solver_capture():
         yield SolverLogInfo(tee=tee)
     else:
-        with capture_output() as s:
-            lt = IOToLogTread(s, logger=logger, level=level)
-            lt.start()
-            try:
-                yield SolverLogInfo(tee=tee, thread=lt)
-            except:
-                lt.stop.set()
-                lt.join(timeout=join_timeout)
-                raise
-        # thread should end when s is closed, but setting stop makes sure
-        # the last of the output gets logged before closing s
-        lt.stop.set()
-        lt.join(timeout=join_timeout)
+        with capture_output(LogStream(level, logger)) as s:
+            yield SolverLogInfo(tee=tee)
