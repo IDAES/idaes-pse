@@ -45,7 +45,7 @@ import idaes.logger as idaeslog
 
 
 def dummy_method(b, *args, **kwargs):
-    return 42 * pyunits.mol / pyunits.m**3
+    return 42.0 * pyunits.mol / pyunits.m**3
 
 
 configuration = {
@@ -388,7 +388,7 @@ class TestStateBlockSymmetric(object):
 
         assert isinstance(model.state[1].Liq_vol_mol_solvent, Expression)
         assert len(model.state[1].Liq_vol_mol_solvent) == 1
-        assert str(model.state[1].Liq_vol_mol_solvent.expr) == "1/(42*mol/m**3)"
+        assert str(model.state[1].Liq_vol_mol_solvent.expr) == "1/(42.0*mol/m**3)"
 
         assert isinstance(model.state[1].Liq_relative_permittivity_solvent, Expression)
         assert len(model.state[1].Liq_relative_permittivity_solvent) == 1
@@ -433,59 +433,6 @@ class TestStateBlockSymmetric(object):
                         * model.state[1].Liq_A_DH
                         * model.state[1].Liq_ionic_strength ** (3 / 2)
                         / (1 + 14.9 * model.state[1].Liq_ionic_strength ** (1 / 2))
-                    )
-                )
-            else:
-
-                def ndxdn(j, k):
-                    if j == k:
-                        return (1 - model.state[1].Liq_x_ref[k]) / (
-                            model.state[1].mole_frac_phase_comp_true["Liq", "Cl-"]
-                            + model.state[1].mole_frac_phase_comp_true["Liq", "OH-"]
-                            + model.state[1].mole_frac_phase_comp_true["Liq", "Na+"]
-                            + model.state[1].mole_frac_phase_comp_true["Liq", "H+"]
-                        )
-                    else:
-                        return -model.state[1].Liq_x_ref[k] / (
-                            model.state[1].mole_frac_phase_comp_true["Liq", "Cl-"]
-                            + model.state[1].mole_frac_phase_comp_true["Liq", "OH-"]
-                            + model.state[1].mole_frac_phase_comp_true["Liq", "Na+"]
-                            + model.state[1].mole_frac_phase_comp_true["Liq", "H+"]
-                        )
-
-                assert str(model.state[1].Liq_log_gamma_pdh[j].expr) == str(
-                    -model.state[1].Liq_A_DH
-                    * (
-                        (2 * model.params.get_component(j).config.charge ** 2 / 14.9)
-                        * log(
-                            (1 + 14.9 * model.state[1].Liq_ionic_strength ** 0.5)
-                            / (1 + 14.9 * model.state[1].Liq_ionic_strength_ref ** 0.5)
-                        )
-                        + (
-                            model.params.get_component(j).config.charge ** 2
-                            * model.state[1].Liq_ionic_strength ** 0.5
-                            - 2 * model.state[1].Liq_ionic_strength ** 1.5
-                        )
-                        / (1 + 14.9 * model.state[1].Liq_ionic_strength ** 0.5)
-                        - (
-                            2
-                            * model.state[1].Liq_ionic_strength
-                            * model.state[1].Liq_ionic_strength_ref ** -0.5
-                        )
-                        / (1 + 14.9 * model.state[1].Liq_ionic_strength_ref ** 0.5)
-                        * (
-                            0.5
-                            * (
-                                model.params.get_component("Cl-").config.charge ** 2
-                                * ndxdn(j, "Cl-")
-                                + model.params.get_component("OH-").config.charge ** 2
-                                * ndxdn(j, "OH-")
-                                + model.params.get_component("Na+").config.charge ** 2
-                                * ndxdn(j, "Na+")
-                                + model.params.get_component("H+").config.charge ** 2
-                                * ndxdn(j, "H+")
-                            )
-                        )
                     )
                 )
 

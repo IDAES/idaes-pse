@@ -195,7 +195,7 @@ def test_bid_missing_pmin(generator_params):
 
 @pytest.mark.unit
 def test_bid_missing_pmax(generator_params):
-    generator_params["production_cost_bid_pairs"].pop()
+    generator_params["production_cost_bid_pairs"] = [(30, 0), (45, 0)]
     with pytest.raises(
         ValueError, match=r"^(The last power output in the bid should be the Pmax)"
     ):
@@ -208,6 +208,16 @@ def test_invalid_start_up_bid(generator_params):
     with pytest.raises(
         ValueError,
         match=r"^(The first startup lag should be the same as minimum down time)",
+    ):
+        ThermalGeneratorModelData(**generator_params)
+
+
+@pytest.mark.unit
+def test_invalid_pcost(generator_params):
+    generator_params["production_cost_bid_pairs"] = [(30, 0)]
+    with pytest.raises(
+        ValueError,
+        match=r"^(A valid production_cost_bid_pairs requires at least 2 points)",
     ):
         ThermalGeneratorModelData(**generator_params)
 
@@ -232,6 +242,7 @@ def test_model_data_iterator(generator_data_object):
         "generator_type",
         "initial_status",
         "initial_p_output",
+        "include_default_p_cost",
     ]
     iter_result = [name for name, value in generator_data_object]
 

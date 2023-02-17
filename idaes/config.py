@@ -66,7 +66,7 @@ binary_arch_map = {
     "amd64": "x86_64",
     "arm64": "aarch64",
 }
-# Set of extra binary packages and basic build platforom where available
+# Set of extra binary packages and basic build platform where available
 extra_binaries = {
     "petsc": base_platforms,
 }

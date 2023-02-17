@@ -494,9 +494,11 @@ class PropertyClassMetadata(object):
                     constructed by default.
         - 'supported': (optional, only if 'indices' is None or False) bool indicating if this property is
                        supported by this package.
-        - 'required': (optional, only if 'indices' is None or False bool indicating if this property is
+        - 'required': (optional, only if 'indices' is None or False) bool indicating if this property is
                       required by this package.
-        - 'initialize': (optional) dict indicating 'method', 'required' and 'supported' values for sub-properties by index.
+        - 'valid_range': (optional, only if 'indices' is None or False) 2-tuple containing range of validity for
+                      property values (lower, upper).
+        - 'initialize': (optional) dict indicating 'method', 'required', 'supported' and 'valid_range' values for sub-properties by index.
 
         Args:
             p (dict): Key=property, Value=dict

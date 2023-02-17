@@ -7,6 +7,7 @@
     dyn_utils
     initialization
     misc
+    model_diagnostics
     model_serializer
     model_statistics
     phase_equilibria

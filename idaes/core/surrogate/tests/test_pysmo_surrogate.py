@@ -1633,6 +1633,20 @@ class TestPysmoSurrogate:
         cstr = cstr.replace("inputs[x2]", "5")
         assert eval(cstr) == pytest.approx(0, abs=1e-8)
 
+    @pytest.mark.unit
+    def test_populate_block_multisurrogate_poly_userdef_mixedtypes(self, pysmo_surr1):
+        # Test ``populate_block`` for input variables of mixed types, e.g scalar and indexed pyomo variables
+
+        m = ConcreteModel()
+        m.x1 = Var(initialize=0, bounds=(0, 5))
+        m.x2 = Var([0], initialize=0, bounds=(0, 10))
+        m.z1 = Var(initialize=0, bounds=(0, 10))
+        m.surrogate = SurrogateBlock(concrete=True)
+        m.surrogate.build_model(
+            pysmo_surr1, input_vars=[m.x1, m.x2], output_vars=[m.z1]
+        )
+        assert len(m.surrogate.pysmo_constraint) == 1
+
     @pytest.mark.parametrize(
         "confidence_dict", [{0.99: 3.2498355440153697}, {0.90: 1.8331129326536335}]
     )
