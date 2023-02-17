@@ -26,6 +26,13 @@ Apple Silicon (aarch64)
 
 Intel (x86_64)
 ^^^^^^^^^^^^^^
+
+The IDAES binary extensions are not currently available on macOS.  When running
+tests without the IDAES extensions, it is expected that a relatively small number
+of tests will fail to warn you of missing features. A few tests may also fail due
+to solver failures, since other versions of Ipopt may use different linear solvers 
+by default. 
+
 .. literalinclude:: install_templates/quickstart.md
    :language: bash
    :linenos:

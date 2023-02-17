@@ -99,3 +99,4 @@ Run IDAES Tests
 ^^^^^^^^^^^^^^^
 
 .. include:: install_templates/run_tests.md
+

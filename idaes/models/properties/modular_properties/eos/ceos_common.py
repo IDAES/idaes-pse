@@ -21,7 +21,7 @@ cubic_so_path = os.path.join(bin_directory, "cubic_roots.so")
 
 def cubic_roots_available():
     """Make sure the compiled cubic root functions are available. Yes, in
-    Windows the .so extention is still used.
+    Windows the .so extension is still used.
     """
     return os.path.isfile(cubic_so_path)
 
