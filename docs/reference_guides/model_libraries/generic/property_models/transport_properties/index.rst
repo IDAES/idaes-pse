@@ -6,3 +6,4 @@ Property Models
 
     chapman_enskog
     chung_pure
+    eucken

@@ -74,15 +74,13 @@ method.
       "H2O": {
         "type": Component,
         "valid_phase_types": [PhaseType.vaporPhase, PhaseType.liquidPhase],
-          ...
-          "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones, "Liq": None},
-          "viscosity_collision_integral_callback": collision_integral_neufeld_callback,
-          "parameter_data": {
-            "mw": (0.01801528, pyunits.kg / pyunits.mol),
-            "lennard_jones_sigma": (2.641, pyunits.angstrom),
-            "lennard_jones_epsilon_reduced": (809.1, pyunits.K),
-          }
-          ...
+        ...
+        "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones, "Liq": None},
+        "viscosity_collision_integral_callback": collision_integral_neufeld_callback,
+        "parameter_data": {
+          "mw": (0.01801528, pyunits.kg / pyunits.mol),
+          "lennard_jones_sigma": (2.641, pyunits.angstrom),
+          "lennard_jones_epsilon_reduced": (809.1, pyunits.K),
         }
         ...
       }

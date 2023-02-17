@@ -78,18 +78,16 @@ method.
       "H2O": {
         "type": Component,
         "valid_phase_types": [PhaseType.vaporPhase, PhaseType.liquidPhase],
-          ...
-          "visc_d_phase_comp": {"Vap": ChungViscosityPure, "Liq": None},
-          "viscosity_collision_integral_callback": collision_integral_neufeld_callback,
-          "parameter_data": {
-            "mw": (0.01801528, pyunits.kg / pyunits.mol),
-            "temperature_crit": (647.3, pyunits.K),
-            "dens_mol_crit": (0.01787, pyunits.mol/pyunits.mL),
-            "omega": 0.344,
-            "dipole_moment": (1.8546, pyunits.debye),
-            "association_factor_chung": 0.076
-          }
-          ...
+        ...
+        "visc_d_phase_comp": {"Vap": ChungViscosityPure, "Liq": None},
+        "viscosity_collision_integral_callback": collision_integral_neufeld_callback,
+        "parameter_data": {
+          "mw": (0.01801528, pyunits.kg / pyunits.mol),
+          "temperature_crit": (647.3, pyunits.K),
+          "dens_mol_crit": (0.01787, pyunits.mol/pyunits.mL),
+          "omega": 0.344,
+          "dipole_moment": (1.8546, pyunits.debye),
+          "association_factor_chung": 0.076
         }
         ...
       }
