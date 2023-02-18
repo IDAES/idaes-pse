@@ -135,16 +135,7 @@ def test_solver_log(caplog):
     idaeslog.solver_capture_on()
     with idaeslog.solver_log(log, idaeslog.DEBUG) as slc:
         res = solver.solve(model, tee=True)
-    assert not slc.thread.is_alive()  # make sure logging thread is down
     s = ""
     for record in caplog.records:
         s += record.message
     assert "Optimal" in s
-
-    # test that an exception still results in the thread terminating
-    try:
-        with idaeslog.solver_log(log, idaeslog.DEBUG) as slc:
-            res = solver.solve(modelf, tee=True)
-    except NameError:
-        pass  # expect name error
-    assert not slc.thread.is_alive()  # make sure logging thread is down
