@@ -16,28 +16,11 @@ The following commands should be sufficient to get you started with installing a
 
 .. Import quick start guide, including OS specific lines & skipping non-OS lines & comments
 
-Apple Silicon (aarch64)
-^^^^^^^^^^^^^^^^^^^^^^^
 .. literalinclude:: install_templates/quickstart.md
    :language: bash
-   :linenos:
-   :start-after: modification warning
-   :lines: 1-6,8,11-
 
-Intel (x86_64)
-^^^^^^^^^^^^^^
-
-The IDAES binary extensions are not currently available on macOS.  When running
-tests without the IDAES extensions, it is expected that a relatively small number
-of tests will fail to warn you of missing features. A few tests may also fail due
-to solver failures, since other versions of Ipopt may use different linear solvers 
-by default. 
-
-.. literalinclude:: install_templates/quickstart.md
-   :language: bash
-   :linenos:
-   :start-after: modification warning
-   :lines: 1-6,10,11-
+.. note:: Currently, the macOS x86_64 binaries do not include HSL linear solvers, k_aug, or dot_sens, so
+   some linear solvers in Ipopt and some uncertainty propagation features may not be available.
 
 ------------------------------------------------
 

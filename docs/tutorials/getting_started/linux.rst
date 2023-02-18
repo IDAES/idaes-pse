@@ -17,9 +17,6 @@ The following commands should be sufficient to get you started with installing a
 .. Import quick start guide, including OS specific lines & skipping non-OS lines & comments
 .. literalinclude:: install_templates/quickstart.md
    :language: bash
-   :linenos:
-   :start-after: modification warning
-   :lines: 1-6,8,11-
 
 ------------------------------------------------
 
