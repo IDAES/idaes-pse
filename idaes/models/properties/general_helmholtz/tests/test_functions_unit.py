@@ -178,6 +178,66 @@ def test_expression_writter_mass():
 
     assert pytest.approx(0.39309, rel=1e-4) == pyo.value(
         pyo.units.convert(
+            te.s(
+                u=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(0.39309, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.s(
+                s=0.39309 * 1000 * pyo.units.J / pyo.units.kg / pyo.units.K,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(112.56, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.h(
+                s=0.39309 * 1000 * pyo.units.J / pyo.units.kg / pyo.units.K,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(112.56, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.u(
+                s=0.39309 * 1000 * pyo.units.J / pyo.units.kg / pyo.units.K,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(112.56, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.u(
+                u=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(112.56, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.h(
+                h=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(0.39309, rel=1e-4) == pyo.value(
+        pyo.units.convert(
             te.s_liq(
                 h=112.56 * 1000 * pyo.units.J / pyo.units.kg,
                 p=3.5368 * 1000 * pyo.units.Pa,
@@ -263,6 +323,231 @@ def test_expression_writter_mass():
                 p=3.5368 * 1000 * pyo.units.Pa,
             ),
             pyo.units.kJ / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(-5.361836, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.g(
+                u=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(-5.361836, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.g(
+                h=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(-5.361836, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.g(
+                s=0.39309 * 1000 * pyo.units.J / pyo.units.kg / pyo.units.K,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(-5.3652750407, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.f(
+                u=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(3.5368, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.p(
+                u=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.kPa,
+        )
+    )
+
+    assert pytest.approx(-5.3652750407, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.f(
+                h=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(-5.3652750407, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.f(
+                u=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(1.81e-05, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.v_mol(
+                u=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.m**3 / pyo.units.mol,
+        )
+    )
+
+    assert pytest.approx(1.81e-05, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.v_mol(
+                h=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.m**3 / pyo.units.mol,
+        )
+    )
+
+    assert pytest.approx(1.81e-05, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.v_mol(
+                s=0.39309 * 1000 * pyo.units.J / pyo.units.kg / pyo.units.K,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.m**3 / pyo.units.mol,
+        )
+    )
+
+    assert pytest.approx(0.001003499, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.v_mass(
+                u=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.m**3 / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(0.001003499, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.v_mass(
+                h=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.m**3 / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(0.001003499, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.v_mass(
+                s=0.39309 * 1000 * pyo.units.J / pyo.units.kg / pyo.units.K,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.m**3 / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(0.001003499, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.v_mass(
+                T=300 * pyo.units.K,
+                p=3.5368 * 1000 * pyo.units.Pa,
+                x=0,
+            ),
+            pyo.units.m**3 / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(0.001003499, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.v_mass_liq(
+                T=300 * pyo.units.K,
+                p=3.5368 * 1000 * pyo.units.Pa,
+                x=0,
+            ),
+            pyo.units.m**3 / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(39.07833781228, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.v_mass_vap(
+                T=300 * pyo.units.K,
+                p=3.5368 * 1000 * pyo.units.Pa,
+                x=1.0,
+            ),
+            pyo.units.m**3 / pyo.units.kg,
+        )
+    )
+
+    assert pytest.approx(300, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.T(
+                T=300 * pyo.units.K,
+                p=3.5368 * 1000 * pyo.units.Pa,
+                x=1.0,
+            ),
+            pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(300, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.T(
+                s=0.39309 * 1000 * pyo.units.J / pyo.units.kg / pyo.units.K,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(2.1569869, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.tau(
+                T=300 * pyo.units.K,
+                p=3.5368 * 1000 * pyo.units.Pa,
+                x=1.0,
+            ),
+            pyo.units.dimensionless,
+        )
+    )
+
+    assert pytest.approx(300, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.T(
+                u=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(2.1569869, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.tau(
+                s=0.39309 * 1000 * pyo.units.J / pyo.units.kg / pyo.units.K,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.dimensionless,
+        )
+    )
+
+    assert pytest.approx(2.1569869, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.tau(
+                u=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.dimensionless,
         )
     )
 
@@ -493,6 +778,34 @@ def test_expression_writter_mass():
         )
     )
 
+    assert pytest.approx(0.07441200836, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.cv_mol_liq(T=300 * pyo.units.K, x=0),
+            pyo.units.kJ / pyo.units.mol / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(0.025982313, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.cv_mol_vap(T=300 * pyo.units.K, x=0),
+            pyo.units.kJ / pyo.units.mol / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(0.0753202555, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.cp_mol_liq(T=300 * pyo.units.K, x=0),
+            pyo.units.kJ / pyo.units.mol / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(0.034482648393, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.cp_mol_vap(T=300 * pyo.units.K, x=0),
+            pyo.units.kJ / pyo.units.mol / pyo.units.K,
+        )
+    )
+
     assert pytest.approx(4.1809, rel=1e-4) == pyo.value(
         pyo.units.convert(
             te.cp_liq(T=300 * pyo.units.K, x=0),
@@ -524,6 +837,36 @@ def test_expression_writter_mass():
     assert pytest.approx(427.89, rel=1e-4) == pyo.value(
         pyo.units.convert(
             te.w_vap(T=300 * pyo.units.K, x=0),
+            pyo.units.m / pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(1501.3549, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.w(
+                h=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.m / pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(1501.3549, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.w(
+                u=112.56 * 1000 * pyo.units.J / pyo.units.kg,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
+            pyo.units.m / pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(1501.3549, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.w(
+                s=0.39309 * 1000 * pyo.units.J / pyo.units.kg / pyo.units.K,
+                p=3.5368 * 1000 * pyo.units.Pa,
+            ),
             pyo.units.m / pyo.units.s,
         )
     )

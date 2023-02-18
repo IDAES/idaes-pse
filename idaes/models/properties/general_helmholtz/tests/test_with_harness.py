@@ -348,3 +348,63 @@ class TestBasicVUPMass(PropertyTestHarness):
         self.has_density_terms = True
         # Helmholtz package initialization has no solver calls, so can't fail
         self.skip_initialization_raises_exception_test = True
+
+
+class TestBasicMixTPXMass(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = HelmholtzParameterBlock
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.MIX,
+            "state_vars": StateVars.TPX,
+            "amount_basis": AmountBasis.MASS,
+        }
+        self.prop_args = {}
+        self.has_density_terms = True
+        # Helmholtz package initialization has no solver calls, so can't fail
+        self.skip_initialization_raises_exception_test = True
+
+
+class TestBasicLVTPXMass(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = HelmholtzParameterBlock
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.LG,
+            "state_vars": StateVars.TPX,
+            "amount_basis": AmountBasis.MASS,
+        }
+        self.prop_args = {}
+        self.has_density_terms = True
+        # Helmholtz package initialization has no solver calls, so can't fail
+        self.skip_initialization_raises_exception_test = True
+
+
+class TestBasicLTPXMass(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = HelmholtzParameterBlock
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.L,
+            "state_vars": StateVars.TPX,
+            "amount_basis": AmountBasis.MASS,
+        }
+        self.prop_args = {}
+        self.has_density_terms = True
+        # Helmholtz package initialization has no solver calls, so can't fail
+        self.skip_initialization_raises_exception_test = True
+
+
+class TestBasicVTPXMass(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = HelmholtzParameterBlock
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.G,
+            "state_vars": StateVars.TPX,
+            "amount_basis": AmountBasis.MASS,
+        }
+        self.prop_args = {}
+        self.has_density_terms = True
+        # Helmholtz package initialization has no solver calls, so can't fail
+        self.skip_initialization_raises_exception_test = True
