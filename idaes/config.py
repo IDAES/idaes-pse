@@ -27,6 +27,7 @@ release_checksum_url = (
 # This is a list of platforms with builds
 base_platforms = (
     "darwin-aarch64",
+    "darwin-x86_64",
     "el7-x86_64",
     "el8-x86_64",
     "el8-aarch64",
@@ -89,7 +90,7 @@ default_uom = {
 
 
 def canonical_arch(arch):
-    """Get the offical machine type in {x86_64, aarch64} if possible, otherwise
+    """Get the official machine type in {x86_64, aarch64} if possible, otherwise
     just return arch.lower().
 
     Args:
@@ -103,7 +104,7 @@ def canonical_arch(arch):
 
 
 def canonical_distro(dist):
-    """Get the offical distro name if possible, otherwise just return
+    """Get the official distro name if possible, otherwise just return
     dist.lower(). Distro is used loosely here and includes Windows, Darwin
     (macOS), and other OSs in addition to Linux.
 
@@ -320,8 +321,8 @@ def _new_idaes_config_block():
         pyomo.common.config.ConfigValue(
             domain=int,
             default=200,
-            description="Number of nonliner solver failures before giving up",
-            doc="Number of nonliner solver failures before giving up",
+            description="Number of nonlinear solver failures before giving up",
+            doc="Number of nonlinear solver failures before giving up",
         ),
     )
 
@@ -370,8 +371,8 @@ def _new_idaes_config_block():
         pyomo.common.config.ConfigValue(
             default="ipopt",
             domain=str,
-            description="Default solver.  See Pyomo's SolverFactory for detauls.",
-            doc="Default solver.  See Pyomo's SolverFactory for detauls.",
+            description="Default solver.  See Pyomo's SolverFactory for details.",
+            doc="Default solver.  See Pyomo's SolverFactory for details.",
         ),
     )
 
@@ -532,7 +533,7 @@ def create_dir(d):
     Args:
         d(str): directory path to create
 
-    Retruns:
+    Returns:
         None
     """
     if os.path.exists(d):
