@@ -17,9 +17,12 @@ license for HSL linear solvers that allows inclusion in IDAES's compiled version
 of Ipopt.
 
 All technical papers, sales and publicity material resulting from use of
-the HSL codes within IPOPT must contain the following acknowledgement: HSL, a
+the HSL codes within Ipopt must contain the following acknowledgement: HSL, a
 collection of Fortran codes for large-scale scientific computation. See
 http://www.hsl.rl.ac.uk.
+
+.. note:: Currently the macOS x86_64 binaries do not include HSL, so HSL linear solvers
+    in Ipopt and k_aug and dot_sens are not available on that platform. 
 
 Main Package
 ~~~~~~~~~~~~
@@ -35,9 +38,8 @@ Main Package
 - `cbc <https://projects.coin-or.org/Cbc>`_
 - `bonmin, <https://projects.coin-or.org/Bonmin>`_ (uses Ipopt with HSL)
 - `couenne <https://projects.coin-or.org/Couenne/>`_ (uses Ipopt with HSL)
-- `iapws95_external <https://github.com/IDAES/idaes-ext/tree/main/src/helmholtz>`_, function for the IAPWS95 EoS water
-- `swco2_external <https://github.com/IDAES/idaes-ext/tree/main/src/helmholtz>`_, functions for the Span-Wagner EoS for CO2
-- `cubic_roots <https://github.com/IDAES/idaes-ext/tree/main/src/cubic>`_, function for finding root of a cubic equation
+- `general_external <https://github.com/IDAES/idaes-ext/tree/main/src/general_helmholtz>`_, functions for Helmholtz equations of state
+- `cubic_roots <https://github.com/IDAES/idaes-ext/tree/main/src/cubic>`_, functions for finding roots of a cubic equation
 - `functions <https://github.com/IDAES/idaes-ext/tree/main/src/functions>`_, miscellaneous simple math functions, examples, and test code
 
 Extras
@@ -77,7 +79,7 @@ not on the list, you can try to specify a similar distribution.
 +-----------------------------+---------------+--------------------+-------------------+
 | Linux Mint 20               | ubuntu2004    | x86_64, aarch64    | ubuntu2004        |
 +-----------------------------+---------------+--------------------+-------------------+
-| macOS                       | darwin        | aarch64            | darwin            |
+| macOS                       | darwin        | x86_64, aarch64    | darwin            |
 +-----------------------------+---------------+--------------------+-------------------+
 | Red Hat Enterprise Linux 7  | rhel7         | x86_64             | el7               |
 +-----------------------------+---------------+--------------------+-------------------+

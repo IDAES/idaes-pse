@@ -15,17 +15,21 @@ The following commands should be sufficient to get you started with installing a
    * `Run IDAES Tests`_
 
 .. Import quick start guide, including OS specific lines & skipping non-OS lines & comments
+
 .. literalinclude:: install_templates/quickstart.md
    :language: bash
-   :linenos:
-   :start-after: modification warning
-   :lines: 1-6,10,11-
+
+.. warning:: Currently, the macOS x86_64 binaries do not include HSL linear solvers, k_aug, or dot_sens, so
+   some linear solvers in Ipopt and some uncertainty propagation features may not be available. Some tests
+   may also fail due to missing features.
 
 ------------------------------------------------
 
 Installing IDAES
 ----------------
 To get IDAES fully set up on your machine, we'll go through the steps to get idaes-pse package installed as well as setting up the IDAES extensions, which includes some extra solvers and function libraries, the IDAES example files, and the IDAES tests.
+
+.. include:: install_templates/idaes_data.md
 
 Install Prerequisites
 ^^^^^^^^^^^^^^^^^^^^^
@@ -45,22 +49,6 @@ Install IDAES Extensions
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: install_templates/extensions.md
-
-.. warning:: 
-
-   The IDAES binary extensions are not yet supported on Mac/OSX.
-
-   .. container:: collapsible
-
-      .. container:: header
-
-         **Fallback solution**
-
-      As a fallback (assuming you are using a conda env) you can install
-      the open source ipopt solver with the command ``conda install -c
-      conda-forge ipopt`` though this will not have all the features
-      of our extensions package.
-
 
 Install IDAES Examples
 ^^^^^^^^^^^^^^^^^^^^^^

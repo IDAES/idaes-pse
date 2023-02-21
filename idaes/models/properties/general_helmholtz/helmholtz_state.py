@@ -174,7 +174,11 @@ class _StateBlock(StateBlock):
                         v.vapor_frac, state_args, "vapor_frac", hold_state
                     )
                 else:
-                    flags[i] = (v.flow_mol.fixed, v.temperature.fixed, v.pressure.fixed)
+                    flags[i] = (
+                        v.flow_mass.fixed,
+                        v.temperature.fixed,
+                        v.pressure.fixed,
+                    )
                     self._set_not_fixed(
                         v.flow_mass, state_args, "flow_mass", hold_state
                     )
@@ -906,63 +910,205 @@ class HelmholtzStateBlockData(StateBlockData):
         # Total (mixed phase) properties
         #
 
-        # Enthalpy
-        if not self.is_property_constructed("enth_mol"):
+        # Enthalpy and pressure state variables two-phase properties
+        if self.state_vars == StateVars.PH:
+            if self.amount_basis == AmountBasis.MOLE:
+                h = self.enth_mol * params.uc["J/mol to kJ/kg"]
+                self.enth_mass = pyo.Expression(
+                    expr=self.enth_mol * params.uc["J/mol to J/kg"]
+                )
+            else:
+                h = self.enth_mass * params.uc["J/kg to kJ/kg"]
+                self.enth_mol = pyo.Expression(
+                    expr=self.enth_mass * params.uc["J/kg to J/mol"]
+                )
+            self.entr_mass = pyo.Expression(
+                expr=self.s_hp_func(cmp, h, P, _data_dir)
+                * params.uc["kJ/kg/K to J/kg/K"]
+            )
+            self.entr_mol = pyo.Expression(
+                expr=self.s_hp_func(cmp, h, P, _data_dir)
+                * params.uc["kJ/kg/K to J/mol/K"]
+            )
+            self.energy_internal_mass = pyo.Expression(
+                expr=self.u_hp_func(cmp, h, P, _data_dir) * params.uc["kJ/kg to J/kg"]
+            )
+            self.energy_internal_mol = pyo.Expression(
+                expr=self.u_hp_func(cmp, h, P, _data_dir) * params.uc["kJ/kg to J/mol"]
+            )
+            self.cp_mass = pyo.Expression(
+                expr=self.cp_hp_func(cmp, h, P, _data_dir)
+                * params.uc["kJ/kg/K to J/kg/K"]
+            )
+            self.cp_mol = pyo.Expression(
+                expr=self.cp_hp_func(cmp, h, P, _data_dir)
+                * params.uc["kJ/kg/K to J/mol/K"]
+            )
+            self.cv_mass = pyo.Expression(
+                expr=self.cv_hp_func(cmp, h, P, _data_dir)
+                * params.uc["kJ/kg/K to J/kg/K"]
+            )
+            self.cv_mol = pyo.Expression(
+                expr=self.cv_hp_func(cmp, h, P, _data_dir)
+                * params.uc["kJ/kg/K to J/mol/K"]
+            )
+            self.dens_mass = pyo.Expression(
+                expr=1.0 / self.v_hp_func(cmp, h, P, _data_dir)
+            )
+            self.dens_mol = pyo.Expression(
+                expr=params.uc["kg/m3 to mol/m3"] / self.v_hp_func(cmp, h, P, _data_dir)
+            )
+        # Entropy is a state variable
+        elif self.state_vars == StateVars.PS:
+            if self.amount_basis == AmountBasis.MOLE:
+                s = self.entr_mol * params.uc["J/mol/K to kJ/kg/K"]
+                self.entr_mass = pyo.Expression(
+                    expr=self.entr_mol * params.uc["J/mol/K to J/kg/K"]
+                )
+            else:
+                s = self.entr_mass * params.uc["J/kg/K to kJ/kg/K"]
+                self.enth_mol = pyo.Expression(
+                    expr=self.entr_mass * params.uc["J/kg/K to J/mol/K"]
+                )
+            self.enth_mass = pyo.Expression(
+                expr=self.h_sp_func(cmp, s, P, _data_dir) * params.uc["kJ/kg to J/kg"]
+            )
+            self.enth_mol = pyo.Expression(
+                expr=self.h_sp_func(cmp, s, P, _data_dir) * params.uc["kJ/kg to J/mol"]
+            )
+            self.energy_internal_mass = pyo.Expression(
+                expr=self.u_sp_func(cmp, s, P, _data_dir) * params.uc["kJ/kg to J/kg"]
+            )
+            self.energy_internal_mol = pyo.Expression(
+                expr=self.u_sp_func(cmp, s, P, _data_dir) * params.uc["kJ/kg to J/mol"]
+            )
+            self.cp_mass = pyo.Expression(
+                expr=self.cp_sp_func(cmp, s, P, _data_dir)
+                * params.uc["kJ/kg/K to J/kg/K"]
+            )
+            self.cp_mol = pyo.Expression(
+                expr=self.cp_sp_func(cmp, s, P, _data_dir)
+                * params.uc["kJ/kg/K to J/mol/K"]
+            )
+            self.cv_mass = pyo.Expression(
+                expr=self.cv_sp_func(cmp, s, P, _data_dir)
+                * params.uc["kJ/kg/K to J/kg/K"]
+            )
+            self.cv_mol = pyo.Expression(
+                expr=self.cv_sp_func(cmp, s, P, _data_dir)
+                * params.uc["kJ/kg/K to J/mol/K"]
+            )
+            self.dens_mass = pyo.Expression(
+                expr=1.0 / self.v_sp_func(cmp, s, P, _data_dir)
+            )
+            self.dens_mol = pyo.Expression(
+                expr=params.uc["kg/m3 to mol/m3"] / self.v_sp_func(cmp, s, P, _data_dir)
+            )
+        # Internal energy is a state variable
+        elif self.state_vars == StateVars.PU:
+            if self.amount_basis == AmountBasis.MOLE:
+                u = self.energy_internal_mol * params.uc["J/mol to kJ/kg"]
+                self.energy_internal_mass = pyo.Expression(
+                    expr=self.energy_internal_mol * params.uc["J/mol to J/kg"]
+                )
+            else:
+                u = self.energy_internal_mass * params.uc["J/kg to kJ/kg"]
+                self.energy_internal_mol = pyo.Expression(
+                    expr=self.energy_internal_mass * params.uc["J/kg to J/mol"]
+                )
+            self.enth_mass = pyo.Expression(
+                expr=self.h_up_func(cmp, u, P, _data_dir) * params.uc["kJ/kg to J/kg"]
+            )
+            self.enth_mol = pyo.Expression(
+                expr=self.h_up_func(cmp, u, P, _data_dir) * params.uc["kJ/kg to J/mol"]
+            )
+            self.entr_mass = pyo.Expression(
+                expr=self.s_up_func(cmp, u, P, _data_dir)
+                * params.uc["kJ/kg/K to J/kg/K"]
+            )
+            self.entr_mol = pyo.Expression(
+                expr=self.s_up_func(cmp, u, P, _data_dir)
+                * params.uc["kJ/kg/K to J/mol/K"]
+            )
+            self.cp_mass = pyo.Expression(
+                expr=self.cp_up_func(cmp, u, P, _data_dir)
+                * params.uc["kJ/kg/K to J/kg/K"]
+            )
+            self.cp_mol = pyo.Expression(
+                expr=self.cp_up_func(cmp, u, P, _data_dir)
+                * params.uc["kJ/kg/K to J/mol/K"]
+            )
+            self.cv_mass = pyo.Expression(
+                expr=self.cv_up_func(cmp, u, P, _data_dir)
+                * params.uc["kJ/kg/K to J/kg/K"]
+            )
+            self.cv_mol = pyo.Expression(
+                expr=self.cv_up_func(cmp, u, P, _data_dir)
+                * params.uc["kJ/kg/K to J/mol/K"]
+            )
+            self.dens_mass = pyo.Expression(
+                expr=1.0 / self.v_up_func(cmp, u, P, _data_dir)
+            )
+            self.dens_mol = pyo.Expression(
+                expr=params.uc["kg/m3 to mol/m3"] / self.v_up_func(cmp, u, P, _data_dir)
+            )
+        else:  # T, P, x
+            # enthalpy
             self.enth_mol = pyo.Expression(
                 expr=sum(self.phase_frac[p] * self.enth_mol_phase[p] for p in phlist)
             )
-        if not self.is_property_constructed("enth_mass"):
+
             self.enth_mass = pyo.Expression(
                 expr=sum(self.phase_frac[p] * self.enth_mass_phase[p] for p in phlist)
             )
-        # Entropy
-        if not self.is_property_constructed("entr_mol"):
+
+            # Entropy
             self.entr_mol = pyo.Expression(
                 expr=sum(self.phase_frac[p] * self.entr_mol_phase[p] for p in phlist)
             )
-        if not self.is_property_constructed("entr_mass"):
             self.entr_mass = pyo.Expression(
                 expr=sum(self.phase_frac[p] * self.entr_mass_phase[p] for p in phlist)
             )
-        # Internal Energy
-        if not self.is_property_constructed("energy_internal_mol"):
+            # Internal Energy
             self.energy_internal_mol = pyo.Expression(
                 expr=sum(
                     self.phase_frac[p] * self.energy_internal_mol_phase[p]
                     for p in phlist
                 )
             )
-        if not self.is_property_constructed("energy_internal_mass"):
             self.energy_internal_mass = pyo.Expression(
                 expr=sum(
                     self.phase_frac[p] * self.energy_internal_mass_phase[p]
                     for p in phlist
                 )
             )
-        # cp
-        self.cp_mol = pyo.Expression(
-            expr=sum(self.phase_frac[p] * self.cp_mol_phase[p] for p in phlist)
-        )
-        self.cp_mass = pyo.Expression(
-            expr=sum(self.phase_frac[p] * self.cp_mass_phase[p] for p in phlist)
-        )
-        # cv
-        self.cv_mol = pyo.Expression(
-            expr=sum(self.phase_frac[p] * self.cv_mol_phase[p] for p in phlist)
-        )
-        self.cv_mass = pyo.Expression(
-            expr=sum(self.phase_frac[p] * self.cv_mass_phase[p] for p in phlist)
-        )
-        # mass density
-        self.dens_mass = pyo.Expression(
-            expr=1.0
-            / sum(self.phase_frac[p] * 1.0 / self.dens_mass_phase[p] for p in phlist)
-        )
-        # mole density
-        self.dens_mol = pyo.Expression(
-            expr=1.0
-            / sum(self.phase_frac[p] * 1.0 / self.dens_mol_phase[p] for p in phlist)
-        )
+            # cp
+            self.cp_mol = pyo.Expression(
+                expr=sum(self.phase_frac[p] * self.cp_mol_phase[p] for p in phlist)
+            )
+            self.cp_mass = pyo.Expression(
+                expr=sum(self.phase_frac[p] * self.cp_mass_phase[p] for p in phlist)
+            )
+            # cv
+            self.cv_mol = pyo.Expression(
+                expr=sum(self.phase_frac[p] * self.cv_mol_phase[p] for p in phlist)
+            )
+            self.cv_mass = pyo.Expression(
+                expr=sum(self.phase_frac[p] * self.cv_mass_phase[p] for p in phlist)
+            )
+            # mass density
+            self.dens_mass = pyo.Expression(
+                expr=1.0
+                / sum(
+                    self.phase_frac[p] * 1.0 / self.dens_mass_phase[p] for p in phlist
+                )
+            )
+            # mole density
+            self.dens_mol = pyo.Expression(
+                expr=1.0
+                / sum(self.phase_frac[p] * 1.0 / self.dens_mol_phase[p] for p in phlist)
+            )
+
         # heat capacity ratio
         self.heat_capacity_ratio = pyo.Expression(expr=self.cp_mol / self.cv_mol)
         # Volumetric flow

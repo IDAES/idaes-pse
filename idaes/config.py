@@ -17,7 +17,7 @@ import os
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
-default_binary_release = "3.1.0"
+default_binary_release = "3.2.0"
 # Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums
@@ -27,6 +27,7 @@ release_checksum_url = (
 # This is a list of platforms with builds
 base_platforms = (
     "darwin-aarch64",
+    "darwin-x86_64",
     "el7-x86_64",
     "el8-x86_64",
     "el8-aarch64",
@@ -40,6 +41,7 @@ base_platforms = (
 )
 # Map some platform names to others for get-extensions
 binary_distro_map = {
+    "macos": "darwin",
     "rhel7": "el7",
     "rhel8": "el8",
     "scientific7": "el7",
@@ -320,8 +322,8 @@ def _new_idaes_config_block():
         pyomo.common.config.ConfigValue(
             domain=int,
             default=200,
-            description="Number of nonliner solver failures before giving up",
-            doc="Number of nonliner solver failures before giving up",
+            description="Number of nonlinear solver failures before giving up",
+            doc="Number of nonlinear solver failures before giving up",
         ),
     )
 
@@ -370,8 +372,8 @@ def _new_idaes_config_block():
         pyomo.common.config.ConfigValue(
             default="ipopt",
             domain=str,
-            description="Default solver.  See Pyomo's SolverFactory for detauls.",
-            doc="Default solver.  See Pyomo's SolverFactory for detauls.",
+            description="Default solver.  See Pyomo's SolverFactory for details.",
+            doc="Default solver.  See Pyomo's SolverFactory for details.",
         ),
     )
 
@@ -532,7 +534,7 @@ def create_dir(d):
     Args:
         d(str): directory path to create
 
-    Retruns:
+    Returns:
         None
     """
     if os.path.exists(d):

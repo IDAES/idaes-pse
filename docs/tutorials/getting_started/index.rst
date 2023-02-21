@@ -3,23 +3,22 @@ Getting Started
 
 .. _IDAES Installation:
 
+.. note:: IDAES supports Python |python-min| to |python-max|.  Newer versions of Python may work, but are untested. 
+
 Installation
 ------------
-To install the IDAES PSE framework, follow the set of instructions below that are
-appropriate for your needs and operating system. If you get stuck, please contact
-`idaes-support@idaes.org <idaes-support@idaes.org>`_.
-
-After installing and testing IDAES, it is strongly recommended to do the IDAES tutorials
-located on the |examples-site|.
-
-If you expect to develop custom models, we recommend following the
+To install the IDAES PSE framework, follow the set of instructions below that are appropriate for 
+your needs. The OS specific instructions provide optional steps for installing Miniconda, which can be 
+skipped. If you are an IDAES developer or expect to change IDAES code, we recommend following the
 :ref:`advanced user installation<tutorials/advanced_install/index:Advanced User Installation>`.
+Please contact `idaes-support@idaes.org <idaes-support@idaes.org>`_, if you have difficulty installing 
+IDAES.
 
-The OS specific instructions provide information about optionally installing
-Miniconda. If you already have a Python installation you prefer, you can skip
-the Miniconda install section.
+After installing and testing IDAES, it is recommended that you do IDAES tutorials located on 
+the |examples-site|.
 
-.. note:: IDAES supports Python 3.7 and above.
+OS Specific Instructions
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. toctree::
     :glob:
@@ -43,10 +42,11 @@ the Miniconda install section.
    * - Mac OSX
      - :ref:`Mac Installation<tutorials/getting_started/mac_osx:Mac/OSX Installation Guide>`
 
-.. warning:: If you are using Python for other complex projects, you may want to
-            consider using environments of some sort to avoid conflicting
-            dependencies.  There are several good options including conda
-            environments if you use Anaconda.
+.. warning:: If you are using Python for other projects or installing multiple versions of IDAES, 
+            you may want to consider using environments to avoid conflicting dependencies.  There are
+            several good options including 
+            `conda environments <https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html>`_ 
+            or `venv <https://docs.python.org/3/library/venv.html>`_.
 
 .. _min_updating_install:
 
@@ -75,9 +75,9 @@ assuming that the installation was done using one of the methods described earli
 
         idaes --version
 
-3. Run the ``idaes get-extension`` command to install compiled binaries compatible with the newly upgraded IDAES version.  These binaries include solvers and function libraries.  See :ref:`Binary Packages <tutorials/getting_started/binaries:Binary Packages>` for more details.::
+3. Run the ``idaes get-extension`` command to install compiled binaries compatible with the newly upgraded IDAES version. The ``--extra petsc`` argument installs the optional PETSc solver. These binaries include solvers and function libraries.  See :ref:`Binary Packages <tutorials/getting_started/binaries:Binary Packages>` for more details.::
 
-    idaes get-extensions
+    idaes get-extensions --extra petsc
 
 4. Finally, use the ``idaes get-examples`` command to install the most recent version of the IDAES examples compatible with the upgraded IDAES version.
 
