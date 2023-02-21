@@ -21,7 +21,7 @@ the HSL codes within Ipopt must contain the following acknowledgement: HSL, a
 collection of Fortran codes for large-scale scientific computation. See
 http://www.hsl.rl.ac.uk.
 
-.. note:: Currently the macOS x86_64 binaries to not include HSL, so HSL linear solvers
+.. note:: Currently the macOS x86_64 binaries do not include HSL, so HSL linear solvers
     in Ipopt and k_aug and dot_sens are not available on that platform. 
 
 Main Package
