@@ -431,6 +431,7 @@ see property package for documentation.}""",
         Returns:
             None
         """
+
         # Isothermal constraint
         @self.Constraint(
             self.flowsheet().time,

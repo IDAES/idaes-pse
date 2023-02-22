@@ -59,7 +59,6 @@ def helmholtz_available():
     otherwise returns False
     """
     if _flib is None:
-        _log.error("Shared library 'general_helmholtz_external' not found.")
         return False
     if not os.path.exists(_data_dir):
         _log.error(f"The Helmholtz EoS data directory {_data_dir} does not exist.")
@@ -652,6 +651,8 @@ class HelmholtzThermoExpressions(object):
         Returns:
             HelmholtzThermoExpressions
         """
+        if not helmholtz_available():
+            raise RuntimeError("Helmholtz EoS external functions not available")
         if amount_basis is None:
             amount_basis = parameters.config.amount_basis
         self.param = parameters
@@ -1379,7 +1380,7 @@ change.
     )
 
     def available(self):
-        """Returns True if the shared library is installed and loads property
+        """Returns True if the shared library is installed and loads properly
         otherwise returns False
         """
         return helmholtz_available()
@@ -1404,7 +1405,7 @@ change.
             T: Temperature
             P: Pressure, None if saturated
             x: Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
-                superheated or subcooled
+                superheated or sub-cooled
             units: The units to report the result in, if None use the default
                 units appropriate for the amount basis.
             amount_basis (AmountBasis): Whether to use a mass or mole basis
@@ -1620,6 +1621,8 @@ change.
             self.Vap = VaporPhase()
 
     def build(self):
+        if not self.available():
+            raise RuntimeError("Helmholtz EoS external functions not available")
         super().build()
         # Check if the specified component is supported
         if not component_registered(self.config.pure_component):

@@ -75,6 +75,9 @@ def test_clp_available():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not pyo.SolverFactory("ipopt_sens").available(False), reason="solver not available"
+)
 def test_sipopt_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that
@@ -87,6 +90,9 @@ def test_sipopt_idaes_solve():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not pyo.SolverFactory("ipopt").available(False), reason="solver not available"
+)
 def test_ipopt_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that
@@ -99,6 +105,9 @@ def test_ipopt_idaes_solve():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not pyo.SolverFactory("ipopt_l1").available(False), reason="solver not available"
+)
 def test_ipopt_l1_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that
@@ -191,6 +200,9 @@ def test_petsc_dae_idaes_solve():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not pyo.SolverFactory("bonmin").available(False), reason="solver not available"
+)
 def test_bonmin_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that
@@ -204,6 +216,9 @@ def test_bonmin_idaes_solve():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not pyo.SolverFactory("couenne").available(False), reason="solver not available"
+)
 def test_couenne_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that
@@ -217,6 +232,9 @@ def test_couenne_idaes_solve():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not pyo.SolverFactory("cbc").available(False), reason="solver not available"
+)
 def test_cbc_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that
@@ -229,6 +247,9 @@ def test_cbc_idaes_solve():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not pyo.SolverFactory("clp").available(False), reason="solver not available"
+)
 def test_clp_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that

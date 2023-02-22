@@ -18,23 +18,29 @@ import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.su
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.steam_cycle_flowsheet as steam_cycle
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.subcritical_boiler_flowsheet as blr
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.subcritical_boiler as recyrc
+from idaes.models.properties.general_helmholtz import helmholtz_available
+
 import pytest
+
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_subcritical_boiler_ss_build():
     m = blr.get_model(dynamic=False, init=False)
     assert degrees_of_freedom(m) == 12
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_subcritical_boiler_dynamic_build():
     m = blr.get_model(dynamic=True, init=False)
     assert degrees_of_freedom(m) == 223
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_subcritical_boiler():
     m = blr.main_steady_state()
@@ -60,6 +66,7 @@ def test_subcritical_boiler():
     )
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_subcritical_boiler_dynamic():
     m = blr.main_dynamic()
@@ -84,6 +91,7 @@ def test_subcritical_boiler_dynamic():
     )
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_steam_cycle():
     m = steam_cycle.main_steady_state()
@@ -109,6 +117,7 @@ def test_steam_cycle():
     )
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_subc_power_plant():
     m = subcrit_plant.main_steady_state()
@@ -132,6 +141,7 @@ def test_subc_power_plant():
     )
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_dynamic_power_plant_build():
     # constructing and initializing dynamic power plant
@@ -143,6 +153,7 @@ def test_dynamic_power_plant_build():
     assert degrees_of_freedom(m) == 157
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_steadystate_power_plant_build():
     # constructing and initializing dynamic power plant
@@ -152,6 +163,7 @@ def test_steadystate_power_plant_build():
     assert degrees_of_freedom(m) == -5
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_dynamic_steam_cycle():
     # constructing and initializing dynamic steam cycle flowsheet
@@ -162,6 +174,7 @@ def test_dynamic_steam_cycle():
     assert degrees_of_freedom(m) == 0
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_subcritical_recirculation_system():
     m = recyrc.main()

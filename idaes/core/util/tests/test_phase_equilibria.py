@@ -51,11 +51,11 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 )
 
 from idaes.core.util.phase_equilibria import TXYDataClass, Txy_data
+from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
 
 
 @pytest.mark.unit
 def test_Txy_dataclass():
-
     TD = TXYDataClass(
         "benzene", "toluene", pyunits.kg / pyunits.m / pyunits.s**2, pyunits.K, 101325
     )
@@ -189,6 +189,7 @@ def test_Txy_data():
 
 # Author: Alejandro Garciadiego
 @pytest.mark.component
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 def test_Txy_data_no_dew():
     configuration = {
         # Specifying components
@@ -308,6 +309,7 @@ def test_Txy_data_no_dew():
 
 # Author: Alejandro Garciadiego
 @pytest.mark.component
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 def test_Txy_data_no_bub():
     configuration = {
         # Specifying components

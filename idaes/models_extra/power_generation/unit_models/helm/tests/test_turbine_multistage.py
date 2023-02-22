@@ -30,6 +30,7 @@ from idaes.core.util.model_statistics import (
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 # Set up solver
 solver = get_solver(options={"max_iter": 20})
@@ -64,6 +65,7 @@ def build_turbine_for_run_test():
     return m
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_initialize():
     """Make a turbine model and make sure it doesn't throw exception"""
@@ -161,6 +163,7 @@ def test_initialize():
     return m
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_initialize_calc_cf():
     """Make a turbine model and make sure it doesn't throw exception"""

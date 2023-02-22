@@ -38,6 +38,7 @@ from pyomo.core.base.param import _ParamData
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.network import Arc
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.common.modeling import unique_component_name
 from pyomo.core.base.constraint import _ConstraintData
 from pyomo.common.collections import ComponentMap, ComponentSet
@@ -686,6 +687,8 @@ def constraint_autoscale_large_jac(
         dummy_objective_name = unique_component_name(m, "objective")
         setattr(m, dummy_objective_name, pyo.Objective(expr=0))
     # Create NLP and calculate the objective
+    if not AmplInterface.available():
+        raise RuntimeError("Pynumero not available.")
     nlp = PyomoNLP(m)
     if equality_constraints_only:
         jac = nlp.evaluate_jacobian_eq().tocsr()

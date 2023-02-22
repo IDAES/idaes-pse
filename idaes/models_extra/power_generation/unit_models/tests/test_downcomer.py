@@ -54,6 +54,7 @@ def build_downcomer():
     return m
 
 
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.unit
 def test_basic_build(build_downcomer):
     """Make a model and make sure it doesn't throw exception"""
@@ -67,6 +68,7 @@ def test_basic_build(build_downcomer):
     assert m.fs.unit.config.property_package is m.fs.properties
 
 
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.integration
 def test_units(build_downcomer):
     assert_units_consistent(build_downcomer)

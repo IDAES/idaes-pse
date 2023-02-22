@@ -472,6 +472,7 @@ exchanger (default = 'counter-current' - counter-current flow arrangement""",
 
 
         """
+
         # Temperature Differences
         @self.Constraint(
             self.flowsheet().time, doc="Side 2 inlet temperature difference"
@@ -495,6 +496,7 @@ exchanger (default = 'counter-current' - counter-current flow arrangement""",
         """
         Add temperature driving force Constraints for counter-current flow.
         """
+
         # Temperature Differences
         @self.Constraint(
             self.flowsheet().time, doc="Side 2 inlet temperature difference"
@@ -518,6 +520,7 @@ exchanger (default = 'counter-current' - counter-current flow arrangement""",
         """
         Add temperature driving force Constraints for co-current flow.
         """
+
         # Temperature Differences
         @self.Constraint(
             self.flowsheet().time, doc="Side 3 inlet temperature difference"
@@ -541,6 +544,7 @@ exchanger (default = 'counter-current' - counter-current flow arrangement""",
         """
         Add temperature driving force Constraints for counter-current flow.
         """
+
         # Temperature Differences
         @self.Constraint(
             self.flowsheet().time, doc="Side 3 inlet temperature difference"

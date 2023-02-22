@@ -23,6 +23,7 @@ from operator import itemgetter
 import pyomo.environ as pyo
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.core.base.block import _BlockData
 import numpy as np
 from scipy.linalg import svd
@@ -64,11 +65,12 @@ class DegeneracyHunter:
             pass
 
         if block_like:
-
             # Add Pyomo model to the object
             self.block = block_or_jac
 
             # setup pynumero interface
+            if not AmplInterface.available():
+                raise RuntimeError("Pynumero not available.")
             self.nlp = PyomoNLP(self.block)
 
             # Get the scaled Jacobian of equality constraints
@@ -83,7 +85,6 @@ class DegeneracyHunter:
             self.candidate_eqns = None
 
         elif type(block_or_jac) is np.array:
-
             raise NotImplementedError(
                 "Degeneracy Hunter currently only supports analyzing a Pyomo model"
             )
@@ -94,7 +95,6 @@ class DegeneracyHunter:
             self.eq_con_list = None
 
         else:
-
             raise TypeError("Check the type for 'block_or_jac'")
 
         # number of equality constraints, variables
@@ -208,7 +208,6 @@ class DegeneracyHunter:
             else:
                 s = "(absolute)"
             if len(vnbs) > 0:
-
                 print("Variables within", tol, s, "of their bounds:")
                 print("variable\tlower\tvalue\tupper")
                 for v in vnbs:
@@ -294,7 +293,6 @@ class DegeneracyHunter:
             m_dh.J = jac_eq.tocsc()
 
             def eq_degenerate(m_dh, v):
-
                 # Find the columns with non-zero entries
                 C_ = find(m_dh.J[:, v])[0]
                 return sum(m_dh.J[c, v] * m_dh.nu[c] for c in C_) == 0
@@ -686,7 +684,6 @@ class DegeneracyHunter:
 
             # Loop over candidate equations
             for i, c in enumerate(self.candidate_eqns):
-
                 if verbose:
                     print("Solving MILP", i + 1, "of", len(self.candidate_eqns), "...")
 

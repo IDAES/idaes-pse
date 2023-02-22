@@ -1692,7 +1692,7 @@ class Implies(DescriptorRule):
         """
 
         result = []
-        for (desc, conc) in self.concs:
+        for desc, conc in self.concs:
             ConIndexes = IndexedElem.fromComb(var, desc, conc)
 
             def rule_lb(m, *args):
@@ -1764,7 +1764,7 @@ class NegImplies(DescriptorRule):
             (list<Constraint>) list of Pyomo constraint objects.
         """
         result = []
-        for (desc, conc) in self.concs:
+        for desc, conc in self.concs:
             ConIndexes = IndexedElem.fromComb(var, desc, conc)
 
             def rule_lb(m, *args):
