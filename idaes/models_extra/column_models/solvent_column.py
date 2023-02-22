@@ -483,18 +483,28 @@ and used when constructing these
         )
 
         # Equilibruim partial pressure of components at interface
-        self.pressure_equil = Var(
+        # self.pressure_equil = Var(
+        #     self.flowsheet().time,
+        #     self.vapor_phase.length_domain,
+        #     equilibrium_comp,
+        #     domain=NonNegativeReals,
+        #     initialize=500,
+        #     units=lunits("pressure"),
+        #     doc="Equilibruim pressure of components at interface",
+        # )
+
+        # Mass transfer constraints
+        # "mass_transfer" is a bad name for these variables since they're written with a mole basis. "material" is better
+        self.mass_transfer_driving_force = Var(
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             equilibrium_comp,
-            domain=NonNegativeReals,
-            initialize=500,
+            initialize=0,
+            domain=Reals,
             units=lunits("pressure"),
-            doc="Equilibruim pressure of components at interface",
+            doc="Generalized driving force for mass transfer"
         )
 
-        # Mass transfer constraints
-        # "mass_transfer" is a bad name for this variable since it's written with a mole basis. "material" is better
         self.interphase_mass_transfer = Var(
             self.flowsheet().time,
             self.liquid_phase.length_domain,
@@ -521,14 +531,7 @@ and used when constructing these
                     blk.mass_transfer_coeff_vap[t, x, j]
                     * blk.area_interfacial[t, x]
                     * blk.area_column
-                    * (
-                        blk.vapor_phase.properties[t, x].mole_frac_comp[j]
-                        * pyunits.convert(
-                            blk.vapor_phase.properties[t, x].pressure,
-                            to_units=lunits("pressure"),
-                        )
-                        - blk.pressure_equil[t, x, j]
-                    )
+                    * blk.mass_transfer_driving_force[t, x, j]
                 )
             else:
                 return blk.interphase_mass_transfer[t, x, j] == 0.0
@@ -684,7 +687,14 @@ and used when constructing these
             else:
                 zb = self.liquid_phase.length_domain.prev(x)
                 lprops = blk.liquid_phase.properties[t, zb]
-                return blk.pressure_equil[t, x, j] == (lprops.fug_phase_comp["Liq", j])
+                return blk.mass_transfer_driving_force[t, x, j] == (
+                        blk.vapor_phase.properties[t, x].mole_frac_comp[j]
+                        * pyunits.convert(
+                            blk.vapor_phase.properties[t, x].pressure,
+                            to_units=lunits("pressure"),
+                        )
+                        - lprops.fug_phase_comp["Liq", j]
+                )
 
     # =========================================================================
     # Scaling routine
@@ -700,10 +710,11 @@ and used when constructing these
 
         # ---------------------------------------------------------------------
         # Scale variables
-        for (t, x, j), v in self.pressure_equil.items():
+        # TODO revisit
+        for (t, x, j), v in self.mass_transfer_driving_force.items():
             if iscale.get_scaling_factor(v) is None:
                 sf_pe = iscale.get_scaling_factor(
-                    self.pressure_equil, default=None, warning=True
+                    self.mass_transfer_driving_force, default=None, warning=True
                 )
                 if sf_pe is None:
                     sf_pe = iscale.get_scaling_factor(
@@ -718,7 +729,7 @@ and used when constructing these
                         warning=True,
                     )
 
-                iscale.set_scaling_factor(v, sf_pe)
+                iscale.set_scaling_factor(v, sf_pe*20)
 
         for (t, x), v in self.vapor_phase.heat.items():
             if iscale.get_scaling_factor(v) is None:
@@ -748,7 +759,7 @@ and used when constructing these
             iscale.constraint_scaling_transform(
                 v,
                 iscale.get_scaling_factor(
-                    self.pressure_equil[t, x, j], default=1, warning=False
+                    self.mass_transfer_driving_force[t, x, j], default=1, warning=False
                 ),
             )
 
