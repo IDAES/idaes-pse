@@ -52,6 +52,7 @@ import pyomo.environ as pyo
 from pyomo.environ import Var, units as pyunits
 from pyomo.network import Port
 import idaes.logger as idaeslog
+from idaes.core.solvers import get_solver
 
 __author__ = "Differentiate Team (N. Susarla, A. Noring, M. Zamarripa)"
 __version__ = "1.1.0"
@@ -514,10 +515,10 @@ class CarbonProcessingUnitData(UnitModelBlockData):
         CO2 pure pyomo block initialization routine
 
         Keyword Arguments:
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
 
             optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
 
         Returns:
@@ -526,8 +527,7 @@ class CarbonProcessingUnitData(UnitModelBlockData):
         iscale.calculate_scaling_factors(blk)
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-        opt = pyo.SolverFactory(solver)
-        opt.options = optarg
+        opt = get_solver(solver="ipopt", options=optarg)
 
         init_log.info_low("Starting initialization...")
 

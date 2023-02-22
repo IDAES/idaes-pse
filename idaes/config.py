@@ -251,6 +251,16 @@ def _new_idaes_config_block():
         ),
     )
 
+    cfg["ipopt"]["options"].declare(
+        "max_iter",
+        pyomo.common.config.ConfigValue(
+            domain=int,
+            default=200,
+            description="Ipopt max_iter option",
+            doc="Ipopt max_iter option",
+        ),
+    )
+
     cfg.declare(
         "ipopt_l1",
         pyomo.common.config.ConfigBlock(
@@ -286,6 +296,16 @@ def _new_idaes_config_block():
             default=1e-6,
             description="Ipopt_l1 tol option",
             doc="Ipopt_l1 tol option",
+        ),
+    )
+
+    cfg["ipopt_l1"]["options"].declare(
+        "max_iter",
+        pyomo.common.config.ConfigValue(
+            domain=int,
+            default=200,
+            description="Ipopt_l1 max_iter option",
+            doc="Ipopt_l1 max_iter option",
         ),
     )
 

@@ -18,6 +18,7 @@ from pyomo.environ import SolverFactory, Var, units as pyunits
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.solvers import get_solver
 
 from idaes.core.surrogate.keras_surrogate import KerasSurrogate
 from idaes.core.surrogate.surrogate_block import SurrogateBlock
@@ -155,7 +156,7 @@ class SofcSurrogateData(UnitModelBlockData):
 
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
-        opt = SolverFactory(solver)
+        opt = get_solver(solver=solver)
         opt.options = optarg
 
         init_log.info_low("Starting initialization...")

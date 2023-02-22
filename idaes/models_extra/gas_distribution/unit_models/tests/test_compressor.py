@@ -31,6 +31,7 @@ from idaes.models_extra.gas_distribution.properties.natural_gas import (
 from idaes.models_extra.gas_distribution.unit_models.compressor import (
     IsothermalCompressor,
 )
+from idaes.core.solvers import get_solver
 
 """
 Test for the simple compressor.
@@ -182,7 +183,7 @@ class TestCompressorValues(unittest.TestCase):
             for key, val in target_values.items()
         )
 
-        ipopt = pyo.SolverFactory("ipopt")
+        ipopt = get_solver("ipopt")
         param_sweeper = ParamSweeper(
             n_scen,
             input_values,
