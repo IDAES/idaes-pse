@@ -75,6 +75,7 @@ from idaes.models.properties import iapws95
 from idaes.models.properties.general_helmholtz import helmholtz_data_dir as hdir
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.solvers import get_solver
 
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
@@ -473,7 +474,7 @@ def kazempoor_braun_replication(model):
     cell = m.fs.cell
     case = 5
 
-    solver = pyo.SolverFactory("ipopt")
+    solver = get_solver("ipopt")
 
     N_voltage = 11
     N_case = 5

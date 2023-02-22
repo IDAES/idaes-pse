@@ -23,6 +23,7 @@ from idaes.apps.caprese.categorize import (
     VariableCategory,
     ConstraintCategory,
 )
+from idaes.core.solvers import get_solver
 
 VC = VariableCategory
 CC = ConstraintCategory
@@ -47,13 +48,15 @@ __author__ = "Robert Parker"
 
 # See if ipopt is available and set up solver
 if pyo.SolverFactory("ipopt").available():
-    solver = pyo.SolverFactory("ipopt")
-    solver.options = {
-        "tol": 1e-6,
-        "bound_push": 1e-8,
-        "halt_on_ampl_error": "yes",
-        "linear_solver": "ma57",
-    }
+    solver = get_solver(
+        solver="ipopt",
+        options={
+            "tol": 1e-6,
+            "bound_push": 1e-8,
+            "halt_on_ampl_error": "yes",
+            "linear_solver": "ma57",
+        },
+    )
 else:
     solver = None
 

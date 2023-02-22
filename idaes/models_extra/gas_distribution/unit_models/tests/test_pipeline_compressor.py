@@ -39,7 +39,7 @@ from idaes.apps.nmpc.dynamic_data import (
     load_inputs_into_model,
     interval_data_from_time_series,
 )
-
+from idaes.core.solvers import get_solver
 
 @pytest.mark.component
 class TestSolveDynamicPipelineCompressor(unittest.TestCase):
@@ -119,7 +119,7 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
         Inlet pressure and outlet flow rate will be fixed.
         """
         nxfe = 4
-        ipopt = pyo.SolverFactory("ipopt")
+        ipopt = get_solver("ipopt")
 
         m_steady = self.make_steady_model(nfe=nxfe)
         self.fix_model_inlets(m_steady, inlet_pressure=50.0 * pyo.units.bar)

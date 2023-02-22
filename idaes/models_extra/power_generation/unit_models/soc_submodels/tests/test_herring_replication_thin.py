@@ -94,6 +94,7 @@ from idaes.models_extra.power_generation.unit_models.soc_submodels.common import
 
 from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 from idaes.models.properties.general_helmholtz import helmholtz_available
+from idaes.core.solvers import get_solver
 
 data_cache = os.sep.join([this_file_dir(), "data_cache"])
 
@@ -472,7 +473,7 @@ def kazempoor_braun_replication(model):
     cell = m.fs.cell
     case = 5
 
-    solver = pyo.SolverFactory("ipopt")
+    solver = get_solver("ipopt")
 
     N_voltage = 11
     N_case = 5

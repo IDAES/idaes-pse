@@ -20,6 +20,7 @@ from pyomo.environ import SolverFactory
 from pyomo.dae.initialization import solve_consistent_initial_conditions
 import idaes.logger as idaeslog
 from idaes.apps.caprese.examples.cstr_model import make_model
+from idaes.core.solvers import get_solver
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -28,13 +29,15 @@ __author__ = "Robert Parker"
 
 # See if ipopt is available and set up solver
 if SolverFactory("ipopt").available():
-    solver = SolverFactory("ipopt")
-    solver.options = {
-        "tol": 1e-6,
-        "bound_push": 1e-8,
-        "halt_on_ampl_error": "yes",
-        "linear_solver": "ma57",
-    }
+    solver = get_solver(
+        solver="ipopt",
+        options={
+            "tol": 1e-6,
+            "bound_push": 1e-8,
+            "halt_on_ampl_error": "yes",
+            "linear_solver": "ma57",
+        }
+    )
 else:
     solver = None
 
