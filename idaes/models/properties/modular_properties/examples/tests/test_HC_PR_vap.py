@@ -49,6 +49,7 @@ from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.examples.HC_PR_vap import (
     configuration_vap,
 )
+from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
 
 
 # -----------------------------------------------------------------------------
@@ -262,6 +263,9 @@ class TestStateBlock(object):
 
         assert_units_consistent(model)
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
@@ -270,6 +274,9 @@ class TestStateBlock(object):
                     model.props[1].flow_mol_phase_comp[p, j]
                 )
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
@@ -277,6 +284,9 @@ class TestStateBlock(object):
                 model.props[1]._enthalpy_flow_term[p]
             )
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
@@ -286,6 +296,9 @@ class TestStateBlock(object):
                         model.props[1]._material_density_term[p, j]
                     )
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
@@ -343,7 +356,6 @@ class TestStateBlock(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
-
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 

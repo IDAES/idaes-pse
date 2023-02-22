@@ -413,7 +413,7 @@ class Viscosity:
 
         theta_ij = {}
         o = dict()
-        for (i, j) in enumerate(blk.component_list, 1):
+        for i, j in enumerate(blk.component_list, 1):
             o[i] = j
 
         for i in range(1, len(blk.component_list)):

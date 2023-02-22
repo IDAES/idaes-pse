@@ -43,7 +43,7 @@ from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 from idaes.models.properties.modular_properties.examples.ASU_PR import configuration
 
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
-
+from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -57,6 +57,7 @@ def _as_quantity(x):
     return value(x) * unit._get_pint_unit()
 
 
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 class TestASUPR(PropertyTestHarness):
     def configure(self):
         self.prop_pack = GenericParameterBlock
@@ -143,6 +144,7 @@ class TestParamBlock(object):
         assert_units_consistent(model)
 
 
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):

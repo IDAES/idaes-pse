@@ -37,7 +37,6 @@ SOUT = idaeslog.INFO
 
 # Set module level pyest marker
 pytestmark = pytest.mark.cubic_root
-prop_available = cubic_roots_available()
 
 
 # -----------------------------------------------------------------------------
@@ -47,6 +46,7 @@ solver = get_solver()
 solver.options["max_iter"] = 50
 
 
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 class TestBTPR(PropertyTestHarness):
     def configure(self):
         self.prop_pack = GenericParameterBlock
@@ -57,6 +57,7 @@ class TestBTPR(PropertyTestHarness):
 
 # -----------------------------------------------------------------------------
 # Test robustness and some outputs
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 class TestBTExample(object):
     @pytest.fixture()
     def m(self):
@@ -662,7 +663,6 @@ class TestBTExample(object):
 
     @pytest.mark.unit
     def test_basic_scaling(self, m):
-
         assert len(m.fs.state[1].scaling_factor) == 23
         assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol] == 1e-2
         assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol_phase["Liq"]] == 1e-2

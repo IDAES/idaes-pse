@@ -38,6 +38,7 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
+import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -85,6 +86,8 @@ class TestBTXIdeal:
         m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
         m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
+        iscale.calculate_scaling_factors(m)
+
         return m
 
     @pytest.fixture(scope="class")
@@ -107,6 +110,8 @@ class TestBTXIdeal:
         m.fs.unit.inlet.flow_mol_comp[0, "toluene"].fix(0.5)
         m.fs.unit.inlet.temperature.fix(363)
         m.fs.unit.inlet.pressure.fix(101325)
+
+        iscale.calculate_scaling_factors(m)
 
         return m
 
@@ -195,6 +200,19 @@ class TestBTXIdeal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx_ftpz, btx_fctp):
+
+        # from idaes.core.util.scaling import unscaled_constraints_generator, unscaled_variables_generator, badly_scaled_var_generator
+        # print("\nUnscaled Constraints")
+        # for i in unscaled_constraints_generator(btx_ftpz):
+        #     print(i)
+        # print("\nUnscaled Vars")
+        # for i in unscaled_variables_generator(btx_ftpz):
+        #     print(i)
+        # print("\nBadly Scaled Vars")
+        # for i in badly_scaled_var_generator(btx_ftpz):
+        #     print(i)
+        # assert False
+
         # Bottoms port
         assert pytest.approx(0.5, abs=1e-3) == value(
             btx_ftpz.fs.unit.bottoms.flow_mol[0]

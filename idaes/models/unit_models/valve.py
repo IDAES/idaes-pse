@@ -146,6 +146,7 @@ variables, expressions, or constraints required can also be added by the callbac
         self.valve_opening = pyo.Var(
             self.flowsheet().time,
             initialize=1,
+            bounds=(0, 1),
             doc="Fraction open for valve from 0 to 1",
         )
         self.valve_opening.fix()

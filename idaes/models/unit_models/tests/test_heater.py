@@ -53,7 +53,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
-
+from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -477,6 +477,7 @@ class TestSaponification(object):
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 class TestBT_Generic(object):
     @pytest.fixture(scope="class")
     def btg(self):

@@ -26,6 +26,7 @@ from pyomo.core.expr.relational_expr import (
     RangedExpression,
 )
 from pyomo.network import Port, Arc
+from pyomo.contrib.pynumero.asl import AmplInterface
 
 from idaes.core.base.process_base import ProcessBaseBlock
 from idaes.core.util.exceptions import ConfigurationError
@@ -268,6 +269,7 @@ def test_calculate_scaling_factors():
           f   g
     """
     o = []  # list of compoent names in the order their calculate_scaling_factors
+
     # method is called
     def rule(blk):
         # This rule for building a block just adds a calculate scaling factor
@@ -711,6 +713,9 @@ class TestScaleSingleConstraint:
         assert model.c3.upper is None
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 class TestScaleConstraintsPynumero:
     def model(self):
         m = pyo.ConcreteModel()
@@ -1109,6 +1114,9 @@ class TestFlattenedScalingAssignment:
         assert scaling_factor[y] == pytest.approx(1 / (4 + 10**3))
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.unit
 def test_extreme_jacobian_rows_and_columns():
     m = pyo.ConcreteModel()
@@ -2162,6 +2170,9 @@ class TestNominalValueExtractionVisitor:
         ]
 
     @pytest.mark.unit
+    @pytest.mark.skipif(
+        not AmplInterface.available(), reason="pynumero_ASL is not available"
+    )
     @pytest.mark.skipif(not cubic_roots_available, reason="Cubic roots not available")
     def test_ext_func(self):
         # Use the cubic root external function to test

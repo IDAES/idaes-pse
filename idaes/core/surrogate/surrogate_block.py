@@ -101,8 +101,8 @@ class SurrogateBlockData(_BlockData):
 
         # set the input bounds if desired
         input_bounds = surrogate_object.input_bounds()
+        input_vars_as_dict = self.input_vars_as_dict()
         if use_surrogate_bounds is True and input_bounds is not None:
-            input_vars_as_dict = self.input_vars_as_dict()
             for k, bnd in input_bounds.items():
                 v = input_vars_as_dict[k]
                 lb = bnd[0]

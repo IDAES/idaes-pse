@@ -31,6 +31,7 @@ from idaes.models.properties.cubic_eos.cubic_prop_pack import (
     CubicEoS,
     EoS_param,
 )
+from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
 
 
 # Set module level pyest marker
@@ -46,6 +47,9 @@ def test_CubicEoS():
 
 
 class TestParameterBlock(object):
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_build_default(self):
         m = ConcreteModel()
@@ -62,6 +66,9 @@ class TestParameterBlock(object):
         for p in m.fs.params.phase_list:
             assert p in ["Vap", "Liq"]
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_build_VL(self):
         m = ConcreteModel()
@@ -78,6 +85,9 @@ class TestParameterBlock(object):
         for p in m.fs.params.phase_list:
             assert p in ["Vap", "Liq"]
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_build_LV(self):
         m = ConcreteModel()
@@ -94,6 +104,9 @@ class TestParameterBlock(object):
         for p in m.fs.params.phase_list:
             assert p in ["Vap", "Liq"]
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_build_L(self):
         m = ConcreteModel()
@@ -110,6 +123,9 @@ class TestParameterBlock(object):
         for p in m.fs.params.phase_list:
             assert p in ["Liq"]
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_build_V(self):
         m = ConcreteModel()
@@ -167,6 +183,9 @@ class TestStateBlock_LV_PR(object):
 
         return m
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_build_default(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
@@ -300,6 +319,9 @@ class TestStateBlock_LV_PR(object):
                 - model.fs.props[1]._log_equilibrium_cubic("Liq", j)
             )
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_common_cubic(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
@@ -361,6 +383,9 @@ class TestStateBlock_L_PR(object):
 
         return m
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_build_default(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
@@ -416,6 +441,9 @@ class TestStateBlock_L_PR(object):
         assert len(model.fs.props[1]._teq) == 1
         assert str(model.fs.props[1]._teq.expr) == str(model.fs.props[1].temperature)
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_common_cubic(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
@@ -476,6 +504,9 @@ class TestStateBlock_V_PR(object):
 
         return m
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_build_default(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
@@ -531,6 +562,9 @@ class TestStateBlock_V_PR(object):
         assert len(model.fs.props[1]._teq) == 1
         assert str(model.fs.props[1]._teq.expr) == str(model.fs.props[1].temperature)
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_common_cubic(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
@@ -591,6 +625,9 @@ class TestStateBlock_LV_SRK(object):
 
         return m
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_build_default(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
@@ -724,6 +761,9 @@ class TestStateBlock_LV_SRK(object):
                 - model.fs.props[1]._log_equilibrium_cubic("Liq", j)
             )
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_common_cubic(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
@@ -785,6 +825,9 @@ class TestStateBlock_L_SRK(object):
 
         return m
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_build_default(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
@@ -840,6 +883,9 @@ class TestStateBlock_L_SRK(object):
         assert len(model.fs.props[1]._teq) == 1
         assert str(model.fs.props[1]._teq.expr) == str(model.fs.props[1].temperature)
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_common_cubic(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
@@ -900,6 +946,9 @@ class TestStateBlock_V_SRK(object):
 
         return m
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_build_default(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
@@ -955,6 +1004,9 @@ class TestStateBlock_V_SRK(object):
         assert len(model.fs.props[1]._teq) == 1
         assert str(model.fs.props[1]._teq.expr) == str(model.fs.props[1].temperature)
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_common_cubic(self, model):
         model.fs.props = model.fs.params.build_state_block([1])

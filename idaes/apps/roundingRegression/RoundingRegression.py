@@ -192,7 +192,7 @@ class RoundingRegression:
         # Format model found and return
         self.opt_regressors = np.nonzero(self.opt_regressors)[0]
         coeffs = np.zeros(self.X.shape[1])
-        for (idx, coefficient) in enumerate(self.opt_coeffs):
+        for idx, coefficient in enumerate(self.opt_coeffs):
             coeffs[self.opt_regressors[idx]] = coefficient
         self.opt_coeffs = coeffs
         return self.opt_obj, self.opt_coeffs, self.opt_regressors

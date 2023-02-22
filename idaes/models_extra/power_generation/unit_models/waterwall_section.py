@@ -313,6 +313,7 @@ constructed,
             doc="Inside diameter of waterwall tube",
             units=units_meta.get_derived_units("length"),
         )
+
         # Inside radius of waterwall tube
         @self.Expression(doc="Inside radius of waterwall tube")
         def radius_inner(b):
@@ -329,6 +330,7 @@ constructed,
             doc="Thickness of waterwall tube",
             units=units_meta.get_derived_units("length"),
         )
+
         # Outside radius of waterwall tube
         @self.Expression(doc="Outside radius of waterwall tube")
         def radius_outer(b):
@@ -340,6 +342,7 @@ constructed,
             doc="Thickness of waterwall Fin",
             units=units_meta.get_derived_units("length"),
         )
+
         # Half of the waterwall fin thickness
         @self.Expression(doc="Half of the waterwall fin thickness")
         def fin_thickness_half(b):

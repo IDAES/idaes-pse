@@ -13,10 +13,13 @@
 
 __author__ = "John Eslick"
 
+import pytest
 import idaes.models.properties.iapws95 as iapws95
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicMix(PropertyTestHarness):
     def configure(self):
         self.prop_pack = iapws95.Iapws95ParameterBlock
@@ -27,6 +30,7 @@ class TestBasicMix(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicLV(PropertyTestHarness):
     def configure(self):
         self.prop_pack = iapws95.Iapws95ParameterBlock
@@ -37,6 +41,7 @@ class TestBasicLV(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicL(PropertyTestHarness):
     def configure(self):
         self.prop_pack = iapws95.Iapws95ParameterBlock
@@ -47,6 +52,7 @@ class TestBasicL(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicV(PropertyTestHarness):
     def configure(self):
         self.prop_pack = iapws95.Iapws95ParameterBlock
