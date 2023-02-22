@@ -44,7 +44,7 @@ __author__ = "Robert Parker"
 # See if ipopt is available and set up solver
 if SolverFactory("ipopt").available():
     solver = get_solver(
-        solver="ipopt", 
+        solver="ipopt",
         options={"tol": 1e-6, "mu_init": 1e-8, "bound_push": 1e-8},
     )
 else:

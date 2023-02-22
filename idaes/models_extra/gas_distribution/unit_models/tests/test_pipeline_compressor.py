@@ -41,6 +41,7 @@ from idaes.apps.nmpc.dynamic_data import (
 )
 from idaes.core.solvers import get_solver
 
+
 @pytest.mark.component
 class TestSolveDynamicPipelineCompressor(unittest.TestCase):
     def make_steady_model(

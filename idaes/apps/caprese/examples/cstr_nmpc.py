@@ -36,7 +36,7 @@ if SolverFactory("ipopt").available():
             "bound_push": 1e-8,
             "halt_on_ampl_error": "yes",
             "linear_solver": "ma57",
-        }
+        },
     )
 else:
     solver = None
