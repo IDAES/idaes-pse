@@ -24,18 +24,11 @@ from pyomo.dae.flatten import flatten_dae_components
 
 from pyomo.contrib.incidence_analysis import (
     IncidenceGraphInterface,
-    solve_strongly_connected_components,
-)
-from pyomo.contrib.incidence_analysis.interface import (
-    _generate_variables_in_constraints,
 )
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.util.subsystems import ParamSweeper
 
 import idaes.core as idaes
-from idaes.models.properties.modular_properties.base.generic_property import (
-    GenericParameterBlock,
-)
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     large_residuals_set,
@@ -53,6 +46,7 @@ from idaes.apps.nmpc.dynamic_data import (
     load_inputs_into_model,
     interval_data_from_time_series,
 )
+from idaes.core.solvers import get_solver
 
 """
 Test for the simple pipeline model
@@ -169,7 +163,7 @@ class TestSolvePipelineSquare(unittest.TestCase):
 
         t0 = m.fs.time.first()
 
-        ipopt = pyo.SolverFactory("ipopt")
+        ipopt = get_solver("ipopt")
 
         res = ipopt.solve(m, tee=True)
         pyo.assert_optimal_termination(res)
@@ -261,7 +255,7 @@ class TestSolvePipelineSquare(unittest.TestCase):
                 to_fix=input_values,
                 output_values=target_values,
             )
-            ipopt = pyo.SolverFactory("ipopt")
+            ipopt = get_solver("ipopt")
             with param_sweeper:
                 # Note that doing this in a context manager means that
                 # on error, values are reset. This is inconvenient
@@ -355,7 +349,7 @@ class TestSolveDynamicPipeline(unittest.TestCase):
         Inlet pressure and outlet flow rate will be fixed.
         """
         nxfe = 4
-        ipopt = pyo.SolverFactory("ipopt")
+        ipopt = get_solver("ipopt")
 
         m_steady = self.make_steady_model(nfe=nxfe)
         self.fix_model_inlets(m_steady)
@@ -530,7 +524,7 @@ class TestSolveDynamicPipeline(unittest.TestCase):
         and 5e5 kg/hr.
         """
         nxfe = 4
-        ipopt = pyo.SolverFactory("ipopt")
+        ipopt = get_solver("ipopt")
 
         # Steady state data
         m_steady = self.make_steady_model(nfe=nxfe)

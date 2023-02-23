@@ -195,9 +195,8 @@ manager is used, it can be turned on and off by using the
 solver output won't be logged and it will go to standard output as
 usual.
 
-The ``solver_log`` context yields an object with ``tee`` and ``thread``
-attributes. ``thread`` is the logging thread, which is not needed for
-most uses. The ``tee`` attribute should be passed to the ``tee``
+The ``solver_log`` context yields an object with the ``tee``
+attribute, which should be passed to the ``tee``
 argument of the ``solve`` method. Tee tells the Pyomo solver to
 display solver output. The solver log context can provide this argument
 by determining if the solver output would be logged at the given level.

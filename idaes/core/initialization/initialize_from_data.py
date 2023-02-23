@@ -10,6 +10,24 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-import idaes.models_extra.convergence.compressor
-import idaes.models_extra.convergence.heater
-import idaes.models_extra.convergence.turbine
+"""
+Initializer class for implementing initialization from a data source
+"""
+from idaes.core.initialization.initializer_base import InitializerBase
+
+__author__ = "Andrew Lee"
+
+
+class FromDataInitializer(InitializerBase):
+    """
+    This is a general purpose Initializer object which attempts to initialize a
+    model from user provided data.
+
+    Data can be provided in either json format or as a dict-like structure. The loaded
+    solution is then checked to ensure that it satisfies all constraints in the model.
+
+    """
+
+    def initialization_routine(self, model):
+        # No action required as data has been loaded in the load_initial_guesses method
+        pass

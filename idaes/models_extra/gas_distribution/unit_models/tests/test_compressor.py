@@ -19,18 +19,11 @@ import pyomo.environ as pyo
 
 from pyomo.contrib.incidence_analysis import (
     IncidenceGraphInterface,
-    solve_strongly_connected_components,
-)
-from pyomo.contrib.incidence_analysis.interface import (
-    _generate_variables_in_constraints,
 )
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.util.subsystems import ParamSweeper
 
 import idaes.core as idaes
-from idaes.models.properties.modular_properties.base.generic_property import (
-    GenericParameterBlock,
-)
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models_extra.gas_distribution.properties.natural_gas import (
     NaturalGasParameterBlock,
@@ -38,6 +31,7 @@ from idaes.models_extra.gas_distribution.properties.natural_gas import (
 from idaes.models_extra.gas_distribution.unit_models.compressor import (
     IsothermalCompressor,
 )
+from idaes.core.solvers import get_solver
 
 """
 Test for the simple compressor.
@@ -189,7 +183,7 @@ class TestCompressorValues(unittest.TestCase):
             for key, val in target_values.items()
         )
 
-        ipopt = pyo.SolverFactory("ipopt")
+        ipopt = get_solver("ipopt")
         param_sweeper = ParamSweeper(
             n_scen,
             input_values,

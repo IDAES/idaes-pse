@@ -288,14 +288,24 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
+        obj.define_custom_properties(
+            {
+                "particle_porosity": {"method": None, "units": pyunits.dimensionless},
+                "dens_mass_skeletal": {
+                    "method": "_dens_mass_skeletal",
+                    "units": obj.derived_units.DENSITY_MASS,
+                },
+                "dens_mass_particle": {
+                    "method": "_dens_mass_particle",
+                    "units": obj.derived_units.DENSITY_MASS,
+                },
+            }
+        )
         obj.add_properties(
             {
                 "flow_mass": {"method": None},
-                "particle_porosity": {"method": None},
                 "temperature": {"method": None},
                 "mass_frac_comp": {"method": None},
-                "dens_mass_skeletal": {"method": "_dens_mass_skeletal"},
-                "dens_mass_particle": {"method": "_dens_mass_particle"},
                 "cp_mol_comp": {"method": "_cp_mol_comp"},
                 "cp_mass": {"method": "_cp_mass"},
                 "enth_mass": {"method": "_enth_mass"},
@@ -327,7 +337,7 @@ class _SolidPhaseStateBlock(StateBlock):
         state_vars_fixed=False,
         outlvl=idaeslog.NOTSET,
         solver="ipopt",
-        optarg={"tol": 1e-8},
+        optarg=None,
     ):
         """
         Initialization routine for property package.

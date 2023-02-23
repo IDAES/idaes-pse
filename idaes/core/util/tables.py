@@ -214,6 +214,7 @@ def create_stream_table_ui(
     Returns:
         A pandas DataFrame containing the stream table data.
     """
+
     # Variable Types:
     class VariableTypes:
         UNFIXED = "unfixed"

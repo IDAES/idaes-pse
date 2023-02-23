@@ -31,7 +31,6 @@ from pyomo.environ import (
     check_optimal_termination,
     units as pyunits,
 )
-from pyomo.opt import SolverFactory
 from pyomo.common.config import ConfigValue
 
 # Import IDAES cores
@@ -499,20 +498,6 @@ class _FlueGasStateBlock(StateBlock):
 
         # Create solver
         opt = get_solver(solver, optarg)
-
-        if state_args is None:
-            state_args = {
-                "flow_mol_comp": {
-                    "N2": 1.0,
-                    "CO2": 1.0,
-                    "NO": 1.0,
-                    "O2": 1.0,
-                    "H2O": 1.0,
-                    "SO2": 1.0,
-                },
-                "pressure": 1e5,
-                "temperature": 495.0,
-            }
 
         if state_vars_fixed is False:
             flags = fix_state_vars(self, state_args)

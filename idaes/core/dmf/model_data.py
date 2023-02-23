@@ -203,9 +203,9 @@ def unit_convert(
     frm,
     to=None,
     system=None,
-    unit_string_map={},
-    ignore_units=[],
-    gauge_pressures={},
+    unit_string_map=None,
+    ignore_units=None,
+    gauge_pressures=None,
     ambient_pressure=1.0,
     ambient_pressure_unit="atm",
 ):
@@ -236,6 +236,13 @@ def unit_convert(
     Returns:
         (tuple): quantity and unit string
     """
+    if unit_string_map is None:
+        unit_string_map = {}
+    if ignore_units is None:
+        ignore_units = []
+    if gauge_pressures is None:
+        gauge_pressures = {}
+
     ureg = pint.UnitRegistry(system=system)
     for u in _register_new_units:
         ureg.define(u)
@@ -451,11 +458,11 @@ def bin_stdev(df, bin_no, min_data=4):
     Args:
         df (pandas.DataFrame): pandas data frame that is a bin number column
         bin_no (str): Column to group by, usually contains bin number
-        min_data (int): Minimum number of data points requitred to calculate
+        min_data (int): Minimum number of data points required to calculate
             standard deviation for a bin (default=4)
 
     Returns:
-        dict: key is the bin number and the value is a pandas.Serries with column
+        dict: key is the bin number and the value is a pandas.Series with column
             standard deviations
     """
     nos = np.unique(df[bin_no])
@@ -478,7 +485,7 @@ def data_rec_plot_book(
     xlabel=None,
     metadata=None,
     cols=None,
-    skip_cols=[],
+    skip_cols=None,
 ):
     """
     Make box and whisker plots from process data compared to data rec results
@@ -502,6 +509,9 @@ def data_rec_plot_book(
         None
 
     """
+    if skip_cols is None:
+        skip_cols = []
+
     if sns is None:
         _log.error(
             "Plotting data requires the 'seaborn' and 'PyPDF2' packages. "
@@ -568,7 +578,7 @@ def data_plot_book(
     xlabel=None,
     metadata=None,
     cols=None,
-    skip_cols=[],
+    skip_cols=None,
 ):
     """
     Make box and whisker plots from process data based on bins from the
@@ -586,6 +596,9 @@ def data_plot_book(
         None
 
     """
+    if skip_cols is None:
+        skip_cols = []
+
     if sns is None:
         _log.error(
             "Plotting data requires the 'seaborn' and 'PyPDF2' packages. "

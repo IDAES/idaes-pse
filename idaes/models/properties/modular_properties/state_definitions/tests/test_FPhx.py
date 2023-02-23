@@ -26,7 +26,6 @@ from idaes.models.properties.modular_properties.state_definitions.FPhx import (
     FPhx,
     define_state,
     set_metadata,
-    define_default_scaling_factors,
 )
 from idaes.core import (
     MaterialFlowBasis,
@@ -58,11 +57,11 @@ def test_set_metadata():
     m.props = PhysicalParameterTestBlock()
 
     # Set metadata to make sure it is overwritten
-    m.props.get_metadata().properties["enth_mol"] = {"method": "test"}
+    m.props.get_metadata().properties["enth_mol"].set_method("test")
 
     set_metadata(m.props)
 
-    assert m.props.get_metadata().properties["enth_mol"] == {"method": None}
+    assert m.props.get_metadata().properties.enth_mol._none.method is None
 
 
 class TestInvalidBounds(object):
@@ -1183,7 +1182,7 @@ class TestCommon(object):
     # Test General Methods
     @pytest.mark.unit
     def test_get_material_flow_terms(self, frame):
-        for (p, j) in frame.params._phase_component_set:
+        for p, j in frame.params._phase_component_set:
             assert str(frame.props[1].get_material_flow_terms(p, j)) == str(
                 frame.props[1].flow_mol_phase_comp[p, j]
             )
@@ -1200,7 +1199,7 @@ class TestCommon(object):
 
     @pytest.mark.unit
     def test_get_material_density_terms(self, frame):
-        for (p, j) in frame.params._phase_component_set:
+        for p, j in frame.params._phase_component_set:
             assert str(frame.props[1].get_material_density_terms(p, j)) == str(
                 frame.props[1]._material_density_term[p, j]
             )

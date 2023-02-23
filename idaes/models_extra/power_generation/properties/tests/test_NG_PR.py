@@ -18,7 +18,6 @@ from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
     Objective,
-    SolverFactory,
     value,
     units as pyunits,
 )
@@ -34,14 +33,12 @@ from idaes.models.unit_models import GibbsReactor
 from idaes.models.properties.modular_properties.eos.ceos import Cubic
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
-
 import idaes.logger as idaeslog
 
 SOUT = idaeslog.INFO
 
 # Set module level pyest marker
 pytestmark = pytest.mark.cubic_root
-prop_available = cubic_roots_available()
 
 # Get default solver for testing
 solver = get_solver()
@@ -74,6 +71,9 @@ class TestNaturalGasProps(object):
 
         return m
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.integration
     def test_T_sweep(self, m):
         assert_units_consistent(m)
@@ -108,6 +108,9 @@ class TestNaturalGasProps(object):
             )
             assert 250 == pytest.approx(value(m.fs.state[1].entr_mol_phase["Vap"]), 1)
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.integration
     def test_P_sweep(self, m):
         for T in range(300, 1000, 200):
@@ -143,6 +146,9 @@ class TestNaturalGasProps(object):
                 assert 185 <= value(m.fs.state[1].entr_mol_phase["Vap"])
                 assert 265 >= value(m.fs.state[1].entr_mol_phase["Vap"])
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.component
     def test_gibbs(self, m):
         m.fs.props = GenericParameterBlock(
@@ -212,6 +218,7 @@ data = {
 }
 
 
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 class Test_CO2_H2O_Properties:
     @pytest.fixture(scope="class")
     def build_model(self):
@@ -273,7 +280,7 @@ class Test_CO2_H2O_Properties:
         m = build_model
         assert (
             str(pyunits.get_units(Cubic.heat_capacity_ratio_phase(m.props[1], "Vap")))
-            == "None"
+            == "dimensionless"
         )
 
         assert (

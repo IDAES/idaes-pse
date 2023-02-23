@@ -13,7 +13,6 @@
 
 __author__ = "John Eslick, Douglas Allan"
 
-import copy
 import enum
 
 from pyomo.common.config import ConfigValue, In
@@ -244,6 +243,7 @@ class _SubsetOf(object):
         values are passed to ``domain.__contains__()``, and if ``True``
         is returned, the value is accepted and returned.
     """
+
     #  TODO Need to determine what to do about repeated entries before this can become a Pyomo PR
     def __new__(cls, domain=None, cast=None):
         return super(_SubsetOf, cls).__new__(cls)

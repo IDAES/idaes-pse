@@ -10,24 +10,26 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from idaes.apps.grid_integration import DoubleLoopCoordinator
-from idaes.apps.grid_integration.tests.util import (
-    make_testing_tracker,
-    make_testing_bidder,
-)
 
-## create trackers
-thermal_tracker = make_testing_tracker()
-thermal_projection_tracker = make_testing_tracker()
-thermal_bidder = make_testing_bidder()
+from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
+from pyomo.common import Executable
+from pyomo.opt.base.solvers import SolverFactory
+from pyomo.opt.solver import SystemCallSolver
 
-# create coordinator
-coordinator = DoubleLoopCoordinator(
-    bidder=thermal_bidder,
-    tracker=thermal_tracker,
-    projection_tracker=thermal_projection_tracker,
-)
+import logging
 
-## Prescient requires the following functions in this module
-get_configuration = coordinator.get_configuration
-register_plugins = coordinator.register_plugins
+logger = logging.getLogger("pyomo.solvers")
+
+
+@SolverFactory.register("ipopt_l1", doc="The Ipopt NLP solver")
+class IPOPT_L1(IPOPT):
+    def _default_executable(self):
+        executable = Executable("ipopt_l1")
+        if not executable:
+            logger.warning(
+                "Could not locate the 'ipopt_l1' executable, "
+                "which is required for solver %s" % self.name
+            )
+            self.enable = False
+            return None
+        return executable.path()

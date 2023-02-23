@@ -14,14 +14,15 @@
 Basic test to make sure the pynumero library is available and working
 """
 
-import idaes
 import pyomo.environ as pyo
 import pytest
 
 try:
     from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+    from pyomo.contrib.pynumero.asl import AmplInterface
 except ImportError:
     PyomoNLP = None
+    AmplInterface = None
 
 
 @pytest.fixture
@@ -44,6 +45,7 @@ def test_import():
 @pytest.mark.unit
 def test_have_pynumero(model):
     assert PyomoNLP is not None
+    assert AmplInterface.available()
     nlp = PyomoNLP(model)
     f = nlp.evaluate_objective()
     assert f == pytest.approx(-504.0)

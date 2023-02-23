@@ -22,7 +22,6 @@ from enum import Enum
 from pyomo.environ import (
     value,
     Var,
-    Block,
     Expression,
     Constraint,
     Reference,
@@ -432,6 +431,7 @@ see property package for documentation.}""",
         Returns:
             None
         """
+
         # Isothermal constraint
         @self.Constraint(
             self.flowsheet().time,

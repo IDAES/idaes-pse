@@ -42,6 +42,7 @@ from idaes.models.unit_models.heat_exchanger import (
     delta_temperature_lmtd2_callback,
     delta_temperature_amtd_callback,
     delta_temperature_underwood_callback,
+    delta_temperature_lmtd_smooth_callback,
     HeatExchanger,
     HeatExchangerFlowPattern,
 )
@@ -78,6 +79,7 @@ from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
 from idaes.models.properties.modular_properties.phase_equil.forms import log_fugacity
 import idaes.models.properties.modular_properties.pure.RPP4 as RPP
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -349,6 +351,22 @@ def basic_model3(cb=delta_temperature_lmtd_callback):
     assert degrees_of_freedom(m) == 0
     m.fs.unit.initialize()
     return m
+
+
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_lmtd_smooth_cb():
+    m = basic_model(delta_temperature_lmtd_smooth_callback)
+    results = solver.solve(m)
+    assert check_optimal_termination(results)
+    # hot in end
+    assert value(m.fs.unit.delta_temperature_in[0]) == pytest.approx(0.464879, rel=1e-3)
+    # hot out end
+    assert value(m.fs.unit.delta_temperature_out[0]) == pytest.approx(
+        0.465069, rel=1e-3
+    )
+    assert value(m.fs.unit.heat_duty[0]) == pytest.approx(46497.44)
 
 
 @pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
@@ -1506,6 +1524,7 @@ class TestSaponification_crossflow(object):
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 class TestBT_Generic_cocurrent(object):
     @pytest.fixture(scope="class")
     def btx(self):

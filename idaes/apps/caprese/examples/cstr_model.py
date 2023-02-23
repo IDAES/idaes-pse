@@ -34,6 +34,7 @@ from idaes.core.util.tests.test_initialization import (
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.unit_models import CSTR, Mixer, MomentumMixingType
+from idaes.core.solvers import get_solver
 from idaes.apps.caprese import nmpc
 from idaes.apps.caprese.nmpc import *
 
@@ -42,8 +43,10 @@ __author__ = "Robert Parker"
 
 # See if ipopt is available and set up solver
 if SolverFactory("ipopt").available():
-    solver = SolverFactory("ipopt")
-    solver.options = {"tol": 1e-6, "mu_init": 1e-8, "bound_push": 1e-8}
+    solver = get_solver(
+        solver="ipopt",
+        options={"tol": 1e-6, "mu_init": 1e-8, "bound_push": 1e-8},
+    )
 else:
     solver = None
 

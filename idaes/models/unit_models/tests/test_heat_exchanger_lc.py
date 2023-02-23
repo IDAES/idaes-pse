@@ -50,14 +50,14 @@ from idaes.core import (
     MomentumBalanceType,
 )
 
-from idaes.models.properties import swco2, iapws95
+from idaes.models.properties import iapws95
 from idaes.models.unit_models import (
     HeatExchangerLumpedCapacitance,
     HeatExchangerFlowPattern,
 )
 
 from idaes.models.unit_models.heat_exchanger import delta_temperature_lmtd_callback
-import numpy as np
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 # Get default solver for testing
 solver = get_solver()
@@ -181,7 +181,6 @@ class TestHXRegression(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_sapon_solution(self, sapon):
-
         results = solver.solve(sapon)
         check_optimal_termination(results)
 
@@ -239,6 +238,7 @@ class TestHXRegression(object):
         )
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestHXLCGeneric(object):
     @pytest.fixture()
     def static_flowsheet_model(self):
@@ -272,7 +272,6 @@ class TestHXLCGeneric(object):
 
     @pytest.fixture()
     def model(self, unconstrained_model):
-
         m = unconstrained_model
         m.discretizer = TransformationFactory("dae.finite_difference")
         m.discretizer.apply_to(m, nfe=1, wrt=m.fs.time, scheme="BACKWARD")
@@ -302,7 +301,6 @@ class TestHXLCGeneric(object):
 
     @pytest.mark.unit
     def test_units_unconstrained(self, unconstrained_model):
-
         # ...but without the discretizer, the units are fine
         assert_units_consistent(unconstrained_model)
 
@@ -357,7 +355,6 @@ class TestHXLCGeneric(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
-
         model.fs.unit.initialize()
         results = solver.solve(model)
 

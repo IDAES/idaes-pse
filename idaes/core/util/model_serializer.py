@@ -15,7 +15,6 @@ Functions for saving and loading Pyomo objects to json
 """
 
 from pyomo.environ import *
-from pyomo.network import Port, Arc
 from pyomo.dae import *
 from pyomo.core.base.component import ComponentData
 import json
@@ -198,59 +197,67 @@ class StoreSpec(object):
             attributes that were written. Based on the state of the component
             and the stored state of the component, the filter function returns
             a list of attributes to read.  For example, a filter function can be
-            used to only read the values of varaibles that were fixed when they
+            used to only read the values of variables that were fixed when they
             were written. The order of the class keys is important and should
             go from specific classes to general ones. For example, if a
             UnitModel is a Block, but you want to store extra attributes for a
             UnitModel, UnitModel should come before Block in the key set.
         data_classes: This takes the same form as the classes argument, the
-            classes should be compoent data types.
+            classes should be component data types.
         ignore_missing: If True will ignore a component or attribute that exists
-            in the model, but not in the stored state. If false an excpetion
+            in the model, but not in the stored state. If false an exception
             will be raised for things in the model that should be loaded but
             aren't in the stored state. Extra items in the stored state will not
-            raise an exception regaurdless of this argument.
+            raise an exception regardless of this argument.
         suffix: If True store suffixes and component ids.  If false, don't store
-            suffixes. This is a legacy option. The prefered way to store a Suffix
+            suffixes. This is a legacy option. The preferred way to store a Suffix
             of not is just to include Suffix in classes or not.
         suffix_filter: None to store all suffixes or a list of suffixes to store.
     """
 
     def __init__(
         self,
-        classes={
-            Param: (("_mutable",), None),
-            Var: ((), None),
-            BooleanVar: ((), None),
-            Expression: ((), None),
-            Block: (("active",), None),
-            Constraint: (("active",), None),
-            Suffix: ((), None),
-        },
-        data_classes={
-            Var._ComponentDataClass: (("fixed", "stale", "value", "lb", "ub"), None),
-            BooleanVar._ComponentDataClass: (("fixed", "stale", "value"), None),
-            pyomo.core.base.param._ParamData: (("value",), None),
-            int: (("value",), None),
-            float: (("value",), None),
-            str: (("value",), None),
-            Expression._ComponentDataClass: ((), None),
-            Block._ComponentDataClass: (("active",), None),
-            Constraint._ComponentDataClass: (("active",), None),
-        },
+        classes=None,
+        data_classes=None,
         ignore_missing=True,
         suffix=None,
         suffix_filter=None,
     ):
-        # convert old style list/tuple classes arg to dict if needed
-        if isinstance(classes, (list, tuple)):
+        if classes is None:
+            self.classes = {
+                Param: (("_mutable",), None),
+                Var: ((), None),
+                BooleanVar: ((), None),
+                Expression: ((), None),
+                Block: (("active",), None),
+                Constraint: (("active",), None),
+                Suffix: ((), None),
+            }
+        elif isinstance(classes, (list, tuple)):
+            # convert old style list/tuple classes arg to dict if needed
             self.classes = {}
             for c in classes:
                 self.classes[c[0]] = c[1:]
         else:
             self.classes = classes
-        # convert old style list/tuple data_classes arg to dict if needed
-        if isinstance(data_classes, (list, tuple)):
+
+        if data_classes is None:
+            self.data_classes = {
+                Var._ComponentDataClass: (
+                    ("fixed", "stale", "value", "lb", "ub"),
+                    None,
+                ),
+                BooleanVar._ComponentDataClass: (("fixed", "stale", "value"), None),
+                pyomo.core.base.param._ParamData: (("value",), None),
+                int: (("value",), None),
+                float: (("value",), None),
+                str: (("value",), None),
+                Expression._ComponentDataClass: ((), None),
+                Block._ComponentDataClass: (("active",), None),
+                Constraint._ComponentDataClass: (("active",), None),
+            }
+        elif isinstance(data_classes, (list, tuple)):
+            # convert old style list/tuple data_classes arg to dict if needed
             self.data_classes = {}
             for c in data_classes:
                 self.data_classes[c[0]] = c[1:]
@@ -271,14 +278,14 @@ class StoreSpec(object):
         # Block and BlockData are required for model structure
         if Block not in self.classes:
             self.classes[Block] = ((), None)
-        if Block._ComponentDataClass not in data_classes:
+        if Block._ComponentDataClass not in self.data_classes:
             self.data_classes[Block._ComponentDataClass] = ((), None)
         # If suffix is None, deside by whether in classes, else add or remove
         # suffix based on option.  May deprecate the suffix option.
         if suffix is not None:
-            if not suffix and Suffix in classes:
+            if not suffix and Suffix in self.classes:
                 del self.classes[Suffix]
-            elif suffix and Suffix not in classes:
+            elif suffix and Suffix not in self.classes:
                 self.classes[Suffix] = ((), None)
         # Create filter function lists, use None if not supplied
         for i, c in self.classes.items():
@@ -431,7 +438,7 @@ class StoreSpec(object):
     @classmethod
     def value_isfixed_isactive(cls, only_fixed):
         """
-        Retur a StoreSpec object to store variable values, if variables are
+        Return a StoreSpec object to store variable values, if variables are
         fixed and if components are active.
 
         Args:
@@ -806,7 +813,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
         sd: dictionary to read from
         o: Pyomo component whoes data to read
         wts: StoreSpec object specifying what to read in
-        lookup: a lookup table for id to componet for reading suffixes
+        lookup: a lookup table for id to component for reading suffixes
         suffixes: a list of suffixes put off reading until end
 
     Returns:
@@ -842,7 +849,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
                 raise (e)  # else raise exception
         if ff is not None:  # if a filer function was given, use it to make a
             # new a list based on the model and whats stored for the state
-            # this lets you contionally load things, for example only load
+            # this lets you condionally load things, for example only load
             # values for unfixed variables.
             alist = ff(el, edict)
         if Suffix in wts.classes:  # if loading suffixes make lookup table id
@@ -929,8 +936,8 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=None, root_name=None)
     Load the state of a Pyomo component state from a dictionary, json file, or
     json string.  Must only specify one of sd, fname, or s as a non-None value.
     This works by going through the model and loading the state of each
-    sub-compoent of o. If the saved state contains extra information, it is
-    ignored.  If the save state doesn't contain an enetry for a model component
+    sub-component of o. If the saved state contains extra information, it is
+    ignored.  If the save state doesn't contain an entry for a model component
     that is to be loaded an error will be raised, unless ignore_missing = True.
 
     Args:
@@ -943,7 +950,7 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=None, root_name=None)
             True if fname ends with '.gz' otherwise False.
 
     Returns:
-        Dictionary with some perfomance information. The keys are
+        Dictionary with some performance information. The keys are
         "etime_load_file", how long in seconds it took to load the json file
         "etime_read_dict", how long in seconds it took to read models state
         "etime_read_suffixes", how long in seconds it took to read suffixes
@@ -974,10 +981,10 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=None, root_name=None)
         raise Exception("Need to specify a data source to load from")
     dict_time = time.time()  # To calculate how long it took to read file
     if wts is None:  # if no StoreSpec object given use the default, which should
-        wts = StoreSpec()  # be the typlical save everything important
+        wts = StoreSpec()  # be the typical save everything important
     lookup = {}  # A dict to use for a lookup tables
     suffixes = {}  # A list of suffixes delayed to end so lookup is complete
-    # Read toplevel componet (is recursive)
+    # Read toplevel component (is recursive)
     if root_name is None:
         for k in sd:
             if k.startswith("__") and k.endswith("__"):

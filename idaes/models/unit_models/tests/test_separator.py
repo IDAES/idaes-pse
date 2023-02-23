@@ -16,7 +16,6 @@ Tests for Separator unit model.
 Author: Andrew Lee
 """
 import pytest
-from io import StringIO
 import pandas
 
 from pyomo.environ import (
@@ -37,6 +36,7 @@ from idaes.core import (
     FlowsheetBlock,
     declare_process_block_class,
     MaterialBalanceType,
+    MomentumBalanceType,
     StateBlockData,
     StateBlock,
     PhysicalParameterBlock,
@@ -107,7 +107,7 @@ class TestBaseConstruction(object):
 
     @pytest.mark.unit
     def test_separator_config(self, build):
-        assert len(build.fs.sep.config) == 14
+        assert len(build.fs.sep.config) == 15
         assert build.fs.sep.config.dynamic is False
         assert build.fs.sep.config.has_holdup is False
         assert build.fs.sep.config.property_package == build.fs.pp
@@ -664,6 +664,31 @@ class TestSplitConstruction(object):
         build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert not hasattr(build.fs.sep, "material_splitting_eqn")
+
+    @pytest.mark.parametrize("balance_type", MomentumBalanceType)
+    @pytest.mark.parametrize("split_type", SplittingType)
+    @pytest.mark.unit
+    def test_momentum_splitting(self, build, balance_type, split_type):
+        build.fs.sep.config.split_basis = split_type
+        build.fs.sep.config.momentum_balance_type = balance_type
+
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+
+        if balance_type is MomentumBalanceType.none:
+            build.fs.sep.add_momentum_splitting_constraints(build.fs.sep.mixed_state)
+            assert not hasattr(build.fs.sep, "pressure_equality_eqn")
+        elif balance_type is MomentumBalanceType.pressureTotal:
+            build.fs.sep.add_momentum_splitting_constraints(build.fs.sep.mixed_state)
+            assert isinstance(build.fs.sep.pressure_equality_eqn, Constraint)
+        else:
+            with pytest.raises(
+                NotImplementedError,
+                match=f"Separators do not yet support momentum balances of type "
+                f"{balance_type}",
+            ):
+                build.fs.sep.add_momentum_splitting_constraints(
+                    build.fs.sep.mixed_state
+                )
 
     @pytest.mark.unit
     def test_add_energy_splitting_constraints(self, build):

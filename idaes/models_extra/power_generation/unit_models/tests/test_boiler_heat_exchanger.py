@@ -48,8 +48,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
-
-import idaes.logger as idaeslog
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -182,22 +181,25 @@ def tu(delta_temperature_callback=delta_temperature_underwood_callback):
     assert_units_consistent(m)
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.unit
 def test_config_am():
     tc(delta_temperature_amtd_callback)
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.unit
 def test_config_lm():
     tc(delta_temperature_lmtd_callback)
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.unit
 def test_config_uw():
     tc(delta_temperature_underwood_callback)
 
 
-@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_boiler_hx_am():
@@ -205,33 +207,33 @@ def test_boiler_hx_am():
     th(delta_temperature_amtd_callback, tout_1=817.7, tout_2=720)
 
 
-@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_boiler_hx_lm():
     th(delta_temperature_lmtd_callback)
 
 
-@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_boiler_hx_uw():
     th(delta_temperature_underwood_callback)
 
 
-@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_units_am():
     tu(delta_temperature_amtd_callback)
 
 
-@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_units_lm():
     tu(delta_temperature_lmtd_callback)
 
 
-@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_units_uw():
     tu(delta_temperature_underwood_callback)

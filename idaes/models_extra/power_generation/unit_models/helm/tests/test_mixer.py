@@ -18,8 +18,10 @@ from idaes.models_extra.power_generation.unit_models.helm import (
     MomentumMixingType,
 )
 from idaes.models.properties import iapws95
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_mixer():
     m = pyo.ConcreteModel()
@@ -59,6 +61,7 @@ def test_mixer():
     assert pyo.value(m.fs.unit.outlet.pressure[0]) == pytest.approx(Pin1, rel=1e-7)
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_mixer2():
     m = pyo.ConcreteModel()

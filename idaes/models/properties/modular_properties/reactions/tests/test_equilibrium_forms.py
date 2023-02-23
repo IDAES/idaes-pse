@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Tests for rate forms
+Tests for equilibrium forms
 """
 
 import pytest
@@ -27,7 +27,7 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_forms impo
 from idaes.core import SolidPhase
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.math import safe_log, smooth_max
+from idaes.core.util.math import smooth_max
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -441,7 +441,9 @@ def test_solubility_no_order():
         ** m.rparams.reaction_r1.reaction_order["p1", "c2"]
     )
 
-    assert str(rform) == str(s - smooth_max(0, s - Q, m.rparams.reaction_r1.eps) == 0)
+    assert str(rform) == str(
+        s - smooth_max(0, s - Q / pyunits.dimensionless, m.rparams.reaction_r1.eps) == 0
+    )
 
 
 @pytest.mark.unit
@@ -536,7 +538,9 @@ def test_solubility_product_with_order():
         ** m.rparams.reaction_r1.reaction_order["sol", "c2"]
     )
 
-    assert str(rform) == str(s - smooth_max(0, s - Q, m.rparams.reaction_r1.eps) == 0)
+    assert str(rform) == str(
+        s - smooth_max(0, s - Q / pyunits.dimensionless, m.rparams.reaction_r1.eps) == 0
+    )
 
 
 @pytest.mark.unit

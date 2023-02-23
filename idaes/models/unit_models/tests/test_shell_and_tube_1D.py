@@ -16,7 +16,6 @@ Tests for Shell and Tube 1D unit model.
 Author: Jaffer Ghouse
 """
 import pytest
-from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -68,6 +67,7 @@ from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
 )
 from idaes.models.properties.modular_properties.phase_equil.forms import log_fugacity
 import idaes.models.properties.modular_properties.pure.RPP4 as RPP
+from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -1321,6 +1321,7 @@ class TestIAPWS_countercurrent(object):
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 class TestBT_Generic_cocurrent(object):
     @pytest.fixture(scope="class")
     def btx(self):

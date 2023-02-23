@@ -20,7 +20,6 @@ import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock
 
 import idaes.logger as idaeslog
-from idaes.core.util.tags import svg_tag as svg_tag_new
 
 _log = idaeslog.getLogger(__name__)
 
@@ -151,32 +150,24 @@ def set_param_from_config(b, param, config=None, index=None):
                 " a value for this parameter and index.".format(b.name, param, index)
             )
 
-    units = param_obj.get_units()
-
     # Check to see if p_data is callable, and if so, try to call the
     # get_parameter_value method to get 2-tuple
     if hasattr(p_data, "get_parameter_value"):
         p_data = p_data.get_parameter_value(b.local_name, param)
 
     if isinstance(p_data, tuple):
-        # 11 Dec 2020 - There is currently a bug in Pyomo where trying to
-        # convert the units of a unitless quantity results in a TypeError.
-        # To avoid this, we check here for cases where both the parameter and
-        # user provided value are unitless and bypass unit conversion.
-        if (units is None or units is pyo.units.dimensionless) and (
-            p_data[1] is None or p_data[1] is pyo.units.dimensionless
-        ):
-            param_obj.value = p_data[0]
+        if p_data[1] is None:
+            p_val = p_data[0] * pyo.units.dimensionless
         else:
-            param_obj.value = pyo.units.convert_value(
-                p_data[0], from_units=p_data[1], to_units=units
-            )
+            p_val = p_data[0] * p_data[1]
     else:
         _log.debug(
             "{} no units provided for parameter {} - assuming default "
             "units".format(b.name, param)
         )
-        param_obj.value = p_data
+        p_val = p_data
+
+    param_obj.set_value(p_val)
 
 
 class StrEnum(str, Enum):

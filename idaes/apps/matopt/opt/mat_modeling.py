@@ -1692,7 +1692,7 @@ class Implies(DescriptorRule):
         """
 
         result = []
-        for (desc, conc) in self.concs:
+        for desc, conc in self.concs:
             ConIndexes = IndexedElem.fromComb(var, desc, conc)
 
             def rule_lb(m, *args):
@@ -1764,7 +1764,7 @@ class NegImplies(DescriptorRule):
             (list<Constraint>) list of Pyomo constraint objects.
         """
         result = []
-        for (desc, conc) in self.concs:
+        for desc, conc in self.concs:
             ConIndexes = IndexedElem.fromComb(var, desc, conc)
 
             def rule_lb(m, *args):
@@ -2108,7 +2108,7 @@ class MaterialDescriptor(IndexedElem):
         bounds=(None, None),
         integer=False,
         binary=False,
-        rules=[],
+        rules=None,
         **kwargs
     ):
         """Standard constuctor for material descriptors.
@@ -2141,6 +2141,8 @@ class MaterialDescriptor(IndexedElem):
         self._confDs = confDs
         self._integer = integer or binary
         self._binary = binary
+        if rules is None:
+            rules = []
         self._rules = rules if type(rules) is list else [rules]
         self._bounds = bounds
         self._pyomo_var = None  # Will be set by MatOptModel._make_pyomo_model

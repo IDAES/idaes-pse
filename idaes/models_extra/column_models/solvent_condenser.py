@@ -27,7 +27,6 @@ __author__ = "Andrew Lee, Paul Akula"
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    check_optimal_termination,
     Constraint,
     Param,
     Reference,
