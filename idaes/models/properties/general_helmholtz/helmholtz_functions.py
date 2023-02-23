@@ -2233,13 +2233,16 @@ change.
         self,
         ylim=None,
         xlim=None,
-        points={},
+        points=None,
         figsize=None,
         dpi=None,
         isotherms=None,
         isotherms_line_format=None,
         isotherms_label=True,
     ):
+        if points is None:
+            points = {}
+
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
         if ylim is not None:
@@ -2327,8 +2330,11 @@ change.
         ax.set_ylabel("Pressure (kPa)")
         return fig, ax
 
-    def ts_diagram(self, ylim=None, xlim=None, points={}, figsize=None, dpi=None):
+    def ts_diagram(self, ylim=None, xlim=None, points=None, figsize=None, dpi=None):
         # Add external functions needed to plot PH-diagram
+        if points is None:
+            points = {}
+
         add_helmholtz_external_functions(
             self,
             [
@@ -2382,7 +2388,8 @@ change.
         ax.set_ylabel("Temperature (K)")
         return fig, ax
 
-    def pt_diagram(self, ylim=None, xlim=None, points={}, figsize=None, dpi=None):
+    # TODO: points argument is unused
+    def pt_diagram(self, ylim=None, xlim=None, points=None, figsize=None, dpi=None):
         # Add external functions needed to plot PH-diagram
         add_helmholtz_external_functions(
             self,

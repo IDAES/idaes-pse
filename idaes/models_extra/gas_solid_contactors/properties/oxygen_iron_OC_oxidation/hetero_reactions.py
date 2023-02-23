@@ -245,7 +245,7 @@ class _ReactionBlock(ReactionBlockBase):
     whole, rather than individual elements of indexed Reaction Blocks.
     """
 
-    def initialize(blk, outlvl=idaeslog.NOTSET, optarg={"tol": 1e-8}, solver="ipopt"):
+    def initialize(blk, outlvl=idaeslog.NOTSET, optarg=None, solver="ipopt"):
         """
         Initialisation routine for reaction package.
 

@@ -419,7 +419,7 @@ class _GasPhaseStateBlock(StateBlock):
         state_vars_fixed=False,
         outlvl=idaeslog.NOTSET,
         solver="ipopt",
-        optarg={"tol": 1e-8},
+        optarg=None,
     ):
         """
         Initialization routine for property package.

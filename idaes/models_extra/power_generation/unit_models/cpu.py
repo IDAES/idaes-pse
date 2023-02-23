@@ -508,7 +508,7 @@ class CarbonProcessingUnitData(UnitModelBlockData):
         blk,
         outlvl=idaeslog.NOTSET,
         solver="ipopt",
-        optarg={"tol": 1e-6},
+        optarg=None,
         release_state=True,
     ):
         """
@@ -524,6 +524,9 @@ class CarbonProcessingUnitData(UnitModelBlockData):
         Returns:
             None
         """
+        if optarg is None:
+            optarg = {"tol": 1e-6}
+
         iscale.calculate_scaling_factors(blk)
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")

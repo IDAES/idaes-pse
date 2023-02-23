@@ -1234,7 +1234,7 @@ def test_build_process_costs_variableonly_nonearguments():
             variable_OM=True,
             resources=resources,
             rates=rates,
-            prices=None,
+            prices="foo",
             fuel=None,
         )
 
@@ -1419,7 +1419,7 @@ def test_build_process_costs_allOM_nonearguments():
             variable_OM=True,
             resources=resources,
             rates=rates,
-            prices=None,
+            prices="foo",
             fuel=None,
         )
 
