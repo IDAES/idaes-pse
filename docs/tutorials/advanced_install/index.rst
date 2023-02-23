@@ -121,5 +121,5 @@ The main branch of idaes-pse is frequently updated and a new IDAES release occur
 
 .. code-block:: sh
 
-    pip install -U idaes-pse
-    pip install -U .
+    pip install -r requirements-dev.txt
+    idaes get-extensions  # IDAES extensions should also be updated
