@@ -61,13 +61,20 @@ class MultiPeriodModel(pyo.ConcreteModel):
         set_scenarios=None,
         initialization_func=None,
         unfix_dof_func=None,
-        flowsheet_options={},
-        initialization_options={},
-        unfix_dof_options={},
+        flowsheet_options=None,
+        initialization_options=None,
+        unfix_dof_options=None,
         solver=None,
         outlvl=logging.WARNING,
     ):  # , state_variable_func=None):
         super().__init__()
+
+        if flowsheet_options is None:
+            flowsheet_options = {}
+        if initialization_options is None:
+            initialization_options = {}
+        if unfix_dof_options is None:
+            unfix_dof_options = {}
 
         self.n_time_points = n_time_points
 
@@ -128,9 +135,9 @@ class MultiPeriodModel(pyo.ConcreteModel):
     def build_multi_period_model(
         self,
         model_data_kwargs=None,
-        flowsheet_options={},
-        initialization_options={},
-        unfix_dof_options={},
+        flowsheet_options=None,
+        initialization_options=None,
+        unfix_dof_options=None,
         solver=None,
     ):
         """
@@ -146,9 +153,17 @@ class MultiPeriodModel(pyo.ConcreteModel):
             unfix_dof_options: dict containing the arguments needed for `unfix_dof_func`
             solver: pyomo solver object
         """
+        if flowsheet_options is None:
+            flowsheet_options = {}
+        if initialization_options is None:
+            initialization_options = {}
+        if unfix_dof_options is None:
+            unfix_dof_options = {}
+
         # use default empty dictionaries if no kwargs dict provided
-        if model_data_kwargs == None:
+        if model_data_kwargs is None:
             model_data_kwargs = {t: {} for t in range(self.n_time_points)}
+        # TODO: Replace this with a proper exception and message
         assert list(range(len(model_data_kwargs))) == sorted(model_data_kwargs)
 
         m = self

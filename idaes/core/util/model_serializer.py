@@ -217,39 +217,47 @@ class StoreSpec(object):
 
     def __init__(
         self,
-        classes={
-            Param: (("_mutable",), None),
-            Var: ((), None),
-            BooleanVar: ((), None),
-            Expression: ((), None),
-            Block: (("active",), None),
-            Constraint: (("active",), None),
-            Suffix: ((), None),
-        },
-        data_classes={
-            Var._ComponentDataClass: (("fixed", "stale", "value", "lb", "ub"), None),
-            BooleanVar._ComponentDataClass: (("fixed", "stale", "value"), None),
-            pyomo.core.base.param._ParamData: (("value",), None),
-            int: (("value",), None),
-            float: (("value",), None),
-            str: (("value",), None),
-            Expression._ComponentDataClass: ((), None),
-            Block._ComponentDataClass: (("active",), None),
-            Constraint._ComponentDataClass: (("active",), None),
-        },
+        classes=None,
+        data_classes=None,
         ignore_missing=True,
         suffix=None,
         suffix_filter=None,
     ):
-        # convert old style list/tuple classes arg to dict if needed
-        if isinstance(classes, (list, tuple)):
+        if classes is None:
+            self.classes = {
+                Param: (("_mutable",), None),
+                Var: ((), None),
+                BooleanVar: ((), None),
+                Expression: ((), None),
+                Block: (("active",), None),
+                Constraint: (("active",), None),
+                Suffix: ((), None),
+            }
+        elif isinstance(classes, (list, tuple)):
+            # convert old style list/tuple classes arg to dict if needed
             self.classes = {}
             for c in classes:
                 self.classes[c[0]] = c[1:]
         else:
             self.classes = classes
-        # convert old style list/tuple data_classes arg to dict if needed
-        if isinstance(data_classes, (list, tuple)):
+
+        if data_classes is None:
+            self.data_classes = {
+                Var._ComponentDataClass: (
+                    ("fixed", "stale", "value", "lb", "ub"),
+                    None,
+                ),
+                BooleanVar._ComponentDataClass: (("fixed", "stale", "value"), None),
+                pyomo.core.base.param._ParamData: (("value",), None),
+                int: (("value",), None),
+                float: (("value",), None),
+                str: (("value",), None),
+                Expression._ComponentDataClass: ((), None),
+                Block._ComponentDataClass: (("active",), None),
+                Constraint._ComponentDataClass: (("active",), None),
+            }
+        elif isinstance(data_classes, (list, tuple)):
+            # convert old style list/tuple data_classes arg to dict if needed
             self.data_classes = {}
             for c in data_classes:
                 self.data_classes[c[0]] = c[1:]
@@ -270,14 +278,14 @@ class StoreSpec(object):
         # Block and BlockData are required for model structure
         if Block not in self.classes:
             self.classes[Block] = ((), None)
-        if Block._ComponentDataClass not in data_classes:
+        if Block._ComponentDataClass not in self.data_classes:
             self.data_classes[Block._ComponentDataClass] = ((), None)
         # If suffix is None, deside by whether in classes, else add or remove
         # suffix based on option.  May deprecate the suffix option.
         if suffix is not None:
-            if not suffix and Suffix in classes:
+            if not suffix and Suffix in self.classes:
                 del self.classes[Suffix]
-            elif suffix and Suffix not in classes:
+            elif suffix and Suffix not in self.classes:
                 self.classes[Suffix] = ((), None)
         # Create filter function lists, use None if not supplied
         for i, c in self.classes.items():

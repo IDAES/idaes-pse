@@ -183,14 +183,17 @@ def set_inputs(m):
 def initialize(
     m,
     outlvl=idaeslog.NOTSET,
-    optarg={
-        "tol": 1e-6,
-        "max_iter": 40,
-    },
+    optarg=None,
 ):
     """Initialize unit models"""
     init_log = idaeslog.getInitLogger(m.name, outlvl, tag="flowsheet")
     solve_log = idaeslog.getSolveLogger(m.name, outlvl, tag="flowsheet")
+
+    if optarg is None:
+        optarg = {
+            "tol": 1e-6,
+            "max_iter": 40,
+        }
 
     solver = get_solver()
     solver.options = optarg

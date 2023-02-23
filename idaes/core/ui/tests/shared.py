@@ -15,7 +15,10 @@ Shared (utility) code for UI tests.
 """
 
 
-def dict_diff(d1, d2, result=[], pfx=""):
+def dict_diff(d1, d2, result=None, pfx=""):
+    if result is None:
+        result = []
+
     if isinstance(d1, list) and isinstance(d2, list):
         if len(d1) != len(d2):
             result.append(

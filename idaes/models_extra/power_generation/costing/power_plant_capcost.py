@@ -1746,7 +1746,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         b,
         resources,
         rates,
-        prices={},
+        prices=None,
         CE_index_year="2018",
         capacity_factor=0.85,
     ):
@@ -1770,6 +1770,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             None.
 
         """
+        if prices is None:
+            prices = {}
 
         if not hasattr(b.parent_block(), "time"):  # flowsheet is not dynamic
             b.parent_block().time = [0]

@@ -36,7 +36,12 @@ class MyBounds(object):
      The results of the __call__ function is fed into the Basinhopping algorithm using the accept_test parameter.
     """
 
-    def __init__(self, xmax=[1], xmin=[1e-6]):
+    def __init__(self, xmax=None, xmin=None):
+        if xmax is None:
+            xmax = [1]
+        if xmin is None:
+            xmin = [1e-6]
+
         self.xmax = np.array(xmax)
         self.xmin = np.array(xmin)
 

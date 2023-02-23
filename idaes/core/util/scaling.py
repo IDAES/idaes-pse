@@ -1135,7 +1135,7 @@ def set_scaling_from_default(
     missing: float = None,
     overwrite: bool = False,
     descend_into: bool = True,
-    components_to_scale: "List of Pyomo component types" = [pyo.Var],
+    components_to_scale: "List of Pyomo component types" = None,
 ):
     """
     Set scaling factor(s) for given component from default scaling factor dictionary associated with the parent model.
@@ -1155,6 +1155,9 @@ def set_scaling_from_default(
         None
 
     """
+    if components_to_scale is None:
+        components_to_scale = [pyo.Var]
+
     if isinstance(component, pyo.Block):
         for c in component.component_data_objects(
             components_to_scale, descend_into=descend_into
