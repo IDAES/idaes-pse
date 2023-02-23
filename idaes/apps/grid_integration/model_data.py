@@ -46,7 +46,6 @@ class BaseValidator(ABC):
             instance: an instance that uses this data descriptor.
             value: value that needs to be validated.
         """
-        pass
 
 
 class StrValidator(BaseValidator):

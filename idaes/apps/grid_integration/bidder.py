@@ -43,8 +43,6 @@ class AbstractBidder(ABC):
             None
         """
 
-        pass
-
     @abstractmethod
     def update_real_time_model(self, **kwargs):
 
@@ -57,8 +55,6 @@ class AbstractBidder(ABC):
         Returns:
             None
         """
-
-        pass
 
     @abstractmethod
     def compute_day_ahead_bids(self, date, hour, **kwargs):
@@ -79,8 +75,6 @@ class AbstractBidder(ABC):
             None
         """
 
-        pass
-
     @abstractmethod
     def compute_real_time_bids(self, date, hour, **kwargs):
 
@@ -100,8 +94,6 @@ class AbstractBidder(ABC):
             None
         """
 
-        pass
-
     @abstractmethod
     def write_results(self, path):
 
@@ -114,8 +106,6 @@ class AbstractBidder(ABC):
         Return:
             None
         """
-
-        pass
 
     @abstractmethod
     def formulate_DA_bidding_problem(self):
@@ -131,8 +121,6 @@ class AbstractBidder(ABC):
             None
         """
 
-        pass
-
     @abstractmethod
     def formulate_RT_bidding_problem(self):
 
@@ -146,8 +134,6 @@ class AbstractBidder(ABC):
         Returns:
             None
         """
-
-        pass
 
     @abstractmethod
     def record_bids(self, bids, model, date, hour):
@@ -169,8 +155,6 @@ class AbstractBidder(ABC):
             None
 
         """
-
-        pass
 
     @property
     @abstractmethod

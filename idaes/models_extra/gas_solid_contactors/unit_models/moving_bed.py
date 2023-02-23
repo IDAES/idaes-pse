@@ -550,8 +550,7 @@ see reaction package for documentation.}""",
         )
 
         # =========================================================================
-        """ Build Control volume 1D for gas phase and
-            populate gas control volume"""
+        # Build Control volume 1D for gas phase and populate gas control volume
 
         self.gas_phase = ControlVolume1DBlock(
             transformation_method=self.config.transformation_method,
@@ -602,8 +601,7 @@ see reaction package for documentation.}""",
         )
 
         # =========================================================================
-        """ Build Control volume 1D for solid phase and
-            populate solid control volume"""
+        # Build Control volume 1D for solid phase and populate solid control volume
 
         # Set argument for heterogeneous reaction block
         self.solid_phase = ControlVolume1DBlock(
@@ -673,7 +671,7 @@ see reaction package for documentation.}""",
         )
 
         # =========================================================================
-        """ Add ports"""
+        # Add ports
         # Add Ports for gas side
         self.add_inlet_port(name="gas_inlet", block=self.gas_phase)
         self.add_outlet_port(name="gas_outlet", block=self.gas_phase)
@@ -683,7 +681,7 @@ see reaction package for documentation.}""",
         self.add_outlet_port(name="solid_outlet", block=self.solid_phase)
 
         # =========================================================================
-        """ Add performance equation method"""
+        # Add performance equation method
         self._apply_transformation()
         self._make_performance()
 

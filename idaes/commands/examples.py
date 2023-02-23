@@ -89,19 +89,13 @@ g_tempdir, g_egg = None, None
 class DownloadError(Exception):
     """Used for errors downloading the release files."""
 
-    pass
-
 
 class CopyError(Exception):
     """Used for errors copying files."""
 
-    pass
-
 
 class InstallError(Exception):
     """Used for errors installing the source as a Python package."""
-
-    pass
 
 
 class GithubError(Exception):

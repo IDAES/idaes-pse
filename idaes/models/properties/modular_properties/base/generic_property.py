@@ -997,7 +997,6 @@ class GenericParameterData(PhysicalParameterBlock):
         Returns:
             None
         """
-        pass
 
     def parameters(self):
         """
@@ -1009,7 +1008,6 @@ class GenericParameterData(PhysicalParameterBlock):
         Returns:
             None
         """
-        pass
 
     @classmethod
     def define_metadata(cls, obj):

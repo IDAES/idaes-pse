@@ -232,7 +232,6 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         4. self.aggregate_flow_costs (indexed by flow type)
         """
         # TODO: Do we have any process level methods to add here?
-        pass
 
     @staticmethod
     def initialize_build(self):
@@ -242,8 +241,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
 
         Note that the aggregate costs will be initialized by the framework.
         """
-        # TODO: For now,  no additional process level costs to initialize
-        pass
+        # TODO: For now, no additional process level costs to initialize
 
     def cost_heat_exchanger(
         blk,

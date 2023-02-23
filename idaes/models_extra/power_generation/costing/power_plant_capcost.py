@@ -399,7 +399,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         Note that the aggregate costs will be initialized by the framework.
         """
         # TODO: For now,  no additional process level costs to initialize
-        pass
 
     def report(self, export=False):
 

@@ -408,7 +408,6 @@ class InitializerBase:
         Returns:
             None.
         """
-        pass
 
     def _load_values_from_dict(self, model, initial_guesses, exception_on_fixed=True):
         """

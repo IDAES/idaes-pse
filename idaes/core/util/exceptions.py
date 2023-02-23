@@ -25,7 +25,7 @@ class IdaesError(Exception):
     exceptions.
     """
 
-    pass  # Problem with toaster
+    # Problem with toaster
 
 
 class BalanceTypeNotSupportedError(NotImplementedError, IdaesError):
@@ -34,7 +34,7 @@ class BalanceTypeNotSupportedError(NotImplementedError, IdaesError):
     type of balance equation.
     """
 
-    pass  # Tried to put bagel in normal toaster
+    # Tried to put bagel in normal toaster
 
 
 class ConfigurationError(ValueError, IdaesError):
@@ -43,7 +43,7 @@ class ConfigurationError(ValueError, IdaesError):
     or inconsistent.
     """
 
-    pass  # Too many buttons, burnt toast
+    # Too many buttons, burnt toast
 
 
 class DynamicError(ValueError, IdaesError):
@@ -52,7 +52,7 @@ class DynamicError(ValueError, IdaesError):
     are incorrect.
     """
 
-    pass  # Incorrect browness setting
+    # Incorrect browness setting
 
 
 class BurntToast(IdaesError):
@@ -60,7 +60,7 @@ class BurntToast(IdaesError):
     General exception for when something breaks badly in the core.
     """
 
-    pass  # Toaster on fire
+    # Toaster on fire
 
 
 class PropertyNotSupportedError(AttributeError, IdaesError):
@@ -71,7 +71,7 @@ class PropertyNotSupportedError(AttributeError, IdaesError):
     Needs to inherit from AttributeError for Pyomo interactions.
     """
 
-    pass  # Could not find bread
+    # Could not find bread
 
 
 class PropertyPackageError(AttributeError, IdaesError):
@@ -81,7 +81,7 @@ class PropertyPackageError(AttributeError, IdaesError):
     Needs to inherit from AttributeError for Pyomo interactions.
     """
 
-    pass  # Bread stuck
+    # Bread stuck
 
 
 class InitializationError(ArithmeticError, IdaesError):
@@ -92,13 +92,9 @@ class InitializationError(ArithmeticError, IdaesError):
     enters a state from which recovery is impossible.
     """
 
-    pass
-
 
 class UserModelError(ValueError, IdaesError):
     """
     IDAES exception for when a user model returns unphysical values that
     prevent further execution of code.
     """
-
-    pass
