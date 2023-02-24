@@ -12,7 +12,6 @@ provided below.
 .. toctree::
     :maxdepth: 1
     
-    matopt/index
     caprese/index
     uncertainty_propagation/index
     diagnostics/index
@@ -53,36 +52,6 @@ black-box systems for which a simulator or experimental setup is available.
 .. note::
     ALAMO is an external tool to needs to be installed separately. See the ALAMOPy documentation for details on ALAMO installation and usage.
 
-
-.. rubric:: RIPE: Reaction Identification and Parameter Estimation
-
-:ref:`RIPE: Reaction Identification and Parameter Estimation<explanations/modeling_extensions/surrogate/ripe/index:RIPE: Reaction Identification and Parameter Estimation>`
-provides tools for reaction network identification. RIPE uses reactor data consisting of 
-concentration, or conversion, values for multiple species that are obtained dynamically, or at 
-multiple process conditions (temperatures, flow rates, working volumes) to identify probable 
-reaction kinetics. The RIPE module also contains tools to facilitate adaptive experimental 
-design.
-
-.. image:: /images/ddm-software.png
-    :width: 500px
-    :align: center
-
-.. rubric:: HELMET: HELMholtz Energy Thermodynamics
-
-:ref:`HELMET: HELMholtz Energy Thermodynamics<explanations/modeling_extensions/surrogate/helmet/index:HELMET: HELMholtz Energy Thermodynamics>`
-provides a framework for regressing multiparameter equations of state that identify an equation 
-for Helmholtz energy and multiple thermodynamic properties simultaneously. 
-
-.. rubric:: MatOpt: Nanomaterials Optimization
-
-:ref:`MatOpt: Nanomaterials Optimization<explanations/modeling_extensions/matopt/index:MatOpt: Nanomaterials Optimization>`
-provides tools for nanomaterials design using Mathematical Optimization. MatOpt can be used to 
-design crystalline nanostructured materials, including but not limited to particles, wires, 
-surfaces, and periodic bulk structures.
-
-.. image:: /images/matopt_logo_full.png
-    :width: 500px
-    :align: center
 
 .. rubric:: Caprese
 

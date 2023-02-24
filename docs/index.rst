@@ -60,6 +60,7 @@ Contents
     how_to_guides/index
     explanations/index
     reference_guides/index
+    archived/index
 
 
 Collaborating institutions
