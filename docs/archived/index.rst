@@ -10,7 +10,6 @@ The IDAES team is open to having theses tools revived if there is sufficient int
     As the IDAES and its underlying dependencies continue to evolve, it may be difficult to find a version of all dependencies that will allow the code to run. Users should be aware of this, and understand that the IDAES team makes no guarantees about the operability of the code and will be unable to help with any issues that arise.
 
 .. toctree::
-    :hidden:
     :maxdepth: 2
 
     helmet/index
