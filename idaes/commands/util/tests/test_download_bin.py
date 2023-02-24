@@ -288,8 +288,7 @@ def test_verify_tarfile_members():
     #     print(f.type, f.name, f.linkname)
     with pytest.raises(
         Exception,
-        match="Tarball None contained potentially unsafe member "
-        + os.path.sep.join(["dir1", "dir2", "dir3", "file"]),
+        match="Tarball None contained potentially unsafe member dir1/dir2/dir3/file",
     ):
         dlb._verify_tar_member_targets(tar, os.path.abspath(""))
 
@@ -314,8 +313,6 @@ def test_verify_tarfile_members():
     # for f in tar.getmembers():
     #     print(f.type, f.name, f.linkname)
     with pytest.raises(
-        Exception,
-        match="Tarball None contained potentially unsafe member "
-        + os.path.sep.join(["dir3", "file"]),
+        Exception, match="Tarball None contained potentially unsafe member dir3/file"
     ):
         dlb._verify_tar_member_targets(tar, os.path.abspath(""))
