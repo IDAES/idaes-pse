@@ -239,7 +239,7 @@ def _resolve_path(path, links):
                     path = os.path.dirname(path)
                 dirs.extend(_splitpath(links[target][1]))
                 target = None
-            else: # links[target][0] == tarfile.LNKTYPE:
+            else:  # links[target][0] == tarfile.LNKTYPE:
                 target_dir, target_name = os.path.split(links[target][1])
                 target = os.path.join(_resolve_path(target_dir, links), target_name)
         if target is not None:
