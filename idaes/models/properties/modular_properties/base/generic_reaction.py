@@ -452,7 +452,6 @@ class GenericReactionParameterData(ReactionParameterBlock):
         Returns:
             None
         """
-        pass
 
     def parameters(self):
         """
@@ -466,7 +465,6 @@ class GenericReactionParameterData(ReactionParameterBlock):
         Returns:
             None
         """
-        pass
 
     @classmethod
     def define_metadata(cls, obj):

@@ -38,7 +38,6 @@ class Walker(object):
         Returns:
             None
         """
-        pass
 
 
 class ModuleClassWalker(Walker):
@@ -204,7 +203,6 @@ class Visitor(object):
         Returns:
             True if visit succeeded, else False
         """
-        pass
 
 
 class PropertyMetadataVisitor(Visitor):
@@ -254,7 +252,6 @@ class PropertyMetadataVisitor(Visitor):
         Returns:
             None
         """
-        pass
 
 
 class PrintPropertyMetadataVisitor(PropertyMetadataVisitor):

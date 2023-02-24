@@ -319,21 +319,25 @@ def initialize_by_time_element(fs, time, **kwargs):
     if scheme == "LAGRANGE-RADAU":
         ncp = time.get_discretization_info()["ncp"]
     elif scheme == "LAGRANGE-LEGENDRE":
-        msg = "Initialization does not support collocation with Legendre roots"
-        raise NotImplementedError(msg)
+        raise NotImplementedError(
+            "Initialization does not support collocation with Legendre roots"
+        )
     elif scheme == "BACKWARD Difference":
         ncp = 1
     elif scheme == "FORWARD Difference":
         ncp = 1
-        msg = "Forward initialization (explicit Euler) has not yet been implemented"
-        raise NotImplementedError(msg)
+        raise NotImplementedError(
+            "Forward initialization (explicit Euler) has not yet been implemented"
+        )
     elif scheme == "CENTRAL Difference":
-        msg = "Initialization does not support central finite difference"
-        raise NotImplementedError(msg)
+        raise NotImplementedError(
+            "Initialization does not support central finite difference"
+        )
     else:
-        msg = "Unrecognized discretization scheme. "
-        "Has the model been discretized along the provided ContinuousSet?"
-        raise ValueError(msg)
+        raise ValueError(
+            "Unrecognized discretization scheme. "
+            "Has the model been discretized along the provided ContinuousSet?"
+        )
     # Disallow Central/Legendre discretizations.
     # Neither of these seem to be square by default for multi-finite element
     # initial value problems.

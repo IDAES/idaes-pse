@@ -97,7 +97,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.H2O = Component()
 
         # -------------------------------------------------------------------------
-        """ Pure gas component properties"""
+        # Pure gas component properties
 
         # Mol. weights of gas - units = kg/mol. ref: NIST webbook
         mw_comp_dict = {"CH4": 0.016, "CO2": 0.044, "H2O": 0.018}
@@ -579,7 +579,7 @@ class GasPhaseStateBlockData(StateBlockData):
         # Molecular weights
         add_object_reference(self, "mw_comp", self.config.parameters.mw_comp)
 
-        """List the necessary state variable objects."""
+        # List the necessary state variable objects.
         self.flow_mol = Var(
             initialize=1.0,
             domain=Reals,

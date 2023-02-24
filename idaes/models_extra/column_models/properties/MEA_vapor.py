@@ -313,10 +313,7 @@ class ThermalCond:
                 / ((1 + p3 / blk.temperature) + (p4 / blk.temperature**2))
             )
 
-        """
-        Thermal conductivity of vapor phase
-        Wassiljewa-Mason-Saxena mixing rule(low pressure)
-        """
+        # Thermal conductivity of vapor phase Wassiljewa-Mason-Saxena mixing rule(low pressure)
         k_vap = 0
         for i in blk.component_list:
             sumij = 0

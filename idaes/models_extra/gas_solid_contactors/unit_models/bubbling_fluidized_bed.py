@@ -425,8 +425,7 @@ see reaction package for documentation.}""",
         )
 
         # =========================================================================
-        """ Build Control volume 1D for the bubble region and
-            populate its control volume"""
+        # Build Control volume 1D for the bubble region and populate its control volume
 
         self.bubble = ControlVolume1DBlock(
             transformation_method=self.config.transformation_method,
@@ -474,8 +473,7 @@ see reaction package for documentation.}""",
         )
 
         # =========================================================================
-        """ Build Control volume 1D for the gas_emulsion region and
-            populate its control volume"""
+        # Build Control volume 1D for the gas_emulsion region and populate its control volume
 
         self.gas_emulsion = ControlVolume1DBlock(
             transformation_method=self.config.transformation_method,
@@ -524,8 +522,7 @@ see reaction package for documentation.}""",
         )
 
         # =========================================================================
-        """ Build Control volume 1D for solid emulsion region and
-            populate solid control volume"""
+        # Build Control volume 1D for solid emulsion region and populate solid control volume
 
         self.solid_emulsion = ControlVolume1DBlock(
             transformation_method=self.config.transformation_method,
@@ -592,7 +589,8 @@ see reaction package for documentation.}""",
         )
 
         # =========================================================================
-        """ Add Ports for gas and solid inlets and outlets"""
+        # Add Ports for gas and solid inlets and outlets
+
         # Build inlet and outlet state blocks for model to be attached to ports
         # Extra state blocks are included at the inlet and outlets to model
         # the mass and energy balances (splitting and mixing) that takes place
@@ -633,7 +631,7 @@ see reaction package for documentation.}""",
         self.add_outlet_port(name="solid_outlet", block=self.solid_outlet_block)
 
         # =========================================================================
-        """ Apply transformation and add performace equation method"""
+        # Apply transformation and add performance equation method
         self._make_vars_params()
         self._apply_transformation()
         self._make_performance()

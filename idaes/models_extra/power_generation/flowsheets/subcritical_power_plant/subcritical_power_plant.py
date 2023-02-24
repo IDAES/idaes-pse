@@ -510,15 +510,15 @@ def main_dynamic():
     # 71 periods of 60 s each (0 to 4260 s)
     for i in range(71):
         itype_list.append(0)
-    """
-    # Followed by 20 periods of 120 s each (1860 to 4260 s)
-    for i in range(20):
-        itype_list.append(1)
-    # Followed by 30 periods of 60 s each (4260 to 6060 s)
-    for i in range(30):
-        itype_list.append(0)
-    """
-    # Total number of period for rolling time windwo simulations
+
+    # # Followed by 20 periods of 120 s each (1860 to 4260 s)
+    # for i in range(20):
+    #     itype_list.append(1)
+    # # Followed by 30 periods of 60 s each (4260 to 6060 s)
+    # for i in range(30):
+    #     itype_list.append(0)
+
+    # Total number of period for rolling time window simulations
     nperiod = len(itype_list)
     tstart = []
     model_list = []
@@ -2262,11 +2262,10 @@ def print_pfd_results(m):
 
 
 if __name__ == "__main__":
-    """
-    Main function to to run simulation
-    To run steady-state model, call main_steady()
-    to run dynamic model, call main_dyn()
-    """
+    # Main function to to run simulation
+    # To run steady-state model, call main_steady()
+    # to run dynamic model, call main_dyn()
+
     # This method builds and runs a subcritical coal-fired power plant
     # dynamic simulation. The simulation consists of 5%/min ramping down from
     # full load to 50% load, holding for 30 minutes and then ramping up
