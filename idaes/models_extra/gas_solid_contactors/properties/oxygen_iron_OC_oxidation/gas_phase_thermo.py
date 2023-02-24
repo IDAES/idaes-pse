@@ -600,7 +600,7 @@ class GasPhaseStateBlockData(StateBlockData):
         # Molecular weights
         add_object_reference(self, "mw_comp", self.config.parameters.mw_comp)
 
-        """List the necessary state variable objects."""
+        # List the necessary state variable objects.
         self.flow_mol = Var(
             initialize=1.0,
             domain=Reals,

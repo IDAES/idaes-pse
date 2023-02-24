@@ -10,6 +10,15 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
+"""
+A simple unit model to calculate power required to achieve isothermal
+gas compression.
+
+Data sources:
+    [1] Stochastic Optimal Control Model for Natural Gas Network
+        Operations. V. Zavala, 2014, Comp. Chem. Eng.
+"""
+
 from pyomo.common.config import ConfigValue
 from pyomo.core.base.constraint import Constraint
 from pyomo.core.base.var import Var
@@ -21,15 +30,6 @@ from idaes.core import (
     UnitModelBlockData,
 )
 from idaes.core.util.config import is_physical_parameter_block
-
-"""
-A simple unit model to calculate power required to achieve isothermal
-gas compression. 
-
-Data sources:
-    [1] Stochastic Optimal Control Model for Natural Gas Network
-        Operations. V. Zavala, 2014, Comp. Chem. Eng.
-"""
 
 
 @declare_process_block_class("IsothermalCompressor")

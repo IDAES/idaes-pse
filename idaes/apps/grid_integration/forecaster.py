@@ -54,8 +54,6 @@ class AbstractPriceForecaster(ABC):
 
         """
 
-        pass
-
     @abstractmethod
     def forecast_real_time_prices(self, date, hour, bus, horizon, n_samples):
 
@@ -77,7 +75,6 @@ class AbstractPriceForecaster(ABC):
             dict: real-time price forecasts
 
         """
-        pass
 
     @abstractmethod
     def forecast_day_ahead_prices(self, date, hour, bus, horizon, n_samples):
@@ -101,8 +98,6 @@ class AbstractPriceForecaster(ABC):
 
         """
 
-        pass
-
 
 class AbstractPrescientPriceForecaster(AbstractPriceForecaster):
 
@@ -124,8 +119,6 @@ class AbstractPrescientPriceForecaster(AbstractPriceForecaster):
             None
         """
 
-        pass
-
     @abstractmethod
     def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
 
@@ -143,8 +136,6 @@ class AbstractPrescientPriceForecaster(AbstractPriceForecaster):
         Returns:
             None
         """
-
-        pass
 
 
 class PlaceHolderForecaster(AbstractPrescientPriceForecaster):

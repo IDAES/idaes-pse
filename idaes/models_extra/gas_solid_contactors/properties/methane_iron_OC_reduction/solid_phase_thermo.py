@@ -93,7 +93,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.Al2O3 = Component()
 
         # -------------------------------------------------------------------------
-        """ Pure solid component properties"""
+        # Pure solid component properties
 
         # Mol. weights of solid components - units = kg/mol. ref: NIST webbook
         mw_comp_dict = {"Fe2O3": 0.15969, "Fe3O4": 0.231533, "Al2O3": 0.10196}
@@ -224,8 +224,8 @@ class PhysicalParameterData(PhysicalParameterBlock):
         )
 
         # -------------------------------------------------------------------------
-        """ Mixed solid properties"""
-        # These are setup as fixed vars to allow for parameter estimation
+        # Mixed solid properties
+        # These are set up as fixed vars to allow for parameter estimation
 
         # Particle size
         self.particle_dia = Var(

@@ -154,7 +154,7 @@ class ReactionParameterData(ReactionParameterBlock):
         )
 
         # -------------------------------------------------------------------------
-        """ Reaction properties that can be estimated"""
+        # Reaction properties that can be estimated
 
         # Particle grain radius within OC particle
         self.grain_radius = Var(
