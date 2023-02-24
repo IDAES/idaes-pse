@@ -193,6 +193,117 @@ def _verfiy_checksums(checksum, pname, ptar, ftar):
                 raise Exception(f"{n} hash does not match expected")
 
 
+def _splitpath(path):
+    """Split path into elements
+
+    This routine is similar to str.split(), except when the pieces are
+    re-joined by os.path.join(), the result will still be an absolute
+    path (if ``path`` was an absolute path).  Note that the path
+    elements are returned in reverse order (which is convenient for
+    _resolve_path below)
+
+    """
+    ans = []
+    while 1:
+        a, b = os.path.split(path)
+        if b:
+            ans.append(b)
+        if a == path:
+            if a:
+                ans.append(a)
+            return ans
+        path = a
+
+
+def _resolve_path(path, links):
+    """Resolve path to the actual filesystem location
+
+    This routine is similar to os.realpath(), but with the added feature
+    of recognizing not only hard / symbolic links on the filesystem, but
+    also links in the ``links`` dict that have not yet been committed to
+    the filesystem.
+
+    """
+    dirs = _splitpath(path)
+    path = ""
+    target = None
+    while dirs:
+        path = os.path.realpath(os.path.join(path, dirs.pop()))
+        if path in links:
+            target = path
+        while target in links:
+            if links[target][0] == tarfile.SYMTYPE:
+                if os.path.isabs(links[target][1]):
+                    path = ""
+                else:
+                    path = os.path.dirname(path)
+                dirs.extend(_splitpath(links[target][1]))
+                target = None
+            else: # links[target][0] == tarfile.LNKTYPE:
+                target_dir, target_name = os.path.split(links[target][1])
+                target = os.path.join(_resolve_path(target_dir, links), target_name)
+        if target is not None:
+            path = target
+            target = None
+    return path
+
+
+def _verify_tar_member_targets(tar, to_path, links=None):
+    """Check tar for unsafe members (references outside to_path)
+
+    Nominally, this would be a simple task: verify that every member of
+    the tarfile (when converted to an absolute path and normalized)
+    starts with the to_path.  Unfortunately, symbolic links make this
+    more difficult.  It is not sufficient to just check the absolute
+    path of the link target, as sequences of links could walk out of the
+    target space.  In this routine, we attempt to identify symbolic
+    links and resolve the actual location where each tar member would be
+    stored on the filesystem.
+
+    Example::
+
+        [DIRTYPE] dir1
+        [SYMTYPE] dir1/dir2 -> ..
+        [SYMTYPE] dir1/dir2/dir3 -> ..
+        [REGTYPE] dir1/dir2/dir3/file  # <-- this is ../file
+
+    Parameters
+    ----------
+    tar : TarFile
+        tarfile to verify
+
+    to_path : str
+        target directory to extract tarfile into
+
+    links : dict[str, tuple[bytes, str]]
+        dictionary that records "virtual" symbolic links; that is,
+        symbolic links in the tarfile that have not yet been extracted,
+        but will exist during / after the extraction process.  This maps
+        the actual symbolic link location to a (type, target) tuple.
+        The target is a resolved (absolute) path for hard links and a
+        potentially relative path for soft links.
+
+    """
+    to_path = os.path.realpath(to_path)
+
+    if links is None:
+        # A dict mapping {from: (type, to)}
+        links = {}
+
+    for member in tar.getmembers():
+        member_path = _resolve_path(os.path.join(to_path, member.name), links)
+        if not member_path.startswith(to_path):
+            raise Exception(
+                f"Tarball {tar.name} contained potentially unsafe member "
+                f"{member.name} that would extract to {member_path} outside "
+                f"target directory {to_path}"
+            )
+        if member.issym():
+            links[member_path] = (member.type, member.linkname)
+        elif member.islnk() and member.name != member.linkname:
+            links[member_path] = (member.type, os.path.join(to_path, member.linkname))
+
+
 def download_binaries(
     release=None,
     url=None,
@@ -272,7 +383,9 @@ def download_binaries(
     _verfiy_checksums(checksum, pname, ptar, ftar)
 
     # Extract solvers
+    links = {}
     for n, p in zip(pname, ptar):
         _log.debug(f"Extracting files in {p} to {to_path}")
         with tarfile.open(p, "r") as f:
+            _verify_tar_member_targets(f, to_path, links)
             f.extractall(to_path)
