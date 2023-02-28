@@ -253,6 +253,7 @@ see property package for documentation.}""",
             doc="Inside diameter of downcomer",
             units=units_meta.get_derived_units("length"),
         )
+
         # Volume constraint
         @self.Constraint(self.flowsheet().time, doc="Downcomer volume of all pipes")
         def volume_eqn(b, t):

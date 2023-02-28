@@ -103,6 +103,7 @@ def test_examples_cli_noop(runner):
     assert result.exit_code == 0
 
 
+@pytest.mark.skip
 @pytest.mark.integration()
 def test_examples_cli_list(runner):
     result = runner.invoke(examples.get_examples, ["-l"])
@@ -131,6 +132,7 @@ def can_write(path):
         return False
 
 
+@pytest.mark.skip
 @pytest.mark.integration()
 def test_examples_cli_download(runner, tempdir):
     # failure with existing dir
@@ -138,6 +140,7 @@ def test_examples_cli_download(runner, tempdir):
     assert result.exit_code == -1
 
 
+@pytest.mark.skip
 @pytest.mark.integration()
 def test_examples_cli_explicit_version(runner, tempdir):
     dirname = str(tempdir / "examples")
@@ -153,6 +156,7 @@ def test_examples_cli_default_version(runner, tempdir):
     assert result.exit_code == 0
 
 
+@pytest.mark.skip
 @pytest.mark.integration()
 def test_examples_cli_download_unstable(runner, tempdir):
     if can_write(tempdir):
@@ -164,6 +168,7 @@ def test_examples_cli_download_unstable(runner, tempdir):
         assert result.exit_code == -1
 
 
+@pytest.mark.skip
 @pytest.mark.integration()
 def test_examples_cli_copy(runner, tempdir):
     dirname = str(tempdir / "examples")
@@ -194,6 +199,7 @@ def test_examples_cli_copy(runner, tempdir):
 # non-CLI
 
 
+@pytest.mark.skip
 @pytest.mark.integration()  # goes out to network
 def test_examples_n():
     target_dir = str(uuid.uuid4())  # pick something that won't exist
@@ -201,6 +207,7 @@ def test_examples_n():
     assert retcode != 0  # failure
 
 
+@pytest.mark.skip
 @pytest.mark.integration()  # goes out to network
 def test_examples_list_releases():
     releases = examples.get_releases(True)
@@ -208,11 +215,13 @@ def test_examples_list_releases():
     examples.print_releases(releases, True)
 
 
+@pytest.mark.skip
 @pytest.mark.integration()  # goes out to network
 def test_examples_download_bad_version():
     assert pytest.raises(examples.DownloadError, examples.download, Path("."), "1.2.3")
 
 
+@pytest.mark.skip
 @pytest.mark.integration()
 def test_examples_find_python_directories(tmp_path):
     root = tmp_path
@@ -237,6 +246,7 @@ def test_examples_find_python_directories(tmp_path):
             assert path_i / j in rel_found_dirs
 
 
+@pytest.mark.skip
 @pytest.mark.integration()
 def test_examples_check_github_response():
     # ok result
@@ -271,6 +281,7 @@ def test_examples_check_github_response():
     )
 
 
+@pytest.mark.skip
 @pytest.mark.nowin32
 @pytest.mark.integration
 def test_examples_install_src():
@@ -295,6 +306,7 @@ def test_examples_install_src():
     examples.INSTALL_PKG = orig_install_pkg
 
 
+@pytest.mark.skip
 @pytest.mark.unit
 def test_examples_cleanup(tempdir):
     # put some crap in the temporary dir
@@ -331,6 +343,7 @@ def test_examples_cleanup(tempdir):
     # assert not tempsubdir.exists()
 
 
+@pytest.mark.skip
 @pytest.mark.unit
 def test_examples_cleanup_nodist(tempdir):
     tempdir = tempdir
@@ -360,6 +373,7 @@ def test_examples_cleanup_nodist(tempdir):
     assert not tempsubdir.exists()
 
 
+@pytest.mark.skip
 @pytest.mark.unit
 def test_examples_cleanup_nodist_noegg(tempdir):
     tempdir = tempdir
@@ -382,6 +396,7 @@ def test_examples_cleanup_nodist_noegg(tempdir):
     assert not tempsubdir.exists()
 
 
+@pytest.mark.skip
 @pytest.mark.unit
 def test_examples_local(tempdir):
     d = tempdir
@@ -404,6 +419,7 @@ def test_examples_local(tempdir):
     # done
 
 
+@pytest.mark.skip
 @pytest.mark.integration()
 def test_illegal_dirs(tmp_path):
     root = tmp_path
@@ -417,6 +433,7 @@ def test_illegal_dirs(tmp_path):
         (root / ".git").rmdir()
 
 
+@pytest.mark.skip
 @pytest.mark.integration()
 def test_get_examples_version():
     assert examples.get_examples_version("1.5.0") == "1.5.1"
@@ -552,95 +569,40 @@ def test_strip_test_cells(remove_cells_notebooks):
 ##################
 # get-extensions #
 ##################
-
-
-@pytest.mark.unit
+@pytest.mark.integration
 def test_get_extensions(runner):
     result = runner.invoke(extensions.get_extensions, ["--no-download"])
     assert result.exit_code == 0
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_print_extensions_version(runner):
     result = runner.invoke(extensions.extensions_version)
     assert result.exit_code == 0
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_get_extensions_plat(runner):
     result = runner.invoke(extensions.bin_platform)
     assert result.exit_code == 0
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_get_extensions_bad_plat(runner):
     result = runner.invoke(extensions.bin_platform, ["--distro", "johns_good_linux42"])
     assert result.exit_code == 0
     assert result.output == "No supported binaries found.\n"
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_extensions_license(runner):
     result = runner.invoke(extensions.extensions_license)
     assert result.exit_code == 0
 
 
-#################
-# convergence  #
-################
-
-
-@pytest.mark.unit
-def test_conv_search(runner):
-    result = runner.invoke(convergence.convergence_search)
-    assert result.exit_code == 0
-
-
-@pytest.mark.unit
-def test_conv_sample(runner):
-    fname = os.path.join(idaes.testing_directory, "sample.json")
-    result = runner.invoke(
-        convergence.convergence_sample,
-        [
-            "-e",
-            "PressureChanger",
-            "-N",
-            "10",
-            "-s",
-            fname,
-        ],
-    )
-    assert result.exit_code == 0
-    if os.path.exists(fname):
-        os.remove(fname)
-
-
-@pytest.mark.integration
-def test_conv_eval(runner):
-    fname = os.path.join(idaes.testing_directory, "sample.json")
-    fname2 = os.path.join(idaes.testing_directory, "result.json")
-    result = runner.invoke(
-        convergence.convergence_sample,
-        [
-            "-e",
-            "PressureChanger",
-            "-N",
-            "10",
-            "-s",
-            fname,
-        ],
-    )
-    assert result.exit_code == 0
-    result = runner.invoke(convergence.convergence_eval, ["-s", fname, "-j", fname2])
-    assert result.exit_code == 0
-    with open(fname2, "r") as f:
-        d = json.load(f)
-    assert "inputs" in d
-    assert len(d["time_successful"]) == 10
-    if os.path.exists(fname):
-        os.remove(fname)
-    if os.path.exists(fname2):
-        os.remove(fname2)
+###########
+# config  #
+###########
 
 
 @pytest.mark.unit

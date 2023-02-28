@@ -10,6 +10,17 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+A simple pipeline unit model. We include a bulk momentum balance and leverage
+the 1D control volume for a phase material balance. For now, we assume the
+pipeline is isothermal.
+
+Data sources:
+    [1] Stochastic Optimal Control Model for Natural Gas Network
+        Operations. V. Zavala, 2014, Comp. Chem. Eng.
+
+"""
+
 from pyomo.common.config import ConfigValue
 from pyomo.core.base.constraint import Constraint
 from pyomo.core.base.var import Var
@@ -33,16 +44,6 @@ from idaes.core.util.config import (
 )
 from idaes.core.util.constants import Constants
 
-"""
-A simple pipeline unit model. We include a bulk momentum balance and leverage
-the 1D control volume for a phase material balance. For now, we assume the
-pipeline is isothermal.
-
-Data sources:
-    [1] Stochastic Optimal Control Model for Natural Gas Network
-        Operations. V. Zavala, 2014, Comp. Chem. Eng.
-
-"""
 
 EXPLICIT_DISCRETIZATION_SCHEMES = {
     "FORWARD",
@@ -135,7 +136,7 @@ argument).""",
         # model requires.
         #
         property_dict = property_package.get_metadata().properties
-        if "pressure" not in property_dict:
+        if not property_dict["pressure"].supported:
             raise ValueError(
                 "Property package supplied to pipeline must have a property "
                 "for 'pressure', which was not found in %s." % type(property_package)

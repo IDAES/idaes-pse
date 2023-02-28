@@ -36,6 +36,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
     MaterialBalanceType,
+    MomentumBalanceType,
     MaterialFlowBasis,
     VarLikeExpression,
 )
@@ -207,6 +208,22 @@ balance type
 **MaterialBalanceType.componentTotal** - use total component balances,
 **MaterialBalanceType.elementTotal** - use total element balances,
 **MaterialBalanceType.total** - use total material balance.}""",
+        ),
+    )
+    CONFIG.declare(
+        "momentum_balance_type",
+        ConfigValue(
+            default=MomentumBalanceType.pressureTotal,
+            domain=In(MomentumBalanceType),
+            description="Momentum balance construction flag",
+            doc="""Indicates what type of momentum balance should be constructed,
+    **default** - MomentumBalanceType.pressureTotal.
+    **Valid values:** {
+    **MomentumBalanceType.none** - exclude momentum balances,
+    **MomentumBalanceType.pressureTotal** - pressure in all outlets is equal,
+    **MomentumBalanceType.pressurePhase** - not yet supported,
+    **MomentumBalanceType.momentumTotal** - not yet supported,
+    **MomentumBalanceType.momentumPhase** - not yet supported.}""",
         ),
     )
     CONFIG.declare(
@@ -789,14 +806,24 @@ objects linked the mixed state and all outlet states,
         pressures in outlets.
         """
 
-        @self.Constraint(
-            self.flowsheet().time,
-            self.outlet_idx,
-            doc="Pressure equality constraint",
-        )
-        def pressure_equality_eqn(b, t, o):
-            o_block = getattr(self, o + "_state")
-            return mixed_block[t].pressure == o_block[t].pressure
+        if self.config.momentum_balance_type is MomentumBalanceType.none:
+            pass
+        elif self.config.momentum_balance_type is MomentumBalanceType.pressureTotal:
+
+            @self.Constraint(
+                self.flowsheet().time,
+                self.outlet_idx,
+                doc="Pressure equality constraint",
+            )
+            def pressure_equality_eqn(b, t, o):
+                o_block = getattr(self, o + "_state")
+                return mixed_block[t].pressure == o_block[t].pressure
+
+        else:
+            raise NotImplementedError(
+                f"Separators do not yet support momentum balances of type "
+                f"{self.config.momentum_balance_type}"
+            )
 
     def partition_outlet_flows(self, mb, outlet_list):
         """

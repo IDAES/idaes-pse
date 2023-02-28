@@ -46,3 +46,4 @@ from .base.costing_base import (
     register_idaes_currency_units,
 )
 from .base.var_like_expression import VarLikeExpression
+from .base.property_set import StandardPropertySet, ElectrolytePropertySet

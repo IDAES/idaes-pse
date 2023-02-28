@@ -86,6 +86,7 @@ def build_drum():
     return m
 
 
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.unit
 def test_basic_build(build_drum):
     """Make a model and make sure it doesn't throw exception"""
@@ -98,6 +99,7 @@ def test_basic_build(build_drum):
     assert m.fs.unit.config.property_package is m.fs.prop_water
 
 
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.integration
 def test_units(build_drum):
     assert_units_consistent(build_drum)

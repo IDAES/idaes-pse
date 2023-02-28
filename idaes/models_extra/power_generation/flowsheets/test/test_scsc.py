@@ -31,6 +31,7 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.models.properties import iapws95
 from idaes.core.util.tables import create_stream_table_dataframe  # as Pandas DataFrame
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 
 @pytest.fixture(scope="module")
@@ -46,6 +47,7 @@ def gross_power_mw(model):
     return -pyo.value(model.fs.turb.power[0]) / 1e6
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_init(model):
     # check that the model solved properly and has 0 degrees of freedom
@@ -54,11 +56,13 @@ def test_init(model):
         assert abs(c.body() - c.lower) < 5e-4
 
 
+# @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 # @pytest.mark.integration
 # def test_unit_consistency(model):
 #     assert_units_consistent(model)
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_init_value(model):
     assert gross_power_mw(model) == pytest.approx(622.38, abs=1e-2)
@@ -67,6 +71,7 @@ def test_init_value(model):
     pfd_result(model, df, None)
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_valve_change(model):
     model.fs.turb.throttle_valve[1].valve_opening[:].value = 0.25

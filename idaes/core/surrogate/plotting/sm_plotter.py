@@ -11,8 +11,8 @@
 # for full copyright and license information.
 #################################################################################
 """
-Task: Artificial Intelligence/Machine Learning
-Subtask: General Unified Surrogate Object - Plotting Methods
+Standard plotting methods (scatter, parity and residual plots).
+
 Author: B. Paul
 """
 
@@ -24,11 +24,6 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 from itertools import combinations  # used to pick xvar pairs in scatter3D
-
-
-"""
-Standard plotting methods (scatter, parity and residual plots).
-"""
 
 
 def surrogate_scatter2D(surrogate, dataframe, filename=None, show=True):

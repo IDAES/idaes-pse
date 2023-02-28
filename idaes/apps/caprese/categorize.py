@@ -21,9 +21,9 @@ from pyomo.environ import (
 )
 from pyomo.dae import DerivativeVar
 from pyomo.common.collections import ComponentSet, ComponentMap
-from pyomo.util.slices import slice_component_along_sets
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.incidence_analysis.interface import IncidenceGraphInterface
+from pyomo.common.deprecation import deprecated
 
 import idaes.apps.caprese.nmpc_var as nmpc_var
 from idaes.apps.caprese.common.config import (
@@ -232,7 +232,7 @@ def categorize_dae_variables_and_constraints(
     # present_vars = [var for var in variables if var in _nlp._vardata_to_idx]
     # present_cons = [con for con in constraints if con in _nlp._condata_to_idx]
 
-    var_block_map, con_block_map = igraph.block_triangularize(
+    var_block_map, con_block_map = igraph.map_nodes_to_block_triangular_indices(
         present_vars,
         present_cons,
     )
@@ -318,6 +318,11 @@ def categorize_dae_variables_and_constraints(
     return var_category_dict, con_category_dict
 
 
+@deprecated(
+    "categorize_dae_variables has been replaced by "
+    "categorize_dae_variables_and_constraints",
+    version="2.0.0",
+)
 def categorize_dae_variables(dae_vars, time, inputs, measurements=None):
     t0 = time.first()
     t1 = time.get_finite_elements()[1]

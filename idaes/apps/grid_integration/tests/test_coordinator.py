@@ -94,7 +94,7 @@ def test_static_params(coordinator_object):
         gen_dict = testing_generator_params
     else:
         gen_dict = renewable_generator_params
-    coordinator_object._update_static_params(gen_dict, first_ruc=False)
+    coordinator_object._update_static_params(gen_dict)
 
 
 @pytest.mark.unit

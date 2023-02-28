@@ -24,6 +24,7 @@ import idaes.core
 import idaes.models.unit_models
 import idaes.models.properties.swco2
 from pyomo.network import Arc
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 
 @pytest.fixture(scope="function")
@@ -42,6 +43,7 @@ def model():
     return m
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.unit
 def test_expand_arcs_and_clone(model):
     # Check that port references were attached to model
@@ -68,6 +70,7 @@ def test_expand_arcs_and_clone(model):
     assert model.fs.stream._expanded_block is None
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.unit
 def test_clone(model):
     m2 = model.clone()

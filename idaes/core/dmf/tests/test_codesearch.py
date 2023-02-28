@@ -268,7 +268,7 @@ def test_metadata_visitor():
 def test_print_metadata_visitor():
     pmv = codesearch.PrintPropertyMetadataVisitor()
     pcm = property_meta.PropertyClassMetadata()
-    pcm.add_properties({"foo": {"method": "bogus"}})
+    pcm.define_custom_properties({"foo": {"method": "bogus"}})
     pmv.visit_metadata(MetadataHaver, pcm)
 
 

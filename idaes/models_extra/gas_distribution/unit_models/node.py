@@ -10,6 +10,11 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+A unit model for a "node" that connects several pipelines,
+possibly with its own supply and demand streams.
+"""
+
 from pyomo.common.config import ConfigValue
 from pyomo.core.base.constraint import Constraint
 from pyomo.core.base.var import Var
@@ -25,11 +30,6 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.config import (
     is_physical_parameter_block,
 )
-
-"""
-A unit model for a "node" that connects several pipelines,
-possibly with its own supply and demand streams.
-"""
 
 
 @declare_process_block_class("PipelineNode")
@@ -86,7 +86,7 @@ class PipelineNodeData(UnitModelBlockData):
         # model requires.
         #
         property_dict = property_package.get_metadata().properties
-        if "pressure" not in property_dict:
+        if not property_dict["pressure"].supported:
             raise ValueError(
                 "Property package supplied to pipeline must have a property "
                 "for 'pressure', which was not found in %s." % type(property_package)

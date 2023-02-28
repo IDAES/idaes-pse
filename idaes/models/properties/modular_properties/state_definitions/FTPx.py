@@ -149,7 +149,7 @@ def define_state(b):
 
     b.phase_frac = Var(
         b.phase_list,
-        initialize=1 / len(b.phase_list),
+        initialize=1.0 / len(b.phase_list),
         bounds=(0, None),
         doc="Phase fractions",
         units=pyunits.dimensionless,
@@ -163,7 +163,7 @@ def define_state(b):
     if b.config.defined_state is False:
         # applied at outlet only
         b.sum_mole_frac_out = Constraint(
-            expr=1 == sum(b.mole_frac_comp[i] for i in b.component_list)
+            expr=1.0 == sum(b.mole_frac_comp[i] for i in b.component_list)
         )
 
     if len(b.phase_list) == 1:
@@ -183,7 +183,7 @@ def define_state(b):
         )
 
         def rule_phase_frac(b, p):
-            return b.phase_frac[p] == 1
+            return b.phase_frac[p] == 1.0
 
         b.phase_fraction_constraint = Constraint(b.phase_list, rule=rule_phase_frac)
 

@@ -79,6 +79,8 @@ from idaes.models.costing.SSLW import (
     BlowerType,
     BlowerMaterial,
 )
+from idaes.models.properties.general_helmholtz import helmholtz_available
+
 
 import logging
 from io import StringIO
@@ -823,6 +825,9 @@ class TestMapping:
 
     # TODO : Test for HX1D once supported
 
+    @pytest.mark.skipif(
+        not helmholtz_available(), reason="General Helmholtz not available"
+    )
     def test_hx_ntu(self):
         # Need a different property package here
         m = ConcreteModel()
@@ -925,6 +930,9 @@ class TestMapping:
 
         assert expected_string in str(stream.getvalue())
 
+    @pytest.mark.skipif(
+        not helmholtz_available(), reason="General Helmholtz not available"
+    )
     def test_pump(self):
         # Need a different property package here
         m = ConcreteModel()

@@ -163,6 +163,7 @@ def create_model():
         inlet_list=["main", "bfpt"],
         property_package=m.fs.prop_water,
     )
+
     # The pressure in the mixer comes from the connection to the condenser.  All
     # the streams coming in and going out of the mixer are equal, but we created
     # the mixer with no calculation for the unit pressure. Here a constraint that

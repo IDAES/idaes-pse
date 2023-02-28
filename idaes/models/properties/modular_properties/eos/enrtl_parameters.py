@@ -36,7 +36,7 @@ class ConstantAlpha(object):
             alpha_data = {}
 
         # Check for unused parameters in alpha_data
-        for (i, j) in alpha_data.keys():
+        for i, j in alpha_data.keys():
             if (i, j) not in b.component_pair_set_symmetric and (
                 j,
                 i,
@@ -116,7 +116,7 @@ class ConstantTau(object):
             tau_data = {}
 
         # Check for unused parameters in tau_data
-        for (i, j) in tau_data.keys():
+        for i, j in tau_data.keys():
             if (i, j) not in b.component_pair_set:
                 raise ConfigurationError(
                     "{} eNRTL tau parameter provided for invalid "

@@ -28,6 +28,7 @@ from idaes.core.util.model_statistics import (
 from idaes.apps.caprese.util import *
 from idaes.apps.caprese.common.config import NoiseBoundOption
 from idaes.apps.caprese.examples.cstr_model import make_model
+from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
 import random
@@ -38,13 +39,15 @@ __author__ = "Robert Parker"
 # See if ipopt is available and set up solver
 solver_available = SolverFactory("ipopt").available()
 if solver_available:
-    solver = SolverFactory("ipopt")
-    solver.options = {
-        "tol": 1e-6,
-        "mu_init": 1e-8,
-        "bound_push": 1e-8,
-        "halt_on_ampl_error": "yes",
-    }
+    solver = get_solver(
+        solver="ipopt",
+        options={
+            "tol": 1e-6,
+            "mu_init": 1e-8,
+            "bound_push": 1e-8,
+            "halt_on_ampl_error": "yes",
+        },
+    )
 else:
     solver = None
 

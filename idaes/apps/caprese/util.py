@@ -36,6 +36,7 @@ from idaes.core.util.dyn_utils import (
     get_fixed_dict,
     deactivate_constraints_unindexed_by,
 )
+from idaes.core.solvers import get_solver
 from idaes.apps.caprese.common.config import NoiseBoundOption
 import idaes.logger as idaeslog
 
@@ -103,7 +104,7 @@ def initialize_by_element_in_range(
         solver : Solver option used to solve portions of the square model
         outlvl : idaes.logger output level
     """
-    solver = kwargs.pop("solver", SolverFactory("ipopt"))
+    solver = kwargs.pop("solver", get_solver(solver="ipopt"))
     outlvl = kwargs.pop("outlvl", idaeslog.NOTSET)
     init_log = idaeslog.getInitLogger("nmpc", outlvl)
     solver_log = idaeslog.getSolveLogger("nmpc", outlvl)

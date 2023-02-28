@@ -34,6 +34,7 @@ _log = idaeslog.getLogger(__name__)
 def register_idaes_currency_units():
     """
     Define conversion rates for US Dollars based on CE Index.
+    Source: https://www.toweringskills.com/financial-analysis/cost-indices/
     """
     if (
         "USD_CE500" in pyo.units._pint_registry
@@ -82,6 +83,7 @@ def register_idaes_currency_units():
                 "USD_2018 = 500/603.1 * USD_CE500",
                 "USD_2019 = 500/607.5 * USD_CE500",
                 "USD_2020 = 500/596.2 * USD_CE500",
+                "USD_2021 = 500/708.0 * USD_CE500",
             ]
         )
 

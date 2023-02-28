@@ -35,6 +35,8 @@ from idaes.models_extra.carbon_capture.co2_compressor import (
 
 from idaes.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester
+from idaes.models.properties.general_helmholtz import helmholtz_available
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -81,6 +83,7 @@ def build_unit():
     return m
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.unit
 def test_basic_build(build_unit):
     """Make a model and make sure it doesn't throw exception"""
@@ -92,16 +95,19 @@ def test_basic_build(build_unit):
     assert m.fs.unit.config.property_package is m.fs.properties_co2
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_units(build_unit):
     assert_units_consistent(build_unit)
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_initialize(build_unit):
     initialization_tester(build_unit, dof=0)
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_run(build_unit):
     m = build_unit

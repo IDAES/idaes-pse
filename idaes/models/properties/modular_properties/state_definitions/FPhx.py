@@ -43,7 +43,7 @@ def set_metadata(b):
     # Need to update metadata so that enth_mol is recorded as being part of the
     # state variables, and to ensure that getattr does not try to build it
     # using the default method.
-    b.get_metadata().properties["enth_mol"] = {"method": None}
+    b.get_metadata().properties["enth_mol"].set_method(None)
 
 
 def define_state(b):
@@ -150,7 +150,7 @@ def define_state(b):
 
     b.phase_frac = Var(
         b.phase_list,
-        initialize=1 / len(b.phase_list),
+        initialize=1.0 / len(b.phase_list),
         bounds=(0, None),
         doc="Phase fractions",
         units=pyunits.dimensionless,
@@ -195,7 +195,7 @@ def define_state(b):
         )
 
         def rule_phase_frac(b, p):
-            return b.phase_frac[p] == 1
+            return b.phase_frac[p] == 1.0
 
         b.phase_fraction_constraint = Constraint(b.phase_list, rule=rule_phase_frac)
 

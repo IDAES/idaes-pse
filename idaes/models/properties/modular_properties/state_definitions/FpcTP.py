@@ -157,7 +157,7 @@ def define_state(b):
                 == b.flow_mol_phase_comp[p, j]
             )
         else:
-            return b.mole_frac_phase_comp[p, j] == 1
+            return b.mole_frac_phase_comp[p, j] == 1.0
 
     b.mole_frac_phase_comp_eq = Constraint(
         b.phase_component_set, rule=rule_mole_frac_phase_comp
@@ -165,7 +165,7 @@ def define_state(b):
 
     def rule_phase_frac(b, p):
         if len(b.phase_list) == 1:
-            return 1
+            return 1.0
         else:
             return b.flow_mol_phase[p] / b.flow_mol
 

@@ -481,8 +481,7 @@ should be constructed,
         )
 
         # =========================================================================
-        """ Build Control volume 1D for gas phase and
-            populate gas control volume"""
+        # Build Control volume 1D for gas phase and populate gas control volume
 
         self.gas_phase = ControlVolume1DBlock(
             transformation_method=self.config.transformation_method,
@@ -533,8 +532,7 @@ should be constructed,
         )
 
         # =========================================================================
-        """ Build Control volume 1D for solid phase and
-            populate solid control volume"""
+        # Build Control volume 1D for solid phase and populate solid control volume
 
         # Build Solid Phase StateBlock
         # As there is no solid flow, there is not need for a control volume as a
@@ -572,13 +570,12 @@ should be constructed,
             )
 
         # =========================================================================
-        """ Add ports"""
         # Add Ports for gas side
         self.add_inlet_port(name="gas_inlet", block=self.gas_phase)
         self.add_outlet_port(name="gas_outlet", block=self.gas_phase)
 
         # =========================================================================
-        """ Add performace equation method"""
+        # Add performance equation method
         self._apply_transformation()
         self._make_performance()
 

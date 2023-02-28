@@ -311,6 +311,7 @@ between flow and pressure driven simulations.}""",
         constraints equal to the number of inlets, enforcing equality between
         all inlets and the mixed stream.
         """
+
         # Create equality constraints
         @self.Constraint(
             self.flowsheet().time,

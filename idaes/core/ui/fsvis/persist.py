@@ -36,7 +36,6 @@ class DataStore(ABC):
         Args:
             data: Data to save.
         """
-        pass
 
     @abstractmethod
     def load(self) -> Dict:
@@ -45,7 +44,6 @@ class DataStore(ABC):
         Returns:
             data, as a dict (even if string of JSON was passed as input to `save()`)
         """
-        pass
 
     @classmethod
     def create(cls, dest=None) -> "DataStore":

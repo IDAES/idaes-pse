@@ -33,12 +33,14 @@ from pyomo.util.check_units import assert_units_consistent, assert_units_equival
 
 from idaes.models.properties import iapws95
 import idaes.core.util.scaling as iscale
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver(options={"nlp_scaling_method": "user-scaling"})
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class GenericValve(object):
     @pytest.fixture(scope="class")
     def valve_model(self):

@@ -48,7 +48,7 @@ class TestNaturalGasPropertyPackage(unittest.TestCase):
         assert_units_equivalent(state.temperature.get_units(), pyo.units.K)
         component_list = m.state.config.parameters.component_list
         j = next(iter(component_list))
-        self.assertIs(state.mole_frac_comp[j].get_units(), None)
+        self.assertIs(str(state.mole_frac_comp[j].get_units()), "dimensionless")
 
         mw = m.state.mw
         assert_units_equivalent(pyo.units.get_units(mw), pyo.units.kg / pyo.units.kmol)
@@ -154,11 +154,11 @@ class TestNaturalGasPropertyPackage(unittest.TestCase):
             pyo.units.kg / pyo.units.m**3,
         )
 
-    def test_compressibility(self):
+    def test_compress_fact(self):
         m = pyo.ConcreteModel()
         m.properties = NaturalGasParameterBlock()
         m.state = m.properties.build_state_block()
-        self.assertEqual(m.state.compressibility.value, 0.80)
+        self.assertEqual(m.state.compress_fact.value, 0.80)
 
     def test_temperature_ref(self):
         m = pyo.ConcreteModel()

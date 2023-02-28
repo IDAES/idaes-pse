@@ -16,6 +16,7 @@ import os
 import pytest
 import pyomo.environ as pyo
 import idaes
+from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
 
 
 def cubic_function(z, b, c, d):
@@ -47,6 +48,12 @@ def derivs(z, b, c, d):
     return g, h
 
 
+@pytest.mark.unit
+def test_cubic_eos_available():
+    assert cubic_roots_available()
+
+
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 @pytest.mark.unit
 def test_general_cubic_root_finder():
     plib = os.path.join(idaes.bin_directory, "cubic_roots.so")

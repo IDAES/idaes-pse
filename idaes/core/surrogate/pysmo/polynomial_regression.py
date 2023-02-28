@@ -1602,7 +1602,7 @@ class PolynomialRegression:
 
         """
         # Reshaping of array necessary when input variables are Pyomo scalar variables
-        vl = np.array([variable_list])
+        vl = np.array([variable_list], dtype="object")
         vl = vl.reshape(1, len(variable_list)) if vl.ndim > 2 else vl
 
         terms = PolynomialRegression.polygeneration(

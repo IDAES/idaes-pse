@@ -13,6 +13,10 @@
 from pyomo.core.base.block import declare_custom_block, _BlockData
 from pyomo.environ import Var, Set
 import collections
+import idaes.logger as idaeslog
+
+__author__ = "Carl Laird, Andrew Lee"
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_custom_block(name="SurrogateBlock")
@@ -57,7 +61,7 @@ class SurrogateBlockData(_BlockData):
         input_vars=None,
         output_vars=None,
         use_surrogate_bounds=True,
-        **kwargs
+        **kwargs,
     ):
         """
         Build an EO model of the surrogate on the block. This method will build the
@@ -97,8 +101,8 @@ class SurrogateBlockData(_BlockData):
 
         # set the input bounds if desired
         input_bounds = surrogate_object.input_bounds()
+        input_vars_as_dict = self.input_vars_as_dict()
         if use_surrogate_bounds is True and input_bounds is not None:
-            input_vars_as_dict = self.input_vars_as_dict()
             for k, bnd in input_bounds.items():
                 v = input_vars_as_dict[k]
                 lb = bnd[0]
@@ -107,7 +111,7 @@ class SurrogateBlockData(_BlockData):
                 ub = bnd[1]
                 if v.ub is not None:
                     ub = min(ub, v.ub)
-                print("Setting bound of {} to {}.".format(v, (lb, ub)))
+                _log.debug(f"Setting bound of {v} to ({lb}, {ub}).")
                 v.setlb(lb)
                 v.setub(ub)
 

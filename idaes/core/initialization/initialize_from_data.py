@@ -10,24 +10,24 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-from idaes.apps.grid_integration import DoubleLoopCoordinator
-from idaes.apps.grid_integration.tests.util import (
-    make_testing_tracker,
-    make_testing_bidder,
-)
+"""
+Initializer class for implementing initialization from a data source
+"""
+from idaes.core.initialization.initializer_base import InitializerBase
 
-## create trackers
-thermal_tracker = make_testing_tracker()
-thermal_projection_tracker = make_testing_tracker()
-thermal_bidder = make_testing_bidder()
+__author__ = "Andrew Lee"
 
-# create coordinator
-coordinator = DoubleLoopCoordinator(
-    bidder=thermal_bidder,
-    tracker=thermal_tracker,
-    projection_tracker=thermal_projection_tracker,
-)
 
-## Prescient requires the following functions in this module
-get_configuration = coordinator.get_configuration
-register_plugins = coordinator.register_plugins
+class FromDataInitializer(InitializerBase):
+    """
+    This is a general purpose Initializer object which attempts to initialize a
+    model from user provided data.
+
+    Data can be provided in either json format or as a dict-like structure. The loaded
+    solution is then checked to ensure that it satisfies all constraints in the model.
+
+    """
+
+    def initialization_routine(self, model):
+        # No action required as data has been loaded in the load_initial_guesses method
+        pass

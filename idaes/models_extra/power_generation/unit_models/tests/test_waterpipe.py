@@ -56,6 +56,7 @@ def build_unit():
     return m
 
 
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.unit
 def test_basic_build(build_unit):
     """Make a unit model and make sure it doesn't throw exception"""

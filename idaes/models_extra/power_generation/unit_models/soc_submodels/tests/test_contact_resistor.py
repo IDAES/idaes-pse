@@ -21,8 +21,9 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models_extra.power_generation.unit_models.soc_submodels.testing as soc_testing
+from idaes.core.solvers import get_solver
 
-solver = pyo.SolverFactory("ipopt")
+solver = get_solver("ipopt")
 
 
 @pytest.fixture

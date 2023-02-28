@@ -199,7 +199,6 @@ def arBY(D, T, Y, Beta):
             if c == 0:
                 try:
                     val += y * (D**d) * (T**t)
-                    pass
                 except Exception:
                     print("Term", x, d, t, T, D)
             elif m == 0:
@@ -542,7 +541,6 @@ def drdRes(D, T, Y, Beta):
             if c == 0:
                 try:
                     val += y * d * (D**d) * (T**t)
-                    pass
                 except Exception:
                     print("Term", x, d, t, T, D)
             elif m == 0:

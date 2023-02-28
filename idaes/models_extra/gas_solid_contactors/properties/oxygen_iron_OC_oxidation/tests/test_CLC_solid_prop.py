@@ -307,9 +307,6 @@ def test_state_vars():
     assert len(list(m.fs.state.component_data_objects(Var))) == 6
     assert len(list(m.component_data_objects(Constraint))) == 1
 
-    for name, var in m.fs.state.define_state_vars().items():
-        assert name in m.fs.properties._metadata._properties
-
 
 @pytest.mark.unit
 def test_indexed_state_block():
@@ -350,7 +347,7 @@ def test_property_construction_ordered():
 
     state_vars = m.fs.state.define_state_vars()
     n_state_vars = len(state_vars)
-    n_vars = len(m.fs.properties._metadata._properties)
+    n_vars = len(m.fs.properties._metadata.properties.list_supported_properties())
     assert len(matching) == n_vars - n_state_vars
 
     nvar = len(list(m.fs.state.component_data_objects(Var)))

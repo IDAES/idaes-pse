@@ -34,13 +34,9 @@ class FlowsheetUnknown(Exception):
 class ProcessingError(Exception):
     """Use for errors processing input."""
 
-    pass
-
 
 class VisualizerError(Exception):
     """Generic error for visualizer"""
-
-    pass
 
 
 class VisualizerSaveError(VisualizerError):

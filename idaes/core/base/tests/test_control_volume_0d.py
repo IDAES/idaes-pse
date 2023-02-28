@@ -310,25 +310,6 @@ def test_add_phase_fractions_single_phase():
 # -----------------------------------------------------------------------------
 # Test reaction rate conversion method
 @pytest.mark.unit
-def test_rxn_rate_conv_no_rxns():
-    m = ConcreteModel()
-    m.fs = Flowsheet(dynamic=False)
-    m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.pp.basis_switch = 3
-    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
-
-    m.fs.cv = ControlVolume0DBlock(property_package=m.fs.pp, reaction_package=m.fs.rp)
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
-
-    for t in m.fs.time:
-        for j in m.fs.pp.component_list:
-            assert m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=False) == 1
-
-
-@pytest.mark.unit
 def test_rxn_rate_conv_property_basis_other():
     m = ConcreteModel()
     m.fs = Flowsheet(dynamic=False)
@@ -345,7 +326,7 @@ def test_rxn_rate_conv_property_basis_other():
     for t in m.fs.time:
         for j in m.fs.pp.component_list:
             with pytest.raises(ConfigurationError):
-                m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True)
+                m.fs.cv._rxn_rate_conv(t, j)
 
 
 @pytest.mark.unit
@@ -365,7 +346,7 @@ def test_rxn_rate_conv_reaction_basis_other():
     for t in m.fs.time:
         for j in m.fs.pp.component_list:
             with pytest.raises(ConfigurationError):
-                m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True)
+                m.fs.cv._rxn_rate_conv(t, j)
 
 
 @pytest.mark.unit
@@ -383,7 +364,7 @@ def test_rxn_rate_conv_both_molar():
 
     for t in m.fs.time:
         for j in m.fs.pp.component_list:
-            assert m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True) == 1
+            assert m.fs.cv._rxn_rate_conv(t, j) == 1
 
 
 @pytest.mark.unit
@@ -403,7 +384,7 @@ def test_rxn_rate_conv_both_mass():
 
     for t in m.fs.time:
         for j in m.fs.pp.component_list:
-            assert m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True) == 1
+            assert m.fs.cv._rxn_rate_conv(t, j) == 1
 
 
 @pytest.mark.unit
@@ -424,7 +405,7 @@ def test_rxn_rate_conv_mole_mass_no_mw():
     for t in m.fs.time:
         for j in m.fs.pp.component_list:
             with pytest.raises(PropertyNotSupportedError):
-                m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True)
+                m.fs.cv._rxn_rate_conv(t, j)
 
 
 @pytest.mark.unit
@@ -445,7 +426,7 @@ def test_rxn_rate_conv_mass_mole_no_mw():
     for t in m.fs.time:
         for j in m.fs.pp.component_list:
             with pytest.raises(PropertyNotSupportedError):
-                m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True)
+                m.fs.cv._rxn_rate_conv(t, j)
 
 
 @pytest.mark.unit
@@ -467,8 +448,7 @@ def test_rxn_rate_conv_mole_mass():
         m.fs.cv.properties_out[t].mw_comp = {"c1": 2, "c2": 3}
         for j in m.fs.pp.component_list:
             assert (
-                m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True)
-                == 1 / m.fs.cv.properties_out[t].mw_comp[j]
+                m.fs.cv._rxn_rate_conv(t, j) == 1 / m.fs.cv.properties_out[t].mw_comp[j]
             )
 
 
@@ -490,10 +470,7 @@ def test_rxn_rate_conv_mass_mole():
     for t in m.fs.time:
         m.fs.cv.properties_out[t].mw_comp = {"c1": 2, "c2": 3}
         for j in m.fs.pp.component_list:
-            assert (
-                m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True)
-                == m.fs.cv.properties_out[t].mw_comp[j]
-            )
+            assert m.fs.cv._rxn_rate_conv(t, j) == m.fs.cv.properties_out[t].mw_comp[j]
 
 
 # -----------------------------------------------------------------------------

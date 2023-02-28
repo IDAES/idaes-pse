@@ -93,7 +93,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.Al2O3 = Component()
 
         # -------------------------------------------------------------------------
-        """ Pure solid component properties"""
+        # Pure solid component properties
 
         # Mol. weights of solid components - units = kg/mol. ref: NIST webbook
         mw_comp_dict = {"Fe2O3": 0.15969, "Fe3O4": 0.231533, "Al2O3": 0.10196}
@@ -221,8 +221,8 @@ class PhysicalParameterData(PhysicalParameterBlock):
         )
 
         # -------------------------------------------------------------------------
-        """ Mixed solid properties"""
-        # These are setup as fixed vars to allow for parameter estimation
+        # Mixed solid properties
+        # These are set up as fixed vars to allow for parameter estimation
 
         # Particle size
         self.particle_dia = Var(
@@ -288,14 +288,24 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
+        obj.define_custom_properties(
+            {
+                "particle_porosity": {"method": None, "units": pyunits.dimensionless},
+                "dens_mass_skeletal": {
+                    "method": "_dens_mass_skeletal",
+                    "units": obj.derived_units.DENSITY_MASS,
+                },
+                "dens_mass_particle": {
+                    "method": "_dens_mass_particle",
+                    "units": obj.derived_units.DENSITY_MASS,
+                },
+            }
+        )
         obj.add_properties(
             {
                 "flow_mass": {"method": None},
-                "particle_porosity": {"method": None},
                 "temperature": {"method": None},
                 "mass_frac_comp": {"method": None},
-                "dens_mass_skeletal": {"method": "_dens_mass_skeletal"},
-                "dens_mass_particle": {"method": "_dens_mass_particle"},
                 "cp_mol_comp": {"method": "_cp_mol_comp"},
                 "cp_mass": {"method": "_cp_mass"},
                 "enth_mass": {"method": "_enth_mass"},
@@ -327,7 +337,7 @@ class _SolidPhaseStateBlock(StateBlock):
         state_vars_fixed=False,
         outlvl=idaeslog.NOTSET,
         solver="ipopt",
-        optarg={"tol": 1e-8},
+        optarg=None,
     ):
         """
         Initialization routine for property package.

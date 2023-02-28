@@ -75,6 +75,7 @@ from idaes.models.properties import iapws95
 from idaes.models.properties.general_helmholtz import helmholtz_data_dir as hdir
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.solvers import get_solver
 
 from idaes.models.properties.modular_properties import (
     GenericParameterBlock,
@@ -91,7 +92,7 @@ from idaes.models_extra.power_generation.unit_models.soc_submodels.common import
     _comp_enthalpy_expr,
     _comp_entropy_expr,
 )
-
+from idaes.models.properties.general_helmholtz import helmholtz_available
 from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 
 data_cache = os.sep.join([this_file_dir(), "data_cache"])
@@ -297,6 +298,7 @@ def model_stack():
     return m
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_initialization_cell(model):
     m = model
@@ -317,7 +319,7 @@ def test_initialization_cell(model):
 
     cell.initialize_build(
         optarg={"nlp_scaling_method": "user-scaling"},
-        current_density_guess=-2000,
+        current_density_guess=0,
         temperature_guess=1103.15,
     )
     cell.model_check()
@@ -360,7 +362,7 @@ def test_initialization_cell(model):
 
     assert degrees_of_freedom(cell) == 11
 
-    cell.initialize(current_density_guess=-1500, temperature_guess=1103.15)
+    cell.initialize(current_density_guess=0, temperature_guess=1103.15)
 
     assert degrees_of_freedom(cell) == 11
 
@@ -369,6 +371,7 @@ def test_initialization_cell(model):
     cell.oxygen_inlet.mole_frac_comp[0, "N2"].fix()
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_initialization_stack(model_stack):
     m = model_stack
@@ -392,7 +395,7 @@ def test_initialization_stack(model_stack):
 
     stack.initialize_build(
         optarg={"nlp_scaling_method": "user-scaling"},
-        current_density_guess=-2000,
+        current_density_guess=0,
         temperature_guess=1103.15,
     )
     cell.model_check()
@@ -437,7 +440,7 @@ def test_initialization_stack(model_stack):
 
     stack.initialize_build(
         optarg={"nlp_scaling_method": "user-scaling"},
-        current_density_guess=-1500,
+        current_density_guess=0,
         temperature_guess=1103.15,
     )
 
@@ -453,7 +456,7 @@ def kazempoor_braun_replication(model):
     cell = m.fs.cell
     case = 5
 
-    solver = pyo.SolverFactory("ipopt")
+    solver = get_solver("ipopt")
 
     N_voltage = 11
     N_case = 5
@@ -486,7 +489,6 @@ def kazempoor_braun_replication(model):
         results[key] = []
 
     for case in range(1, N_case + 1):
-
         T_in = df["T_in"][case] + 273.15
         T_dew = df["T_dew"][case] + 273.15
         N_N2 = cccm_to_mps(df["sccm_N2"][case])
@@ -593,6 +595,7 @@ def kazempoor_braun_replication(model):
     return out
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_model_replication(model):
     out = kazempoor_braun_replication(model)

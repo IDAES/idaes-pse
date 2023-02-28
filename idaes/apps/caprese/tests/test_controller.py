@@ -39,10 +39,11 @@ from idaes.apps.caprese.common.config import (
     ControlPenaltyType,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.solvers import get_solver
 
 solver_available = pyo.SolverFactory("ipopt").available()
 if solver_available:
-    solver = pyo.SolverFactory("ipopt")
+    solver = get_solver(solver="ipopt")
 else:
     solver = None
 

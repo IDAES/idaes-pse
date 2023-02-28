@@ -19,7 +19,7 @@ Costing package based on methods from:
     Chapter 22. Cost Accounting and Capital Cost Estimation
     22.2 Cost Indexes and Capital Investment
 
-Curently, this costing package only includes methods for capital costing of
+Currently, this costing package only includes methods for capital costing of
 unit operations.
 """
 import pyomo.environ as pyo
@@ -203,7 +203,6 @@ class BlowerMaterial(StrEnum):
 
 @declare_process_block_class("SSLWCosting")
 class SSLWCostingData(FlowsheetCostingBlockData):
-
     # Register currency and conversion rates based on CE Index
     register_idaes_currency_units()
 
@@ -233,7 +232,6 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         4. self.aggregate_flow_costs (indexed by flow type)
         """
         # TODO: Do we have any process level methods to add here?
-        pass
 
     @staticmethod
     def initialize_build(self):
@@ -243,8 +241,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
 
         Note that the aggregate costs will be initialized by the framework.
         """
-        # TODO: For now,  no additional process level costs to initialize
-        pass
+        # TODO: For now, no additional process level costs to initialize
 
     def cost_heat_exchanger(
         blk,
@@ -700,7 +697,6 @@ class SSLWCostingData(FlowsheetCostingBlockData):
     def _cost_distillation_trays(
         blk, tray_material, tray_type, vessel_diameter, number_of_trays
     ):
-
         # Check arguments
         if tray_material not in TrayMaterial:
             raise ConfigurationError(
@@ -1618,7 +1614,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         to call the specific sub-methods directly as required.
 
         Args:
-            mover_type: optional arguemnt to indicate type of pressure changer.
+            mover_type: optional argument to indicate type of pressure changer.
         """
         if not blk.unit_model.config.compressor or mover_type == "turbine":
             # Unit is a turbine
@@ -1641,7 +1637,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             SSLWCostingData.cost_fan(blk, **kwargs)
         else:
             raise ConfigurationError(
-                f"{blk.name} - unrecognised value for mover_type argument: "
+                f"{blk.name} - unrecognized value for mover_type argument: "
                 f"{mover_type}."
             )
 

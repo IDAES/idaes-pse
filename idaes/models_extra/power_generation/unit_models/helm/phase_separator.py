@@ -112,6 +112,7 @@ see property package for documentation.}""",
 
         self.add_port("vap_outlet", self.vap_state)
         self.add_port("liq_outlet", self.liq_state)
+
         # vapor outlet state
         @self.Constraint(self.flowsheet().time)
         def vap_material_balance(b, t):

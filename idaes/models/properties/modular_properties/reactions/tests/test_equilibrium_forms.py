@@ -441,7 +441,9 @@ def test_solubility_no_order():
         ** m.rparams.reaction_r1.reaction_order["p1", "c2"]
     )
 
-    assert str(rform) == str(s - smooth_max(0, s - Q, m.rparams.reaction_r1.eps) == 0)
+    assert str(rform) == str(
+        s - smooth_max(0, s - Q / pyunits.dimensionless, m.rparams.reaction_r1.eps) == 0
+    )
 
 
 @pytest.mark.unit
@@ -536,7 +538,9 @@ def test_solubility_product_with_order():
         ** m.rparams.reaction_r1.reaction_order["sol", "c2"]
     )
 
-    assert str(rform) == str(s - smooth_max(0, s - Q, m.rparams.reaction_r1.eps) == 0)
+    assert str(rform) == str(
+        s - smooth_max(0, s - Q / pyunits.dimensionless, m.rparams.reaction_r1.eps) == 0
+    )
 
 
 @pytest.mark.unit

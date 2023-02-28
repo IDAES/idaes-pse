@@ -848,32 +848,6 @@ def test_add_phase_fractions_single_phase():
 # -----------------------------------------------------------------------------
 # Test reaction rate conversion method
 @pytest.mark.unit
-def test_rxn_rate_conv_no_rxns():
-    m = ConcreteModel()
-    m.fs = Flowsheet(dynamic=False)
-    m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.pp.basis_switch = 3
-    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
-
-    m.fs.cv = ControlVolume1DBlock(
-        property_package=m.fs.pp,
-        reaction_package=m.fs.rp,
-        transformation_method="dae.finite_difference",
-        transformation_scheme="BACKWARD",
-        finite_elements=10,
-    )
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
-
-    for t in m.fs.time:
-        for x in m.fs.cv.length_domain:
-            for j in m.fs.pp.component_list:
-                assert m.fs.cv._rxn_rate_conv(t, x, j, has_rate_reactions=False) == 1
-
-
-@pytest.mark.unit
 def test_rxn_rate_conv_property_basis_other():
     m = ConcreteModel()
     m.fs = Flowsheet(dynamic=False)
@@ -897,7 +871,7 @@ def test_rxn_rate_conv_property_basis_other():
         for x in m.fs.cv.length_domain:
             for j in m.fs.pp.component_list:
                 with pytest.raises(ConfigurationError):
-                    m.fs.cv._rxn_rate_conv(t, x, j, has_rate_reactions=True)
+                    m.fs.cv._rxn_rate_conv(t, x, j)
 
 
 @pytest.mark.unit
@@ -924,7 +898,7 @@ def test_rxn_rate_conv_reaction_basis_other():
         for x in m.fs.cv.length_domain:
             for j in m.fs.pp.component_list:
                 with pytest.raises(ConfigurationError):
-                    m.fs.cv._rxn_rate_conv(t, x, j, has_rate_reactions=True)
+                    m.fs.cv._rxn_rate_conv(t, x, j)
 
 
 @pytest.mark.unit
@@ -949,7 +923,7 @@ def test_rxn_rate_conv_both_molar():
     for t in m.fs.time:
         for x in m.fs.cv.length_domain:
             for j in m.fs.pp.component_list:
-                assert m.fs.cv._rxn_rate_conv(t, x, j, has_rate_reactions=True) == 1
+                assert m.fs.cv._rxn_rate_conv(t, x, j) == 1
 
 
 @pytest.mark.unit
@@ -976,7 +950,7 @@ def test_rxn_rate_conv_both_mass():
     for t in m.fs.time:
         for x in m.fs.cv.length_domain:
             for j in m.fs.pp.component_list:
-                assert m.fs.cv._rxn_rate_conv(t, x, j, has_rate_reactions=True) == 1
+                assert m.fs.cv._rxn_rate_conv(t, x, j) == 1
 
 
 @pytest.mark.unit
@@ -1004,7 +978,7 @@ def test_rxn_rate_conv_mole_mass_no_mw():
         for x in m.fs.cv.length_domain:
             for j in m.fs.pp.component_list:
                 with pytest.raises(PropertyNotSupportedError):
-                    m.fs.cv._rxn_rate_conv(t, x, j, has_rate_reactions=True)
+                    m.fs.cv._rxn_rate_conv(t, x, j)
 
 
 @pytest.mark.unit
@@ -1032,7 +1006,7 @@ def test_rxn_rate_conv_mass_mole_no_mw():
         for x in m.fs.cv.length_domain:
             for j in m.fs.pp.component_list:
                 with pytest.raises(PropertyNotSupportedError):
-                    m.fs.cv._rxn_rate_conv(t, x, j, has_rate_reactions=True)
+                    m.fs.cv._rxn_rate_conv(t, x, j)
 
 
 @pytest.mark.unit
@@ -1061,7 +1035,7 @@ def test_rxn_rate_conv_mole_mass():
             m.fs.cv.properties[t, x].mw_comp = {"c1": 2, "c2": 3}
             for j in m.fs.pp.component_list:
                 assert (
-                    m.fs.cv._rxn_rate_conv(t, x, j, has_rate_reactions=True)
+                    m.fs.cv._rxn_rate_conv(t, x, j)
                     == 1 / m.fs.cv.properties[t, x].mw_comp[j]
                 )
 
@@ -1092,7 +1066,7 @@ def test_rxn_rate_conv_mass_mole():
             m.fs.cv.properties[t, x].mw_comp = {"c1": 2, "c2": 3}
             for j in m.fs.pp.component_list:
                 assert (
-                    m.fs.cv._rxn_rate_conv(t, x, j, has_rate_reactions=True)
+                    m.fs.cv._rxn_rate_conv(t, x, j)
                     == m.fs.cv.properties[t, x].mw_comp[j]
                 )
 
@@ -3708,3 +3682,129 @@ def test_report():
 
     with pytest.raises(NotImplementedError):
         m.fs.cv.report()
+
+
+@pytest.mark.unit
+def test_estimate_states_forwards():
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=False)
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.cv = ControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
+
+    m.fs.cv.add_geometry(length_domain_set=[0, 0.2, 0.5, 0.7, 1.0])
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+    for t in m.fs.time:
+        for x in m.fs.cv.length_domain:
+            state = m.fs.cv.properties[t, x]
+            assert value(state.flow_mol_phase_comp["p1", "c1"]) == pytest.approx(
+                2, rel=1e-8
+            )
+            assert value(state.flow_mol_phase_comp["p1", "c2"]) == pytest.approx(
+                2, rel=1e-8
+            )
+            assert value(state.flow_mol_phase_comp["p2", "c1"]) == pytest.approx(
+                2, rel=1e-8
+            )
+            assert value(state.flow_mol_phase_comp["p2", "c2"]) == pytest.approx(
+                2, rel=1e-8
+            )
+            assert value(state.pressure) == pytest.approx(1e5, rel=1e-8)
+            assert value(state.temperature) == pytest.approx(300, rel=1e-8)
+
+    m.fs.cv.properties[0, 0].flow_mol_phase_comp["p1", "c1"].fix(20)
+    m.fs.cv.properties[0, 0].flow_mol_phase_comp["p1", "c2"].fix(21)
+    m.fs.cv.properties[0, 0].flow_mol_phase_comp["p2", "c1"].fix(22)
+    m.fs.cv.properties[0, 0].flow_mol_phase_comp["p2", "c2"].fix(23)
+    m.fs.cv.properties[0, 0].pressure.fix(2.5e5)
+    m.fs.cv.properties[0, 0].temperature.fix(345)
+
+    m.fs.cv.estimate_states(always_estimate=True)
+
+    for t in m.fs.time:
+        for x in m.fs.cv.length_domain:
+            state = m.fs.cv.properties[t, x]
+            assert value(state.flow_mol_phase_comp["p1", "c1"]) == pytest.approx(
+                20, rel=1e-8
+            )
+            assert value(state.flow_mol_phase_comp["p1", "c2"]) == pytest.approx(
+                21, rel=1e-8
+            )
+            assert value(state.flow_mol_phase_comp["p2", "c1"]) == pytest.approx(
+                22, rel=1e-8
+            )
+            assert value(state.flow_mol_phase_comp["p2", "c2"]) == pytest.approx(
+                23, rel=1e-8
+            )
+            assert value(state.pressure) == pytest.approx(2.5e5, rel=1e-8)
+            assert value(state.temperature) == pytest.approx(345, rel=1e-8)
+
+
+@pytest.mark.unit
+def test_estimate_states_backward():
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=False)
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.cv = ControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
+
+    m.fs.cv.add_geometry(
+        length_domain_set=[0, 0.2, 0.5, 0.7, 1.0], flow_direction=FlowDirection.backward
+    )
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+    for t in m.fs.time:
+        for x in m.fs.cv.length_domain:
+            state = m.fs.cv.properties[t, x]
+            assert value(state.flow_mol_phase_comp["p1", "c1"]) == pytest.approx(
+                2, rel=1e-8
+            )
+            assert value(state.flow_mol_phase_comp["p1", "c2"]) == pytest.approx(
+                2, rel=1e-8
+            )
+            assert value(state.flow_mol_phase_comp["p2", "c1"]) == pytest.approx(
+                2, rel=1e-8
+            )
+            assert value(state.flow_mol_phase_comp["p2", "c2"]) == pytest.approx(
+                2, rel=1e-8
+            )
+            assert value(state.pressure) == pytest.approx(1e5, rel=1e-8)
+            assert value(state.temperature) == pytest.approx(300, rel=1e-8)
+
+    m.fs.cv.properties[0, 1].flow_mol_phase_comp["p1", "c1"].fix(20)
+    m.fs.cv.properties[0, 1].flow_mol_phase_comp["p1", "c2"].fix(21)
+    m.fs.cv.properties[0, 1].flow_mol_phase_comp["p2", "c1"].fix(22)
+    m.fs.cv.properties[0, 1].flow_mol_phase_comp["p2", "c2"].fix(23)
+    m.fs.cv.properties[0, 1].pressure.fix(2.5e5)
+    m.fs.cv.properties[0, 1].temperature.fix(345)
+
+    m.fs.cv.estimate_states(always_estimate=True)
+
+    for t in m.fs.time:
+        for x in m.fs.cv.length_domain:
+            state = m.fs.cv.properties[t, x]
+            assert value(state.flow_mol_phase_comp["p1", "c1"]) == pytest.approx(
+                20, rel=1e-8
+            )
+            assert value(state.flow_mol_phase_comp["p1", "c2"]) == pytest.approx(
+                21, rel=1e-8
+            )
+            assert value(state.flow_mol_phase_comp["p2", "c1"]) == pytest.approx(
+                22, rel=1e-8
+            )
+            assert value(state.flow_mol_phase_comp["p2", "c2"]) == pytest.approx(
+                23, rel=1e-8
+            )
+            assert value(state.pressure) == pytest.approx(2.5e5, rel=1e-8)
+            assert value(state.temperature) == pytest.approx(345, rel=1e-8)

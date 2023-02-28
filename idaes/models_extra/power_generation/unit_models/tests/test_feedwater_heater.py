@@ -20,11 +20,13 @@ from idaes.models.properties import iapws95
 from idaes.models_extra.power_generation.unit_models import FWH0D
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 # Set up solver
 solver = get_solver()
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.unit
 def test_fwh_model():
     model = pyo.ConcreteModel()
@@ -63,6 +65,7 @@ def test_fwh_model():
     )
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_fwh_units():
     model = pyo.ConcreteModel()

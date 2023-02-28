@@ -19,10 +19,12 @@ import idaes.core
 from idaes.models_extra.power_generation.unit_models.helm import HelmNtuCondenser
 from idaes.models.properties import iapws95
 from idaes.core.solvers import get_solver
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 solver = get_solver()
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.unit
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_condenser_steady():
@@ -54,6 +56,7 @@ def test_condenser_steady():
     )
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.unit
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_condenser_dynamic():

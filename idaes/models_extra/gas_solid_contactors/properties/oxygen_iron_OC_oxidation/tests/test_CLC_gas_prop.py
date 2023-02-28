@@ -150,7 +150,7 @@ def test_solve_unscaled(gas_prop_unscaled):
     assert hasattr(gas_prop_unscaled.fs.unit[0], "dens_mass")
     assert hasattr(gas_prop_unscaled.fs.unit[0], "visc_d")
     assert hasattr(gas_prop_unscaled.fs.unit[0], "therm_cond")
-    assert hasattr(gas_prop_unscaled.fs.unit[0], "diffusion_comp")
+    assert hasattr(gas_prop_unscaled.fs.unit[0], "diffus_comp")
     assert hasattr(gas_prop_unscaled.fs.unit[0], "cp_mol_comp")
     assert hasattr(gas_prop_unscaled.fs.unit[0], "cp_mol")
     assert hasattr(gas_prop_unscaled.fs.unit[0], "cp_mass")
@@ -180,7 +180,7 @@ def test_scaling(gas_prop):
     assert hasattr(gas_prop.fs.unit[0], "dens_mass")
     assert hasattr(gas_prop.fs.unit[0], "visc_d")
     assert hasattr(gas_prop.fs.unit[0], "therm_cond")
-    assert hasattr(gas_prop.fs.unit[0], "diffusion_comp")
+    assert hasattr(gas_prop.fs.unit[0], "diffus_comp")
     assert hasattr(gas_prop.fs.unit[0], "cp_mol_comp")
     assert hasattr(gas_prop.fs.unit[0], "cp_mol")
     assert hasattr(gas_prop.fs.unit[0], "cp_mass")
@@ -230,7 +230,7 @@ def test_scaling(gas_prop):
         assert pytest.approx(
             1e5, rel=1e-5
         ) == iscale.get_constraint_transform_applied_scaling_factor(c)
-    for i, c in gas_prop.fs.unit[0].diffusion_comp_constraint.items():
+    for i, c in gas_prop.fs.unit[0].diffus_comp_constraint.items():
         assert pytest.approx(
             1e5, rel=1e-5
         ) == iscale.get_constraint_transform_applied_scaling_factor(c)
@@ -326,7 +326,7 @@ def test_units_consistent(gas_prop):
     assert hasattr(gas_prop.fs.unit[0], "dens_mass")
     assert hasattr(gas_prop.fs.unit[0], "visc_d")
     assert hasattr(gas_prop.fs.unit[0], "therm_cond")
-    assert hasattr(gas_prop.fs.unit[0], "diffusion_comp")
+    assert hasattr(gas_prop.fs.unit[0], "diffus_comp")
     assert hasattr(gas_prop.fs.unit[0], "cp_mol_comp")
     assert hasattr(gas_prop.fs.unit[0], "cp_mol")
     assert hasattr(gas_prop.fs.unit[0], "cp_mass")
@@ -367,8 +367,9 @@ def test_state_vars():
 
     for name, var in m.fs.state.define_state_vars().items():
         # State vars should be included in the metadata with no method
-        assert name in m.fs.properties._metadata._properties
-        assert m.fs.properties._metadata._properties[name]["method"] is None
+        meta = m.fs.properties._metadata._properties[name]
+        assert meta.method is None
+        assert meta.supported
 
 
 @pytest.mark.unit
@@ -391,8 +392,9 @@ def test_indexed_state_block():
 
         for name, var in state.define_state_vars().items():
             # State vars should be included in the metadata with no method
-            assert name in m.fs.properties._metadata._properties
-            assert m.fs.properties._metadata._properties[name]["method"] is None
+            meta = m.fs.properties._metadata._properties[name]
+            assert meta.method is None
+            assert meta.supported
 
 
 @pytest.mark.unit
@@ -420,7 +422,7 @@ def test_property_construction_ordered():
         ("dens_mol_comp", "comp_conc_eqn"),
         ("dens_mass", "dens_mass_basis"),
         ("visc_d", "visc_d_constraint"),
-        ("diffusion_comp", "diffusion_comp_constraint"),
+        ("diffus_comp", "diffus_comp_constraint"),
         ("therm_cond", "therm_cond_constraint"),
         ("cp_mol_comp", "cp_shomate_eqn"),
         ("cp_mol", "mixture_heat_capacity_eqn"),
@@ -433,7 +435,7 @@ def test_property_construction_ordered():
     # Make sure the matching captures all the non-state vars.
     state_vars = m.fs.state.define_state_vars()
     n_state_vars = len(state_vars)
-    n_vars = len(m.fs.properties._metadata._properties)
+    n_vars = len(m.fs.properties._metadata.properties.list_supported_properties())
     assert len(matching) == n_vars - n_state_vars
 
     # Make sure we can add constraints one at a time, and only
@@ -800,7 +802,7 @@ class TestProperties(TestCase):
                     val = value(pyunits.convert(val, var.get_units()))
                     assert var.value == pytest.approx(value(val), rel=1e-3)
 
-    def test_diffusion_comp(self):
+    def test_diffus_comp(self):
         m = self._make_model()
         state = m.fs.state
 
@@ -900,7 +902,7 @@ class TestProperties(TestCase):
         target_values = {
             # These values look reasonable
             # TODO: Verify with external source.
-            "diffusion_comp[O2]": [
+            "diffus_comp[O2]": [
                 3.11792621830951e-5 * cm**2 / s,
                 2.456227751888218e-5 * cm**2 / s,
                 3.034740091620132e-5 * cm**2 / s,
@@ -913,7 +915,7 @@ class TestProperties(TestCase):
                 1.5589631091547582e-5 * cm**2 / s,
                 1.1692223318660684e-5 * cm**2 / s,
             ],
-            "diffusion_comp[N2]": [
+            "diffus_comp[N2]": [
                 2.457518754629481e-5 * cm**2 / s,
                 3.1383309495574956e-5 * cm**2 / s,
                 3.0334118458311523e-5 * cm**2 / s,
@@ -926,7 +928,7 @@ class TestProperties(TestCase):
                 1.5691654747787498e-5 * cm**2 / s,
                 1.176874106084062e-5 * cm**2 / s,
             ],
-            "diffusion_comp[H2O]": [
+            "diffus_comp[H2O]": [
                 3.0845168350215713e-5 * cm**2 / s,
                 3.0811129521516416e-5 * cm**2 / s,
                 3.719143107603082e-5 * cm**2 / s,
@@ -939,7 +941,7 @@ class TestProperties(TestCase):
                 1.8595715538015434e-5 * cm**2 / s,
                 1.3946786653511578e-5 * cm**2 / s,
             ],
-            "diffusion_comp[CO2]": [
+            "diffus_comp[CO2]": [
                 1.929322600571961e-5 * cm**2 / s,
                 1.9589681584041365e-5 * cm**2 / s,
                 2.4422863072776697e-5 * cm**2 / s,
@@ -958,10 +960,10 @@ class TestProperties(TestCase):
             for name, values in target_values.items()
         )
 
-        # Construct diffusion_comp and all prerequisites
-        state.diffusion_comp
+        # Construct diffus_comp and all prerequisites
+        state.diffus_comp
 
-        assert_units_consistent(state.diffusion_comp_constraint)
+        assert_units_consistent(state.diffus_comp_constraint)
 
         param_sweeper = ParamSweeper(n_scen, state_values, output_values=target_values)
         with param_sweeper:

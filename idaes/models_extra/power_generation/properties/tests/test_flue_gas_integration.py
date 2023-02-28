@@ -35,7 +35,7 @@ from idaes.models.unit_models import (
     HeatExchangerLumpedCapacitance,
     HeatExchangerFlowPattern,
 )
-
+from idaes.models.properties.general_helmholtz import helmholtz_available
 from idaes.models.unit_models.heat_exchanger import delta_temperature_lmtd_callback
 import numpy as np
 
@@ -46,6 +46,7 @@ solver = get_solver()
 TIME_STEPS = 50
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestHXLCTransientSCO2(object):
     @pytest.fixture
     def model(self):
@@ -175,7 +176,6 @@ class TestHXLCTransientSCO2(object):
         expected_wall_temps,
         tol=1e-3,
     ):
-
         for i, t in enumerate(times):
             assert value(
                 model.fs.unit.tube.properties_out[t].temperature

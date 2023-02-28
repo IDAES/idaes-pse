@@ -27,6 +27,7 @@ from idaes.core.util.model_statistics import (
     activated_equalities_generator,
 )
 from idaes.core.solvers import get_solver
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 # Set up solver
 solver = get_solver()
@@ -50,12 +51,14 @@ def build_turbine_dyn():
     return m
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.unit
 def test_basic_build(build_turbine):
     """Make a turbine model and make sure it doesn't throw exception"""
     m = build_turbine
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_initialize(build_turbine):
     """Initialize a turbine model"""
@@ -72,6 +75,7 @@ def test_initialize(build_turbine):
     assert degrees_of_freedom(m) == 3  # inlet was't fixed and still shouldn't be
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_initialize_calc_cf(build_turbine):
     """Initialize a turbine model"""
@@ -98,6 +102,7 @@ def test_initialize_calc_cf(build_turbine):
     assert degrees_of_freedom(m) == 0
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_initialize_dyn(build_turbine_dyn):
     """Initialize a turbine model"""
@@ -121,6 +126,7 @@ def test_initialize_dyn(build_turbine_dyn):
     assert degrees_of_freedom(m) == 0
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_initialize_dyn2(build_turbine_dyn):
     """Initialize a turbine model"""
@@ -145,6 +151,7 @@ def test_initialize_dyn2(build_turbine_dyn):
     assert degrees_of_freedom(m) == 0
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.unit
 def test_report(build_turbine):
     m = build_turbine

@@ -61,7 +61,7 @@ def model():
     m.rparams.reaction_e1 = Block()
 
     m.meta_object = PropertyClassMetadata()
-    m.meta_object._default_units = UnitSet(
+    m.meta_object._default_units.set_units(
         temperature=pyunits.K,
         mass=pyunits.kg,
         length=pyunits.m,

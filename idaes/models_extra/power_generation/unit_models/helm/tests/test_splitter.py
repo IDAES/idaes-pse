@@ -15,8 +15,10 @@ import pyomo.environ as pyo
 import idaes.core
 from idaes.models_extra.power_generation.unit_models.helm import HelmSplitter
 from idaes.models.properties import iapws95
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_splitter():
     m = pyo.ConcreteModel()

@@ -353,8 +353,13 @@ def sseCombo(lstFile=None, plot=False, report=False, surface=cm.coolwarm):
         HelmetSurface(Y, Beta, showGraph, surface)
 
 
-def ssePVT(PVT1=[], PVT1Vals=[], saveFig=False, show=True, report=False):
+def ssePVT(PVT1=None, PVT1Vals=None, saveFig=False, show=True, report=False):
     """Plots and metrics for Pressure-volume-temperature data"""
+    if PVT1 is None:
+        PVT1 = []
+    if PVT1Vals is None:
+        PVT1Vals = []
+
     Y, Beta = PVT1, PVT1Vals
     BasisFunctions.formCustomBasis()
 
@@ -537,8 +542,13 @@ def ssePVT(PVT1=[], PVT1Vals=[], saveFig=False, show=True, report=False):
     return [np.sum(sseZ1) / Zvar, np.sum(sseZ2) / Zvar, np.sum(sseZ1), np.sum(sseZ2)]
 
 
-def sseCV(Y=[], Beta=[], saveFig=False, show=True, report=False):
+def sseCV(Y=None, Beta=None, saveFig=False, show=True, report=False):
     """Plots and metrics for isochoric heat capacity"""
+    if Y is None:
+        Y = []
+    if Beta is None:
+        Beta = []
+
     DT = []
     CVValuesn = []
     PlaceHolder = []
@@ -669,8 +679,13 @@ def sseCV(Y=[], Beta=[], saveFig=False, show=True, report=False):
     return [sum(sseCV1) / np.var(CVR), sum(sseCV2) / np.var(CVR)]
 
 
-def sseCP(CP1=[], CP1Vals=[], saveFig=False, show=True, report=False):
+def sseCP(CP1=None, CP1Vals=None, saveFig=False, show=True, report=False):
     """Plots and calculates metrics for isobaric heat capacity"""
+    if CP1 is None:
+        CP1 = []
+    if CP1Vals is None:
+        CP1Vals = []
+
     global molecule
     Y = CP1
     Beta = CP1Vals
@@ -844,8 +859,13 @@ def sseCP(CP1=[], CP1Vals=[], saveFig=False, show=True, report=False):
     return [sum(sseCP1) / np.var(CPR), sum(sseCP2) / np.var(CPR)]
 
 
-def sseSND(SND1=[], SND1Vals=[], saveFig=False, show=True, report=False):
+def sseSND(SND1=None, SND1Vals=None, saveFig=False, show=True, report=False):
     """Plots and calculates metrics for speed of sound"""
+    if SND1 is None:
+        SND1 = []
+    if SND1Vals is None:
+        SND1Vals = []
+
     Y = SND1
     Beta = SND1Vals
 
@@ -996,11 +1016,15 @@ def sseSND(SND1=[], SND1Vals=[], saveFig=False, show=True, report=False):
     return [sum(sseW1) / np.var(We), sum(sseW2) / np.var(We)]
 
 
-def HelmetSurface(Y=[], Beta=[], show=True, surface=cm.coolwarm):
+def HelmetSurface(Y=None, Beta=None, surface=cm.coolwarm):
     """Plots Helmholtz Surface"""
+    if Y is None:
+        Y = []
+    if Beta is None:
+        Beta = []
+
     global critT, critP, critD, M, triple, acc, R, Rm, molecule
     BasisFunctions.formCustomBasis()
-    # print(Y, Beta)
 
     fig = plt.figure()
     fig.suptitle("%s Helmholtz Energy Surface" % molecule)

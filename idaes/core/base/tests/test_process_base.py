@@ -24,12 +24,23 @@ from pyomo.environ import Block, ConcreteModel, Set, Var, Param, Expression, uni
 
 from idaes.core.base.process_base import ProcessBaseBlock
 from idaes.core import FlowsheetBlockData, declare_process_block_class
+from idaes.core.initialization import BlockTriangularizationInitializer
 
 
 @declare_process_block_class("Flowsheet")
 class _Flowsheet(FlowsheetBlockData):
     def build(self):
         super(FlowsheetBlockData, self).build()
+
+
+@pytest.mark.unit
+def test_base_attributes():
+    # Test flowsheet method
+    m = ConcreteModel()
+    m.a = Flowsheet()
+
+    assert m.a.initialization_order == [m.a]
+    assert m.a.default_initializer is BlockTriangularizationInitializer
 
 
 @pytest.mark.unit
@@ -183,3 +194,58 @@ Unit : b                                                                   Time:
 """
 
     assert stream.getvalue().strip() == expected.strip()
+
+
+@pytest.mark.unit
+def test_default_scaling():
+    m = ConcreteModel()
+    m.b = ProcessBaseBlock()
+
+    assert isinstance(m.b._default_scaling_factors, dict)
+    assert m.b.default_scaling_factors is m.b._default_scaling_factors
+    assert m.b.default_scaling_factor is m.b._default_scaling_factors
+
+
+@pytest.mark.unit
+def test_set_default_scaling():
+    m = ConcreteModel()
+    m.b = ProcessBaseBlock()
+
+    m.b.set_default_scaling("a", 11)
+    m.b.set_default_scaling("b", 22, index="c")
+
+    assert ("a", None) in m.b._default_scaling_factors
+    assert m.b._default_scaling_factors[("a", None)] == 11
+    assert ("b", "c") in m.b._default_scaling_factors
+    assert m.b._default_scaling_factors[("b", "c")] == 22
+
+
+@pytest.mark.unit
+def test_unset_default_scaling():
+    m = ConcreteModel()
+    m.b = ProcessBaseBlock()
+
+    m.b.set_default_scaling("a", 11)
+    m.b.set_default_scaling("b", 22, index="c")
+
+    m.b.unset_default_scaling("a")
+    # Try something that does not exist
+    m.b.unset_default_scaling("b", index="d")
+
+    assert ("a", None) not in m.b._default_scaling_factors
+    assert ("b", "c") in m.b._default_scaling_factors
+    assert m.b._default_scaling_factors[("b", "c")] == 22
+
+
+@pytest.mark.unit
+def test_get_default_scaling():
+    m = ConcreteModel()
+    m.b = ProcessBaseBlock()
+
+    m.b.set_default_scaling("a", 11)
+    m.b.set_default_scaling("b", 22, index="c")
+
+    assert m.b.get_default_scaling("a") == 11
+    # Lookup scaling factor for an index that doesn't exist, but has overall scaling
+    assert m.b.get_default_scaling("a", index="c") == 11
+    assert m.b.get_default_scaling("b", "c") == 22

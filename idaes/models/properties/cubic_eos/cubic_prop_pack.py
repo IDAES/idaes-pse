@@ -2243,7 +2243,10 @@ class CubicStateBlockData(StateBlockData):
 
         if self.is_property_constructed("dens_mol_phase"):
             for c in self.eq_dens_mol_phase.values():
-                iscale.constraint_scaling_transform(c, sf_P, overwrite=False)
+                sf = iscale.get_scaling_factor(
+                    self.dens_mol_phase, default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if self.is_property_constructed("dens_mass_phase"):
             for p, c in self.eq_dens_mass_phase.items():

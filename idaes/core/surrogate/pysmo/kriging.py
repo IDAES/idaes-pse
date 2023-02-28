@@ -36,7 +36,12 @@ class MyBounds(object):
      The results of the __call__ function is fed into the Basinhopping algorithm using the accept_test parameter.
     """
 
-    def __init__(self, xmax=[1], xmin=[1e-6]):
+    def __init__(self, xmax=None, xmin=None):
+        if xmax is None:
+            xmax = [1]
+        if xmin is None:
+            xmin = [1e-6]
+
         self.xmax = np.array(xmax)
         self.xmin = np.array(xmin)
 
@@ -655,7 +660,7 @@ class KrigingModel:
             Pyomo Expression              : Pyomo expression of the Kriging model based on the variables provided in **variable_list**
 
         """
-        t1 = np.array([variable_list])
+        t1 = np.array([variable_list], dtype="object")
         # Reshaping of variable array is necessary when input variables are Pyomo scalar variables
         t1 = t1.reshape(1, len(variable_list)) if t1.ndim > 2 else t1
 

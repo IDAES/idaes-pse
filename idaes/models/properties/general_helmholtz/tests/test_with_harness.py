@@ -20,8 +20,10 @@ from idaes.models.properties.general_helmholtz import (
     AmountBasis,
 )
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicMix(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -32,6 +34,7 @@ class TestBasicMix(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicLV(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -42,6 +45,7 @@ class TestBasicLV(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicL(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -52,6 +56,7 @@ class TestBasicL(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicV(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -62,6 +67,7 @@ class TestBasicV(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicMixSP(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -76,6 +82,7 @@ class TestBasicMixSP(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicLVSP(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -90,6 +97,7 @@ class TestBasicLVSP(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicLSP(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -104,6 +112,7 @@ class TestBasicLSP(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicVSP(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -118,6 +127,7 @@ class TestBasicVSP(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicMixUP(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -132,6 +142,7 @@ class TestBasicMixUP(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicLVUP(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -146,6 +157,7 @@ class TestBasicLVUP(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicLUP(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -160,6 +172,7 @@ class TestBasicLUP(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicVUP(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -174,6 +187,7 @@ class TestBasicVUP(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicMixMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -188,6 +202,7 @@ class TestBasicMixMass(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicLVMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -202,6 +217,7 @@ class TestBasicLVMass(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicLMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -216,6 +232,7 @@ class TestBasicLMass(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicVMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -230,6 +247,7 @@ class TestBasicVMass(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicMixSPMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -245,6 +263,7 @@ class TestBasicMixSPMass(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicLVSPMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -260,6 +279,7 @@ class TestBasicLVSPMass(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicLSPMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -275,6 +295,7 @@ class TestBasicLSPMass(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicVSPMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -290,6 +311,7 @@ class TestBasicVSPMass(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicMixUPMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -305,6 +327,7 @@ class TestBasicMixUPMass(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicLVUPMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -320,6 +343,7 @@ class TestBasicLVUPMass(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicLUPMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -335,6 +359,7 @@ class TestBasicLUPMass(PropertyTestHarness):
         self.skip_initialization_raises_exception_test = True
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestBasicVUPMass(PropertyTestHarness):
     def configure(self):
         self.prop_pack = HelmholtzParameterBlock
@@ -342,6 +367,66 @@ class TestBasicVUPMass(PropertyTestHarness):
             "pure_component": "h2o",
             "phase_presentation": PhaseType.G,
             "state_vars": StateVars.PU,
+            "amount_basis": AmountBasis.MASS,
+        }
+        self.prop_args = {}
+        self.has_density_terms = True
+        # Helmholtz package initialization has no solver calls, so can't fail
+        self.skip_initialization_raises_exception_test = True
+
+
+class TestBasicMixTPXMass(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = HelmholtzParameterBlock
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.MIX,
+            "state_vars": StateVars.TPX,
+            "amount_basis": AmountBasis.MASS,
+        }
+        self.prop_args = {}
+        self.has_density_terms = True
+        # Helmholtz package initialization has no solver calls, so can't fail
+        self.skip_initialization_raises_exception_test = True
+
+
+class TestBasicLVTPXMass(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = HelmholtzParameterBlock
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.LG,
+            "state_vars": StateVars.TPX,
+            "amount_basis": AmountBasis.MASS,
+        }
+        self.prop_args = {}
+        self.has_density_terms = True
+        # Helmholtz package initialization has no solver calls, so can't fail
+        self.skip_initialization_raises_exception_test = True
+
+
+class TestBasicLTPXMass(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = HelmholtzParameterBlock
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.L,
+            "state_vars": StateVars.TPX,
+            "amount_basis": AmountBasis.MASS,
+        }
+        self.prop_args = {}
+        self.has_density_terms = True
+        # Helmholtz package initialization has no solver calls, so can't fail
+        self.skip_initialization_raises_exception_test = True
+
+
+class TestBasicVTPXMass(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = HelmholtzParameterBlock
+        self.param_args = {
+            "pure_component": "h2o",
+            "phase_presentation": PhaseType.G,
+            "state_vars": StateVars.TPX,
             "amount_basis": AmountBasis.MASS,
         }
         self.prop_args = {}

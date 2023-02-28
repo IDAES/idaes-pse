@@ -24,8 +24,9 @@ from idaes.core.util.exceptions import ConfigurationError
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 import idaes.models_extra.power_generation.unit_models.soc_submodels.testing as soc_testing
+from idaes.core.solvers import get_solver
 
-solver = pyo.SolverFactory("ipopt")
+solver = get_solver("ipopt")
 
 
 def common_components(nt, nz, ncomp, nreact):

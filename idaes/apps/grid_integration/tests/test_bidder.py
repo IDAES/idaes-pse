@@ -295,3 +295,67 @@ def test_compute_RT_bids(bidder_object):
     }
 
     pyo_unittest.assertStructuredAlmostEqual(first=expected_bids, second=bids)
+
+
+@pytest.fixture
+def bidder_object_pcost():
+
+    solver = pyo.SolverFactory("cbc")
+    forecaster = TestingForecaster(prediction=30)
+
+    # create a bidder model
+    testing_model_data.include_default_p_cost = False
+    bidding_model_object = TestingModel(model_data=testing_model_data)
+    bidder_object = Bidder(
+        bidding_model_object=bidding_model_object,
+        day_ahead_horizon=day_ahead_horizon,
+        real_time_horizon=real_time_horizon,
+        n_scenario=n_scenario,
+        solver=solver,
+        forecaster=forecaster,
+    )
+    return bidder_object
+
+
+@pytest.mark.component
+@pytest.mark.skipif(
+    not prescient_avail, reason="Prescient (optional dependency) not available"
+)
+def test_compute_RT_bids_pcost(bidder_object_pcost):
+    marginal_cost = bidder_object_pcost.bidding_model_object.marginal_cost
+    gen = bidder_object_pcost.generator
+    default_bids = bidder_object_pcost.bidding_model_object.model_data.p_cost
+    pmin = bidder_object_pcost.bidding_model_object.pmin
+    pmax = bidder_object_pcost.bidding_model_object.pmax
+    date = "2021-08-20"
+
+    # test bidding when price forecast lower than marginal cost
+    # expect default bids
+    realized_day_ahead_prices = [29] * bidder_object_pcost.real_time_horizon
+    realized_day_ahead_dispatches = [0] * bidder_object_pcost.real_time_horizon
+    shift = 1
+    fixed_forecast = marginal_cost - shift
+    bidder_object_pcost.forecaster.prediction = fixed_forecast
+    bids = bidder_object_pcost.compute_real_time_bids(
+        date=date,
+        hour=0,
+        realized_day_ahead_prices=realized_day_ahead_prices,
+        realized_day_ahead_dispatches=realized_day_ahead_dispatches,
+    )
+
+    expected_bids = {
+        t: {
+            gen: {
+                "p_min": pmin,
+                "p_max": pmin,
+                "p_min_agc": pmin,
+                "p_max_agc": pmin,
+                "startup_capacity": pmin,
+                "shutdown_capacity": pmin,
+                "p_cost": [(30, 0)],
+            }
+        }
+        for t in range(horizon)
+    }
+
+    pyo_unittest.assertStructuredAlmostEqual(first=expected_bids, second=bids)

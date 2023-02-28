@@ -17,10 +17,11 @@ import pyomo.environ as pyo
 import idaes.core
 import idaes.models.unit_models as cmodels
 import idaes.models_extra.power_generation.unit_models.helm as hmodels
-
+from idaes.models.properties.general_helmholtz import helmholtz_available
 from idaes.models.properties import iapws95
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_pump():
     m = pyo.ConcreteModel()
@@ -58,6 +59,7 @@ def test_pump():
     )
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_turbine():
     m = pyo.ConcreteModel()
@@ -96,6 +98,7 @@ def test_turbine():
     )
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_compressor():
     m = pyo.ConcreteModel()
@@ -135,6 +138,7 @@ def test_compressor():
     )
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_compressor_pump_compare():
     m = pyo.ConcreteModel()

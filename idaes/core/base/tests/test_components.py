@@ -47,7 +47,7 @@ class TestComponent:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object._default_units = UnitSet(
+        m.meta_object._default_units.set_units(
             temperature=pyunits.K,
             mass=pyunits.kg,
             length=pyunits.m,
@@ -174,7 +174,7 @@ class TestComponent:
             return m.meta_object
 
         m.get_metadata = types.MethodType(get_metadata, m)
-        m.meta_object._default_units = UnitSet(
+        m.meta_object._default_units.set_units(
             temperature=pyunits.K,
             mass=pyunits.kg,
             length=pyunits.m,
@@ -209,7 +209,7 @@ class TestComponent:
             return m.meta_object
 
         m.get_metadata = types.MethodType(get_metadata, m)
-        m.meta_object._default_units = UnitSet(
+        m.meta_object._default_units.set_units(
             temperature=pyunits.K,
             mass=pyunits.kg,
             length=pyunits.m,
@@ -241,7 +241,7 @@ class TestSolute:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object._default_units = UnitSet(
+        m.meta_object._default_units.set_units(
             temperature=pyunits.K,
             mass=pyunits.kg,
             length=pyunits.m,
@@ -353,7 +353,7 @@ class TestSovent:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object._default_units = UnitSet(
+        m.meta_object._default_units.set_units(
             temperature=pyunits.K,
             mass=pyunits.kg,
             length=pyunits.m,
@@ -484,7 +484,7 @@ class TestIon:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object._default_units = UnitSet(
+        m.meta_object._default_units.set_units(
             temperature=pyunits.K,
             mass=pyunits.kg,
             length=pyunits.m,
@@ -510,7 +510,7 @@ class TestAnion:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object._default_units = UnitSet(
+        m.meta_object._default_units.set_units(
             temperature=pyunits.K,
             mass=pyunits.kg,
             length=pyunits.m,
@@ -534,7 +534,7 @@ class TestAnion:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object._default_units = UnitSet(
+        m.meta_object._default_units.set_units(
             temperature=pyunits.K,
             mass=pyunits.kg,
             length=pyunits.m,
@@ -637,7 +637,7 @@ class TestCation:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object._default_units = UnitSet(
+        m.meta_object._default_units.set_units(
             temperature=pyunits.K,
             mass=pyunits.kg,
             length=pyunits.m,
@@ -723,7 +723,7 @@ class TestApparent:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object._default_units = UnitSet(
+        m.meta_object._default_units.set_units(
             temperature=pyunits.K,
             mass=pyunits.kg,
             length=pyunits.m,
@@ -747,7 +747,7 @@ class TestApparent:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object._default_units = UnitSet(
+        m.meta_object._default_units.set_units(
             temperature=pyunits.K,
             mass=pyunits.kg,
             length=pyunits.m,
@@ -774,7 +774,7 @@ class TestApparent:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object._default_units = UnitSet(
+        m.meta_object._default_units.set_units(
             temperature=pyunits.K,
             mass=pyunits.kg,
             length=pyunits.m,

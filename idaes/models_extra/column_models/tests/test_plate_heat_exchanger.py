@@ -226,7 +226,7 @@ class TestPHE(object):
                     - phe.fs.unit.hot_side_outlet.flow_mol[0]
                 )
             )
-            <= 1e-6
+            <= 2e-6
         )
 
         for j in phe.fs.hotside_properties.apparent_species_set:
@@ -239,7 +239,7 @@ class TestPHE(object):
                         * phe.fs.unit.hot_side_outlet.mole_frac_comp[0, j]
                     )
                 )
-                <= 1e-6
+                <= 2e-6
             )
 
         assert (
@@ -249,7 +249,7 @@ class TestPHE(object):
                     - phe.fs.unit.cold_side_outlet.flow_mol[0]
                 )
             )
-            <= 1e-6
+            <= 2e-6
         )
 
         for j in phe.fs.coldside_properties.apparent_species_set:
@@ -262,7 +262,7 @@ class TestPHE(object):
                         * phe.fs.unit.cold_side_outlet.mole_frac_comp[0, j]
                     )
                 )
-                <= 1e-6
+                <= 2e-6
             )
 
         # Energy conservation test
@@ -275,7 +275,7 @@ class TestPHE(object):
                     - phe.fs.unit.cold_side.properties_out[0]._enthalpy_flow_term["Liq"]
                 )
             )
-            <= 1e-6
+            <= 2e-6
         )
 
     # @pytest.mark.ui

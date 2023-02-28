@@ -38,6 +38,7 @@ from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import DefaultBool
+from idaes.core.util.initialization import fix_state_vars
 
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -622,3 +623,19 @@ Must be True if dynamic = True,
             pass
 
         super().del_component(obj)
+
+    def fix_initialization_states(self):
+        """
+        Fixes inlet states for models with one control volume and inlet with standard names.
+
+        More complex models may need to overload this with a model-specific method.
+
+        Returns:
+            None
+        """
+        try:
+            # Guess a 0-D control volume
+            fix_state_vars(self.control_volume.properties_in)
+        except AttributeError:
+            # If AttributeError, assume must be a 1-D control volume
+            fix_state_vars(self.control_volume.properties[:, 0])

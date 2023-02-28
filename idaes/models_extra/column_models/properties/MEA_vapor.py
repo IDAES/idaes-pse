@@ -313,10 +313,7 @@ class ThermalCond:
                 / ((1 + p3 / blk.temperature) + (p4 / blk.temperature**2))
             )
 
-        """
-        Thermal conductivity of vapor phase
-        Wassiljewa-Mason-Saxena mixing rule(low pressure)
-        """
+        # Thermal conductivity of vapor phase Wassiljewa-Mason-Saxena mixing rule(low pressure)
         k_vap = 0
         for i in blk.component_list:
             sumij = 0
@@ -413,7 +410,7 @@ class Viscosity:
 
         theta_ij = {}
         o = dict()
-        for (i, j) in enumerate(blk.component_list, 1):
+        for i, j in enumerate(blk.component_list, 1):
             o[i] = j
 
         for i in range(1, len(blk.component_list)):

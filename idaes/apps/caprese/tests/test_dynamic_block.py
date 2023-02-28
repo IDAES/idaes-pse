@@ -52,6 +52,7 @@ from idaes.apps.caprese.common.config import (
     VariableCategory,
     InputOption,
 )
+from idaes.core.solvers import get_solver
 
 VC = VariableCategory
 from idaes.apps.caprese.nmpc_var import (
@@ -71,7 +72,7 @@ __author__ = "Robert Parker"
 
 solver_available = pyo.SolverFactory("ipopt").available()
 if solver_available:
-    solver = pyo.SolverFactory("ipopt")
+    solver = get_solver(solver="ipopt")
 else:
     solver = None
 

@@ -30,6 +30,7 @@ from idaes.core.util.model_statistics import (
 from idaes.models.properties import iapws95
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 solver = get_solver()
 
@@ -39,6 +40,7 @@ def model():
     return main()
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_basic_build(model):
     """Make a turbine model and make sure it doesn't throw exception"""
@@ -53,11 +55,13 @@ def test_basic_build(model):
     assert isinstance(model.fs.drum.drum_level, pyo.Var)
 
 
+# @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 # @pytest.mark.integration
 # def test_unit_consistency(model):
 #     assert_units_consistent(model)
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_init(model):
     # check that the model solved properly and has 0 degrees of freedom
