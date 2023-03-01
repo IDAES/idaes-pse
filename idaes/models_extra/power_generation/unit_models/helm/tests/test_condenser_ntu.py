@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """Tests that helmholtz specific NTU condenser model."""
 
@@ -19,10 +19,12 @@ import idaes.core
 from idaes.models_extra.power_generation.unit_models.helm import HelmNtuCondenser
 from idaes.models.properties import iapws95
 from idaes.core.solvers import get_solver
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 solver = get_solver()
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.unit
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_condenser_steady():
@@ -54,6 +56,7 @@ def test_condenser_steady():
     )
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.unit
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_condenser_dynamic():

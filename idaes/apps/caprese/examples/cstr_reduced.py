@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Example for Caprese's module for NMPC.
@@ -23,6 +23,7 @@ from idaes.apps.caprese.categorize import (
     VariableCategory,
     ConstraintCategory,
 )
+from idaes.core.solvers import get_solver
 
 VC = VariableCategory
 CC = ConstraintCategory
@@ -47,13 +48,15 @@ __author__ = "Robert Parker"
 
 # See if ipopt is available and set up solver
 if pyo.SolverFactory("ipopt").available():
-    solver = pyo.SolverFactory("ipopt")
-    solver.options = {
-        "tol": 1e-6,
-        "bound_push": 1e-8,
-        "halt_on_ampl_error": "yes",
-        "linear_solver": "ma57",
-    }
+    solver = get_solver(
+        solver="ipopt",
+        options={
+            "tol": 1e-6,
+            "bound_push": 1e-8,
+            "halt_on_ampl_error": "yes",
+            "linear_solver": "ma57",
+        },
+    )
 else:
     solver = None
 

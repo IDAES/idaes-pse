@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 import idaes
 import logging
@@ -25,7 +25,7 @@ ERROR = logging.ERROR  # 40
 WARNING = logging.WARNING  # 30
 INFO_LOW = 21  # Most important info
 INFO = logging.INFO  # 20  #Medium info (default)
-INFO_HIGH = 19  # Less improtant important info
+INFO_HIGH = 19  # Less important important info
 DEBUG = logging.DEBUG  # 10
 NOTSET = logging.NOTSET  # 0
 
@@ -37,7 +37,7 @@ levelname = {  # the level name of all our extra info levels is "INFO"
 
 
 class _TagFilter(logging.Filter):
-    """Filter applied to IDAES loggers returned by this modulue."""
+    """Filter applied to IDAES loggers returned by this module."""
 
     @staticmethod
     def filter(record):
@@ -146,7 +146,7 @@ def getModelLogger(name, level=None, tag=None):
 
 
 def condition(res):
-    """Get the solver termination condition to log.  This isn't a specifc value
+    """Get the solver termination condition to log.  This isn't a specific value
     that you can really depend on, just a message to pass on from the solver for
     the user's benefit. Sometimes the solve is in a try-except, so we'll handle
     None and str for those cases, where you don't have a real result."""
@@ -266,45 +266,9 @@ def add_valid_log_tag(tag):
     idaes.cfg.valid_logger_tags.add(tag)
 
 
-class IOToLogThread(threading.Thread):
-    """This is a Thread class that can log solver messages and show them as
-    they are produced, while the main thread is waiting on the solver to finish
-    """
-
-    def __init__(self, stream, logger, sleep=1.0, level=logging.ERROR):
-        super().__init__(daemon=True)
-        self.log = logger
-        self.level = level
-        self.stream = stream
-        self.sleep = sleep
-        self.stop = threading.Event()
-        self.pos = 0
-
-    def log_value(self):
-        try:
-            v = self.stream.getvalue()[self.pos :]
-        except ValueError:
-            self.stop.set()
-            return
-        self.pos += len(v)
-        for l in v.split("\n"):
-            if l:
-                self.log.log(self.level, l.strip())
-
-    def run(self):
-        while True:
-            self.log_value()
-            self.stop.wait(self.sleep)
-            if self.stop.isSet():
-                self.log_value()
-                self.pos = 0
-                return
-
-
 class SolverLogInfo(object):
-    def __init__(self, tee=True, thread=None):
+    def __init__(self, tee=True):
         self.tee = tee
-        self.thread = thread
 
 
 @contextmanager

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains utilities to provide variable and expression scaling
@@ -38,6 +38,7 @@ from pyomo.core.base.param import _ParamData
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.network import Arc
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.common.modeling import unique_component_name
 from pyomo.core.base.constraint import _ConstraintData
 from pyomo.common.collections import ComponentMap, ComponentSet
@@ -686,6 +687,8 @@ def constraint_autoscale_large_jac(
         dummy_objective_name = unique_component_name(m, "objective")
         setattr(m, dummy_objective_name, pyo.Objective(expr=0))
     # Create NLP and calculate the objective
+    if not AmplInterface.available():
+        raise RuntimeError("Pynumero not available.")
     nlp = PyomoNLP(m)
     if equality_constraints_only:
         jac = nlp.evaluate_jacobian_eq().tocsr()
@@ -1132,7 +1135,7 @@ def set_scaling_from_default(
     missing: float = None,
     overwrite: bool = False,
     descend_into: bool = True,
-    components_to_scale: "List of Pyomo component types" = [pyo.Var],
+    components_to_scale: "List of Pyomo component types" = None,
 ):
     """
     Set scaling factor(s) for given component from default scaling factor dictionary associated with the parent model.
@@ -1152,6 +1155,9 @@ def set_scaling_from_default(
         None
 
     """
+    if components_to_scale is None:
+        components_to_scale = [pyo.Var]
+
     if isinstance(component, pyo.Block):
         for c in component.component_data_objects(
             components_to_scale, descend_into=descend_into

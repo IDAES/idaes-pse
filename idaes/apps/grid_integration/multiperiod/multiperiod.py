@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 import pyomo.environ as pyo
 from pyomo.common.timing import TicTocTimer
@@ -61,14 +61,20 @@ class MultiPeriodModel(pyo.ConcreteModel):
         set_scenarios=None,
         initialization_func=None,
         unfix_dof_func=None,
-        flowsheet_options={},
-        initialization_options={},
-        unfix_dof_options={},
+        flowsheet_options=None,
+        initialization_options=None,
+        unfix_dof_options=None,
         solver=None,
         outlvl=logging.WARNING,
     ):  # , state_variable_func=None):
-
         super().__init__()
+
+        if flowsheet_options is None:
+            flowsheet_options = {}
+        if initialization_options is None:
+            initialization_options = {}
+        if unfix_dof_options is None:
+            unfix_dof_options = {}
 
         self.n_time_points = n_time_points
 
@@ -129,9 +135,9 @@ class MultiPeriodModel(pyo.ConcreteModel):
     def build_multi_period_model(
         self,
         model_data_kwargs=None,
-        flowsheet_options={},
-        initialization_options={},
-        unfix_dof_options={},
+        flowsheet_options=None,
+        initialization_options=None,
+        unfix_dof_options=None,
         solver=None,
     ):
         """
@@ -147,9 +153,17 @@ class MultiPeriodModel(pyo.ConcreteModel):
             unfix_dof_options: dict containing the arguments needed for `unfix_dof_func`
             solver: pyomo solver object
         """
+        if flowsheet_options is None:
+            flowsheet_options = {}
+        if initialization_options is None:
+            initialization_options = {}
+        if unfix_dof_options is None:
+            unfix_dof_options = {}
+
         # use default empty dictionaries if no kwargs dict provided
-        if model_data_kwargs == None:
+        if model_data_kwargs is None:
             model_data_kwargs = {t: {} for t in range(self.n_time_points)}
+        # TODO: Replace this with a proper exception and message
         assert list(range(len(model_data_kwargs))) == sorted(model_data_kwargs)
 
         m = self
@@ -274,7 +288,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
         Create linking constraint on `b1` using `variable_pairs`
         """
         b1.link_constraints = pyo.Constraint(range(len(variable_pairs)))
-        for (i, pair) in enumerate(variable_pairs):
+        for i, pair in enumerate(variable_pairs):
             b1.link_constraints[i] = pair[0] == pair[1]
 
     def _create_periodic_constraints(self, b1, variable_pairs):
@@ -282,7 +296,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
         Create periodic linking constraint on `b1` using `variable_pairs`
         """
         b1.periodic_constraints = pyo.Constraint(range(len(variable_pairs)))
-        for (i, pair) in enumerate(variable_pairs):
+        for i, pair in enumerate(variable_pairs):
             b1.periodic_constraints[i] = pair[0] == pair[1]
 
     def build_stochastic_multi_period(
@@ -639,7 +653,6 @@ class MultiPeriodModel(pyo.ConcreteModel):
         draw_style="steps",
         grid=None,
     ):
-
         """
         The function plots optimal operation schedule as a function of time.
 

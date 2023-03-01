@@ -1,29 +1,39 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 
 import os
 import enum
+import ctypes
 from pyomo.environ import ExternalFunction, units as pyunits
+from pyomo.common.fileutils import find_library
 from idaes import bin_directory
 
-cubic_so_path = os.path.join(bin_directory, "cubic_roots.so")
+try:
+    # When compiling these, I don't bother changing the extension based on OS,
+    # so the file name is always ends in .so. It's fine.
+    cubic_so_path = find_library("cubic_roots.so")
+    ctypes.cdll.LoadLibrary(cubic_so_path)
+except:
+    cubic_so_path = None
 
 
 def cubic_roots_available():
     """Make sure the compiled cubic root functions are available. Yes, in
-    Windows the .so extention is still used.
+    Windows the .so extension is still used.
     """
-    return os.path.isfile(cubic_so_path)
+    if cubic_so_path is None:
+        return False
+    return True
 
 
 class CubicType(enum.Enum):
@@ -87,6 +97,8 @@ class CubicThermoExpressions(object):
     }
 
     def __init__(self, blk):
+        if not cubic_roots_available():
+            raise RuntimeError("Cubic root external functions are not available.")
         self.blk = blk
 
     def add_funcs(self, names=None):

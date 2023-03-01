@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 IDAES General Purpose Packed Solvent Column Model.
@@ -224,7 +224,7 @@ and used when constructing these
             return blk.area_column == (Constants.pi * 0.25 * (blk.diameter_column) ** 2)
 
         # =====================================================================
-        """ Set argument values for vapor and liquid sides"""
+        # Set argument values for vapor and liquid sides
 
         # Set flow directions for the control volume blocks
         # Gas flows from 0 to 1, Liquid flows from 1 to 0
@@ -236,8 +236,7 @@ and used when constructing these
         set_direction_liquid = FlowDirection.backward
 
         # =====================================================================
-        """ Build Control volume 1D for vapor phase and
-            populate vapor control volume"""
+        # Build Control volume 1D for vapor phase and populate vapor control volume
 
         self.vapor_phase = ControlVolume1DBlock(
             transformation_method="dae.finite_difference",
@@ -280,10 +279,8 @@ and used when constructing these
         self.vapor_phase.apply_transformation()
 
         # =====================================================================
-        """ Build Control volume 1D for liquid phase and
-            populate liquid control volume
+        # Build Control volume 1D for liquid phase and populate liquid control volume
 
-        """
         self.liquid_phase = ControlVolume1DBlock(
             transformation_method="dae.finite_difference",
             transformation_scheme="FORWARD",

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 
 import os
@@ -510,15 +510,15 @@ def main_dynamic():
     # 71 periods of 60 s each (0 to 4260 s)
     for i in range(71):
         itype_list.append(0)
-    """
-    # Followed by 20 periods of 120 s each (1860 to 4260 s)
-    for i in range(20):
-        itype_list.append(1)
-    # Followed by 30 periods of 60 s each (4260 to 6060 s)
-    for i in range(30):
-        itype_list.append(0)
-    """
-    # Total number of period for rolling time windwo simulations
+
+    # # Followed by 20 periods of 120 s each (1860 to 4260 s)
+    # for i in range(20):
+    #     itype_list.append(1)
+    # # Followed by 30 periods of 60 s each (4260 to 6060 s)
+    # for i in range(30):
+    #     itype_list.append(0)
+
+    # Total number of period for rolling time window simulations
     nperiod = len(itype_list)
     tstart = []
     model_list = []
@@ -2262,11 +2262,10 @@ def print_pfd_results(m):
 
 
 if __name__ == "__main__":
-    """
-    Main function to to run simulation
-    To run steady-state model, call main_steady()
-    to run dynamic model, call main_dyn()
-    """
+    # Main function to to run simulation
+    # To run steady-state model, call main_steady()
+    # to run dynamic model, call main_dyn()
+
     # This method builds and runs a subcritical coal-fired power plant
     # dynamic simulation. The simulation consists of 5%/min ramping down from
     # full load to 50% load, holding for 30 minutes and then ramping up

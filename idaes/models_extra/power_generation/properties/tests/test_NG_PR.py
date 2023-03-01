@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 
 import pytest
@@ -33,14 +33,12 @@ from idaes.models.unit_models import GibbsReactor
 from idaes.models.properties.modular_properties.eos.ceos import Cubic
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
-
 import idaes.logger as idaeslog
 
 SOUT = idaeslog.INFO
 
 # Set module level pyest marker
 pytestmark = pytest.mark.cubic_root
-prop_available = cubic_roots_available()
 
 # Get default solver for testing
 solver = get_solver()
@@ -73,6 +71,9 @@ class TestNaturalGasProps(object):
 
         return m
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.integration
     def test_T_sweep(self, m):
         assert_units_consistent(m)
@@ -107,6 +108,9 @@ class TestNaturalGasProps(object):
             )
             assert 250 == pytest.approx(value(m.fs.state[1].entr_mol_phase["Vap"]), 1)
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.integration
     def test_P_sweep(self, m):
         for T in range(300, 1000, 200):
@@ -142,6 +146,9 @@ class TestNaturalGasProps(object):
                 assert 185 <= value(m.fs.state[1].entr_mol_phase["Vap"])
                 assert 265 >= value(m.fs.state[1].entr_mol_phase["Vap"])
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.component
     def test_gibbs(self, m):
         m.fs.props = GenericParameterBlock(
@@ -211,6 +218,7 @@ data = {
 }
 
 
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 class Test_CO2_H2O_Properties:
     @pytest.fixture(scope="class")
     def build_model(self):

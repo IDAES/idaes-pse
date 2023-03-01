@@ -47,7 +47,7 @@ Now install the examples and the pre-build extensions (binary solvers):
 
 ```bash
 idaes get-examples
-idaes get-extensions  # on MacOS use: conda install -c conda-forge ipopt
+idaes get-extensions
 ```
 
 This will install the examples into an `examples` subdirectory which can be opened using a [Jypter](https://jupyter.org) Notebook:
@@ -69,9 +69,9 @@ The code and examples have been tested with the following operating systems:
 |----------------|--------------------|
 | Linux          | Any modern Linux   |
 | Windows        | Windows 10         |
-| Mac OSX        | Not supported*     |
+| macOS          | Partly supported*  |
 
-*For advanced users, Mac OSX installation may be performed with some small changes to the Linux installation instructions.
+*HSL is not currently provided for macOS on Intel processors, so some features may be limited or not available.
 
 Most of the functionality is implemented in Python. In accordance with
 the end-of-life for many Python 2 libraries, the IDAES Toolkit is written

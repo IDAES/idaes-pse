@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 import pyomo.common.config
 import logging.config
@@ -17,7 +17,7 @@ import os
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
-default_binary_release = "3.1.0"
+default_binary_release = "3.2.0"
 # Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums
@@ -27,6 +27,7 @@ release_checksum_url = (
 # This is a list of platforms with builds
 base_platforms = (
     "darwin-aarch64",
+    "darwin-x86_64",
     "el7-x86_64",
     "el8-x86_64",
     "el8-aarch64",
@@ -40,6 +41,7 @@ base_platforms = (
 )
 # Map some platform names to others for get-extensions
 binary_distro_map = {
+    "macos": "darwin",
     "rhel7": "el7",
     "rhel8": "el8",
     "scientific7": "el7",
@@ -89,7 +91,7 @@ default_uom = {
 
 
 def canonical_arch(arch):
-    """Get the offical machine type in {x86_64, aarch64} if possible, otherwise
+    """Get the official machine type in {x86_64, aarch64} if possible, otherwise
     just return arch.lower().
 
     Args:
@@ -103,7 +105,7 @@ def canonical_arch(arch):
 
 
 def canonical_distro(dist):
-    """Get the offical distro name if possible, otherwise just return
+    """Get the official distro name if possible, otherwise just return
     dist.lower(). Distro is used loosely here and includes Windows, Darwin
     (macOS), and other OSs in addition to Linux.
 
@@ -249,6 +251,16 @@ def _new_idaes_config_block():
         ),
     )
 
+    cfg["ipopt"]["options"].declare(
+        "max_iter",
+        pyomo.common.config.ConfigValue(
+            domain=int,
+            default=200,
+            description="Ipopt max_iter option",
+            doc="Ipopt max_iter option",
+        ),
+    )
+
     cfg.declare(
         "ipopt_l1",
         pyomo.common.config.ConfigBlock(
@@ -287,6 +299,16 @@ def _new_idaes_config_block():
         ),
     )
 
+    cfg["ipopt_l1"]["options"].declare(
+        "max_iter",
+        pyomo.common.config.ConfigValue(
+            domain=int,
+            default=200,
+            description="Ipopt_l1 max_iter option",
+            doc="Ipopt_l1 max_iter option",
+        ),
+    )
+
     cfg.declare(
         "petsc_ts",
         pyomo.common.config.ConfigBlock(
@@ -320,8 +342,8 @@ def _new_idaes_config_block():
         pyomo.common.config.ConfigValue(
             domain=int,
             default=200,
-            description="Number of nonliner solver failures before giving up",
-            doc="Number of nonliner solver failures before giving up",
+            description="Number of nonlinear solver failures before giving up",
+            doc="Number of nonlinear solver failures before giving up",
         ),
     )
 
@@ -370,8 +392,8 @@ def _new_idaes_config_block():
         pyomo.common.config.ConfigValue(
             default="ipopt",
             domain=str,
-            description="Default solver.  See Pyomo's SolverFactory for detauls.",
-            doc="Default solver.  See Pyomo's SolverFactory for detauls.",
+            description="Default solver.  See Pyomo's SolverFactory for details.",
+            doc="Default solver.  See Pyomo's SolverFactory for details.",
         ),
     )
 
@@ -532,7 +554,7 @@ def create_dir(d):
     Args:
         d(str): directory path to create
 
-    Retruns:
+    Returns:
         None
     """
     if os.path.exists(d):

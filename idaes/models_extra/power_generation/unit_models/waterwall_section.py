@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Waterwall section model
@@ -313,6 +313,7 @@ constructed,
             doc="Inside diameter of waterwall tube",
             units=units_meta.get_derived_units("length"),
         )
+
         # Inside radius of waterwall tube
         @self.Expression(doc="Inside radius of waterwall tube")
         def radius_inner(b):
@@ -329,6 +330,7 @@ constructed,
             doc="Thickness of waterwall tube",
             units=units_meta.get_derived_units("length"),
         )
+
         # Outside radius of waterwall tube
         @self.Expression(doc="Outside radius of waterwall tube")
         def radius_outer(b):
@@ -340,6 +342,7 @@ constructed,
             doc="Thickness of waterwall Fin",
             units=units_meta.get_derived_units("length"),
         )
+
         # Half of the waterwall fin thickness
         @self.Expression(doc="Half of the waterwall fin thickness")
         def fin_thickness_half(b):
@@ -1047,12 +1050,11 @@ constructed,
             )
 
         if self.config.rigorous_boiling is True:
-            """
-            Due to low contribution to the enhancement factor and highly nonlinear
-            constraint, the Martinelli paramter has been removed from the model.
-            if required user needs to declare the variable and constraint, and
-            update constraint in line 909 to add the Martinelli parameter factor
-            """
+            # Due to low contribution to the enhancement factor and highly nonlinear
+            # constraint, the Martinelli parameter has been removed from the model.
+            # if required user needs to declare the variable and constraint, and
+            # update constraint in line 909 to add the Martinelli parameter factor
+
             # Reciprocal of Martinelli parameter to the power of 0.86,
             # typical range in (1e-3, 1.0)
             self.martinelli_reciprocal_p86 = Var(
