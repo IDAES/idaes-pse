@@ -603,7 +603,7 @@ class UnitModelCostingBlockData(ProcessBlockData):
                         "variables."
                     )
                 elif cvar.lb is None or cvar.lb < 0:
-                    _log.warn(
+                    _log.warning(
                         f"{unit_model.name} {v} component has a lower bound "
                         "less than zero. Be aware that this may result in "
                         "negative costs during optimization."

@@ -146,7 +146,7 @@ Release = namedtuple("Release", ["date", "tag", "info"])
 @click.option(
     "--version",
     "-V",
-    help=f"Version of examples to download",
+    help="Version of examples to download",
     default=None,
     show_default=False,
 )
@@ -288,7 +288,7 @@ def print_summary(version, dirname, installed):
     if installed:
         print(f"Package: {INSTALL_PKG}")
     else:
-        print(f"Package: not installed")
+        print("Package: not installed")
     print(sep2)
 
 
@@ -391,7 +391,7 @@ def download_contents(target_dir, version):
     req = requests.get(url, stream=True)
     if req.status_code != 200:
         if req.status_code in (400, 404):
-            raise DownloadError(f"file not found")
+            raise DownloadError("file not found")
         raise DownloadError(f"status={req.status_code}")
     # note: mkdtemp() creates a directory that seems un-removable on Windows.
     # So, instead, just create the directory yourself in the current directory

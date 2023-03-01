@@ -766,7 +766,7 @@ class TrainedSurrogateDecoder(TSEBase):
             {c: list(range(10)) for c in columns}
         )  # cls.pd_decode(attr["regression_data"])
         max_order = 1  # int(attr["final_polynomial_order"])
-        _log.debug(f"Reconstructing PolynomialRegression surrogate.")
+        _log.debug("Reconstructing PolynomialRegression surrogate.")
         model = pr.PolynomialRegression(orig_data, regr_data, max_order)
         # Set model attributes from saved attributes
         _log.debug("Setting attributes on constructed surrogate model")

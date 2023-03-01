@@ -119,13 +119,13 @@ def scale_arc_constraints(blk):
                 constraint_scaling_transform(c, sf)
 
 
-def map_scaling_factor(iter, default=1, warning=False, func=min, hint=None):
+def map_scaling_factor(components, default=1, warning=False, func=min, hint=None):
     """Map get_scaling_factor to an iterable of Pyomo components, and call func
     on the result.  This could be use, for example, to get the minimum or
     maximum scaling factor of a set of components.
 
     Args:
-        iter: Iterable yielding Pyomo components
+        components: Iterable yielding Pyomo components
         default: The default value used when a scaling factor is missing. The
             default is default=1.
         warning: Log a warning for missing scaling factors
@@ -142,12 +142,12 @@ def map_scaling_factor(iter, default=1, warning=False, func=min, hint=None):
             lambda x: get_scaling_factor(
                 x, default=default, warning=warning, hint=hint
             ),
-            iter,
+            components,
         )
     )
 
 
-def min_scaling_factor(iter, default=1, warning=True, hint=None):
+def min_scaling_factor(components, default=1, warning=True, hint=None):
     """Map get_scaling_factor to an iterable of Pyomo components, and get the
     minimum scaling factor.
 
@@ -163,7 +163,9 @@ def min_scaling_factor(iter, default=1, warning=True, hint=None):
     Returns:
         Minimum scaling factor of the components in iter
     """
-    return map_scaling_factor(iter, default=default, warning=warning, func=min)
+    return map_scaling_factor(
+        components, default=default, warning=warning, func=min, hint=hint
+    )
 
 
 def propagate_indexed_component_scaling_factors(
@@ -848,14 +850,14 @@ def extreme_jacobian_columns(
     return el
 
 
-def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
+def jacobian_cond(m=None, scaled=True, order=None, pinv=False, jac=None):
     """
     Get the condition number of the scaled or unscaled Jacobian matrix of a model.
 
     Args:
         m: calculate the condition number of the Jacobian from this model.
         scaled: if True use scaled Jacobian, else use unscaled
-        ord: norm order, None = Frobenius, see scipy.sparse.linalg.norm for more
+        order: norm order, None = Frobenius, see scipy.sparse.linalg.norm for more
         pinv: Use pseudoinverse, works for non-square matrices
         jac: (optional) previously calculated Jacobian
 
@@ -870,10 +872,10 @@ def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
         pinv = True
     if not pinv:
         jac_inv = spla.inv(jac)
-        return spla.norm(jac, ord) * spla.norm(jac_inv, ord)
+        return spla.norm(jac, order) * spla.norm(jac_inv, order)
     else:
         jac_inv = la.pinv(jac.toarray())
-        return spla.norm(jac, ord) * la.norm(jac_inv, ord)
+        return spla.norm(jac, order) * la.norm(jac_inv, order)
 
 
 def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
@@ -1183,12 +1185,12 @@ def set_scaling_from_default(
         if dsf is not None:
             set_scaling_factor(component, dsf, overwrite=overwrite)
         elif missing is not None:
-            _log.warn(
+            _log.warning(
                 f"No default scaling factor found for {component.name}, assigning value of {missing} instead."
             )
             set_scaling_factor(component, missing, overwrite=overwrite)
         else:
-            _log.warn(
+            _log.warning(
                 f"No default scaling factor found for {component.name}, no scaling factor assigned."
             )
 
@@ -1409,7 +1411,7 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
             denominator = 1
             # Log a warning for the user
             _log.debug(
-                f"Nominal value of 0 found in denominator of division expression. "
+                "Nominal value of 0 found in denominator of division expression. "
                 "Assigning a value of 1. You should check you scaling factors and models to "
                 "ensure there are no values of 0 that can appear in these functions."
             )

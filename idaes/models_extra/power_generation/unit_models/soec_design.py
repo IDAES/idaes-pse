@@ -699,7 +699,7 @@ class SoecDesignData(UnitModelBlockData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver_obj.solve(self, tee=slc.tee)
         if not pyo.check_optimal_termination(res):
-            raise InitializationError(f"SOEC failed to initialize.")
+            raise InitializationError("SOEC failed to initialize.")
 
         from_json(self, sd=istate, wts=sp)
         init_log.info_high("SOEC Initialization Complete")

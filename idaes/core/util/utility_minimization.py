@@ -728,20 +728,20 @@ class CurveData:
         self.T_unit = T_unit
         self.Q_unit = Q_unit
 
-    def Cooling_Tin(self, list):
-        Cooling_Tin = list
+    def Cooling_Tin(self, _list):
+        self.Cooling_Tin = _list
 
-    def Cooling_Tout(self, list):
-        Cooling_Tout = list
+    def Cooling_Tout(self, _list):
+        self.Cooling_Tout = _list
 
-    def Cooling_Q(self, list):
-        Cooling_Q = list
+    def Cooling_Q(self, _list):
+        self.Cooling_Q = _list
 
-    def Heating_Tin(self, list):
-        Heating_Tin = list
+    def Heating_Tin(self, _list):
+        self.Heating_Tin = _list
 
-    def Heating_Tout(self, list):
-        Heating_Tout = list
+    def Heating_Tout(self, _list):
+        self.Heating_Tout = _list
 
-    def Heating_Q(self, list):
-        Heating_Q = list
+    def Heating_Q(self, _list):
+        self.Heating_Q = _list

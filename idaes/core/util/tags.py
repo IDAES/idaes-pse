@@ -749,14 +749,14 @@ def svg_tag(
 
     # Add some text
     for t in texts:
-        id = t.attributes["id"].value
-        if id in tag_map:
+        _id = t.attributes["id"].value
+        if _id in tag_map:
             # if it's multiline change last line
             try:
                 tspan = t.getElementsByTagName("tspan")[-1]
             except IndexError:
-                _log.warning(f"Text object but no tspan for tag {tag_map[id]}.")
-                _log.warning(f"Skipping output for {tag_map[id]}.")
+                _log.warning(f"Text object but no tspan for tag {tag_map[_id]}.")
+                _log.warning(f"Skipping output for {tag_map[_id]}.")
                 continue
             try:
                 tspan = tspan.childNodes[0]
@@ -766,12 +766,12 @@ def svg_tag(
                 tspan = tspan.childNodes[0]
 
             if show_tags:
-                val = tag_map[id]
+                val = tag_map[_id]
             else:
-                if tag_group[tag_map[id]].is_indexed:
-                    val = tag_group[tag_map[id]][idx]
+                if tag_group[tag_map[_id]].is_indexed:
+                    val = tag_group[tag_map[_id]][idx]
                 else:
-                    val = tag_group[tag_map[id]]
+                    val = tag_group[tag_map[_id]]
 
             tspan.nodeValue = str(val)
 

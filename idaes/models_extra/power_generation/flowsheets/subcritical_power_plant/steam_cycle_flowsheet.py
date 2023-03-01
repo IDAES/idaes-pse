@@ -30,8 +30,7 @@ from idaes.models_extra.power_generation.unit_models.helm import (
     HelmTurbineMultistage as TurbineMultistage,
     HelmMixer as Mixer,
     MomentumMixingType,
-    HelmValve as SteamValve,
-    HelmValve as WaterValve,
+    HelmValve as Valve,
     HelmIsentropicCompressor as WaterPump,
     HelmSplitter as Separator,
     HelmNtuCondenser as Condenser,
@@ -98,7 +97,7 @@ def add_unit_models(m):
     )
 
     # Unit model for regulating valve of BFPT (boiler feed pump turbine)
-    fs.bfp_turb_valve = SteamValve(dynamic=False, property_package=prop_water)
+    fs.bfp_turb_valve = Valve(dynamic=False, property_package=prop_water)
 
     # Unit model for main stage of BFPT
     fs.bfp_turb = TurbineStage(dynamic=False, property_package=prop_water)
@@ -134,7 +133,7 @@ def add_unit_models(m):
     )
 
     # Unit model for water control valve between makeup tank and hotwell
-    fs.makeup_valve = WaterValve(
+    fs.makeup_valve = Valve(
         dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
@@ -149,7 +148,7 @@ def add_unit_models(m):
 
     # Unit model for water control valve after hotwell tank
     # Used to control deaerator level
-    fs.cond_valve = WaterValve(
+    fs.cond_valve = Valve(
         dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
@@ -192,7 +191,7 @@ def add_unit_models(m):
     )
 
     # Unit model for water control valve between drain of fwh2 and fwh1
-    fs.fwh2_valve = WaterValve(
+    fs.fwh2_valve = Valve(
         dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
@@ -211,7 +210,7 @@ def add_unit_models(m):
     )
 
     # Unit model for control valve between drain of fwh3 and fwh2
-    fs.fwh3_valve = WaterValve(
+    fs.fwh3_valve = Valve(
         dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
@@ -247,7 +246,7 @@ def add_unit_models(m):
     )
 
     # Unit model for attemperator spray control valve
-    fs.spray_valve = WaterValve(
+    fs.spray_valve = Valve(
         dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
@@ -267,7 +266,7 @@ def add_unit_models(m):
     )
 
     # Unit model for water control valve drain of fwh5 and deaerator
-    fs.fwh5_valve = WaterValve(
+    fs.fwh5_valve = Valve(
         dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
@@ -287,7 +286,7 @@ def add_unit_models(m):
     )
 
     # Unit model for water control valve between drain of fwh6 and fwh5
-    fs.fwh6_valve = WaterValve(
+    fs.fwh6_valve = Valve(
         dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 

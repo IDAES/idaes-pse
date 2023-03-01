@@ -589,9 +589,9 @@ class FlowsheetSerializer:
                 "label": self.labels[edge],
             }
 
-    def _add_port_item(self, cell_index, group, id):
+    def _add_port_item(self, cell_index, group, _id):
         """Add port item to jointjs element"""
-        new_port_item = {"group": group, "id": id}
+        new_port_item = {"group": group, "id": _id}
         if new_port_item not in self._out_json["cells"][cell_index]["ports"]["items"]:
             self._out_json["cells"][cell_index]["ports"]["items"].append(new_port_item)
 
@@ -816,9 +816,9 @@ class FlowsheetSerializer:
         eventually may need to actually implement/subclass
         """
 
-        def __init__(self, typename, id):
+        def __init__(self, typename, _id):
             self.name = typename
-            self.id = id
+            self.id = _id
 
         def getname(self):
             return self.id

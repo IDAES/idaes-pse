@@ -30,7 +30,6 @@ import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.su
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.steam_cycle_flowsheet as stc
 from idaes.core.util.dyn_utils import copy_values_at_time, copy_non_time_indexed_values
 import idaes.logger as idaeslog
-import os
 import idaes.core.util.tables as tables
 from idaes.core.util.tags import svg_tag, ModelTagGroup
 from idaes.core.solvers import get_solver

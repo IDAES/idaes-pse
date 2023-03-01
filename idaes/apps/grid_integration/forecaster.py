@@ -376,7 +376,7 @@ class Backcaster(AbstractPrescientPriceForecaster):
             )
 
         if len(historical_price) == 0:
-            raise ValueError(f"Given historical price is empty.")
+            raise ValueError("Given historical price is empty.")
 
         for b, price_list in historical_price.items():
             if not isinstance(price_list, list):

@@ -180,7 +180,7 @@ def visualize(
     if browser:
         success = webbrowser.open(url)
         if success:
-            _log.debug(f"Flowsheet opened in browser window")
+            _log.debug("Flowsheet opened in browser window")
         else:
             _log.warning(f"Could not open flowsheet URL '{url}' in browser")
             if not quiet:

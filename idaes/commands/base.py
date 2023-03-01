@@ -88,7 +88,7 @@ def command_base(verbose, quiet):
 
 
 @command_base.command(help="Show IDAES copyright information")
-def copyright():
+def copyright():  # pylint: disable=W0622
     click.echo(
         """
 ================================================================================

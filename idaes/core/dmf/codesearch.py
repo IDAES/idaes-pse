@@ -169,7 +169,7 @@ class ModuleClassWalker(Walker):
                 mod = importlib.import_module(modname)
             except Exception:
                 if self._warn:
-                    _log.warn(
+                    _log.warning(
                         "Error during import of module: {}. Ignoring.".format(modname)
                     )
                 continue
@@ -232,7 +232,7 @@ class PropertyMetadataVisitor(Visitor):
         except NotImplementedError:
             module = obj.__module__
             #            if not module.startswith('idaes.core.'):
-            _log.warn(
+            _log.warning(
                 '{} in module "{}" does not define its metadata'.format(
                     obj.__name__, module
                 )

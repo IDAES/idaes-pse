@@ -14,8 +14,17 @@
 Functions for saving and loading Pyomo objects to json
 """
 
-from pyomo.environ import *
-from pyomo.dae import *
+from pyomo.environ import (
+    Param,
+    Var,
+    BooleanVar,
+    Expression,
+    Block,
+    Constraint,
+    Suffix,
+    value,
+)
+from pyomo.core.base.param import _ParamData
 from pyomo.core.base.component import ComponentData
 import json
 import datetime
@@ -241,7 +250,7 @@ class StoreSpec(object):
                     None,
                 ),
                 BooleanVar._ComponentDataClass: (("fixed", "stale", "value"), None),
-                pyomo.core.base.param._ParamData: (("value",), None),
+                _ParamData: (("value",), None),
                 int: (("value",), None),
                 float: (("value",), None),
                 str: (("value",), None),
@@ -457,7 +466,7 @@ class StoreSpec(object):
                 data_classes={
                     Var._ComponentDataClass: (("value", "fixed"), _only_fixed),
                     BooleanVar._ComponentDataClass: (("value", "fixed"), _only_fixed),
-                    pyomo.core.base.param._ParamData: (("value",), None),
+                    _ParamData: (("value",), None),
                     Constraint._ComponentDataClass: (("active",), None),
                     Block._ComponentDataClass: (("active",), None),
                 },
@@ -474,7 +483,7 @@ class StoreSpec(object):
                 data_classes={
                     Var._ComponentDataClass: (("value", "fixed"), None),
                     BooleanVar._ComponentDataClass: (("value", "fixed"), None),
-                    pyomo.core.base.param._ParamData: (("value",), None),
+                    _ParamData: (("value",), None),
                     Constraint._ComponentDataClass: (("active",), None),
                     Block._ComponentDataClass: (("active",), None),
                 },
