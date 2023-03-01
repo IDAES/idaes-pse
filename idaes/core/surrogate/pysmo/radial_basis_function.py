@@ -34,6 +34,7 @@ from pyomo.environ import (
     Expression,
     SolverFactory,
     Constraint,
+    exp,
 )
 import scipy.optimize as opt
 from six import string_types
