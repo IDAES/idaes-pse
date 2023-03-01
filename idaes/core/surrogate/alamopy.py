@@ -1000,7 +1000,7 @@ class AlamoTrainer(SurrogateTrainer):
 
         if "ALAMO terminated with termination code " in alamo_log:
             self._remove_temp_files()
-            _log.warn(
+            _log.warning(
                 "ALAMO executable returned non-zero return code. Check "
                 "the ALAMO output for more information."
             )

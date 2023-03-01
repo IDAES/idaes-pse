@@ -262,8 +262,6 @@ class InitializerBase:
         self._update_summary(model, "status", InitializationStatus.Error)
         raise NotImplementedError()
 
-        return None
-
     def restore_model_state(self, model: Block):
         """
         Restore model state to that stored in self.initial_state.

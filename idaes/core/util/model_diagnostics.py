@@ -89,10 +89,9 @@ class DegeneracyHunter:
                 "Degeneracy Hunter currently only supports analyzing a Pyomo model"
             )
 
-            # TODO: Need to refactor, document, and test support for Jacobian
-            self.jac_eq = block_or_jac
-
-            self.eq_con_list = None
+            # # TODO: Need to refactor, document, and test support for Jacobian
+            # self.jac_eq = block_or_jac
+            # self.eq_con_list = None
 
         else:
             raise TypeError("Check the type for 'block_or_jac'")

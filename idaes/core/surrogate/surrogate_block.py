@@ -218,28 +218,26 @@ class SurrogateBlockData(_BlockData):
         return {self._output_labels[i]: v for i, v in enumerate(self._output_vars)}
 
 
-def _extract_var_data_gen(vars):
-    if vars is None:
+def _extract_var_data_gen(_vars):
+    if _vars is None:
         return
-    elif getattr(vars, "ctype", None) is Var:
-        if vars.is_indexed():
-            if not vars.index_set().isordered():
+    elif getattr(_vars, "ctype", None) is Var:
+        if _vars.is_indexed():
+            if not _vars.index_set().isordered():
                 raise ValueError(
-                    "Expected IndexedVar: {} to be indexed over an ordered set.".format(
-                        vars
-                    )
+                    f"Expected IndexedVar: {_vars} to be indexed over an ordered set."
                 )
-            yield from vars.values()
+            yield from _vars.values()
         else:
-            yield vars
-    elif isinstance(vars, collections.abc.Sequence):
-        for v in vars:
+            yield _vars
+    elif isinstance(_vars, collections.abc.Sequence):
+        for v in _vars:
             yield from _extract_var_data_gen(v)
     else:
-        raise ValueError("Unknown variable type of {} for {}".format(type(vars), vars))
+        raise ValueError(f"Unknown variable type of {type(_vars)} for {_vars}")
 
 
-def _extract_var_data(vars):
-    if vars is None:
+def _extract_var_data(_vars):
+    if _vars is None:
         return None
-    return list(_extract_var_data_gen(vars))
+    return list(_extract_var_data_gen(_vars))

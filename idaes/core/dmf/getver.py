@@ -109,12 +109,12 @@ class Versioned:
         Returns:
             The Git hash (which may be None) and the version (a string)
         """
-        hash = None
+        _hash = None
         try:
-            hash = self.git_hash
+            _hash = self.git_hash
         except GetVersionError:
             pass
-        return VersionInfo(git_hash=hash, version=self.version)
+        return VersionInfo(git_hash=_hash, version=self.version)
 
     @property
     def name(self) -> str:

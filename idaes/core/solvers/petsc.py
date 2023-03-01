@@ -751,15 +751,15 @@ class PetscTrajectory(object):
             names = list(map(str.strip, f.readlines()))
         with open(f"{self.stub}.typ") as f:
             typ = list(map(int, f.readlines()))
-        vars = [name for i, name in enumerate(names) if typ[i] in [0, 1]]
+        _vars = [name for i, name in enumerate(names) if typ[i] in [0, 1]]
         (t, v, names) = petsc_binary_io().ReadTrajectory("Visualization-data")
         self.time = t
         self.vecs_by_time = v
-        self.vecs = dict.fromkeys(vars, None)
+        self.vecs = dict.fromkeys(_vars, None)
         for k in self.vecs.keys():
             self.vecs[k] = [0] * len(self.time)
         self.vecs["_time"] = list(self.time)
-        for i, v in enumerate(vars):
+        for i, v in enumerate(_vars):
             for j, vt in enumerate(self.vecs_by_time):
                 self.vecs[v][j] = vt[i]
 

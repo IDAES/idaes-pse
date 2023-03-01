@@ -24,9 +24,8 @@ from pyomo.environ import (
     value,
     units as pyunits,
 )
-import idaes.logger as idaeslog
-from idaes.core.solvers import get_solver
 
+from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
 # Import plotting functions
