@@ -11,4 +11,4 @@
 # for full copyright and license information.
 #################################################################################
 
-from idaes.models.properties.general_helmholtz import *
+from idaes.models.properties.general_helmholtz import *  # pylint: disable=W0401,W0614
