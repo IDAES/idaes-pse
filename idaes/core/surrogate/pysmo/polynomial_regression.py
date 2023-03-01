@@ -33,6 +33,7 @@ from pyomo.environ import (
     minimize,
     Expression,
     SolverFactory,
+    ComponentMap,
 )
 from pyomo.core.expr.visitor import replace_expressions
 import scipy.optimize as opt
