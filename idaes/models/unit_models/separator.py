@@ -966,7 +966,7 @@ objects linked the mixed state and all outlet states,
                                     for ps in mb.phase_list:
                                         if split_map[ps, j] == o:
                                             return 1
-                                    else:
+                                    else:  # pylint: disable=W0120
                                         return self.eps
                             else:
                                 raise BurntToast(
