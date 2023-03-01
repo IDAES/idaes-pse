@@ -1411,7 +1411,7 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
             denominator = 1
             # Log a warning for the user
             _log.debug(
-                f"Nominal value of 0 found in denominator of division expression. "
+                "Nominal value of 0 found in denominator of division expression. "
                 "Assigning a value of 1. You should check you scaling factors and models to "
                 "ensure there are no values of 0 that can appear in these functions."
             )

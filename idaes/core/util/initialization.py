@@ -488,8 +488,8 @@ def initialize_by_time_element(fs, time, **kwargs):
             if degrees_of_freedom(fs) != 0:
                 msg = (
                     f"Model has nonzero degrees of freedom at finite element"
-                    " {i}. This was unexpected. "
-                    "Use keyword arg igore_dof=True to skip this check."
+                    f" {i}. This was unexpected. "
+                    f"Use keyword arg igore_dof=True to skip this check."
                 )
                 init_log.error(msg)
                 raise ValueError("Nonzero degrees of freedom")

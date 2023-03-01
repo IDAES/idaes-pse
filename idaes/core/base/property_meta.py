@@ -477,7 +477,7 @@ class PropertyClassMetadata(object):
             self._default_units.set_units(**u)
         except TypeError:
             raise TypeError(
-                f"Unexpected argument for base quantities found when creating UnitSet. "
+                "Unexpected argument for base quantities found when creating UnitSet. "
                 "Please ensure that units are only defined for the seven base quantities."
             )
 

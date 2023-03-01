@@ -200,7 +200,7 @@ ValveFunctionType.custom}""",
         vfselect = self.config.valve_function
         if vfselect is not ValveFunctionType.custom and vfcb is not None:
             _log.warning(
-                f"A valve function callback was provided but the valve "
+                "A valve function callback was provided but the valve "
                 "function type is not custom."
             )
 

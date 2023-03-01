@@ -2026,8 +2026,8 @@ class MEAColumnData(PackedColumnData):
         # Check solver status
         if not check_optimal_termination(res):
             raise InitializationError(
-                f"Model failed to initialize successfully. Please check "
-                f"the output logs for more information."
+                "Model failed to initialize successfully. Please check "
+                "the output logs for more information."
             )
         else:
             init_log.info("Initialization successful")
