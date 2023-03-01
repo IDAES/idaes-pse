@@ -31,7 +31,6 @@ from pyomo.environ import (
     Reals,
     Objective,
     minimize,
-    Expression,
     SolverFactory,
     Constraint,
     exp,

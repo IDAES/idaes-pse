@@ -14,7 +14,6 @@
 from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
 from pyomo.common import Executable
 from pyomo.opt.base.solvers import SolverFactory
-from pyomo.opt.solver import SystemCallSolver
 
 import logging
 

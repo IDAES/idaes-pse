@@ -76,7 +76,6 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.models.properties.modular_properties.eos.ceos_common import (
     EoS_param,
-    cubic_roots_available,
     CubicThermoExpressions,
     CubicType as CubicEoS,
 )

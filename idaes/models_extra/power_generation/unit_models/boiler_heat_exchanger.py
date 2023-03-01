@@ -67,6 +67,8 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util.exceptions import ConfigurationError
 
+# These are convenience imports of methods from the base HX model
+# pylint: disable=W0611
 from idaes.models.unit_models.heat_exchanger import (
     HeatExchangerData,
     delta_temperature_lmtd_callback,

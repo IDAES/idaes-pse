@@ -289,9 +289,6 @@ class PysmoPolyTrainer(PysmoTrainer):
         ),
     )
 
-    def __init__(self, **settings):
-        super().__init__(**settings)
-
     def _create_model(self, pysmo_input, output_label):
         model = pr.PolynomialRegression(
             pysmo_input,
@@ -451,9 +448,6 @@ class PysmoKrigingTrainer(PysmoTrainer):
             "Produces more generalizable models. Useful for noisy data.",
         ),
     )
-
-    def __init__(self, **settings):
-        super().__init__(**settings)
 
     def _create_model(self, pysmo_input, output_label):
         model = krg.KrigingModel(

@@ -41,7 +41,6 @@ from idaes.core.util.exceptions import (
 )
 from idaes.models.properties.modular_properties.eos.ceos_common import (
     EoS_param,
-    cubic_roots_available,
     CubicThermoExpressions,
     CubicType,
 )

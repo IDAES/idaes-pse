@@ -80,6 +80,3 @@ class HelmTurbineStageData(HelmIsentropicTurbineData):
             optarg (dict): Solver arguments dictionary
         """
         super().initialize_build(outlvl=outlvl, solver=solver, optarg=optarg)
-
-    def calculate_scaling_factors(self):
-        super().calculate_scaling_factors()

@@ -23,8 +23,6 @@ from idaes.core.base.process_block import ProcessBlock
 from idaes.core import ProcessBlockData, MaterialFlowBasis
 from idaes.core.base import property_meta
 from idaes.core.util.exceptions import (
-    BurntToast,
-    PropertyNotSupportedError,
     PropertyPackageError,
 )
 from idaes.core.util.config import (

@@ -48,7 +48,6 @@ from idaes.core import declare_process_block_class, UnitModelBlockData
 import idaes.core.util.scaling as iscale
 
 # Additional import for the unit operation
-import pyomo.environ as pyo
 from pyomo.environ import Var, units as pyunits
 from pyomo.network import Port
 import idaes.logger as idaeslog
