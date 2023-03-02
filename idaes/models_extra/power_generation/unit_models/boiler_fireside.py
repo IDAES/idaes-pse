@@ -81,6 +81,8 @@ import idaes.logger as idaeslog
 
 
 # Additional import for the unit operation
+# TODO: log is reauired for eval - need to work out how to make this explicit
+# pylint: disable=W0611
 from pyomo.environ import (
     Var,
     Param,
@@ -88,7 +90,7 @@ from pyomo.environ import (
     RangeSet,
     Constraint,
     log,
-)  # pylint: disable=W0611
+)
 import idaes.core.util.scaling as iscale
 from idaes.core.util.constants import Constants as const
 from idaes.core.solvers import get_solver
