@@ -89,7 +89,6 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
     )
 
     def __init__(self, *args, **kwargs):
-        self.__reaction_block_class = None
         super().__init__(*args, **kwargs)
 
     def build(self):

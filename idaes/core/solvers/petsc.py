@@ -186,6 +186,8 @@ class PetscTS(Petsc):
 class PetscTAO(Petsc):
     """This is a place holder for optimization solvers"""
 
+    # Placeholder class, skip pylint checks
+    # pylint: disable=W0231
     def __init__(self, **kwds):
         raise NotImplementedError(
             "The PETSc TAO interface has not yet been implemented"
