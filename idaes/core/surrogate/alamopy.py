@@ -979,6 +979,7 @@ class AlamoTrainer(SurrogateTrainer):
                     stdout=t.STDOUT,
                     stderr=t.STDERR,
                     universal_newlines=True,
+                    check=False,
                 )
 
                 t.STDOUT.flush()
