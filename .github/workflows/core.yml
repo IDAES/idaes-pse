@@ -173,7 +173,7 @@ jobs:
           echo "::group::Display pylint version"
           pip show pylint astroid
           echo "::endgroup::"
-          pylint --rcfile=./.pylint/pylintrc --disable=W,C,R,I --enable=W0101,W0102,W104,W0105,W0107,W0120,W0211,W0231,W0235,W0238,W0401,W0404,W0611,W0614,W0622,W1304,W1308,W1309,W1505 --output-format=idaes_reporters.MultiReporter "$pylint_target_dir" --ignore-patterns=test_.*?py  --ignore=alamopy_depr,ripe,helmet,matopt
+          pylint --rcfile=./.pylint/pylintrc --disable=W,C,R,I --enable=W0101,W0102,W104,W0105,W0107,W0120,W0211,W0231,W0235,W0238,W0401,W0404,W0611,W0614,W0622,W1201,W1304,W1308,W1309,W1505 --output-format=idaes_reporters.MultiReporter "$pylint_target_dir" --ignore-patterns=test_.*?py  --ignore=alamopy_depr,ripe,helmet,matopt
       - name: Generate pylint report on failure
         if: failure()
         run: |
