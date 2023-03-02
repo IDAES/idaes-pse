@@ -2,14 +2,14 @@
 init-hook="import sys; sys.path.append('.pylint')"
 load-plugins=idaes_transform
 ignore-patterns=test_.*
-ignore-paths=^idaes/apps/.*$,
+ignore=alamopy_depr,ripe,helmet,matopt
 
 [MESSAGES CONTROL]
 disable=no-self-argument,
     bad-super-call,
     assignment-from-none,
     invalid-unary-operand-type,
-    unsubscriptable-object,    
+    unsubscriptable-object,
 
 [IMPORTS]
 ignored-modules=cvalsim,almsim
