@@ -1,16 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
-#
-# Author: Abdelrahman Elbashandy - aaelbashandy@lbl.gov
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 
 
@@ -20,8 +18,8 @@ from collections import deque
 class Node:
     """A node represents a unit model or an element in JointJs terms"""
 
-    def __init__(self, id: str, level: int = 0, rank: int = 0) -> None:
-        self.id = id
+    def __init__(self, _id: str, level: int = 0, rank: int = 0) -> None:
+        self.id = _id
         self.level = level  # equivalent to row number in a matrix
         self.rank = rank  # equivalent to col number in a matrix
 
@@ -131,7 +129,7 @@ class UnitModelsPositioning:
         for _, unit_info in self._unit_models.items():
             unit_name, unit_type = unit_info["name"], unit_info["type"]
             # Create a node for this unit model and add it to our nodes map
-            self._nodes[unit_name] = Node(id=unit_name)
+            self._nodes[unit_name] = Node(_id=unit_name)
             if unit_type == self.FEED:
                 self._feeds.add(unit_name)
             elif unit_type == self.PRODUCT:

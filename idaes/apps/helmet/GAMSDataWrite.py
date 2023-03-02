@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Writer of the data into the GAMS file
@@ -211,7 +211,6 @@ def SNDdt(textFile, DataToWrite, Combination=False, PlotData=False):
             textFile.write("delta('%s', '%d') = %.13f ;\n" % ("SND", i, x[0]))
             textFile.write("tau('%s','%d') = %.13f ;\n" % ("SND", i, x[1]))
         else:
-            pass  # required by pylint so that the block directive applies
             # PYLINT-TODO-FIX use correct number of args in format strings
             # pylint: disable=too-few-format-args
             textFile.write("itt('%s','%d') = %.13f ;\n" % (i, itt_val))

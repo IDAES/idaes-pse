@@ -1,21 +1,30 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Functions for saving and loading Pyomo objects to json
 """
 
-from pyomo.environ import *
-from pyomo.dae import *
+from pyomo.environ import (
+    Param,
+    Var,
+    BooleanVar,
+    Expression,
+    Block,
+    Constraint,
+    Suffix,
+    value,
+)
+from pyomo.core.base.param import _ParamData
 from pyomo.core.base.component import ComponentData
 import json
 import datetime
@@ -25,7 +34,7 @@ import logging
 
 _log = logging.getLogger(__name__)
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "John Eslick"
 __format_version__ = 4
 
@@ -42,7 +51,7 @@ def _set_active(o, d):
     """
     Set if component is active, used for read active attribute callback.
     Args:
-        o: object whoes attribute is to be set
+        o: object whose attribute is to be set
         d: attribute value
     Returns:
         None
@@ -77,7 +86,7 @@ def _get_value(o):
     """
     Get object value attribute callback.
     Args:
-        o: object whoes attribute is to be set
+        o: object whose attribute is to be set
         d: attribute value
     Returns:
         None
@@ -87,10 +96,10 @@ def _get_value(o):
 
 def _set_value(o, d):
     """
-    Set object value attribute callback. This doen't allow the value of an
-    immutable paramter to be set (which would raise an exeption in Pyomo)
+    Set object value attribute callback. This doesn't allow the value of an
+    immutable parameter to be set (which would raise an exception in Pyomo)
     Args:
-        o: object whoes attribute is to be set
+        o: object whose attribute is to be set
         d: attribute value
     Returns:
         None
@@ -108,7 +117,7 @@ def _set_lb(o, d):
     """
     Set variable lower bound, used for read lb attribute callback.
     Args:
-        o: object whoes attribute is to be set
+        o: object whose attribute is to be set
         d: attribute value
     Returns:
         None
@@ -120,7 +129,7 @@ def _set_ub(o, d):
     """
     Set variable upper bound, use for read ub attribute callback.
     Args:
-        o: object whoes attribute is to be set
+        o: object whose attribute is to be set
         d: attribute value
     Returns:
         None
@@ -141,7 +150,7 @@ def _value_if_not_fixed(o, d):
     Returns:
         An attribute list to read. Loads fixed for either fixed or un-fixed
         variables, but only reads in values for unfixed variables.  This is
-        useful for intialization functions.
+        useful for initialization functions.
     """
     if o.fixed:
         return ()
@@ -161,7 +170,7 @@ def _only_fixed(o, d):
     Returns:
         An attribute list to read. Loads fixed for either fixed or un-fixed
         variables, but only reads in values for unfixed variables.  This is
-        useful for intialization functions.
+        useful for initialization functions.
     """
     if d["fixed"]:
         return ("value", "fixed")
@@ -171,7 +180,7 @@ def _only_fixed(o, d):
 
 class Counter(object):
     """
-    This is a counter object, which is an easy way to pass an interger pointer
+    This is a counter object, which is an easy way to pass an integer pointer
     around between methods.
     """
 
@@ -224,7 +233,7 @@ class StoreSpec(object):
         suffix_filter=None,
     ):
         if classes is None:
-            self.classes = {
+            classes = {
                 Param: (("_mutable",), None),
                 Var: ((), None),
                 BooleanVar: ((), None),
@@ -233,22 +242,15 @@ class StoreSpec(object):
                 Constraint: (("active",), None),
                 Suffix: ((), None),
             }
-        elif isinstance(classes, (list, tuple)):
-            # convert old style list/tuple classes arg to dict if needed
-            self.classes = {}
-            for c in classes:
-                self.classes[c[0]] = c[1:]
-        else:
-            self.classes = classes
 
         if data_classes is None:
-            self.data_classes = {
+            data_classes = {
                 Var._ComponentDataClass: (
                     ("fixed", "stale", "value", "lb", "ub"),
                     None,
                 ),
                 BooleanVar._ComponentDataClass: (("fixed", "stale", "value"), None),
-                pyomo.core.base.param._ParamData: (("value",), None),
+                _ParamData: (("value",), None),
                 int: (("value",), None),
                 float: (("value",), None),
                 str: (("value",), None),
@@ -256,14 +258,22 @@ class StoreSpec(object):
                 Block._ComponentDataClass: (("active",), None),
                 Constraint._ComponentDataClass: (("active",), None),
             }
-        elif isinstance(data_classes, (list, tuple)):
-            # convert old style list/tuple data_classes arg to dict if needed
+
+        # convert old style list/tuple classes arg to dict if needed
+        if isinstance(classes, (list, tuple)):
+            self.classes = {}
+            for c in classes:
+                self.classes[c[0]] = c[1:]
+        else:
+            self.classes = classes
+        # convert old style list/tuple data_classes arg to dict if needed
+        if isinstance(data_classes, (list, tuple)):
             self.data_classes = {}
             for c in data_classes:
                 self.data_classes[c[0]] = c[1:]
         else:
             self.data_classes = data_classes
-        # Callbacks are used for attributes that cannont be directly get or set
+        # Callbacks are used for attributes that cannot be directly get or set
         self.write_cbs = {  # Write callbacks (writing state so get attr)
             "value": _get_value
         }
@@ -278,14 +288,14 @@ class StoreSpec(object):
         # Block and BlockData are required for model structure
         if Block not in self.classes:
             self.classes[Block] = ((), None)
-        if Block._ComponentDataClass not in self.data_classes:
+        if Block._ComponentDataClass not in data_classes:
             self.data_classes[Block._ComponentDataClass] = ((), None)
-        # If suffix is None, deside by whether in classes, else add or remove
+        # If suffix is None, decide by whether in classes, else add or remove
         # suffix based on option.  May deprecate the suffix option.
         if suffix is not None:
-            if not suffix and Suffix in self.classes:
+            if not suffix and Suffix in classes:
                 del self.classes[Suffix]
-            elif suffix and Suffix not in self.classes:
+            elif suffix and Suffix not in classes:
                 self.classes[Suffix] = ((), None)
         # Create filter function lists, use None if not supplied
         for i, c in self.classes.items():
@@ -456,7 +466,7 @@ class StoreSpec(object):
                 data_classes={
                     Var._ComponentDataClass: (("value", "fixed"), _only_fixed),
                     BooleanVar._ComponentDataClass: (("value", "fixed"), _only_fixed),
-                    pyomo.core.base.param._ParamData: (("value",), None),
+                    _ParamData: (("value",), None),
                     Constraint._ComponentDataClass: (("active",), None),
                     Block._ComponentDataClass: (("active",), None),
                 },
@@ -473,7 +483,7 @@ class StoreSpec(object):
                 data_classes={
                     Var._ComponentDataClass: (("value", "fixed"), None),
                     BooleanVar._ComponentDataClass: (("value", "fixed"), None),
-                    pyomo.core.base.param._ParamData: (("value",), None),
+                    _ParamData: (("value",), None),
                     Constraint._ComponentDataClass: (("active",), None),
                     Block._ComponentDataClass: (("active",), None),
                 },
@@ -503,8 +513,8 @@ def _write_component(sd, o, wts, count=None, lookup=None, suffixes=None):
             object name (not fully qualified)
         o: object to save
         wts: a StoreSpec object indicating what object attributes to write
-        count: count the number of Pyomo componets written also used for ids
-        lookup: is a lookup table for compoent ids from components
+        count: count the number of Pyomo components written also used for ids
+        lookup: is a lookup table for component ids from components
         suffixes: is a list of suffixes, that we are delaying writing
     Returns:
         None
@@ -519,7 +529,7 @@ def _write_component(sd, o, wts, count=None, lookup=None, suffixes=None):
     alist, ff = wts.get_class_attr_list(o)
     if alist is None:
         return  # alist is none means skip this component type
-    # Get the componet name, doesn't need to be fully qualified or unique because
+    # Get the component name, doesn't need to be fully qualified or unique because
     # we are storing the state in a hierarchy structure
     oname = o.getname(fully_qualified=False)
     # Create a dictionary for this component, if storing suffixes assign it
@@ -528,9 +538,9 @@ def _write_component(sd, o, wts, count=None, lookup=None, suffixes=None):
     sd[oname] = {"__type__": str(type(o))}
     if Suffix in wts.classes:
         sd[oname]["__id__"] = count.count
-    lookup[id(o)] = count.count  # used python id() here for efficency
+    lookup[id(o)] = count.count  # used python id() here for efficiency
     if count is not None:
-        count.count += 1  # incriment the componet counter
+        count.count += 1  # increment the component counter
     for a in alist:  # store the desired attributes
         if a in wts.write_cbs:
             if wts.write_cbs[a] is None:
@@ -539,7 +549,7 @@ def _write_component(sd, o, wts, count=None, lookup=None, suffixes=None):
                 sd[oname][a] = wts.write_cbs[a](o)
         else:
             sd[oname][a] = getattr(o, a, None)
-    sd[oname]["data"] = {}  # create a dict for compoent data and subcomponents
+    sd[oname]["data"] = {}  # create a dict for component data and sub-components
     if isinstance(o, Suffix):  # if is a suffix, make a list and delay writing
         if wts.suffix_filter is None or oname in wts.suffix_filter:
             suffixes.append(
@@ -560,7 +570,7 @@ def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
     """
     Iterate through the component data and write to the sd dictionary. The keys
     for the data items are added to the dictionary. If the component has
-    subcomponents they are written by a recursive call to _write_component under
+    sub-components they are written by a recursive call to _write_component under
     the __pyomo_components__ key.
 
     Args:
@@ -568,8 +578,8 @@ def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
             data object indexes repn.
         o: object to save
         wts: a StoreSpec object indicating what object attributes to write
-        count: count the number of Pyomo componets written also used for ids
-        lookup: is a lookup table for compoent ids from components
+        count: count the number of Pyomo components written also used for ids
+        lookup: is a lookup table for component ids from components
         suffixes: is a list of suffixes, that we are delaying writing
     Returns:
         None
@@ -584,10 +594,10 @@ def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
         for key in o:
             el = o[key]
             if id(key) not in lookup:
-                # didn't store these compoents so can't write suffix.
+                # didn't store these components so can't write suffix.
                 continue
-            sd[lookup[id(key)]] = el  # Asssume keys are Pyomo model components
-    else:  # rest of compoents with normal componet data structure
+            sd[lookup[id(key)]] = el  # Assume keys are Pyomo model components
+    else:  # rest of components with normal component data structure
         frst = True  # on first item when true
         try:
             item_keys = o.keys()
@@ -604,11 +614,11 @@ def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
                     return  # if None then skip writing
             frst = False  # done with first only stuff
             edict = {"__type__": str(type(el))}
-            if Suffix in wts.classes:  # if writing suffixes give data compoents an id
+            if Suffix in wts.classes:  # if writing suffixes give data components an id
                 edict["__id__"] = count.count
                 lookup[id(el)] = count.count  # and add to lookup table
             if count is not None:
-                count.count += 1  # inciment component counter
+                count.count += 1  # increment component counter
             sd[repr(key)] = edict  # stick item dict into component data dict
             for a in alist:  # store desired attributes
                 if a in wts.write_cbs:
@@ -678,18 +688,18 @@ def to_json(
 
     Args:
         o: The Pyomo component object to save.  Usually a Pyomo model, but could
-            also be a subcomponent of a model (usually a sub-block).
+            also be a sub-component of a model (usually a sub-block).
         fname: json file name to save model state, if None only create
             python dict
         gz: If fname is given and gv is True gzip the json file. The default is
             True if the file name ends with '.gz' otherwise False.
         human_read: if True, add indents and spacing to make the json file more
             readable, if false cut out whitespace and make as compact as
-            possilbe
+            possible
         metadata: A dictionary of additional metadata to add.
         wts: is What To Save, this is a StoreSpec object that specifies what
             object types and attributes to save.  If None, the default is used
-            which saves the state of the compelte model state.
+            which saves the state of the complete model state.
         metadata: additional metadata to save beyond the standard format_version,
             date, and time.
         return_dict: default is False if true returns a dictionary representation
@@ -744,7 +754,7 @@ def to_json(
             with open(fname, "w") as f:
                 json.dump(sd, f, **dump_kw)
     file_time = time.time()
-    # unfortunatly I can't write how long it took to write the file in the file
+    # unfortunately I can't write how long it took to write the file in the file
     pdict["etime_write_file"] = file_time - dict_time
     if return_dict:
         # In interactive environments returning the dict can cause it to print
@@ -801,7 +811,7 @@ def _read_component(sd, o, wts, lookup=None, suffixes=None, root_name=None):
     if isinstance(o, Suffix):
         if wts.suffix_filter is None or oname in wts.suffix_filter:
             suffixes[odict["__id__"]] = odict["data"]  # is populated
-    else:  # read nonsufix component data
+    else:  # read non-sufix component data
         _read_component_data(odict["data"], o, wts, lookup=lookup, suffixes=suffixes)
 
 
@@ -811,7 +821,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
 
     Args:
         sd: dictionary to read from
-        o: Pyomo component whoes data to read
+        o: Pyomo component whose data to read
         wts: StoreSpec object specifying what to read in
         lookup: a lookup table for id to component for reading suffixes
         suffixes: a list of suffixes put off reading until end
@@ -835,8 +845,8 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
             el = o
         else:
             el = o[key]
-        if c == 0:  # if first data item assume all itmes are same and get alist
-            alist, ff = wts.get_data_class_attr_list(el)  # ff is fileter function
+        if c == 0:  # if first data item assume all times are same and get alist
+            alist, ff = wts.get_data_class_attr_list(el)  # ff is filter function
             if alist is None:
                 return  # skip reading this type
         c += 1
@@ -849,7 +859,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
                 raise (e)  # else raise exception
         if ff is not None:  # if a filer function was given, use it to make a
             # new a list based on the model and whats stored for the state
-            # this lets you condionally load things, for example only load
+            # this lets you conditionally load things, for example only load
             # values for unfixed variables.
             alist = ff(el, edict)
         if Suffix in wts.classes:  # if loading suffixes make lookup table id
@@ -887,7 +897,7 @@ def component_data_from_dict(sd, o, wts):
     """
     el = o
     alist = []  # list of attributes to read
-    alist, ff = wts.get_data_class_attr_list(el)  # ff is fileter function
+    alist, ff = wts.get_data_class_attr_list(el)  # ff is filter function
     if alist is None:
         return
     edict = sd
@@ -998,7 +1008,7 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=None, root_name=None)
     # Now read in the suffixes
     _read_suffixes(lookup, suffixes)
     suffix_time = time.time()  # to calculate time to read suffixes
-    pdict = {}  # return some perfomance information, to make sure not too slow
+    pdict = {}  # return some performance information, to make sure not too slow
     pdict["etime_load_file"] = dict_time - start_time
     pdict["etime_read_dict"] = read_time - dict_time
     pdict["etime_read_suffixes"] = suffix_time - read_time

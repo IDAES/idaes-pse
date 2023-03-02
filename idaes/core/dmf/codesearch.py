@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Search through the code and index static information in the DMF.
@@ -38,7 +38,6 @@ class Walker(object):
         Returns:
             None
         """
-        pass
 
 
 class ModuleClassWalker(Walker):
@@ -170,7 +169,7 @@ class ModuleClassWalker(Walker):
                 mod = importlib.import_module(modname)
             except Exception:
                 if self._warn:
-                    _log.warn(
+                    _log.warning(
                         "Error during import of module: {}. Ignoring.".format(modname)
                     )
                 continue
@@ -204,7 +203,6 @@ class Visitor(object):
         Returns:
             True if visit succeeded, else False
         """
-        pass
 
 
 class PropertyMetadataVisitor(Visitor):
@@ -234,7 +232,7 @@ class PropertyMetadataVisitor(Visitor):
         except NotImplementedError:
             module = obj.__module__
             #            if not module.startswith('idaes.core.'):
-            _log.warn(
+            _log.warning(
                 '{} in module "{}" does not define its metadata'.format(
                     obj.__name__, module
                 )
@@ -254,7 +252,6 @@ class PropertyMetadataVisitor(Visitor):
         Returns:
             None
         """
-        pass
 
 
 class PrintPropertyMetadataVisitor(PropertyMetadataVisitor):

@@ -2,14 +2,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 General purpose heat integration block for IDAES models
@@ -728,20 +728,20 @@ class CurveData:
         self.T_unit = T_unit
         self.Q_unit = Q_unit
 
-    def Cooling_Tin(self, list):
-        Cooling_Tin = list
+    def Cooling_Tin(self, _list):
+        self.Cooling_Tin = _list
 
-    def Cooling_Tout(self, list):
-        Cooling_Tout = list
+    def Cooling_Tout(self, _list):
+        self.Cooling_Tout = _list
 
-    def Cooling_Q(self, list):
-        Cooling_Q = list
+    def Cooling_Q(self, _list):
+        self.Cooling_Q = _list
 
-    def Heating_Tin(self, list):
-        Heating_Tin = list
+    def Heating_Tin(self, _list):
+        self.Heating_Tin = _list
 
-    def Heating_Tout(self, list):
-        Heating_Tout = list
+    def Heating_Tout(self, _list):
+        self.Heating_Tout = _list
 
-    def Heating_Q(self, list):
-        Heating_Q = list
+    def Heating_Q(self, _list):
+        self.Heating_Q = _list
