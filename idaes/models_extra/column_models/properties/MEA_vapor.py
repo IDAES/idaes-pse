@@ -155,7 +155,7 @@ class Diffus:
                 if (i, j) in binary_set
             )
             + sum(
-                blk.mole_frac_comp[j] / diffus_binary(j, i)
+                blk.mole_frac_comp[j] / diffus_binary(j, i)  # pylint: disable=W1114
                 for j in blk.component_list
                 if (j, i) in binary_set
             )
