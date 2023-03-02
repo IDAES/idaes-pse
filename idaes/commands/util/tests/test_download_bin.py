@@ -11,7 +11,10 @@
 # for full copyright and license information.
 #################################################################################
 import pytest
+import base64
+import io
 import os
+import tarfile
 import tempfile
 import shutil
 from platform import machine
@@ -259,3 +262,57 @@ def test_dl_bin_unknown():
             release=idaes.config.default_binary_release,
             to_path="testing",
         )
+
+
+@pytest.mark.unit
+def test_verify_tarfile_members():
+    # Tarball with:
+    #
+    # [DIRTYPE] dir1
+    # [SYMTYPE] dir1/dir2 -> ..
+    # [LNKTYPE] dir1/dir2 -> dir1/dir2
+    # [SYMTYPE] dir1/dir2/dir3 -> ..
+    # [REGTYPE] dir1/dir2/dir3/file
+    #
+    softlink_tar_gz = (
+        b"H4sICLbv92MAA3NvZnRsaW5rLnRhcgDt0+0KgjAUgOFdyq5Ad7a5XU9gwSIItO4/l0EFR"
+        b"QlO+nifHwoeYQdfbFMntSrLDGJslBEfw+39Sol3sclPox/mEo1Vuim819mxP6w6rdW27V"
+        b"Pq9k/fezX/Um3uP1xswTPG/nFCfxskKG2rquBWF/T/wP5ejCgtSyxH//ET54src8aU/sG"
+        b"4Ye58Y/j/l3Dfv96k3Xr2M3LgEPx7/UXy3FqntJl9kwf+vD8AAAAAAAAAAAAA4DecAEnw"
+        b"Tw0AKAAA"
+    )
+    data = io.BytesIO(base64.b64decode(softlink_tar_gz))
+    tar = tarfile.open(None, "r:gz", data)
+    # verify tarfile contents:
+    # for f in tar.getmembers():
+    #     print(f.type, f.name, f.linkname)
+    with pytest.raises(
+        Exception,
+        match="Tarball None contained potentially unsafe member dir1/dir2/dir3/file",
+    ):
+        dlb._verify_tar_member_targets(tar, os.path.abspath(""))
+
+    # Tarball with:
+    #
+    # [DIRTYPE] dir1
+    # [SYMTYPE] dir1/dir2 -> ..
+    # [LNKTYPE] dir1/dir2 -> dir1/dir2
+    # [LNKTYPE] dir1/dir2/dir3 -> dir1/dir2
+    # [REGTYPE] dir3/file
+    #
+    hardlink_tar_gz = (
+        b"H4sICHg++GMAA2hhcmRsaW5rLnRhcgDt1FkKwjAUQNG3lKzA5qUZ1iNUISIIre7fxor6I"
+        b"w6Q4nDPRwpNIY9caJd7baQuO0opiFWf4u3zStS3KZS3yY/7mqwTEyrPdXIY9sveGNl0Q8"
+        b"797u53j/a/VFf6j4ureMbUP73Q30WNYtxiUXGqM/p/YH+vVsXoHMPRf7risrR1znijf/K"
+        b"O/nMo1Zt13q4qnlECx+if6h9Vy/8/OC/GVpzp4s/7AwAAAAAAAAAAAAB+wxHqgNJYACgA"
+        b"AA=="
+    )
+    data = io.BytesIO(base64.b64decode(hardlink_tar_gz))
+    tar = tarfile.open(None, "r:gz", data)
+    # verify tarfile contents:
+    # for f in tar.getmembers():
+    #     print(f.type, f.name, f.linkname)
+    with pytest.raises(
+        Exception, match="Tarball None contained potentially unsafe member dir3/file"
+    ):
+        dlb._verify_tar_member_targets(tar, os.path.abspath(""))
