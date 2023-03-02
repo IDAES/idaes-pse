@@ -310,6 +310,7 @@ class PysmoPolyTrainer(PysmoTrainer):
                         add_terms[k].replace(j, "variable_headers['" + str(j) + "']")
                         for k in range(0, len(add_terms))
                     ]
+                # pylint: disable=W0123
                 model.set_additional_terms(
                     [
                         eval(m, GLOBAL_FUNCS, {"variable_headers": variable_headers})
@@ -785,6 +786,7 @@ class TrainedSurrogateDecoder(TSEBase):
         )
         # Re-create function objects from additional terms
         list_terms = cls._poly_decode_vars(attr["additional_term_expressions"], p)
+        # pylint: disable=W0123
         model.additional_term_expressions = [
             eval(m, GLOBAL_FUNCS, {"p": p}) for m in list_terms
         ]

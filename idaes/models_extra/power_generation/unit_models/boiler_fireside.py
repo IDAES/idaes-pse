@@ -276,6 +276,8 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
             doc="Surrogate model for heat loss" " to water wall zones",
         )
         def eq_surr_waterwall_heat(b, t, z):
+            # Evaluating surrogate expression
+            # pylint: disable=W0123
             return b.waterwall_heat[t, z] * b.fcorrection_heat_ww[t] == eval(
                 data_dict[z]
             )
@@ -287,6 +289,8 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                 doc="Surrogate model for heat loss" " to platen superheater",
             )
             def eq_surr_platen_heat(b, t):
+                # Evaluating surrogate expression
+                # pylint: disable=W0123
                 return b.platen_heat[t] * b.fcorrection_heat_platen[t] == eval(
                     data_dict["pl"]
                 )
@@ -298,6 +302,8 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                 doc="Surrogate model for heat loss in " " the roof and backpass heater",
             )
             def eq_surr_roof_heat(b, t):
+                # Evaluating surrogate expression
+                # pylint: disable=W0123
                 return b.roof_heat[t] * b.fcorrection_heat_ww[t] == eval(
                     data_dict["roof"]
                 )
@@ -308,6 +314,8 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
             doc="Surrogate model for" " mass fraction of unburned carbon",
         )
         def eq_surr_ln_ubc(b, t):
+            # Evaluating surrogate expression
+            # pylint: disable=W0123
             return b.ubc_in_flyash[t] == eval(data_dict["flyash"])
 
         # Constraints for NOx in mol fraction, surrogate model in PPM,
@@ -317,6 +325,8 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
             doc="NOx in mol fraction" "surrogate model must be in PPM",
         )
         def eq_surr_nox(b, t):
+            # Evaluating surrogate expression
+            # pylint: disable=W0123
             return b.frac_mol_NOx_fluegas[t] * 1e6 == eval(data_dict["NOx"])
 
         #                    # 1e6 conversion factor from PPM to mol fract
