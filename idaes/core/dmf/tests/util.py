@@ -195,7 +195,7 @@ def tmp_dmf():
         try:
             shutil.rmtree(tmpdir)
             removed = True
-        except Exception as err:
+        except Exception:  # pylint: disable=W0703
             time.sleep(1)
     if not removed:
         warnings.warn(f"failed to remove temporary directory: {tmpdir}")

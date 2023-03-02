@@ -398,7 +398,7 @@ def download_contents(target_dir, version):
     random_name = str(uuid4())
     try:
         os.mkdir(random_name)
-    except Exception as err:
+    except Exception as err:  # pylint: disable=W0703
         _log.fatal(f"making directory '{random_name}': {err}")
         click.echo("Cannot make temporary directory in current directory. Abort.")
         sys.exit(-1)
@@ -431,7 +431,7 @@ def copy_contents(target_dir, repo_root):
         raise CopyError(err)
     except FileNotFoundError:
         raise CopyError(f"Could not find file '{subdir}'")
-    except Exception as err:
+    except Exception as err:  # pylint: disable=W0703
         raise CopyError(f"Unknown problem copying: {err}")
     _log.info(f"copy.local.end from={subdir} to={target_dir}")
 
@@ -443,6 +443,7 @@ def clean_up_temporary_files():
         _log.debug(f"remove temporary directory.start name='{d}'")
         try:
             shutil.rmtree(d)
+        # pylint: disable=W0703
         except Exception as err:  # WTF
             _log.warning(f"remove temporary directory.error name='{d}' msg='{err}'")
         else:
@@ -452,7 +453,7 @@ def clean_up_temporary_files():
         _log.debug(f"remove setuptools egg path='{g_egg}'")
         try:
             shutil.rmtree(g_egg.name)
-        except Exception as err:
+        except Exception as err:  # pylint: disable=W0703
             _log.warning(f"remove temporary directory.error name='{g_egg}' msg='{err}'")
     # dist directory created by setuptools
     d = Path("dist")
@@ -460,7 +461,7 @@ def clean_up_temporary_files():
         for f in d.glob("idaes_examples-*.egg"):
             try:
                 f.unlink()
-            except Exception as err:
+            except Exception as err:  # pylint: disable=W0703
                 _log.warning(f"could not remove distribution file {f}: {err}")
         # remove directory, if now empty
         num_files = len(list(d.glob("*")))
@@ -468,7 +469,7 @@ def clean_up_temporary_files():
             _log.info(f"removing dist directory '{d.absolute()}'")
             try:
                 d.rmdir()
-            except Exception as err:
+            except Exception as err:  # pylint: disable=W0703
                 _log.warning(f"could not remove distribution directory {d}: {err}")
 
 
@@ -637,7 +638,7 @@ def install_src(version, target_dir):
     _log.info(f"remove build directory '{build_dir}'")
     try:
         shutil.rmtree(build_dir)
-    except Exception as err:
+    except Exception as err:  # pylint: disable=W0703
         _log.warning(f"failed to remove build directory {build_dir}: {err}")
     if moved_build_dir is not None:
         _log.info(f"restore build dir '{build_dir}' from '{moved_build_dir}'")

@@ -167,7 +167,7 @@ class ModuleClassWalker(Walker):
             _log.debug(f"visit module: {modname}")
             try:
                 mod = importlib.import_module(modname)
-            except Exception:
+            except Exception:  # pylint: disable=W0703
                 if self._warn:
                     _log.warning(f"Error during import of module: {modname}. Ignoring.")
                 continue

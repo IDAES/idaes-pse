@@ -336,7 +336,7 @@ class DmfMagicsImpl(object):
         try:
             obj = self._shell.ev(name)
             _log.debug(f"Looking for HTML docs for object: {obj}")
-        except Exception:
+        except Exception:  # pylint: disable=W0703
             oname = name
             _log.debug(f"Looking for HTML docs for object: {oname}")
         try:

@@ -488,7 +488,7 @@ class FlowsheetSerializer:
                         self._ordered_stream_names.appendleft(edge_name)
                     else:
                         self._ordered_stream_names.append(edge_name)
-                except Exception:
+                except Exception:  # pylint: disable=W0703
                     self._logger.warning(
                         f"Cannot extract state block from Port: "
                         f"name={port_name}. "

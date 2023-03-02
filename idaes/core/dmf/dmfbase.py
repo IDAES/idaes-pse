@@ -950,7 +950,7 @@ class DMF(workspace.Workspace, HasTraits):
             except errors.NoSuchResourceError as err:
                 if warn_missing:
                     _log.warning(f"During update, resource not found: {err}")
-            except Exception as err:
+            except Exception as err:  # pylint: disable=W0703
                 _log.warning(f"During update, unknown error: {err}")
             else:
                 # if it was OK, add to valid resources dict
