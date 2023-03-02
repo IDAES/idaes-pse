@@ -585,9 +585,9 @@ should be constructed in this state block,
         force users to overload this.
         """
         raise NotImplementedError(
-            "{} property package has not implemented the"
-            " define_state_vars method. Please contact "
-            "the property package developer."
+            f"{self.name} property package has not implemented the"
+            f" define_state_vars method. Please contact "
+            f"the property package developer."
         )
 
     def define_port_members(self):

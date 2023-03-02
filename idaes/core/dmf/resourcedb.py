@@ -94,7 +94,7 @@ class ResourceDB(object):
         filter_expr = self._create_filter_expr(filter_dict, flags)
 
         # return results for query
-        _log.debug("Find resources matching: {}".format(filter_expr))
+        _log.debug(f"Find resources matching: {filter_expr}")
         results = self._db.search(filter_expr)
         for r in results:
             if id_only:

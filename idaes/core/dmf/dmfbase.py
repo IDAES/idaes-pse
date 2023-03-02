@@ -100,8 +100,8 @@ class DMFConfig(object):
             fp = open(self._filename, "rb")
         except IOError as err:
             _log.warning(
-                "Unable to open global DMF configuration file "
-                "for reading: {}. Using default configuration values.".format(err)
+                f"Unable to open global DMF configuration file "
+                f"for reading: {err}. Using default configuration values."
             )
         # if we got a config file, parse it
         if fp:
@@ -515,7 +515,7 @@ class DMF(workspace.Workspace, HasTraits):
         try:
             self._db.put(rsrc)
         except errors.DuplicateResourceError as err:
-            _log.error("Cannot add resource: {}".format(err))
+            _log.error(f"Cannot add resource: {err}")
             raise
         # if that worked, remember in session store
         self._resources[rsrc.id] = rsrc
@@ -585,9 +585,7 @@ class DMF(workspace.Workspace, HasTraits):
                 filepath = datafile["path"]
                 _, filename = os.path.split(filepath)
                 copydir = os.path.join(ddir, filename)
-                _log.debug(
-                    'Copying datafile "{}" to directory "{}"'.format(filepath, copydir)
-                )
+                _log.debug(f'Copying datafile "{filepath}" to directory "{copydir}"')
                 try:
                     shutil.copy2(filepath, copydir)
                 except (IOError, OSError) as err:
@@ -605,15 +603,13 @@ class DMF(workspace.Workspace, HasTraits):
                     is_tmp = rsrc.is_tmp
                 if is_tmp:
                     _log.debug(
-                        "Temporary datafile flag is on, removing "
-                        'original datafile "{}"'.format(filepath)
+                        f"Temporary datafile flag is on, removing "
+                        f'original datafile "{filepath}"'
                     )
                     try:
                         os.unlink(filepath)
                     except OSError as err:
-                        _log.error(
-                            'Removing temporary datafile "{}": {}'.format(filepath, err)
-                        )
+                        _log.error(f'Removing temporary datafile "{filepath}": {err}')
                     if "is_tmp" in datafile:  # remove this directive
                         del datafile["is_tmp"]
                 datafile["path"] = filename
@@ -870,9 +866,7 @@ class DMF(workspace.Workspace, HasTraits):
                     rid_list.append(rsrc.id)
         if not id_list:
             _log.info(
-                "Cannot remove resource-id={} filter={}: Not found".format(
-                    identifier, filter_dict
-                )
+                f"Cannot remove resource-id={identifier} filter={filter_dict}: Not found"
             )
             return
         # TODO: Delete all associated data files!!
