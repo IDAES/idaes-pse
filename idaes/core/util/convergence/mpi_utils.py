@@ -40,7 +40,7 @@ class MPIInterface:
                 globals()["MPI"] = importlib.import_module("mpi4py.MPI")
                 # import succeeded
                 MPIInterface.__have_mpi__ = True
-            except:
+            except ImportError:
                 # import failed (e.g., no mpi4py installed)
                 MPIInterface.__have_mpi__ = False
 

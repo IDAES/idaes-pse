@@ -173,11 +173,11 @@ class PetscTS(Petsc):
         if self.options.get("--ts_save_trajectory", 0):
             try:
                 shutil.copyfile(f"{stub}.col", f"{self._ts_vars_stub}.col")
-            except:
+            except Exception:  # pylint: disable=W0703
                 pass
             try:
                 shutil.copyfile(f"{stub}.typ", f"{self._ts_vars_stub}.typ")
-            except:
+            except Exception:  # pylint: disable=W0703
                 pass
         return ASL._postsolve(self)
 

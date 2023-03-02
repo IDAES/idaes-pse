@@ -163,7 +163,7 @@ def condition(res):
             return "{} - {}".format(s, solver_message)
         else:
             return "{} - {}".format(s, str(res.solver.message))
-    except:
+    except:  # pylint: disable=W0702
         return s
 
 

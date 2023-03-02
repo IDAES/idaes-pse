@@ -341,7 +341,8 @@ class KrigingModel:
             # log_like = (0.5 * ns * np.log(ssd)) + (0.5 * np.log(np.abs(np.linalg.det(cov_mat))))
             log_like = (0.5 * ns * np.log(ssd)) + (0.5 * lndetcov)
             conc_log_like = log_like[0, 0]
-        except:  # When Cholesky fails - non-positive definite covariance matrix
+        except Exception:  # pylint: disable=W0703
+            # When Cholesky fails - non-positive definite covariance matrix
             conc_log_like = 1e4
         return conc_log_like
 

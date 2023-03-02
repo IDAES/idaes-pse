@@ -23,7 +23,7 @@ try:
     import sympy
 
     _configure_sympy(sympy, True)
-except:
+except ImportError:
     pass
 
 from pyomo.environ import ExternalFunction, Var, Expression, value, units as pu
@@ -206,7 +206,7 @@ def sympify_expression(expr):
     try:  # If I explicitly ask for a named expression then descend into it.
         if expr.is_named_expression_type():
             is_expr = True
-    except:
+    except AttributeError:
         pass
     if not is_expr:  # and not expr.is_named_expression_type():
         return object_map, ans
@@ -310,11 +310,11 @@ def document_constraints(
         to_doc.append(d["object_map"])
         try:
             sy = comp.latex_symbol
-        except:
+        except AttributeError:
             sy = None
         try:
             d["latex_expr"] = comp.latex_nice_expr
-        except:
+        except AttributeError:
             pass
         if sy is not None:
             if doc:
@@ -331,7 +331,7 @@ def document_constraints(
         to_doc.append(d["object_map"])
         try:
             return f"$${comp.latex_nice_expr}$$"
-        except:
+        except AttributeError:
             pass
         if comp.upper != comp.lower:
             if doc:
@@ -366,7 +366,7 @@ def document_constraints(
                 cs.append(f"**Fixed Var:** {c} = {value(c)}")
                 try:
                     sy = c.latex_symbol
-                except:
+                except AttributeError:
                     sy = None
                 if sy is not None:
                     cs.append(

@@ -205,7 +205,7 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
             )
             cb_doc += "\n"
             cb_doc = "\n".join(" " * 12 + x for x in cb_doc.splitlines())
-        except:
+        except Exception:  # pylint: disable=W0703
             cb_doc = ""
         if cb_doc != "":
             cb_doc = _config_block_keys_docstring.format(cb_doc)

@@ -31,7 +31,8 @@ def dict_diff(d1, d2, result=None, pfx=""):
             same = None
             try:
                 same = d1 == d2
-            except:  # cannot compare them
+            except Exception:  # pylint: disable=W0703
+                # cannot compare them
                 pass  # good enough
             if same is False:
                 result.append(f"value at {pfx} first != second")

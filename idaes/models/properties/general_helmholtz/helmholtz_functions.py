@@ -50,7 +50,7 @@ try:
     # so the file name is always ends in .so. It's fine.
     _flib = find_library("general_helmholtz_external.so")
     ctypes.cdll.LoadLibrary(_flib)
-except:
+except Exception:  # pylint: disable=W0703
     _flib = None
 
 

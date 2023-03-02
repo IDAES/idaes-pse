@@ -229,7 +229,7 @@ class ProcessBlockData(_BlockData):
         idx_map = self.parent_component()._idx_map  # index map function
         try:
             idx = self.index()
-        except:
+        except AttributeError:
             idx = None
         if idx_map is not None:
             idx = idx_map(idx)
