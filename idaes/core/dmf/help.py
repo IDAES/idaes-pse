@@ -46,6 +46,8 @@ def find_html_docs(dmf, obj=None, obj_name=None, **kw):
             try:
                 module_, name = obj_name.rsplit(".", 1)
             except ValueError:
+                # TODO: Is this try/expect necessary?
+                # pylint: disable=W0706
                 raise
     _log.debug("Find docs for object. module=/{}/ name=/{}/".format(module_, name))
     return get_html_docs(dmf, module_, name, **kw)
