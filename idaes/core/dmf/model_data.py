@@ -391,7 +391,7 @@ def read_data(
             ambient_pressure = np.array(df[ambient_pressure])
         except KeyError:
             _log.exception(
-                "Tag '{}' does not exist for ambient pressure".format(ambient_pressure)
+                f"Tag '{ambient_pressure}' does not exist for ambient pressure"
             )
             raise
 

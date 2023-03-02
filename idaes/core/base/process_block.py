@@ -38,7 +38,7 @@ def _rule_default(b, *args):
     try:
         b.build()
     except Exception:
-        logging.getLogger(__name__).exception("Failure in build: {}".format(b))
+        logging.getLogger(__name__).exception(f"Failure in build: {b}")
         raise
 
 

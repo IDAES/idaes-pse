@@ -49,7 +49,7 @@ def find_html_docs(dmf, obj=None, obj_name=None, **kw):
             except ValueError:
                 # TODO: Is this try/expect necessary?
                 raise
-    _log.debug("Find docs for object. module=/{}/ name=/{}/".format(module_, name))
+    _log.debug(f"Find docs for object. module=/{module_}/ name=/{name}/")
     return get_html_docs(dmf, module_, name, **kw)
 
 
@@ -145,11 +145,11 @@ def _find_refs(tree, module, name, sphinx_version):
     # There are 3 types of refs we are looking for
     # 1. manually added with index directive
     xpath_expr = '//li[contains(.,"{m}")]/ul/li/a'.format(m=module)
-    _log.debug("manually indexed: xpath expr={}".format(xpath_expr))
+    _log.debug(f"manually indexed: xpath expr={xpath_expr}")
     elements = tree.xpath(xpath_expr)
     hrefs = [e.get("href") for e in elements if e.text.strip() == name]
     if hrefs:
-        _log.debug("found manually indexed docs at: {}".format(hrefs[0]))
+        _log.debug(f"found manually indexed docs at: {hrefs[0]}")
         return hrefs  # found something; stop
     if name:
         # 2a. embedded in the page
@@ -160,10 +160,10 @@ def _find_refs(tree, module, name, sphinx_version):
         target = "module-{}".format(module)  # how Sphinx names these
         subtype = "autodoc"  # for logging
     xpath_expr = '//li/a[contains(@href,"#{}")]/@href'.format(target)
-    _log.debug("{}: xpath expr={}".format(subtype, xpath_expr))
+    _log.debug(f"{subtype}: xpath expr={xpath_expr}")
     hrefs = [p for p in tree.xpath(xpath_expr) if p.endswith(target)]
     if hrefs:
-        _log.debug("found {} docs at: {}".format(subtype, hrefs[0]))
+        _log.debug(f"found {subtype} docs at: {hrefs[0]}")
     return hrefs
 
 

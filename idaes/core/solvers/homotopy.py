@@ -249,11 +249,7 @@ def homotopy(
         else:
             n_1 = n_0 + s
 
-        _log.info(
-            "Homotopy Iteration {}. Next Step: {} (Current: {})".format(
-                iter_count, n_1, n_0
-            )
-        )
+        _log.info(f"Homotopy Iteration {iter_count}. Next Step: {n_1} (Current: {n_0})")
 
         # Update values for all variables using n_1
         for i in range(len(variables)):
@@ -292,27 +288,26 @@ def homotopy(
             else:
                 # Step is already at minimum size, terminate homotopy
                 _log.exception(
-                    "Homotopy failed - could not converge at minimum step "
-                    "size. Current progress is {}".format(n_0)
+                    f"Homotopy failed - could not converge at minimum step "
+                    f"size. Current progress is {n_0}"
                 )
                 return TerminationCondition.minStepLength, n_0, iter_count
 
         if iter_count >= max_eval:  # Use greater than or equal to to be safe
             _log.exception(
-                "Homotopy failed - maximum homotopy iterations "
-                "exceeded. Current progress is {}".format(n_0)
+                f"Homotopy failed - maximum homotopy iterations "
+                f"exceeded. Current progress is {n_0}"
             )
             return TerminationCondition.maxEvaluations, n_0, iter_count
 
     if sol_reg == "-":
         _log.info(
-            "Homotopy successful - converged at target values in {} "
-            "iterations.".format(iter_count)
+            f"Homotopy successful - converged at target values in {iter_count} iterations."
         )
         return TerminationCondition.optimal, n_0, iter_count
     else:
         _log.exception(
-            "Homotopy failed - converged at target values with "
-            "regularization in {} iterations.".format(iter_count)
+            f"Homotopy failed - converged at target values with "
+            f"regularization in {iter_count} iterations."
         )
         return TerminationCondition.other, n_0, iter_count
