@@ -38,6 +38,7 @@ class StateIndex(Enum):
 class GenericPropertyPackageError(PropertyPackageError):
     # Error message for when a property is called for but no option provided
     def __init__(self, block, prop):
+        super().__init__()
         self.prop = prop
         self.block = block
 

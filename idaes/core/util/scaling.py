@@ -45,10 +45,8 @@ from pyomo.common.collections import ComponentMap, ComponentSet
 from pyomo.dae import DerivativeVar
 from pyomo.dae.flatten import slice_component_along_sets
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.core.expr.visitor import ExpressionValueVisitor
 from pyomo.core.expr import current as EXPR
 from pyomo.core.expr.numvalue import native_types, pyomo_constant_types
-from pyomo.core.expr.template_expr import IndexTemplate
 from pyomo.core.base.units_container import _PyomoUnit
 
 import idaes.logger as idaeslog

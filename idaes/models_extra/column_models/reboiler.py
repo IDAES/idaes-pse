@@ -28,7 +28,6 @@ from pyomo.network import Port
 from pyomo.environ import (
     check_optimal_termination,
     Reference,
-    Expression,
     Var,
     Constraint,
     value,
@@ -48,7 +47,6 @@ from idaes.core import (
 )
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import (
-    PropertyPackageError,
     PropertyNotSupportedError,
     ConfigurationError,
     InitializationError,

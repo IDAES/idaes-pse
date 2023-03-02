@@ -81,6 +81,7 @@ class SkeletonUnitModelData(ProcessBlockData):
         ),
     )
 
+    # pylint: disable=W0235
     def build(self):
         """
         General build method for SkeletonUnitModelBlockData.

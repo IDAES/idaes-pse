@@ -296,6 +296,7 @@ def update_metadata_model_references(model, metadata):
     for tag, md in metadata.items():
         if md["reference_string"]:
             try:
+                # pylint: disable=W0123
                 md["reference"] = pyo.Reference(
                     eval(md["reference_string"], {"m": model})
                 )

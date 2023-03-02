@@ -136,9 +136,9 @@ def set_param_from_config(b, param, config=None, index=None):
             param_obj = getattr(b, param + "_" + index)
         except AttributeError:
             raise AttributeError(
-                "{} - set_param_from_config method was provided with param and"
-                " index arguments {} {}, but no attribute with that "
-                "combination ({}_{}) exists.".format(b.name, param, index, param, index)
+                f"{b.name} - set_param_from_config method was provided with param and"
+                f" index arguments {param} {index}, but no attribute with that "
+                f"combination ({param}_{index}) exists."
             )
 
         try:

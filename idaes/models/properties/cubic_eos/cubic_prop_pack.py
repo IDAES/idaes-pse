@@ -74,6 +74,9 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+
+# cubic_roots_available is used elsewhere
+# pylint: disable=W0611
 from idaes.models.properties.modular_properties.eos.ceos_common import (
     EoS_param,
     cubic_roots_available,

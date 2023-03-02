@@ -12,7 +12,6 @@
 #################################################################################
 import idaes
 import logging
-import threading
 
 from contextlib import contextmanager
 from pyomo.common.tee import capture_output

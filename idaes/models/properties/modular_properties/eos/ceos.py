@@ -39,6 +39,9 @@ from idaes.core.util.exceptions import (
     ConfigurationError,
     PropertyNotSupportedError,
 )
+
+# cubic_roots_available is used elsewhere
+# pylint: disable=W0611
 from idaes.models.properties.modular_properties.eos.ceos_common import (
     EoS_param,
     cubic_roots_available,

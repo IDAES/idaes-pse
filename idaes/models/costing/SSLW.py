@@ -234,7 +234,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         # TODO: Do we have any process level methods to add here?
 
     @staticmethod
-    def initialize_build(self):
+    def initialize_build(*args, **kwargs):
         """
         Here we can add intialization steps for the things we built in
         build_process_costs.

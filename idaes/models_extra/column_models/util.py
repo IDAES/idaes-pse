@@ -19,7 +19,6 @@ __author__ = "Jaffer Ghouse, Alejandro Garcia-Diego"
 import idaes.logger as idaeslog
 
 # Import Pyomo libraries
-from pyomo.network import Port
 from pyomo.environ import (
     Reference,
     Expression,

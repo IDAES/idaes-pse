@@ -62,19 +62,6 @@ class ShellAndTube1DData(HeatExchanger1DData):
         ),
     )
 
-    def build(self):
-        """
-        Begin building model (pre-DAE transformation).
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # Call UnitModel.build to setup dynamics
-        super().build()
-
     def _process_config(self):
         super()._process_config()
 

@@ -30,8 +30,6 @@ import idaes.logger as idaeslog
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
 from pyomo.environ import (
-    Reference,
-    Expression,
     Var,
     Set,
     value,
@@ -43,8 +41,6 @@ from idaes.core import declare_process_block_class, UnitModelBlockData, useDefau
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import (
     ConfigurationError,
-    PropertyPackageError,
-    PropertyNotSupportedError,
     InitializationError,
 )
 from idaes.core.solvers import get_solver

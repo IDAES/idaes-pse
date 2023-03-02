@@ -19,7 +19,7 @@ estimation problem if the VLE data is available.
 """
 
 # Import Pyomo libraries
-from pyomo.environ import Param, NonNegativeReals, value, Set, units as pyunits
+from pyomo.environ import Param, NonNegativeReals, Set, units as pyunits
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, Component
@@ -28,7 +28,6 @@ from idaes.core.util.misc import extract_data
 from idaes.models.properties.activity_coeff_models.activity_coeff_prop_pack import (
     ActivityCoeffParameterData,
 )
-import idaes.core.util.scaling as iscale
 from idaes.logger import getIdaesLogger
 
 # Some more inforation about this module

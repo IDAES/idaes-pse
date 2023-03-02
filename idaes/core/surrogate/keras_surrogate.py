@@ -33,8 +33,6 @@ if omlt_available:
         ReluBigMFormulation,
         ReluComplementarityFormulation,
     )
-    from omlt.neuralnet.layer import DenseLayer, InputLayer
-    from omlt.neuralnet.network_definition import NetworkDefinition
 
     if keras_available:
         from omlt.io import load_keras_sequential

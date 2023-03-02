@@ -22,7 +22,6 @@ import idaes.logger as idaeslog
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Arc, Port
 from pyomo.environ import (
-    value,
     Integers,
     RangeSet,
     TransformationFactory,

@@ -23,8 +23,6 @@ from idaes.core.base.process_block import ProcessBlock
 from idaes.core import ProcessBlockData, MaterialFlowBasis
 from idaes.core.base import property_meta
 from idaes.core.util.exceptions import (
-    BurntToast,
-    PropertyNotSupportedError,
     PropertyPackageError,
 )
 from idaes.core.util.config import (
@@ -89,10 +87,6 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
             description="Default arguments to use with Property Package", implicit=True
         ),
     )
-
-    def __init__(self, *args, **kwargs):
-        self.__reaction_block_class = None
-        super().__init__(*args, **kwargs)
 
     def build(self):
         """

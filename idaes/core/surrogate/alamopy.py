@@ -979,6 +979,7 @@ class AlamoTrainer(SurrogateTrainer):
                     stdout=t.STDOUT,
                     stderr=t.STDERR,
                     universal_newlines=True,
+                    check=False,
                 )
 
                 t.STDOUT.flush()
@@ -1204,6 +1205,8 @@ class AlamoSurrogate(SurrogateBase):
         if self._fcn is None:
             fcn = dict()
             for o in self._output_labels:
+                # We need to evaluate the string returned by ALAMO
+                # pylint: disable=W0123
                 fcn[o] = eval(
                     f"lambda {', '.join(self._input_labels)}: "
                     f"{self._surrogate_expressions[o].split('==')[1]}",
@@ -1254,6 +1257,8 @@ class AlamoSurrogate(SurrogateBase):
             def alamo_rule(b, o):
                 lvars = block.input_vars_as_dict()
                 lvars.update(block.output_vars_as_dict())
+                # We need to evaluate the string returned by ALAMO
+                # pylint: disable=W0123
                 return eval(self._surrogate_expressions[o], GLOBAL_FUNCS, lvars)
 
             block.alamo_constraint = Constraint(output_set, rule=alamo_rule)
@@ -1261,6 +1266,8 @@ class AlamoSurrogate(SurrogateBase):
 
             def alamo_rule(b, o):
                 lvars = block.input_vars_as_dict()
+                # We need to evaluate the string returned by ALAMO
+                # pylint: disable=W0123
                 return eval(
                     self._surrogate_expressions[o].split("==")[1], GLOBAL_FUNCS, lvars
                 )

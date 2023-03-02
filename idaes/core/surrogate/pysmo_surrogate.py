@@ -289,9 +289,6 @@ class PysmoPolyTrainer(PysmoTrainer):
         ),
     )
 
-    def __init__(self, **settings):
-        super().__init__(**settings)
-
     def _create_model(self, pysmo_input, output_label):
         model = pr.PolynomialRegression(
             pysmo_input,
@@ -313,6 +310,7 @@ class PysmoPolyTrainer(PysmoTrainer):
                         add_terms[k].replace(j, "variable_headers['" + str(j) + "']")
                         for k in range(0, len(add_terms))
                     ]
+                # pylint: disable=W0123
                 model.set_additional_terms(
                     [
                         eval(m, GLOBAL_FUNCS, {"variable_headers": variable_headers})
@@ -451,9 +449,6 @@ class PysmoKrigingTrainer(PysmoTrainer):
             "Produces more generalizable models. Useful for noisy data.",
         ),
     )
-
-    def __init__(self, **settings):
-        super().__init__(**settings)
 
     def _create_model(self, pysmo_input, output_label):
         model = krg.KrigingModel(
@@ -791,6 +786,7 @@ class TrainedSurrogateDecoder(TSEBase):
         )
         # Re-create function objects from additional terms
         list_terms = cls._poly_decode_vars(attr["additional_term_expressions"], p)
+        # pylint: disable=W0123
         model.additional_term_expressions = [
             eval(m, GLOBAL_FUNCS, {"p": p}) for m in list_terms
         ]

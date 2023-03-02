@@ -141,9 +141,11 @@ class PublicationDataset(Dataset):
             "language": pub.get("language", "english"),
         }
         if "isbn" in pub:
-            meta["source"] = f"{pub.get('authors', 'Anon.')}, "
-            f"\"{pub.get('title', 'no title')}\". "
-            f"{pub.get('publisher', '')} ({pub.get('date', '')})"
+            meta["source"] = (
+                f"{pub.get('authors', 'Anon.')}, "
+                f"\"{pub.get('title', 'no title')}\". "
+                f"{pub.get('publisher', '')} ({pub.get('date', '')})"
+            )
         else:
             meta["source"] = (
                 f"{pub.get('authors', 'Anon.')}, "

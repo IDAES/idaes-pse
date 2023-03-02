@@ -1391,7 +1391,8 @@ class CVTSampling(SamplingMethods):
                 "Tolerance too tight. CVT algorithm may take long time to converge."
             )
         elif (tolerance < 0.1) and (tolerance > 1e-9):
-            tolerance = tolerance
+            # valid tolerance
+            pass
         else:
             raise Exception("Invalid tolerance input")
         self.eps = tolerance

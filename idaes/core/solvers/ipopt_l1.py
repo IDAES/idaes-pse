@@ -14,7 +14,6 @@
 from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
 from pyomo.common import Executable
 from pyomo.opt.base.solvers import SolverFactory
-from pyomo.opt.solver import SystemCallSolver
 
 import logging
 
@@ -27,8 +26,8 @@ class IPOPT_L1(IPOPT):
         executable = Executable("ipopt_l1")
         if not executable:
             logger.warning(
-                "Could not locate the 'ipopt_l1' executable, "
-                "which is required for solver %s" % self.name
+                f"Could not locate the 'ipopt_l1' executable, "
+                f"which is required for solver {self.name}"
             )
             self.enable = False
             return None

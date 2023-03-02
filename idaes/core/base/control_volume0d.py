@@ -64,19 +64,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
     specified in the chosen property package.
     """
 
-    def build(self):
-        """
-        Build method for ControlVolume0DBlock blocks.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # Call build method from base class
-        super(ControlVolume0DBlockData, self).build()
-
     def add_geometry(self):
         """
         Method to create volume Var in ControlVolume.

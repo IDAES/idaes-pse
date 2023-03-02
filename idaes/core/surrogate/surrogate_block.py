@@ -21,6 +21,7 @@ _log = idaeslog.getLogger(__name__)
 
 @declare_custom_block(name="SurrogateBlock")
 class SurrogateBlockData(_BlockData):
+    # pylint: disable=W0235
     def __init__(self, component):
         """
         This custom block is used for importing surrogates into IDAES

@@ -17,6 +17,9 @@ __author__ = "John Eslick"
 from idaes.core import declare_process_block_class
 
 import idaes.logger as idaeslog
+
+# Some of these are convenience imports
+# pylint: disable=W0611
 from idaes.models.properties.general_helmholtz import (
     helmholtz_available,
     HelmholtzParameterBlockData,
