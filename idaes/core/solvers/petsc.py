@@ -38,6 +38,10 @@ import idaes.logger as idaeslog
 import idaes.config as icfg
 
 
+# Importing a few things here so that they are cached
+# pytest: disable=unused-import
+
+
 def petsc_binary_io():
     if petsc_binary_io.PetscBinaryIOTrajectory is not None:
         return petsc_binary_io.PetscBinaryIOTrajectory
