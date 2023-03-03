@@ -182,7 +182,6 @@ variables, expressions, or constraints required can also be added by the callbac
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
         """
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
 
         for t in self.flowsheet().time:
             if (

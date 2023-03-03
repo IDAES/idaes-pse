@@ -114,7 +114,6 @@ argument).""",
         # self.config is the ConfigBlock "instantiated" from self.CONFIG
         # in ProcessBlockData.
         config = self.config
-        time = self.flowsheet().time
         property_package = config.property_package
 
         if len(property_package.phase_list) != 1:
@@ -154,7 +153,6 @@ argument).""",
         )
         self.control_volume.add_phase_component_balances()
 
-        cv = self.control_volume
         self.add_diameter()
         self.add_friction_factor()
 
@@ -298,7 +296,6 @@ argument).""",
         """
         cv = self.control_volume
         state = cv.properties[t, x]
-        area = cv.area
         flow = state.flow_mass
         pressure = state.pressure
         diameter = self.diameter

@@ -169,9 +169,9 @@ class TempDir(object):
         if self._d is not None:
             # remove files in dir
             rmdirs = []
-            for dirpath, subdirs, files in os.walk(
+            for dirpath, subdirs, files in os.walk(  # pylint: disable=unused-variable
                 self._d
-            ):  # pylint: disable=unused-variable
+            ):
                 for f in files:
                     os.unlink(os.path.join(dirpath, f))
                 rmdirs.append(dirpath)

@@ -89,7 +89,7 @@ class IsentropicPerformanceCurveData(ProcessBlockData):
     )
 
     def has_constraints(self):
-        for o in self.component_data_objects(Constraint):
+        for _ in self.component_data_objects(Constraint):
             return True
         return False
 

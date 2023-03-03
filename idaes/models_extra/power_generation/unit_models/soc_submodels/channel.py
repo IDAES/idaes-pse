@@ -609,10 +609,8 @@ class SocChannelData(UnitModelBlockData):
         # For convenience define outlet expressions
         if self.config.opposite_flow:
             izfout = self.izfout = izfaces.first()
-            iznout = self.iznout = iznodes.first()
         else:
             izfout = self.izfout = izfaces.last()
-            iznout = self.iznout = iznodes.last()
 
         @self.Expression(tset, comps)
         def flow_mol_comp_outlet(b, t, i):
@@ -670,11 +668,9 @@ class SocChannelData(UnitModelBlockData):
         # fixed at the cell level instead.
         # TODO Add ports to submodel instead?
 
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         tset = self.flowsheet().config.time
-        t0 = tset.first()
 
         for t in tset:
             _set_if_unfixed(self.temperature_outlet[t], self.temperature_inlet[t])
@@ -829,7 +825,6 @@ class SocChannelData(UnitModelBlockData):
         sH = 1e-4  # Enthalpy/int energy
         sLx = sgsf(self.length_x, 1 / self.length_x.value)
         sLy = 1 / self.length_y[None].value
-        sLz = len(self.iznodes) / self.length_z[None].value
 
         for t in self.flowsheet().time:
             sT = sgsf(self.temperature_inlet[t], 1e-2)

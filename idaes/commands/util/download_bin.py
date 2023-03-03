@@ -352,9 +352,9 @@ def download_binaries(
     fd = FileDownloader(insecure=insecure, cacert=cacert)
 
     # Get platform information
-    arch, platform = _get_arch_and_platform(
+    arch, platform = _get_arch_and_platform(  # pylint: disable=unused-variable
         fd, platform
-    )  # pylint: disable=unused-variable
+    )
     platform = _get_release_platform(platform)
 
     # Get release url

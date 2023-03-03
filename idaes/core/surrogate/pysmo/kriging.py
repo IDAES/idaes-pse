@@ -625,10 +625,10 @@ class KrigingModel:
         ) = self.optimal_parameter_evaluation(bh_results.x, p)
         # Training performance
         (
-            training_ss_error,
+            training_ss_error,  # pylint: disable=unused-variable
             rmse_error,
             y_training_predictions,
-        ) = self.error_calculation(  # pylint: disable=unused-variable
+        ) = self.error_calculation(
             optimal_theta,
             p,
             optimal_mean,

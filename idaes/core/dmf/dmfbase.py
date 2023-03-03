@@ -826,9 +826,9 @@ class DMF(workspace.Workspace, HasTraits):
         Raises:
             NoSuchResourceError: if the starting resource is not found
         """
-        for depth, triple, meta in self.find_related(
+        for depth, triple, meta in self.find_related(  # pylint: disable=unused-variable
             rsrc, **kwargs
-        ):  # pylint: disable=unused-variable
+        ):
             if predicate is not None and triple.predicate != predicate:
                 continue
             id_ = meta[Resource.ID_FIELD]

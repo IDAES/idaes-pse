@@ -27,9 +27,7 @@ import pyomo.environ as pyo
 
 
 def _thermal_conductivity(blk, delta, tau, on_blk=None):
-    """Thermal condutivity (for now) ommiting critical enhancment"""
-    T = blk.temperature_star / tau / pyo.units.K
-    rho = delta * blk.dens_mass_star / pyo.units.kg * pyo.units.m**3
+    """Thermal conductivity (for now) omitting critical enhancement"""
     Tred = 1.0 / tau
 
     a = [
@@ -63,7 +61,6 @@ def _viscosity(blk, delta, tau, on_blk=None):
 
     eok = 340
     sigma = 5.017e-1
-    M = 114.0415928
     NA = 6.0221408e23
     a = [
         -963382,

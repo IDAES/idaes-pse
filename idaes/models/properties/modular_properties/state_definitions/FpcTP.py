@@ -143,11 +143,11 @@ def define_state(b):
     )
 
     def rule_mole_frac_phase_comp(b, p, j):
-        # Calcualting mole frac phase comp is degenerate if there is only one
+        # Calculating mole frac phase comp is degenerate if there is only one
         # component in phase.
         # Count components
         comp_count = 0
-        for p1, j1 in b.phase_component_set:
+        for p1, _ in b.phase_component_set:
             if p1 == p:
                 comp_count += 1
 

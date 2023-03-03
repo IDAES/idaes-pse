@@ -180,7 +180,6 @@ ValveFunctionType.custom}""",
         # including external function calls to calculate thermodynamic quantities
         # from a set of state variables.
         _assert_properties(config.property_package)
-        te = ThermoExpr(blk=self, parameters=config.property_package)
 
         self.valve_opening = pyo.Var(
             self.flowsheet().time,
@@ -277,7 +276,7 @@ ValveFunctionType.custom}""",
                 self.inlet.flow_mol[t].unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(self, tee=slc.tee)
+            opt.solve(self, tee=slc.tee)
 
         init_log.info("Steam valve intialization complete")
 

@@ -130,7 +130,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         # Set up some sets for the space and time indexing
         tset = self.flowsheet().config.time
         # Set up node and face sets and get integer indices for them
-        izfaces, iznodes = common._face_initializer(
+        izfaces, iznodes = common._face_initializer(  # pylint: disable=unused-variable
             self, self.config.control_volume_zfaces, "z"
         )
         comps = self.component_list = pyo.Set(
@@ -401,7 +401,6 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
     def initialize_build(
         self, outlvl=idaeslog.NOTSET, solver=None, optarg=None, fix_x0=False
     ):
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         self.temperature_deviation_x.fix()
@@ -451,10 +450,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         def cst(c, s):
             iscale.constraint_scaling_transform(c, s, overwrite=False)
 
-        sR = 1e-1  # Scaling factor for R
         sy_def = 10  # Mole frac comp scaling
-        sLy = 1 / self.length_y[None].value
-        sLz = len(self.iznodes) / self.length_z[None].value
 
         for t in self.flowsheet().time:
             for iz in self.iznodes:

@@ -610,9 +610,7 @@ def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
                 el = o[key]
             if frst:  # assume all item are same type, use first to get alist
                 # Get all attributes
-                alist, ff = wts.get_data_class_attr_list(
-                    el
-                )  # pylint: disable=unused-variable
+                (alist, _) = wts.get_data_class_attr_list(el)
                 if alist is None:
                     return  # if None then skip writing
             frst = False  # done with first only stuff

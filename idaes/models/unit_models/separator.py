@@ -1385,11 +1385,10 @@ objects linked the mixed state and all outlet states,
 
         # Premises for initializing outlet states:
         # 1. Intensive states remain unchanged - this is either a valid premise
-        # or the actual state is impossible to calcuate without solving the
+        # or the actual state is impossible to calculate without solving the
         # full separator model.
         # 2. Extensive states are use split fractions if index matches, or
         # average of split fractions for outlet otherwise
-        props = blk.config.property_package
         for o in outlet_list:
             # Get corresponding outlet StateBlock
             o_block = getattr(blk, o + "_state")
@@ -1645,8 +1644,6 @@ objects linked the mixed state and all outlet states,
         Returns:
             None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-
         if blk.config.mixed_state_block is None:
             mblock = blk.mixed_state
         else:
@@ -1678,12 +1675,12 @@ objects linked the mixed state and all outlet states,
 
         if hasattr(self, "material_splitting_eqn"):
             if mb_type == MaterialBalanceType.componentPhase:
-                for (t, o, p, j), c in self.material_splitting_eqn.items():
+                for (t, _, p, j), c in self.material_splitting_eqn.items():
                     flow_term = mixed_state[t].get_material_flow_terms(p, j)
                     s = iscale.get_scaling_factor(flow_term, default=1)
                     iscale.constraint_scaling_transform(c, s)
             elif mb_type == MaterialBalanceType.componentTotal:
-                for (t, o, j), c in self.material_splitting_eqn.items():
+                for (t, _, j), c in self.material_splitting_eqn.items():
                     for i, p in enumerate(mixed_state.phase_list):
                         ft = mixed_state[t].get_material_flow_terms(p, j)
                         if i == 0:
@@ -1694,7 +1691,7 @@ objects linked the mixed state and all outlet states,
                     iscale.constraint_scaling_transform(c, s)
             elif mb_type == MaterialBalanceType.total:
                 pc_set = mixed_state.phase_component_set
-                for (t, o), c in self.material_splitting_eqn.items():
+                for (t, _), c in self.material_splitting_eqn.items():
                     for i, (p, j) in enumerate(pc_set):
                         ft = mixed_state[t].get_material_flow_terms(p, j)
                         if i == 0:

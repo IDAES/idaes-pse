@@ -2202,7 +2202,6 @@ class CubicStateBlockData(StateBlockData):
         is_two_phase = len(phases) == 2  # possibly {Liq}, {Vap}, or {Liq, Vap}
         sf_flow = iscale.get_scaling_factor(self.flow_mol, default=1, warning=True)
         sf_T = iscale.get_scaling_factor(self.temperature, default=1, warning=True)
-        sf_P = iscale.get_scaling_factor(self.pressure, default=1, warning=True)
 
         if self.is_property_constructed("_teq"):
             iscale.set_scaling_factor(self._teq, sf_T)

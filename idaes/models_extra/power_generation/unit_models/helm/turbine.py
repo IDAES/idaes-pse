@@ -163,14 +163,13 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         efficency, inlet, and one of pressure ratio, pressure change or outlet
         pressure.
         """
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         # Create solver
         slvr = get_solver(solver, optarg)
 
         # Store original specification so initialization doesn't change the model
-        # This will only resore the values of varaibles that were originally fixed
+        # This will only restore the values of variables that were originally fixed
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
         # Check for alternate pressure specs
@@ -204,7 +203,7 @@ class HelmIsentropicTurbineData(BalanceBlockData):
             self.outlet.flow_mol[t] = pyo.value(self.inlet.flow_mol[t])
         # Solve the model (should be already solved from above)
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = slvr.solve(self, tee=slc.tee)
+            slvr.solve(self, tee=slc.tee)
         from_json(self, sd=istate, wts=sp)
 
     def calculate_scaling_factors(self):

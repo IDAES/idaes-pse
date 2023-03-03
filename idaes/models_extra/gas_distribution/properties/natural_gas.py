@@ -92,7 +92,6 @@ class NaturalGasParameterBlockData(PhysicalParameterBlock):
         kgkmolK = pyunits.kg / pyunits.kmol / pyunits.K
         kmolm3 = pyunits.kmol / pyunits.m**3
         kgm3 = pyunits.kg / pyunits.m**3
-        mps = pyunits.m / pyunits.s
         kmolhr = pyunits.kmol / pyunits.hr
         obj.add_properties(
             {

@@ -1078,27 +1078,27 @@ def set_scaling_factors(m):
     iscale.set_scaling_factor(fs.aPSH.tube._enthalpy_flow, 1e-8)
     iscale.set_scaling_factor(fs.aPSH.shell.enthalpy_flow_dx, 1e-7)
     iscale.set_scaling_factor(fs.aPSH.tube.enthalpy_flow_dx, 1e-7)
-    for t, c in fs.aPSH.shell.enthalpy_flow_dx_disc_eq.items():
+    for c in fs.aPSH.shell.enthalpy_flow_dx_disc_eq.values():
         iscale.constraint_scaling_transform(c, 1e-7)
-    for t, c in fs.aPSH.tube.enthalpy_flow_dx_disc_eq.items():
+    for c in fs.aPSH.tube.enthalpy_flow_dx_disc_eq.values():
         iscale.constraint_scaling_transform(c, 1e-7)
 
     iscale.set_scaling_factor(fs.aRH1.shell._enthalpy_flow, 1e-8)
     iscale.set_scaling_factor(fs.aRH1.tube._enthalpy_flow, 1e-8)
     iscale.set_scaling_factor(fs.aRH1.shell.enthalpy_flow_dx, 1e-7)
     iscale.set_scaling_factor(fs.aRH1.tube.enthalpy_flow_dx, 1e-7)
-    for t, c in fs.aRH1.shell.enthalpy_flow_dx_disc_eq.items():
+    for c in fs.aRH1.shell.enthalpy_flow_dx_disc_eq.values():
         iscale.constraint_scaling_transform(c, 1e-7)
-    for t, c in fs.aRH1.tube.enthalpy_flow_dx_disc_eq.items():
+    for c in fs.aRH1.tube.enthalpy_flow_dx_disc_eq.values():
         iscale.constraint_scaling_transform(c, 1e-7)
 
     iscale.set_scaling_factor(fs.aRH2.shell._enthalpy_flow, 1e-8)
     iscale.set_scaling_factor(fs.aRH2.tube._enthalpy_flow, 1e-8)
     iscale.set_scaling_factor(fs.aRH2.shell.enthalpy_flow_dx, 1e-7)
     iscale.set_scaling_factor(fs.aRH2.tube.enthalpy_flow_dx, 1e-7)
-    for t, c in fs.aRH2.shell.enthalpy_flow_dx_disc_eq.items():
+    for c in fs.aRH2.shell.enthalpy_flow_dx_disc_eq.values():
         iscale.constraint_scaling_transform(c, 1e-7)
-    for t, c in fs.aRH2.tube.enthalpy_flow_dx_disc_eq.items():
+    for c in fs.aRH2.tube.enthalpy_flow_dx_disc_eq.values():
         iscale.constraint_scaling_transform(c, 1e-7)
 
     # Calculate calculated scaling factors
