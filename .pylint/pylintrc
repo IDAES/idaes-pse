@@ -10,6 +10,7 @@ disable=no-self-argument,
     assignment-from-none,
     invalid-unary-operand-type,
     unsubscriptable-object,
+    fixme,
 
 [IMPORTS]
 ignored-modules=cvalsim,almsim
