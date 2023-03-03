@@ -2,7 +2,7 @@
 init-hook="import sys; sys.path.append('.pylint')"
 load-plugins=idaes_transform
 ignore-patterns=test_.*
-ignore=alamopy_depr,ripe,helmet,matopt
+ignore=apps
 
 [MESSAGES CONTROL]
 disable=no-self-argument,
