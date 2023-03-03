@@ -537,7 +537,6 @@ def petsc_dae_by_time_element(
                 res_list.append(res)
 
     tprev = t0
-    count = 1
     fix_derivs = []
     tj = previous_trajectory
     if tj is not None:

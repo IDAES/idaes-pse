@@ -303,7 +303,7 @@ class FlowsheetSerializer:
                 self.adj_list[src.getname()].add(dst.getname())
                 used_ports.add(stream.source)
                 used_ports.add(stream.dest)
-            except KeyError as error:
+            except KeyError:
                 self._logger.error(
                     f"Unable to find port. {name}, {stream.source}, {stream.dest}"
                 )
@@ -609,7 +609,7 @@ class FlowsheetSerializer:
                     unit_type,
                     unit_icon.link_positions,
                 )
-            except KeyError as e:
+            except KeyError:
                 self._logger.info(
                     f"Unable to find icon for {unit_type}. Using default icon"
                 )

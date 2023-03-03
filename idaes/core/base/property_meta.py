@@ -556,7 +556,7 @@ class PropertyClassMetadata(object):
         Returns:
             None
         """
-        for k, v in p.items():
+        for k in p.keys():
             try:
                 self._properties[k].set_required(True)
             except KeyError:

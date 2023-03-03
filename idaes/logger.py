@@ -277,5 +277,5 @@ def solver_log(logger, level=logging.ERROR):
     if not solver_capture():
         yield SolverLogInfo(tee=tee)
     else:
-        with capture_output(LogStream(level, logger)) as s:
+        with capture_output(LogStream(level, logger)):
             yield SolverLogInfo(tee=tee)

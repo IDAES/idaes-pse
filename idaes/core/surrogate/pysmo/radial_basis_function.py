@@ -703,7 +703,7 @@ class RadialBasisFunctions:
         # Find matrix inverse. Use pseudo-inverse if inverse is not available
         try:
             inverse_x = np.linalg.inv(x)
-        except np.linalg.LinAlgError as LAE:
+        except np.linalg.LinAlgError:
             inverse_x = np.linalg.pinv(x)
 
         phi = np.matmul(inverse_x, y)
@@ -775,11 +775,11 @@ class RadialBasisFunctions:
 
         instance = model
         opt = SolverFactory("ipopt")
-        opt.options["max_iter"] = 10000
+        # TODO: This is too many iterations
+        opt.options["max_iter"] = 1000
         opt.options["acceptable_tol"] = 1e-30
-        # model.pprint()
-        result = opt.solve(instance)  # , tee=True)
-        # model.display()
+        # TODO: Should htis be checking for a feasible solution?
+        opt.solve(instance)
 
         # Convert theta variable into numpy array
         phi = np.zeros((len(instance.theta), 1))
@@ -1061,7 +1061,7 @@ class RadialBasisFunctions:
         radial_weights = radial_weights.reshape(radial_weights.shape[0], 1)
 
         (
-            training_ss_error,
+            training_ss_error,  # pylint: disable=unused-variable
             rmse_error,
             y_training_predictions_scaled,
         ) = self.error_calculation(
@@ -1112,7 +1112,6 @@ class RadialBasisFunctions:
         radial_weights = self.weights
         centres_matrix = self.centres
         r = self.sigma
-        lambda_reg = self.regularization_parameter
         scale = self.x_data_max - self.x_data_min
         scale[scale == 0.0] = 1.0
         x_pred_scaled = (x_data - self.x_data_min) / scale

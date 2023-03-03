@@ -213,7 +213,13 @@ def homotopy(
     solver_obj = SolverFactory("ipopt")
 
     # Perform initial solve of model to confirm feasible initial solution
-    results, solved, sol_iter, sol_time, sol_reg = ipopt_solve_with_stats(
+    (
+        results,
+        solved,
+        sol_iter,
+        sol_time,
+        sol_reg,
+    ) = ipopt_solve_with_stats(  # pylint: disable=unused-variable
         model, solver_obj, max_solver_iterations, max_solver_time
     )
 

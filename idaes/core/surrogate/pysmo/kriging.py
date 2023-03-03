@@ -242,7 +242,7 @@ class KrigingModel:
         """
         try:
             inverse_x = np.linalg.inv(x)
-        except np.linalg.LinAlgError as LAE:
+        except np.linalg.LinAlgError:
             inverse_x = np.linalg.pinv(x)
         return inverse_x
 
@@ -624,7 +624,11 @@ class KrigingModel:
             optimal_ymu,
         ) = self.optimal_parameter_evaluation(bh_results.x, p)
         # Training performance
-        training_ss_error, rmse_error, y_training_predictions = self.error_calculation(
+        (
+            training_ss_error,
+            rmse_error,
+            y_training_predictions,
+        ) = self.error_calculation(  # pylint: disable=unused-variable
             optimal_theta,
             p,
             optimal_mean,

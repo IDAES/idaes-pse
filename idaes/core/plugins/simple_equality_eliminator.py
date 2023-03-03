@@ -123,7 +123,7 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
 
         nr_tot = 0
         # repeat elimination until no more can be eliminated or hit max_iter
-        for i in range(max_iter):
+        for i in range(max_iter):  # pylint: disable=unused-variable
             subs, cnstr, fixes, subs_map = self._get_subs(instance)
 
             if reversible:
@@ -175,7 +175,7 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
         applies to the last reversible transformation performed with this object.
         """
         try:
-            instance = self._instance
+            instance = self._instance  # pylint: disable=unused-variable
         except AttributeError:
             _log.warning("Nothing to revert.")
 

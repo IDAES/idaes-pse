@@ -936,21 +936,21 @@ class MEAColumnData(PackedColumnData):
                 blk.liquid_phase.properties[0, x].log_k_eq["bicarbonate"], 1
             )
 
-        for (t, x), v in blk.vapor_phase.properties.items():
+        for v in blk.vapor_phase.properties.values():
             iscale.constraint_scaling_transform(
                 v.total_flow_balance,
                 iscale.get_scaling_factor(v.flow_mol, default=1, warning=True),
             )
 
-        for (t, x), v in blk.liquid_phase.properties.items():
-            for (p, j), c in v.appr_to_true_species.items():
+        for v in blk.liquid_phase.properties.values():
+            for (p, j) in v.appr_to_true_species.keys():
                 iscale.constraint_scaling_transform(
                     v.appr_to_true_species[p, j],
                     iscale.get_scaling_factor(
                         v.flow_mol_phase_comp_true[p, j], default=1, warning=True
                     ),
                 )
-            for (p, j), c in v.true_mole_frac_constraint.items():
+            for (p, j) in v.true_mole_frac_constraint.keys():
                 iscale.constraint_scaling_transform(
                     v.true_mole_frac_constraint[p, j],
                     iscale.get_scaling_factor(
@@ -958,21 +958,18 @@ class MEAColumnData(PackedColumnData):
                     ),
                 )
 
-            for j, c in v.component_flow_balances.items():
-                iscale.constraint_scaling_transform(
-                    v.component_flow_balances["CO2"], 100
-                )
-                iscale.constraint_scaling_transform(v.component_flow_balances["H2O"], 1)
-                iscale.constraint_scaling_transform(v.component_flow_balances["MEA"], 1)
+            iscale.constraint_scaling_transform(v.component_flow_balances["CO2"], 100)
+            iscale.constraint_scaling_transform(v.component_flow_balances["H2O"], 1)
+            iscale.constraint_scaling_transform(v.component_flow_balances["MEA"], 1)
 
-        for (t, x), v in blk.liquid_phase.properties.items():
+        for v in blk.liquid_phase.properties.values():
             iscale.constraint_scaling_transform(
                 v.total_flow_balance,
                 iscale.get_scaling_factor(v.flow_mol, default=1, warning=True),
             )
 
-        for (t, x), v in blk.liquid_phase.properties.items():
-            for rxn, c in v.log_k_eq_constraint.items():
+        for v in blk.liquid_phase.properties.values():
+            for rxn in v.log_k_eq_constraint.keys():
                 iscale.constraint_scaling_transform(
                     v.log_k_eq_constraint[rxn],
                     iscale.get_scaling_factor(v.log_k_eq[rxn], default=1, warning=True),
@@ -1584,8 +1581,6 @@ class MEAColumnData(PackedColumnData):
             "enhancement_factor_eqn1",
             "enhancement_factor_eqn2",
         ]
-
-        enhancement_factor_obj = ["enhancement_factor_obj"]
 
         heat_transfer_coefficient_constraint = ["heat_transfer_coeff_base_constraint"]
 

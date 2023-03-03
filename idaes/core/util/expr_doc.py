@@ -233,7 +233,7 @@ def _add_docs(object_map, docs, typ, head):
         object_map = [object_map]
 
     for om in object_map:
-        for i, sc in enumerate(om.sympyVars()):
+        for i, sc in enumerate(om.sympyVars()):  # pylint: disable=unused-variable
             c = om.getPyomoSymbol(sc)
             cdat = c
             c = c.parent_component()  # Document the parent for indexed comps

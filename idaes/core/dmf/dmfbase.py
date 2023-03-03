@@ -478,7 +478,7 @@ class DMF(workspace.Workspace, HasTraits):
         if (not constructed_from_kwargs) and kwargs:
             rsrc.set_values(kwargs)
         # add to DMF
-        rsrc_id = self.add(rsrc)
+        self.add(rsrc)
         # Set DMF datafiles dir
         rsrc._dmf_datafiles_path = self.datafiles_path
         return rsrc
@@ -826,7 +826,9 @@ class DMF(workspace.Workspace, HasTraits):
         Raises:
             NoSuchResourceError: if the starting resource is not found
         """
-        for depth, triple, meta in self.find_related(rsrc, **kwargs):
+        for depth, triple, meta in self.find_related(
+            rsrc, **kwargs
+        ):  # pylint: disable=unused-variable
             if predicate is not None and triple.predicate != predicate:
                 continue
             id_ = meta[Resource.ID_FIELD]

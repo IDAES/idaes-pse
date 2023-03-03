@@ -1161,11 +1161,11 @@ should be constructed,
 
         # Set default scaling values for some CV1D vars (to avoid warnings)
         if hasattr(self.gas_phase, "heat"):
-            for (t, x), v in self.gas_phase.heat.items():
+            for v in self.gas_phase.heat.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1e-6)
         if hasattr(self.gas_phase, "area"):
-            for (t, x), v in self.gas_phase.area.items():
+            for v in self.gas_phase.area.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1)
 

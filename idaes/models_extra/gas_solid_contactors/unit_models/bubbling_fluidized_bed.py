@@ -3200,7 +3200,13 @@ see reaction package for documentation.}""",
                 )
 
         if hasattr(self, "gas_material_balance_out"):
-            for (t, p, j), c in self.gas_material_balance_out.items():
+            for (
+                t,
+                p,
+                j,
+            ), c in (
+                self.gas_material_balance_out.items()
+            ):  # pytest: disable=unused-variable
                 iscale.constraint_scaling_transform(
                     c,
                     iscale.get_scaling_factor(

@@ -501,7 +501,9 @@ def find_workspaces(root):
     """
     w = []
     # try all subdirectories of root
-    for dirpath, dirnames, filenames in os.walk(root):
+    for dirpath, dirnames, filenames in os.walk(
+        root
+    ):  # pylint: disable=unused-variable
         for dmfdir in dirnames:
             dmfpath = os.path.join(dirpath, dmfdir)
             conf_file = os.path.join(dmfpath, Workspace.WORKSPACE_CONFIG)

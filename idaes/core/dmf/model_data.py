@@ -293,7 +293,7 @@ def update_metadata_model_references(model, metadata):
     Returns:
         None
     """
-    for tag, md in metadata.items():
+    for tag, md in metadata.items():  # pylint: disable=unused-variable
         if md["reference_string"]:
             try:
                 # pylint: disable=W0123

@@ -464,11 +464,6 @@ see reaction package for documentation.}""",
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        # Get units meta data from property packages (only solid needed)
-        units_meta_solid = (
-            self.config.solid_property_package.get_metadata().get_derived_units
-        )
-
         # scale some variables
         if hasattr(self, "bed_diameter"):
             if iscale.get_scaling_factor(self.bed_diameter) is None:

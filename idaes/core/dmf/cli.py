@@ -107,7 +107,6 @@ class AliasedGroup(click.Group):
         self._aliases = aliases
 
     def get_command(self, ctx, cmd_name):
-        t0 = time.time()
         command = click.Group.get_command(self, ctx, cmd_name)
         if command is None:
             commands = self.list_commands(ctx)

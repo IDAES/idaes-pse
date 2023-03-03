@@ -186,7 +186,9 @@ def hash_extensions(release, path):
 @cb.command(name="bin-platform", help="Show the compatible binary build.")
 @click.option("--distro", default="auto")
 def bin_platform(distro):
-    fd, arch = idaes.commands.util.download_bin._get_file_downloader(False, None)
+    fd, arch = idaes.commands.util.download_bin._get_file_downloader(
+        False, None
+    )  # pylint: disable=unused-variable
     try:
         arch, platform = idaes.commands.util.download_bin._get_arch_and_platform(
             fd, distro

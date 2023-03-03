@@ -288,8 +288,6 @@ class BoilerHeatExchangerData(HeatExchangerData):
             add_object_reference(self, "volume_cold_side", self.cold_side.volume)
             add_object_reference(self, "volume_hot_side", self.hot_side.volume)
             # Total tube side valume
-            self.Constraint(doc="Total tube side volume")
-
             def volume_cold_side_eqn(b):
                 return b.volume_cold_side == (
                     0.25
@@ -300,8 +298,7 @@ class BoilerHeatExchangerData(HeatExchangerData):
                     * b.tube_nrow
                 )
 
-            # Total shell side valume
-            self.Constraint(doc="Total shell side volume")
+            self.Constraint(doc="Total tube side volume", rule=volume_cold_side_eqn)
 
             def volume_hot_side_eqn(b):
                 return (
@@ -314,6 +311,9 @@ class BoilerHeatExchangerData(HeatExchangerData):
                     * b.tube_ncol
                     * b.tube_nrow
                 )
+
+            # Total shell side volume
+            self.Constraint(doc="Total shell side volume", rule=volume_hot_side_eqn)
 
     def _make_performance(self):
         """
@@ -1212,41 +1212,6 @@ class BoilerHeatExchangerData(HeatExchangerData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-
-        # We have a pretty good idea that the delta Ts will be between about
-        # 1 and 100 regardless of process of temperature units, so a default
-        # should be fine, so don't warn.  Guessing a typical delta t around 10
-        # the default scaling factor is set to 0.1
-        sf_dT1 = dict(
-            zip(
-                self.delta_temperature_in.keys(),
-                [
-                    iscale.get_scaling_factor(v, default=0.1)
-                    for v in self.delta_temperature_in.values()
-                ],
-            )
-        )
-        sf_dT2 = dict(
-            zip(
-                self.delta_temperature_out.keys(),
-                [
-                    iscale.get_scaling_factor(v, default=0.1)
-                    for v in self.delta_temperature_out.values()
-                ],
-            )
-        )
-
-        # U depends a lot on the process and units of measure so user should set
-        # this one.
-        sf_u = dict(
-            zip(
-                self.overall_heat_transfer_coefficient.keys(),
-                [
-                    iscale.get_scaling_factor(v, default=0.01, warning=True)
-                    for v in self.overall_heat_transfer_coefficient.values()
-                ],
-            )
-        )
 
         # Since this depends on the process size this is another scaling factor
         # the user should always set.

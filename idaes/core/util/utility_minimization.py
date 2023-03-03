@@ -105,7 +105,7 @@ def min_utility(blk, heating, cooling, DTmin, eps=1e-6, DG_units=pyunits.Mwatt):
         pinch_streamsdict.keys(), rule=T_out, doc="Outlet temperature in exchangers"
     )
 
-    # Expression for cp of equimpent with heat exchange
+    # Expression for cp of equipment with heat exchange
     def Theta_(blk, i):
         if i in heatingdict.keys():
             return Q[i] / (
@@ -449,7 +449,6 @@ def generate_curves(CD):
     Qw = CD.Qw
 
     plt.figure(figsize=(10, 10))
-    ax = plt.subplot(111)
 
     # Plot values for Hot streams
     # Negative sign corrects for Q < 0 for hot streams

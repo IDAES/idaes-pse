@@ -471,18 +471,11 @@ class SoecDesignData(UnitModelBlockData):
         )
         self.electrolysis_prop_params.set_default_scaling("flow_mol_phase", scale)
 
-        for (
-            t,
-            i,
-        ), v in self.electrolysis_reactor.control_volume.rate_reaction_extent.items():
+        for v in self.electrolysis_reactor.control_volume.rate_reaction_extent.values():
             iscale.set_scaling_factor(v, scale)
         for (
-            t,
-            p,
-            i,
-        ), v in (
-            self.electrolysis_reactor.control_volume.rate_reaction_generation.items()
-        ):
+            v
+        ) in self.electrolysis_reactor.control_volume.rate_reaction_generation.values():
             iscale.set_scaling_factor(v, scale)
 
     def set_heat_scale(self, scale=1e-5):

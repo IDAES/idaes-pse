@@ -198,7 +198,6 @@ class FlowsheetServer(http.server.HTTPServer):
         if not diff:
             # If no difference do nothing
             _log.debug("Stored flowsheet is the same as the flowsheet in memory")
-            merged = saved
         else:
             # Otherwise, save this merged value before returning it
             num, pl = len(diff), "s" if len(diff) > 1 else ""

@@ -71,7 +71,7 @@ def load_inputs_into_model(model, time, input_data, time_tol=0):
 
         intervals = list(sorted(inputs.keys()))
         assert_disjoint_intervals(intervals)
-        for i, interval in enumerate(intervals):
+        for i, interval in enumerate(intervals):  # pylint: disable=unused-variable
             idx0 = time.find_nearest_index(interval[0], tolerance=time_tol)
             idx1 = time.find_nearest_index(interval[1], tolerance=time_tol)
             if idx0 is None or idx1 is None:

@@ -526,7 +526,7 @@ def _write_component(sd, o, wts, count=None, lookup=None, suffixes=None):
 
     # Get list of attributes to save, also returns ff, which is a filter
     # function and only used in reading stuff back in.
-    alist, ff = wts.get_class_attr_list(o)
+    alist, ff = wts.get_class_attr_list(o)  # pylint: disable=unused-variable
     if alist is None:
         return  # alist is none means skip this component type
     # Get the component name, doesn't need to be fully qualified or unique because
@@ -609,7 +609,10 @@ def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
             else:
                 el = o[key]
             if frst:  # assume all item are same type, use first to get alist
-                alist, ff = wts.get_data_class_attr_list(el)  # get attributes
+                # Get all attributes
+                alist, ff = wts.get_data_class_attr_list(
+                    el
+                )  # pylint: disable=unused-variable
                 if alist is None:
                     return  # if None then skip writing
             frst = False  # done with first only stuff
@@ -652,7 +655,8 @@ def component_data_to_dict(o, wts):
     Component data to a dict.
     """
     el = o
-    alist, ff = wts.get_data_class_attr_list(el)  # get attributes
+    # get attributes
+    alist, ff = wts.get_data_class_attr_list(el)  # pylint: disable=unused-variable
     if alist is None:
         return  # if None then skip writing
     edict = {}  # if not writing suffixes don't need ids
