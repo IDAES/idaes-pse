@@ -16,7 +16,6 @@ Command Line Interface for idaes.core.dmf.
 Uses "Click" to handle command-line parsing and dispatch.
 """
 # stdlib
-import time
 from collections import namedtuple
 from datetime import datetime
 from enum import Enum

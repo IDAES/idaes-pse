@@ -402,7 +402,7 @@ _registered = False
 
 def register():
     """Register with IPython on import (once)."""
-    global _registered
+    global _registered  # pylint: disable=global-statement
     if _registered:
         return
     try:

@@ -17,9 +17,6 @@ from idaes.models_extra.power_generation.unit_models.balance import BalanceBlock
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.solvers import get_solver
 import idaes.models.properties.helmholtz.helmholtz as hltz
-from idaes.models.properties.helmholtz.helmholtz import (
-    HelmholtzThermoExpressions as ThermoExpr,
-)
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError

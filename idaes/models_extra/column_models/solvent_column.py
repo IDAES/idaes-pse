@@ -39,7 +39,6 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
     FlowDirection,
-    MaterialFlowBasis,
     useDefault,
     DistributedVars,
 )

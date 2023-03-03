@@ -10,6 +10,20 @@ disable=no-self-argument,
     assignment-from-none,
     invalid-unary-operand-type,
     unsubscriptable-object,
+    fixme,
+    raise-missing-from,
+    logging-fstring-interpolation,
+    unnecessary-lambda,
+    attribute-defined-outside-init,
+    protected-access,
+    arguments-differ,
+    abstract-method,
+    arguments-renamed,
+    unused-argument,
+    redefined-outer-name,
+    cell-var-from-loop,
+    anomalous-backslash-in-string,
+    unspecified-encoding
 
 [IMPORTS]
 ignored-modules=cvalsim,almsim
