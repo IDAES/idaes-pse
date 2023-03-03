@@ -39,7 +39,7 @@ import idaes.config as icfg
 
 
 # Importing a few things here so that they are cached
-# pytest: disable=unused-import
+# pylint: disable=unused-import
 
 
 def petsc_binary_io():

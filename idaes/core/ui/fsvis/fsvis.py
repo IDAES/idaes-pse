@@ -99,7 +99,7 @@ def visualize(
         :mod:`idaes.core.ui.fsvis.errors.VisualizerError`: Any other errors
         RuntimeError: If too many versions of the save file already exist. See :data:`MAX_SAVED_VERSIONS`.
     """
-    global web_server
+    global web_server  # pylint: disable=global-statement
 
     # Initialize IDAES logging
     _init_logging(log_level)

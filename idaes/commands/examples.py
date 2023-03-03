@@ -384,7 +384,7 @@ def download_contents(target_dir, version):
     Raises:
         DownloadError: if the GET on the release URL returns non-200 status
     """
-    global g_tempdir
+    global g_tempdir  # pylint: disable=global-statement
     url = archive_file_url(version)
     _log.info(f"get examples from: {url}")
     # stream out to a big .zip file
@@ -565,7 +565,7 @@ def install_src(version, target_dir):
     """
     from setuptools import setup, find_packages  # import here due to slowness
 
-    global g_egg
+    global g_egg  # pylint: disable=global-statement
     orig_dir = Path(os.curdir).absolute()
     target_dir = Path(target_dir.absolute())
     root_dir = target_dir.parent
