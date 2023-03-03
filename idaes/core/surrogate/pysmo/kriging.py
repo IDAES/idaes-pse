@@ -348,18 +348,20 @@ class KrigingModel:
 
     def numerical_gradient(self, var_vector, x, y, p):
         """
-        The numerical_gradient method calculates numerical gradients for the Kriging hyperparameters via central differencing,
+        The numerical_gradient method calculates numerical gradients for the Kriging hyperparameters
+        via central differencing,
 
         grad(theta) = (f(theta + eps) - f(theta - eps))/(2 * eps)
 
         Args:
-            var_vector(NumPy Array)        : Numpy array containing the Kriging paramaters (Kriging weights and regularization parameter)
-            x(NumPy Array)                 : Scaled version of input features/variables
-            y(NumPy Array)                 : Output variable y (unscaled)
-            p(float)                       : Kriging model exponent (fixed to 2) to ensure model smoothness
+            var_vector(NumPy Array): Numpy array containing the Kriging parameters (Kriging weights and
+                regularization parameter)
+            x(NumPy Array): Scaled version of input features/variables
+            y(NumPy Array): Output variable y (unscaled)
+            p(float): Kriging model exponent (fixed to 2) to ensure model smoothness
 
         Returns:
-            grad_vec(NumPy Array)          : Array of the gradients of the variables in var_vector
+            grad_vec(NumPy Array): Array of the gradients of the variables in var_vector
 
         """
         eps = 1e-6
