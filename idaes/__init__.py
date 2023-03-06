@@ -19,6 +19,9 @@ import os
 import copy
 import logging
 
+from . import config
+from .ver import __version__  # noqa
+
 
 def _handle_optional_compat_activation(
     env_var: str = "IDAES_ACTIVATE_V1_COMPAT",
@@ -40,11 +43,6 @@ def _handle_optional_compat_activation(
 
 
 _handle_optional_compat_activation()
-
-
-from . import config
-
-from .ver import __version__  # noqa
 
 _log = logging.getLogger(__name__)
 

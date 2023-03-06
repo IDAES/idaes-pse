@@ -45,6 +45,11 @@ import json
 # third-party
 import click
 
+# package
+from idaes.commands import cb
+from idaes.commands.base import how_to_report_an_error
+from idaes.ver import package_version as V
+
 # third-party slow
 nb_exporters = attempt_import("nbconvert.exporters")[0]
 nb_writers = attempt_import("nbconvert.writers")[0]
@@ -52,10 +57,6 @@ traitlets_config = attempt_import("traitlets.config")[0]
 nbformat = attempt_import("nbformat")[0]
 requests = attempt_import("requests")[0]
 
-# package
-from idaes.commands import cb
-from idaes.commands.base import how_to_report_an_error
-from idaes.ver import package_version as V
 
 __author__ = "Dan Gunter"
 

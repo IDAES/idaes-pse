@@ -25,6 +25,9 @@ from pyomo.common.dependencies import attempt_import
 keras, keras_available = attempt_import("tensorflow.keras")
 omlt, omlt_available = attempt_import("omlt")
 
+from idaes.core.surrogate.base.surrogate_base import SurrogateBase
+from idaes.core.surrogate.sampling.scaling import OffsetScaler
+
 if omlt_available:
     from omlt import OmltBlock, OffsetScaling
     from omlt.neuralnet import (
@@ -36,9 +39,6 @@ if omlt_available:
 
     if keras_available:
         from omlt.io import load_keras_sequential
-
-from idaes.core.surrogate.base.surrogate_base import SurrogateBase
-from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
 
 class KerasSurrogate(SurrogateBase):

@@ -13,6 +13,8 @@
 
 import time
 
+# Need to time imports, so must start timer before importing
+# pytest: disable=wrong-import-position
 _command_import_start_time = time.time()
 
 from idaes.commands.base import command_base as cb

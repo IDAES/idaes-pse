@@ -10,9 +10,6 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
-__author__ = "John Eslick"
-
 """Transformation to replace variables with other variables."""
 import pyomo.environ as pyo
 from pyomo.core.base.transformation import TransformationFactory
@@ -21,6 +18,9 @@ from pyomo.core.expr import current as EXPR
 from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 from pyomo.repn import generate_standard_repn
 import idaes.logger as idaeslog
+
+
+__author__ = "John Eslick"
 
 
 _log = idaeslog.getLogger(__name__)
