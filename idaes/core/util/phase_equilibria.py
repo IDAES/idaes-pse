@@ -303,7 +303,7 @@ def build_txy_diagrams(
     ig, ax = plt.subplots(figsize=(12, 8))  # pylint: disable=unused-variable
 
     if len(txy_data.TBubb) and len(txy_data.TDew) > 0:
-        if include_pressure == True:
+        if include_pressure is True:
             # Plot results for bubble temperature
 
             ax.plot(
@@ -340,7 +340,7 @@ def build_txy_diagrams(
 
     elif len(txy_data.TDew) == 0:
 
-        if include_pressure == True:
+        if include_pressure is True:
             # Plot results for bubble temperature
 
             # Plot results for dew temperature
@@ -361,7 +361,7 @@ def build_txy_diagrams(
 
     elif len(txy_data.TBubb) == 0:
 
-        if include_pressure == True:
+        if include_pressure is True:
             # Plot results for bubble temperature
 
             # Plot results for dew temperature
@@ -397,7 +397,7 @@ def build_txy_diagrams(
     plt.xlim(0.0, 1)
 
     # Declare legend and fontsize
-    if print_legend == True:
+    if print_legend is True:
         plt.legend(fontsize=16)
 
     if figure_name:

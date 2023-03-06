@@ -151,7 +151,7 @@ class ParallelTaskManager:
         if global_data_list_of_lists is not None:
             return self._stack_global_data(global_data_list_of_lists)
 
-        assert self.is_root() == False
+        assert self.is_root() is False
         return None
 
     def _stack_global_data(self, global_data_list_of_lists):

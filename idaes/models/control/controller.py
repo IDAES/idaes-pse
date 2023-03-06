@@ -198,7 +198,7 @@ class PIDControllerData(UnitModelBlockData):
         """
         super().build()
 
-        if self.config.dynamic == False:
+        if self.config.dynamic is False:
             raise ConfigurationError(
                 "PIDControllers work only with dynamic flowsheets."
             )

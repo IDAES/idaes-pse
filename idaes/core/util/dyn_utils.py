@@ -366,7 +366,7 @@ def path_from_block(comp, blk, include_comp=False):
         route = [(parent_obj.local_name, parent_data.index())] + route
         # If top-levelmodel has been reached, break
         # (This should not happen)
-        if parent_data.parent_block() == None:
+        if parent_data.parent_block() is None:
             break
         parent_data = parent_data.parent_block()
 

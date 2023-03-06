@@ -250,8 +250,8 @@ def make_phase_split(
 
                 phase_set = model.config.property_package.phase_list
 
-                # If statement to skip in case equimpment is not a Tray
-                if equipmentType == None:
+                # If statement to skip in case equipment is not a Tray
+                if equipmentType is None:
 
                     def rule_flow(model, t, p, i):
                         if (phase is model._liquid_set and p in model._liquid_set) or (
