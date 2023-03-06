@@ -190,7 +190,7 @@ def homotopy(
             "Invalid value for min_step ({}). Must lie "
             "between 0.01 and 0.1.".format(min_step)
         )
-    if not min_step <= max_step:
+    if min_step > max_step:
         raise ConfigurationError(
             "Invalid argumnets: step_min must be less " "or equal to step_max."
         )
