@@ -55,9 +55,9 @@ def how_to_report_an_error(embed=False):
         "message, in the report.",
     ]
     if not embed:
-        bar = "-" * 50
-        msg.insert(0, bar)
-        msg.append(bar)
+        bar_ = "-" * 50
+        msg.insert(0, bar_)
+        msg.append(bar_)
     return "\n".join(msg)
 
 
