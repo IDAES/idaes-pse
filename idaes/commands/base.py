@@ -108,6 +108,8 @@ def copyright():  # pylint: disable=W0622
 
 @command_base.command(help="Show how long it takes to import command modules")
 def import_time(name="import-time"):
+    # Avoid circular import
+    # pylint: disable=import-outside-toplevel
     from idaes.commands import _command_import_total_time
 
     click.echo(f"Time: {_command_import_total_time}")

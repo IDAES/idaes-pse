@@ -25,6 +25,7 @@ import socket
 import threading
 from typing import Dict, Union
 from urllib.parse import urlparse
+import time
 
 # package
 from idaes import logger
@@ -409,8 +410,6 @@ def utf8_decode(b: bytes):
 
 
 def find_free_port():
-    import time
-
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(("127.0.0.1", 0))
     port = s.getsockname()[1]

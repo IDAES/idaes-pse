@@ -232,6 +232,7 @@ class FlowsheetSerializer:
             self._ordered_stream_names.append(component.getname())
 
     def _identify_unit_models(self) -> Dict:
+        # pylint: disable=import-outside-toplevel
         from idaes.core import UnitModelBlockData  # avoid circular import
         from idaes.core.base.property_base import PhysicalParameterBlock, StateBlock
 
@@ -270,6 +271,7 @@ class FlowsheetSerializer:
 
     def _construct_stream_labels(self):
         # Construct the stream labels
+        # pylint: disable-next=import-outside-toplevel
         from idaes.core.util.tables import (
             stream_states_dict,
         )  # deferred to avoid circ. import
@@ -440,6 +442,7 @@ class FlowsheetSerializer:
         This is intended for use on ports of top level unit models.
         It is unclear if it works with nested unit models (probably not).
         """
+        # pylint: disable-next=import-outside-toplevel
         from idaes.core.util.tables import stream_states_dict
 
         for port in sorted(untouched_ports, key=lambda p: str(p)):
@@ -515,6 +518,7 @@ class FlowsheetSerializer:
         self._construct_jointjs_json()
 
     def _construct_model_json(self):
+        # pylint: disable-next=import-outside-toplevel
         from idaes.core.util.tables import (
             create_stream_table_ui,
         )  # deferred to avoid circular import

@@ -35,6 +35,8 @@ def _handle_optional_compat_activation(
             found_in_env,
         )
         try:
+            # Only need to import this if required
+            # pylint: disable=import-outside-toplevel
             from _idaes_v1_compat import activate
         except ImportError:
             _log.error("Required package _idaes_v1_compat not found")

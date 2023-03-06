@@ -564,6 +564,7 @@ def install_src(version, target_dir):
     When done, name the directory back to 'src', and remove '__init__.py' files.
     Then clean up whatever cruft is left behind..
     """
+    # pylint: disable-next=import-outside-toplevel
     from setuptools import setup, find_packages  # import here due to slowness
 
     global g_egg  # pylint: disable=global-statement
@@ -593,6 +594,7 @@ def install_src(version, target_dir):
     # if there is a 'build' directory, move it aside
     build_dir = root_dir / "build"
     if build_dir.exists():
+        # pylint: disable-next=import-outside-toplevel
         from uuid import uuid1
 
         random_letters = str(uuid1())

@@ -42,6 +42,8 @@ See also, on the DMF Resource class:
 # stdlib
 from typing import List, Tuple, Dict
 import re
+from io import BufferedIOBase, RawIOBase
+import os
 
 # ext
 import pandas as pd
@@ -198,9 +200,6 @@ class Table:
         # set engine explicitly to openpyxl for *.xlsx files
         v = [int(_) for _ in pd.__version__.split(".")]
         if v[0] <= 1 and v[1] <= 1:  # version < 1.2.0
-            from io import BufferedIOBase, RawIOBase
-            import os
-
             # if it's a file and has xlsx extension, set engine
             if not isinstance(filepath, (BufferedIOBase, RawIOBase)):
                 ext = os.path.splitext(str(filepath))[-1]

@@ -1634,6 +1634,7 @@ change.
                 f"Component {self.config.pure_component} not supported."
             )
         # This is imported here to avoid a circular import
+        # pylint: disable-next=import-outside-toplevel
         from idaes.models.properties.general_helmholtz.helmholtz_state import (
             HelmholtzStateBlock,
         )
