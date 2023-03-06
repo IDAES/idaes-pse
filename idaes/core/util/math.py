@@ -35,7 +35,7 @@ def smooth_abs(a, eps=1e-4):
         An expression for the smoothed absolute value operation.
     """
     # Check type of eps
-    if not (isinstance(eps, (float, int, Param))):
+    if not isinstance(eps, (float, int, Param)):
         raise TypeError(
             "smooth_abs eps argument must be a float, int or " "Pyomo Param"
         )
@@ -68,7 +68,7 @@ def smooth_minmax(a, b, eps=1e-4, sense="max"):
         An expression for the smoothed minimum or maximum operation.
     """
     # Check type of eps
-    if not (isinstance(eps, (float, int, Param))):
+    if not isinstance(eps, (float, int, Param)):
         raise TypeError(
             "Smooth {} eps argument must be a float, int or "
             "Pyomo Param".format(sense)
