@@ -10,7 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
+# pylint: disable=consider-using-enumerate
 
 # Imports from the python standard library
 from __future__ import division, print_function

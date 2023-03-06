@@ -169,17 +169,15 @@ def Txy_data(
 
     count = 1
     # Create and run loop to calculate temperatures at every composition
-    for i in range(len(x_d)):
-        model.props[1].mole_frac_comp[component_1].fix(x_d[i])
-        model.props[1].mole_frac_comp[component_2].fix(1 - x_d[i] - xs)
+    for i, v in enumerate(x_d):
+        model.props[1].mole_frac_comp[component_1].fix(v)
+        model.props[1].mole_frac_comp[component_2].fix(1 - v - xs)
         # solve the model
         status = solver.solve(model, tee=False)
         # If solution is optimal store the concentration, and calculated temperatures in the created arrays
         if check_optimal_termination(status):
 
-            print(
-                "Case: ", count, " Optimal. ", component_1, "x = {:.2f}".format(x_d[i])
-            )
+            print("Case: ", count, " Optimal. ", component_1, "x = {:.2f}".format(v))
 
             if hasattr(model.props[1], "_mole_frac_tdew") and hasattr(
                 model.props[1], "_mole_frac_tbub"
@@ -195,7 +193,7 @@ def Txy_data(
                 print("One of the components only exists in liquid phase.")
                 Tbubb.append(value(model.props[1].temperature_bubble["Vap", "Liq"]))
 
-            X.append(x_d[i])
+            X.append(v)
 
         # If the solver did not solve to an optimal solution, do not store the data point
         else:

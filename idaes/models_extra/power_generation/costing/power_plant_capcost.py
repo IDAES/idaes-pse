@@ -873,17 +873,17 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         )
 
             if isinstance(scaled_param, list):
-                for j in range(len(scaled_param)):
-                    if scaled_param[j].get_units() is None:
+                for sp in scaled_param:
+                    if sp.get_units() is None:
                         raise ValueError(
                             "Account %s uses units of %s. "
                             "Units of %s were passed. "
                             "Scaled_param must have units."
-                            % (cost_accounts[0], ref_units, scaled_param[j].get_units())
+                            % (cost_accounts[0], ref_units, sp.get_units())
                         )
                     else:
                         try:
-                            pyunits.convert(scaled_param[j], ref_units)
+                            pyunits.convert(sp, ref_units)
                         except InconsistentUnitsError:
                             raise Exception(
                                 "Account %s uses units of %s. "
@@ -892,7 +892,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                                 % (
                                     cost_accounts[0],
                                     ref_units,
-                                    scaled_param[j].get_units(),
+                                    sp.get_units(),
                                 )
                             )
             else:

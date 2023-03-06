@@ -369,7 +369,7 @@ class KrigingModel:
         grad_vec = np.zeros(
             len(var_vector),
         )
-        for i in range(0, len(var_vector)):
+        for i in range(0, len(var_vector)):  # pylint: disable=consider-using-enumerate
             var_vector_plus = np.copy(var_vector)
             var_vector_plus[i] = var_vector[i] + eps
             var_vector_minus = np.copy(var_vector)

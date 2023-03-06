@@ -100,8 +100,7 @@ def homotopy(
     # Validate variables and targets
     if len(variables) != len(targets):
         raise ConfigurationError("Number of variables and targets do not match.")
-    for i in range(len(variables)):
-        v = variables[i]
+    for i, v in enumerate(variables):
         t = targets[i]
 
         if not isinstance(v, _VarData):
@@ -235,8 +234,8 @@ def homotopy(
     # Set up homotopy variables
     # Get initial values and deltas for all variables
     v_init = []
-    for i in range(len(variables)):
-        v_init.append(variables[i].value)
+    for i, v in enumerate(variables):
+        v_init.append(v.value)
 
     n_0 = 0.0  # Homotopy progress variable
     s = step_init  # Set step size to step_init
@@ -258,8 +257,8 @@ def homotopy(
         _log.info(f"Homotopy Iteration {iter_count}. Next Step: {n_1} (Current: {n_0})")
 
         # Update values for all variables using n_1
-        for i in range(len(variables)):
-            variables[i].fix(targets[i] * n_1 + v_init[i] * (1 - n_1))
+        for i, v in enumerate(variables):
+            v.fix(targets[i] * n_1 + v_init[i] * (1 - n_1))
 
         # Solve model at new state
         results, solved, sol_iter, sol_time, sol_reg = ipopt_solve_with_stats(

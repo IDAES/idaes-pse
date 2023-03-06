@@ -10,8 +10,6 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
-
 from collections import deque
 
 
@@ -287,8 +285,7 @@ class UnitModelsPositioning:
                         - center_node_i * self._Y
                         - (center_node_i - 1) * self._dy
                     )
-                    for i in range(len(rank_nodes)):
-                        node = rank_nodes[i]
+                    for i, node in enumerate(rank_nodes):
                         self._allocated_positions[node] = (x, y)
                         # Pass the level trunk/axis or (y = height)
                         if i == center_node_i - 1:

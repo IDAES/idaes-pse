@@ -1043,8 +1043,8 @@ class AlamoTrainer(SurrogateTrainer):
         trace_read = {}
         # Get headers from first line in trace file
         headers = lines[0].split(", ")
-        for i in range(len(headers)):
-            header = headers[i].strip("#\n")
+        for i, v in enumerate(headers):
+            header = v.strip("#\n")
             if header in common_trace:
                 trace_read[header] = None
             else:
@@ -1058,11 +1058,11 @@ class AlamoTrainer(SurrogateTrainer):
         else:
             omult = 1
 
-        for j in range(len(output_labels)):
+        for j, ol in enumerate(output_labels):
             trace = lines[(-len(output_labels) + j) * omult].split(", ")
 
-            for i in range(len(headers)):
-                header = headers[i].strip("#\n")
+            for i, v in enumerate(headers):
+                header = v.strip("#\n")
                 trace_val = trace[i].strip("\n")
 
                 # Replace Fortran powers (^) with Python powers (**)
@@ -1076,7 +1076,7 @@ class AlamoTrainer(SurrogateTrainer):
                         # No value yet, so set value
                         trace_read[header] = trace_val
                     else:
-                        # Check that current value matches the existng value
+                        # Check that current value matches the existing value
                         if trace_read[header] != trace_val:
                             raise RuntimeError(
                                 f"Mismatch in values when reading ALAMO trace "
@@ -1084,7 +1084,7 @@ class AlamoTrainer(SurrogateTrainer):
                                 f"{trace_read[header]}, {header}"
                             )
                 else:
-                    trace_read[header][output_labels[j]] = trace_val
+                    trace_read[header][ol] = trace_val
 
                 # Do some final sanity checks
                 if header == "OUTPUT":
@@ -1107,12 +1107,12 @@ class AlamoTrainer(SurrogateTrainer):
                 elif header == "Model":
                     # Var label on LHS should match output label
                     vlabel = trace_val.split("==")[0].strip()
-                    if vlabel != output_labels[j]:
+                    if vlabel != ol:
                         raise RuntimeError(
                             f"Mismatch when reading ALAMO trace file. "
                             f"Label of output variable in expression "
                             f"({vlabel}) does not match expected label "
-                            f"({output_labels[j]})."
+                            f"({ol})."
                         )
 
         return trace_read
@@ -1220,8 +1220,7 @@ class AlamoSurrogate(SurrogateBase):
         outputs = np.zeros(shape=(inputs.shape[0], len(self._output_labels)))
 
         for i in range(inputdata.shape[0]):
-            for o in range(len(self._output_labels)):
-                o_name = self._output_labels[o]
+            for o, o_name in enumerate(self._output_labels):
                 outputs[i, o] = value(self._fcn[o_name](*inputdata[i, :]))
 
         return pd.DataFrame(
