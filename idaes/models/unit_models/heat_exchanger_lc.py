@@ -37,7 +37,7 @@ class HeatExchangerLumpedCapacitanceData(HeatExchangerData):
         ConfigValue(
             default=useDefault,
             domain=DefaultBool,
-            doc="""Indicates whether heat holdup in the wall material should 
+            doc="""Indicates whether heat holdup in the wall material should
 be included in the overall energy balance,
 **default** - useDefault.
 **Valid values:** {

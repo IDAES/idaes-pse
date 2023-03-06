@@ -340,8 +340,8 @@ class MEAColumnData(PackedColumnData):
 
         self.Cv_ref = Var(
             initialize=0.357,
-            doc="""Vapor packing specific constant in Billet and Schultes 
-                      volumetric mass transfer coefficient correlation""",
+            doc="Vapor packing specific constant in Billet and Schultes "
+            "volumetric mass transfer coefficient correlation",
         )
 
         def rule_mass_transfer_coeff_vap(blk, t, x, j):
@@ -404,7 +404,7 @@ class MEAColumnData(PackedColumnData):
 
         self.Cl_ref = Var(
             initialize=0.5,
-            doc="""Liquid packing specific constant in Billet and Schultes 
+            doc="""Liquid packing specific constant in Billet and Schultes
                       volumetric mass transfer coefficient correlation""",
         )
 

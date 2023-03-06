@@ -25,7 +25,7 @@ class SurrogateBlockData(_BlockData):
     def __init__(self, component):
         """
         This custom block is used for importing surrogates into IDAES
-        
+
         Example usage without specifying inputs and outputs:
         > # Load the surrogate object
         > alamo_surrogate = AlamoSurrogate.load_from_file('alamo_reformer.json')

@@ -50,7 +50,7 @@ The purpose of this file is to perform polynomial regression in Pyomo.
 This will be done in two stages. First, a sampling plan will
 be used to select samples for generating a surrogate model.
 In the second stage, the surrogate model is constructed by fitting to
-different order polynomials. Long term, an iterative adaptive sampling 
+different order polynomials. Long term, an iterative adaptive sampling
 approach will be incorporated for model improvement.
 Cross-validation is used to select the best model.
 

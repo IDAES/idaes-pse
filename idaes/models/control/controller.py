@@ -170,7 +170,7 @@ class PIDControllerData(UnitModelBlockData):
             doc=(
                 """Type of antiwindup technique to use. Options are **ControllerAntiwindupType.NONE**,
                 **ControllerAntiwindupType.CONDITIONAL_INTEGRATION**, and **ControllerAntiwindupType.BACK_CALCULATION**.
-                See the controller documentation for details on the mathematical formulation. 
+                See the controller documentation for details on the mathematical formulation.
                 """
             ),
         ),
@@ -181,7 +181,7 @@ class PIDControllerData(UnitModelBlockData):
             default=False,
             domain=Bool,
             description="Whether basing derivative action on process var or error",
-            doc="""Naive implementations of derivative action can cause large spikes in 
+            doc="""Naive implementations of derivative action can cause large spikes in
                 control when the setpoint is changed. One solution is to use the (negative)
                 derivative of the process variable to calculate derivative action instead
                 of using the derivative of setpoint error. If **True**, use the derivative of
