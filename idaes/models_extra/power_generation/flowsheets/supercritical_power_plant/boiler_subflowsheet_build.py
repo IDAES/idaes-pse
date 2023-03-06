@@ -48,6 +48,10 @@ Created: 1/10/2020 by Boiler subsystem team (M Zamarripa)
 """
 __author__ = "Miguel Zamarripa"
 
+from collections import OrderedDict
+import os
+import logging
+
 # Import Pyomo libraries
 from pyomo.environ import (
     ConcreteModel,
@@ -56,6 +60,8 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.network import Arc
+from pyomo.common.fileutils import this_file_dir
+
 from idaes.core.util.tags import svg_tag
 
 # Import IDAES core
@@ -79,11 +85,8 @@ from idaes.models.unit_models.separator import (
     SplittingType,
     EnergySplittingType,
 )
-from pyomo.common.fileutils import this_file_dir
-from collections import OrderedDict
-import os
+
 from idaes.core.util.model_statistics import degrees_of_freedom
-import logging
 from idaes.core.solvers import get_solver
 
 

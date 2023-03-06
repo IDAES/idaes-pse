@@ -70,17 +70,6 @@ The surrogate models are typically a function of:
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 
-# Import IDAES cores
-from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
-
-from idaes.core.util.model_statistics import degrees_of_freedom
-
-from idaes.core.util.config import is_physical_parameter_block, DefaultBool
-from idaes.core.util.exceptions import ConfigurationError
-import idaes.logger as idaeslog
-
-
-# Additional import for the unit operation
 # TODO: log is reauired for eval - need to work out how to make this explicit
 # pylint: disable=W0611
 from pyomo.environ import (
@@ -91,6 +80,15 @@ from pyomo.environ import (
     Constraint,
     log,
 )
+
+# Import IDAES cores
+from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
+
+from idaes.core.util.model_statistics import degrees_of_freedom
+
+from idaes.core.util.config import is_physical_parameter_block, DefaultBool
+from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.constants import Constants as const
 from idaes.core.solvers import get_solver

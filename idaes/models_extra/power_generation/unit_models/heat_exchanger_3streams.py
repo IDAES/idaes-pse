@@ -16,6 +16,7 @@ side 1 is hot stream, side 2 and 3 are cold streams
 """
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.environ import Var, Reference
 
 # Import IDAES cores
 from idaes.core import (
@@ -27,16 +28,10 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
-
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
-
 import idaes.logger as idaeslog
-
-
-# Additional import for the unit operation
-from pyomo.environ import Var, Reference
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 __version__ = "1.0.0"

@@ -20,7 +20,6 @@ import json
 import gzip
 import numpy as np
 
-import idaes
 import pyomo.environ as pyo
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.core.expr.visitor import identify_variables
@@ -34,6 +33,8 @@ from pyomo.util.subsystems import (
 from pyomo.solvers.plugins.solvers.ASL import ASL
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
+
+import idaes
 import idaes.logger as idaeslog
 import idaes.config as icfg
 

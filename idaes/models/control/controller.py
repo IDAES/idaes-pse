@@ -17,11 +17,12 @@ PID controller model module
 __author__ = ["John Eslick", "Jinliang Ma"]
 
 import enum
+
 import pyomo.environ as pyo
 import pyomo.dae as pyodae
+from pyomo.common.config import ConfigValue, In, Bool
 
 from idaes.core import UnitModelBlockData, declare_process_block_class
-from pyomo.common.config import ConfigValue, In, Bool
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_bound
 from idaes.core.util import scaling as iscale

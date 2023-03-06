@@ -18,10 +18,10 @@ import platform
 import pkg_resources
 import json
 
-import idaes
 import pyomo
 import pyomo.environ as pyo
 
+import idaes
 import idaes.ver as ver
 
 

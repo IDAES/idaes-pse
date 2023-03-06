@@ -66,10 +66,7 @@ from idaes.models_extra.power_generation.costing.generic_ccs_capcost_custom_dict
 )
 
 from idaes.core.util.tables import stream_table_dataframe_to_string
-
 import idaes.logger as idaeslog
-
-import pyomo.environ as pyo
 from idaes.core import declare_process_block_class
 
 _log = idaeslog.getLogger(__name__)
@@ -85,8 +82,8 @@ def custom_power_plant_currency_units():
     """
     register_idaes_currency_units()
     if (
-        "USD_2008_Nov" in pyo.units._pint_registry
-        and "USD_2019_Sep" in pyo.units._pint_registry
+        "USD_2008_Nov" in pyunits._pint_registry
+        and "USD_2019_Sep" in pyunits._pint_registry
     ):
         # Assume that custom power plant units have already been registered
         # Log a message and end
@@ -96,7 +93,7 @@ def custom_power_plant_currency_units():
             "call of custom_power_plant_currency_units."
         )
     else:
-        pyo.units.load_definitions_from_strings(
+        pyunits.load_definitions_from_strings(
             [
                 "USD_2008_Nov = 500/566.2 * USD_CE500",
                 "USD_2019_Sep = 500/599.3 * USD_CE500",
@@ -120,9 +117,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         for each costing method to separate the parameters for each method.
         """
         # Set the base year for all costs
-        self.base_currency = pyo.units.USD_2018
+        self.base_currency = pyunits.USD_2018
         # Set a base period for all operating costs
-        self.base_period = pyo.units.year
+        self.base_period = pyunits.year
 
     def build_process_costs(
         self,

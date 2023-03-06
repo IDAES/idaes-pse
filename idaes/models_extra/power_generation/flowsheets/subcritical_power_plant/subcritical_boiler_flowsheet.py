@@ -14,6 +14,8 @@
 Dynamic sub-flowsheet for a subcritical 300MWe boiler system
 """
 
+import matplotlib.pyplot as plt
+
 # Import Pyomo libraries
 import pyomo.environ as pyo
 from pyomo.network import Arc
@@ -54,8 +56,6 @@ from idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.gene
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util.dyn_utils import copy_values_at_time, copy_non_time_indexed_values
-
-import matplotlib.pyplot as plt
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 
