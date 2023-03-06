@@ -16,8 +16,6 @@ Tray column model for distillation.
 
 __author__ = "Jaffer Ghouse"
 
-import idaes.logger as idaeslog
-
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Arc, Port
@@ -40,7 +38,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.solvers import get_solver
 
 import idaes.core.util.scaling as iscale
-
+import idaes.logger as idaeslog
 from idaes.core.util.initialization import propagate_state
 
 _log = idaeslog.getLogger(__name__)

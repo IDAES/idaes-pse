@@ -13,6 +13,11 @@
 """
 Functions for saving and loading Pyomo objects to json
 """
+import json
+import datetime
+import time
+import gzip
+import logging
 
 from pyomo.environ import (
     Param,
@@ -26,11 +31,6 @@ from pyomo.environ import (
 )
 from pyomo.core.base.param import _ParamData
 from pyomo.core.base.component import ComponentData
-import json
-import datetime
-import time
-import gzip
-import logging
 
 _log = logging.getLogger(__name__)
 

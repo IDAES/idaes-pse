@@ -10,12 +10,11 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+import logging
 
 from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
 from pyomo.common import Executable
 from pyomo.opt.base.solvers import SolverFactory
-
-import logging
 
 logger = logging.getLogger("pyomo.solvers")
 

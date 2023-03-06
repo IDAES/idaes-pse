@@ -15,8 +15,8 @@
 __author__ = "John Eslick"
 
 import os
-import idaes
 import click
+import idaes
 from idaes.commands import cb
 
 

@@ -17,12 +17,15 @@ from __future__ import division, print_function
 from builtins import str
 import os.path
 import warnings
+import pickle
 
 # Imports from third parties
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-import pickle
+import scipy.optimize as opt
+from six import string_types
+
 from pyomo.environ import (
     ConcreteModel,
     Param,
@@ -36,8 +39,6 @@ from pyomo.environ import (
     exp,
     log,
 )
-import scipy.optimize as opt
-from six import string_types
 
 # Imports from IDAES namespace
 from idaes.core.surrogate.pysmo.sampling import FeatureScaling as fs

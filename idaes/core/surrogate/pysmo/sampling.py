@@ -12,13 +12,14 @@
 #################################################################################
 
 from __future__ import division, print_function
+import warnings
+import itertools
+
 from six import string_types
 
 # from builtins import int, str
 import numpy as np
 import pandas as pd
-import warnings
-import itertools
 
 __author__ = "Oluwamayowa Amusat"
 

@@ -16,8 +16,8 @@ Base command for 'idaes' commandline script
 
 __author__ = "John Eslick"
 
-import click
 import logging
+import click
 
 # separate command logging from normal IDAES logging
 _log = logging.getLogger("idaes.commands")

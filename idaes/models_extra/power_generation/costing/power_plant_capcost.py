@@ -35,9 +35,10 @@ Other methods:
 __author__ = "Costing Team (A. Noring, B. Paul, D. Caballero, and M. Zamarripa)"
 __version__ = "1.0.0"
 
-from pandas import DataFrame
 from sys import stdout
 import textwrap
+
+from pandas import DataFrame
 
 from pyomo.environ import (
     Param,

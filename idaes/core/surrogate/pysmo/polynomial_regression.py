@@ -17,14 +17,15 @@ from __future__ import division
 # from builtins import int, str
 import os.path
 import warnings
+import pickle
 
 # Imports from third parties
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-import pickle
 import scipy.optimize as opt
 from scipy import stats
+from six import string_types
 
 from pyomo.environ import (
     ConcreteModel,
@@ -40,8 +41,6 @@ from pyomo.environ import (
     value,
 )
 from pyomo.core.expr.visitor import replace_expressions
-
-from six import string_types
 
 # Imports from IDAES namespace
 from idaes.core.surrogate.pysmo.utils import NumpyEvaluator

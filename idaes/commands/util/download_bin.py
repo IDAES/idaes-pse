@@ -13,12 +13,14 @@
 import os
 import hashlib
 from platform import machine
-import idaes.logger as idaeslog
 import tarfile
-import idaes
-from idaes.config import extra_binaries
-from pyomo.common.download import FileDownloader
 import urllib
+
+from pyomo.common.download import FileDownloader
+
+import idaes
+import idaes.logger as idaeslog
+from idaes.config import extra_binaries
 
 _log = idaeslog.getLogger(__name__)
 _release_base_url = idaes.config.release_base_url

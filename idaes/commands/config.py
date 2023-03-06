@@ -14,10 +14,11 @@
 
 __author__ = "John Eslick"
 
-import idaes
-import click
 import json
+import click
 import pyomo.common.config
+
+import idaes
 from idaes.commands import cb
 import idaes.config as cfg
 

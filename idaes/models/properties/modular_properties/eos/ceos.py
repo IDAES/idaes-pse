@@ -31,8 +31,9 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     get_component_object as cobj,
 )
+
 from idaes.core.util.math import safe_log
-from .eos_base import EoSBase
+
 import idaes.logger as idaeslog
 from idaes.core.util.exceptions import (
     BurntToast,
@@ -48,8 +49,7 @@ from idaes.models.properties.modular_properties.eos.ceos_common import (
     CubicThermoExpressions,
     CubicType,
 )
-
-# pylint: disable=invalid-name
+from .eos_base import EoSBase
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

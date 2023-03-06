@@ -10,13 +10,13 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
 """
 This module contains utility functions to generate phase equilibrium data and
 plots.
 """
-
-__author__ = "Alejandro Garciadiego"
+# Import plotting functions
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Import objects from pyomo package
 from pyomo.environ import (
@@ -28,9 +28,8 @@ from pyomo.environ import (
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
-# Import plotting functions
-import matplotlib.pyplot as plt
-import numpy as np
+
+__author__ = "Alejandro Garciadiego"
 
 
 def Txy_diagram(

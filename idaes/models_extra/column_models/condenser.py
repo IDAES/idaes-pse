@@ -20,8 +20,8 @@ different state variables and the associated splits.
 
 __author__ = "Jaffer Ghouse"
 
-from pandas import DataFrame
 from enum import Enum
+from pandas import DataFrame
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In

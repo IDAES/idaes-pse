@@ -39,8 +39,8 @@ from idaes.models.properties.modular_properties.phase_equil.henry import (
 )
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
-from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
 import idaes.core.util.scaling as iscale
+from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
 
 
 # Set up logger

@@ -16,10 +16,10 @@ Methods for calculating equilibrium constants
 from pyomo.environ import exp, log, Var, units as pyunits, value
 
 from idaes.models.properties.modular_properties.base.utility import ConcentrationForm
-from .dh_rxn import constant_dh_rxn
 from idaes.core.util.misc import set_param_from_config
 from idaes.core.util.constants import Constants as c
 from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from .dh_rxn import constant_dh_rxn
 
 
 # -----------------------------------------------------------------------------

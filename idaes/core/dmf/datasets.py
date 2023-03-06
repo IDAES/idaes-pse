@@ -19,9 +19,9 @@ See :mod:`idaes.core.datasets` for user-facing API.
 from collections import namedtuple
 import json
 import logging
+from typing import Tuple, Dict, Union, List
 from pathlib import Path
 from pkg_resources import get_distribution
-from typing import Tuple, Dict, Union, List
 
 # package
 from idaes.core.dmf import DMF, resource

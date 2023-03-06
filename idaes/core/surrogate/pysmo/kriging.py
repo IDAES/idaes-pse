@@ -15,15 +15,16 @@ __author__ = "Oluwamayowa Amusat"
 
 # Imports from the python standard library
 import os.path
+import pickle
 
 # Imports from third parties
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-import pickle
-from pyomo.core import Param, exp
 from scipy.optimize import basinhopping
 import scipy.optimize as opt
+
+from pyomo.core import Param, exp
 
 # Imports from IDAES namespace
 from idaes.core.surrogate.pysmo.sampling import FeatureScaling as fs

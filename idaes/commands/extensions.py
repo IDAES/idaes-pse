@@ -15,8 +15,10 @@
 __author__ = "John Eslick"
 
 import os
-import click
 import logging
+
+import click
+
 import idaes
 import idaes.commands.util.download_bin
 from idaes.commands import cb

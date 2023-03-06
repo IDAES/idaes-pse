@@ -10,9 +10,11 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+import collections
+
 from pyomo.core.base.block import declare_custom_block, _BlockData
 from pyomo.environ import Var, Set
-import collections
+
 import idaes.logger as idaeslog
 
 __author__ = "Carl Laird, Andrew Lee"

@@ -17,9 +17,8 @@ import time
 # pytest: disable=wrong-import-position
 _command_import_start_time = time.time()
 
-from idaes.commands.base import command_base as cb
-
 import pkgutil
+from idaes.commands.base import command_base as cb
 
 # import all the commands
 for loader, module_name, is_pkg in pkgutil.walk_packages(__path__):

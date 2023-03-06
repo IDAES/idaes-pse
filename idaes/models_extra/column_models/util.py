@@ -16,8 +16,6 @@ Utility functions for column models
 
 __author__ = "Jaffer Ghouse, Alejandro Garcia-Diego"
 
-import idaes.logger as idaeslog
-
 # Import Pyomo libraries
 from pyomo.environ import (
     Reference,
@@ -29,6 +27,7 @@ from idaes.core.util.exceptions import (
     PropertyPackageError,
     PropertyNotSupportedError,
 )
+import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 

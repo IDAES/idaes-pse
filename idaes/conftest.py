@@ -10,8 +10,8 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-import pytest
 import sys
+import pytest
 
 ####
 # Uncomment this to collect list of all test files

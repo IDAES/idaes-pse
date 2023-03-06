@@ -10,13 +10,13 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-import idaes
 import logging
-
 from contextlib import contextmanager
+
 from pyomo.common.tee import capture_output
 from pyomo.common.log import LogStream
 
+import idaes
 
 # Throw the standard levels in here, just let you access it all in one place
 CRITICAL = logging.CRITICAL  # 50

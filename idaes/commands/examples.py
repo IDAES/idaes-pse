@@ -22,9 +22,6 @@ directory into a package called "idaes_examples".
 Options let the user choose a different version, directory, and
 whether to actually download or install.
 """
-# Pyomo utility for delayed import
-from pyomo.common.dependencies import attempt_import
-
 # stdlib
 from collections import namedtuple
 from datetime import datetime
@@ -41,9 +38,11 @@ from uuid import uuid4
 from zipfile import ZipFile
 import json
 
-
 # third-party
 import click
+
+# Pyomo utility for delayed import
+from pyomo.common.dependencies import attempt_import
 
 # package
 from idaes.commands import cb

@@ -10,8 +10,11 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+from enum import Enum
+
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigValue, In
+
 from idaes.core import declare_process_block_class
 from idaes.models_extra.power_generation.unit_models.balance import BalanceBlockData
 from idaes.core.util import from_json, to_json, StoreSpec
@@ -20,7 +23,6 @@ import idaes.models.properties.helmholtz.helmholtz as hltz
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
-from enum import Enum
 
 
 _log = idaeslog.getLogger(__name__)

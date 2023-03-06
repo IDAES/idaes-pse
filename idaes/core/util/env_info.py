@@ -15,8 +15,8 @@ __author__ = "John Eslick"
 
 import sys
 import platform
-import pkg_resources
 import json
+import pkg_resources
 
 import pyomo
 import pyomo.environ as pyo
