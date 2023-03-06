@@ -647,7 +647,7 @@ def load_generic_ccs_costing_dictionary(path=None):
 
         generic_ccs_costing_data = generic_ccs_costing_params
 
-        for tech in generic_ccs_costing_data.keys():  # do one technology at a time
+        for tech in generic_ccs_costing_data:  # do one technology at a time
             for ccs in ["A", "B"]:
                 if (
                     ccs in generic_ccs_costing_data[tech]

@@ -916,8 +916,8 @@ class FlowsheetDiff:
         old_model, new_model = self._old["model"], self._new["model"]
         n = 0
         for cls in "unit_models", "arcs":
-            for k in diff.keys():
-                diff[k][cls] = {}
+            for k in diff.values():
+                k[cls] = {}
             old_data, new_data = old_model[cls], new_model[cls]
             # Add/change
             for key in new_data:

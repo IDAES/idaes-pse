@@ -126,9 +126,7 @@ class SurrogateBlockData(_BlockData):
         if len(kwargs) > 0:
             raise ValueError(
                 "Error in keyword arguments passed to build_model."
-                " The following arguments were not used: {}".format(
-                    [k for k in kwargs.keys()]
-                )
+                " The following arguments were not used: {}".format([k for k in kwargs])
             )
 
     def _setup_inputs_outputs(
