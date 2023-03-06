@@ -618,7 +618,6 @@ class Cubic(EoSBase):
 
     @staticmethod
     def dens_mol_phase(b, p):
-        pobj = b.params.get_phase(p)
         return b.pressure / (
             Cubic.gas_constant(b) * b.temperature * b.compress_fact_phase[p]
         )
@@ -654,8 +653,6 @@ class Cubic(EoSBase):
 
     @staticmethod
     def energy_internal_mol_phase_comp(blk, p, j):
-        pobj = blk.params.get_phase(p)
-
         return (
             blk.enth_mol_phase_comp[p, j] - blk.pressure * blk.vol_mol_phase_comp[p, j]
         )
@@ -691,8 +688,6 @@ class Cubic(EoSBase):
 
     @staticmethod
     def enth_mol_phase_comp(blk, p, j):
-        pobj = blk.params.get_phase(p)
-
         dlogphi_j_dT = _d_log_fug_coeff_dT_phase_comp(blk, p, j)
 
         enth_ideal_gas = get_method(blk, "enth_mol_ig_comp", j)(
@@ -743,8 +738,6 @@ class Cubic(EoSBase):
 
     @staticmethod
     def entr_mol_phase_comp(blk, p, j):
-        pobj = blk.params.get_phase(p)
-
         logphi_j = _log_fug_coeff_phase_comp(blk, p, j)
         dlogphi_j_dT = _d_log_fug_coeff_dT_phase_comp(blk, p, j)
 
@@ -907,7 +900,6 @@ def _dZ_dT(blk, p):
 
     K2 = (EoS_u - 1) * B - 1
     K3 = A - EoS_u * B - (EoS_u - EoS_w) * B**2
-    K4 = -(A * B + EoS_w * B**2 + EoS_w * B**3)
 
     dK2dT = (EoS_u - 1) * dBdT
     dK3dT = dAdT - EoS_u * dBdT - 2 * (EoS_u - EoS_w) * B * dBdT
@@ -965,7 +957,6 @@ def _N_dZ_dNj(blk, p, j):
 
     K2 = (EoS_u - 1) * B - 1
     K3 = A - EoS_u * B - (EoS_u - EoS_w) * B**2
-    K4 = -(A * B + EoS_w * B**2 + EoS_w * B**3)
 
     N_dK2_dNj = (EoS_u - 1) * N_dB_dNj
     N_dK3_dNj = N_dA_dNj - EoS_u * N_dB_dNj - 2 * (EoS_u - EoS_w) * B * N_dB_dNj

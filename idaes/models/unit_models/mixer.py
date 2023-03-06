@@ -1024,7 +1024,7 @@ objects linked to all inlet states and the mixed state,
             for t, c in self.enthalpy_mixing_equations.items():
 
                 def scale_gen():
-                    for v in self.mixed_state[t].phase_list:
+                    for p in self.mixed_state[t].phase_list:
                         yield self.mixed_state[t].get_enthalpy_flow_terms(p)
 
                 s = iscale.min_scaling_factor(scale_gen(), default=1)

@@ -16,7 +16,6 @@ Command Line Interface for idaes.core.dmf.
 Uses "Click" to handle command-line parsing and dispatch.
 """
 # stdlib
-import time
 from collections import namedtuple
 from datetime import datetime
 from enum import Enum
@@ -107,7 +106,6 @@ class AliasedGroup(click.Group):
         self._aliases = aliases
 
     def get_command(self, ctx, cmd_name):
-        t0 = time.time()
         command = click.Group.get_command(self, ctx, cmd_name)
         if command is None:
             commands = self.list_commands(ctx)

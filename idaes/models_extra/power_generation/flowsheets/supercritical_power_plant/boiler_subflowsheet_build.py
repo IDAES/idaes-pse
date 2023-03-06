@@ -587,7 +587,7 @@ def pfd_result(outfile, m, df):
 
     original_svg_file = os.path.join(this_file_dir(), "Boiler_scpc_PFD.svg")
     with open(original_svg_file, "r") as f:
-        s = svg_tag(tags, f, outfile=outfile)
+        svg_tag(tags, f, outfile=outfile)
 
 
 def _stream_dict(m):

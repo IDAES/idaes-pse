@@ -365,7 +365,7 @@ class Tracker:
 
             try:
                 dispatch = market_dispatch[t]
-            except IndexError as ex:
+            except IndexError:
                 self.model.tracking_dispatch_constraints[t].deactivate()
             else:
                 self.model.power_dispatch[t] = dispatch

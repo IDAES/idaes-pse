@@ -39,7 +39,6 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
     FlowDirection,
-    MaterialFlowBasis,
     useDefault,
     DistributedVars,
 )
@@ -343,22 +342,9 @@ and used when constructing these
                 f"same material flow basis."
             )
 
-        vunits = (
-            self.config.vapor_phase.property_package.get_metadata().get_derived_units
-        )
         lunits = (
             self.config.liquid_phase.property_package.get_metadata().get_derived_units
         )
-        flow_basis = self.liquid_phase.properties[t_init, 0].get_material_flow_basis()
-        if flow_basis == MaterialFlowBasis.molar:
-            fb = "flow_mole"
-        elif flow_basis == MaterialFlowBasis.molar:
-            fb = "flow_mass"
-        else:
-            raise ConfigurationError(
-                f"{self.name} SolventCondenser only supports mass or molar "
-                f"basis for MaterialFlowBasis."
-            )
 
         # Hydrodynamics and cacking parameters
         self.eps_ref = Param(

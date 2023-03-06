@@ -116,10 +116,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
 
     def build(self):
         super().build()
-        has_holdup = self.config.has_holdup
-        dynamic = self.config.dynamic
         tset = self.flowsheet().config.time
-        t0 = tset.first()
 
         self.number_cells = pyo.Var(
             initialize=1e5,
@@ -262,11 +259,8 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         current_density_guess=None,
         temperature_guess=None,
     ):
-        t0 = self.flowsheet().time.first()
-
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
-        tset = self.flowsheet().config.time
 
         solver_obj = get_solver(solver, optarg)
 

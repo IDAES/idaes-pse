@@ -301,7 +301,7 @@ def build_txy_diagrams(
     """
 
     # Declare a plot and it's size
-    ig, ax = plt.subplots(figsize=(12, 8))
+    ig, ax = plt.subplots(figsize=(12, 8))  # pylint: disable=unused-variable
 
     if len(txy_data.TBubb) and len(txy_data.TDew) > 0:
         if include_pressure == True:

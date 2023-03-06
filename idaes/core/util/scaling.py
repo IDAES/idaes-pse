@@ -238,7 +238,7 @@ def set_scaling_factor(c, v, data_objects=True, overwrite=True):
 
     if not overwrite:
         try:
-            tmp = suf[c]
+            tmp = suf[c]  # pylint: disable=unused-variable
             # Able to access suffix value for c, so return without setting scaling factor
             return
         except KeyError:
@@ -863,7 +863,7 @@ def jacobian_cond(m=None, scaled=True, order=None, pinv=False, jac=None):
         (float) Condition number
     """
     if jac is None:
-        jac, nlp = get_jacobian(m, scaled)
+        jac, nlp = get_jacobian(m, scaled)  # pylint: disable=unused-variable
     jac = jac.tocsc()
     if jac.shape[0] != jac.shape[1] and not pinv:
         _log.warning("Nonsquare Jacobian using pseudo inverse")
@@ -1080,7 +1080,7 @@ class FlattenedScalingAssignment(object):
         source_vars = [v for v in in_constraint if v is not vardata]
         nominal_source = [1 / scaling_factor[var] for var in source_vars]
 
-        with CacheVars(in_constraint) as cache:
+        with CacheVars(in_constraint):
             for v, nom_val in zip(source_vars, nominal_source):
                 v.set_value(nom_val)
             # This assumes that target var is initialized to a somewhat

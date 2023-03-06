@@ -198,7 +198,6 @@ class FlowsheetServer(http.server.HTTPServer):
         if not diff:
             # If no difference do nothing
             _log.debug("Stored flowsheet is the same as the flowsheet in memory")
-            merged = saved
         else:
             # Otherwise, save this merged value before returning it
             num, pl = len(diff), "s" if len(diff) > 1 else ""
@@ -229,7 +228,7 @@ class FlowsheetServer(http.server.HTTPServer):
         _log.debug(f"Serve forever on localhost:{self._port}")
         try:
             self.serve_forever()
-        except Exception as err:
+        except Exception as err:  # pylint: disable=W0703
             _log.info(f"Shutting down server due to error: {err}")
             self.shutdown()
 
@@ -351,7 +350,7 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         except errors.ProcessingError as err:
             self._write_text(400, message=str(err))
             return
-        except Exception as err:
+        except Exception as err:  # pylint: disable=W0703
             self._write_text(500, message=str(err))
             return
         self._write_text(200, message="success")

@@ -38,6 +38,10 @@ import idaes.logger as idaeslog
 import idaes.config as icfg
 
 
+# Importing a few things here so that they are cached
+# pylint: disable=unused-import
+
+
 def petsc_binary_io():
     if petsc_binary_io.PetscBinaryIOTrajectory is not None:
         return petsc_binary_io.PetscBinaryIOTrajectory
@@ -173,11 +177,11 @@ class PetscTS(Petsc):
         if self.options.get("--ts_save_trajectory", 0):
             try:
                 shutil.copyfile(f"{stub}.col", f"{self._ts_vars_stub}.col")
-            except:
+            except Exception:  # pylint: disable=W0703
                 pass
             try:
                 shutil.copyfile(f"{stub}.typ", f"{self._ts_vars_stub}.typ")
-            except:
+            except Exception:  # pylint: disable=W0703
                 pass
         return ASL._postsolve(self)
 
@@ -537,7 +541,6 @@ def petsc_dae_by_time_element(
                 res_list.append(res)
 
     tprev = t0
-    count = 1
     fix_derivs = []
     tj = previous_trajectory
     if tj is not None:

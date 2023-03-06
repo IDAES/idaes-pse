@@ -66,7 +66,7 @@ class SocContactResistorData(UnitModelBlockData):
         # Set up some sets for the space and time indexing
         tset = self.flowsheet().config.time
         # Set up node and face sets and get integer indices for them
-        izfaces, iznodes = common._face_initializer(
+        izfaces, iznodes = common._face_initializer(  # pylint: disable=unused-variable
             self, self.config.control_volume_zfaces, "z"
         )
         common._submodel_boilerplate_create_if_none(self)
@@ -117,7 +117,6 @@ class SocContactResistorData(UnitModelBlockData):
         fix_heat_flux_x0=True,
         temperature_guess=None,
     ):
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         if temperature_guess is not None:

@@ -626,7 +626,7 @@ class LatinHypercubeSampling(SamplingMethods):
             sample_points_vector(NumPy Array): Array containing the columns of the random samples generated in each strata.
         """
 
-        ns, nf = np.shape(self.x_data)
+        ns, nf = np.shape(self.x_data)  # pylint: disable=unused-variable
         sample_points_vector = np.zeros(
             (self.number_of_samples, nf)
         )  # Array containing points in each interval for each variable
@@ -1465,7 +1465,7 @@ class CVTSampling(SamplingMethods):
         current_centres = current_centres.reshape(current_centres.shape[0], 1)
         for i in range(0, initial_centres.shape[0]):
             data_matrix = current_random_points[current_centres[:, 0] == i]
-            m_prime, n_prime = data_matrix.shape
+            m_prime, n_prime = data_matrix.shape  # pylint: disable=unused-variable
             if m_prime == 0:
                 centres[i, :] = np.mean(initial_centres, axis=0)
             else:

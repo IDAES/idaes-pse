@@ -132,7 +132,7 @@ class UnitModelIcon:
     def _build_link_positions(self) -> Dict:
         """Fill in boilerplate based on raw info and place built value in class cache."""
         # build link positions from info
-        groups, items = {}, []
+        groups = {}
         for group_name, group_config in self._model_details["port_groups"].items():
             groups[group_name] = group_config
             groups[group_name].update(

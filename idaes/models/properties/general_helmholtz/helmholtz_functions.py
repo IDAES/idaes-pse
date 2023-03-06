@@ -45,12 +45,16 @@ _log = idaeslog.getLogger(__name__)
 _data_dir = os.path.join(idaes.bin_directory, "helm_data")
 _data_dir = os.path.join(_data_dir, "")
 
+# General Helmholtz functions return variables for all phases,
+# but single phase properties do not need all of these.
+# pylint: disable=W0612
+
 try:
     # When compiling these, I don't bother changing the extension based on OS,
     # so the file name is always ends in .so. It's fine.
     _flib = find_library("general_helmholtz_external.so")
     ctypes.cdll.LoadLibrary(_flib)
-except:
+except Exception:  # pylint: disable=W0703
     _flib = None
 
 

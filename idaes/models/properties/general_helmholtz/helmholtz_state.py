@@ -469,7 +469,6 @@ class HelmholtzStateBlockData(StateBlockData):
         eps_pu = params.smoothing_pressure_under
         eps_po = params.smoothing_pressure_over
         priv_plist = params.private_phase_list
-        plist = params.phase_list
         rho_star = params.dens_mass_crit
         # Convert pressures to kPa for external functions and nicer scaling in
         # the complementarity-type constraints.
@@ -537,7 +536,6 @@ class HelmholtzStateBlockData(StateBlockData):
         # Public phase list
         pub_phlist = params.phase_list
         component_list = params.component_list
-        phase_set = params.config.phase_presentation
         self.phase_equilibrium_list = params.phase_equilibrium_list
 
         # Add component mole fraction for standardization
@@ -705,7 +703,7 @@ class HelmholtzStateBlockData(StateBlockData):
 
         self.entr_mass_sat_phase = pyo.Expression(
             phlist,
-            rule=rule_entr_mol_sat_phase,
+            rule=rule_entr_mass_sat_phase,
             doc="Saturated entropy of the phases at pressure",
         )
 

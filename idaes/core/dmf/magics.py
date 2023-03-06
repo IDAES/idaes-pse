@@ -77,7 +77,7 @@ class DmfMagics(Magics):
             result = self._impl.dmf(line)
             self._last_ok = True
         except DMFMagicError as err:
-            _log.error("Error with magic command: {}".format(err))
+            _log.error(f"Error with magic command: {err}")
             result = None  # err.message
         return result
 
@@ -274,10 +274,8 @@ class DmfMagicsImpl(object):
         self._init_required("help")
         if len(names) > 1:
             _log.warning(
-                "DMF Help is restricted to only one object or class "
-                "at a time. Ignoring trailing arguments ({})".format(
-                    " ".join(names[1:])
-                )
+                f"DMF Help is restricted to only one object or class "
+                f"at a time. Ignoring trailing arguments ({' '.join(names[1:])})"
             )
         name = names[0]
         # Check some special names first.
@@ -300,9 +298,7 @@ class DmfMagicsImpl(object):
                 help_locations = help.get_html_docs(self._dmf, p_module, p_class)
             except DMFMagicError as err:
                 _log.debug(
-                    "Getting help for pseudo-class {}::{}, error: {}".format(
-                        p_module, p_class, err
-                    )
+                    f"Getting help for pseudo-class {p_module}::{p_class}, error: {err}"
                 )
                 # for Result
                 name = "pseudo-module {}.{}".format(p_module, p_class)
@@ -310,7 +306,7 @@ class DmfMagicsImpl(object):
             try:
                 help_locations = self._find_help_for_object(name)
             except DMFMagicError as err:
-                _log.debug("Getting help for object {}, error: {}".format(name, err))
+                _log.debug(f"Getting help for object {name}, error: {err}")
         # Result
         if help_locations:
             self._show_help_in_browser(help_locations)
@@ -339,10 +335,10 @@ class DmfMagicsImpl(object):
         obj, oname = None, None
         try:
             obj = self._shell.ev(name)
-            _log.debug("Looking for HTML docs for object: {}".format(obj))
-        except Exception:
+            _log.debug(f"Looking for HTML docs for object: {obj}")
+        except Exception:  # pylint: disable=W0703
             oname = name
-            _log.debug("Looking for HTML docs for object: {}".format(oname))
+            _log.debug(f"Looking for HTML docs for object: {oname}")
         try:
             result = help.find_html_docs(self._dmf, obj=obj, obj_name=oname)
         except (ValueError, AttributeError):
@@ -358,7 +354,7 @@ class DmfMagicsImpl(object):
         for url in help_locations:
             if urlparse(url).scheme == "":
                 url = "file://" + url
-            _log.debug('Opening URL "{}"'.format(url))
+            _log.debug(f'Opening URL "{url}"')
             webbrowser.open_new(url)
 
     def _magics_help(self):
@@ -406,14 +402,14 @@ _registered = False
 
 def register():
     """Register with IPython on import (once)."""
-    global _registered
+    global _registered  # pylint: disable=global-statement
     if _registered:
         return
     try:
         ip = get_ipython()  # noqa: F821  pylint: disable=undefined-variable
         _log.debug("Registering DMF magics")
         ip.register_magics(DmfMagics)
-    except:  # noqa: E722
+    except Exception:  # pylint: disable=W0703
         pass
     _registered = True
 

@@ -293,7 +293,7 @@ def update_metadata_model_references(model, metadata):
     Returns:
         None
     """
-    for tag, md in metadata.items():
+    for tag, md in metadata.items():  # pylint: disable=unused-variable
         if md["reference_string"]:
             try:
                 # pylint: disable=W0123
@@ -391,7 +391,7 @@ def read_data(
             ambient_pressure = np.array(df[ambient_pressure])
         except KeyError:
             _log.exception(
-                "Tag '{}' does not exist for ambient pressure".format(ambient_pressure)
+                f"Tag '{ambient_pressure}' does not exist for ambient pressure"
             )
             raise
 

@@ -137,6 +137,6 @@ class temporary_config_ctx(object):
         self.orig_config = copy.deepcopy(cfg)
 
     def __exit__(self, exc_type, exc_value, traceback):
-        global cfg
+        global cfg  # pylint: disable=global-statement
         cfg = self.orig_config
         reconfig()

@@ -155,7 +155,7 @@ class Versioned:
         version = None
         try:
             version = pkg_resources.get_distribution(self._name).version
-        except Exception as err:
+        except Exception as err:  # pylint: disable=W0703
             _log.warning(
                 f"Could not get version from pkg_resources.get_distribution; trying pip ({self.PIP}). "
                 f"Error message was: {err}"

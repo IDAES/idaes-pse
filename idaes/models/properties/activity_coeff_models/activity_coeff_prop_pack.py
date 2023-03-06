@@ -387,7 +387,6 @@ class _ActivityCoeffStateBlock(StateBlock):
                 if c.local_name in [
                     "eq_total",
                     "eq_comp",
-                    "eq_mole_frac" "eq_sum_mol_frac",
                     "eq_phase_equilibrium",
                     "eq_enth_mol_phase",
                     "eq_entr_mol_phase",
@@ -423,7 +422,6 @@ class _ActivityCoeffStateBlock(StateBlock):
                 if c.local_name in [
                     "eq_total",
                     "eq_comp",
-                    "eq_sum_mol_frac",
                     "eq_phase_equilibrium",
                 ]:
                     c.activate()

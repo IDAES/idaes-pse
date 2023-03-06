@@ -40,7 +40,7 @@ class MPIInterface:
                 globals()["MPI"] = importlib.import_module("mpi4py.MPI")
                 # import succeeded
                 MPIInterface.__have_mpi__ = True
-            except:
+            except ImportError:
                 # import failed (e.g., no mpi4py installed)
                 MPIInterface.__have_mpi__ = False
 
@@ -82,7 +82,6 @@ class ParallelTaskManager:
         if not self._mpi_interface.have_mpi:
             self._local_map = range(n_total_tasks)
         else:
-            rank = self._mpi_interface.rank
             size = self._mpi_interface.size
 
             # there must be a better way to do this
@@ -135,9 +134,6 @@ class ParallelTaskManager:
         assert len(local_data) == len(self._local_map)
         if not self._mpi_interface.have_mpi:
             return list(local_data)
-
-        comm = self._mpi_interface.comm
-        global_data_list = comm.allgather(local_data)
 
         # PYLINT-TODO-FIX fix the error due to the
         # non-existing global_data_list_of_lists variable

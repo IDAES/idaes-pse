@@ -50,7 +50,7 @@ class RoundingRegression:
         self.LAP = LinAlgandPyomo(X, Y, complexity_penalty_factor)
 
         # Find OLS solution (i.e. including all variables) and construct QP relaxation model
-        _, B_ols, self.B_ols_sum = self.LAP.evaluate_obj(np.ones(X.shape[1]))
+        _, _, self.B_ols_sum = self.LAP.evaluate_obj(np.ones(X.shape[1]))
         QP, opt = self.LAP.construct_QP(X, Y, self.B_ols_sum)
 
         # Get rounding probabilities from relaxed binaries of QP relaxation
@@ -77,7 +77,7 @@ class RoundingRegression:
         opt_regressors = np.zeros(len(self.regressors_probability))
 
         # Build RR model from null
-        for n in range(number_RR):
+        for n in range(number_RR):  # pylint: disable=unused-variable
             # Initialize null model
             regressors = np.zeros(len(self.regressors_probability))
             i, j = 0, 0
@@ -140,7 +140,6 @@ class RoundingRegression:
         """
 
         improvement = False
-        objective_list_det2 = []
         opt_obj = 1e5
         regressors = copy(self.rr_regressors)
         step_regressors = copy(self.rr_regressors)
@@ -382,7 +381,12 @@ class LinAlgandPyomo:
             self.regressors_old_A = copy(self.regressors)
             self.regressors_old_QR = copy(self.regressors)
         else:
-            self.B_ols, self.SSRols, rank, s = np.linalg.lstsq(self.A, self.b, rcond=-1)
+            (
+                self.B_ols,
+                self.SSRols,
+                _,
+                _,
+            ) = np.linalg.lstsq(self.A, self.b, rcond=-1)
             self.B_ols_sum = sum(abs(self.B_ols[i]) for i in range(self.A.shape[1]))
             if len(self.SSRols) == 0:
                 self.SSRols = 0

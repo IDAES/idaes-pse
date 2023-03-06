@@ -261,7 +261,7 @@ class ConvergenceEvaluation:
             raise ValueError(f"Problem reading json file: {baseline_filename}")
 
         # Run samples from baseline
-        inputs, samples, results = run_convergence_evaluation(basedict, self)
+        _, _, results = run_convergence_evaluation(basedict, self)
 
         return _compare_run_to_baseline(
             results, basedict["results"], rel_tol=rel_tol, abs_tol=abs_tol
@@ -726,7 +726,7 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
                 _set_model_parameters_from_sample(model, inputs, ss)
                 solver = conv_eval.get_solver()
                 (
-                    status_obj,
+                    status_obj,  # pylint: disable=unused-variable
                     solved,
                     iters,
                     iters_in_restoration,
@@ -775,7 +775,7 @@ def generate_baseline_statistics(
     jsondict["seed"] = seed
     jsondict["samples"] = generate_samples(eval_spec, n_points, seed)
 
-    inputs, samples, results = run_convergence_evaluation(jsondict, conv_eval)
+    _, _, results = run_convergence_evaluation(jsondict, conv_eval)
 
     jsondict["results"] = OrderedDict()
     for r in results:

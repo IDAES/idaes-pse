@@ -21,7 +21,7 @@ try:
     # so the file name is always ends in .so. It's fine.
     cubic_so_path = find_library("cubic_roots.so")
     ctypes.cdll.LoadLibrary(cubic_so_path)
-except:
+except Exception:  # pylint: disable=W0703
     cubic_so_path = None
 
 

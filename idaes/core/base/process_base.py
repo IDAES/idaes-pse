@@ -229,7 +229,7 @@ class ProcessBlockData(_BlockData):
         idx_map = self.parent_component()._idx_map  # index map function
         try:
             idx = self.index()
-        except:
+        except AttributeError:
             idx = None
         if idx_map is not None:
             idx = idx_map(idx)
@@ -579,7 +579,7 @@ class ProcessBlockData(_BlockData):
                     "no default defined by parent flowsheet(s).".format(self.name)
                 )
             elif parent.config.default_property_package is not None:
-                _log.info("{} Using default property package".format(self.name))
+                _log.info(f"{self.name} Using default property package")
                 return parent.config.default_property_package
 
             parent = parent.flowsheet()

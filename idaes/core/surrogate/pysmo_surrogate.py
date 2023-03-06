@@ -407,7 +407,7 @@ class PysmoRBFTrainer(PysmoTrainer):
             regularization=self.config.regularization,
             overwrite=True,
         )
-        variable_headers = model.get_feature_vector()
+        model.get_feature_vector()
         return model
 
     def _get_metrics(self, model) -> Dict:
@@ -457,7 +457,7 @@ class PysmoKrigingTrainer(PysmoTrainer):
             regularization=self.config.regularization,
             overwrite=True,
         )
-        variable_headers = model.get_feature_vector()
+        model.get_feature_vector()
         return model
 
     def _get_metrics(self, model):

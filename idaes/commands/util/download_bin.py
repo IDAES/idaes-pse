@@ -120,7 +120,7 @@ def _read_checksum_file(check_to):
     checksum = {}  # storage for hashes if install from release
 
     with open(check_to, "r") as f:
-        for i in range(1000):
+        for i in range(1000):  # pylint: disable=unused-variable
             line = f.readline(1000)
             if line == "":
                 break
@@ -352,7 +352,9 @@ def download_binaries(
     fd = FileDownloader(insecure=insecure, cacert=cacert)
 
     # Get platform information
-    arch, platform = _get_arch_and_platform(fd, platform)
+    arch, platform = _get_arch_and_platform(  # pylint: disable=unused-variable
+        fd, platform
+    )
     platform = _get_release_platform(platform)
 
     # Get release url

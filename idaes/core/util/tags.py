@@ -588,7 +588,7 @@ class ModelTagGroup(dict):
 
         tag_list = []
         indexes = []
-        for i, tag in enumerate(tags):
+        for i, tag in enumerate(tags):  # pylint: disable=unused-variable
             if not isinstance(tag, collections.abc.Hashable):
                 if len(tag) == 2:
                     tag_list.append(tag[0])

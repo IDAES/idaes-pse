@@ -196,9 +196,7 @@ class Workspace(object):
                             "existing configuration would be "
                             "overwritten: {}".format(self._conf)
                         )
-                _log.info(
-                    "Using existing path for new DMF workspace: {}".format(self._wsdir)
-                )
+                _log.info(f"Using existing path for new DMF workspace: {self._wsdir}")
             if not skip_config:
                 try:
                     self._create_new_config(add_defaults)
@@ -278,7 +276,7 @@ class Workspace(object):
                 if key in d:
                     del d[key]
                 else:
-                    _log.warning('Cannot remove "{}": no such key'.format(key))
+                    _log.warning(f'Cannot remove "{key}": no such key')
         d.update(values)
         self._write_conf(d)
         self._cached_conf = d
@@ -353,7 +351,7 @@ class Workspace(object):
     def _read_conf(self):
         #: type (None) -> dict
         if self._cached_conf is None:
-            _log.debug('Load workspace configuration from "{}"'.format(self._conf))
+            _log.debug(f'Load workspace configuration from "{self._conf}"')
             conf = open(self._conf, "r")
             try:
                 contents = yaml_load(conf)
@@ -447,9 +445,7 @@ class WorkspaceConfiguration(object):
             desc, type_ = item["description"], item["type"]
             # Coerce unknown types to string (but print a warning, as this is not expected)
             if type_ not in self.DEFAULTS:
-                _log.warning(
-                    'Unknown schema type "{}".' 'Using "string" instead'.format(type_)
-                )
+                _log.warning(f'Unknown schema type "{type_}".' 'Using "string" instead')
                 type_ = "string"
             # Based on value type, extract default value
             default_value = None
@@ -505,7 +501,9 @@ def find_workspaces(root):
     """
     w = []
     # try all subdirectories of root
-    for dirpath, dirnames, filenames in os.walk(root):
+    for dirpath, dirnames, filenames in os.walk(  # pylint: disable=unused-variable
+        root
+    ):
         for dmfdir in dirnames:
             dmfpath = os.path.join(dirpath, dmfdir)
             conf_file = os.path.join(dmfpath, Workspace.WORKSPACE_CONFIG)

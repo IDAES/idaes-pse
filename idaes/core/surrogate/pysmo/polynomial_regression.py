@@ -771,8 +771,10 @@ class PolynomialRegression:
 
         instance = model
         opt = SolverFactory("ipopt")
-        opt.options["max_iter"] = 10000000
-        result = opt.solve(instance)  # , tee=True)
+        # TODO: This is too many iterations
+        opt.options["max_iter"] = 1000
+        # TODO: Should this be checking the for a feasible solution?
+        opt.solve(instance)
 
         # Convert theta variable into numpy array
         phi = np.zeros((len(instance.theta), 1))

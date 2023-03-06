@@ -17,9 +17,6 @@ from idaes.models_extra.power_generation.unit_models.balance import BalanceBlock
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.solvers import get_solver
 import idaes.models.properties.helmholtz.helmholtz as hltz
-from idaes.models.properties.helmholtz.helmholtz import (
-    HelmholtzThermoExpressions as ThermoExpr,
-)
 import idaes.core.util.scaling as iscale
 
 import idaes.logger as idaeslog
@@ -96,7 +93,6 @@ class HelmPumpData(BalanceBlockData):
         # including external function calls to calculate thermodynamic quantities
         # from a set of state variables.
         _assert_properties(config.property_package)
-        te = ThermoExpr(blk=self, parameters=config.property_package)
 
         eff = self.efficiency_pump = pyo.Var(
             self.flowsheet().time, initialize=0.9, doc="Pump efficiency"
@@ -140,7 +136,6 @@ class HelmPumpData(BalanceBlockData):
         efficency, inlet, and one of pressure ratio, pressure change or outlet
         pressure.
         """
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         # Create solver
@@ -179,7 +174,7 @@ class HelmPumpData(BalanceBlockData):
             self.outlet.flow_mol[t] = pyo.value(self.inlet.flow_mol[t])
         # Solve the model (should be already solved from above)
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = slvr.solve(self, tee=slc.tee)
+            slvr.solve(self, tee=slc.tee)
         from_json(self, sd=istate, wts=sp)
 
     def calculate_scaling_factors(self):

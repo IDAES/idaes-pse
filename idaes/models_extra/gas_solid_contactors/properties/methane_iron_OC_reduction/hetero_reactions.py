@@ -271,11 +271,12 @@ class _ReactionBlock(ReactionBlockBase):
         # TODO - Update in the future as needed
         # Get a single representative block for getting config arguments
         for k in blk.keys():
+            rep_key = k
             break
 
         # Fix state variables if not already fixed
         # Fix state variables of the primary (solid) state block
-        state_var_flags = fix_state_vars(blk[k].config.solid_state_block)
+        state_var_flags = fix_state_vars(blk[rep_key].config.solid_state_block)
 
         # Fix values of secondary (gas) state block variables if not fixed,
         # as well as the solid density variable.

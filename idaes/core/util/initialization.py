@@ -313,7 +313,6 @@ def initialize_by_time_element(fs, time, **kwargs):
         raise ValueError("ContinuousSet must be discretized")
 
     scheme = time.get_discretization_info()["scheme"]
-    fep_list = time.get_finite_elements()
     nfe = time.get_discretization_info()["nfe"]
 
     if scheme == "LAGRANGE-RADAU":

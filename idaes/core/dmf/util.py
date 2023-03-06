@@ -566,7 +566,7 @@ _is_curdir = None
 
 
 def fail_if_tempdir_is_curdir():
-    global _is_curdir
+    global _is_curdir  # pylint: disable=global-statement
     if _is_curdir is None:
         td = tempfile.gettempdir()  # initializes it 1st time
         try:

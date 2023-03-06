@@ -661,7 +661,7 @@ class HeatExchangerData(UnitModelBlockData):
             for i in self.hot_side.heat:
                 self.hot_side.heat[i].value = s1_duty
         else:
-            cd_fixed = True
+            cs_fixed = True
             for i in self.hot_side.heat:
                 self.hot_side.heat[i].set_value(self.cold_side.heat[i])
 

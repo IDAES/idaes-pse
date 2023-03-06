@@ -833,7 +833,7 @@ class AlamoTrainer(SurrogateTrainer):
             input_max.append(b[1])
 
         # Get number of data points to build alm file
-        n_rdata, n_inputs = training_data.shape
+        n_rdata, n_inputs = training_data.shape  # pylint: disable=unused-variable
 
         if validation_data is not None:
             n_vdata, n_inputs = validation_data.shape

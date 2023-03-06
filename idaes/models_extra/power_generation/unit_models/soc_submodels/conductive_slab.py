@@ -313,11 +313,6 @@ class SocConductiveSlabData(UnitModelBlockData):
         def cst(c, s):
             iscale.constraint_scaling_transform(c, s, overwrite=False)
 
-        sR = 1e-1  # Scaling factor for R
-        sD = 1e4  # Heuristic scaling factor for diffusion coefficient
-        sy_def = 10  # Mole frac comp scaling
-        sh = 1e-2  # Heat xfer coeff
-        sH = 1e-4  # Enthalpy/int energy
         sk = 1  # Thermal conductivity is ~1
         sLx = sgsf(self.length_x, len(self.ixnodes) / self.length_x.value)
         # sLy = sgsf(self.length_y,1/self.length_y[None].value)
@@ -327,9 +322,6 @@ class SocConductiveSlabData(UnitModelBlockData):
 
         for t in self.flowsheet().time:
             for iz in self.iznodes:
-                if not self.temperature_z[t, iz].is_reference():
-                    sT = sgsf(self.temperature_z[t, iz], 1e-2)
-
                 if self.heat_flux_x0[t, iz].is_reference():
                     sq0 = gsf(self.heat_flux_x0[t, iz].referent, default=1e-2)
                 else:
@@ -347,7 +339,7 @@ class SocConductiveSlabData(UnitModelBlockData):
                     ssf(self.temperature_deviation_x1, sq1 * sLx / sk)
 
                 sqx = min(sq0, sq1)
-                sqz = 10 * sqx  # Heuristic
+                # sqz = 10 * sqx  # Heuristic
 
                 for ix in self.ixnodes:
                     sDT = sgsf(self.temperature_deviation_x[t, ix, iz], sqx * sLx / sk)
