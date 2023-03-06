@@ -111,13 +111,13 @@ class ParallelTaskManager:
 
     # ToDo: fix the parallel task manager to handle dictionaries as well as lists
     def global_to_local_data(self, global_data):
-        if type(global_data) is list:
+        if isinstance(global_data, list):
             local_data = list()
             assert len(global_data) == self._n_total_tasks
             for i in self._local_map:
                 local_data.append(global_data[i])
             return local_data
-        elif type(global_data) is OrderedDict:
+        elif isinstance(global_data, OrderedDict):
             local_data = OrderedDict()
             assert len(global_data) == self._n_total_tasks
             idx = 0

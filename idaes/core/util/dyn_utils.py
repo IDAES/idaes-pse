@@ -80,7 +80,7 @@ def deactivate_model_at(b, cset, pts, outlvl=idaeslog.NOTSET):
         A dictionary mapping points in pts to lists of
         component data that have been deactivated there
     """
-    if not type(pts) is list:
+    if not isinstance(pts, list):
         pts = [pts]
     for pt in pts:
         if not pt in cset:
@@ -250,7 +250,7 @@ def get_index_of_set(comp, wrt):
         )
 
     index = comp.index()
-    if not type(index) is tuple:
+    if not isinstance(index, tuple):
         index = (index,)
     loc = get_location_of_coordinate_set(parent.index_set(), wrt)
     return index[loc]
@@ -308,7 +308,7 @@ def get_derivatives_at(b, time, pts):
         Dictionary mapping time points to lists of derivatives
         at those points
     """
-    if not type(pts) is list:
+    if not isinstance(pts, list):
         pts = [pts]
     dvdict = {pt: [] for pt in pts}
 
@@ -514,7 +514,7 @@ def find_comp_in_block_at_time(
             index_set = local_parent.index_set()
             time_loc = get_location_of_coordinate_set(index_set, time)
 
-            if type(index) is not tuple:
+            if not isinstance(index, tuple):
                 index = (index,)
             index = list(index)
 
@@ -557,7 +557,7 @@ def find_comp_in_block_at_time(
             index_set = tgt_comp.index_set()
             time_loc = get_location_of_coordinate_set(index_set, time)
 
-            if type(index) is not tuple:
+            if not isinstance(index, tuple):
                 index = (index,)
             index = list(index)
 

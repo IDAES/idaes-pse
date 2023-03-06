@@ -27,7 +27,7 @@ def dict_diff(d1, d2, result=None, pfx=""):
         else:
             pass  # good enough
     elif not isinstance(d1, dict) or not isinstance(d2, dict):
-        if type(d1) == type(d2):
+        if type(d1) == type(d2):  # pylint: disable=unidiomatic-typecheck
             same = None
             try:
                 same = d1 == d2

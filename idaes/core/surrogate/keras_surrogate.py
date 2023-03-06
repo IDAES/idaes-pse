@@ -88,9 +88,9 @@ class KerasSurrogate(SurrogateBase):
         # make sure we are using the standard scaler
         if (
             input_scaler is not None
-            and type(input_scaler) is not OffsetScaler
+            and not isinstance(input_scaler, OffsetScaler)
             or output_scaler is not None
-            and type(output_scaler) is not OffsetScaler
+            and not isinstance(output_scaler, OffsetScaler)
         ):
             raise NotImplementedError("KerasSurrogate only supports the OffsetScaler.")
 

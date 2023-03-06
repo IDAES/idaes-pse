@@ -155,7 +155,7 @@ class SimpleVarLikeExpression(_GeneralVarLikeExpressionData, VarLikeExpression):
                 "SimpleExpression object '%s' does not accept "
                 "index values other than None. Invalid value: %s" % (self.name, index)
             )
-        if (type(expr) is tuple) and (expr == pyo.Expression.Skip):
+        if isinstance(expr, tuple) and expr == pyo.Expression.Skip:
             raise ValueError(
                 "Expression.Skip can not be assigned "
                 "to an Expression that is not indexed: %s" % (self.name)
@@ -180,7 +180,7 @@ class IndexedVarLikeExpression(VarLikeExpression):
     #
     def add(self, index, expr):
         """Add an expression with a given index."""
-        if (type(expr) is tuple) and (expr == pyo.Expression.Skip):
+        if isinstance(expr, tuple) and expr == pyo.Expression.Skip:
             return None
         cdata = _GeneralVarLikeExpressionData(expr, component=self)
         self._data[index] = cdata

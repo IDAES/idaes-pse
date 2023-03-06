@@ -281,10 +281,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             )
 
             if land_cost is not None:
-                if (
-                    (type(land_cost) in [Expression, ScalarExpression])
-                    or (type(land_cost) is Param and land_cost.get_units is None)
-                    or (type(land_cost) is Var and land_cost.get_units is None)
+                if isinstance(land_cost, (Expression, ScalarExpression)) or (
+                    isinstance(land_cost, (Param, Var)) and land_cost.get_units is None
                 ):
                     land_cost_units_factor = 1 * CE_index_units
                 else:
@@ -619,7 +617,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         }
 
         # preloaded account handling
-        if type(cost_accounts) == str:
+        if isinstance(cost_accounts, str):
             if tech in [1, 2]:
                 cost_accounts = PC_preloaded_accounts[cost_accounts]
             elif tech in [3, 4, 5]:
@@ -734,7 +732,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     costing_params[str(tech)][ccs][account]["BEC"] * 1e-3
                 )
 
-                if type(process_params[account]) == list:
+                if isinstance(process_params[account], list):
                     for i, processparam in enumerate(process_params[account]):
                         reference_params[account, processparam] = costing_params[
                             str(tech)
@@ -743,7 +741,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             str(tech)
                         ][ccs][account]["Cost scaling fraction"][i]
 
-                elif type(process_params[account]) == str:
+                elif isinstance(process_params[account], str):
                     reference_params[account] = costing_params[str(tech)][ccs][account][
                         "RP Value"
                     ]
@@ -874,7 +872,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             % (cost_accounts[0], ref_units[0] + "/" + ref_units[1])
                         )
 
-            if type(scaled_param) is list:
+            if isinstance(scaled_param, list):
                 for j in range(len(scaled_param)):
                     if scaled_param[j].get_units() is None:
                         raise ValueError(
@@ -949,7 +947,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             # currency units
         )
 
-        if type(process_params[cost_accounts[0]]) == list:
+        if isinstance(process_params[cost_accounts[0]], list):
             if len(process_params[cost_accounts[0]]) > 1:
                 blk.ref_param = Param(
                     cost_accounts,
@@ -966,7 +964,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     initialize=cost_scaling_fractions,
                     doc="reference parameter for account",
                 )
-        elif type(process_params[cost_accounts[0]]) == str:
+        elif isinstance(process_params[cost_accounts[0]], str):
             blk.ref_param = Param(
                 cost_accounts,
                 mutable=True,
@@ -1033,7 +1031,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             elif ref_cost_units[0] == "M":  # millions of $
                 ref_cost_units = getattr(pyunits, "MUSD_" + ref_cost_units[1])
 
-            if type(process_params[i]) == list:
+            if isinstance(process_params[i], list):
                 if len(process_params[i]) > 1:
                     return costing.bare_erected_cost[i] == (
                         pyunits.convert(
@@ -1049,7 +1047,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             for j, p in enumerate(process_params[i])
                         )
                     )
-            elif type(process_params[i]) == str:
+            elif isinstance(process_params[i], str):
                 return costing.bare_erected_cost[i] == (
                     pyunits.convert(
                         costing.ref_cost[i] * ref_cost_units, CE_index_units
@@ -1785,11 +1783,11 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             )
 
         # assert arguments are correct types
-        if type(resources) is not list:
+        if not isinstance(resources, list):
             raise TypeError("resources argument must be a list")
-        if type(rates) is not list:
+        if not isinstance(rates, list):
             raise TypeError("rates argument must be a list")
-        if type(prices) is not dict:
+        if not isinstance(prices, dict):
             raise TypeError("prices argument must be a dictionary")
 
         # assert lists are the same length
