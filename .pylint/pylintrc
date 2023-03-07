@@ -12,7 +12,7 @@ disable=no-self-argument,
     unsubscriptable-object,
     fixme,
     raise-missing-from,
-    logging-fstring-interpolation,
+    logging-fstring-interpolation,  #not sure why pylint doesn;t like f-strings
     unnecessary-lambda,
     attribute-defined-outside-init,
     protected-access,
@@ -21,9 +21,18 @@ disable=no-self-argument,
     arguments-renamed,
     unused-argument,
     redefined-outer-name,
-    cell-var-from-loop,
+    cell-var-from-loop,  # this arises due to Pyomo rules
     anomalous-backslash-in-string,
-    unspecified-encoding
+    unspecified-encoding,
+    # Conventions
+    invalid-name,
+    empty-docstring,
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    line-too-long,  # we have black for this
+    too-many-lines,
+    use-implicit-booleaness-not-comparison,  # implicit booleaness can be hard to follow
 
 [IMPORTS]
 ignored-modules=cvalsim,almsim

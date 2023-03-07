@@ -528,7 +528,7 @@ class PolynomialRegression:
 
     @classmethod
     def polygeneration(
-        self,
+        cls,
         polynomial_order,
         multinomials,
         x_input_train_data,

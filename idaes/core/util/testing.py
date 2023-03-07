@@ -366,7 +366,7 @@ class _ReactionParameterBlock(ReactionParameterBlock):
         )
 
     @classmethod
-    def get_required_properties(self):
+    def get_required_properties(cls):
         return {}
 
 
