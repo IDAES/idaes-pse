@@ -530,7 +530,7 @@ def heat_ex_data(blk, heating, cooling):
 
     # Convert Pyomo model values into arrays
     j = 0
-    for v in heatingdict.items():
+    for v in heatingdict.values():
         HTin[j] = value(v.control_volume.properties_in[0].temperature)
         HTout[j] = value(v.control_volume.properties_out[0].temperature) + 1
         HQ[j] = value(pyunits.convert(v.control_volume.heat[0], to_units=DG_units))
