@@ -19,6 +19,8 @@
 #  rights in this software.
 #  This software is distributed under the 3-clause BSD License.
 #  ___________________________________________________________________________
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
 
 __author__ = "Oluwamayowa Amusat, John Siirola"
 

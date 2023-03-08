@@ -10,6 +10,10 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+
+
 class FlowsheetNotFound(Exception):
     def __init__(self, id_, location):
         super().__init__(f"Flowsheet {id_} not found in {location}")

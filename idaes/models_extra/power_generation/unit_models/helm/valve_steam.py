@@ -10,6 +10,9 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+
 from enum import Enum
 
 import pyomo.environ as pyo
@@ -36,7 +39,7 @@ class ValveFunctionType(Enum):
 
 
 def _assert_properties(pb):
-    """Assert that the properies parameter block conforms to the requirements"""
+    """Assert that the properties parameter block conforms to the requirements"""
     try:
         assert isinstance(pb, hltz.HelmholtzParameterBlockData)
         assert pb.config.phase_presentation in {

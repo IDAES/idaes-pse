@@ -10,6 +10,10 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+Python interface for ALAMO tool.
+"""
+
 from enum import Enum
 import subprocess
 from io import StringIO

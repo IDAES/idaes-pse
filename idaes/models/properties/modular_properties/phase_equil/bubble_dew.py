@@ -10,6 +10,10 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+Modular methods for calculating bubble and dew points
+"""
+
 from pyomo.environ import Constraint
 
 from idaes.models.properties.modular_properties.base.utility import (

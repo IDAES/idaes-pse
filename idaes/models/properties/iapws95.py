@@ -10,6 +10,9 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+IAPWS95 property package for water and steam
+"""
 
 __author__ = "John Eslick"
 

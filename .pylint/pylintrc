@@ -1,7 +1,7 @@
 [MASTER]
 init-hook="import sys; sys.path.append('.pylint')"
 load-plugins=idaes_transform
-ignore-patterns=test_.*
+ignore-patterns=test_.*,__init__.py
 ignore=alamopy_depr,grid_integration,helmet,matopt,ripe,roundingRegression
 
 [MESSAGES CONTROL]
@@ -26,7 +26,6 @@ disable=no-self-argument,
     unspecified-encoding,
     # Conventions
     invalid-name,
-    missing-module-docstring,
     missing-class-docstring,
     missing-function-docstring,
     line-too-long,  # we have black for this

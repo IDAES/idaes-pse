@@ -10,5 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
 
 from idaes.models.properties.general_helmholtz import *  # pylint: disable=W0401,W0614
