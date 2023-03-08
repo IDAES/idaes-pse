@@ -12,7 +12,7 @@ disable=no-self-argument,
     unsubscriptable-object,
     fixme,
     raise-missing-from,
-    logging-fstring-interpolation,  #not sure why pylint doesn;t like f-strings
+    logging-fstring-interpolation,  # not sure why pylint doesn't like f-strings
     unnecessary-lambda,
     attribute-defined-outside-init,
     protected-access,
@@ -26,7 +26,6 @@ disable=no-self-argument,
     unspecified-encoding,
     # Conventions
     invalid-name,
-    empty-docstring,
     missing-module-docstring,
     missing-class-docstring,
     missing-function-docstring,

@@ -818,7 +818,9 @@ def generate_baseline_statistics(
 def save_convergence_statistics(
     inputs, results, dmf=None, display=True, json_path=None, report_path=None
 ):
-    """ """
+    """
+    Save convergence statistics to json file or dmf
+    """
     s = Stats(inputs, results)
     if display:
         s.report()

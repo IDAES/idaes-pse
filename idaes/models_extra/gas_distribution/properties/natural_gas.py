@@ -49,7 +49,9 @@ _log = idaeslog.getLogger(__name__)
 
 @declare_process_block_class("NaturalGasParameterBlock")
 class NaturalGasParameterBlockData(PhysicalParameterBlock):
-    """ """
+    """
+    Property package for natural gas with a single pseudo-component.
+    """
 
     def build(self):
         super(NaturalGasParameterBlockData, self).build()
