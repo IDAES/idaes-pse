@@ -26,6 +26,9 @@ All results have been cross-referenced against other sources.
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 # Import Python libraries
 import math
 

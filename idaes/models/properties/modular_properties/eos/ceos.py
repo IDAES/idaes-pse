@@ -18,6 +18,9 @@ Currently only supports liquid and vapor phases
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from enum import Enum
 from copy import deepcopy
 

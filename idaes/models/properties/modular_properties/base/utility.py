@@ -19,6 +19,9 @@ Author: A Lee
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from enum import Enum
 
 from pyomo.environ import units as pyunits

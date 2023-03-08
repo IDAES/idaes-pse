@@ -545,22 +545,32 @@ should be constructed in this state block,
 
     @property
     def component_list(self):
+        # TODO: Should refactor parent so this is not private
+        # pylint: disable-next=protected-access
         return self.parent_component()._return_component_list()
 
     @property
     def phase_list(self):
+        # TODO: Should refactor parent so this is not private
+        # pylint: disable-next=protected-access
         return self.parent_component()._return_phase_list()
 
     @property
     def phase_component_set(self):
+        # TODO: Should refactor parent so this is not private
+        # pylint: disable-next=protected-access
         return self.parent_component()._return_phase_component_set()
 
     @property
     def has_inherent_reactions(self):
+        # TODO: Should refactor parent so this is not private
+        # pylint: disable-next=protected-access
         return self.parent_component()._has_inherent_reactions()
 
     @property
     def include_inherent_reactions(self):
+        # TODO: Should refactor parent so this is not private
+        # pylint: disable-next=protected-access
         return self.parent_component()._include_inherent_reactions()
 
     def build(self):

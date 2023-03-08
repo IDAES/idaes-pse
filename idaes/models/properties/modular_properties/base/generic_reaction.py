@@ -13,6 +13,9 @@
 """
 Framework for generic reaction packages
 """
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from math import log
 
 # Import Pyomo libraries

@@ -14,6 +14,9 @@
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
+# TODO: protected access issues
+# pylint: disable=protected-access
+
 __author__ = "John Eslick"
 
 import json

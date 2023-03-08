@@ -16,6 +16,9 @@ Dynamic sub-flowsheet for a subcritical 300MWe boiler system
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
+# Model needs to access private flow terms
+# pylint: disable=protected-access
+
 import matplotlib.pyplot as plt
 
 # Import Pyomo libraries

@@ -38,6 +38,9 @@ Expressions:
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 __author__ = "Douglas Allan"
 
 from pyomo.common.config import ConfigValue, ConfigBlock

@@ -21,6 +21,9 @@ Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego.
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import Constraint, Param, Var, value
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_max, smooth_min

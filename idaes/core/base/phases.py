@@ -112,9 +112,12 @@ class PhaseData(ProcessBlockData):
         super(PhaseData, self).build()
 
         # If the phase_list does not exist, add a reference to the new Phase
-        # The IF is mostly for backwards compatability, to allow for old-style
+        # The IF is mostly for backwards compatibility, to allow for old-style
         # property packages where the phase_list already exists but we need to
         # add new Phase objects
+
+        # We control config
+        # pylint: disable-next=protected-access
         if not self.config._phase_list_exists:
             self.__add_to_phase_list()
 

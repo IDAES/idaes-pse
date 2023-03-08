@@ -231,9 +231,14 @@ Must be True if dynamic = True,
                     sblock = block.properties
 
                     # Need to determine correct subset of indices to add to Port
-                    if block._flow_direction == FlowDirection.forward:
+                    # Look at private attributes on control volume
+                    if (
+                        block._flow_direction == FlowDirection.forward
+                    ):  # pylint: disable=protected-access
                         _idx = block.length_domain.first()
-                    elif block._flow_direction == FlowDirection.backward:
+                    elif (
+                        block._flow_direction == FlowDirection.backward
+                    ):  # pylint: disable=protected-access
                         _idx = block.length_domain.last()
 
                     port, ref_name_list = sblock.build_port(
@@ -326,9 +331,14 @@ Must be True if dynamic = True,
                     sblock = block.properties
 
                     # Need to determine correct subset of indices to add to Port
-                    if block._flow_direction == FlowDirection.backward:
+                    # Look at private attribute on control volume
+                    if (
+                        block._flow_direction == FlowDirection.backward
+                    ):  # pylint: disable=protected-access
                         _idx = block.length_domain.first()
-                    elif block._flow_direction == FlowDirection.forward:
+                    elif (
+                        block._flow_direction == FlowDirection.forward
+                    ):  # pylint: disable=protected-access
                         _idx = block.length_domain.last()
 
                     port, ref_name_list = sblock.build_port(

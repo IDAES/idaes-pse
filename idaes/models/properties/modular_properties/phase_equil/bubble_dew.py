@@ -16,6 +16,9 @@ Modular methods for calculating bubble and dew points
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import Constraint
 
 from idaes.models.properties.modular_properties.base.utility import (

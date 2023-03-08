@@ -13,8 +13,10 @@
 """
 This module contains utility functions for use in testing IDAES models.
 """
+# These are methods for testing, and break a few conventions
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
+# pylint: disable=protected-access
 
 __author__ = "Andrew Lee"
 

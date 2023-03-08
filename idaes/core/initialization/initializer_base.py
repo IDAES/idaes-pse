@@ -51,12 +51,25 @@ class InitializationStatus(Enum):
     Error = -4  # Exception raised during execution (other than DoF or convergence)
 
 
+# Store spec needs to use some internals from Pyomo
 StoreState = StoreSpec(
     data_classes={
-        Var._ComponentDataClass: (("fixed", "value"), _only_fixed),
-        BooleanVar._ComponentDataClass: (("fixed", "value"), _only_fixed),
-        Block._ComponentDataClass: (("active",), None),
-        Constraint._ComponentDataClass: (("active",), None),
+        Var._ComponentDataClass: (
+            ("fixed", "value"),
+            _only_fixed,
+        ),  # pylint: disable=protected-access
+        BooleanVar._ComponentDataClass: (
+            ("fixed", "value"),
+            _only_fixed,
+        ),  # pylint: disable=protected-access
+        Block._ComponentDataClass: (
+            ("active",),
+            None,
+        ),  # pylint: disable=protected-access
+        Constraint._ComponentDataClass: (
+            ("active",),
+            None,
+        ),  # pylint: disable=protected-access
     }
 )
 

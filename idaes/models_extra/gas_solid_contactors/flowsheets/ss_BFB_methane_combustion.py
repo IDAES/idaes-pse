@@ -191,5 +191,7 @@ if __name__ == "__main__":
 
     # Plot some results
     print()
+    # TODO: Fix this
+    # pylint: disable-next=protected-access
     stream_table = m.fs.BFB._get_stream_table_contents()
     print(stream_table)

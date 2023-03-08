@@ -334,4 +334,6 @@ within this flowsheet if not otherwise specified,
                 # Set time config argument to parent time
                 self.config.time = fs.time
                 add_object_reference(self, "_time", fs.time)
+                # We control time units
+                # pylint: disable-next=protected-access
                 self._time_units = fs._time_units

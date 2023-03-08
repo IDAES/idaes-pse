@@ -13,6 +13,9 @@
 # TODO: Missing doc strings
 # pylint: disable=missing-module-docstring
 
+# Build on demand needs to play with some private attributes
+# pylint: disable=protected-access
+
 from idaes.core.util.exceptions import (
     PropertyPackageError,
     PropertyNotSupportedError,

@@ -46,6 +46,7 @@ import idaes.config as icfg
 # Importing a few things here so that they are cached
 # pylint: disable=unused-import
 # pylint: disable=import-outside-toplevel
+# pylint: disable=protected-access
 
 
 def petsc_binary_io():

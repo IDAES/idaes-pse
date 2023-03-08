@@ -16,6 +16,9 @@ Packed Solvent Column Model for MEA systems
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
+# TODO: look into protected access issues
+# pylint: disable=protected-access
+
 # Import Python libraries
 import numpy as np
 

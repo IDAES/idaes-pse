@@ -47,6 +47,9 @@ https://doi.org/10.1016/j.jpowsour.2005.03.174
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 __author__ = "Douglas Allan"
 
 import copy

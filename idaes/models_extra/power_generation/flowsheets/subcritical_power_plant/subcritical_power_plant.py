@@ -14,6 +14,9 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-function-docstring
 
+# Model needs to access private flow terms
+# pylint: disable=protected-access
+
 import os
 import time as wall_clock
 import matplotlib.pyplot as plt

@@ -13,6 +13,9 @@
 """
 Framework for generic property packages
 """
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 # Import Pyomo libraries
 from pyomo.environ import (
     Block,

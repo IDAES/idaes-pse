@@ -13,6 +13,9 @@
 # TODO: Missing doc strings
 # pylint: disable=missing-module-docstring
 
+# Changing existing config block attributes
+# pylint: disable=protected-access
+
 import pyomo.environ as pyo
 from pyomo.common.config import In
 from idaes.core import declare_process_block_class

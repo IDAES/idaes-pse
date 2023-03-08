@@ -86,8 +86,8 @@ def custom_power_plant_currency_units():
     """
     register_idaes_currency_units()
     if (
-        "USD_2008_Nov" in pyunits._pint_registry
-        and "USD_2019_Sep" in pyunits._pint_registry
+        "USD_2008_Nov" in pyunits._pint_registry  # pylint: disable=protected-access
+        and "USD_2019_Sep" in pyunits._pint_registry  # pylint: disable=protected-access
     ):
         # Assume that custom power plant units have already been registered
         # Log a message and end
@@ -1128,7 +1128,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # check to see if a costing block already exists
         if (
             self.parent_block().name
-            in self.config.flowsheet_costing_block._registered_unit_costing
+            in self.config.flowsheet_costing_block._registered_unit_costing  # pylint: disable=protected-access
         ):
             raise AttributeError(
                 "{} already has an attribute costing. "
@@ -1386,7 +1386,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # check to see if a costing block already exists
         if (
             self.parent_block().name
-            in self.config.flowsheet_costing_block._registered_unit_costing
+            in self.config.flowsheet_costing_block._registered_unit_costing  # pylint: disable=protected-access
         ):
             raise AttributeError(
                 "{} already has an attribute costing. "

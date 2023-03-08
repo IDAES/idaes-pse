@@ -14,6 +14,9 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 
+# Changing existing config block attributes
+# pylint: disable=protected-access
+
 from enum import Enum
 
 import pyomo.environ as pyo

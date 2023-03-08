@@ -31,6 +31,9 @@ Instances of ``Var`` that must be fixed:
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 __author__ = "Douglas Allan"
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In

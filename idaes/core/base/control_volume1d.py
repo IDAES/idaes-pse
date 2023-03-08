@@ -16,6 +16,9 @@ Base class for control volumes
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
+# We use some private attributes here to hide these from the user
+# pylint: disable=protected-access
+
 # Import Python libraries
 import copy
 from enum import Enum

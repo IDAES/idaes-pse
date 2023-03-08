@@ -20,6 +20,9 @@ that is common to the API and CLI.
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
+# TODO: protected access issues
+# pylint: disable=protected-access
+
 # stdlib
 from datetime import datetime
 import glob

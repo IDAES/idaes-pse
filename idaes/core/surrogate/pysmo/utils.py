@@ -24,6 +24,9 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 __author__ = "Oluwamayowa Amusat, John Siirola"
 
 from pyomo.core.expr import current as EXPR, native_types

@@ -75,6 +75,8 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
 
     CONFIG = HelmholtzParameterBlockData.CONFIG()
     CONFIG.pure_component = "CO2"
+    # TODO: Might need to refactor this
+    # pylint: disable=protected-access
     CONFIG.get("pure_component")._default = "CO2"
 
 

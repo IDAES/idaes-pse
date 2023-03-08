@@ -15,6 +15,9 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 # stdlib
 import io
 import json

@@ -15,7 +15,6 @@ disable=no-self-argument,
     logging-fstring-interpolation,  # not sure why pylint doesn't like f-strings
     unnecessary-lambda,
     attribute-defined-outside-init,
-    protected-access,  # this probably needs to be addressed
     arguments-differ,
     abstract-method,
     arguments-renamed,

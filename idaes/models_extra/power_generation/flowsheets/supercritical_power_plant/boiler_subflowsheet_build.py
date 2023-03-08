@@ -605,7 +605,8 @@ def _stream_dict(m):
     Returns:
         None
     """
-
+    # We control m
+    # pylint: disable-next=protected-access
     m._streams = OrderedDict(
         [
             ("MS", m.fs.ATMP1.mixed_state),

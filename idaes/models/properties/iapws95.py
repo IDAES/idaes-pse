@@ -75,6 +75,8 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
 
     CONFIG = HelmholtzParameterBlockData.CONFIG()
     CONFIG.pure_component = "H2O"
+    # TODO: Might need to refactor this
+    # pylint: disable=protected-access
     CONFIG.get("pure_component")._default = "H2O"
 
 

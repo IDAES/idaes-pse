@@ -16,6 +16,9 @@ Base for IDAES process model objects.
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
+# TODO: Look into if this is necessary
+# pylint: disable=protected-access
+
 import sys
 import logging
 import textwrap

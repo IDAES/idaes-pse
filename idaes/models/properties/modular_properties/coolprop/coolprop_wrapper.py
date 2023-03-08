@@ -22,6 +22,9 @@ caching data to avoid repeated database lookups.
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 import json
 
 from pyomo.common.dependencies import attempt_import

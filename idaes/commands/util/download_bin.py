@@ -14,6 +14,9 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 
+# TODO: protected access issues
+# pylint: disable=protected-access
+
 import os
 import hashlib
 from platform import machine

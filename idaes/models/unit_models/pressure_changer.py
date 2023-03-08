@@ -16,6 +16,9 @@ Standard IDAES pressure changer model.
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
+# Changing existing config block attributes
+# pylint: disable=protected-access
+
 # Import Python libraries
 from enum import Enum
 
