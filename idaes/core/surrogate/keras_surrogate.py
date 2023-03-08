@@ -22,11 +22,11 @@ import pandas as pd
 
 from pyomo.common.dependencies import attempt_import
 
-keras, keras_available = attempt_import("tensorflow.keras")
-omlt, omlt_available = attempt_import("omlt")
-
 from idaes.core.surrogate.base.surrogate_base import SurrogateBase
 from idaes.core.surrogate.sampling.scaling import OffsetScaler
+
+keras, keras_available = attempt_import("tensorflow.keras")
+omlt, omlt_available = attempt_import("omlt")
 
 if omlt_available:
     from omlt import OmltBlock, OffsetScaling

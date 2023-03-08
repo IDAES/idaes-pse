@@ -14,7 +14,7 @@
 import time
 
 # Need to time imports, so must start timer before importing
-# pytest: disable=wrong-import-position
+# pylint: disable=wrong-import-position
 _command_import_start_time = time.time()
 
 import pkgutil

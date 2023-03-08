@@ -33,6 +33,7 @@ disable=no-self-argument,
     line-too-long,  # we have black for this
     too-many-lines,
     use-implicit-booleaness-not-comparison,  # implicit booleaness can be hard to follow
+    consider-using-f-string,  # should fix, but a lot of effort
 
 [IMPORTS]
 ignored-modules=cvalsim,almsim
