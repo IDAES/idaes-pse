@@ -12,6 +12,7 @@
 #################################################################################
 # TODO: Missing doc strings
 # pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
 
 from __future__ import division, print_function
 import warnings

@@ -44,6 +44,8 @@ _log = idaeslog.getLogger(__name__)
 
 
 class GenericReactionPackageError(PropertyPackageError):
+    """Modular reaction package class."""
+
     # Error message for when a property is called for but no option provided
     def __init__(self, block, prop):
         super().__init__()
@@ -504,6 +506,10 @@ class _GenericReactionBlock(ReactionBlockBase):
 
 @declare_process_block_class("GenericReactionBlock", block_class=_GenericReactionBlock)
 class GenericReactionBlockData(ReactionBlockDataBase):
+    """
+    Modular Reaction Block class.
+    """
+
     def build(self):
         # TODO: Need a different error here
         super(GenericReactionBlockData, self).build()

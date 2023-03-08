@@ -348,6 +348,8 @@ do_not_initialize = []
 
 
 class FpcTP(object):
+    """Phase-component flow, temperature, pressure state."""
+
     set_metadata = set_metadata
     define_state = define_state
     state_initialization = state_initialization

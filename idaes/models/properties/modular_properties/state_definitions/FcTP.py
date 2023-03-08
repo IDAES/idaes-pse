@@ -484,6 +484,8 @@ do_not_initialize = []
 
 
 class FcTP(object):
+    """Component flow, temperature, pressure state."""
+
     set_metadata = set_metadata
     define_state = define_state
     state_initialization = state_initialization

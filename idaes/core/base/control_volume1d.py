@@ -63,6 +63,10 @@ _log = idaeslog.getLogger(__name__)
 
 # Enumerate options for area
 class DistributedVars(Enum):
+    """
+    Enum indicating if a variable is constant across the spatial domain.
+    """
+
     variant = 0
     uniform = 1
 

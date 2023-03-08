@@ -12,6 +12,7 @@
 #################################################################################
 # TODO: Missing doc strings
 # pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
 
 from pyomo.environ import units as pyunits
 from idaes.core.base.property_base import PhysicalParameterBlock

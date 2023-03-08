@@ -89,6 +89,10 @@ def register_idaes_currency_units():
 
 
 class DefaultCostingComponents(StrEnum):
+    """
+    Costing components Enum
+    """
+
     capital = "capital_cost"
     fixed = "fixed_operating_cost"
     variable = "variable_operating_cost"

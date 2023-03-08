@@ -32,6 +32,8 @@ from .eos_base import EoSBase
 
 # TODO: Add support for ideal solids
 class Ideal(EoSBase):
+    """EoS class for ideal phases."""
+
     # Add attribute indicating support for electrolyte systems
     electrolyte_support = True
 

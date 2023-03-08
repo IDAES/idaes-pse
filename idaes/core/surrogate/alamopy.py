@@ -48,6 +48,10 @@ GLOBAL_FUNCS = {"sin": sin, "cos": cos, "ln": log, "exp": exp}
 
 # The values associated with these must match those expected in the .alm file
 class Modelers(Enum):
+    """
+    Enum for modelers supported by ALAMO.
+    """
+
     BIC = 1
     MallowsCp = 2
     AICc = 3
@@ -59,6 +63,10 @@ class Modelers(Enum):
 
 
 class Screener(Enum):
+    """
+    Enum for screeners supported by ALAMO.
+    """
+
     none = 0
     lasso = 1
     SIS = 2

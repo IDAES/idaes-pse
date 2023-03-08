@@ -13,6 +13,9 @@
 """
 Get project version and/or git hash
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 # stdlib
 from collections import namedtuple
 import importlib

@@ -18,6 +18,8 @@ Reid, Prausnitz and Polling, 2001, McGraw-Hill
 
 All parameter indicies based on conventions used by the source
 """
+# TODO: Missing doc strings
+# pylint: disable=missing-class-docstring
 
 from pyomo.environ import log, Var, units as pyunits
 

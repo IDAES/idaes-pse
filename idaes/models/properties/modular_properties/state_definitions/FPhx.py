@@ -515,6 +515,8 @@ do_not_initialize = ["sum_mole_frac_out"]
 
 
 class FPhx(object):
+    """Total flow, pressure, enthalpy, mole fraction state."""
+
     set_metadata = set_metadata
     define_state = define_state
     state_initialization = state_initialization

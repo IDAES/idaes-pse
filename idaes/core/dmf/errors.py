@@ -13,6 +13,9 @@
 """
 Exception classes.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 import logging
 
 __author__ = "Dan Gunter <dkgunter@lbl.gov>"

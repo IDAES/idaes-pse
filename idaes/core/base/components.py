@@ -31,6 +31,10 @@ _log = idaeslog.getLogger(__name__)
 
 @declare_process_block_class("Component")
 class ComponentData(ProcessBlockData):
+    """
+    Standard component object class.
+    """
+
     CONFIG = ConfigBlock()
 
     CONFIG.declare(

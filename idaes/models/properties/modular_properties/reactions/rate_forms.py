@@ -20,6 +20,8 @@ from idaes.models.properties.modular_properties.base.utility import (
 
 # -----------------------------------------------------------------------------
 class power_law_rate:
+    """Methods for power-law rate expressions."""
+
     @staticmethod
     def build_parameters(rblock, config):
         pass

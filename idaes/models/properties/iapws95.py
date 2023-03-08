@@ -71,6 +71,8 @@ def htpx(T=None, P=None, x=None):
 
 @declare_process_block_class("Iapws95ParameterBlock")
 class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
+    """IAWPS95 Parameter Block class"""
+
     CONFIG = HelmholtzParameterBlockData.CONFIG()
     CONFIG.pure_component = "H2O"
     CONFIG.get("pure_component")._default = "H2O"
@@ -81,4 +83,4 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
     block_class=_StateBlock,
 )
 class Iapws95StateBlockData(HelmholtzStateBlockData):
-    pass
+    """IAWPS95 State Block class."""

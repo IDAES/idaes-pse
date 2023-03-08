@@ -15,6 +15,9 @@ Common methods used by generic framework
 
 Author: A Lee
 """
+# TODO: Missing doc strings
+# pylint: disable=missing-class-docstring
+
 from enum import Enum
 
 from pyomo.environ import units as pyunits

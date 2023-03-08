@@ -12,6 +12,7 @@
 #################################################################################
 # TODO: Missing doc strings
 # pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
 
 __author__ = "John Eslick, Douglas Allan"
 

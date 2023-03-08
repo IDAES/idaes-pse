@@ -56,6 +56,8 @@ ClosestApproach = 14.9
 
 
 class ENRTL(Ideal):
+    """EoS class for eNRTL based property packages."""
+
     # Add attribute indicating support for electrolyte systems
     electrolyte_support = True
 

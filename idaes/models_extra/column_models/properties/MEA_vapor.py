@@ -28,6 +28,9 @@ References:
     [1] Hilliard thesis (1998)
     [2] Morgan et.al (2015)
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 # Import Pyomo units
 from pyomo.environ import sqrt, units as pyunits, Var
 

@@ -15,6 +15,9 @@
 
 Set up logging for the idaes module, and import plugins.
 """
+# TODO: Missing doc strings
+# pylint: disable=missing-class-docstring
+
 import os
 import copy
 import logging

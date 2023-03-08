@@ -27,6 +27,8 @@ import idaes.core.util.scaling as iscale
 
 
 class IdealBubbleDew:
+    """Bubble and dew point calculations for ideal systems."""
+
     # -------------------------------------------------------------------------
     # Bubble temperature methods
     # This approach can only be used when both liquid and vapor phases use
@@ -477,6 +479,8 @@ class IdealBubbleDew:
 
 
 class LogBubbleDew:
+    """General bubble and dew point calculations (log formulation)."""
+
     # -------------------------------------------------------------------------
     # Bubble temperature methods
     @staticmethod

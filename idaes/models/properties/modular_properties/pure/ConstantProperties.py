@@ -14,6 +14,9 @@
 Method to set constant pure component properties:
 
 """
+# TODO: Missing doc strings
+# pylint: disable=missing-class-docstring
+
 from pyomo.environ import log, Var
 
 from idaes.core.util.misc import set_param_from_config

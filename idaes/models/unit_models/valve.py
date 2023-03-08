@@ -37,6 +37,10 @@ _log = idaeslog.getLogger(__name__)
 
 
 class ValveFunctionType(Enum):
+    """
+    Enum of supported valve types.
+    """
+
     linear = 1
     quick_opening = 2
     equal_percentage = 3
@@ -103,6 +107,10 @@ def pressure_flow_default_callback(valve):
 
 @declare_process_block_class("Valve", doc="Adiabatic valves")
 class ValveData(PressureChangerData):
+    """
+    Basic valve model class.
+    """
+
     # Same settings as the default pressure changer, but force to expander with
     # isentropic efficiency
     CONFIG = PressureChangerData.CONFIG()

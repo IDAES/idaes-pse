@@ -26,6 +26,8 @@ from idaes.core.util.exceptions import ConfigurationError
 
 
 class EoSBase:
+    """Base class for modular equation-of-state classes."""
+
     @staticmethod
     def gas_constant(b):
         # Utility method to convert gas constant to base units

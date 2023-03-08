@@ -181,6 +181,8 @@ def henry_units(henry_type, units):
 
 
 class ConstantH:
+    """Methods for invariant Henry constant"""
+
     @staticmethod
     def build_parameters(cobj, p, h_type):
         b = cobj.parent_block()

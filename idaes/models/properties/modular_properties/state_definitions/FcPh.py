@@ -517,6 +517,8 @@ do_not_initialize = []
 
 
 class FcPh(object):
+    """Component flow, pressure enthalpy state"""
+
     set_metadata = set_metadata
     define_state = define_state
     state_initialization = state_initialization

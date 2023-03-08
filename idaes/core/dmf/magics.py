@@ -13,6 +13,9 @@
 """
 Jupyter magics for the DMF.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 # stdlib
 import inspect
 import logging

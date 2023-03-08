@@ -66,6 +66,10 @@ _log = idaeslog.getLogger(__name__)
 
 # Enumerate options for balances
 class SplittingType(Enum):
+    """
+    Enum of supported material split types.
+    """
+
     totalFlow = 1
     phaseFlow = 2
     componentFlow = 3
@@ -73,6 +77,10 @@ class SplittingType(Enum):
 
 
 class EnergySplittingType(Enum):
+    """
+    Enum of support energy split types.
+    """
+
     equal_temperature = 1
     equal_molar_enthalpy = 2
     enthalpy_split = 3

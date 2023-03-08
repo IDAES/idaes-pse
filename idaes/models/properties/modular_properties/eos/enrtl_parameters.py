@@ -25,6 +25,8 @@ _log = idaeslog.getLogger(__name__)
 
 
 class ConstantAlpha(object):
+    """Class for methods assuming constant alpha"""
+
     @staticmethod
     def build_parameters(b):
         param_block = b.parent_block()
@@ -105,6 +107,8 @@ class ConstantAlpha(object):
 
 
 class ConstantTau(object):
+    """Class for methods assuming consant tau"""
+
     @staticmethod
     def build_parameters(b):
         param_block = b.parent_block()

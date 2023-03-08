@@ -36,6 +36,10 @@ __author__ = "Andrew Lee"
 
 # Enumerate options for material balances
 class FlashType(Enum):
+    """
+    Enum of supported flash types.
+    """
+
     isothermal = 1
     isenthalpic = 2
 

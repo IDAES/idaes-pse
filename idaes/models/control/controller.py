@@ -78,6 +78,10 @@ def smooth_heaviside(x, k):
     doc="PID controller model block.  To use this the model must be dynamic.",
 )
 class PIDControllerData(UnitModelBlockData):
+    """
+    PID controller class.
+    """
+
     CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare(
         "process_var",

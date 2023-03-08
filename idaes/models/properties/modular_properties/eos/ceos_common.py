@@ -38,6 +38,8 @@ def cubic_roots_available():
 
 
 class CubicType(enum.Enum):
+    """enum of supported cubic types."""
+
     PR = 0
     SRK = 1
 

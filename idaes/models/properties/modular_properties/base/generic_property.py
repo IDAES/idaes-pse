@@ -1958,6 +1958,10 @@ class _GenericStateBlock(StateBlock):
 
 @declare_process_block_class("GenericStateBlock", block_class=_GenericStateBlock)
 class GenericStateBlockData(StateBlockData):
+    """
+    Modular State Block class.
+    """
+
     CONFIG = StateBlockData.CONFIG()
 
     def build(self):

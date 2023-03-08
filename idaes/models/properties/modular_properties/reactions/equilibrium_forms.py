@@ -25,6 +25,8 @@ from idaes.models.properties.modular_properties.base.utility import (
 
 # ----------------------------------------------------------------------------
 class power_law_equil:
+    """Methods for power-law based equilibrium forms."""
+
     @staticmethod
     def build_parameters(rblock, config):
         pass
@@ -56,6 +58,8 @@ class power_law_equil:
 
 # ----------------------------------------------------------------------------
 class log_power_law_equil:
+    """Methods for log formulation of power-law based equilibrium forms."""
+
     @staticmethod
     def return_expression(b, rblock, r_idx, T):
         e = None

@@ -1,7 +1,7 @@
 [MASTER]
 init-hook="import sys; sys.path.append('.pylint')"
 load-plugins=idaes_transform
-ignore-patterns=test_.*,__init__.py
+ignore-patterns=test_.*,__init__.*
 ignore=alamopy_depr,grid_integration,helmet,matopt,ripe,roundingRegression
 
 [MESSAGES CONTROL]
@@ -15,7 +15,7 @@ disable=no-self-argument,
     logging-fstring-interpolation,  # not sure why pylint doesn't like f-strings
     unnecessary-lambda,
     attribute-defined-outside-init,
-    protected-access,
+    protected-access,  # this probably needs to be addressed
     arguments-differ,
     abstract-method,
     arguments-renamed,
@@ -26,7 +26,6 @@ disable=no-self-argument,
     unspecified-encoding,
     # Conventions
     invalid-name,
-    missing-class-docstring,
     missing-function-docstring,
     line-too-long,  # we have black for this
     too-many-lines,

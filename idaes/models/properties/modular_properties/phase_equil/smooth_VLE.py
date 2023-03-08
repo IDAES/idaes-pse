@@ -29,6 +29,8 @@ import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 class SmoothVLE(object):
+    """Methods for constructing equations associated with Smooth VLE formulation."""
+
     @staticmethod
     def phase_equil(b, phase_pair):
         # This method is called via StateBlock.build, thus does not need clean-up

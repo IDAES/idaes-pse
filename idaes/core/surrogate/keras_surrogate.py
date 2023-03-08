@@ -13,6 +13,9 @@
 """
 Interface for importing Keras models into IDAES
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 from enum import Enum
 import json
 import os.path

@@ -58,11 +58,19 @@ _log = idaeslog.getLogger(__name__)
 
 
 class CondenserType(Enum):
+    """
+    Enum for supported condenser types.
+    """
+
     totalCondenser = 0
     partialCondenser = 1
 
 
 class TemperatureSpec(Enum):
+    """
+    Enum for temperature specifications.
+    """
+
     atBubblePoint = 0
     customTemperature = 1
 

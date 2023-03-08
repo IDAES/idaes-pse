@@ -12,6 +12,7 @@
 #################################################################################
 # TODO: Missing doc strings
 # pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
 
 from pyomo.environ import SolverFactory
 import idaes

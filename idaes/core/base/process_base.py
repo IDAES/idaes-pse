@@ -60,6 +60,10 @@ _log = logging.getLogger(__name__)
 
 # Enumerate options for material flow basis
 class MaterialFlowBasis(Enum):
+    """
+    Material flow basis Enum
+    """
+
     molar = 0
     mass = 1
     other = 2

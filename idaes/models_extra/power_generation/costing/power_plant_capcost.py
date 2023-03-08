@@ -10,7 +10,6 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
 """
 Power Plant costing library
 This method leverages NETL costing capabilities. Two main methods have been
@@ -32,6 +31,9 @@ Other methods:
     - check_sCO2_costing_bounds() to display a warning if costing model have
       been used outside the range that where designed for
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 __author__ = "Costing Team (A. Noring, B. Paul, D. Caballero, and M. Zamarripa)"
 __version__ = "1.0.0"
 

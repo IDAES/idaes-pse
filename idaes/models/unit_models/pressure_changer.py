@@ -53,6 +53,10 @@ _log = idaeslog.getLogger(__name__)
 
 
 class ThermodynamicAssumption(Enum):
+    """
+    Enum of supported thermodynamic assumptions.
+    """
+
     isothermal = 1
     isentropic = 2
     pump = 3
@@ -1145,7 +1149,10 @@ see property package for documentation.}""",
 
 @declare_process_block_class("Turbine", doc="Isentropic turbine model")
 class TurbineData(PressureChangerData):
-    # Pressure changer with isentropic turbine options
+    """
+    Pressure changer with isentropic turbine options
+    """
+
     CONFIG = PressureChangerData.CONFIG()
     CONFIG.compressor = False
     CONFIG.get("compressor")._default = False
@@ -1156,7 +1163,8 @@ class TurbineData(PressureChangerData):
 
 @declare_process_block_class("Compressor", doc="Isentropic compressor model")
 class CompressorData(PressureChangerData):
-    # Pressure changer with isentropic turbine options
+    """Pressure changer with isentropic compressor options"""
+
     CONFIG = PressureChangerData.CONFIG()
     CONFIG.compressor = True
     CONFIG.get("compressor")._default = True
@@ -1167,7 +1175,8 @@ class CompressorData(PressureChangerData):
 
 @declare_process_block_class("Pump", doc="Pump model")
 class PumpData(PressureChangerData):
-    # Pressure changer with isentropic turbine options
+    """Pressure changer with pump options"""
+
     CONFIG = PressureChangerData.CONFIG()
     CONFIG.compressor = True
     CONFIG.get("compressor")._default = True

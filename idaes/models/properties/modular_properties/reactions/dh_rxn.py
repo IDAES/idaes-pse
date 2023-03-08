@@ -22,6 +22,8 @@ from idaes.core.util.misc import set_param_from_config
 # -----------------------------------------------------------------------------
 # Constant dh_rxn
 class constant_dh_rxn:
+    """Methods for constant heat of reaction."""
+
     @staticmethod
     def build_parameters(rblock, config):
         units = rblock.parent_block().get_metadata().derived_units

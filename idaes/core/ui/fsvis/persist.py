@@ -15,6 +15,9 @@ Storage of models for the IDAES Flowsheet Visualizer.
 
 Currently implemented methods are trivial storage in memory and storage to a file.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 # stdlib
 from abc import ABC, abstractmethod
 import json

@@ -39,6 +39,9 @@ See also, on the DMF Resource class:
     * :attr:`idaes.core.dmf.resource.Resource.tables`
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 # stdlib
 from typing import List, Tuple, Dict
 import re

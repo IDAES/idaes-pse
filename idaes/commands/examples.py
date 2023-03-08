@@ -22,6 +22,9 @@ directory into a package called "idaes_examples".
 Options let the user choose a different version, directory, and
 whether to actually download or install.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 # stdlib
 from collections import namedtuple
 from datetime import datetime

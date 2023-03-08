@@ -49,6 +49,9 @@ Instances of ``Var`` that must be fixed:
     - ``resistivity_thermal_exponent_dividend``: Parameter divided by temperature in resistivity equation, in K.
       Would be something like (reduced) activation energy, but it can be both negative and positive.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 __author__ = "John Eslick, Douglas Allan"
 
 from pyomo.common.config import ConfigValue, Bool, ListOf

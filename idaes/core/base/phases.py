@@ -27,6 +27,10 @@ from idaes.core.base.process_base import declare_process_block_class, ProcessBlo
 
 # Enumerate recognised Phase types
 class PhaseType(Enum):
+    """
+    Enum indicating phase type.
+    """
+
     undefined = 0
     liquidPhase = 1
     vaporPhase = 2
@@ -37,6 +41,10 @@ class PhaseType(Enum):
 # TODO: Document EoS options and parameter_Data
 @declare_process_block_class("Phase")
 class PhaseData(ProcessBlockData):
+    """
+    Standard phase object class.
+    """
+
     CONFIG = ConfigBlock()
     CONFIG.declare(
         "component_list",
@@ -147,6 +155,10 @@ class PhaseData(ProcessBlockData):
 
 @declare_process_block_class("LiquidPhase", block_class=Phase)
 class LiquidPhaseData(PhaseData):
+    """
+    Liquid phase object class.
+    """
+
     def is_liquid_phase(self):
         return True
 
@@ -159,6 +171,10 @@ class LiquidPhaseData(PhaseData):
 
 @declare_process_block_class("SolidPhase", block_class=Phase)
 class SolidPhaseData(PhaseData):
+    """
+    Solid phase object class.
+    """
+
     def is_liquid_phase(self):
         return False
 
@@ -171,6 +187,10 @@ class SolidPhaseData(PhaseData):
 
 @declare_process_block_class("VaporPhase", block_class=Phase)
 class VaporPhaseData(PhaseData):
+    """
+    Vapor phase object class.
+    """
+
     def is_liquid_phase(self):
         return False
 
@@ -183,6 +203,10 @@ class VaporPhaseData(PhaseData):
 
 @declare_process_block_class("AqueousPhase", block_class=LiquidPhase)
 class AqueousPhaseData(LiquidPhaseData):
+    """
+    Aqueous phase object class.
+    """
+
     # Special phase type for liquid phases involving electrolytes
     # This is used to determine if we need to do the more complex component
     # list determinations

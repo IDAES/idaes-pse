@@ -71,6 +71,8 @@ def htpx(T=None, P=None, x=None):
 
 @declare_process_block_class("SWCO2ParameterBlock")
 class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
+    """Span-Wager Parameter Block class"""
+
     CONFIG = HelmholtzParameterBlockData.CONFIG()
     CONFIG.pure_component = "CO2"
     CONFIG.get("pure_component")._default = "CO2"
@@ -81,4 +83,4 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
     block_class=_StateBlock,
 )
 class SWCO2StateBlockData(HelmholtzStateBlockData):
-    pass
+    """Span-Wager State Block class."""
