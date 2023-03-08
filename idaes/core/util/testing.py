@@ -14,6 +14,7 @@
 This module contains utility functions for use in testing IDAES models.
 """
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 __author__ = "Andrew Lee"
 

@@ -20,6 +20,8 @@ National Institute of Standards and Technology, NIST Chemistry WebBook,
 https://webbook.nist.gov/chemistry/ (accessed March 10, 2018).
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # Import Pyomo libraries
 from pyomo.environ import (

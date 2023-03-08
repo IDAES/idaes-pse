@@ -16,6 +16,7 @@ of state.
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 # Import Python libraries
 import logging

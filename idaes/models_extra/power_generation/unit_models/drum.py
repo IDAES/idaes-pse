@@ -47,6 +47,9 @@ are mixed before entering drum
 
 Created: August 19 2020
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 import pyomo.environ as pyo

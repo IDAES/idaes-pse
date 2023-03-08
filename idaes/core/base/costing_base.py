@@ -13,6 +13,9 @@
 """
 Base classes for process costing
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock, ConfigValue
 from pyomo.util.calc_var_value import calculate_variable_from_constraint

@@ -21,6 +21,7 @@ All parameter indicies and units based on conventions used by the source
 """
 # TODO: Missing doc strings
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 from pyomo.environ import Expression, log, Var, units as pyunits
 

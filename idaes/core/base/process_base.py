@@ -13,6 +13,8 @@
 """
 Base for IDAES process model objects.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 import sys
 import logging
@@ -44,7 +46,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.units_of_measurement import report_quantity
 
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
 

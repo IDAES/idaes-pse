@@ -22,6 +22,7 @@ Data sources:
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 from pyomo.common.config import ConfigValue
 from pyomo.core.base.constraint import Constraint

@@ -13,6 +13,9 @@
 """
 Methods for calculating equilibrium constants
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import exp, log, Var, units as pyunits, value
 
 from idaes.models.properties.modular_properties.base.utility import ConcentrationForm

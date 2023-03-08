@@ -733,6 +733,7 @@ class AlamoTrainer(SurrogateTrainer):
 
     # TODO: let's generalize this under the metrics?
     def get_alamo_results(self):
+        """Return results from trainer"""
         return self._results
 
     def _get_files(self):

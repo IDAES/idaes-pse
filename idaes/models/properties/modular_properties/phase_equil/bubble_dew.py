@@ -13,6 +13,8 @@
 """
 Modular methods for calculating bubble and dew points
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 from pyomo.environ import Constraint
 
@@ -22,7 +24,7 @@ from idaes.models.properties.modular_properties.base.utility import (
 )
 import idaes.core.util.scaling as iscale
 
-# _valid_VL_component_list return variables that are not need in all cases/
+# _valid_VL_component_list return variables that are not need in all cases
 # pylint: disable=W0612
 
 

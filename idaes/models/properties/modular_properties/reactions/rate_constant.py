@@ -13,6 +13,9 @@
 """
 Methods for calculating rate constants
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import exp, Var, units as pyunits
 
 from idaes.core import MaterialFlowBasis

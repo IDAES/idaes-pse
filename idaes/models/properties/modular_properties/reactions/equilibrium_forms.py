@@ -13,6 +13,9 @@
 """
 Methods for defining equilibrium reactions
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import Param, units as pyunits
 
 from idaes.core.util.math import smooth_max

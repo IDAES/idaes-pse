@@ -10,10 +10,11 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
 """
 Standard IDAES pressure changer model.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # Import Python libraries
 from enum import Enum

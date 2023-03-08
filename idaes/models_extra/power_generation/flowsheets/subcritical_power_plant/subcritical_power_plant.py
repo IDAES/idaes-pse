@@ -12,6 +12,7 @@
 #################################################################################
 # TODO: Missing doc strings
 # pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
 
 import os
 import time as wall_clock

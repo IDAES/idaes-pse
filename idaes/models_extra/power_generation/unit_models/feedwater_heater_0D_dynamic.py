@@ -26,6 +26,7 @@ are two models included here.
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 __author__ = "John Eslick, Jinliang Ma"
 from pyomo.common.config import ConfigValue, ConfigBlock, Bool

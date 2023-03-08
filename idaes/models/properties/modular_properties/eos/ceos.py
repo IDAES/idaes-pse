@@ -15,6 +15,9 @@ Methods for cubic equations of state.
 
 Currently only supports liquid and vapor phases
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from enum import Enum
 from copy import deepcopy
 

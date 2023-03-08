@@ -46,6 +46,9 @@ Main Assumptions:
 Created: 1/10/2020 by Boiler subsystem team (M Zamarripa)
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 __author__ = "Miguel Zamarripa"
 
 from collections import OrderedDict

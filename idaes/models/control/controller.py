@@ -13,6 +13,8 @@
 """
 PID controller model module
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 __author__ = ["John Eslick", "Jinliang Ma"]
 

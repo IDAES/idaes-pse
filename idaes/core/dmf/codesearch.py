@@ -15,6 +15,7 @@ Search through the code and index static information in the DMF.
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 # stdlib
 import glob

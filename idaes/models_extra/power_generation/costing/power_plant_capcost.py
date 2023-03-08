@@ -33,6 +33,7 @@ Other methods:
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 __author__ = "Costing Team (A. Noring, B. Paul, D. Caballero, and M. Zamarripa)"
 __version__ = "1.0.0"

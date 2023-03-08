@@ -22,6 +22,7 @@ is needed to make this appropriate for general use.
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 from collections import OrderedDict
 import importlib

@@ -13,6 +13,8 @@
 """
 Base class for control volumes
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # Import Python libraries
 import copy

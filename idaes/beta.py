@@ -13,6 +13,7 @@
 #################################################################################
 # TODO: Missing doc strings
 # pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
 
 import importlib
 import inspect

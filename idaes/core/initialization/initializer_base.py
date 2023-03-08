@@ -100,6 +100,7 @@ class InitializerBase:
         cls.__doc__ = add_docstring_list(cls.__doc__ if cls.__doc__ else "", cls.CONFIG)
 
     def get_logger(self, model):
+        """Get logger for model by name"""
         return idaeslog.getInitLogger(model.name, self.config.output_level)
 
     def initialize(

@@ -16,6 +16,7 @@ where an Expression could be mistaken for a Var.
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 import pyomo.environ as pyo
 from pyomo.core.base.expression import _GeneralExpressionData

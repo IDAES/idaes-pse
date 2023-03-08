@@ -13,6 +13,8 @@
 """
 This module contains classes for property blocks and property parameter blocks.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 import sys
 

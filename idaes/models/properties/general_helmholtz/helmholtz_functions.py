@@ -12,6 +12,9 @@
 #################################################################################
 """Generic Helmholtz EOS Functions and Parameters
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 __author__ = "John Eslick"
 
 import enum

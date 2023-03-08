@@ -33,6 +33,7 @@ Instances of ``Var`` that must be fixed:
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 __author__ = "John Eslick, Douglas Allan"
 

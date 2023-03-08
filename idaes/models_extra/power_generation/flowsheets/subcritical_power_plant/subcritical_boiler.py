@@ -28,6 +28,9 @@ feedwater pump), and steam outlet to superheaters.
 For a detailed description see Jupyter Notebook
 authors: Boiler Subsystem Team (J. Ma, M. Zamarripa)
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 import os
 
 # import plotting libraries

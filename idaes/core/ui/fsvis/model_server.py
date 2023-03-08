@@ -15,6 +15,8 @@ Visualization server back-end.
 
 The main class is `FlowsheetServer`, which is instantiated from the `visualize()` function.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # stdlib
 import http.server

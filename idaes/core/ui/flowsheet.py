@@ -15,6 +15,7 @@ Flowsheet-related classes and functions used by the UI.
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 # stdlib
 from collections import defaultdict, deque

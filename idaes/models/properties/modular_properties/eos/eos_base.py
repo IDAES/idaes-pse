@@ -16,6 +16,9 @@ Base class for EoS modules.
 Raises NotImplementedErrors for all expected methods in case developer misses
 some. EoS developers should overload all these methods.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import units as pyunits
 from idaes.core.util.constants import Constants as const
 from idaes.models.properties.modular_properties.base.utility import (

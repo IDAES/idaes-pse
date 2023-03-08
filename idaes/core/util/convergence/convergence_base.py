@@ -59,6 +59,7 @@ See the documentation in convergence.py for more information.
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 # stdlib
 from collections import OrderedDict

@@ -36,6 +36,7 @@ References:
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 # Import Pyomo units
 from pyomo.environ import exp, log, units as pyunits, Var, Expression

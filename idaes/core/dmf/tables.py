@@ -41,6 +41,7 @@ See also, on the DMF Resource class:
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 # stdlib
 from typing import List, Tuple, Dict

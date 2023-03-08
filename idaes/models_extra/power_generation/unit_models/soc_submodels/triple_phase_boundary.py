@@ -45,6 +45,7 @@ https://doi.org/10.1016/j.jpowsour.2005.03.174
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 __author__ = "Douglas Allan"
 

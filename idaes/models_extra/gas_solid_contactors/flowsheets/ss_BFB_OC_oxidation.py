@@ -18,6 +18,9 @@ Created: 05/04/2020
 
 Author: Chinedu Okoli
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import python libraries
 import time
 

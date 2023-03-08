@@ -13,6 +13,9 @@
 """
 General pure component electrolyte methods
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import Var, units as pyunits
 
 from idaes.core.util.misc import set_param_from_config

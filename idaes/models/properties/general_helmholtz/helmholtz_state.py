@@ -12,6 +12,9 @@
 #################################################################################
 """Generic Helmholtz EOS StateBlock Class
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 __author__ = "John Eslick"
 
 

@@ -10,11 +10,13 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
 """
 This module contains utility functions for converting units of measurement and
 reporting model outputs.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import as_quantity, units
 import idaes
 

@@ -17,6 +17,8 @@ iron-oxide case study
 
 Author: Chinedu Okoli
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 import time
 

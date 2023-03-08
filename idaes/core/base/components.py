@@ -15,6 +15,9 @@ IDAES Component objects
 
 @author: alee
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import Set, Param, Var, units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 

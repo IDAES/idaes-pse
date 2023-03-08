@@ -17,6 +17,9 @@ particular to the CLI.
 Call functions defined in 'api' module to handle logic
 that is common to the API and CLI.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # stdlib
 from datetime import datetime
 import glob

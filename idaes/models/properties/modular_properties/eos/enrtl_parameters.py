@@ -13,8 +13,11 @@
 """
 Sub-methods for eNRTL activity coefficient method.
 
-Includes temperature dependance rules for alpha and tau
+Includes temperature dependence rules for alpha and tau
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import Reals, units as pyunits, Var
 
 from idaes.core.util.exceptions import BurntToast, ConfigurationError

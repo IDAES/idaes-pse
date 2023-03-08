@@ -51,6 +51,9 @@ by 1D heat conduction
 
 Created: October 27 2020
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo libraries
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool

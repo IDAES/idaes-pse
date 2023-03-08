@@ -17,6 +17,7 @@ Author: A Lee
 """
 # TODO: Missing doc strings
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 from enum import Enum
 

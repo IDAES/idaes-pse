@@ -89,6 +89,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 def set_param_value(b, param, units):
+    """Set parameter values from user provided dict"""
     # We cannot use the standard method in core.util.misc as here the parameter
     # data is directly attached to the config block, rather than in a parameter
     # data entry.

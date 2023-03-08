@@ -17,6 +17,9 @@ Created on Tue Feb 18 10:54:52 2020
 
 @author: alee
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from enum import Enum
 
 from pyomo.environ import Set

@@ -13,6 +13,9 @@
 """
 Methods for defining reaction rates
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from idaes.models.properties.modular_properties.base.utility import (
     get_concentration_term,
 )

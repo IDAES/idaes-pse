@@ -17,6 +17,7 @@ Currently implemented methods are trivial storage in memory and storage to a fil
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 # stdlib
 from abc import ABC, abstractmethod

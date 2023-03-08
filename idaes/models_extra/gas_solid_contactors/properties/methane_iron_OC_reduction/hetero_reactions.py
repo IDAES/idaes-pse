@@ -22,6 +22,8 @@ oxygen carriers in chemical-looping combustion,
 Chem. Eng. Sci. 62 (2007) 533–549.
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # Import Pyomo libraries
 from pyomo.environ import (
