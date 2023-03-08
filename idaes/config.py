@@ -10,10 +10,11 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-import pyomo.common.config
 import logging.config
 import json
 import os
+
+import pyomo.common.config
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions

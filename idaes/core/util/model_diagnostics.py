@@ -84,7 +84,7 @@ class DegeneracyHunter:
 
             self.candidate_eqns = None
 
-        elif type(block_or_jac) is np.array:
+        elif type(block_or_jac) is np.array:  # pylint: disable=unidiomatic-typecheck
             raise NotImplementedError(
                 "Degeneracy Hunter currently only supports analyzing a Pyomo model"
             )

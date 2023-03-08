@@ -10,9 +10,11 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+import collections
+
 from pyomo.core.base.block import declare_custom_block, _BlockData
 from pyomo.environ import Var, Set
-import collections
+
 import idaes.logger as idaeslog
 
 __author__ = "Carl Laird, Andrew Lee"
@@ -25,7 +27,7 @@ class SurrogateBlockData(_BlockData):
     def __init__(self, component):
         """
         This custom block is used for importing surrogates into IDAES
-        
+
         Example usage without specifying inputs and outputs:
         > # Load the surrogate object
         > alamo_surrogate = AlamoSurrogate.load_from_file('alamo_reformer.json')
@@ -124,9 +126,7 @@ class SurrogateBlockData(_BlockData):
         if len(kwargs) > 0:
             raise ValueError(
                 "Error in keyword arguments passed to build_model."
-                " The following arguments were not used: {}".format(
-                    [k for k in kwargs.keys()]
-                )
+                " The following arguments were not used: {}".format([k for k in kwargs])
             )
 
     def _setup_inputs_outputs(

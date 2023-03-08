@@ -19,6 +19,9 @@ import os
 import copy
 import logging
 
+from . import config
+from .ver import __version__  # noqa
+
 
 def _handle_optional_compat_activation(
     env_var: str = "IDAES_ACTIVATE_V1_COMPAT",
@@ -32,6 +35,8 @@ def _handle_optional_compat_activation(
             found_in_env,
         )
         try:
+            # Only need to import this if required
+            # pylint: disable=import-outside-toplevel
             from _idaes_v1_compat import activate
         except ImportError:
             _log.error("Required package _idaes_v1_compat not found")
@@ -40,11 +45,6 @@ def _handle_optional_compat_activation(
 
 
 _handle_optional_compat_activation()
-
-
-from . import config
-
-from .ver import __version__  # noqa
 
 _log = logging.getLogger(__name__)
 

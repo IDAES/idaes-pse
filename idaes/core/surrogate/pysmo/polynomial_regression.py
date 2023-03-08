@@ -17,12 +17,16 @@ from __future__ import division
 # from builtins import int, str
 import os.path
 import warnings
+import pickle
 
 # Imports from third parties
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-import pickle
+import scipy.optimize as opt
+from scipy import stats
+from six import string_types
+
 from pyomo.environ import (
     ConcreteModel,
     Param,
@@ -34,10 +38,9 @@ from pyomo.environ import (
     Expression,
     SolverFactory,
     ComponentMap,
+    value,
 )
 from pyomo.core.expr.visitor import replace_expressions
-import scipy.optimize as opt
-from six import string_types
 
 # Imports from IDAES namespace
 from idaes.core.surrogate.pysmo.utils import NumpyEvaluator
@@ -50,7 +53,7 @@ The purpose of this file is to perform polynomial regression in Pyomo.
 This will be done in two stages. First, a sampling plan will
 be used to select samples for generating a surrogate model.
 In the second stage, the surrogate model is constructed by fitting to
-different order polynomials. Long term, an iterative adaptive sampling 
+different order polynomials. Long term, an iterative adaptive sampling
 approach will be incorporated for model improvement.
 Cross-validation is used to select the best model.
 
@@ -525,7 +528,7 @@ class PolynomialRegression:
 
     @classmethod
     def polygeneration(
-        self,
+        cls,
         polynomial_order,
         multinomials,
         x_input_train_data,
@@ -1660,17 +1663,16 @@ class PolynomialRegression:
         """
         nf = x_data.shape[1]
         x_list = [i for i in range(0, nf)]
-        import pyomo.environ as aml
 
-        m = aml.ConcreteModel()
-        i = aml.Set(initialize=x_list)
-        m.xx = aml.Var(i)
-        m.o2 = aml.Objective(expr=self.generate_expression([m.xx[i] for i in x_list]))
+        m = ConcreteModel()
+        i = Set(initialize=x_list)
+        m.xx = Var(i)
+        m.o2 = Objective(expr=self.generate_expression([m.xx[i] for i in x_list]))
         y_eq = np.zeros((x_data.shape[0], 1))
         for j in range(0, x_data.shape[0]):
             for i in x_list:
                 m.xx[i] = x_data[j, i]
-            y_eq[j, 0] = aml.value(m.o2([m.xx[i] for i in x_list]))
+            y_eq[j, 0] = value(m.o2([m.xx[i] for i in x_list]))
         return y_eq
 
     def pickle_save(self, solutions):
@@ -1782,7 +1784,6 @@ class PolynomialRegression:
             confidence      : Required confidence interval level, default = 0.95 (95%)
 
         """
-        from scipy.stats import t
 
         data = self.final_training_data
         y_pred = self.predict_output(data[:, :-1])
@@ -1809,7 +1810,7 @@ class PolynomialRegression:
         ss_reg_params = np.sqrt(
             np.diag(covar)
         )  # standard error for each regression parameter
-        t_dist = t.ppf(
+        t_dist = stats.t.ppf(
             (1 + confidence) / 2, dof
         )  # alternatively, t_dist_data = st.t.interval(0.99, 8)
         # Evaluate confidence intervals, Tabulate and print results

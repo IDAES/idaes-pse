@@ -18,9 +18,9 @@ generated Sphinx documentation and return its location.
 import logging
 import os
 from pathlib import Path
-import requests
 import types
 from urllib.parse import urlparse
+import requests
 
 # third-party
 from lxml import html

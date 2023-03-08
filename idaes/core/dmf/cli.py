@@ -44,6 +44,7 @@ from idaes.core.dmf.util import (
     parse_datetime,
     size_prefix,
 )
+from idaes.core.dmf import datasets
 
 __author__ = "Dan Gunter"
 
@@ -1088,8 +1089,6 @@ def rm(identifier, yes, multiple, list_resources):
     help="Load into global IDAES data workspace (by default, use current workspace)",
 )
 def load_data(datadir, global_):
-    from idaes.core.dmf import datasets
-
     def echolog(msg, error=False):
         if error:
             _log.error(f"Error: {msg}")

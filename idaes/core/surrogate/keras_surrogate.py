@@ -22,6 +22,9 @@ import pandas as pd
 
 from pyomo.common.dependencies import attempt_import
 
+from idaes.core.surrogate.base.surrogate_base import SurrogateBase
+from idaes.core.surrogate.sampling.scaling import OffsetScaler
+
 keras, keras_available = attempt_import("tensorflow.keras")
 omlt, omlt_available = attempt_import("omlt")
 
@@ -36,9 +39,6 @@ if omlt_available:
 
     if keras_available:
         from omlt.io import load_keras_sequential
-
-from idaes.core.surrogate.base.surrogate_base import SurrogateBase
-from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
 
 class KerasSurrogate(SurrogateBase):
@@ -88,9 +88,9 @@ class KerasSurrogate(SurrogateBase):
         # make sure we are using the standard scaler
         if (
             input_scaler is not None
-            and type(input_scaler) is not OffsetScaler
+            and not isinstance(input_scaler, OffsetScaler)
             or output_scaler is not None
-            and type(output_scaler) is not OffsetScaler
+            and not isinstance(output_scaler, OffsetScaler)
         ):
             raise NotImplementedError("KerasSurrogate only supports the OffsetScaler.")
 

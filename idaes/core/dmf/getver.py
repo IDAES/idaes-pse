@@ -19,10 +19,11 @@ import importlib
 import json
 import logging
 from pathlib import Path
-import pkg_resources
 import subprocess
 from types import ModuleType
 from typing import Union
+
+import pkg_resources
 
 _log = logging.getLogger(__name__)
 

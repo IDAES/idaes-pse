@@ -17,6 +17,7 @@ Base for IDAES process model objects.
 import sys
 import logging
 import textwrap
+from enum import Enum
 
 from pandas import DataFrame
 
@@ -25,7 +26,6 @@ from pyomo.common.formatting import tabular_writer
 from pyomo.environ import Block
 from pyomo.gdp import Disjunct
 from pyomo.common.config import ConfigBlock
-from enum import Enum
 
 from idaes.core.base.process_block import declare_process_block_class
 from idaes.core.initialization import BlockTriangularizationInitializer

@@ -850,10 +850,8 @@ objects linked to all inlet states and the mixed state,
                     # If fixed, use current value
                     # otherwise calculate guess from mixed state
                     if not s_vars[s][k].fixed:
-                        for i in range(len(i_block_list)):
-                            i_vars.append(
-                                getattr(i_block_list[i][t], s_vars[s].local_name)
-                            )
+                        for ib in i_block_list:
+                            i_vars.append(getattr(ib[t], s_vars[s].local_name))
 
                         if s == "pressure":
                             # If pressure, use minimum as initial guess

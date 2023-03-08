@@ -12,13 +12,14 @@
 #################################################################################
 
 from __future__ import division, print_function
+import warnings
+import itertools
+
 from six import string_types
 
 # from builtins import int, str
 import numpy as np
 import pandas as pd
-import warnings
-import itertools
 
 __author__ = "Oluwamayowa Amusat"
 
@@ -1218,7 +1219,7 @@ class HammersleySampling(SamplingMethods):
         sample_points[:, 0] = (
             np.arange(0, self.number_of_samples)
         ) / self.number_of_samples
-        for i in range(0, len(prime_list)):
+        for i in range(0, len(prime_list)):  # pylint: disable=consider-using-enumerate
             sample_points[:, i + 1] = self.data_sequencing(
                 self.number_of_samples, prime_list[i]
             )

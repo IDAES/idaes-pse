@@ -379,17 +379,17 @@ class _SolidPhaseStateBlock(StateBlock):
 
         # Deactivate the constraints specific for outlet block i.e.
         # when defined state is False
-        for k in blk.keys():
-            if blk[k].config.defined_state is False:
-                blk[k].sum_component_eqn.deactivate()
+        for k in blk.values():
+            if k.config.defined_state is False:
+                k.sum_component_eqn.deactivate()
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
             flags = fix_state_vars(blk, state_args)
         else:
             # Check when the state vars are fixed already result in dof 0
-            for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
+            for k in blk.values():
+                if degrees_of_freedom(k) != 0:
                     raise Exception(
                         "State vars fixed but degrees of freedom "
                         "for state block is not zero during "
@@ -398,38 +398,36 @@ class _SolidPhaseStateBlock(StateBlock):
 
         # ---------------------------------------------------------------------
         # Initialize values
-        for k in blk.keys():
-            if hasattr(blk[k], "density_skeletal_constraint"):
+        for k in blk.values():
+            if hasattr(k, "density_skeletal_constraint"):
                 calculate_variable_from_constraint(
-                    blk[k].dens_mass_skeletal, blk[k].density_skeletal_constraint
+                    k.dens_mass_skeletal, k.density_skeletal_constraint
                 )
 
-            if hasattr(blk[k], "mixture_heat_capacity_eqn"):
+            if hasattr(k, "mixture_heat_capacity_eqn"):
                 calculate_variable_from_constraint(
-                    blk[k].cp_mass, blk[k].mixture_heat_capacity_eqn
+                    k.cp_mass, k.mixture_heat_capacity_eqn
                 )
 
-            if hasattr(blk[k], "mixture_enthalpy_eqn"):
-                calculate_variable_from_constraint(
-                    blk[k].enth_mass, blk[k].mixture_enthalpy_eqn
-                )
+            if hasattr(k, "mixture_enthalpy_eqn"):
+                calculate_variable_from_constraint(k.enth_mass, k.mixture_enthalpy_eqn)
 
-            for j in blk[k]._params.component_list:
+            for j in k._params.component_list:
 
-                if hasattr(blk[k], "cp_shomate_eqn"):
+                if hasattr(k, "cp_shomate_eqn"):
                     calculate_variable_from_constraint(
-                        blk[k].cp_mol_comp[j], blk[k].cp_shomate_eqn[j]
+                        k.cp_mol_comp[j], k.cp_shomate_eqn[j]
                     )
 
-                if hasattr(blk[k], "enthalpy_shomate_eqn"):
+                if hasattr(k, "enthalpy_shomate_eqn"):
                     calculate_variable_from_constraint(
-                        blk[k].enth_mol_comp[j], blk[k].enthalpy_shomate_eqn[j]
+                        k.enth_mol_comp[j], k.enthalpy_shomate_eqn[j]
                     )
 
         # Solve property block if non-empty
         free_vars = 0
-        for k in blk.keys():
-            free_vars += number_unfixed_variables_in_activated_equalities(blk[k])
+        for k in blk.values():
+            free_vars += number_unfixed_variables_in_activated_equalities(k)
 
         if free_vars > 0:
             # Create solver
@@ -466,9 +464,9 @@ class _SolidPhaseStateBlock(StateBlock):
         revert_state_vars(blk, flags)
 
         # Activate state variable related constraints
-        for k in blk.keys():
-            if blk[k].config.defined_state is False:
-                blk[k].sum_component_eqn.activate()
+        for k in blk.values():
+            if k.config.defined_state is False:
+                k.sum_component_eqn.activate()
 
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         init_log.info_high("States released.")

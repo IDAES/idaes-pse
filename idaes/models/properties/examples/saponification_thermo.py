@@ -197,9 +197,9 @@ class _StateBlock(StateBlock):
         # when defined state is False
         # This is needed as fixing state vars fixes conc_mol_comp["H2O"],
         # which is also specified by the conc_water_eqn constraint
-        for k in blk.keys():
-            if blk[k].config.defined_state is False:
-                blk[k].conc_water_eqn.deactivate()
+        for k in blk.values():
+            if k.config.defined_state is False:
+                k.conc_water_eqn.deactivate()
 
         if state_vars_fixed is False:
             # Fix state variables if not already fixed
@@ -207,8 +207,8 @@ class _StateBlock(StateBlock):
 
         else:
             # Check when the state vars are fixed already result in dof 0
-            for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
+            for k in blk.values():
+                if degrees_of_freedom(k) != 0:
                     raise Exception(
                         "State vars fixed but degrees of freedom "
                         "for state block is not zero during "
@@ -237,9 +237,9 @@ class _StateBlock(StateBlock):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
 
         # Reactivate conc_water_eqn
-        for k in blk.keys():
-            if not blk[k].config.defined_state:
-                blk[k].conc_water_eqn.activate()
+        for k in blk.values():
+            if not k.config.defined_state:
+                k.conc_water_eqn.activate()
 
         if flags is None:
             return

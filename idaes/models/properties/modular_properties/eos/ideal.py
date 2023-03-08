@@ -23,11 +23,11 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     get_component_object as cobj,
 )
-from .eos_base import EoSBase
 from idaes.models.properties.modular_properties.phase_equil.henry import (
     henry_pressure,
     log_henry_pressure,
 )
+from .eos_base import EoSBase
 
 
 # TODO: Add support for ideal solids

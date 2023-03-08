@@ -11,8 +11,8 @@
 # for full copyright and license information.
 #################################################################################
 """
-This is a sample visualization script. This script builds a simple model and 
-calls visualize("sample_visualization") in order to pop up a webpage with 
+This is a sample visualization script. This script builds a simple model and
+calls visualize("sample_visualization") in order to pop up a webpage with
 a sample visualization.
 """
 import sys

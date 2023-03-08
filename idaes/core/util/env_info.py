@@ -15,13 +15,13 @@ __author__ = "John Eslick"
 
 import sys
 import platform
-import pkg_resources
 import json
+import pkg_resources
 
-import idaes
 import pyomo
 import pyomo.environ as pyo
 
+import idaes
 import idaes.ver as ver
 
 
@@ -110,7 +110,7 @@ class EnvironmentInfo:
         d = {
             "IDAES": {
                 # break off the +label, which is the git hash
-                "Version": self.version_string.split("+")[0],
+                "Version": self.version_string.split("+", maxsplit=1)[0],
                 "Git Hash": self.git_hash,
                 "Binary Directory": self.bin_directory,
                 "Data Directory": self.data_directory,

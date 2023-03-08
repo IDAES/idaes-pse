@@ -18,14 +18,6 @@ from pyomo.core.expr.sympy_tools import (
     _pyomo_operator_map,
     _configure_sympy,
 )
-
-try:
-    import sympy
-
-    _configure_sympy(sympy, True)
-except ImportError:
-    pass
-
 from pyomo.environ import ExternalFunction, Var, Expression, value, units as pu
 from pyomo.core.base.constraint import _ConstraintData, Constraint
 from pyomo.core.base.expression import _ExpressionData
@@ -34,6 +26,13 @@ from pyomo.core.expr.visitor import StreamBasedExpressionVisitor
 from pyomo.core.expr.numeric_expr import ExternalFunctionExpression
 from pyomo.core.expr import current as EXPR, native_types
 from pyomo.common.collections import ComponentMap
+
+try:
+    import sympy
+
+    _configure_sympy(sympy, True)
+except ImportError:
+    pass
 
 # TODO<jce> Look into things like sum operator and template expressions
 

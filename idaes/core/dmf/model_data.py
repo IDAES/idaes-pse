@@ -10,7 +10,6 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
 """
 This module contains functions to read and manage data for use in parameter
 esitmation, data reconciliation, and validation.
@@ -20,14 +19,15 @@ __author__ = "John Eslick"
 
 import logging
 import csv
+import os
+import warnings
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import pint
-import os
 
 import pyomo.environ as pyo
-import warnings
 
 try:
     import seaborn as sns

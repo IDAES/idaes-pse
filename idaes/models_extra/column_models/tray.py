@@ -24,8 +24,6 @@ have a side vapor draw if required.
 
 __author__ = "Jaffer Ghouse"
 
-import idaes.logger as idaeslog
-
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
@@ -45,6 +43,7 @@ from idaes.core.util.exceptions import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
+import idaes.logger as idaeslog
 from idaes.models_extra.column_models.util import make_phase_split
 
 _log = idaeslog.getLogger(__name__)

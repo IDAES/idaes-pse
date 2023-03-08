@@ -25,7 +25,7 @@ def test_beta_module_exception():
     with pytest.raises(
         ImportError,
         match=r"Module 'idaes.tests.beta_mod' is in beta "
-        "and must be imported using idaes.beta.import_beta\(\).",
+        "and must be imported using idaes.beta.import_beta().",
     ):
         import idaes.tests.beta_mod
 
@@ -52,7 +52,7 @@ def test_beta_module_import():
     assert mod.__name__ == "idaes.logger"
     assert (
         os.getvalue().strip() == "Module 'idaes.tests.test_beta' "
-        "imported module 'idaes.logger' as a Beta module.  "
+        "imported module 'idaes.logger' as a Beta module. "
         "This module is not declared beta and can be "
         "imported using Python's normal import mechanisms."
     )
@@ -73,7 +73,7 @@ def test_beta_reimport():
     with pytest.raises(
         ImportError,
         match=r"Module 'idaes.tests.beta_mod' is in beta "
-        "and must be imported using idaes.beta.import_beta\(\).",
+        "and must be imported using idaes.beta.import_beta().",
     ):
         import idaes.tests.beta_mod
 

@@ -10,9 +10,10 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+from collections import OrderedDict
 
 from pandas import DataFrame
-from collections import OrderedDict
+
 from pyomo.environ import value
 from pyomo.network import Arc, Port
 from pyomo.core.base.var import _GeneralVarData, Var

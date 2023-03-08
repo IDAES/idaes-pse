@@ -13,6 +13,11 @@
 """
 Functions for saving and loading Pyomo objects to json
 """
+import json
+import datetime
+import time
+import gzip
+import logging
 
 from pyomo.environ import (
     Param,
@@ -26,11 +31,6 @@ from pyomo.environ import (
 )
 from pyomo.core.base.param import _ParamData
 from pyomo.core.base.component import ComponentData
-import json
-import datetime
-import time
-import gzip
-import logging
 
 _log = logging.getLogger(__name__)
 
@@ -791,7 +791,7 @@ def _read_component(sd, o, wts, lookup=None, suffixes=None, root_name=None):
         if wts.ignore_missing:
             return
         else:
-            raise (e)
+            raise e
     if ff is not None:
         alist = ff(o, odict)
     if Suffix in wts.classes:
@@ -809,7 +809,7 @@ def _read_component(sd, o, wts, lookup=None, suffixes=None, root_name=None):
             if wts.ignore_missing:
                 return
             else:
-                raise (e)
+                raise e
     if isinstance(o, Suffix):
         if wts.suffix_filter is None or oname in wts.suffix_filter:
             suffixes[odict["__id__"]] = odict["data"]  # is populated
@@ -858,7 +858,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
             if wts.ignore_missing:
                 return  # if ignore missing option its okay
             else:
-                raise (e)  # else raise exception
+                raise e  # else raise exception
         if ff is not None:  # if a filer function was given, use it to make a
             # new a list based on the model and whats stored for the state
             # this lets you conditionally load things, for example only load
@@ -879,7 +879,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
                 if wts.ignore_missing:
                     return  # if ignore option then is okay
                 else:
-                    raise (e)  # otherwise raise an exception
+                    raise e  # otherwise raise an exception
         if _may_have_subcomponents(el) and "__pyomo_components__" in edict:
             # read sub-components of block-like
             for o2 in el.component_objects(descend_into=False):
@@ -915,7 +915,7 @@ def component_data_from_dict(sd, o, wts):
             if wts.ignore_missing:
                 return  # if ignore option then is okay
             else:
-                raise (e)  # otherwise raise an exception
+                raise e  # otherwise raise an exception
     if _may_have_subcomponents(el):  # read sub-components of block-like
         for o2 in el.component_objects(descend_into=False):
             # recursive read here

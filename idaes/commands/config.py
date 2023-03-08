@@ -14,10 +14,11 @@
 
 __author__ = "John Eslick"
 
-import idaes
-import click
 import json
+import click
 import pyomo.common.config
+
+import idaes
 from idaes.commands import cb
 import idaes.config as cfg
 
@@ -77,7 +78,7 @@ def config_set(
         global_config_file = file
         file = None
     # make sure one and only one place is specified to write to
-    if not (glb ^ local ^ bool(file)):
+    if not glb ^ local ^ bool(file):
         click.echo("Must specify exactly one of --global, --local, --file")
         return
     # if global make sure you don't pick up local config and write it back

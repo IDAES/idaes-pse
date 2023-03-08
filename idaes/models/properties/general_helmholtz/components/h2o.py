@@ -68,7 +68,7 @@ def _thermal_conductivity(blk, delta, tau, on_blk=None):
     return (
         (
             pyo.sqrt(1.0 / tau)
-            / sum(L0[i] * tau**i for i in L0)
+            / sum(l0i * tau**i for i, l0i in L0.items())
             * pyo.exp(
                 delta
                 * sum(
@@ -134,7 +134,7 @@ def _viscosity(blk, delta, tau, on_blk=None):
         (
             1e-4
             * pyo.sqrt(1.0 / tau)
-            / sum(H0[i] * tau**i for i in H0)
+            / sum(h0i * tau**i for i, h0i in H0.items())
             * pyo.exp(
                 delta
                 * sum(

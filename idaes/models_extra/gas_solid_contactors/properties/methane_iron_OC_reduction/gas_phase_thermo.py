@@ -436,17 +436,17 @@ class _GasPhaseStateBlock(StateBlock):
 
         # Deactivate the constraints specific for non-inlet blocks i.e.
         # when defined state is False
-        for k in blk.keys():
-            if blk[k].config.defined_state is False:
-                blk[k].sum_component_eqn.deactivate()
+        for k in blk.values():
+            if k.config.defined_state is False:
+                k.sum_component_eqn.deactivate()
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
             flags = fix_state_vars(blk, state_args)
         else:
             # Check when the state vars are fixed already result in dof 0
-            for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
+            for k in blk.values():
+                if degrees_of_freedom(k) != 0:
                     raise Exception(
                         "State vars fixed but degrees of freedom "
                         "for state block is not zero during "
@@ -455,68 +455,62 @@ class _GasPhaseStateBlock(StateBlock):
 
         # ---------------------------------------------------------------------
         # Initialize values
-        for k in blk.keys():
+        for k in blk.values():
 
-            if hasattr(blk[k], "mw_eqn"):
-                calculate_variable_from_constraint(blk[k].mw, blk[k].mw_eqn)
+            if hasattr(k, "mw_eqn"):
+                calculate_variable_from_constraint(k.mw, k.mw_eqn)
 
-            if hasattr(blk[k], "ideal_gas"):
-                calculate_variable_from_constraint(blk[k].dens_mol, blk[k].ideal_gas)
+            if hasattr(k, "ideal_gas"):
+                calculate_variable_from_constraint(k.dens_mol, k.ideal_gas)
 
-            if hasattr(blk[k], "dens_mass_basis"):
+            if hasattr(k, "dens_mass_basis"):
+                calculate_variable_from_constraint(k.dens_mass, k.dens_mass_basis)
+
+            if hasattr(k, "mixture_heat_capacity_eqn"):
                 calculate_variable_from_constraint(
-                    blk[k].dens_mass, blk[k].dens_mass_basis
+                    k.cp_mol, k.mixture_heat_capacity_eqn
                 )
 
-            if hasattr(blk[k], "mixture_heat_capacity_eqn"):
+            if hasattr(k, "cp_mass_basis"):
+                calculate_variable_from_constraint(k.cp_mass, k.cp_mass_basis)
+
+            if hasattr(k, "visc_d_constraint"):
+                calculate_variable_from_constraint(k.visc_d, k.visc_d_constraint)
+
+            if hasattr(k, "therm_cond_constraint"):
                 calculate_variable_from_constraint(
-                    blk[k].cp_mol, blk[k].mixture_heat_capacity_eqn
+                    k.therm_cond, k.therm_cond_constraint
                 )
 
-            if hasattr(blk[k], "cp_mass_basis"):
-                calculate_variable_from_constraint(blk[k].cp_mass, blk[k].cp_mass_basis)
+            if hasattr(k, "mixture_enthalpy_eqn"):
+                calculate_variable_from_constraint(k.enth_mol, k.mixture_enthalpy_eqn)
 
-            if hasattr(blk[k], "visc_d_constraint"):
-                calculate_variable_from_constraint(
-                    blk[k].visc_d, blk[k].visc_d_constraint
-                )
+            for j in k.params.component_list:
 
-            if hasattr(blk[k], "therm_cond_constraint"):
-                calculate_variable_from_constraint(
-                    blk[k].therm_cond, blk[k].therm_cond_constraint
-                )
-
-            if hasattr(blk[k], "mixture_enthalpy_eqn"):
-                calculate_variable_from_constraint(
-                    blk[k].enth_mol, blk[k].mixture_enthalpy_eqn
-                )
-
-            for j in blk[k]._params.component_list:
-
-                if hasattr(blk[k], "comp_conc_eqn"):
+                if hasattr(k, "comp_conc_eqn"):
                     calculate_variable_from_constraint(
-                        blk[k].dens_mol_comp[j], blk[k].comp_conc_eqn[j]
+                        k.dens_mol_comp[j], k.comp_conc_eqn[j]
                     )
 
-                if hasattr(blk[k], "diffus_comp_constraint"):
+                if hasattr(k, "diffus_comp_constraint"):
                     calculate_variable_from_constraint(
-                        blk[k].diffus_comp[j], blk[k].diffus_comp_constraint[j]
+                        k.diffus_comp[j], k.diffus_comp_constraint[j]
                     )
 
-                if hasattr(blk[k], "cp_shomate_eqn"):
+                if hasattr(k, "cp_shomate_eqn"):
                     calculate_variable_from_constraint(
-                        blk[k].cp_mol_comp[j], blk[k].cp_shomate_eqn[j]
+                        k.cp_mol_comp[j], k.cp_shomate_eqn[j]
                     )
 
-                if hasattr(blk[k], "enthalpy_shomate_eqn"):
+                if hasattr(k, "enthalpy_shomate_eqn"):
                     calculate_variable_from_constraint(
-                        blk[k].enth_mol_comp[j], blk[k].enthalpy_shomate_eqn[j]
+                        k.enth_mol_comp[j], k.enthalpy_shomate_eqn[j]
                     )
 
         # Solve property block if non-empty
         free_vars = 0
-        for k in blk.keys():
-            free_vars += number_unfixed_variables_in_activated_equalities(blk[k])
+        for k in blk.values():
+            free_vars += number_unfixed_variables_in_activated_equalities(k)
 
         if free_vars > 0:
             # Create solver
@@ -553,9 +547,9 @@ class _GasPhaseStateBlock(StateBlock):
         revert_state_vars(blk, flags)
 
         # Activate state variable related constraints
-        for k in blk.keys():
-            if blk[k].config.defined_state is False:
-                blk[k].sum_component_eqn.activate()
+        for k in blk.values():
+            if k.config.defined_state is False:
+                k.sum_component_eqn.activate()
 
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         init_log.info_high("States released.")

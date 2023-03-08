@@ -28,9 +28,10 @@ variables to calculate additional scaling factors.
 __author__ = "John Eslick, Tim Bartholomew, Robert Parker, Andrew Lee"
 
 import math
+import sys
+
 import scipy.sparse.linalg as spla
 import scipy.linalg as la
-import sys
 
 import pyomo.environ as pyo
 from pyomo.core.base.var import _VarData

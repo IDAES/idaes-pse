@@ -711,7 +711,9 @@ class TrainedSurrogateDecoder(TSEBase):
                 if value is None:
                     d[key] = None
                 else:
-                    d[key] = {k: tuple(v) for k, v in value.items() if value != None}
+                    d[key] = {
+                        k: tuple(v) for k, v in value.items() if value is not None
+                    }
             else:
                 d[key] = value
         if model_json is None:

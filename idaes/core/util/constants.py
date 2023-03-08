@@ -20,9 +20,9 @@ avaialble
 
 __author__ = "Andrew Lee"
 
-from pyomo.environ import units
-
 import math
+
+from pyomo.environ import units
 
 
 class Constants:

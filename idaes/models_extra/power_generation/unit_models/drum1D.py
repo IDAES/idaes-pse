@@ -51,24 +51,9 @@ by 1D heat conduction
 
 Created: October 27 2020
 """
-# Import IDAES cores
-from idaes.core import (
-    ControlVolume0DBlock,
-    declare_process_block_class,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-    UnitModelBlockData,
-    useDefault,
-)
-import idaes.logger as idaeslog
-
 # Import Pyomo libraries
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-from idaes.core.util.config import is_physical_parameter_block
-
-# Additional import for the unit operation
 from pyomo.environ import (
     value,
     Var,
@@ -83,13 +68,25 @@ from pyomo.environ import (
     Constraint,
     TransformationFactory,
 )
+from pyomo.network import Port, Arc
+
+# Import IDAES cores
+from idaes.core import (
+    ControlVolume0DBlock,
+    declare_process_block_class,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
+    UnitModelBlockData,
+    useDefault,
+)
+import idaes.logger as idaeslog
+from idaes.core.util.config import is_physical_parameter_block
 
 # from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
-from pyomo.network import Port
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
-from pyomo.network import Arc
 
 from idaes.models_extra.power_generation.unit_models.helm.phase_separator import (
     HelmPhaseSeparator,

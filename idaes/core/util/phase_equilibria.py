@@ -10,13 +10,13 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
 """
 This module contains utility functions to generate phase equilibrium data and
 plots.
 """
-
-__author__ = "Alejandro Garciadiego"
+# Import plotting functions
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Import objects from pyomo package
 from pyomo.environ import (
@@ -28,9 +28,8 @@ from pyomo.environ import (
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
-# Import plotting functions
-import matplotlib.pyplot as plt
-import numpy as np
+
+__author__ = "Alejandro Garciadiego"
 
 
 def Txy_diagram(
@@ -170,17 +169,15 @@ def Txy_data(
 
     count = 1
     # Create and run loop to calculate temperatures at every composition
-    for i in range(len(x_d)):
-        model.props[1].mole_frac_comp[component_1].fix(x_d[i])
-        model.props[1].mole_frac_comp[component_2].fix(1 - x_d[i] - xs)
+    for i, v in enumerate(x_d):
+        model.props[1].mole_frac_comp[component_1].fix(v)
+        model.props[1].mole_frac_comp[component_2].fix(1 - v - xs)
         # solve the model
         status = solver.solve(model, tee=False)
         # If solution is optimal store the concentration, and calculated temperatures in the created arrays
         if check_optimal_termination(status):
 
-            print(
-                "Case: ", count, " Optimal. ", component_1, "x = {:.2f}".format(x_d[i])
-            )
+            print(f"Case: {count} Optimal. {component_1} x = {v:.2f}")
 
             if hasattr(model.props[1], "_mole_frac_tdew") and hasattr(
                 model.props[1], "_mole_frac_tbub"
@@ -196,13 +193,11 @@ def Txy_data(
                 print("One of the components only exists in liquid phase.")
                 Tbubb.append(value(model.props[1].temperature_bubble["Vap", "Liq"]))
 
-            X.append(x_d[i])
+            X.append(v)
 
         # If the solver did not solve to an optimal solution, do not store the data point
         else:
-            print(
-                "Case: ", count, " No Result", component_1, "x = {:.2f}".format(x_d[i])
-            )
+            print(f"Case: {count} No Result {component_1} x = {x_d[i]:.2f}")
         count += 1
 
     # Call TXYData function and store the data in TD class
@@ -304,7 +299,7 @@ def build_txy_diagrams(
     ig, ax = plt.subplots(figsize=(12, 8))  # pylint: disable=unused-variable
 
     if len(txy_data.TBubb) and len(txy_data.TDew) > 0:
-        if include_pressure == True:
+        if include_pressure is True:
             # Plot results for bubble temperature
 
             ax.plot(
@@ -341,7 +336,7 @@ def build_txy_diagrams(
 
     elif len(txy_data.TDew) == 0:
 
-        if include_pressure == True:
+        if include_pressure is True:
             # Plot results for bubble temperature
 
             # Plot results for dew temperature
@@ -362,7 +357,7 @@ def build_txy_diagrams(
 
     elif len(txy_data.TBubb) == 0:
 
-        if include_pressure == True:
+        if include_pressure is True:
             # Plot results for bubble temperature
 
             # Plot results for dew temperature
@@ -398,7 +393,7 @@ def build_txy_diagrams(
     plt.xlim(0.0, 1)
 
     # Declare legend and fontsize
-    if print_legend == True:
+    if print_legend is True:
         plt.legend(fontsize=16)
 
     if figure_name:

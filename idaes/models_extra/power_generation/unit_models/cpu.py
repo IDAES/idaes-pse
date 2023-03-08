@@ -43,13 +43,12 @@ The degrees of freedom are the inlet states:
 (2) Inlet component mole fractions: CO2, H2O, N2, Ar, O2
 """
 
+from pyomo.environ import Var, units as pyunits
+from pyomo.network import Port
+
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
 import idaes.core.util.scaling as iscale
-
-# Additional import for the unit operation
-from pyomo.environ import Var, units as pyunits
-from pyomo.network import Port
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 

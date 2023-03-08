@@ -274,9 +274,9 @@ class _CubicStateBlock(StateBlock):
 
         # Deactivate the constraints specific for outlet block i.e.
         # when defined state is False
-        for k in blk.keys():
-            if blk[k].config.defined_state is False:
-                blk[k].sum_mole_frac_out.deactivate()
+        for k in blk.values():
+            if k.config.defined_state is False:
+                k.sum_mole_frac_out.deactivate()
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
@@ -284,8 +284,8 @@ class _CubicStateBlock(StateBlock):
 
         else:
             # Check when the state vars are fixed already result in dof 0
-            for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
+            for k in blk.values():
+                if degrees_of_freedom(k) != 0:
                     raise Exception(
                         "State vars fixed but degrees of freedom "
                         "for state block is not zero during "
@@ -313,25 +313,25 @@ class _CubicStateBlock(StateBlock):
             )
 
         # Bubble temperature initialization
-        for k in blk.keys():
-            if hasattr(blk[k], "_mole_frac_tbub"):
+        for k in blk.values():
+            if hasattr(k, "_mole_frac_tbub"):
                 Tbub0 = 0
-                for j in blk[k].params.component_list:
+                for j in k.params.component_list:
                     Tbub0 += value(
-                        blk[k].mole_frac_comp[j]
+                        k.mole_frac_comp[j]
                         * (
-                            blk[k].params.antoine_coeff_B[j]
+                            k.params.antoine_coeff_B[j]
                             / (
-                                blk[k].params.antoine_coeff_A[j]
+                                k.params.antoine_coeff_A[j]
                                 - math.log10(
                                     value(
                                         pyunits.convert(
-                                            blk[k].pressure, to_units=pyunits.bar
+                                            k.pressure, to_units=pyunits.bar
                                         )
                                     )
                                 )
                             )
-                            - blk[k].params.antoine_coeff_C[j]
+                            - k.params.antoine_coeff_C[j]
                         )
                     )
 
@@ -341,19 +341,19 @@ class _CubicStateBlock(StateBlock):
                 while err > 1e-2 and counter < 100:
                     f = value(
                         sum(
-                            antoine_P(blk[k], j, Tbub0) * blk[k].mole_frac_comp[j]
-                            for j in blk[k].params.component_list
+                            antoine_P(k, j, Tbub0) * k.mole_frac_comp[j]
+                            for j in k.params.component_list
                         )
-                        - blk[k].pressure
+                        - k.pressure
                     )
                     df = value(
                         sum(
-                            blk[k].mole_frac_comp[j]
-                            * blk[k].params.antoine_coeff_B[j]
+                            k.mole_frac_comp[j]
+                            * k.params.antoine_coeff_B[j]
                             * math.log(10)
-                            * antoine_P(blk[k], j, Tbub0)
-                            / (Tbub0 + blk[k].params.antoine_coeff_C[j]) ** 2
-                            for j in blk[k].params.component_list
+                            * antoine_P(k, j, Tbub0)
+                            / (Tbub0 + k.params.antoine_coeff_C[j]) ** 2
+                            for j in k.params.component_list
                         )
                     )
 
@@ -368,35 +368,33 @@ class _CubicStateBlock(StateBlock):
                     Tbub0 = Tbub1
                     counter += 1
 
-                blk[k].temperature_bubble.value = Tbub0
+                k.temperature_bubble.value = Tbub0
 
-                for j in blk[k].params.component_list:
-                    blk[k]._mole_frac_tbub[j].value = value(
-                        blk[k].mole_frac_comp[j]
-                        * antoine_P(blk[k], j, Tbub0)
-                        / blk[k].pressure
+                for j in k.params.component_list:
+                    k._mole_frac_tbub[j].value = value(
+                        k.mole_frac_comp[j] * antoine_P(k, j, Tbub0) / k.pressure
                     )
 
         # Dew temperature initialization
-        for k in blk.keys():
-            if hasattr(blk[k], "_mole_frac_tdew"):
+        for k in blk.values():
+            if hasattr(k, "_mole_frac_tdew"):
                 Tdew0 = 0
-                for j in blk[k].params.component_list:
+                for j in k.params.component_list:
                     Tdew0 += value(
-                        blk[k].mole_frac_comp[j]
+                        k.mole_frac_comp[j]
                         * (
-                            blk[k].params.antoine_coeff_B[j]
+                            k.params.antoine_coeff_B[j]
                             / (
-                                blk[k].params.antoine_coeff_A[j]
+                                k.params.antoine_coeff_A[j]
                                 - math.log10(
                                     value(
                                         pyunits.convert(
-                                            blk[k].pressure, to_units=pyunits.bar
+                                            k.pressure, to_units=pyunits.bar
                                         )
                                     )
                                 )
                             )
-                            - blk[k].params.antoine_coeff_C[j]
+                            - k.params.antoine_coeff_C[j]
                         )
                     )
 
@@ -405,24 +403,24 @@ class _CubicStateBlock(StateBlock):
 
                 while err > 1e-2 and counter < 100:
                     f = value(
-                        blk[k].pressure
+                        k.pressure
                         * sum(
-                            blk[k].mole_frac_comp[j] / antoine_P(blk[k], j, Tdew0)
-                            for j in blk[k].params.component_list
+                            k.mole_frac_comp[j] / antoine_P(k, j, Tdew0)
+                            for j in k.params.component_list
                         )
                         - 1
                     )
                     df = -value(
-                        blk[k].pressure
+                        k.pressure
                         * math.log(10)
                         * sum(
-                            blk[k].mole_frac_comp[j]
-                            * blk[k].params.antoine_coeff_B[j]
+                            k.mole_frac_comp[j]
+                            * k.params.antoine_coeff_B[j]
                             / (
-                                (Tdew0 + blk[k].params.antoine_coeff_C[j]) ** 2
-                                * antoine_P(blk[k], j, Tdew0)
+                                (Tdew0 + k.params.antoine_coeff_C[j]) ** 2
+                                * antoine_P(k, j, Tdew0)
                             )
-                            for j in blk[k].params.component_list
+                            for j in k.params.component_list
                         )
                     )
 
@@ -437,61 +435,54 @@ class _CubicStateBlock(StateBlock):
                     Tdew0 = Tdew1
                     counter += 1
 
-                blk[k].temperature_dew.value = Tdew0
+                k.temperature_dew.value = Tdew0
 
-                for j in blk[k].params.component_list:
-                    blk[k]._mole_frac_tdew[j].value = value(
-                        blk[k].mole_frac_comp[j]
-                        * blk[k].pressure
-                        / antoine_P(blk[k], j, Tdew0)
+                for j in k.params.component_list:
+                    k._mole_frac_tdew[j].value = value(
+                        k.mole_frac_comp[j] * k.pressure / antoine_P(k, j, Tdew0)
                     )
 
         # Bubble pressure initialization
-        for k in blk.keys():
-            if hasattr(blk[k], "_mole_frac_pbub"):
-                blk[k].pressure_bubble.value = value(
+        for k in blk.values():
+            if hasattr(k, "_mole_frac_pbub"):
+                k.pressure_bubble.value = value(
                     sum(
-                        blk[k].mole_frac_comp[j]
-                        * antoine_P(blk[k], j, blk[k].temperature)
-                        for j in blk[k].params.component_list
+                        k.mole_frac_comp[j] * antoine_P(k, j, k.temperature)
+                        for j in k.params.component_list
                     )
                 )
 
-                for j in blk[k].params.component_list:
-                    blk[k]._mole_frac_pbub[j].value = value(
-                        blk[k].mole_frac_comp[j]
-                        * antoine_P(blk[k], j, blk[k].temperature)
-                        / blk[k].pressure_bubble
+                for j in k.params.component_list:
+                    k._mole_frac_pbub[j].value = value(
+                        k.mole_frac_comp[j]
+                        * antoine_P(k, j, k.temperature)
+                        / k.pressure_bubble
                     )
 
-                blk[k].pressure_bubble.display()
-                blk[k]._mole_frac_pbub.display()
+                k.pressure_bubble.display()
+                k._mole_frac_pbub.display()
 
         # Dew pressure initialization
-        for k in blk.keys():
-            if hasattr(blk[k], "_mole_frac_pdew"):
-                blk[k].pressure_dew.value = value(
+        for k in blk.values():
+            if hasattr(k, "_mole_frac_pdew"):
+                k.pressure_dew.value = value(
                     sum(
-                        1
-                        / (
-                            blk[k].mole_frac_comp[j]
-                            / antoine_P(blk[k], j, blk[k].temperature)
-                        )
-                        for j in blk[k].params.component_list
+                        1 / (k.mole_frac_comp[j] / antoine_P(k, j, k.temperature))
+                        for j in k.params.component_list
                     )
                 )
 
-                for j in blk[k].params.component_list:
-                    blk[k]._mole_frac_pdew[j].value = value(
-                        blk[k].mole_frac_comp[j]
-                        * blk[k].pressure_bubble
-                        / antoine_P(blk[k], j, blk[k].temperature)
+                for j in k.params.component_list:
+                    k._mole_frac_pdew[j].value = value(
+                        k.mole_frac_comp[j]
+                        * k.pressure_bubble
+                        / antoine_P(k, j, k.temperature)
                     )
 
         # Solve bubble and dew point constraints
         cons_count = 0
-        for k in blk.keys():
-            for c in blk[k].component_objects(Constraint):
+        for k in blk.values():
+            for c in k.component_objects(Constraint):
                 # Deactivate all property constraints
                 if c.local_name not in (
                     "eq_pressure_dew",
@@ -504,7 +495,7 @@ class _CubicStateBlock(StateBlock):
                     "_sum_mole_frac_pdew",
                 ):
                     c.deactivate()
-            cons_count += number_activated_equalities(blk[k])
+            cons_count += number_activated_equalities(k)
 
         if cons_count > 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -517,95 +508,82 @@ class _CubicStateBlock(StateBlock):
 
         # ---------------------------------------------------------------------
         # If flash, initialize T1 and Teq
-        for k in blk.keys():
-            if (blk[k].params.config.valid_phase == ("Liq", "Vap")) or (
-                blk[k].params.config.valid_phase == ("Vap", "Liq")
+        for k in blk.values():
+            if (k.params.config.valid_phase == ("Liq", "Vap")) or (
+                k.params.config.valid_phase == ("Vap", "Liq")
             ):
-                blk[k]._t1.value = max(
-                    blk[k].temperature.value, blk[k].temperature_bubble.value
-                )
-                blk[k]._teq.value = min(blk[k]._t1.value, blk[k].temperature_dew.value)
+                k._t1.value = max(k.temperature.value, k.temperature_bubble.value)
+                k._teq.value = min(k._t1.value, k.temperature_dew.value)
         init_log.info("Equilibrium temperature init complete.")
 
         # ---------------------------------------------------------------------
         # Initialize flow rates and compositions
         # TODO : This will need to be generalised more when we move to a
         # modular implementation
-        for k in blk.keys():
-            if blk[k].params.config.valid_phase == "Liq":
-                blk[k].flow_mol_phase["Liq"].value = blk[k].flow_mol.value
+        for k in blk.values():
+            if k.params.config.valid_phase == "Liq":
+                k.flow_mol_phase["Liq"].value = k.flow_mol.value
 
-                for j in blk[k].params.component_list:
-                    blk[k].mole_frac_phase_comp["Liq", j].value = (
-                        blk[k].mole_frac_comp[j].value
-                    )
+                for j in k.params.component_list:
+                    k.mole_frac_phase_comp["Liq", j].value = k.mole_frac_comp[j].value
 
-            elif blk[k].params.config.valid_phase == "Vap":
-                blk[k].flow_mol_phase["Vap"].value = blk[k].flow_mol.value
+            elif k.params.config.valid_phase == "Vap":
+                k.flow_mol_phase["Vap"].value = k.flow_mol.value
 
-                for j in blk[k].params.component_list:
-                    blk[k].mole_frac_phase_comp["Vap", j].value = (
-                        blk[k].mole_frac_comp[j].value
-                    )
+                for j in k.params.component_list:
+                    k.mole_frac_phase_comp["Vap", j].value = k.mole_frac_comp[j].value
 
             else:
-                if blk[k].temperature.value > blk[k].temperature_dew.value:
+                if k.temperature.value > k.temperature_dew.value:
                     # Pure vapour
-                    blk[k].flow_mol_phase["Vap"].value = blk[k].flow_mol.value
-                    blk[k].flow_mol_phase["Liq"].value = 1e-5 * blk[k].flow_mol.value
+                    k.flow_mol_phase["Vap"].value = k.flow_mol.value
+                    k.flow_mol_phase["Liq"].value = 1e-5 * k.flow_mol.value
 
-                    for j in blk[k].params.component_list:
-                        blk[k].mole_frac_phase_comp["Vap", j].value = (
-                            blk[k].mole_frac_comp[j].value
-                        )
-                        blk[k].mole_frac_phase_comp["Liq", j].value = (
-                            blk[k]._mole_frac_tdew[j].value
-                        )
-                elif blk[k].temperature.value < blk[k].temperature_bubble.value:
+                    for j in k.params.component_list:
+                        k.mole_frac_phase_comp["Vap", j].value = k.mole_frac_comp[
+                            j
+                        ].value
+                        k.mole_frac_phase_comp["Liq", j].value = k._mole_frac_tdew[
+                            j
+                        ].value
+                elif k.temperature.value < k.temperature_bubble.value:
                     # Pure liquid
-                    blk[k].flow_mol_phase["Vap"].value = 1e-5 * blk[k].flow_mol.value
-                    blk[k].flow_mol_phase["Liq"].value = blk[k].flow_mol.value
+                    k.flow_mol_phase["Vap"].value = 1e-5 * k.flow_mol.value
+                    k.flow_mol_phase["Liq"].value = k.flow_mol.value
 
-                    for j in blk[k].params.component_list:
-                        blk[k].mole_frac_phase_comp["Vap", j].value = (
-                            blk[k]._mole_frac_tbub[j].value
-                        )
-                        blk[k].mole_frac_phase_comp["Liq", j].value = (
-                            blk[k].mole_frac_comp[j].value
-                        )
+                    for j in k.params.component_list:
+                        k.mole_frac_phase_comp["Vap", j].value = k._mole_frac_tbub[
+                            j
+                        ].value
+                        k.mole_frac_phase_comp["Liq", j].value = k.mole_frac_comp[
+                            j
+                        ].value
                 else:
                     # Two-phase
                     # Estimate vapor fraction from distance from Tbub and Tdew
                     # Thanks to Rahul Gandhi for the method
                     vapRatio = value(
-                        (blk[k].temperature - blk[k].temperature_bubble)
-                        / (blk[k].temperature_dew - blk[k].temperature_bubble)
+                        (k.temperature - k.temperature_bubble)
+                        / (k.temperature_dew - k.temperature_bubble)
                     )
 
-                    blk[k].flow_mol_phase["Vap"].value = value(
-                        vapRatio * blk[k].flow_mol
-                    )
-                    blk[k].flow_mol_phase["Liq"].value = value(
-                        (1 - vapRatio) * blk[k].flow_mol
-                    )
+                    k.flow_mol_phase["Vap"].value = value(vapRatio * k.flow_mol)
+                    k.flow_mol_phase["Liq"].value = value((1 - vapRatio) * k.flow_mol)
 
                     # Initialize compositions using Rachford-Rice equation
-                    for j in blk[k].params.component_list:
-                        kfact = value(
-                            antoine_P(blk[k], j, blk[k].temperature.value)
-                            / blk[k].pressure
+                    for j in k.params.component_list:
+                        kfact = value(antoine_P(k, j, k.temperature.value) / k.pressure)
+                        k.mole_frac_phase_comp["Liq", j].value = value(
+                            k.mole_frac_comp[j] / (1 + vapRatio * (kfact - 1))
                         )
-                        blk[k].mole_frac_phase_comp["Liq", j].value = value(
-                            blk[k].mole_frac_comp[j] / (1 + vapRatio * (kfact - 1))
-                        )
-                        blk[k].mole_frac_phase_comp["Vap", j].value = value(
-                            blk[k].mole_frac_phase_comp["Liq", j] * kfact
+                        k.mole_frac_phase_comp["Vap", j].value = value(
+                            k.mole_frac_phase_comp["Liq", j] * kfact
                         )
 
         # ---------------------------------------------------------------------
         # Solve phase equilibrium constraints
-        for k in blk.keys():
-            for c in blk[k].component_objects(Constraint):
+        for k in blk.values():
+            for c in k.component_objects(Constraint):
                 # Activate equilibrium constraints
                 if c.local_name in (
                     "total_flow_balance",
@@ -623,8 +601,8 @@ class _CubicStateBlock(StateBlock):
 
         # ---------------------------------------------------------------------
         # Initialize other properties
-        for k in blk.keys():
-            for c in blk[k].component_objects(Constraint):
+        for k in blk.values():
+            for c in k.component_objects(Constraint):
                 # Activate all constraints except sum_mole_frac_out
                 if c.local_name not in ("sum_mole_frac_out"):
                     c.activate()
@@ -658,9 +636,9 @@ class _CubicStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         """
-        for k in blk.keys():
-            if not blk[k].config.defined_state:
-                blk[k].sum_mole_frac_out.activate()
+        for k in blk.values():
+            if not k.config.defined_state:
+                k.sum_mole_frac_out.activate()
 
         if flags is None:
             return

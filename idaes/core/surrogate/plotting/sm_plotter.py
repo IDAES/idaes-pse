@@ -17,13 +17,13 @@ Author: B. Paul
 """
 
 # Import statements
+from itertools import combinations  # used to pick xvar pairs in scatter3D
+
 import numpy as np
 import matplotlib.pyplot as plt
 
 # TODO: Consider adding seaborn in future
 from matplotlib.backends.backend_pdf import PdfPages
-
-from itertools import combinations  # used to pick xvar pairs in scatter3D
 
 
 def surrogate_scatter2D(surrogate, dataframe, filename=None, show=True):
