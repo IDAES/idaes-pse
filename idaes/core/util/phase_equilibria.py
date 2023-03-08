@@ -177,7 +177,7 @@ def Txy_data(
         # If solution is optimal store the concentration, and calculated temperatures in the created arrays
         if check_optimal_termination(status):
 
-            print("Case: ", count, " Optimal. ", component_1, "x = {:.2f}".format(v))
+            print(f"Case: {count} Optimal. {component_1} x = {v:.2f}")
 
             if hasattr(model.props[1], "_mole_frac_tdew") and hasattr(
                 model.props[1], "_mole_frac_tbub"
@@ -197,9 +197,7 @@ def Txy_data(
 
         # If the solver did not solve to an optimal solution, do not store the data point
         else:
-            print(
-                "Case: ", count, " No Result", component_1, "x = {:.2f}".format(x_d[i])
-            )
+            print(f"Case: {count} No Result {component_1} x = {x_d[i]:.2f}")
         count += 1
 
     # Call TXYData function and store the data in TD class

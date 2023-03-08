@@ -183,9 +183,9 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
             c.activate()
         for c in self._all_fixes:
             c[0].unfix()
-        for cid in self._original:
+        for cid, v in self._original.items():
             c = self._expr_map[cid]
-            c.set_value(expr=self._original[cid])
+            c.set_value(expr=v)
 
         # The problem should be back, now fill in values for the variables that
         # were removed

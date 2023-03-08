@@ -215,13 +215,13 @@ class SBlockBase(StateBlock):
         hold_state=False,
         state_args=None,
     ):
-        for k in blk.keys():
-            blk[k].init_test = True
-            blk[k].hold_state = hold_state
+        for k in blk.values():
+            k.init_test = True
+            k.hold_state = hold_state
 
     def release_state(blk, flags=None, outlvl=idaeslog.NOTSET):
-        for k in blk.keys():
-            blk[k].hold_state = not blk[k].hold_state
+        for k in blk.values():
+            k.hold_state = not k.hold_state
 
 
 @declare_process_block_class("TestStateBlock", block_class=SBlockBase)
@@ -374,8 +374,8 @@ class RBlockBase(ReactionBlockBase):
     def initialize(
         blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None, state_vars_fixed=False
     ):
-        for k in blk.keys():
-            blk[k].init_test = True
+        for k in blk.values():
+            k.init_test = True
 
 
 @declare_process_block_class("ReactionBlock", block_class=RBlockBase)

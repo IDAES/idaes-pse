@@ -647,12 +647,13 @@ def load_generic_ccs_costing_dictionary(path=None):
 
         generic_ccs_costing_data = generic_ccs_costing_params
 
-        for tech in generic_ccs_costing_data:  # do one technology at a time
+        for (
+            tech,
+            gccsd,
+        ) in generic_ccs_costing_data.items():  # do one technology at a time
             for ccs in ["A", "B"]:
-                if (
-                    ccs in generic_ccs_costing_data[tech]
-                ):  # check if CCS = A, for indexing
-                    accounts_dict = generic_ccs_costing_data[tech][ccs]  # shorter alias
+                if ccs in gccsd:  # check if CCS = A, for indexing
+                    accounts_dict = gccsd[ccs]  # shorter alias
                     for account in accounts_dict.keys():  # do one account at a time
                         if account == "5.1.a.epri":
                             accounts_dict[account][
@@ -675,7 +676,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                             key: accounts_dict[account][key]
                             for key in sorted_accountkeys
                         }  # re-add the keys in alphabetical order
-                    generic_ccs_costing_data[tech][
+                    gccsd[
                         ccs
                     ] = accounts_dict  # use the alias to update the original dictionary
 

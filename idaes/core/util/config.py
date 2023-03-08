@@ -50,8 +50,8 @@ def is_physical_parameter_block(val):
         return val
     else:
         _log.error(
-            "Property package argument {} should == useDefault or "
-            "be an instance of PhysicalParameterBlock".format(val)
+            f"Property package argument {val} should == useDefault or "
+            f"be an instance of PhysicalParameterBlock"
         )
         raise ConfigurationError(
             """Property package argument should be an instance

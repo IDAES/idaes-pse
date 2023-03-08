@@ -293,11 +293,9 @@ def heat_data(blk, heating, cooling, DG_units=pyunits.Mwatt):
         )
 
     # Calculating FCp out of heat in control volume
-    # Obtaines Q from equipment's control volume heat
-    for i in pinch_streamsdict:
-        Q[i] = value(
-            pyunits.convert(pinch_streamsdict[i].heat_duty[0], to_units=DG_units)
-        )
+    # Obtains Q from equipment's control volume heat
+    for i, v in pinch_streamsdict.items():
+        Q[i] = value(pyunits.convert(v.heat_duty[0], to_units=DG_units))
         FCp_[i] = Q[i] / (T_out[i] - T_in[i])
 
     # Generate a large dictioary containing all the data obtained
@@ -500,17 +498,15 @@ def heat_ex_data(blk, heating, cooling):
     )
     DG_units = pyunits.get_units(blk.Qw)
 
-    for i, el in enumerate(exchanger_list):
+    for el in exchanger_list:
         pinch_streamsdict[str(el)] = el
+        exchangerdict[str(el)] = el
 
-    for i, el in enumerate(cooling):
+    for el in cooling:
         coolingdict[str(el)] = el
 
-    for i, el in enumerate(heating):
+    for el in heating:
         heatingdict[str(el)] = el
-
-    for i, el in enumerate(exchanger_list):
-        exchangerdict[str(el)] = el
 
     # Generate zero arrays from length of the cooling list
     CHX = len(coolingdict)
@@ -520,12 +516,10 @@ def heat_ex_data(blk, heating, cooling):
 
     # Convert Pyomo model values into arrays
     j = 0
-    for i in coolingdict:
-        CTin[j] = value(coolingdict[i].control_volume.properties_in[0].temperature) + 1
-        CTout[j] = value(coolingdict[i].control_volume.properties_out[0].temperature)
-        CQ[j] = value(
-            pyunits.convert(coolingdict[i].control_volume.heat[0], to_units=DG_units)
-        )
+    for v in coolingdict.values():
+        CTin[j] = value(v.control_volume.properties_in[0].temperature) + 1
+        CTout[j] = value(v.control_volume.properties_out[0].temperature)
+        CQ[j] = value(pyunits.convert(v.control_volume.heat[0], to_units=DG_units))
         j += 1
 
     # Generate zero arrays from length of the heating list
@@ -536,14 +530,10 @@ def heat_ex_data(blk, heating, cooling):
 
     # Convert Pyomo model values into arrays
     j = 0
-    for i in heatingdict:
-        HTin[j] = value(heatingdict[i].control_volume.properties_in[0].temperature)
-        HTout[j] = (
-            value(heatingdict[i].control_volume.properties_out[0].temperature) + 1
-        )
-        HQ[j] = value(
-            pyunits.convert(heatingdict[i].control_volume.heat[0], to_units=DG_units)
-        )
+    for v in heatingdict.items():
+        HTin[j] = value(v.control_volume.properties_in[0].temperature)
+        HTout[j] = value(v.control_volume.properties_out[0].temperature) + 1
+        HQ[j] = value(pyunits.convert(v.control_volume.heat[0], to_units=DG_units))
         j += 1
 
         # Fill class with values and arrays
@@ -563,7 +553,7 @@ def gen_curves(Tin, Tout, Q):
     Function to do add cumulative heat arrays
     Args:
         Tin: Inlet temperatures of cooling/heating equipment
-        Toout: Outlet temperatures of cooling/heating equipment
+        Tout: Outlet temperatures of cooling/heating equipment
         Q: Heat of cooling/heating equipment
     Returns:
         Tstar: Cumulative Temperature array
@@ -639,22 +629,20 @@ def print_HX_results(blk, exchanger_list):
     Q_ = {}
 
     # Loop over heat exchangers
-    for i in exchangerdict:
-        Tin_[i] = value(exchangerdict[i].control_volume.properties_in[0].temperature)
-        Tout_[i] = value(exchangerdict[i].control_volume.properties_out[0].temperature)
-        f_[i] = value(exchangerdict[i].control_volume.properties_out[0].flow_mol)
-        Q_[i] = value(exchangerdict[i].control_volume.heat[0])
-        T_units = pyunits.get_units(
-            exchangerdict[i].control_volume.properties_in[0].temperature
-        )
-        DG_units = pyunits.get_units(exchangerdict[i].heat_duty[0])
+    for i, v in exchangerdict.items():
+        Tin_[i] = value(v.control_volume.properties_in[0].temperature)
+        Tout_[i] = value(v.control_volume.properties_out[0].temperature)
+        f_[i] = value(v.control_volume.properties_out[0].flow_mol)
+        Q_[i] = value(v.control_volume.heat[0])
+        T_units = pyunits.get_units(v.control_volume.properties_in[0].temperature)
+        DG_units = pyunits.get_units(v.heat_duty[0])
 
     # Print the header
     print("Heat Exchanger Summary: ")
 
     # Print Inlet Temperature, Outlet Temperature and Heat
-    for i in exchangerdict:
-        print("Heat exchanger: ", exchangerdict[i])
+    for i, v in exchangerdict.items():
+        print("Heat exchanger: ", v)
         print(f'Inlet T: {" "*3} {Tin_[i] : 0.3f} {T_units}')
         print(f'Outlet T: {" "*2} {Tout_[i] : 0.3f} {T_units}')
         print(f'Q : {" "*9} {Q_[i]: 0.3f} {DG_units}')

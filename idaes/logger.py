@@ -160,10 +160,10 @@ def condition(res):
     try:
         if "ipopt" in str(res.solver.message).lower():
             solver_message = " ".join(str(res.solver.message).split(" ")[2:])
-            return "{} - {}".format(s, solver_message)
+            return f"{s} - {solver_message}"
         else:
-            return "{} - {}".format(s, str(res.solver.message))
-    except:  # pylint: disable=W0702
+            return f"{s} - {str(res.solver.message)}"
+    except:  # pylint: disable=bare-except
         return s
 
 
@@ -210,7 +210,7 @@ def set_log_tags(tags):
     """
     for m in tags:
         if m not in idaes.cfg.valid_logger_tags.union({None}):
-            raise ValueError("{} is not a valid logging tag".format(m))
+            raise ValueError(f"{m} is not a valid logging tag")
     idaes.cfg.logger_tags = set(tags)
 
 
@@ -224,7 +224,7 @@ def add_log_tag(tag):
         None
     """
     if tag not in idaes.cfg.valid_logger_tags.union({None}):
-        raise ValueError("{} is not a valid logging tag".format(tag))
+        raise ValueError(f"{tag} is not a valid logging tag")
     idaes.cfg.logger_tags.add(tag)
 
 

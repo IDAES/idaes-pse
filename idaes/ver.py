@@ -93,9 +93,8 @@ class Version(object):
         """
         if releaselevel not in self._specifiers:
             raise ValueError(
-                'Value "{}" for releaselevel not in ({})'.format(
-                    releaselevel, ",".join(sorted(self._specifiers.keys()))
-                )
+                f'Value "{releaselevel}" for releaselevel not in '
+                f'({",".join(sorted(self._specifiers.keys()))})'
             )
         self.major, self.minor, self.micro = major, minor, micro
         self.releaselevel, self.serial, self.label = releaselevel, serial, label
@@ -117,19 +116,16 @@ class Version(object):
 
     def __str__(self):
         """Return version information as a string."""
-        return "{}.{}.{}{}".format(
-            self.major,
-            self.minor,
-            self.micro,
-            (
-                ""
-                if self.releaselevel == "final"
-                else "."
+        if self.releaselevel == "final":
+            tag = ""
+        else:
+            tag = (
+                "."
                 + self._specifiers[self.releaselevel]
                 + ("" if self.serial is None else str(self.serial))
                 + ("" if self.label is None else "+" + self.label)
-            ),
-        )
+            )
+        return f"{self.major}.{self.minor}.{self.micro}{tag}"
 
 
 class HasVersion(object):

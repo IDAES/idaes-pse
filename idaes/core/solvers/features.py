@@ -194,8 +194,8 @@ def dae(nfe=1):
     # Set initial conditions and solve initial from the values of differential
     # variables.
     y0 = {1: 0.444, 2: 0.00123, 3: 0.0, 4: 0.007, 5: 0.0}  # initial differential vars
-    for i in y0:
-        model.y[0, i].fix(y0[i])
+    for i, v in y0.items():
+        model.y[0, i].fix(v)
 
     discretizer = pyo.TransformationFactory("dae.finite_difference")
     discretizer.apply_to(model, nfe=nfe, scheme="BACKWARD")

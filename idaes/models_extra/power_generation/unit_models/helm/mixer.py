@@ -404,7 +404,7 @@ between flow and pressure driven simulations.}""",
         for t, v in self.outlet.pressure.items():
             if not v.fixed:
                 v.value = min(
-                    [value(self.inlet_blocks[i][t].pressure) for i in self.inlet_blocks]
+                    [value(i[t].pressure) for i in self.inlet_blocks.values()]
                 )
         self.outlet.unfix()
 

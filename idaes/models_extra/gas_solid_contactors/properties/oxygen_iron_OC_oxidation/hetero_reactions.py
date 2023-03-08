@@ -285,48 +285,46 @@ class _ReactionBlock(ReactionBlockBase):
         Cflag = {}  # Gas concentration flag
         Dflag = {}  # Solid density flag
 
-        for k in blk.keys():
-            for j in blk[k].gas_state_ref._params.component_list:
-                if blk[k].gas_state_ref.dens_mol_comp[j].fixed is True:
+        for k, b in blk.items():
+            for j in b.gas_state_ref._params.component_list:
+                if b.gas_state_ref.dens_mol_comp[j].fixed is True:
                     Cflag[k, j] = True
                 else:
                     Cflag[k, j] = False
-                    blk[k].gas_state_ref.dens_mol_comp[j].fix(
-                        blk[k].gas_state_ref.dens_mol_comp[j].value
+                    b.gas_state_ref.dens_mol_comp[j].fix(
+                        b.gas_state_ref.dens_mol_comp[j].value
                     )
-            if blk[k].solid_state_ref.dens_mass_skeletal.fixed is True:
+            if b.solid_state_ref.dens_mass_skeletal.fixed is True:
                 Dflag[k] = True
             else:
                 Dflag[k] = False
-                blk[k].solid_state_ref.dens_mass_skeletal.fix(
-                    blk[k].solid_state_ref.dens_mass_skeletal.value
+                b.solid_state_ref.dens_mass_skeletal.fix(
+                    b.solid_state_ref.dens_mass_skeletal.value
                 )
 
         # Initialise values
-        for k in blk.keys():
-            if hasattr(blk[k], "OC_conv_eqn"):
-                calculate_variable_from_constraint(blk[k].OC_conv, blk[k].OC_conv_eqn)
+        for k in blk.values():
+            if hasattr(k, "OC_conv_eqn"):
+                calculate_variable_from_constraint(k.OC_conv, k.OC_conv_eqn)
 
-            if hasattr(blk[k], "OC_conv_temp_eqn"):
-                calculate_variable_from_constraint(
-                    blk[k].OC_conv_temp, blk[k].OC_conv_temp_eqn
-                )
+            if hasattr(k, "OC_conv_temp_eqn"):
+                calculate_variable_from_constraint(k.OC_conv_temp, k.OC_conv_temp_eqn)
 
-            for j in blk[k]._params.rate_reaction_idx:
-                if hasattr(blk[k], "rate_constant_eqn"):
+            for j in k._params.rate_reaction_idx:
+                if hasattr(k, "rate_constant_eqn"):
                     calculate_variable_from_constraint(
-                        blk[k].k_rxn[j], blk[k].rate_constant_eqn[j]
+                        k.k_rxn[j], k.rate_constant_eqn[j]
                     )
 
-                if hasattr(blk[k], "gen_rate_expression"):
+                if hasattr(k, "gen_rate_expression"):
                     calculate_variable_from_constraint(
-                        blk[k].reaction_rate[j], blk[k].gen_rate_expression[j]
+                        k.reaction_rate[j], k.gen_rate_expression[j]
                     )
 
         # Solve property block if non-empty
         free_vars = 0
-        for k in blk.keys():
-            free_vars += number_unfixed_variables_in_activated_equalities(blk[k])
+        for k in blk.values():
+            free_vars += number_unfixed_variables_in_activated_equalities(k)
 
         if free_vars > 0:
             # Create solver
@@ -342,14 +340,17 @@ class _ReactionBlock(ReactionBlockBase):
         # ---------------------------------------------------------------------
         # Revert state vars and other variables to pre-initialization states
         # Revert state variables of the primary (solid) state block
-        revert_state_vars(blk[k].config.solid_state_block, state_var_flags)
+        # TODO: I am not sure this line works as expected if there is more than one
+        # time point
+        for k in blk.values():
+            revert_state_vars(k.config.solid_state_block, state_var_flags)
 
-        for k in blk.keys():
-            for j in blk[k].gas_state_ref._params.component_list:
+        for k, b in blk.items():
+            for j in b.gas_state_ref._params.component_list:
                 if Cflag[k, j] is False:
-                    blk[k].gas_state_ref.dens_mol_comp[j].unfix()
+                    b.gas_state_ref.dens_mol_comp[j].unfix()
             if Dflag[k] is False:
-                blk[k].solid_state_ref.dens_mass_skeletal.unfix()
+                b.solid_state_ref.dens_mass_skeletal.unfix()
 
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="reactions")
         init_log.info_high("States released.")
