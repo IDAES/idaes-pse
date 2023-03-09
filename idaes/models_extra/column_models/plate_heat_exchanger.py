@@ -100,9 +100,11 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
     # Update config block setting for pressure change to always be true
     CONFIG.hot_side.has_pressure_change = True
     CONFIG.hot_side.get("has_pressure_change").set_domain(In([True]))
+    # pylint: disable-next=protected-access
     CONFIG.hot_side.get(
         "has_pressure_change"
     )._description = "Pressure change term construction flag - must be True"
+    # pylint: disable-next=protected-access
     CONFIG.hot_side.get("has_pressure_change")._doc = (
         "Plate Heat Exchanger model includes correlations for pressure drop "
         "thus has_pressure_change must be True"
@@ -110,9 +112,11 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
 
     CONFIG.cold_side.has_pressure_change = True
     CONFIG.cold_side.get("has_pressure_change").set_domain(In([True]))
+    # pylint: disable-next=protected-access
     CONFIG.cold_side.get(
         "has_pressure_change"
     )._description = "Pressure change term construction flag - must be True"
+    # pylint: disable-next=protected-access
     CONFIG.cold_side.get("has_pressure_change")._doc = (
         "Plate Heat Exchanger model includes correlations for pressure drop "
         "thus has_pressure_change must be True"

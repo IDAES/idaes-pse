@@ -19,6 +19,9 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
     for Use in a Process Simulation Software Environment." Journal of Engineering
     for Gas Turbines and Power. v136.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 __Author__ = "John Eslick"
 
 from pyomo.environ import Var, units as pyunits

@@ -46,6 +46,9 @@ Main Assumptions:
 Created: 1/10/2020 by Boiler subsystem team (M Zamarripa)
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 __author__ = "Miguel Zamarripa"
 
 from collections import OrderedDict
@@ -602,7 +605,8 @@ def _stream_dict(m):
     Returns:
         None
     """
-
+    # We control m
+    # pylint: disable-next=protected-access
     m._streams = OrderedDict(
         [
             ("MS", m.fs.ATMP1.mixed_state),

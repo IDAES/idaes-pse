@@ -61,6 +61,8 @@ Main Assumptions:
         - IDEAL GAS: Flue Gas side
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 __author__ = "Miguel Zamarripa"
 

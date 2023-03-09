@@ -11,6 +11,9 @@
 # for full copyright and license information.
 #################################################################################
 """Transformation to replace variables with other variables."""
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 import pyomo.environ as pyo
 from pyomo.core.base.transformation import TransformationFactory
 from pyomo.core.plugins.transform.hierarchy import NonIsomorphicTransformation

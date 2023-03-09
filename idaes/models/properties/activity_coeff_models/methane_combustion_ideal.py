@@ -43,6 +43,8 @@ _log = getIdaesLogger(__name__)
 
 @declare_process_block_class("MethaneParameterBlock")
 class MethaneParameterData(ActivityCoeffParameterData):
+    """Ideal property package for methane combustion."""
+
     # Methane combstion only considers and ideal vapor phase, so need to
     # overload the user-selection of activity coefficient model and valid
     # phases. Do this by creating our own Config block with limited choices.

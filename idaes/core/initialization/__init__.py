@@ -10,6 +10,9 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+
 from .block_triangularization import BlockTriangularizationInitializer
 from .general_hierarchical import SingleControlVolumeUnitInitializer
 from .initialize_from_data import FromDataInitializer

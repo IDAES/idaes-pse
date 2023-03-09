@@ -17,6 +17,9 @@ streams.
 
 Created: August 21 2020
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.environ import value

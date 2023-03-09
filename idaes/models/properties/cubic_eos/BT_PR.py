@@ -38,6 +38,8 @@ _log = getIdaesLogger(__name__)
 
 @declare_process_block_class("BTParameterBlock")
 class BTParameterData(CubicParameterData):
+    """Cubic property package for benzene and toluene mixtures."""
+
     def build(self):
         """
         Callable method for Block construction.

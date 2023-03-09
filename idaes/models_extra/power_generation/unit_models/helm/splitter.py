@@ -19,6 +19,8 @@ have n_outlets - 1 specified split fractions or outlet flows.
 
 This model is psuedo-steady-state when used in dynamic mode.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 from pyomo.environ import Var, value
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf

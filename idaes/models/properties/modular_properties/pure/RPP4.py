@@ -18,6 +18,10 @@ Reid, Prausnitz and Polling, 1987, McGraw-Hill
 
 All parameter indicies and units based on conventions used by the source
 """
+# TODO: Missing doc strings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import exp, log, Var, units as pyunits
 
 from idaes.core.util.misc import set_param_from_config

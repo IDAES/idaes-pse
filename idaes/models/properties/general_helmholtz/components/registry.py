@@ -12,6 +12,8 @@
 #################################################################################
 """This module provides functions to register and retrieve component information
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 import os
 import idaes

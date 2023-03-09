@@ -17,6 +17,10 @@ from pyomo.common.config import ConfigBlock
 
 
 class SurrogateTrainer(object):
+    """
+    Base class for IDAES Surrogate Trainers.
+    """
+
     CONFIG = ConfigBlock()
 
     def __init__(
@@ -196,6 +200,10 @@ class SurrogateTrainer(object):
 
 
 class SurrogateBase:
+    """
+    Base class for Surrogate object.
+    """
+
     def __init__(self, input_labels=None, output_labels=None, input_bounds=None):
         """
         Base class for standard IDAES Surrogate object. This class is

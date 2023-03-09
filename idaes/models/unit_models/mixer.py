@@ -58,11 +58,19 @@ _log = idaeslog.getLogger(__name__)
 
 # Enumerate options for balances
 class MixingType(Enum):
+    """
+    Enum of supported mixing types.
+    """
+
     none = 0
     extensive = 1
 
 
 class MomentumMixingType(Enum):
+    """
+    Enum of supported approaches to pressure mixing.
+    """
+
     none = 0
     minimize = 1
     equality = 2

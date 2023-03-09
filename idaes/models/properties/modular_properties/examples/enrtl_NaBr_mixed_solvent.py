@@ -34,14 +34,17 @@ from idaes.models.properties.modular_properties.pure.electrolyte import (
 
 
 def rho_H2O(b, *args, **kwargs):
+    """Assume constant density of pure water"""
     return 1000 / 18e-3 * pyo.units.mol / pyo.units.m**3
 
 
 def rho_MeOH(b, *args, **kwargs):
+    """Assume constant density for ethanol"""
     return 792 / 32e-3 * pyo.units.mol / pyo.units.m**3
 
 
 def rho_EtOH(b, *args, **kwargs):
+    """Assume constant density for methanol"""
     return 789.45 / 46e-3 * pyo.units.mol / pyo.units.m**3
 
 

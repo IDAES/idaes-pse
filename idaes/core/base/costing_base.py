@@ -13,6 +13,12 @@
 """
 Base classes for process costing
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# This plays with some private attributes - most are necessary
+# pylint: disable=protected-access
+
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock, ConfigValue
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -89,6 +95,10 @@ def register_idaes_currency_units():
 
 
 class DefaultCostingComponents(StrEnum):
+    """
+    Costing components Enum
+    """
+
     capital = "capital_cost"
     fixed = "fixed_operating_cost"
     variable = "variable_operating_cost"

@@ -14,6 +14,9 @@
 A unit model for a "node" that connects several pipelines,
 possibly with its own supply and demand streams.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 from pyomo.common.config import ConfigValue
 from pyomo.core.base.constraint import Constraint
