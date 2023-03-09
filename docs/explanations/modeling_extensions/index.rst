@@ -67,12 +67,6 @@ design.
     :width: 500px
     :align: center
 
-.. rubric:: HELMET: HELMholtz Energy Thermodynamics
-
-:ref:`HELMET: HELMholtz Energy Thermodynamics<explanations/modeling_extensions/surrogate/helmet/index:HELMET: HELMholtz Energy Thermodynamics>`
-provides a framework for regressing multiparameter equations of state that identify an equation 
-for Helmholtz energy and multiple thermodynamic properties simultaneously. 
-
 .. rubric:: MatOpt: Nanomaterials Optimization
 
 :ref:`MatOpt: Nanomaterials Optimization<explanations/modeling_extensions/matopt/index:MatOpt: Nanomaterials Optimization>`

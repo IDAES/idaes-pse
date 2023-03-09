@@ -6,7 +6,6 @@ Surrogate modeling
 
     api/index
     ripe/index
-    helmet/index
     sampling/index
     plotting/index
 
@@ -17,10 +16,10 @@ flowsheets.
 .. image:: /images/ddm-software.png
     :width: 600px
 
-ALAMOpy, RIPE, and HELMET are data driven machine learning (ddm-learning) tools
+ALAMOpy and RIPE are data driven machine learning (ddm-learning) tools
 which leverage ALAMO, a regression application for generating equation-based
-surrogates. RIPE and HELMET are regression tools for the development of property
-models for kinetics and thermodynamics of a system. The provided tools include
+surrogates. RIPE is a regression tools for the development of property
+models for kinetics of a system. The provided tools include
 both ALAMOpy and RIPE that can access ALAMO and other solvers through the Python
 API, and an interface for accessing ALAMO solvers (via an external license)
 within IDAES flowsheets.
