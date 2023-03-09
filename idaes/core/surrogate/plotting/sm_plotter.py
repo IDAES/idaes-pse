@@ -15,6 +15,8 @@ Standard plotting methods (scatter, parity and residual plots).
 
 Author: B. Paul
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # Import statements
 from itertools import combinations  # used to pick xvar pairs in scatter3D

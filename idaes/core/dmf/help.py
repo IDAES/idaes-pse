@@ -14,6 +14,12 @@
 Find documentation for modules and classes in the
 generated Sphinx documentation and return its location.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: protected access issues
+# pylint: disable=protected-access
+
 # stdlib
 import logging
 import os

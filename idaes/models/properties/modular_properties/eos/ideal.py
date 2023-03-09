@@ -15,6 +15,12 @@ Methods for ideal equations of state.
 
 Currently only supports liquid and vapor phases
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import Expression, log
 
 from idaes.core import Apparent
@@ -32,6 +38,8 @@ from .eos_base import EoSBase
 
 # TODO: Add support for ideal solids
 class Ideal(EoSBase):
+    """EoS class for ideal phases."""
+
     # Add attribute indicating support for electrolyte systems
     electrolyte_support = True
 

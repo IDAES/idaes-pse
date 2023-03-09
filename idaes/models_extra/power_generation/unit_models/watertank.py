@@ -29,6 +29,9 @@ are mixed before entering the tank
 
 Created: November 04 2020
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo libraries
 from pyomo.environ import value, Var, Reference, acos
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool

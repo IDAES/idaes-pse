@@ -47,6 +47,10 @@ __author__ = "Andrew Lee"
 
 # Enumerate options for material balances
 class MaterialBalanceType(Enum):
+    """
+    Enum for material balance types.
+    """
+
     useDefault = -1
     none = 0
     componentPhase = 1
@@ -57,6 +61,10 @@ class MaterialBalanceType(Enum):
 
 # Enumerate options for energy balances
 class EnergyBalanceType(Enum):
+    """
+    Enum for energy balance types.
+    """
+
     useDefault = -1
     none = 0
     enthalpyPhase = 1
@@ -67,6 +75,10 @@ class EnergyBalanceType(Enum):
 
 # Enumerate options for momentum balances
 class MomentumBalanceType(Enum):
+    """
+    Enum for momentum/pressure balance types.
+    """
+
     none = 0
     pressureTotal = 1
     pressurePhase = 2
@@ -76,6 +88,10 @@ class MomentumBalanceType(Enum):
 
 # Enumerate options for flow direction
 class FlowDirection(Enum):
+    """
+    Enum indicating direction of flow.
+    """
+
     forward = 1
     backward = 2
 

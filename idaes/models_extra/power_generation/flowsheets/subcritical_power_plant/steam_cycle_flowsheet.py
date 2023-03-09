@@ -13,6 +13,9 @@
 """
 Dynamic sub-flowsheet for a subcritical 300MWe steam cycle system
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Python time library
 import time
 import matplotlib.pyplot as plt

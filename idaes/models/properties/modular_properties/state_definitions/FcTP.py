@@ -14,6 +14,12 @@
 Methods for setting up FcTP as the state variables in a generic property
 package
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import (
     Constraint,
     Expression,
@@ -484,6 +490,8 @@ do_not_initialize = []
 
 
 class FcTP(object):
+    """Component flow, temperature, pressure state."""
+
     set_metadata = set_metadata
     define_state = define_state
     state_initialization = state_initialization

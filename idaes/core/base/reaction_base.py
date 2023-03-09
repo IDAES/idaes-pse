@@ -13,6 +13,8 @@
 """
 This module contains classes for reaction blocks and reaction parameter blocks.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool

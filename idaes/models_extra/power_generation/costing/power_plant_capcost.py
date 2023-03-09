@@ -10,7 +10,6 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
 """
 Power Plant costing library
 This method leverages NETL costing capabilities. Two main methods have been
@@ -32,6 +31,10 @@ Other methods:
     - check_sCO2_costing_bounds() to display a warning if costing model have
       been used outside the range that where designed for
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 __author__ = "Costing Team (A. Noring, B. Paul, D. Caballero, and M. Zamarripa)"
 __version__ = "1.0.0"
 
@@ -83,8 +86,8 @@ def custom_power_plant_currency_units():
     """
     register_idaes_currency_units()
     if (
-        "USD_2008_Nov" in pyunits._pint_registry
-        and "USD_2019_Sep" in pyunits._pint_registry
+        "USD_2008_Nov" in pyunits._pint_registry  # pylint: disable=protected-access
+        and "USD_2019_Sep" in pyunits._pint_registry  # pylint: disable=protected-access
     ):
         # Assume that custom power plant units have already been registered
         # Log a message and end
@@ -1125,7 +1128,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # check to see if a costing block already exists
         if (
             self.parent_block().name
-            in self.config.flowsheet_costing_block._registered_unit_costing
+            in self.config.flowsheet_costing_block._registered_unit_costing  # pylint: disable=protected-access
         ):
             raise AttributeError(
                 "{} already has an attribute costing. "
@@ -1383,7 +1386,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # check to see if a costing block already exists
         if (
             self.parent_block().name
-            in self.config.flowsheet_costing_block._registered_unit_costing
+            in self.config.flowsheet_costing_block._registered_unit_costing  # pylint: disable=protected-access
         ):
             raise AttributeError(
                 "{} already has an attribute costing. "

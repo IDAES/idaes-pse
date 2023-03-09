@@ -10,6 +10,12 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+
+# Changing existing config block attributes
+# pylint: disable=protected-access
+
 import pyomo.environ as pyo
 from pyomo.common.config import In
 from idaes.core import declare_process_block_class
@@ -27,7 +33,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 def _assert_properties(pb):
-    """Assert that the properies parameter block conforms to the requirements"""
+    """Assert that the properties parameter block conforms to the requirements"""
     try:
         assert isinstance(pb, hltz.HelmholtzParameterBlockData)
         assert pb.config.phase_presentation in {

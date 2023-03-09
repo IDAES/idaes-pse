@@ -19,6 +19,10 @@ Retrieved: September 13th, 2019
 
 All parameter indicies and units based on conventions used by the source
 """
+# TODO: Missing doc strings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import Expression, log, Var, units as pyunits
 
 from idaes.core.util.misc import set_param_from_config

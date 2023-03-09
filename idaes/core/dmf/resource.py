@@ -11,8 +11,12 @@
 # for full copyright and license information.
 #################################################################################
 """
-Resource representaitons.
+Resource representations.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 # stdlib
 import abc
 import argparse

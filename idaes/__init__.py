@@ -15,6 +15,10 @@
 
 Set up logging for the idaes module, and import plugins.
 """
+# TODO: Missing doc strings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 import os
 import copy
 import logging
@@ -65,7 +69,7 @@ else:
 _local_config_file = "idaes.conf"
 
 # Create the general IDAES configuration block, with default config
-cfg = config._new_idaes_config_block()
+cfg = config._new_idaes_config_block()  # pylint: disable=protected-access
 config.reconfig(cfg)
 # read global config and overwrite provided config options
 config.read_config(_global_config_file, cfg=cfg)

@@ -13,6 +13,12 @@
 """
 Data Management Framework
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: protected access issues
+# pylint: disable=protected-access
+
 # stdlib
 from datetime import datetime
 import logging

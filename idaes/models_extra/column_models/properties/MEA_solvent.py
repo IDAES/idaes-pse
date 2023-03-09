@@ -34,6 +34,10 @@ References:
     [2] Morgan et.al (2015)
     [3] NIST Webbook, https://webbook.nist.gov/
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo units
 from pyomo.environ import exp, log, units as pyunits, Var, Expression
 

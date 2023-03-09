@@ -13,6 +13,9 @@
 """
 Test utility functions
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 # standard library
 import importlib
 import logging

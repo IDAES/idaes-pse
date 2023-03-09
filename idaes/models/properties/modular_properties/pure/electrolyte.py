@@ -13,6 +13,9 @@
 """
 General pure component electrolyte methods
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import Var, units as pyunits
 
 from idaes.core.util.misc import set_param_from_config
@@ -22,6 +25,8 @@ from idaes.core.util.misc import set_param_from_config
 # Method for constant relative permittivity
 # Relative permittivity was referred to as the dielectric constant in the past
 class relative_permittivity_constant:
+    """Methods for constant relative permittivity."""
+
     @staticmethod
     def build_parameters(cobj):
         cobj.relative_permittivity_liq_comp = Var(

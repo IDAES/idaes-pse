@@ -241,6 +241,7 @@ def solve_indexed_blocks(solver, blocks, **kwds):
     Returns:
         A Pyomo solver results object
     """
+    # We need to play with Pyomo internals for this
     # Check blocks argument, and convert to a list of Blocks
     if isinstance(blocks, Block):
         blocks = [blocks]
@@ -261,8 +262,10 @@ def solve_indexed_blocks(solver, blocks, **kwds):
                 )
             # Append components of BlockData to temporary Block
             try:
-                tmp._decl["block_%s" % i] = i
-                tmp._decl_order.append((b, i + 1 if i < nBlocks - 1 else None))
+                tmp._decl["block_%s" % i] = i  # pylint: disable=protected-access
+                tmp._decl_order.append(  # pylint: disable=protected-access
+                    (b, i + 1 if i < nBlocks - 1 else None)
+                )
             except Exception:
                 raise Exception(
                     "solve_indexed_blocks method failed adding "
@@ -270,7 +273,11 @@ def solve_indexed_blocks(solver, blocks, **kwds):
                 )
 
         # Set ctypes on temporary Block
-        tmp._ctypes[Block] = [0, nBlocks - 1, nBlocks]
+        tmp._ctypes[Block] = [  # pylint: disable=protected-access
+            0,
+            nBlocks - 1,
+            nBlocks,
+        ]
 
         # Solve temporary Block
         results = solver.solve(tmp, **kwds)
@@ -278,9 +285,9 @@ def solve_indexed_blocks(solver, blocks, **kwds):
     finally:
         # Clean up temporary Block contents so they are not removed when Block
         # is garbage collected.
-        tmp._decl = {}
-        tmp._decl_order = []
-        tmp._ctypes = {}
+        tmp._decl = {}  # pylint: disable=protected-access
+        tmp._decl_order = []  # pylint: disable=protected-access
+        tmp._ctypes = {}  # pylint: disable=protected-access
 
     # Return results
     return results

@@ -10,6 +10,11 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+Common utilities for cubic EoS property packages.
+"""
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 import enum
 import ctypes
@@ -35,6 +40,8 @@ def cubic_roots_available():
 
 
 class CubicType(enum.Enum):
+    """enum of supported cubic types."""
+
     PR = 0
     SRK = 1
 

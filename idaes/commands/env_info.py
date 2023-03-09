@@ -12,6 +12,8 @@
 #################################################################################
 """Get info about the environment IDAES is running in and the IDAES version
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 __author__ = "John Eslick"
 
