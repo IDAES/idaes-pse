@@ -13,6 +13,9 @@
 """
 Mock-up EoS module for testing generic property packages
 """
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import Var, sqrt, units as pyunits
 
 from idaes.models.properties.modular_properties.eos.eos_base import EoSBase

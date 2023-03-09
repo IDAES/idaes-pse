@@ -13,6 +13,12 @@
 """
 Functions for saving and loading Pyomo objects to json
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# We need to work with some Pyomo internals for this
+# pylint: disable=protected-access
+
 import json
 import datetime
 import time

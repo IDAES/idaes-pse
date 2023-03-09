@@ -15,6 +15,8 @@ This provides standard valve models for adiabatic control valves.  Beyond the
 most common valve models, and adiabatic valve model can be added by supplying
 custom callbacks for the pressure-flow relation or valve function.
 """
+# Changing existing config block attributes
+# pylint: disable=protected-access
 
 __Author__ = "John Eslick"
 
@@ -37,6 +39,10 @@ _log = idaeslog.getLogger(__name__)
 
 
 class ValveFunctionType(Enum):
+    """
+    Enum of supported valve types.
+    """
+
     linear = 1
     quick_opening = 2
     equal_percentage = 3
@@ -103,6 +109,10 @@ def pressure_flow_default_callback(valve):
 
 @declare_process_block_class("Valve", doc="Adiabatic valves")
 class ValveData(PressureChangerData):
+    """
+    Basic valve model class.
+    """
+
     # Same settings as the default pressure changer, but force to expander with
     # isentropic efficiency
     CONFIG = PressureChangerData.CONFIG()

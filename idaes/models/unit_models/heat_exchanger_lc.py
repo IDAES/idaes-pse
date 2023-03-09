@@ -29,6 +29,9 @@ from .heat_exchanger import HeatExchangerData
     "HeatExchangerLumpedCapacitance", doc="0D heat exchanger for transient simulations"
 )
 class HeatExchangerLumpedCapacitanceData(HeatExchangerData):
+    """
+    Lumped capacitance HX unit class.
+    """
 
     CONFIG = HeatExchangerData.CONFIG(implicit=True)
 

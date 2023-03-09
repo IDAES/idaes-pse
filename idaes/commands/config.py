@@ -11,6 +11,11 @@
 # for full copyright and license information.
 #################################################################################
 """Commandline Utilities for Managing the IDAES Config files"""
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: protected access issues
+# pylint: disable=protected-access
 
 __author__ = "John Eslick"
 

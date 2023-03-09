@@ -20,6 +20,9 @@ and roof superheater, model main equations:
 * Consider a layer of metal and a layer of slag
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import value, Var, Param, asin, cos, Reference

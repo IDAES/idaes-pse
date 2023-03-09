@@ -26,6 +26,10 @@ from pyomo.environ import units
 
 
 class Constants:
+    """
+    IDAES Constants class
+    """
+
     # -------------------------------------------------------------------------
     # General geometric relationships
     pi = math.pi

@@ -13,6 +13,12 @@
 """
 Methods for creating additional state variables for electrolyte systems
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import Constraint, NonNegativeReals, Reference, units as pyunits, Var
 
 from idaes.models.properties.modular_properties.base.generic_property import StateIndex

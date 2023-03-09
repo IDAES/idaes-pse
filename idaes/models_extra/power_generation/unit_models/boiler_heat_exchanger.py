@@ -33,6 +33,8 @@ General assumtpions:
     - Pressure drop tube and shell side (friction factor calc.)
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
 
 __author__ = "Boiler subsystem team (J Ma, M Zamarripa)"
 __version__ = "1.0.0"

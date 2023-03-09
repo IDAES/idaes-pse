@@ -10,6 +10,9 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+IAPWS95 property package for water and steam
+"""
 
 __author__ = "John Eslick"
 
@@ -68,8 +71,12 @@ def htpx(T=None, P=None, x=None):
 
 @declare_process_block_class("Iapws95ParameterBlock")
 class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
+    """IAWPS95 Parameter Block class"""
+
     CONFIG = HelmholtzParameterBlockData.CONFIG()
     CONFIG.pure_component = "H2O"
+    # TODO: Might need to refactor this
+    # pylint: disable=protected-access
     CONFIG.get("pure_component")._default = "H2O"
 
 
@@ -78,4 +85,4 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
     block_class=_StateBlock,
 )
 class Iapws95StateBlockData(HelmholtzStateBlockData):
-    pass
+    """IAWPS95 State Block class."""

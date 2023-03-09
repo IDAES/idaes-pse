@@ -17,6 +17,8 @@ what could be considered a typical SCPC plant, producing around 620 MW gross.
 This model is for demonstration and tutorial purposes only. Before looking at the
 model, it may be useful to look at the process flow diagram (PFD).
 """
+# Model needs to access private flow terms
+# pylint: disable=protected-access
 
 __author__ = "John Eslick, Maojian Wang"
 

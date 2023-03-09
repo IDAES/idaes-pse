@@ -13,6 +13,11 @@
 """
 Base class for control volumes
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# We use some private attributes here to hide these from the user
+# pylint: disable=protected-access
 
 # Import Python libraries
 import copy
@@ -63,6 +68,10 @@ _log = idaeslog.getLogger(__name__)
 
 # Enumerate options for area
 class DistributedVars(Enum):
+    """
+    Enum indicating if a variable is constant across the spatial domain.
+    """
+
     variant = 0
     uniform = 1
 

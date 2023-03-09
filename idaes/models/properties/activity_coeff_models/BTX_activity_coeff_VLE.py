@@ -41,6 +41,8 @@ _log = getIdaesLogger(__name__)
 
 @declare_process_block_class("BTXParameterBlock")
 class BTXParameterData(ActivityCoeffParameterData):
+    """Property package for mixtures of benzene, toluene and (ortho-)xylene."""
+
     def build(self):
         """
         Callable method for Block construction.

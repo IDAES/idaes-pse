@@ -19,6 +19,8 @@ Data sources:
         Operations. V. Zavala, 2014, Comp. Chem. Eng.
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
 
 from pyomo.core.base.units_container import units as pyunits
 from pyomo.core.base.var import Var

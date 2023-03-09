@@ -22,6 +22,9 @@ main equations:
 
 Created: April 2019 by Jinliang Ma
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import value, Var, Reference
