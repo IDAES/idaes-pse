@@ -38,6 +38,11 @@ References:
 3. H. Renon and J.M. Prausnitz, "Local compositions in thermodynamic excess functions for liquid mixtures.", AIChE Journal Vol. 14, No.1, 1968.
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
 
 # Import Pyomo libraries
 from pyomo.environ import (

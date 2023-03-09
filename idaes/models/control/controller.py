@@ -13,6 +13,8 @@
 """
 PID controller model module
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 __author__ = ["John Eslick", "Jinliang Ma"]
 
@@ -78,6 +80,10 @@ def smooth_heaviside(x, k):
     doc="PID controller model block.  To use this the model must be dynamic.",
 )
 class PIDControllerData(UnitModelBlockData):
+    """
+    PID controller class.
+    """
+
     CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare(
         "process_var",

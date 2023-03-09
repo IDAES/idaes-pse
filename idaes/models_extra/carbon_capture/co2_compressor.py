@@ -24,6 +24,9 @@ International Journal of Greenhouse Gas Control. v62. page 31-45
 Created: April 2020
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 __Author__ = "Quang Minh Le, John Eslick, Andrew Lee"
 
 from enum import Enum

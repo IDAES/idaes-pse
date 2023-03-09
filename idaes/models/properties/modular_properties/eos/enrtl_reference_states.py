@@ -24,6 +24,9 @@ Reference:
 Song, Y. and Chen, C.-C., Symmetric Electrolyte Nonrandom Two-Liquid Activity
 Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import Expression
 
 from idaes.models.properties.modular_properties.base.utility import (

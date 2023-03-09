@@ -10,6 +10,10 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+Python interface for ALAMO tool.
+"""
+
 from enum import Enum
 import subprocess
 from io import StringIO
@@ -44,6 +48,10 @@ GLOBAL_FUNCS = {"sin": sin, "cos": cos, "ln": log, "exp": exp}
 
 # The values associated with these must match those expected in the .alm file
 class Modelers(Enum):
+    """
+    Enum for modelers supported by ALAMO.
+    """
+
     BIC = 1
     MallowsCp = 2
     AICc = 3
@@ -55,6 +63,10 @@ class Modelers(Enum):
 
 
 class Screener(Enum):
+    """
+    Enum for screeners supported by ALAMO.
+    """
+
     none = 0
     lasso = 1
     SIS = 2
@@ -721,6 +733,7 @@ class AlamoTrainer(SurrogateTrainer):
 
     # TODO: let's generalize this under the metrics?
     def get_alamo_results(self):
+        """Return results from trainer"""
         return self._results
 
     def _get_files(self):

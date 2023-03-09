@@ -16,6 +16,9 @@ Utility functions for column models
 
 __author__ = "Jaffer Ghouse, Alejandro Garcia-Diego"
 
+# TODO: look into protected access issues - probably need to refactor
+# pylint: disable=protected-access
+
 # Import Pyomo libraries
 from pyomo.environ import (
     Reference,

@@ -15,6 +15,10 @@ DMF support for standard IDAES datasets.
 
 See :mod:`idaes.core.datasets` for user-facing API.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 # stdlib
 from collections import namedtuple
 import json

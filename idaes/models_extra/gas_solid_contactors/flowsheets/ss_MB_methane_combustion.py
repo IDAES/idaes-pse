@@ -17,6 +17,8 @@ iron-oxide case study
 
 Author: Chinedu Okoli
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 import time
 
@@ -162,5 +164,7 @@ def main():
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
     m = main()
+    # TODO: Fix this
+    # pylint: disable-next=protected-access
     stream_table = m.fs.MB._get_stream_table_contents()
     print(stream_table)

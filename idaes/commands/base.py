@@ -13,6 +13,8 @@
 """
 Base command for 'idaes' commandline script
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 __author__ = "John Eslick"
 

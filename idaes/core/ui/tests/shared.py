@@ -13,6 +13,8 @@
 """
 Shared (utility) code for UI tests.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 
 def dict_diff(d1, d2, result=None, pfx=""):

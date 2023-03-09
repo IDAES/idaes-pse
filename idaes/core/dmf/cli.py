@@ -15,6 +15,9 @@ Command Line Interface for idaes.core.dmf.
 
 Uses "Click" to handle command-line parsing and dispatch.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # stdlib
 from collections import namedtuple
 from datetime import datetime

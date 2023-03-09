@@ -10,6 +10,9 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+
 data_dic = {
     1: "(74904.4 * b.wall_temperature_waterwall[t, 1] \
             +11301.8 * b.wall_temperature_waterwall[t, 2] \

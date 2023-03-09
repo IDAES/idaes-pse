@@ -22,6 +22,8 @@ oxygen carriers in chemical-looping combustion,
 Chem. Eng. Sci. 62 (2007) 533–549.
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -286,7 +288,7 @@ class _ReactionBlock(ReactionBlockBase):
         Dflag = {}  # Solid density flag
 
         for k, b in blk.items():
-            for j in b.gas_state_ref._params.component_list:
+            for j in b.gas_state_ref.params.component_list:
                 if b.gas_state_ref.dens_mol_comp[j].fixed is True:
                     Cflag[k, j] = True
                 else:
@@ -310,7 +312,7 @@ class _ReactionBlock(ReactionBlockBase):
             if hasattr(k, "OC_conv_temp_eqn"):
                 calculate_variable_from_constraint(k.OC_conv_temp, k.OC_conv_temp_eqn)
 
-            for j in k._params.rate_reaction_idx:
+            for j in k.params.rate_reaction_idx:
                 if hasattr(k, "rate_constant_eqn"):
                     calculate_variable_from_constraint(
                         k.k_rxn[j], k.rate_constant_eqn[j]
@@ -346,7 +348,7 @@ class _ReactionBlock(ReactionBlockBase):
             revert_state_vars(k.config.solid_state_block, state_var_flags)
 
         for k, b in blk.items():
-            for j in b.gas_state_ref._params.component_list:
+            for j in b.gas_state_ref.params.component_list:
                 if Cflag[k, j] is False:
                     b.gas_state_ref.dens_mol_comp[j].unfix()
             if Dflag[k] is False:
@@ -441,7 +443,7 @@ class ReactionBlockData(ReactionBlockDataBase):
     # Rate constant method
     def _k_rxn(self):
         self.k_rxn = Var(
-            self._params.rate_reaction_idx,
+            self.params.rate_reaction_idx,
             domain=Reals,
             initialize=1,
             doc="Rate constant [mol^(1-rxn_order) * m^(3*rxn_order -2)/s]",
@@ -451,9 +453,9 @@ class ReactionBlockData(ReactionBlockDataBase):
         def rate_constant_eqn(b, j):
             if j == "R1":
                 return self.k_rxn[j] == (
-                    self._params.k0_rxn[j]
+                    self.params.k0_rxn[j]
                     * exp(
-                        -self._params.energy_activation[j]
+                        -self.params.energy_activation[j]
                         / (
                             pyunits.convert(
                                 Constants.gas_constant,  # J/mol/K
@@ -469,7 +471,7 @@ class ReactionBlockData(ReactionBlockDataBase):
         try:
             # Try to build constraint
             self.rate_constant_eqn = Constraint(
-                self._params.rate_reaction_idx, rule=rate_constant_eqn
+                self.params.rate_reaction_idx, rule=rate_constant_eqn
             )
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -492,12 +494,12 @@ class ReactionBlockData(ReactionBlockDataBase):
                 * (
                     b.solid_state_ref.mass_frac_comp["Fe2O3"]
                     + (
-                        b.solid_state_ref._params.mw_comp["Fe2O3"]
-                        / b.solid_state_ref._params.mw_comp["Fe3O4"]
+                        b.solid_state_ref.params.mw_comp["Fe2O3"]
+                        / b.solid_state_ref.params.mw_comp["Fe3O4"]
                     )
                     * (
-                        b._params.rate_reaction_stoichiometry["R1", "Sol", "Fe2O3"]
-                        / -b._params.rate_reaction_stoichiometry["R1", "Sol", "Fe3O4"]
+                        b.params.rate_reaction_stoichiometry["R1", "Sol", "Fe2O3"]
+                        / -b.params.rate_reaction_stoichiometry["R1", "Sol", "Fe3O4"]
                     )
                     * b.solid_state_ref.mass_frac_comp["Fe3O4"]
                 )
@@ -535,7 +537,7 @@ class ReactionBlockData(ReactionBlockDataBase):
     # General rate of reaction method
     def _reaction_rate(self):
         self.reaction_rate = Var(
-            self._params.rate_reaction_idx,
+            self.params.rate_reaction_idx,
             domain=Reals,
             initialize=0,
             doc="Gen. rate of reaction [mol_rxn/m3.s]",
@@ -543,30 +545,32 @@ class ReactionBlockData(ReactionBlockDataBase):
         )
 
         def rate_rule(b, r):
-            return b.reaction_rate[r] == b._params._scale_factor_rxn * (
+            return b.reaction_rate[
+                r
+            ] == b.params._scale_factor_rxn * (  # pylint: disable=protected-access
                 b.solid_state_ref.mass_frac_comp["Fe3O4"]
                 * (1 - b.solid_state_ref.particle_porosity)
                 * b.solid_state_ref.dens_mass_skeletal
-                * (b._params.a_vol / (b.solid_state_ref._params.mw_comp["Fe3O4"]))
+                * (b.params.a_vol / (b.solid_state_ref.params.mw_comp["Fe3O4"]))
                 * 3
-                * -b._params.rate_reaction_stoichiometry["R1", "Sol", "Fe3O4"]
+                * -b.params.rate_reaction_stoichiometry["R1", "Sol", "Fe3O4"]
                 * b.k_rxn[r]
                 * (
                     (
-                        (b.gas_state_ref.dens_mol_comp["O2"] ** 2 + b._params.eps**2)
+                        (b.gas_state_ref.dens_mol_comp["O2"] ** 2 + b.params.eps**2)
                         ** 0.5
                     )
-                    ** b._params.rxn_order[r]
+                    ** b.params.rxn_order[r]
                 )
                 * b.OC_conv_temp
-                / (b._params.dens_mol_sol * b._params.grain_radius)
-                / (-b._params.rate_reaction_stoichiometry["R1", "Sol", "Fe3O4"])
+                / (b.params.dens_mol_sol * b.params.grain_radius)
+                / (-b.params.rate_reaction_stoichiometry["R1", "Sol", "Fe3O4"])
             )
 
         try:
             # Try to build constraint
             self.gen_rate_expression = Constraint(
-                self._params.rate_reaction_idx, rule=rate_rule
+                self.params.rate_reaction_idx, rule=rate_rule
             )
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later

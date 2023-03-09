@@ -15,6 +15,12 @@ Methods for cubic equations of state.
 
 Currently only supports liquid and vapor phases
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from enum import Enum
 from copy import deepcopy
 
@@ -67,11 +73,15 @@ References:
 
 
 class MixingRuleA(Enum):
+    """Enum for supported rules for calculating am"""
+
     # Rule to calculate am for cubic equations of state
     default = 0
 
 
 class MixingRuleB(Enum):
+    """Enum for supported rules for calculating bm"""
+
     # Rule to calculate bm for cubic equations of state
     default = 0
 
@@ -109,6 +119,8 @@ CubicConfig.declare(
 
 
 class Cubic(EoSBase):
+    """Class for constructing modular cubic EoS properties"""
+
     @staticmethod
     def common(b, pobj):
         # TODO: determine if Henry's Law applies to Cubic EoS systems

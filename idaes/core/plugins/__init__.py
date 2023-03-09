@@ -10,5 +10,8 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+
 import idaes.core.plugins.variable_replace
 import idaes.core.plugins.simple_equality_eliminator

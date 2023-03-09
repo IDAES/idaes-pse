@@ -14,6 +14,9 @@
 """
 General purpose heat integration block for IDAES models
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Plotting and Numpy libraries for composite curves
 import matplotlib.pyplot as plt
 import numpy as np

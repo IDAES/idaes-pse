@@ -17,8 +17,14 @@ within the IDAES generic properties framework.
 The CoolPropWrapper class contains a set of sub-classes for the supported
 thermophysical properties required by the generic property framework, along
 with some helper functions for common calls to the CoolProp database and
-chaching data to avoid repeated database lookups.
+caching data to avoid repeated database lookups.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 import json
 
 from pyomo.common.dependencies import attempt_import
