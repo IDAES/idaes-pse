@@ -2107,8 +2107,10 @@ should be constructed,
                     # This is OK
                     sf = iscale.min_scaling_factor(
                         [
-                            self.gas_phase._enthalpy_flow[t, x, p] for p in phase_list
-                        ]  # pylint: disable=protected-access
+                            # pylint: disable-next=protected-access
+                            self.gas_phase._enthalpy_flow[t, x, p]
+                            for p in phase_list
+                        ]
                     )
                     iscale.constraint_scaling_transform(c, 1e-3 * sf, overwrite=True)
 

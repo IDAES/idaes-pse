@@ -163,13 +163,13 @@ class Pyomo2SympyVisitor(StreamBasedExpressionVisitor):
         if isinstance(node, ExternalFunctionExpression):
             # catch ExternalFunction
             _op = self.object_map.getSympySymbol(
-                node._fcn
-            )  # pylint: disable=protected-access
+                node._fcn  # pylint: disable=protected-access
+            )
         else:
             if node.__class__ is EXPR.UnaryFunctionExpression:
-                return _functionMap[node._name](
+                return _functionMap[node._name](  # pylint: disable=protected-access
                     values[0]
-                )  # pylint: disable=protected-access
+                )
             _op = _pyomo_operator_map.get(node.__class__, None)
         if _op is None:
             return node._apply_operation(values)  # pylint: disable=protected-access

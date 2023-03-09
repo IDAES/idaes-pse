@@ -85,9 +85,8 @@ class HasPropertyClassMetadata(object):
 
             # Check that the metadata was actually populated
             # Check requires looking at private attributes
-            if (
-                pcm._properties is None or pcm._default_units is None
-            ):  # pylint: disable=protected-access
+            # pylint: disable-next=protected-access
+            if pcm._properties is None or pcm._default_units is None:
                 raise PropertyPackageError(
                     "Property package did not populate all expected metadata."
                 )

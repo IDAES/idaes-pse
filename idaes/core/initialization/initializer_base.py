@@ -54,22 +54,22 @@ class InitializationStatus(Enum):
 # Store spec needs to use some internals from Pyomo
 StoreState = StoreSpec(
     data_classes={
-        Var._ComponentDataClass: (
+        Var._ComponentDataClass: (  # pylint: disable=protected-access
             ("fixed", "value"),
             _only_fixed,
-        ),  # pylint: disable=protected-access
-        BooleanVar._ComponentDataClass: (
+        ),
+        BooleanVar._ComponentDataClass: (  # pylint: disable=protected-access
             ("fixed", "value"),
             _only_fixed,
-        ),  # pylint: disable=protected-access
-        Block._ComponentDataClass: (
+        ),
+        Block._ComponentDataClass: (  # pylint: disable=protected-access
             ("active",),
             None,
-        ),  # pylint: disable=protected-access
-        Constraint._ComponentDataClass: (
+        ),
+        Constraint._ComponentDataClass: (  # pylint: disable=protected-access
             ("active",),
             None,
-        ),  # pylint: disable=protected-access
+        ),
     }
 )
 

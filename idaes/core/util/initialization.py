@@ -263,9 +263,9 @@ def solve_indexed_blocks(solver, blocks, **kwds):
             # Append components of BlockData to temporary Block
             try:
                 tmp._decl["block_%s" % i] = i  # pylint: disable=protected-access
-                tmp._decl_order.append(
+                tmp._decl_order.append(  # pylint: disable=protected-access
                     (b, i + 1 if i < nBlocks - 1 else None)
-                )  # pylint: disable=protected-access
+                )
             except Exception:
                 raise Exception(
                     "solve_indexed_blocks method failed adding "
@@ -273,11 +273,11 @@ def solve_indexed_blocks(solver, blocks, **kwds):
                 )
 
         # Set ctypes on temporary Block
-        tmp._ctypes[Block] = [
+        tmp._ctypes[Block] = [  # pylint: disable=protected-access
             0,
             nBlocks - 1,
             nBlocks,
-        ]  # pylint: disable=protected-access
+        ]
 
         # Solve temporary Block
         results = solver.solve(tmp, **kwds)
