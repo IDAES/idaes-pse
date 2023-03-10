@@ -69,32 +69,24 @@ kwargs = dict(
     install_requires=[
         # idaes core / dmf
         "backports.shutil_get_terminal_size",
-        "bunch",
         "click>=8",
         "colorama",
-        "distro",  # help identify linux distros for binary downloads
-        "flask",  # for ui/fsvis
-        "flask-cors",
         "jupyter",
         "lxml",
         "matplotlib",
         "nbconvert",
         "nbformat",
         "numpy",
-        "networkx",
         "omlt==1.1",  # fix the version for now as package evolves
         "pandas<1.5",
         "pint",
-        "psutil",
         "pyomo @ https://github.com/IDAES/pyomo/archive/6.5.0.zip",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
-        "python-slugify",  # for ui/fsvis
         "scipy",
         "sympy",
         "tinydb",
-        "rbfopt",
         "xlrd",  # for DMF read of old .xls Excel files
         "openpyxl",  # for DMF read of new .xls Excel files
         # lbianchi-lbl: see https://github.com/IDAES/idaes-pse/issues/661
