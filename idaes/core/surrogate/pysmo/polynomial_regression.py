@@ -14,10 +14,6 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-function-docstring
 
-# Imports from the python standard library
-from __future__ import division
-
-# from builtins import int, str
 import os.path
 import warnings
 import pickle
@@ -28,7 +24,6 @@ import numpy as np
 import pandas as pd
 import scipy.optimize as opt
 from scipy import stats
-from six import string_types
 
 from pyomo.environ import (
     ConcreteModel,
@@ -413,7 +408,7 @@ class PolynomialRegression:
             solution_method = "pyomo"
             self.solution_method = solution_method
             print("Default parameter estimation method is used.")
-        elif not isinstance(solution_method, string_types):
+        elif not isinstance(solution_method, str):
             raise Exception("Invalid solution method. Must be of type <str>.")
         elif (
             (solution_method.lower() == "mle")

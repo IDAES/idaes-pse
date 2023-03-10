@@ -17,8 +17,6 @@
 # pylint: disable=consider-using-enumerate
 
 # Imports from the python standard library
-from __future__ import division, print_function
-from builtins import str
 import os.path
 import warnings
 import pickle
@@ -28,7 +26,6 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.optimize as opt
-from six import string_types
 
 from pyomo.environ import (
     ConcreteModel,
@@ -317,7 +314,7 @@ class RadialBasisFunctions:
             solution_method = "algebraic"
             self.solution_method = solution_method
             print("Default parameter estimation method is used.")
-        elif not isinstance(solution_method, string_types):
+        elif not isinstance(solution_method, str):
             raise Exception("Invalid solution method. Must be of type <str>.")
         elif (
             (solution_method.lower() == "algebraic")
@@ -336,7 +333,7 @@ class RadialBasisFunctions:
             basis_function = "gaussian"
             self.basis_function = basis_function
             print("Gaussian basis function is used.")
-        elif not isinstance(basis_function, string_types):
+        elif not isinstance(basis_function, str):
             raise Exception("Invalid basis_function. Must be of type <str>.")
         elif (
             (basis_function.lower() == "linear")
