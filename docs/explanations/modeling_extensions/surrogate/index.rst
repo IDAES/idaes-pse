@@ -1,4 +1,4 @@
-Surrogate modeling
+Surrogate Modeling
 ==================
 
 .. toctree::
