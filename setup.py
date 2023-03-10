@@ -82,7 +82,7 @@ kwargs = dict(
         "numpy",
         "networkx",
         "omlt==1.1",  # fix the version for now as package evolves
-        "pandas<1.5",
+        "pandas",
         "pint",
         "psutil",
         "pyomo @ https://github.com/IDAES/pyomo/archive/6.5.0.zip",
@@ -97,7 +97,6 @@ kwargs = dict(
         "xlrd",  # for DMF read of old .xls Excel files
         "openpyxl",  # for DMF read of new .xls Excel files
         # lbianchi-lbl: see https://github.com/IDAES/idaes-pse/issues/661
-        "ipython<8.0.0",
     ],
     entry_points={
         "console_scripts": [
