@@ -14,6 +14,8 @@
 This module contains the base class for constructing flowsheet models in the
 IDAES modeling framework.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 import pyomo.environ as pe
 from pyomo.dae import ContinuousSet
@@ -332,4 +334,6 @@ within this flowsheet if not otherwise specified,
                 # Set time config argument to parent time
                 self.config.time = fs.time
                 add_object_reference(self, "_time", fs.time)
+                # We control time units
+                # pylint: disable-next=protected-access
                 self._time_units = fs._time_units

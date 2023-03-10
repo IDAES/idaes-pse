@@ -42,6 +42,8 @@ The degrees of freedom are the inlet states:
 (1) Inlet flow in mol/s
 (2) Inlet component mole fractions: CO2, H2O, N2, Ar, O2
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 from pyomo.environ import Var, units as pyunits
 from pyomo.network import Port

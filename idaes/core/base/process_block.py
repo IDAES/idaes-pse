@@ -16,6 +16,8 @@ reason to subclass a Pyomo block is to create a block that comes with
 pre-defined model equations. This is used in the IDAES modeling framework to
 create modular process model blocks.
 """
+# TODO: Look into if this is necessary
+# pylint: disable=protected-access
 
 import sys
 import logging

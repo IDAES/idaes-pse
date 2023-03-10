@@ -17,6 +17,9 @@ Main assumptions:
     - ideal gas
     - components in flue gas: O2, N2, NO, CO2, H2O, SO2
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo libraries
 from pyomo.environ import (
     Constraint,

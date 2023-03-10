@@ -10,6 +10,8 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
 
 from .config import SolverWrapper, use_idaes_solver_configuration_defaults
 from .features import ipopt_has_linear_solver

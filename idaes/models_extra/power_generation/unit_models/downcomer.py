@@ -19,6 +19,9 @@ Main assumptions:
 
 Created August 27, 2020
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo libraries
 from pyomo.environ import value, Var, Reference, units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool

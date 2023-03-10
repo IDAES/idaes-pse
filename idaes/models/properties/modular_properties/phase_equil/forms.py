@@ -13,10 +13,15 @@
 """
 Library of common forms for phase equilibrium constraints
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 import idaes.core.util.scaling as iscale
 
 
 class fugacity:
+    """Phase equilibrium through equating fugacity"""
+
     @staticmethod
     def return_expression(b, phase1, phase2, comp):
         pp = (phase1, phase2)
@@ -52,6 +57,8 @@ class fugacity:
 
 
 class log_fugacity:
+    """Phase equilibrium through equating log of fugacity."""
+
     @staticmethod
     def return_expression(b, phase1, phase2, comp):
         pp = (phase1, phase2)

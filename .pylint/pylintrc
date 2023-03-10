@@ -1,7 +1,7 @@
 [MASTER]
 init-hook="import sys; sys.path.append('.pylint')"
 load-plugins=idaes_transform
-ignore-patterns=test_.*
+ignore-patterns=test_.*,__init__.*
 ignore=alamopy_depr,grid_integration,helmet,matopt,ripe,roundingRegression
 
 [MESSAGES CONTROL]
@@ -15,20 +15,16 @@ disable=no-self-argument,
     logging-fstring-interpolation,  # not sure why pylint doesn't like f-strings
     unnecessary-lambda,
     attribute-defined-outside-init,
-    protected-access,
     arguments-differ,
     abstract-method,
     arguments-renamed,
-    unused-argument,
+    unused-argument,  # w have cases where a general high level method passes arguments that simpler methods do not need
     redefined-outer-name,
     cell-var-from-loop,  # this arises due to Pyomo rules
     anomalous-backslash-in-string,
     unspecified-encoding,
     # Conventions
     invalid-name,
-    missing-module-docstring,
-    missing-class-docstring,
-    missing-function-docstring,
     line-too-long,  # we have black for this
     too-many-lines,
     use-implicit-booleaness-not-comparison,  # implicit booleaness can be hard to follow

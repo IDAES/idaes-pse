@@ -14,6 +14,10 @@
 Natural gas property package for the vapor phase using Peng-Robinson equation
 of state.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 # Import Python libraries
 import logging
 import copy

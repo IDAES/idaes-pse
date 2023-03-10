@@ -13,6 +13,10 @@
 """
 Interface for importing Keras models into IDAES
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 from enum import Enum
 import json
 import os.path
@@ -137,10 +141,10 @@ class KerasSurrogate(SurrogateBase):
            block: Pyomo Block component
               The block to be populated with variables and/or constraints.
            additional_options: dict or None
-              If not None, then should be a dict with the following keys:
-                 'formulation': KerasSurrogate.Formulation
-                    The formulation to use with OMLT. Possible values are FULL_SPACE,
-                    REDUCED_SPACE, RELU_BIGM, or RELU_COMPLEMENTARITY (default is FULL_SPACE)
+              If not None, then should be a dict with the following keys;
+              'formulation': KerasSurrogate.Formulation
+              The formulation to use with OMLT. Possible values are FULL_SPACE,
+              REDUCED_SPACE, RELU_BIGM, or RELU_COMPLEMENTARITY (default is FULL_SPACE)
         """
         formulation = additional_options.pop(
             "formulation", KerasSurrogate.Formulation.FULL_SPACE

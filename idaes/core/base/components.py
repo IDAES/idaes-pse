@@ -15,6 +15,9 @@ IDAES Component objects
 
 @author: alee
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import Set, Param, Var, units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 
@@ -31,6 +34,10 @@ _log = idaeslog.getLogger(__name__)
 
 @declare_process_block_class("Component")
 class ComponentData(ProcessBlockData):
+    """
+    Standard component object class.
+    """
+
     CONFIG = ConfigBlock()
 
     CONFIG.declare(
@@ -207,8 +214,10 @@ class ComponentData(ProcessBlockData):
         # The IF is mostly for backwards compatability, to allow for old-style
         # property packages where the component_list already exists but we
         # need to add new Component objects
-        if not self.config._component_list_exists:
-            if not self.config._electrolyte:
+
+        # WE control the config block, ignore warnings about protected access
+        if not self.config._component_list_exists:  # pylint: disable=protected-access
+            if not self.config._electrolyte:  # pylint: disable=protected-access
                 self._add_to_component_list()
             else:
                 self._add_to_electrolyte_component_list()
@@ -266,7 +275,7 @@ class ComponentData(ProcessBlockData):
         New Component types should overload this method
         """
         parent = self.parent_block()
-        parent._non_aqueous_set.add(self.local_name)
+        parent._non_aqueous_set.add(self.local_name)  # pylint: disable=protected-access
 
     def _is_phase_valid(self, phase):
         # If no valid phases assigned
@@ -564,7 +573,7 @@ class ApparentData(SoluteData):
         New Component types should overload this method
         """
         parent = self.parent_block()
-        parent._apparent_set.add(self.local_name)
+        parent._apparent_set.add(self.local_name)  # pylint: disable=protected-access
 
 
 __all_components__ = [Component, Solute, Solvent, Ion, Anion, Cation, Apparent]

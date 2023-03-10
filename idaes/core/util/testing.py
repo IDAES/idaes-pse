@@ -10,10 +10,13 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
 """
 This module contains utility functions for use in testing IDAES models.
 """
+# These are methods for testing, and break a few conventions
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=protected-access
 
 __author__ = "Andrew Lee"
 

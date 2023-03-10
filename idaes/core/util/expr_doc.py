@@ -10,6 +10,9 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
 
 import re
 
@@ -159,13 +162,17 @@ class Pyomo2SympyVisitor(StreamBasedExpressionVisitor):
     def exitNode(self, node, values):
         if isinstance(node, ExternalFunctionExpression):
             # catch ExternalFunction
-            _op = self.object_map.getSympySymbol(node._fcn)
+            _op = self.object_map.getSympySymbol(
+                node._fcn  # pylint: disable=protected-access
+            )
         else:
             if node.__class__ is EXPR.UnaryFunctionExpression:
-                return _functionMap[node._name](values[0])
+                return _functionMap[node._name](  # pylint: disable=protected-access
+                    values[0]
+                )
             _op = _pyomo_operator_map.get(node.__class__, None)
         if _op is None:
-            return node._apply_operation(values)
+            return node._apply_operation(values)  # pylint: disable=protected-access
         else:
             return _op(*tuple(values))
 

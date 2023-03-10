@@ -51,12 +51,25 @@ class InitializationStatus(Enum):
     Error = -4  # Exception raised during execution (other than DoF or convergence)
 
 
+# Store spec needs to use some internals from Pyomo
 StoreState = StoreSpec(
     data_classes={
-        Var._ComponentDataClass: (("fixed", "value"), _only_fixed),
-        BooleanVar._ComponentDataClass: (("fixed", "value"), _only_fixed),
-        Block._ComponentDataClass: (("active",), None),
-        Constraint._ComponentDataClass: (("active",), None),
+        Var._ComponentDataClass: (  # pylint: disable=protected-access
+            ("fixed", "value"),
+            _only_fixed,
+        ),
+        BooleanVar._ComponentDataClass: (  # pylint: disable=protected-access
+            ("fixed", "value"),
+            _only_fixed,
+        ),
+        Block._ComponentDataClass: (  # pylint: disable=protected-access
+            ("active",),
+            None,
+        ),
+        Constraint._ComponentDataClass: (  # pylint: disable=protected-access
+            ("active",),
+            None,
+        ),
     }
 )
 
@@ -100,6 +113,7 @@ class InitializerBase:
         cls.__doc__ = add_docstring_list(cls.__doc__ if cls.__doc__ else "", cls.CONFIG)
 
     def get_logger(self, model):
+        """Get logger for model by name"""
         return idaeslog.getInitLogger(model.name, self.config.output_level)
 
     def initialize(

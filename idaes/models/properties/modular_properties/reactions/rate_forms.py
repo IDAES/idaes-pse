@@ -13,6 +13,9 @@
 """
 Methods for defining reaction rates
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from idaes.models.properties.modular_properties.base.utility import (
     get_concentration_term,
 )
@@ -20,6 +23,8 @@ from idaes.models.properties.modular_properties.base.utility import (
 
 # -----------------------------------------------------------------------------
 class power_law_rate:
+    """Methods for power-law rate expressions."""
+
     @staticmethod
     def build_parameters(rblock, config):
         pass

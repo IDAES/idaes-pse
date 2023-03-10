@@ -13,6 +13,11 @@
 """
 Base for IDAES process model objects.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into if this is necessary
+# pylint: disable=protected-access
 
 import sys
 import logging
@@ -44,7 +49,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.units_of_measurement import report_quantity
 
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
 
@@ -60,6 +65,10 @@ _log = logging.getLogger(__name__)
 
 # Enumerate options for material flow basis
 class MaterialFlowBasis(Enum):
+    """
+    Material flow basis Enum
+    """
+
     molar = 0
     mass = 1
     other = 2

@@ -13,6 +13,9 @@
 """
 Utility functions.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # stdlib
 from datetime import datetime, timedelta, timezone
 import importlib

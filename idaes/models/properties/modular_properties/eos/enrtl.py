@@ -26,6 +26,12 @@ Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 Note that "charge number" in the paper referes to the absolute value of the
 ionic charge.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import Expression, exp, log, Set, units as pyunits
 
 from idaes.models.properties.modular_properties.base.utility import (
@@ -56,6 +62,8 @@ ClosestApproach = 14.9
 
 
 class ENRTL(Ideal):
+    """EoS class for eNRTL based property packages."""
+
     # Add attribute indicating support for electrolyte systems
     electrolyte_support = True
 

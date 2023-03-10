@@ -55,6 +55,10 @@ _log = idaeslog.getLogger(__name__)
 
 
 class HeatExchangerFlowPattern(Enum):
+    """
+    Enum of supported flow patterns for heat exchangers.
+    """
+
     countercurrent = 1
     cocurrent = 2
     crossflow = 3

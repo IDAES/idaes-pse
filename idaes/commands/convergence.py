@@ -11,6 +11,8 @@
 # for full copyright and license information.
 #################################################################################
 """Commandline interface for convergence testing tools"""
+# This code is deprecated
+# pylint: disable=missing-function-docstring
 
 __author__ = "John Eslick"
 

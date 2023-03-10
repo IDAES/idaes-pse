@@ -14,6 +14,12 @@
 Methods for setting up FPhx as the state variables in a generic property
 package
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import (
     Constraint,
     Expression,
@@ -515,6 +521,8 @@ do_not_initialize = ["sum_mole_frac_out"]
 
 
 class FPhx(object):
+    """Total flow, pressure, enthalpy, mole fraction state."""
+
     set_metadata = set_metadata
     define_state = define_state
     state_initialization = state_initialization
