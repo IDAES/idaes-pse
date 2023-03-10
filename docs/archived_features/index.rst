@@ -7,4 +7,5 @@ This page contains a list of archived features and models that have been removed
     :maxdepth: 2
 
     helmet
+    ripe
 

@@ -54,19 +54,6 @@ black-box systems for which a simulator or experimental setup is available.
     ALAMO is an external tool to needs to be installed separately. See the ALAMOPy documentation for details on ALAMO installation and usage.
 
 
-.. rubric:: RIPE: Reaction Identification and Parameter Estimation
-
-:ref:`RIPE: Reaction Identification and Parameter Estimation<explanations/modeling_extensions/surrogate/ripe/index:RIPE: Reaction Identification and Parameter Estimation>`
-provides tools for reaction network identification. RIPE uses reactor data consisting of 
-concentration, or conversion, values for multiple species that are obtained dynamically, or at 
-multiple process conditions (temperatures, flow rates, working volumes) to identify probable 
-reaction kinetics. The RIPE module also contains tools to facilitate adaptive experimental 
-design.
-
-.. image:: /images/ddm-software.png
-    :width: 500px
-    :align: center
-
 .. rubric:: MatOpt: Nanomaterials Optimization
 
 :ref:`MatOpt: Nanomaterials Optimization<explanations/modeling_extensions/matopt/index:MatOpt: Nanomaterials Optimization>`
