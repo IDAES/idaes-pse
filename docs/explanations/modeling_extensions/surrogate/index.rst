@@ -5,10 +5,6 @@ Surrogate modeling
     :maxdepth: 1
 
     api/index
-<<<<<<< HEAD
-=======
-    ripe/index
->>>>>>> main
     sampling/index
     plotting/index
 
@@ -16,19 +12,11 @@ IDAES contains several surrogate modeling tools, including the IDAES Surrogates 
 which enables integrating ALAMO, PySMO or Keras surrogate models into IDAES
 flowsheets.
 
-<<<<<<< HEAD
-=======
-.. image:: /images/ddm-software.png
-    :width: 600px
-
-ALAMOpy and RIPE are data driven machine learning (ddm-learning) tools
+ALAMOpy is a data driven machine learning (ddm-learning) tool
 which leverage ALAMO, a regression application for generating equation-based
-surrogates. RIPE is a regression tools for the development of property
-models for kinetics of a system. The provided tools include
-both ALAMOpy and RIPE that can access ALAMO and other solvers through the Python
+surrogates. The provided tools allow access to ALAMO and other solvers through the Python
 API, and an interface for accessing ALAMO solvers (via an external license)
 within IDAES flowsheets.
->>>>>>> main
 
 .. image:: /images/pysmo-logo.png
     :width: 300px
