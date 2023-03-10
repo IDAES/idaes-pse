@@ -3,7 +3,16 @@
 
 # Overall (non-specific)
 * @lbianchi-lbl @ksbeattie
+# packaging
+setup.py @lbianchi-lbl @ksbeattie
+requirements*.txt @lbianchi-lbl @ksbeattie 
 
+# CI infra
+.github/ @lbianchi-lbl @ksbeattie 
+
+# testing
+pytest*.ini @lbianchi-lbl
+conftest.py @lbianchi-lbl
 # Docs - need to identify owner(s)
 
 # Commands
