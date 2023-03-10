@@ -31,7 +31,7 @@ conftest.py @lbianchi-lbl
 /idaes/apps/caprese/ @Robbybp
 /idaes/apps/grid_integration/ @jsiirola @adowling2
 #     /idaes/apps/matopt/ TBD
-/idaes/nmpc/ @Robbybp
+/idaes/apps/nmpc/ @Robbybp
 /idaes/apps/uncertainty_propagation/ @adowling2
 
 # Models Extra - each package needs a maintainer
