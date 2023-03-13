@@ -15,13 +15,9 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-from __future__ import division, print_function
 import warnings
 import itertools
 
-from six import string_types
-
-# from builtins import int, str
 import numpy as np
 import pandas as pd
 
@@ -517,7 +513,7 @@ class LatinHypercubeSampling(SamplingMethods):
             sampling_type = "creation"
             self.sampling_type = sampling_type
             print("Creation-type sampling will be used.")
-        elif not isinstance(sampling_type, string_types):
+        elif not isinstance(sampling_type, str):
             raise Exception("Invalid sampling type entry. Must be of type <str>.")
         elif (sampling_type.lower() == "creation") or (
             sampling_type.lower() == "selection"
@@ -757,7 +753,7 @@ class UniformSampling(SamplingMethods):
             sampling_type = "creation"
             self.sampling_type = sampling_type
             print("Creation-type sampling will be used.")
-        elif not isinstance(sampling_type, string_types):
+        elif not isinstance(sampling_type, str):
             raise Exception("Invalid sampling type entry. Must be of type <str>.")
         elif (sampling_type.lower() == "creation") or (
             sampling_type.lower() == "selection"
@@ -937,7 +933,7 @@ class HaltonSampling(SamplingMethods):
             sampling_type = "creation"
             self.sampling_type = sampling_type
             print("Creation-type sampling will be used.")
-        elif not isinstance(sampling_type, string_types):
+        elif not isinstance(sampling_type, str):
             raise Exception("Invalid sampling type entry. Must be of type <str>.")
         elif (sampling_type.lower() == "creation") or (
             sampling_type.lower() == "selection"
@@ -1115,7 +1111,7 @@ class HammersleySampling(SamplingMethods):
             sampling_type = "creation"
             self.sampling_type = sampling_type
             print("Creation-type sampling will be used.")
-        elif not isinstance(sampling_type, string_types):
+        elif not isinstance(sampling_type, str):
             raise Exception("Invalid sampling type entry. Must be of type <str>.")
         elif (sampling_type.lower() == "creation") or (
             sampling_type.lower() == "selection"
@@ -1304,7 +1300,7 @@ class CVTSampling(SamplingMethods):
             sampling_type = "creation"
             self.sampling_type = sampling_type
             print("Creation-type sampling will be used.")
-        elif not isinstance(sampling_type, string_types):
+        elif not isinstance(sampling_type, str):
             raise Exception("Invalid sampling type entry. Must be of type <str>.")
         elif (sampling_type.lower() == "creation") or (
             sampling_type.lower() == "selection"

@@ -34,7 +34,6 @@ Property package contains temperature and pressure variables.
 Property package contains minimum fluidization velocity.
 
 """
-from __future__ import division
 
 # Import Python libraries
 import matplotlib.pyplot as plt
