@@ -158,7 +158,7 @@ Must be True if dynamic = True,
                 f"instance of a StateBlock object (does not have a build_port method)."
             )
 
-        # Add Port and References to unit moodel
+        # Add Port and References to unit model
         self.add_component(name, port)
         for ref, cname in ref_name_list:
             ref_name = block.get_port_reference_name(cname, name)
@@ -218,7 +218,7 @@ Must be True if dynamic = True,
         if doc is None:
             doc = "Inlet Port"
 
-        # Determine type of sourcce block
+        # Determine type of source block
         if isinstance(block, ControlVolumeBlockData):
             # Work out if this is a 0D or 1D block
             try:
@@ -254,7 +254,7 @@ Must be True if dynamic = True,
             sblock = block
             port, ref_name_list = sblock.build_port(doc)
 
-        # Add Port and References to unit moodel
+        # Add Port and References to unit model
         self.add_component(name, port)
         for ref, cname in ref_name_list:
             ref_name = sblock.get_port_reference_name(cname, name)
@@ -316,7 +316,7 @@ Must be True if dynamic = True,
         if doc is None:
             doc = "Outlet Port"
 
-        # Determine type of sourcce block
+        # Determine type of source block
         if isinstance(block, ControlVolumeBlockData):
             # Work out if this is a 0D or 1D block
             try:
