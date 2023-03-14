@@ -142,7 +142,7 @@ rst_epilog = """
 .. |python-max| replace:: 3.10
 
 .. |examples-site| replace:: `examples online documentation page`_
-.. _examples online documentation page: https://idaes.github.io/examples-pse/latest/index.html
+.. _examples online documentation page: https://idaes-examples.readthedocs.io/en/latest/
 
 .. |github-issues| replace:: `Github issues page`_
 .. _Github issues page: https://github.com/IDAES/idaes-pse/issues
