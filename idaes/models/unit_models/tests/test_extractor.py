@@ -205,12 +205,12 @@ class TestBuild:
 
     @pytest.mark.unit
     def test_config(self, model):
-        assert len(model.fs.unit.config) == 4
         assert not model.fs.unit.config.dynamic
         assert not model.fs.unit.config.has_holdup
         assert model.fs.unit.config.number_of_stages == 2
         assert "phase1" in model.fs.unit.config.phases
         assert "phase2" in model.fs.unit.config.phases
+        assert model.fs.unit.config.interacting_phases is None
 
     @pytest.mark.unit
     def test_states(self, model):

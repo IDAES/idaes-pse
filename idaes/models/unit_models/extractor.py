@@ -18,7 +18,7 @@ IDAES model for a generic multiple-phase, multi-stage extractor cascade.
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, RangeSet, Set, units, Var
-from pyomo.common.config import ConfigDict, ConfigValue, In
+from pyomo.common.config import ConfigDict, ConfigList, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
@@ -102,6 +102,13 @@ class ExtractorCascadeData(UnitModelBlockData):
         "number_of_stages",
         ConfigValue(domain=int, description="Number of stages in cascade"),
     )
+    CONFIG.declare(
+        "interacting_phases",
+        ConfigValue(
+            domain=list,
+            doc="List of interacting phase pairs as 2-tuples ('phase1', 'phase2').",
+        ),
+    )
 
     def build(self):
         """
@@ -127,15 +134,32 @@ class ExtractorCascadeData(UnitModelBlockData):
             raise NotImplementedError("Extractor model does not support dynamics yet.")
 
         # Build indexing sets
-        self.stages = RangeSet(1, self.config.number_of_stages)
-        self.states = RangeSet(0, self.config.number_of_stages)
+        self.stages = RangeSet(
+            1,
+            self.config.number_of_stages,
+            doc="Set of stages in cascade (1 to number of stages)",
+        )
+        self.states = RangeSet(
+            0,
+            self.config.number_of_stages,
+            doc="Set of material states in cascade. Equivalent to stages with an "
+            "extra point at 0 (0 to number of stages)",
+        )
 
-        self.phase_component_interactions = Set()
+        self.phase_component_interactions = Set(
+            doc="Set of interacting components between phases."
+        )
         for p1 in self.config.phases:
             for p2 in self.config.phases:
                 if p1 == p2:
                     continue
-                # TODO: Add check for non-interacting phases
+                if self.config.interacting_phases is not None and not (
+                    (p1, p2) in self.config.interacting_phases
+                    or (p2, p1) in self.config.interacting_phases
+                ):
+                    # Not an interacting phase pair
+                    continue
+                # Interacting phase pair
                 for j in self.config.phases[p1].property_package.component_list:
                     if (
                         j in self.config.phases[p2].property_package.component_list
