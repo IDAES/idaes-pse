@@ -85,7 +85,6 @@ kwargs = dict(
         "pyyaml",
         "requests",  # for ui/fsvis
         "scipy",
-        "sympy",
         "tinydb",
         "xlrd",  # for DMF read of old .xls Excel files
         "openpyxl",  # for DMF read of new .xls Excel files
@@ -101,6 +100,7 @@ kwargs = dict(
     extras_require={
         "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
         "optional": [
+            "sympy",  # idaes.core.util.expr_doc
             "tensorflow",  # idaes.core.surrogate.keras_surrogate
             "gridx-prescient>=2.2.1",  # idaes.tests.prescient
             # A Lee 11-Jan-22: no precompiled version of CoolProp available for Pyhton 3.9
