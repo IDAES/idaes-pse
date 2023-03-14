@@ -68,7 +68,6 @@ kwargs = dict(
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
         # idaes core / dmf
-        "backports.shutil_get_terminal_size",
         "click>=8",
         "colorama",
         "jupyter",
