@@ -1,18 +1,22 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Interface for importing Keras models into IDAES
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 from enum import Enum
 import json
 import os.path
@@ -22,21 +26,23 @@ import pandas as pd
 
 from pyomo.common.dependencies import attempt_import
 
+from idaes.core.surrogate.base.surrogate_base import SurrogateBase
+from idaes.core.surrogate.sampling.scaling import OffsetScaler
+
 keras, keras_available = attempt_import("tensorflow.keras")
 omlt, omlt_available = attempt_import("omlt")
 
 if omlt_available:
     from omlt import OmltBlock, OffsetScaling
     from omlt.neuralnet import (
-        FullSpaceContinuousFormulation,
-        ReducedSpaceContinuousFormulation,
-        ReLUBigMFormulation,
-        ReLUComplementarityFormulation,
-        load_keras_sequential,
+        FullSpaceSmoothNNFormulation,
+        ReducedSpaceSmoothNNFormulation,
+        ReluBigMFormulation,
+        ReluComplementarityFormulation,
     )
 
-from idaes.core.surrogate.base.surrogate_base import SurrogateBase
-from idaes.core.surrogate.sampling.scaling import OffsetScaler
+    if keras_available:
+        from omlt.io import load_keras_sequential
 
 
 class KerasSurrogate(SurrogateBase):
@@ -86,9 +92,9 @@ class KerasSurrogate(SurrogateBase):
         # make sure we are using the standard scaler
         if (
             input_scaler is not None
-            and type(input_scaler) is not OffsetScaler
+            and not isinstance(input_scaler, OffsetScaler)
             or output_scaler is not None
-            and type(output_scaler) is not OffsetScaler
+            and not isinstance(output_scaler, OffsetScaler)
         ):
             raise NotImplementedError("KerasSurrogate only supports the OffsetScaler.")
 
@@ -135,10 +141,10 @@ class KerasSurrogate(SurrogateBase):
            block: Pyomo Block component
               The block to be populated with variables and/or constraints.
            additional_options: dict or None
-              If not None, then should be a dict with the following keys:
-                 'formulation': KerasSurrogate.Formulation
-                    The formulation to use with OMLT. Possible values are FULL_SPACE,
-                    REDUCED_SPACE, RELU_BIGM, or RELU_COMPLEMENTARITY (default is FULL_SPACE)
+              If not None, then should be a dict with the following keys;
+              'formulation': KerasSurrogate.Formulation
+              The formulation to use with OMLT. Possible values are FULL_SPACE,
+              REDUCED_SPACE, RELU_BIGM, or RELU_COMPLEMENTARITY (default is FULL_SPACE)
         """
         formulation = additional_options.pop(
             "formulation", KerasSurrogate.Formulation.FULL_SPACE
@@ -170,19 +176,25 @@ class KerasSurrogate(SurrogateBase):
             factor_outputs=factor_outputs,
         )
 
-        # omlt takes input bounds as a list
-        input_bounds = self.input_bounds()
-        input_bounds = [input_bounds[k] for k in self.input_labels()]
-        net = load_keras_sequential(self._keras_model, omlt_scaling, input_bounds)
+        # omlt takes *scaled* input bounds as a dictionary with int keys
+        input_bounds = dict(enumerate(self.input_bounds().values()))
+        scaled_input_bounds = omlt_scaling.get_scaled_input_expressions(input_bounds)
+        scaled_input_bounds = {i: tuple(bnd) for i, bnd in scaled_input_bounds.items()}
+
+        net = load_keras_sequential(
+            self._keras_model,
+            scaling_object=omlt_scaling,
+            scaled_input_bounds=scaled_input_bounds,
+        )
 
         if formulation == KerasSurrogate.Formulation.FULL_SPACE:
-            formulation_object = FullSpaceContinuousFormulation(net)
+            formulation_object = FullSpaceSmoothNNFormulation(net)
         elif formulation == KerasSurrogate.Formulation.REDUCED_SPACE:
-            formulation_object = ReducedSpaceContinuousFormulation(net)
+            formulation_object = ReducedSpaceSmoothNNFormulation(net)
         elif formulation == KerasSurrogate.Formulation.RELU_BIGM:
-            formulation_object = ReLUBigMFormulation(net)
+            formulation_object = ReluBigMFormulation(net)
         elif formulation == KerasSurrogate.Formulation.RELU_COMPLEMENTARITY:
-            formulation_object = ReLUComplementarityFormulation(net)
+            formulation_object = ReluComplementarityFormulation(net)
         else:
             raise ValueError(
                 'An unrecognized formulation "{}" was passed to '
@@ -192,9 +204,29 @@ class KerasSurrogate(SurrogateBase):
         block.nn = OmltBlock()
         block.nn.build_formulation(
             formulation_object,
-            input_vars=block._input_vars_as_list(),
-            output_vars=block._output_vars_as_list(),
         )
+
+        # input/output variables need to be constrained to be equal
+        # auto-created variables that come from OMLT.
+        input_idx_by_label = {s: i for i, s in enumerate(self._input_labels)}
+        input_vars_as_dict = block.input_vars_as_dict()
+
+        @block.Constraint(self._input_labels)
+        def input_surrogate_ties(m, input_label):
+            return (
+                input_vars_as_dict[input_label]
+                == block.nn.inputs[input_idx_by_label[input_label]]
+            )
+
+        output_idx_by_label = {s: i for i, s in enumerate(self._output_labels)}
+        output_vars_as_dict = block.output_vars_as_dict()
+
+        @block.Constraint(self._output_labels)
+        def output_surrogate_ties(m, output_label):
+            return (
+                output_vars_as_dict[output_label]
+                == block.nn.outputs[output_idx_by_label[output_label]]
+            )
 
     def evaluate_surrogate(self, inputs):
         """
@@ -214,7 +246,9 @@ class KerasSurrogate(SurrogateBase):
         y = self._keras_model.predict(x.to_numpy())
 
         # y is a numpy array, make it a dataframe
-        y = pd.DataFrame(data=y, columns=self.output_labels(), index=inputs.index)
+        y = pd.DataFrame(
+            data=y, columns=self.output_labels(), index=inputs.index, dtype="float64"
+        )
         if self._output_scaler is not None:
             y = self._output_scaler.unscale(y)
         return y

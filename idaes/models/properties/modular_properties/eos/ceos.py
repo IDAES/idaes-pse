@@ -1,20 +1,26 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Methods for cubic equations of state.
 
 Currently only supports liquid and vapor phases
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from enum import Enum
 from copy import deepcopy
 
@@ -31,22 +37,25 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     get_component_object as cobj,
 )
+
 from idaes.core.util.math import safe_log
-from .eos_base import EoSBase
+
 import idaes.logger as idaeslog
 from idaes.core.util.exceptions import (
     BurntToast,
     ConfigurationError,
     PropertyNotSupportedError,
 )
+
+# cubic_roots_available is used elsewhere
+# pylint: disable=W0611
 from idaes.models.properties.modular_properties.eos.ceos_common import (
     EoS_param,
     cubic_roots_available,
     CubicThermoExpressions,
     CubicType,
 )
-
-# pylint: disable=invalid-name
+from .eos_base import EoSBase
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -64,11 +73,15 @@ References:
 
 
 class MixingRuleA(Enum):
+    """Enum for supported rules for calculating am"""
+
     # Rule to calculate am for cubic equations of state
     default = 0
 
 
 class MixingRuleB(Enum):
+    """Enum for supported rules for calculating bm"""
+
     # Rule to calculate bm for cubic equations of state
     default = 0
 
@@ -106,6 +119,8 @@ CubicConfig.declare(
 
 
 class Cubic(EoSBase):
+    """Class for constructing modular cubic EoS properties"""
+
     @staticmethod
     def common(b, pobj):
         # TODO: determine if Henry's Law applies to Cubic EoS systems
@@ -267,19 +282,16 @@ class Cubic(EoSBase):
                 a = getattr(m, cname + "_a")
                 da_dT = getattr(m, cname + "_da_dT")
                 d2a_dT2 = getattr(m, cname + "_d2a_dT2")
-                # Placeholders for if temperature dependent k is needed
-                dk_dT = 0
-                d2k_dT2 = 0
 
                 # Initialize loop variable
-                d2am_dT2 = 0
+                d2am_dT2 = None
 
                 for i in m.components_in_phase(p):
                     for j in m.components_in_phase(p):
                         d2aij_dT2 = sqrt(a[i] * a[j]) * (
-                            -d2k_dT2
-                            - dk_dT * (da_dT[i] / a[i] + da_dT[j] / a[j])
-                            + (1 - k[i, j])
+                            # -d2k_dT2  # TODO: Placeholder for if temperature dependent k is needed
+                            # - dk_dT * (da_dT[i] / a[i] + da_dT[j] / a[j])
+                            +(1 - k[i, j])
                             / 2
                             * (
                                 d2a_dT2[i] / a[i]
@@ -287,11 +299,15 @@ class Cubic(EoSBase):
                                 - 1 / 2 * (da_dT[i] / a[i] - da_dT[j] / a[j]) ** 2
                             )
                         )
-                        d2am_dT2 += (
+                        d2am_dT2_term = (
                             m.mole_frac_phase_comp[p, i]
                             * m.mole_frac_phase_comp[p, j]
                             * d2aij_dT2
                         )
+                        if d2am_dT2 is None:
+                            d2am_dT2 = d2am_dT2_term
+                        else:
+                            d2am_dT2 += d2am_dT2_term
                 return d2am_dT2
 
             b.add_component(
@@ -614,7 +630,6 @@ class Cubic(EoSBase):
 
     @staticmethod
     def dens_mol_phase(b, p):
-        pobj = b.params.get_phase(p)
         return b.pressure / (
             Cubic.gas_constant(b) * b.temperature * b.compress_fact_phase[p]
         )
@@ -650,8 +665,6 @@ class Cubic(EoSBase):
 
     @staticmethod
     def energy_internal_mol_phase_comp(blk, p, j):
-        pobj = blk.params.get_phase(p)
-
         return (
             blk.enth_mol_phase_comp[p, j] - blk.pressure * blk.vol_mol_phase_comp[p, j]
         )
@@ -687,8 +700,6 @@ class Cubic(EoSBase):
 
     @staticmethod
     def enth_mol_phase_comp(blk, p, j):
-        pobj = blk.params.get_phase(p)
-
         dlogphi_j_dT = _d_log_fug_coeff_dT_phase_comp(blk, p, j)
 
         enth_ideal_gas = get_method(blk, "enth_mol_ig_comp", j)(
@@ -739,8 +750,6 @@ class Cubic(EoSBase):
 
     @staticmethod
     def entr_mol_phase_comp(blk, p, j):
-        pobj = blk.params.get_phase(p)
-
         logphi_j = _log_fug_coeff_phase_comp(blk, p, j)
         dlogphi_j_dT = _d_log_fug_coeff_dT_phase_comp(blk, p, j)
 
@@ -903,7 +912,6 @@ def _dZ_dT(blk, p):
 
     K2 = (EoS_u - 1) * B - 1
     K3 = A - EoS_u * B - (EoS_u - EoS_w) * B**2
-    K4 = -(A * B + EoS_w * B**2 + EoS_w * B**3)
 
     dK2dT = (EoS_u - 1) * dBdT
     dK3dT = dAdT - EoS_u * dBdT - 2 * (EoS_u - EoS_w) * B * dBdT
@@ -961,7 +969,6 @@ def _N_dZ_dNj(blk, p, j):
 
     K2 = (EoS_u - 1) * B - 1
     K3 = A - EoS_u * B - (EoS_u - EoS_w) * B**2
-    K4 = -(A * B + EoS_w * B**2 + EoS_w * B**3)
 
     N_dK2_dNj = (EoS_u - 1) * N_dB_dNj
     N_dK3_dNj = N_dA_dNj - EoS_u * N_dB_dNj - 2 * (EoS_u - EoS_w) * B * N_dB_dNj

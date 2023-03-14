@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains tests for scaling.
@@ -26,6 +26,7 @@ from pyomo.core.expr.relational_expr import (
     RangedExpression,
 )
 from pyomo.network import Port, Arc
+from pyomo.contrib.pynumero.asl import AmplInterface
 
 from idaes.core.base.process_base import ProcessBaseBlock
 from idaes.core.util.exceptions import ConfigurationError
@@ -268,6 +269,7 @@ def test_calculate_scaling_factors():
           f   g
     """
     o = []  # list of compoent names in the order their calculate_scaling_factors
+
     # method is called
     def rule(blk):
         # This rule for building a block just adds a calculate scaling factor
@@ -711,6 +713,9 @@ class TestScaleSingleConstraint:
         assert model.c3.upper is None
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 class TestScaleConstraintsPynumero:
     def model(self):
         m = pyo.ConcreteModel()
@@ -1109,6 +1114,9 @@ class TestFlattenedScalingAssignment:
         assert scaling_factor[y] == pytest.approx(1 / (4 + 10**3))
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.unit
 def test_extreme_jacobian_rows_and_columns():
     m = pyo.ConcreteModel()
@@ -2162,6 +2170,9 @@ class TestNominalValueExtractionVisitor:
         ]
 
     @pytest.mark.unit
+    @pytest.mark.skipif(
+        not AmplInterface.available(), reason="pynumero_ASL is not available"
+    )
     @pytest.mark.skipif(not cubic_roots_available, reason="Cubic roots not available")
     def test_ext_func(self):
         # Use the cubic root external function to test

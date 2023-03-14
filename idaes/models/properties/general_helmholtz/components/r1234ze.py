@@ -1,24 +1,24 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """This module provides r1234ze property expressions
 
 Richard A. Perkins and Marcia L. Huber. Measurement and Correlation of the Thermal
-    Conductivity of 2,3,3,3-Tetrafluoroprop-1-ene (R1234yf) and 
-    trans-1,3,3,3-Tetrafluoropropene (R1234ze(E)). J. Chem. Eng. Data, 56:4868–4874, 
+    Conductivity of 2,3,3,3-Tetrafluoroprop-1-ene (R1234yf) and
+    trans-1,3,3,3-Tetrafluoropropene (R1234ze(E)). J. Chem. Eng. Data, 56:4868–4874,
     2011. doi:10.1021/je200811n.
 
-Huber ML, Assael MJ. Correlations for the Viscosity of 2,3,3,3-Tetrafluoroprop-1-ene 
-    (R1234yf) and trans-1,3,3,3-Tetrafluoropropene (R1234ze(E)). Int J Refrig. 
+Huber ML, Assael MJ. Correlations for the Viscosity of 2,3,3,3-Tetrafluoroprop-1-ene
+    (R1234yf) and trans-1,3,3,3-Tetrafluoropropene (R1234ze(E)). Int J Refrig.
     2016; 71:39-45. doi:10.1016/j.ijrefrig.2016.08.007
 
 """
@@ -27,9 +27,7 @@ import pyomo.environ as pyo
 
 
 def _thermal_conductivity(blk, delta, tau, on_blk=None):
-    """Thermal condutivity (for now) ommiting critical enhancment"""
-    T = blk.temperature_star / tau / pyo.units.K
-    rho = delta * blk.dens_mass_star / pyo.units.kg * pyo.units.m**3
+    """Thermal conductivity (for now) omitting critical enhancement"""
     Tred = 1.0 / tau
 
     a = [
@@ -63,7 +61,6 @@ def _viscosity(blk, delta, tau, on_blk=None):
 
     eok = 340
     sigma = 5.017e-1
-    M = 114.0415928
     NA = 6.0221408e23
     a = [
         -963382,

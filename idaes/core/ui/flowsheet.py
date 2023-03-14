@@ -1,18 +1,22 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Flowsheet-related classes and functions used by the UI.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 # stdlib
 from collections import defaultdict, deque
 import copy
@@ -232,6 +236,7 @@ class FlowsheetSerializer:
             self._ordered_stream_names.append(component.getname())
 
     def _identify_unit_models(self) -> Dict:
+        # pylint: disable=import-outside-toplevel
         from idaes.core import UnitModelBlockData  # avoid circular import
         from idaes.core.base.property_base import PhysicalParameterBlock, StateBlock
 
@@ -270,6 +275,7 @@ class FlowsheetSerializer:
 
     def _construct_stream_labels(self):
         # Construct the stream labels
+        # pylint: disable-next=import-outside-toplevel
         from idaes.core.util.tables import (
             stream_states_dict,
         )  # deferred to avoid circ. import
@@ -303,7 +309,7 @@ class FlowsheetSerializer:
                 self.adj_list[src.getname()].add(dst.getname())
                 used_ports.add(stream.source)
                 used_ports.add(stream.dest)
-            except KeyError as error:
+            except KeyError:
                 self._logger.error(
                     f"Unable to find port. {name}, {stream.source}, {stream.dest}"
                 )
@@ -440,6 +446,7 @@ class FlowsheetSerializer:
         This is intended for use on ports of top level unit models.
         It is unclear if it works with nested unit models (probably not).
         """
+        # pylint: disable-next=import-outside-toplevel
         from idaes.core.util.tables import stream_states_dict
 
         for port in sorted(untouched_ports, key=lambda p: str(p)):
@@ -488,7 +495,7 @@ class FlowsheetSerializer:
                         self._ordered_stream_names.appendleft(edge_name)
                     else:
                         self._ordered_stream_names.append(edge_name)
-                except Exception:
+                except Exception:  # pylint: disable=W0703
                     self._logger.warning(
                         f"Cannot extract state block from Port: "
                         f"name={port_name}. "
@@ -515,6 +522,7 @@ class FlowsheetSerializer:
         self._construct_jointjs_json()
 
     def _construct_model_json(self):
+        # pylint: disable-next=import-outside-toplevel
         from idaes.core.util.tables import (
             create_stream_table_ui,
         )  # deferred to avoid circular import
@@ -589,9 +597,9 @@ class FlowsheetSerializer:
                 "label": self.labels[edge],
             }
 
-    def _add_port_item(self, cell_index, group, id):
+    def _add_port_item(self, cell_index, group, _id):
         """Add port item to jointjs element"""
-        new_port_item = {"group": group, "id": id}
+        new_port_item = {"group": group, "id": _id}
         if new_port_item not in self._out_json["cells"][cell_index]["ports"]["items"]:
             self._out_json["cells"][cell_index]["ports"]["items"].append(new_port_item)
 
@@ -609,7 +617,7 @@ class FlowsheetSerializer:
                     unit_type,
                     unit_icon.link_positions,
                 )
-            except KeyError as e:
+            except KeyError:
                 self._logger.info(
                     f"Unable to find icon for {unit_type}. Using default icon"
                 )
@@ -816,9 +824,9 @@ class FlowsheetSerializer:
         eventually may need to actually implement/subclass
         """
 
-        def __init__(self, typename, id):
+        def __init__(self, typename, _id):
             self.name = typename
-            self.id = id
+            self.id = _id
 
         def getname(self):
             return self.id
@@ -912,8 +920,8 @@ class FlowsheetDiff:
         old_model, new_model = self._old["model"], self._new["model"]
         n = 0
         for cls in "unit_models", "arcs":
-            for k in diff.keys():
-                diff[k][cls] = {}
+            for k in diff.values():
+                k[cls] = {}
             old_data, new_data = old_model[cls], new_model[cls]
             # Add/change
             for key in new_data:

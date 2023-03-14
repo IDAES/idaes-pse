@@ -1,15 +1,21 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
+
+# Model needs to access private flow terms
+# pylint: disable=protected-access
 
 import os
 import time as wall_clock
@@ -30,7 +36,6 @@ import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.su
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.steam_cycle_flowsheet as stc
 from idaes.core.util.dyn_utils import copy_values_at_time, copy_non_time_indexed_values
 import idaes.logger as idaeslog
-import os
 import idaes.core.util.tables as tables
 from idaes.core.util.tags import svg_tag, ModelTagGroup
 from idaes.core.solvers import get_solver
@@ -66,7 +71,7 @@ def set_scaling_factors(m):
         iscale.set_scaling_factor(ww.energy_holdup_metal, 1e-6)
         iscale.set_scaling_factor(ww.N_Re, 1e-6)
         iscale.set_scaling_factor(ww.pitch, 1e3)
-        for j, c in ww.hconv_lo_eqn.items():
+        for c in ww.hconv_lo_eqn.values():
             iscale.constraint_scaling_transform(c, 1e-2)
 
     iscale.set_scaling_factor(fs.aRoof.heat_fireside, 1e-7)
@@ -510,15 +515,15 @@ def main_dynamic():
     # 71 periods of 60 s each (0 to 4260 s)
     for i in range(71):
         itype_list.append(0)
-    """
-    # Followed by 20 periods of 120 s each (1860 to 4260 s)
-    for i in range(20):
-        itype_list.append(1)
-    # Followed by 30 periods of 60 s each (4260 to 6060 s)
-    for i in range(30):
-        itype_list.append(0)
-    """
-    # Total number of period for rolling time windwo simulations
+
+    # # Followed by 20 periods of 120 s each (1860 to 4260 s)
+    # for i in range(20):
+    #     itype_list.append(1)
+    # # Followed by 30 periods of 60 s each (4260 to 6060 s)
+    # for i in range(30):
+    #     itype_list.append(0)
+
+    # Total number of period for rolling time window simulations
     nperiod = len(itype_list)
     tstart = []
     model_list = []
@@ -568,12 +573,12 @@ def main_dynamic():
     m_dyn.fs_main.fs_stc.spray_ctrl.mv_ref.value = (
         m_dyn.fs_main.fs_stc.spray_valve.valve_opening[t0].value
     )
-    # For two bounded controllers, set the initial integral_of_error
-    m_dyn.fs_main.fs_stc.makeup_ctrl.integral_of_error[:].value = pyo.value(
-        m_dyn.fs_main.fs_stc.makeup_ctrl.integral_of_error_ref[t0]
+    # For two bounded controllers, set the initial mv_integral_component
+    m_dyn.fs_main.fs_stc.makeup_ctrl.mv_integral_component[:].value = pyo.value(
+        m_dyn.fs_main.fs_stc.makeup_ctrl.mv_integral_component_ref[t0]
     )
-    m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error[:].value = pyo.value(
-        m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error_ref[t0]
+    m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[:].value = pyo.value(
+        m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component_ref[t0]
     )
 
     # Controllers on the main flowsheet
@@ -643,7 +648,7 @@ def main_dynamic():
                 )
             _log.info(
                 "Spray control windup={}".format(
-                    m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error[t].value
+                    m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[t].value
                 )
             )
             mv_unbounded = pyo.value(m_dyn.fs_main.fs_stc.spray_ctrl.mv_unbounded[t])
@@ -651,27 +656,27 @@ def main_dynamic():
                 # Reset spray control windup
                 if (
                     pyo.value(
-                        m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error[t].value
+                        m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[t].value
                     )
-                    > 3000
+                    > 0.3
                 ):
-                    m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error[t].value = 3000
+                    m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[t].value = 0.3
                     _log.info(
-                        "Reached lower bound of manipulated variable and"
-                        " maximum windup of 3000. Reset windup to 3000."
+                        "Reached upper bound of manipulated variable and"
+                        " maximum windup of 0.3. Reset windup to 0.3."
                     )
             if mv_unbounded > pyo.value(m_dyn.fs_main.fs_stc.spray_ctrl.mv_ub):
                 # Reset spray control windup
                 if (
                     pyo.value(
-                        m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error[t].value
+                        m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[t].value
                     )
-                    < -10000
+                    < -1
                 ):
-                    m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error[t].value = -10000
+                    m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[t].value = -1
                     _log.info(
-                        "Reached upper bound of manipulated variable and"
-                        " minimum windup of -1e4. Reset windup to -1e4."
+                        "Reached lower bound of manipulated variable and"
+                        " minimum windup of -1. Reset windup to -1."
                     )
         _log.info("Solving for period number {} from {} s".format(i, tstart[i]))
         # Solve dynamic case for current period of time
@@ -742,14 +747,14 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         m.fs_main.drum_master_ctrl = PIDController(
             process_var=m.fs_main.fs_blr.aDrum.level,
             manipulated_var=m.fs_main.flow_level_ctrl_output,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
         # slave of cascading level controller
         m.fs_main.drum_slave_ctrl = PIDController(
             process_var=m.fs_main.fs_stc.bfp.outlet.flow_mol,
             manipulated_var=m.fs_main.fs_stc.bfp_turb_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
         # turbine master PID controller to control power output in MW
@@ -757,7 +762,7 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         m.fs_main.turbine_master_ctrl = PIDController(
             process_var=m.fs_main.fs_stc.power_output,
             manipulated_var=m.fs_main.fs_stc.turb.throttle_valve[1].valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
         # boiler master PID controller to control main steam pressure in MPa
@@ -765,7 +770,7 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         m.fs_main.boiler_master_ctrl = PIDController(
             process_var=m.fs_main.main_steam_pressure,
             manipulated_var=m.fs_main.fs_blr.aBoiler.flowrate_coal_raw,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -836,10 +841,10 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         m.fs_main.boiler_master_ctrl.mv_ref.fix(29.0)
 
         t0 = m.fs_main.time.first()
-        m.fs_main.drum_master_ctrl.integral_of_error[t0].fix(0)
-        m.fs_main.drum_slave_ctrl.integral_of_error[t0].fix(0)
-        m.fs_main.turbine_master_ctrl.integral_of_error[t0].fix(0)
-        m.fs_main.boiler_master_ctrl.integral_of_error[t0].fix(0)
+        m.fs_main.drum_master_ctrl.mv_integral_component[t0].fix(0)
+        m.fs_main.drum_slave_ctrl.mv_integral_component[t0].fix(0)
+        m.fs_main.turbine_master_ctrl.mv_integral_component[t0].fix(0)
+        m.fs_main.boiler_master_ctrl.mv_integral_component[t0].fix(0)
         m.fs_main.flow_level_ctrl_output.value = 0
     else:
 
@@ -2262,11 +2267,10 @@ def print_pfd_results(m):
 
 
 if __name__ == "__main__":
-    """
-    Main function to to run simulation
-    To run steady-state model, call main_steady()
-    to run dynamic model, call main_dyn()
-    """
+    # Main function to to run simulation
+    # To run steady-state model, call main_steady()
+    # to run dynamic model, call main_dyn()
+
     # This method builds and runs a subcritical coal-fired power plant
     # dynamic simulation. The simulation consists of 5%/min ramping down from
     # full load to 50% load, holding for 30 minutes and then ramping up

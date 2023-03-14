@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Integration tests for generic property package framework
@@ -49,6 +49,7 @@ from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
 from idaes.models.properties.modular_properties.phase_equil.forms import log_fugacity
 
 import idaes.models.properties.modular_properties.pure.RPP4 as RPP4
+from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
 
 import idaes.logger as idaeslog
 
@@ -257,10 +258,16 @@ class TestNonVapourisable_Vapour(object):
 
         return model
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_dof(self, model):
         assert degrees_of_freedom(model.props[1]) == 0
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -283,6 +290,9 @@ class TestNonVapourisable_Vapour(object):
         for v in fin_fixed_vars:
             assert v in orig_fixed_vars
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -292,6 +302,9 @@ class TestNonVapourisable_Vapour(object):
         # Check for optimal solution
         assert check_optimal_termination(results)
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -351,6 +364,9 @@ class TestNonVapourisable_Vapour(object):
             * model.props[1].phase_frac["Liq"]
         )
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     @pytest.mark.ui
     def test_report(self, model):
@@ -375,10 +391,16 @@ class TestNonVapourisable_Liquid(object):
 
         return model
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     def test_dof(self, model):
         assert degrees_of_freedom(model.props[1]) == 0
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -401,6 +423,9 @@ class TestNonVapourisable_Liquid(object):
         for v in fin_fixed_vars:
             assert v in orig_fixed_vars
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -410,6 +435,9 @@ class TestNonVapourisable_Liquid(object):
         # Check for optimal solution
         assert check_optimal_termination(results)
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -469,6 +497,9 @@ class TestNonVapourisable_Liquid(object):
             * model.props[1].phase_frac["Liq"]
         )
 
+    @pytest.mark.skipif(
+        not cubic_roots_available(), reason="Cubic functions not available"
+    )
     @pytest.mark.unit
     @pytest.mark.ui
     def test_report(self, model):

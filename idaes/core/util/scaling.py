@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains utilities to provide variable and expression scaling
@@ -28,9 +28,10 @@ variables to calculate additional scaling factors.
 __author__ = "John Eslick, Tim Bartholomew, Robert Parker, Andrew Lee"
 
 import math
+import sys
+
 import scipy.sparse.linalg as spla
 import scipy.linalg as la
-import sys
 
 import pyomo.environ as pyo
 from pyomo.core.base.var import _VarData
@@ -38,16 +39,15 @@ from pyomo.core.base.param import _ParamData
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.network import Arc
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.common.modeling import unique_component_name
 from pyomo.core.base.constraint import _ConstraintData
 from pyomo.common.collections import ComponentMap, ComponentSet
 from pyomo.dae import DerivativeVar
 from pyomo.dae.flatten import slice_component_along_sets
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.core.expr.visitor import ExpressionValueVisitor
 from pyomo.core.expr import current as EXPR
 from pyomo.core.expr.numvalue import native_types, pyomo_constant_types
-from pyomo.core.expr.template_expr import IndexTemplate
 from pyomo.core.base.units_container import _PyomoUnit
 
 import idaes.logger as idaeslog
@@ -118,13 +118,13 @@ def scale_arc_constraints(blk):
                 constraint_scaling_transform(c, sf)
 
 
-def map_scaling_factor(iter, default=1, warning=False, func=min, hint=None):
+def map_scaling_factor(components, default=1, warning=False, func=min, hint=None):
     """Map get_scaling_factor to an iterable of Pyomo components, and call func
     on the result.  This could be use, for example, to get the minimum or
     maximum scaling factor of a set of components.
 
     Args:
-        iter: Iterable yielding Pyomo components
+        components: Iterable yielding Pyomo components
         default: The default value used when a scaling factor is missing. The
             default is default=1.
         warning: Log a warning for missing scaling factors
@@ -141,12 +141,12 @@ def map_scaling_factor(iter, default=1, warning=False, func=min, hint=None):
             lambda x: get_scaling_factor(
                 x, default=default, warning=warning, hint=hint
             ),
-            iter,
+            components,
         )
     )
 
 
-def min_scaling_factor(iter, default=1, warning=True, hint=None):
+def min_scaling_factor(components, default=1, warning=True, hint=None):
     """Map get_scaling_factor to an iterable of Pyomo components, and get the
     minimum scaling factor.
 
@@ -162,7 +162,9 @@ def min_scaling_factor(iter, default=1, warning=True, hint=None):
     Returns:
         Minimum scaling factor of the components in iter
     """
-    return map_scaling_factor(iter, default=default, warning=warning, func=min)
+    return map_scaling_factor(
+        components, default=default, warning=warning, func=min, hint=hint
+    )
 
 
 def propagate_indexed_component_scaling_factors(
@@ -237,7 +239,7 @@ def set_scaling_factor(c, v, data_objects=True, overwrite=True):
 
     if not overwrite:
         try:
-            tmp = suf[c]
+            tmp = suf[c]  # pylint: disable=unused-variable
             # Able to access suffix value for c, so return without setting scaling factor
             return
         except KeyError:
@@ -686,6 +688,8 @@ def constraint_autoscale_large_jac(
         dummy_objective_name = unique_component_name(m, "objective")
         setattr(m, dummy_objective_name, pyo.Objective(expr=0))
     # Create NLP and calculate the objective
+    if not AmplInterface.available():
+        raise RuntimeError("Pynumero not available.")
     nlp = PyomoNLP(m)
     if equality_constraints_only:
         jac = nlp.evaluate_jacobian_eq().tocsr()
@@ -845,14 +849,14 @@ def extreme_jacobian_columns(
     return el
 
 
-def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
+def jacobian_cond(m=None, scaled=True, order=None, pinv=False, jac=None):
     """
     Get the condition number of the scaled or unscaled Jacobian matrix of a model.
 
     Args:
         m: calculate the condition number of the Jacobian from this model.
         scaled: if True use scaled Jacobian, else use unscaled
-        ord: norm order, None = Frobenius, see scipy.sparse.linalg.norm for more
+        order: norm order, None = Frobenius, see scipy.sparse.linalg.norm for more
         pinv: Use pseudoinverse, works for non-square matrices
         jac: (optional) previously calculated Jacobian
 
@@ -860,17 +864,17 @@ def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
         (float) Condition number
     """
     if jac is None:
-        jac, nlp = get_jacobian(m, scaled)
+        jac, nlp = get_jacobian(m, scaled)  # pylint: disable=unused-variable
     jac = jac.tocsc()
     if jac.shape[0] != jac.shape[1] and not pinv:
         _log.warning("Nonsquare Jacobian using pseudo inverse")
         pinv = True
     if not pinv:
         jac_inv = spla.inv(jac)
-        return spla.norm(jac, ord) * spla.norm(jac_inv, ord)
+        return spla.norm(jac, order) * spla.norm(jac_inv, order)
     else:
         jac_inv = la.pinv(jac.toarray())
-        return spla.norm(jac, ord) * la.norm(jac_inv, ord)
+        return spla.norm(jac, order) * la.norm(jac_inv, order)
 
 
 def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
@@ -1077,7 +1081,7 @@ class FlattenedScalingAssignment(object):
         source_vars = [v for v in in_constraint if v is not vardata]
         nominal_source = [1 / scaling_factor[var] for var in source_vars]
 
-        with CacheVars(in_constraint) as cache:
+        with CacheVars(in_constraint):
             for v, nom_val in zip(source_vars, nominal_source):
                 v.set_value(nom_val)
             # This assumes that target var is initialized to a somewhat
@@ -1132,7 +1136,7 @@ def set_scaling_from_default(
     missing: float = None,
     overwrite: bool = False,
     descend_into: bool = True,
-    components_to_scale: "List of Pyomo component types" = [pyo.Var],
+    components_to_scale: "List of Pyomo component types" = None,
 ):
     """
     Set scaling factor(s) for given component from default scaling factor dictionary associated with the parent model.
@@ -1152,6 +1156,9 @@ def set_scaling_from_default(
         None
 
     """
+    if components_to_scale is None:
+        components_to_scale = [pyo.Var]
+
     if isinstance(component, pyo.Block):
         for c in component.component_data_objects(
             components_to_scale, descend_into=descend_into
@@ -1177,12 +1184,12 @@ def set_scaling_from_default(
         if dsf is not None:
             set_scaling_factor(component, dsf, overwrite=overwrite)
         elif missing is not None:
-            _log.warn(
+            _log.warning(
                 f"No default scaling factor found for {component.name}, assigning value of {missing} instead."
             )
             set_scaling_factor(component, missing, overwrite=overwrite)
         else:
-            _log.warn(
+            _log.warning(
                 f"No default scaling factor found for {component.name}, no scaling factor assigned."
             )
 
@@ -1403,7 +1410,7 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
             denominator = 1
             # Log a warning for the user
             _log.debug(
-                f"Nominal value of 0 found in denominator of division expression. "
+                "Nominal value of 0 found in denominator of division expression. "
                 "Assigning a value of 1. You should check you scaling factors and models to "
                 "ensure there are no values of 0 that can appear in these functions."
             )

@@ -1,29 +1,35 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+
+# Changing existing config block attributes
+# pylint: disable=protected-access
+
+from enum import Enum
+
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigValue, In
+
 from idaes.core import declare_process_block_class
 from idaes.models_extra.power_generation.unit_models.balance import BalanceBlockData
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.solvers import get_solver
 import idaes.models.properties.helmholtz.helmholtz as hltz
-from idaes.models.properties.helmholtz.helmholtz import (
-    HelmholtzThermoExpressions as ThermoExpr,
-)
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
-from enum import Enum
 
 
 _log = idaeslog.getLogger(__name__)
@@ -37,7 +43,7 @@ class ValveFunctionType(Enum):
 
 
 def _assert_properties(pb):
-    """Assert that the properies parameter block conforms to the requirements"""
+    """Assert that the properties parameter block conforms to the requirements"""
     try:
         assert isinstance(pb, hltz.HelmholtzParameterBlockData)
         assert pb.config.phase_presentation in {
@@ -180,7 +186,6 @@ ValveFunctionType.custom}""",
         # including external function calls to calculate thermodynamic quantities
         # from a set of state variables.
         _assert_properties(config.property_package)
-        te = ThermoExpr(blk=self, parameters=config.property_package)
 
         self.valve_opening = pyo.Var(
             self.flowsheet().time,
@@ -200,7 +205,7 @@ ValveFunctionType.custom}""",
         vfselect = self.config.valve_function
         if vfselect is not ValveFunctionType.custom and vfcb is not None:
             _log.warning(
-                f"A valve function callback was provided but the valve "
+                "A valve function callback was provided but the valve "
                 "function type is not custom."
             )
 
@@ -277,7 +282,7 @@ ValveFunctionType.custom}""",
                 self.inlet.flow_mol[t].unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(self, tee=slc.tee)
+            opt.solve(self, tee=slc.tee)
 
         init_log.info("Steam valve intialization complete")
 

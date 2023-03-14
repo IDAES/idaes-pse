@@ -1,15 +1,24 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+"""
+Modular methods for calculating bubble and dew points
+"""
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import Constraint
 
 from idaes.models.properties.modular_properties.base.utility import (
@@ -18,8 +27,13 @@ from idaes.models.properties.modular_properties.base.utility import (
 )
 import idaes.core.util.scaling as iscale
 
+# _valid_VL_component_list return variables that are not need in all cases
+# pylint: disable=W0612
+
 
 class IdealBubbleDew:
+    """Bubble and dew point calculations for ideal systems."""
+
     # -------------------------------------------------------------------------
     # Bubble temperature methods
     # This approach can only be used when both liquid and vapor phases use
@@ -470,6 +484,8 @@ class IdealBubbleDew:
 
 
 class LogBubbleDew:
+    """General bubble and dew point calculations (log formulation)."""
+
     # -------------------------------------------------------------------------
     # Bubble temperature methods
     @staticmethod

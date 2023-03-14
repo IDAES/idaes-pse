@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """This module provides co2 property expressions
 
@@ -48,9 +48,9 @@ def _thermal_conductivity(blk, delta, tau, on_blk=None):
     }
     T = blk.temperature_star / tau
     Ts = T / (251.196 * pyo.units.K)
-    G = sum(b[i] / Ts**i for i in b)
+    G = sum(bi / Ts**i for i, bi in b.items())
     cint_over_k = 1.0 + pyo.exp(-183.5 * pyo.units.K / T) * sum(
-        c[i] * (T / 100 / pyo.units.K) ** (2 - i) for i in c
+        ci * (T / 100 / pyo.units.K) ** (2 - i) for i, ci in c.items()
     )
     return (
         (
@@ -88,7 +88,7 @@ def _viscosity(blk, delta, tau, on_blk=None):
         (
             1.00697
             * pyo.sqrt(T / pyo.units.K)
-            / pyo.exp(sum(a[i] * pyo.log(Ts) ** i for i in a))
+            / pyo.exp(sum(ai * pyo.log(Ts) ** i for i, ai in a.items()))
             / 1e6
             + d[1] * delta
             + d[2] * delta**2

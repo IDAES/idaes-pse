@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Watertank model test
@@ -46,6 +46,7 @@ from idaes.core.solvers import get_solver
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
+
 
 # -----------------------------------------------------------------------------
 @pytest.fixture(scope="module")
@@ -156,6 +157,7 @@ def tank_models(
     ]
 
 
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.unit
 def test_basic_build(tank_models):
     """Make a turbine model and make sure it doesn't throw exception"""
@@ -196,7 +198,6 @@ def test_run_watertank(tank_models):
     solver.options = optarg
 
     for i in tank_models:
-
         m = i
 
         # fix inlets

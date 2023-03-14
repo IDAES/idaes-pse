@@ -1,17 +1,18 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
-#
-# Author: Abdelrahman Elbashandy
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+
 import os
 import json
 from typing import Dict
@@ -134,7 +135,7 @@ class UnitModelIcon:
     def _build_link_positions(self) -> Dict:
         """Fill in boilerplate based on raw info and place built value in class cache."""
         # build link positions from info
-        groups, items = {}, []
+        groups = {}
         for group_name, group_config in self._model_details["port_groups"].items():
             groups[group_name] = group_config
             groups[group_name].update(

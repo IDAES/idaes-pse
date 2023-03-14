@@ -1,15 +1,29 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+"""
+A simple pipeline unit model. We include a bulk momentum balance and leverage
+the 1D control volume for a phase material balance. For now, we assume the
+pipeline is isothermal.
+
+Data sources:
+    [1] Stochastic Optimal Control Model for Natural Gas Network
+        Operations. V. Zavala, 2014, Comp. Chem. Eng.
+
+"""
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 from pyomo.common.config import ConfigValue
 from pyomo.core.base.constraint import Constraint
 from pyomo.core.base.var import Var
@@ -33,16 +47,6 @@ from idaes.core.util.config import (
 )
 from idaes.core.util.constants import Constants
 
-"""
-A simple pipeline unit model. We include a bulk momentum balance and leverage
-the 1D control volume for a phase material balance. For now, we assume the
-pipeline is isothermal.
-
-Data sources:
-    [1] Stochastic Optimal Control Model for Natural Gas Network
-        Operations. V. Zavala, 2014, Comp. Chem. Eng.
-
-"""
 
 EXPLICIT_DISCRETIZATION_SCHEMES = {
     "FORWARD",
@@ -113,7 +117,6 @@ argument).""",
         # self.config is the ConfigBlock "instantiated" from self.CONFIG
         # in ProcessBlockData.
         config = self.config
-        time = self.flowsheet().time
         property_package = config.property_package
 
         if len(property_package.phase_list) != 1:
@@ -153,7 +156,6 @@ argument).""",
         )
         self.control_volume.add_phase_component_balances()
 
-        cv = self.control_volume
         self.add_diameter()
         self.add_friction_factor()
 
@@ -297,7 +299,6 @@ argument).""",
         """
         cv = self.control_volume
         state = cv.properties[t, x]
-        area = cv.area
         flow = state.flow_mass
         pressure = state.pressure
         diameter = self.diameter

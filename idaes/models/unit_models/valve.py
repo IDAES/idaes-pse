@@ -1,20 +1,22 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This provides standard valve models for adiabatic control valves.  Beyond the
 most common valve models, and adiabatic valve model can be added by supplying
 custom callbacks for the pressure-flow relation or valve function.
 """
+# Changing existing config block attributes
+# pylint: disable=protected-access
 
 __Author__ = "John Eslick"
 
@@ -37,6 +39,10 @@ _log = idaeslog.getLogger(__name__)
 
 
 class ValveFunctionType(Enum):
+    """
+    Enum of supported valve types.
+    """
+
     linear = 1
     quick_opening = 2
     equal_percentage = 3
@@ -103,6 +109,10 @@ def pressure_flow_default_callback(valve):
 
 @declare_process_block_class("Valve", doc="Adiabatic valves")
 class ValveData(PressureChangerData):
+    """
+    Basic valve model class.
+    """
+
     # Same settings as the default pressure changer, but force to expander with
     # isentropic efficiency
     CONFIG = PressureChangerData.CONFIG()
@@ -146,6 +156,7 @@ variables, expressions, or constraints required can also be added by the callbac
         self.valve_opening = pyo.Var(
             self.flowsheet().time,
             initialize=1,
+            bounds=(0, 1),
             doc="Fraction open for valve from 0 to 1",
         )
         self.valve_opening.fix()
@@ -181,7 +192,6 @@ variables, expressions, or constraints required can also be added by the callbac
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
         """
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
 
         for t in self.flowsheet().time:
             if (
