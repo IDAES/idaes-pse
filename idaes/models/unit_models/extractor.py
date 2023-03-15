@@ -155,12 +155,14 @@ class ExtractorCascadeData(UnitModelBlockData):
         # Check that at least two streams were declared
         if len(self.config.streams) < 2:
             raise ConfigurationError(
-                f"Extractor models must define at least two streams; received "
-                f"{self.config.streams}"
+                f"ExtractorCascade models must define at least two streams; received "
+                f"{list(self.config.streams.keys())}"
             )
 
         if self.config.dynamic:
-            raise NotImplementedError("Extractor model does not support dynamics yet.")
+            raise NotImplementedError(
+                "ExtractorCascade model does not support dynamics yet."
+            )
 
         # Build indexing sets
         self.stages = RangeSet(

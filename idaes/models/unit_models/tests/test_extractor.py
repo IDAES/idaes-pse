@@ -42,9 +42,10 @@ from idaes.core import (
     Phase,
     MaterialFlowBasis,
 )
-from idaes.models.unit_models.extractor import ExtractorCascade
+from idaes.models.unit_models.extractor import ExtractorCascade, ExtractorCascadeData
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
+from idaes.core.util.exceptions import ConfigurationError
 
 
 # -----------------------------------------------------------------------------
@@ -185,7 +186,61 @@ class StateBlock2Data(StateBlockData):
 
 
 # -----------------------------------------------------------------------------
+# Frame class for unit testing
+@declare_process_block_class("ECFrame")
+class ECFrameData(ExtractorCascadeData):
+    def build(self):
+        super(ExtractorCascadeData, self).build()
+
+
+# -----------------------------------------------------------------------------
 class TestBuild:
+    @pytest.mark.unit
+    def test_verify_inputs_too_few_streams(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties1 = Parameters1()
+        m.fs.properties2 = Parameters2()
+
+        m.fs.unit = ECFrame(
+            number_of_stages=2,
+            streams={
+                "stream1": {"property_package": m.fs.properties1},
+            },
+        )
+
+        with pytest.raises(
+            ConfigurationError,
+            match="ExtractorCascade models must define at least two streams; received "
+            "\['stream1'\]",
+        ):
+            m.fs.unit._verify_inputs()
+
+    @pytest.mark.unit
+    def test_verify_inputs_dynamic(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=True, time_units=units.s)
+
+        m.fs.properties1 = Parameters1()
+        m.fs.properties2 = Parameters2()
+
+        m.fs.unit = ECFrame(
+            number_of_stages=2,
+            streams={
+                "stream1": {"property_package": m.fs.properties1},
+                "stream2": {"property_package": m.fs.properties1},
+            },
+        )
+
+        with pytest.raises(
+            NotImplementedError,
+            match="ExtractorCascade model does not support dynamics yet.",
+        ):
+            m.fs.unit._verify_inputs()
+
+
+class TestBuild2:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
