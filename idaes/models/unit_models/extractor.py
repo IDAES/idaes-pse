@@ -189,8 +189,6 @@ class ExtractorCascadeData(UnitModelBlockData):
 
             arg_dict1 = dict(**pconfig.property_package_args)
             arg_dict1["defined_state"] = False
-            # d0 = dict(**pconfig.property_package_args)
-            # d0["defined_state"] = True
 
             state = ppack.build_state_block(
                 self.flowsheet().time,
@@ -260,29 +258,43 @@ class ExtractorCascadeData(UnitModelBlockData):
             def material_balance_rule(b, t, s, j):
                 if flow_dir == FlowDirection.forward:
                     if s == b.stages.first():
-                        in_state = getattr(self, stream + "_inlet_state")[t]
+                        if pconfig.has_feed:
+                            in_state = getattr(self, stream + "_inlet_state")[t]
+                        else:
+                            in_state = None
                     else:
                         in_state = state_block[t, b.stages.prev(s)]
                 elif flow_dir == FlowDirection.backward:
                     if s == b.stages.last():
-                        in_state = getattr(self, stream + "_inlet_state")[t]
+                        if pconfig.has_feed:
+                            in_state = getattr(self, stream + "_inlet_state")[t]
+                        else:
+                            in_state = None
                     else:
                         in_state = state_block[t, b.stages.next(s)]
                 else:
                     raise BurntToast("If/else overrun when constructing balances")
                 out_state = state_block[t, s]
 
+                if in_state is not None:
+                    rhs = sum(
+                        in_state.get_material_flow_terms(p, j)
+                        for p in phase_list
+                        if (p, j) in pc_set
+                    ) - sum(
+                        out_state.get_material_flow_terms(p, j)
+                        for p in phase_list
+                        if (p, j) in pc_set
+                    )
+                else:
+                    rhs = -sum(
+                        out_state.get_material_flow_terms(p, j)
+                        for p in phase_list
+                        if (p, j) in pc_set
+                    )
+
                 # As overall units come from the first StateBlock constructed, we
                 # cannot guarantee that any units are consistent, so convert all flow terms
-                rhs = sum(
-                    in_state.get_material_flow_terms(p, j)
-                    for p in phase_list
-                    if (p, j) in pc_set
-                ) - sum(
-                    out_state.get_material_flow_terms(p, j)
-                    for p in phase_list
-                    if (p, j) in pc_set
-                )
                 if mb_units is not None:
                     rhs = units.convert(rhs, mb_units)
 
