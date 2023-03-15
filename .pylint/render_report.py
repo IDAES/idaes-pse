@@ -40,7 +40,6 @@ class PylintRecord:
             line=line,
             path_url=path_url,
             line_url=line_url,
-            line=int(d.pop("line")),
             column=int(d.pop("column")),
             symbol=d.pop("symbol"),
             message=d.pop("message"),
