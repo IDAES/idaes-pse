@@ -47,7 +47,6 @@ Install IDAES Extensions
 Install IDAES Examples
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. |os_specific_fpath| replace:: `C:\\Users\\MyName\\IDAES\\Examples`
 .. include:: install_templates/examples.md
 
 Run IDAES Tests

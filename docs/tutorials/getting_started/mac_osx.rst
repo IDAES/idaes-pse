@@ -53,7 +53,6 @@ Install IDAES Extensions
 Install IDAES Examples
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. |os_specific_fpath| replace:: `~\/idaes/examples`
 .. include:: install_templates/examples.md
 
 Run IDAES Tests
