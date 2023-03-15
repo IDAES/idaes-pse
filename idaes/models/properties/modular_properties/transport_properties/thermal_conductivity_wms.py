@@ -18,7 +18,9 @@ mixing rules because they both rely on the same phi_ij terms.
 Method taken from Properties of Gases and Liquids, 5th Ed., Sections 10-6-1 and 10-6-2
 """
 
-from idaes.models.properties.modular_properties.transport_properties.viscosity_wilke import ViscosityWilke
+from idaes.models.properties.modular_properties.transport_properties.viscosity_wilke import (
+    ViscosityWilke,
+)
 
 
 class ThermalConductivityWMS(object):

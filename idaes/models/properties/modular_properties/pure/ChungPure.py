@@ -21,7 +21,9 @@ from pyomo.environ import Var, units as pyunits
 import pyomo.environ as pyo
 
 from idaes.core.util.misc import set_param_from_config
-from idaes.models.properties.modular_properties.pure.ChapmanEnskog import collision_integral_neufeld_callback
+from idaes.models.properties.modular_properties.pure.ChapmanEnskog import (
+    collision_integral_neufeld_callback,
+)
 
 
 class ChungViscosityPure(object):

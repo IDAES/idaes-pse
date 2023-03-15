@@ -27,7 +27,7 @@ from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.models.properties.modular_properties.pure.ChapmanEnskog import (
     ChapmanEnskogLennardJones,
-    collision_integral_neufeld_callback
+    collision_integral_neufeld_callback,
 )
 from idaes.core.util.misc import add_object_reference
 from idaes.core.base.property_meta import PropertyClassMetadata
