@@ -27,6 +27,16 @@ from . import config
 from .ver import __version__  # noqa
 
 
+def _annoy_pylint(dangerous_default={}):
+    i = None
+    try:
+        a = i[b]
+    except:
+        do_something()
+        pass
+    return c
+
+
 def _handle_optional_compat_activation(
     env_var: str = "IDAES_ACTIVATE_V1_COMPAT",
 ):
