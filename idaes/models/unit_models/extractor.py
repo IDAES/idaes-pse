@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-IDAES model for a generic multiple-phase, multi-stage extractor cascade.
+IDAES model for a generic multiple-stream, multi-stage extractor cascade.
 """
 
 # TODO: Add reactions
@@ -40,6 +40,7 @@ __author__ = "Andrew Lee"
 # TODO: Add heat transfer, enthalpy transfer, pressure change, reactions, heat of reaction, phase change
 # TODO: Options for balance types?
 # TODO: Side feed/draw
+# TODO: No feed streams
 
 
 @declare_process_block_class("ExtractorCascade")
@@ -50,22 +51,22 @@ class ExtractorCascadeData(UnitModelBlockData):
 
     CONFIG = UnitModelBlockData.CONFIG()
 
-    # Config dict to contain information on each phase
-    _phase_config = ConfigDict()
-    _phase_config.declare(
+    # Config dict to contain information on each stream
+    _stream_config = ConfigDict()
+    _stream_config.declare(
         "property_package",
         ConfigValue(
             default=useDefault,
             domain=is_physical_parameter_block,
-            description="Property package to use for given phase",
-            doc="""Property parameter object used to define property calculations for given phase,
+            description="Property package to use for given stream",
+            doc="""Property parameter object used to define property calculations for given stream,
     **default** - useDefault.
     **Valid values:** {
     **useDefault** - use default package from parent model or flowsheet,
     **PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
         ),
     )
-    _phase_config.declare(
+    _stream_config.declare(
         "property_package_args",
         ConfigDict(
             implicit=True,
@@ -77,24 +78,24 @@ class ExtractorCascadeData(UnitModelBlockData):
     see property package for documentation.}""",
         ),
     )
-    _phase_config.declare(
+    _stream_config.declare(
         "flow_direction",
         ConfigValue(
             default=FlowDirection.forward,
             domain=In(FlowDirection),
             doc="Direction of flow in stages",
             description="FlowDirection Enum indicating direction of "
-            "flow for given phase. Default=FlowDirection.forward.",
+            "flow for given stream. Default=FlowDirection.forward.",
         ),
     )
 
     CONFIG.declare(
-        "phases",
+        "streams",
         ConfigDict(
             implicit=True,
-            implicit_domain=_phase_config,
-            description="Dict of phases and associated property packages",
-            doc="ConfigDict with keys indicating names for each phase in system and "
+            implicit_domain=_stream_config,
+            description="Dict of streams and associated property packages",
+            doc="ConfigDict with keys indicating names for each stream in system and "
             "values indicating property package and associated arguments.",
         ),
     )
@@ -103,10 +104,10 @@ class ExtractorCascadeData(UnitModelBlockData):
         ConfigValue(domain=int, description="Number of stages in cascade"),
     )
     CONFIG.declare(
-        "interacting_phases",
+        "interacting_streams",
         ConfigValue(
             domain=list,
-            doc="List of interacting phase pairs as 2-tuples ('phase1', 'phase2').",
+            doc="List of interacting stream pairs as 2-tuples ('stream1', 'stream2').",
         ),
     )
 
@@ -123,11 +124,11 @@ class ExtractorCascadeData(UnitModelBlockData):
         # Call UnitModel.build
         super().build()
 
-        # Check that at least two phases were declared
-        if len(self.config.phases) < 2:
+        # Check that at least two streams were declared
+        if len(self.config.streams) < 2:
             raise ConfigurationError(
-                f"Extractor models must define at least two phases; received "
-                f"{self.config.phases}"
+                f"Extractor models must define at least two streams; received "
+                f"{self.config.streams}"
             )
 
         if self.config.dynamic:
@@ -146,31 +147,31 @@ class ExtractorCascadeData(UnitModelBlockData):
             "extra point at 0 (0 to number of stages)",
         )
 
-        self.phase_component_interactions = Set(
-            doc="Set of interacting components between phases."
+        self.stream_component_interactions = Set(
+            doc="Set of interacting components between streams."
         )
-        for p1 in self.config.phases:
-            for p2 in self.config.phases:
+        for p1 in self.config.streams:
+            for p2 in self.config.streams:
                 if p1 == p2:
                     continue
-                if self.config.interacting_phases is not None and not (
-                    (p1, p2) in self.config.interacting_phases
-                    or (p2, p1) in self.config.interacting_phases
+                if self.config.interacting_streams is not None and not (
+                    (p1, p2) in self.config.interacting_streams
+                    or (p2, p1) in self.config.interacting_streams
                 ):
-                    # Not an interacting phase pair
+                    # Not an interacting stream pair
                     continue
-                # Interacting phase pair
-                for j in self.config.phases[p1].property_package.component_list:
+                # Interacting stream pair
+                for j in self.config.streams[p1].property_package.component_list:
                     if (
-                        j in self.config.phases[p2].property_package.component_list
-                        and (p2, p1, j) not in self.phase_component_interactions
+                        j in self.config.streams[p2].property_package.component_list
+                        and (p2, p1, j) not in self.stream_component_interactions
                     ):
                         # Common component, assume interaction
-                        self.phase_component_interactions.add((p1, p2, j))
-        if len(self.phase_component_interactions) == 0:
+                        self.stream_component_interactions.add((p1, p2, j))
+        if len(self.stream_component_interactions) == 0:
             raise ConfigurationError(
                 "No common components found in property packages. Extractor model assumes "
-                "mass transfer occurs between components with the same name in different phases."
+                "mass transfer occurs between components with the same name in different streams."
             )
 
         # Build state blocks
@@ -178,7 +179,7 @@ class ExtractorCascadeData(UnitModelBlockData):
         flow_basis = None
         uom = None
 
-        for phase, pconfig in self.config.phases.items():
+        for stream, pconfig in self.config.streams.items():
             ppack = pconfig.property_package
             flow_dir = pconfig.flow_direction
 
@@ -197,14 +198,14 @@ class ExtractorCascadeData(UnitModelBlockData):
             state = ppack.build_state_block(
                 self.flowsheet().time,
                 self.states,
-                doc=f"States for phase {phase}",
+                doc=f"States for stream {stream}",
                 initialize={0: d0, 1: d1},
                 idx_map=idx_map,
             )
-            self.add_component(phase, state)
+            self.add_component(stream, state)
 
             if flow_basis is None:
-                # Set unit level flow basis and units from first phase
+                # Set unit level flow basis and units from first stream
                 t = self.flowsheet().time.first()
                 s = self.states.first()
                 flow_basis = state[t, s].get_material_flow_basis()
@@ -217,8 +218,8 @@ class ExtractorCascadeData(UnitModelBlockData):
                     raise ConfigurationError(
                         f"Property packages use different flow bases: ExtractionCascade "
                         f"requires all property packages to use the same basis. "
-                        f"{phase} uses {state[t, s].get_material_flow_basis()}, "
-                        f"whilst first phase uses {flow_basis}."
+                        f"{stream} uses {state[t, s].get_material_flow_basis()}, "
+                        f"whilst first stream uses {flow_basis}."
                     )
 
         # Build material balances
@@ -233,15 +234,15 @@ class ExtractorCascadeData(UnitModelBlockData):
         self.material_transfer_term = Var(
             self.flowsheet().time,
             self.stages,
-            self.phase_component_interactions,
+            self.stream_component_interactions,
             initialize=0,
             units=mb_units,
-            doc="Interphase mass transfer term",
+            doc="Interstream mass transfer term",
         )
 
-        for phase, pconfig in self.config.phases.items():
-            # Material balance for phase
-            state_block = getattr(self, phase)
+        for stream, pconfig in self.config.streams.items():
+            # Material balance for stream
+            state_block = getattr(self, stream)
             component_list = state_block.component_list
             phase_list = state_block.phase_list
             pc_set = state_block.phase_component_set
@@ -273,11 +274,11 @@ class ExtractorCascadeData(UnitModelBlockData):
                 if mb_units is not None:
                     rhs = units.convert(rhs, mb_units)
 
-                for k in b.phase_component_interactions:
-                    if k[0] == phase and k[2] == j:
+                for k in b.stream_component_interactions:
+                    if k[0] == stream and k[2] == j:
                         # Positive mass transfer
                         rhs += b.material_transfer_term[t, s, k]
-                    elif k[1] == phase and k[2] == j:
+                    elif k[1] == stream and k[2] == j:
                         # Negative mass transfer
                         rhs += -b.material_transfer_term[t, s, k]
 
@@ -289,13 +290,13 @@ class ExtractorCascadeData(UnitModelBlockData):
                 component_list,
                 rule=material_balance_rule,
             )
-            self.add_component(phase + "_material_balance", mbal)
+            self.add_component(stream + "_material_balance", mbal)
 
             # TODO: Optional energy and momentum balances
 
         # Add Ports
-        for phase, pconfig in self.config.phases.items():
-            sblock = getattr(self, phase)
+        for stream, pconfig in self.config.streams.items():
+            sblock = getattr(self, stream)
             flow_dir = pconfig.flow_direction
 
             if flow_dir == FlowDirection.forward:
@@ -308,14 +309,14 @@ class ExtractorCascadeData(UnitModelBlockData):
                 raise BurntToast("If/else overrun when constructing Ports")
 
             in_port, _ = sblock.build_port(
-                f"{phase} Inlet", slice_index=(slice(None), inlet)
+                f"{stream} Inlet", slice_index=(slice(None), inlet)
             )
-            self.add_component(phase + "_inlet", in_port)
+            self.add_component(stream + "_inlet", in_port)
 
             out_port, _ = sblock.build_port(
-                f"{phase} Outlet", slice_index=(slice(None), outlet)
+                f"{stream} Outlet", slice_index=(slice(None), outlet)
             )
-            self.add_component(phase + "_outlet", out_port)
+            self.add_component(stream + "_outlet", out_port)
 
     # TODO: Initialization - use the new framework
     def initialize(self, **kwargs):

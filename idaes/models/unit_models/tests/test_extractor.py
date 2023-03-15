@@ -192,9 +192,9 @@ class TestBuild:
 
         m.fs.unit = ExtractorCascade(
             number_of_stages=2,
-            phases={
-                "phase1": {"property_package": m.fs.properties1},
-                "phase2": {
+            streams={
+                "stream1": {"property_package": m.fs.properties1},
+                "stream2": {
                     "property_package": m.fs.properties2,
                     "flow_direction": FlowDirection.backward,
                 },
@@ -208,9 +208,9 @@ class TestBuild:
         assert not model.fs.unit.config.dynamic
         assert not model.fs.unit.config.has_holdup
         assert model.fs.unit.config.number_of_stages == 2
-        assert "phase1" in model.fs.unit.config.phases
-        assert "phase2" in model.fs.unit.config.phases
-        assert model.fs.unit.config.interacting_phases is None
+        assert "stream1" in model.fs.unit.config.streams
+        assert "stream2" in model.fs.unit.config.streams
+        assert model.fs.unit.config.interacting_streams is None
 
     @pytest.mark.unit
     def test_states(self, model):
@@ -219,105 +219,117 @@ class TestBuild:
         assert isinstance(model.fs.unit.stages, RangeSet)
         assert len(model.fs.unit.stages) == 2
 
-        assert isinstance(model.fs.unit.phase_component_interactions, Set)
-        # One phase pair with two common components
-        assert len(model.fs.unit.phase_component_interactions) == 2
-        for k in model.fs.unit.phase_component_interactions:
+        assert isinstance(model.fs.unit.stream_component_interactions, Set)
+        # One stream pair with two common components
+        assert len(model.fs.unit.stream_component_interactions) == 2
+        for k in model.fs.unit.stream_component_interactions:
             assert k in [
-                ("phase1", "phase2", "solute1"),
-                ("phase1", "phase2", "solute2"),
+                ("stream1", "stream2", "solute1"),
+                ("stream1", "stream2", "solute2"),
             ]
 
-        assert isinstance(model.fs.unit.phase1, StateBlock1)
-        assert len(model.fs.unit.phase1) == 3
-        assert model.fs.unit.phase1[0, 0].config.defined_state
-        assert not model.fs.unit.phase1[0, 1].config.defined_state
-        assert not model.fs.unit.phase1[0, 2].config.defined_state
+        assert isinstance(model.fs.unit.stream1, StateBlock1)
+        assert len(model.fs.unit.stream1) == 3
+        assert model.fs.unit.stream1[0, 0].config.defined_state
+        assert not model.fs.unit.stream1[0, 1].config.defined_state
+        assert not model.fs.unit.stream1[0, 2].config.defined_state
 
-        assert isinstance(model.fs.unit.phase2, StateBlock2)
-        assert len(model.fs.unit.phase2) == 3
-        assert not model.fs.unit.phase2[0, 0].config.defined_state
-        assert not model.fs.unit.phase2[0, 1].config.defined_state
-        assert model.fs.unit.phase2[0, 2].config.defined_state
+        assert isinstance(model.fs.unit.stream2, StateBlock2)
+        assert len(model.fs.unit.stream2) == 3
+        assert not model.fs.unit.stream2[0, 0].config.defined_state
+        assert not model.fs.unit.stream2[0, 1].config.defined_state
+        assert model.fs.unit.stream2[0, 2].config.defined_state
 
     @pytest.mark.unit
     def test_material_balances(self, model):
         assert isinstance(model.fs.unit.material_transfer_term, Var)
-        # One phase pair with two common components over two stages and 1 time point
+        # One stream pair with two common components over two stages and 1 time point
         assert len(model.fs.unit.material_transfer_term) == 4
         assert_units_equivalent(
             model.fs.unit.material_transfer_term._units, units.mol / units.s
         )
 
-        assert isinstance(model.fs.unit.phase1_material_balance, Constraint)
+        assert isinstance(model.fs.unit.stream1_material_balance, Constraint)
         # 1 time point, 2 stages, 4 components
-        assert len(model.fs.unit.phase1_material_balance) == 8
+        assert len(model.fs.unit.stream1_material_balance) == 8
         for s in [1, 2]:
             for j in ["solvent1", "solute3"]:  # no mass transfer, forward flow
-                assert str(model.fs.unit.phase1_material_balance[0, s, j]._expr) == str(
+                assert str(
+                    model.fs.unit.stream1_material_balance[0, s, j]._expr
+                ) == str(
                     0
-                    == model.fs.unit.phase1[0, s - 1].flow_mol_phase_comp["phase1", j]
-                    - model.fs.unit.phase1[0, s].flow_mol_phase_comp["phase1", j]
+                    == model.fs.unit.stream1[0, s - 1].flow_mol_phase_comp["phase1", j]
+                    - model.fs.unit.stream1[0, s].flow_mol_phase_comp["phase1", j]
                 )
             for j in ["solute1", "solute2"]:  # has +ve mass transfer, forward flow
-                assert str(model.fs.unit.phase1_material_balance[0, s, j]._expr) == str(
+                assert str(
+                    model.fs.unit.stream1_material_balance[0, s, j]._expr
+                ) == str(
                     0
-                    == model.fs.unit.phase1[0, s - 1].flow_mol_phase_comp["phase1", j]
-                    - model.fs.unit.phase1[0, s].flow_mol_phase_comp["phase1", j]
-                    + model.fs.unit.material_transfer_term[0, s, "phase1", "phase2", j]
+                    == model.fs.unit.stream1[0, s - 1].flow_mol_phase_comp["phase1", j]
+                    - model.fs.unit.stream1[0, s].flow_mol_phase_comp["phase1", j]
+                    + model.fs.unit.material_transfer_term[
+                        0, s, "stream1", "stream2", j
+                    ]
                 )
 
-        assert isinstance(model.fs.unit.phase2_material_balance, Constraint)
+        assert isinstance(model.fs.unit.stream2_material_balance, Constraint)
         # 1 time point, 2 stages, 3 components
-        assert len(model.fs.unit.phase2_material_balance) == 6
+        assert len(model.fs.unit.stream2_material_balance) == 6
         for s in [1, 2]:
             for j in ["solvent2"]:  # no mass transfer, reverse flow
-                assert str(model.fs.unit.phase2_material_balance[0, s, j]._expr) == str(
+                assert str(
+                    model.fs.unit.stream2_material_balance[0, s, j]._expr
+                ) == str(
                     0
-                    == model.fs.unit.phase2[0, s].flow_mol_phase_comp["phase1", j]
-                    - model.fs.unit.phase2[0, s - 1].flow_mol_phase_comp["phase1", j]
+                    == model.fs.unit.stream2[0, s].flow_mol_phase_comp["phase1", j]
+                    - model.fs.unit.stream2[0, s - 1].flow_mol_phase_comp["phase1", j]
                 )
             for j in ["solute1", "solute2"]:  # has -ve mass transfer, reverse flow
-                assert str(model.fs.unit.phase2_material_balance[0, s, j]._expr) == str(
+                assert str(
+                    model.fs.unit.stream2_material_balance[0, s, j]._expr
+                ) == str(
                     0
-                    == model.fs.unit.phase2[0, s].flow_mol_phase_comp["phase1", j]
-                    - model.fs.unit.phase2[0, s - 1].flow_mol_phase_comp["phase1", j]
-                    - model.fs.unit.material_transfer_term[0, s, "phase1", "phase2", j]
+                    == model.fs.unit.stream2[0, s].flow_mol_phase_comp["phase1", j]
+                    - model.fs.unit.stream2[0, s - 1].flow_mol_phase_comp["phase1", j]
+                    - model.fs.unit.material_transfer_term[
+                        0, s, "stream1", "stream2", j
+                    ]
                 )
 
     @pytest.mark.unit
     def test_ports(self, model):
-        assert isinstance(model.fs.unit.phase1_inlet, Port)
-        for p, j in model.fs.unit.phase1.phase_component_set:
+        assert isinstance(model.fs.unit.stream1_inlet, Port)
+        for p, j in model.fs.unit.stream1.phase_component_set:
             assert (
-                model.fs.unit.phase1_inlet.flow_mol_phase_comp[0, p, j]
-                is model.fs.unit.phase1[0, 0].flow_mol_phase_comp[p, j]
+                model.fs.unit.stream1_inlet.flow_mol_phase_comp[0, p, j]
+                is model.fs.unit.stream1[0, 0].flow_mol_phase_comp[p, j]
             )
 
-        assert isinstance(model.fs.unit.phase1_outlet, Port)
-        for p, j in model.fs.unit.phase1.phase_component_set:
+        assert isinstance(model.fs.unit.stream1_outlet, Port)
+        for p, j in model.fs.unit.stream1.phase_component_set:
             assert (
-                model.fs.unit.phase1_outlet.flow_mol_phase_comp[0, p, j]
-                is model.fs.unit.phase1[0, 2].flow_mol_phase_comp[p, j]
+                model.fs.unit.stream1_outlet.flow_mol_phase_comp[0, p, j]
+                is model.fs.unit.stream1[0, 2].flow_mol_phase_comp[p, j]
             )
 
-        assert isinstance(model.fs.unit.phase2_inlet, Port)
-        for p, j in model.fs.unit.phase2.phase_component_set:
+        assert isinstance(model.fs.unit.stream2_inlet, Port)
+        for p, j in model.fs.unit.stream2.phase_component_set:
             assert (
-                model.fs.unit.phase2_inlet.flow_mol_phase_comp[0, p, j]
-                is model.fs.unit.phase2[0, 2].flow_mol_phase_comp[p, j]
+                model.fs.unit.stream2_inlet.flow_mol_phase_comp[0, p, j]
+                is model.fs.unit.stream2[0, 2].flow_mol_phase_comp[p, j]
             )
 
-        assert isinstance(model.fs.unit.phase2_outlet, Port)
-        for p, j in model.fs.unit.phase2.phase_component_set:
+        assert isinstance(model.fs.unit.stream2_outlet, Port)
+        for p, j in model.fs.unit.stream2.phase_component_set:
             assert (
-                model.fs.unit.phase2_outlet.flow_mol_phase_comp[0, p, j]
-                is model.fs.unit.phase2[0, 0].flow_mol_phase_comp[p, j]
+                model.fs.unit.stream2_outlet.flow_mol_phase_comp[0, p, j]
+                is model.fs.unit.stream2[0, 0].flow_mol_phase_comp[p, j]
             )
 
     @pytest.mark.unit
     def test_degrees_of_freedom(self, model):
-        # Expect 11 DoF: 4 phase1 inlets, 3 phase2 inlets and 2x2 mass transfer terms
+        # Expect 11 DoF: 4 stream1 inlets, 3 stream2 inlets and 2x2 mass transfer terms
         assert (degrees_of_freedom(model)) == 11
 
     @pytest.mark.component
@@ -335,26 +347,28 @@ def test_toy_problem():
 
     model.fs.unit = ExtractorCascade(
         number_of_stages=2,
-        phases={
-            "phase1": {"property_package": model.fs.properties1},
-            "phase2": {
+        streams={
+            "stream1": {"property_package": model.fs.properties1},
+            "stream2": {
                 "property_package": model.fs.properties2,
                 "flow_direction": FlowDirection.backward,
             },
         },
     )
 
-    model.fs.unit.phase1_inlet.flow_mol_phase_comp[0, "phase1", "solvent1"].fix(2)
-    model.fs.unit.phase1_inlet.flow_mol_phase_comp[0, "phase1", "solute1"].fix(3)
-    model.fs.unit.phase1_inlet.flow_mol_phase_comp[0, "phase1", "solute2"].fix(4)
-    model.fs.unit.phase1_inlet.flow_mol_phase_comp[0, "phase1", "solute3"].fix(5)
+    model.fs.unit.stream1_inlet.flow_mol_phase_comp[0, "phase1", "solvent1"].fix(2)
+    model.fs.unit.stream1_inlet.flow_mol_phase_comp[0, "phase1", "solute1"].fix(3)
+    model.fs.unit.stream1_inlet.flow_mol_phase_comp[0, "phase1", "solute2"].fix(4)
+    model.fs.unit.stream1_inlet.flow_mol_phase_comp[0, "phase1", "solute3"].fix(5)
 
-    model.fs.unit.phase2_inlet.flow_mol_phase_comp[0, "phase1", "solvent2"].fix(11)
-    model.fs.unit.phase2_inlet.flow_mol_phase_comp[0, "phase1", "solute1"].fix(12)
-    model.fs.unit.phase2_inlet.flow_mol_phase_comp[0, "phase1", "solute2"].fix(13)
+    model.fs.unit.stream2_inlet.flow_mol_phase_comp[0, "phase1", "solvent2"].fix(11)
+    model.fs.unit.stream2_inlet.flow_mol_phase_comp[0, "phase1", "solute1"].fix(12)
+    model.fs.unit.stream2_inlet.flow_mol_phase_comp[0, "phase1", "solute2"].fix(13)
 
-    model.fs.unit.material_transfer_term[0, :, "phase1", "phase2", "solute1"].fix(0.5)
-    model.fs.unit.material_transfer_term[0, :, "phase1", "phase2", "solute2"].fix(-0.5)
+    model.fs.unit.material_transfer_term[0, :, "stream1", "stream2", "solute1"].fix(0.5)
+    model.fs.unit.material_transfer_term[0, :, "stream1", "stream2", "solute2"].fix(
+        -0.5
+    )
 
     assert (degrees_of_freedom(model)) == 0
 
@@ -364,32 +378,32 @@ def test_toy_problem():
     assert_optimal_termination(results)
 
     assert value(
-        model.fs.unit.phase1_outlet.flow_mol_phase_comp[0, "phase1", "solvent1"]
+        model.fs.unit.stream1_outlet.flow_mol_phase_comp[0, "phase1", "solvent1"]
     ) == pytest.approx(2, rel=1e-5)
     assert value(
-        model.fs.unit.phase1_outlet.flow_mol_phase_comp[0, "phase1", "solute1"]
+        model.fs.unit.stream1_outlet.flow_mol_phase_comp[0, "phase1", "solute1"]
     ) == pytest.approx(
         4, rel=1e-5
     )  # 3 + 0.5 + 0.5
     assert value(
-        model.fs.unit.phase1_outlet.flow_mol_phase_comp[0, "phase1", "solute2"]
+        model.fs.unit.stream1_outlet.flow_mol_phase_comp[0, "phase1", "solute2"]
     ) == pytest.approx(
         3, rel=1e-5
     )  # 3 - 0.5 - 0.5
     assert value(
-        model.fs.unit.phase1_outlet.flow_mol_phase_comp[0, "phase1", "solute3"]
+        model.fs.unit.stream1_outlet.flow_mol_phase_comp[0, "phase1", "solute3"]
     ) == pytest.approx(5, rel=1e-5)
 
     assert value(
-        model.fs.unit.phase2_outlet.flow_mol_phase_comp[0, "phase1", "solvent2"]
+        model.fs.unit.stream2_outlet.flow_mol_phase_comp[0, "phase1", "solvent2"]
     ) == pytest.approx(11, rel=1e-5)
     assert value(
-        model.fs.unit.phase2_outlet.flow_mol_phase_comp[0, "phase1", "solute1"]
+        model.fs.unit.stream2_outlet.flow_mol_phase_comp[0, "phase1", "solute1"]
     ) == pytest.approx(
         11, rel=1e-5
     )  # 12 - 0.5 - 0.5
     assert value(
-        model.fs.unit.phase2_outlet.flow_mol_phase_comp[0, "phase1", "solute2"]
+        model.fs.unit.stream2_outlet.flow_mol_phase_comp[0, "phase1", "solute2"]
     ) == pytest.approx(
         14, rel=1e-5
     )  # 13 + 0.5 + 0.5
