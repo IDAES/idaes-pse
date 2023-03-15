@@ -141,8 +141,8 @@ rst_epilog = """
 .. |python-min| replace:: 3.7
 .. |python-max| replace:: 3.10
 
-.. |examples-site| replace:: `examples online documentation page`_
-.. _examples online documentation page: https://idaes-examples.readthedocs.io/en/latest/
+.. |examples-site| replace:: `examples website`_
+.. _examples website: https://idaes-examples.readthedocs.io/en/latest/
 
 .. |github-issues| replace:: `Github issues page`_
 .. _Github issues page: https://github.com/IDAES/idaes-pse/issues
