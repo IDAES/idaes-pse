@@ -111,7 +111,7 @@ class PhaseData(ProcessBlockData):
         "transport_property_options",
         ConfigValue(
             description="Options for transport properties like viscosity, surface tension, and thermal conductivity"
-        )
+        ),
     )
 
     def build(self):

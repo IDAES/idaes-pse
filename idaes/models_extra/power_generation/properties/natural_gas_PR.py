@@ -51,7 +51,9 @@ from idaes.models.properties.modular_properties.transport_properties import (
     ViscosityWilke,
     ThermalConductivityWMS,
 )
-from idaes.models.properties.modular_properties.transport_properties.viscosity_wilke import wilke_phi_ij_callback
+from idaes.models.properties.modular_properties.transport_properties.viscosity_wilke import (
+    wilke_phi_ij_callback,
+)
 
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius

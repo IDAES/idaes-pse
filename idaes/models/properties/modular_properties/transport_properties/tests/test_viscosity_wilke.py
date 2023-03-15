@@ -89,9 +89,7 @@ def construct_dummy_model(component_dict, callback):
                 "type": VaporPhase,
                 "equation_of_state": Ideal,
                 "visc_d_phase": ViscosityWilke,
-                "transport_property_options":  {
-                    "viscosity_phi_ij_callback": callback
-                }
+                "transport_property_options": {"viscosity_phi_ij_callback": callback},
             },
         },
         base_units={

@@ -32,14 +32,20 @@ class ViscosityWilke(object):
     @staticmethod
     def build_parameters(pobj):
         try:
-            assert "viscosity_phi_ij_callback" in pobj.config.transport_property_options.keys()
+            assert (
+                "viscosity_phi_ij_callback"
+                in pobj.config.transport_property_options.keys()
+            )
         except AttributeError:
             # No transport options dictionary passed to config, need to create dictionary wholesale
-            pobj.config.transport_property_options = {"viscosity_phi_ij_callback": wilke_phi_ij_callback}
+            pobj.config.transport_property_options = {
+                "viscosity_phi_ij_callback": wilke_phi_ij_callback
+            }
         except AssertionError:
             # Transport options dictionary exists but does not have a callback
-            pobj.config.transport_property_options["viscosity_phi_ij_callback"] = wilke_phi_ij_callback
-
+            pobj.config.transport_property_options[
+                "viscosity_phi_ij_callback"
+            ] = wilke_phi_ij_callback
 
     @staticmethod
     def build_phi_ij(b, p):
@@ -54,7 +60,9 @@ class ViscosityWilke(object):
             }
 
             def phi_rule(blk, i, j):
-                return pobj.config.transport_property_options["viscosity_phi_ij_callback"](blk, i, j, p, mw_dict)
+                return pobj.config.transport_property_options[
+                    "viscosity_phi_ij_callback"
+                ](blk, i, j, p, mw_dict)
 
             b.visc_d_phi_ij = pyo.Expression(
                 b.components_in_phase(p),
