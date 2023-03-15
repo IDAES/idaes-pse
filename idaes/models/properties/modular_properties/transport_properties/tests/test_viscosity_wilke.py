@@ -63,7 +63,7 @@ def set_metadata(b):
     pass
 
 
-def construct_dummy_model(component_dict):
+def construct_dummy_model(component_dict, callback):
     m = ConcreteModel()
     components = [comp for comp in component_dict.keys()]
     comp1 = components[0]
@@ -89,6 +89,9 @@ def construct_dummy_model(component_dict):
                 "type": VaporPhase,
                 "equation_of_state": Ideal,
                 "visc_d_phase": ViscosityWilke,
+                "transport_property_options":  {
+                    "viscosity_phi_ij_callback": callback
+                }
             },
         },
         base_units={
@@ -133,9 +136,7 @@ def test_wilke_visc_d_phase_N2_CO2():
         "N2": {"mw": 28.014, "visc_d_Vap": 175.8},
         "CO2": {"mw": 44.009, "visc_d_Vap": 146.6},
     }
-    m = construct_dummy_model(component_dict)
-
-    assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
+    m = construct_dummy_model(component_dict, wilke_phi_ij_callback)
 
     expr = ViscosityWilke.visc_d_phase.return_expression(m.props[1], "Vap")
 
@@ -184,9 +185,7 @@ def test_wilke_visc_d_phase_ammonia_hydrogen():
         "NH3": {"mw": 17.031, "visc_d_Vap": 105.9},
         "H2": {"mw": 2.016, "visc_d_Vap": 90.6},
     }
-    m = construct_dummy_model(component_dict)
-
-    assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
+    m = construct_dummy_model(component_dict, wilke_phi_ij_callback)
 
     expr = ViscosityWilke.visc_d_phase.return_expression(m.props[1], "Vap")
 
@@ -218,9 +217,7 @@ def test_wilke_visc_d_phase_N2O_SO2():
         "N2O": {"mw": 44.013, "visc_d_Vap": 173.0},
         "SO2": {"mw": 64.066, "visc_d_Vap": 152.3},
     }
-    m = construct_dummy_model(component_dict)
-
-    assert m.params.Vap.viscosity_phi_ij_callback is wilke_phi_ij_callback
+    m = construct_dummy_model(component_dict, wilke_phi_ij_callback)
 
     expr = ViscosityWilke.visc_d_phase.return_expression(m.props[1], "Vap")
 
@@ -250,9 +247,7 @@ def test_herning_zipperer_visc_d_phase_N2_CO2():
         "N2": {"mw": 28.014, "visc_d_Vap": 175.8},
         "CO2": {"mw": 44.009, "visc_d_Vap": 146.6},
     }
-    m = construct_dummy_model(component_dict)
-
-    m.params.Vap.viscosity_phi_ij_callback = herring_zimmer_phi_ij_callback
+    m = construct_dummy_model(component_dict, herring_zimmer_phi_ij_callback)
 
     expr = ViscosityWilke.visc_d_phase.return_expression(m.props[1], "Vap")
 
@@ -299,9 +294,7 @@ def test_herning_zipperer_visc_d_phase_ammonia_hydrogen():
         "NH3": {"mw": 17.031, "visc_d_Vap": 105.9},
         "H2": {"mw": 2.016, "visc_d_Vap": 90.6},
     }
-    m = construct_dummy_model(component_dict)
-
-    m.params.Vap.viscosity_phi_ij_callback = herring_zimmer_phi_ij_callback
+    m = construct_dummy_model(component_dict, herring_zimmer_phi_ij_callback)
 
     expr = ViscosityWilke.visc_d_phase.return_expression(m.props[1], "Vap")
 
@@ -335,9 +328,7 @@ def test_herning_zipperer_visc_d_phase_N2O_SO2():
         "N2O": {"mw": 44.013, "visc_d_Vap": 173.0},
         "SO2": {"mw": 64.066, "visc_d_Vap": 152.3},
     }
-    m = construct_dummy_model(component_dict)
-
-    m.params.Vap.viscosity_phi_ij_callback = herring_zimmer_phi_ij_callback
+    m = construct_dummy_model(component_dict, herring_zimmer_phi_ij_callback)
 
     expr = ViscosityWilke.visc_d_phase.return_expression(m.props[1], "Vap")
 
@@ -351,7 +342,7 @@ def test_herning_zipperer_visc_d_phase_N2O_SO2():
         170.7,
         173.0,
     ]  # Experimental viscosities in millipoise
-    err_list = [0.0, -2.2, -2.1, -1.2, 0.0]  # Percent error in Wilke's method
+    err_list = [0.0, -2.2, -2.1, -1.2, 0.0]  # Percent error in H&Z's method
     for i in range(5):
         m.props[1].mole_frac_phase_comp["Vap", "N2O"] = mole_frac_list[i]
         m.props[1].mole_frac_phase_comp["Vap", "SO2"] = 1 - mole_frac_list[i]

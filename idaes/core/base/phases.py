@@ -107,6 +107,12 @@ class PhaseData(ProcessBlockData):
         "visc_d_phase",
         ConfigValue(description="Method to calculate dynamic viscosity of phase"),
     )
+    CONFIG.declare(
+        "transport_property_options",
+        ConfigValue(
+            description="Options for transport properties like viscosity, surface tension, and thermal conductivity"
+        )
+    )
 
     def build(self):
         super(PhaseData, self).build()

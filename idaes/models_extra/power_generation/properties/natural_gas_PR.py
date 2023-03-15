@@ -51,6 +51,7 @@ from idaes.models.properties.modular_properties.transport_properties import (
     ViscosityWilke,
     ThermalConductivityWMS,
 )
+from idaes.models.properties.modular_properties.transport_properties.viscosity_wilke import wilke_phi_ij_callback
 
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius
@@ -101,6 +102,9 @@ _phase_dicts_ideal = {
         "type": VaporPhase,
         "equation_of_state": Ideal,
         "visc_d_phase": ViscosityWilke,
+        "transport_property_options": {
+            "viscosity_phi_ij_callback": wilke_phi_ij_callback,
+        },
         "therm_cond_phase": ThermalConductivityWMS,
     },
 }

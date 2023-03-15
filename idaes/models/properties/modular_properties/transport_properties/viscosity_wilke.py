@@ -31,8 +31,15 @@ from idaes.models.properties.modular_properties.base.utility import get_componen
 class ViscosityWilke(object):
     @staticmethod
     def build_parameters(pobj):
-        if not hasattr(pobj, "viscosity_phi_ij_callback"):
-            pobj.viscosity_phi_ij_callback = wilke_phi_ij_callback
+        try:
+            assert "viscosity_phi_ij_callback" in pobj.config.transport_property_options.keys()
+        except AttributeError:
+            # No transport options dictionary passed to config, need to create dictionary wholesale
+            pobj.config.transport_property_options = {"viscosity_phi_ij_callback": wilke_phi_ij_callback}
+        except AssertionError:
+            # Transport options dictionary exists but does not have a callback
+            pobj.config.transport_property_options["viscosity_phi_ij_callback"] = wilke_phi_ij_callback
+
 
     @staticmethod
     def build_phi_ij(b, p):
@@ -47,7 +54,7 @@ class ViscosityWilke(object):
             }
 
             def phi_rule(blk, i, j):
-                return pobj.viscosity_phi_ij_callback(blk, i, j, p, mw_dict)
+                return pobj.config.transport_property_options["viscosity_phi_ij_callback"](blk, i, j, p, mw_dict)
 
             b.visc_d_phi_ij = pyo.Expression(
                 b.components_in_phase(p),
@@ -82,7 +89,14 @@ class ViscosityWilke(object):
 
 
 def wilke_phi_ij_callback(b, i, j, pname, mw_dict):
-    # Equation 9-5.14 in Properties of Gases and Liquids 5th ed.
+    """Equation 9.5.14 from Properties of Gases and Liquids.
+
+    .. math::
+
+      \\phi_{ij} = \\frac{[1 + (\\mu_i/\\mu_j)^{1/2}(M_j/M_i)^{1/4}]^2}{[8(1+M_i/M_j)]^{1/2}}
+
+    in which :math:`M_i` is the molecular weight of component :math:`i`.
+    """
     visc_i = b._visc_d_phase_comp[pname, i]
     visc_j = b._visc_d_phase_comp[pname, j]
     return (
@@ -91,5 +105,12 @@ def wilke_phi_ij_callback(b, i, j, pname, mw_dict):
 
 
 def herring_zimmer_phi_ij_callback(b, i, j, pname, mw_dict):
-    # Equation 9-5.17 in Properties of Gases and Liquids 5th ed.
+    """Equation 9.5.17 from Properties of Gases and Liquids.
+
+    .. math::
+
+      \\phi_{ij} = \\left(\\frac{M_j}{M_i}\\right)^{1/2}
+
+    in which :math:`M_i` is the molecular weight of component :math:`i`.
+    """
     return pyo.sqrt(mw_dict[j] / mw_dict[i])
