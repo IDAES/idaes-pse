@@ -28,6 +28,10 @@ References:
     [1] Hilliard thesis (1998)
     [2] Morgan et.al (2015)
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo units
 from pyomo.environ import sqrt, units as pyunits, Var
 
@@ -155,7 +159,7 @@ class Diffus:
                 if (i, j) in binary_set
             )
             + sum(
-                blk.mole_frac_comp[j] / diffus_binary(j, i)
+                blk.mole_frac_comp[j] / diffus_binary(j, i)  # pylint: disable=W1114
                 for j in blk.component_list
                 if (j, i) in binary_set
             )

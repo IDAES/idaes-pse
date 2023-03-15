@@ -248,7 +248,7 @@ see reaction package for documentation.}""",
         )
         def volume_solid_constraint(b, t):
             return b.volume_solid[t] == (
-                b.volume_bed * (1 - b.solids[t]._params.voidage)
+                b.volume_bed * (1 - b.solids[t].params.voidage)
             )
 
         # Accumulation equal to mass transfer/reaction
@@ -287,7 +287,7 @@ see reaction package for documentation.}""",
         def solids_material_accumulation_constraints(b, t, j):
             return b.solids_material_accumulation[t, j] / units_meta_solid(
                 "time"
-            ) == b.volume_solid[t] * b.solids[t]._params.mw_comp[j] * sum(
+            ) == b.volume_solid[t] * b.solids[t].params.mw_comp[j] * sum(
                 b.reactions[t].reaction_rate[r]
                 * b.config.reaction_package.rate_reaction_stoichiometry[r, "Sol", j]
                 for r in b.config.reaction_package.rate_reaction_idx
@@ -319,7 +319,7 @@ see reaction package for documentation.}""",
             else:
                 return 1 == sum(
                     b.solids[t].mass_frac_comp[j]
-                    for j in b.solids[t]._params.component_list
+                    for j in b.solids[t].params.component_list
                 )
 
         if self.config.energy_balance_type != EnergyBalanceType.none:
@@ -463,11 +463,6 @@ see reaction package for documentation.}""",
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-
-        # Get units meta data from property packages (only solid needed)
-        units_meta_solid = (
-            self.config.solid_property_package.get_metadata().get_derived_units
-        )
 
         # scale some variables
         if hasattr(self, "bed_diameter"):

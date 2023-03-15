@@ -10,6 +10,9 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
 
 import re
 
@@ -18,14 +21,6 @@ from pyomo.core.expr.sympy_tools import (
     _pyomo_operator_map,
     _configure_sympy,
 )
-
-try:
-    import sympy
-
-    _configure_sympy(sympy, True)
-except:
-    pass
-
 from pyomo.environ import ExternalFunction, Var, Expression, value, units as pu
 from pyomo.core.base.constraint import _ConstraintData, Constraint
 from pyomo.core.base.expression import _ExpressionData
@@ -34,6 +29,13 @@ from pyomo.core.expr.visitor import StreamBasedExpressionVisitor
 from pyomo.core.expr.numeric_expr import ExternalFunctionExpression
 from pyomo.core.expr import current as EXPR, native_types
 from pyomo.common.collections import ComponentMap
+
+try:
+    import sympy
+
+    _configure_sympy(sympy, True)
+except ImportError:
+    pass
 
 # TODO<jce> Look into things like sum operator and template expressions
 
@@ -160,13 +162,17 @@ class Pyomo2SympyVisitor(StreamBasedExpressionVisitor):
     def exitNode(self, node, values):
         if isinstance(node, ExternalFunctionExpression):
             # catch ExternalFunction
-            _op = self.object_map.getSympySymbol(node._fcn)
+            _op = self.object_map.getSympySymbol(
+                node._fcn  # pylint: disable=protected-access
+            )
         else:
             if node.__class__ is EXPR.UnaryFunctionExpression:
-                return _functionMap[node._name](values[0])
+                return _functionMap[node._name](  # pylint: disable=protected-access
+                    values[0]
+                )
             _op = _pyomo_operator_map.get(node.__class__, None)
         if _op is None:
-            return node._apply_operation(values)
+            return node._apply_operation(values)  # pylint: disable=protected-access
         else:
             return _op(*tuple(values))
 
@@ -206,7 +212,7 @@ def sympify_expression(expr):
     try:  # If I explicitly ask for a named expression then descend into it.
         if expr.is_named_expression_type():
             is_expr = True
-    except:
+    except AttributeError:
         pass
     if not is_expr:  # and not expr.is_named_expression_type():
         return object_map, ans
@@ -233,7 +239,7 @@ def _add_docs(object_map, docs, typ, head):
         object_map = [object_map]
 
     for om in object_map:
-        for i, sc in enumerate(om.sympyVars()):
+        for i, sc in enumerate(om.sympyVars()):  # pylint: disable=unused-variable
             c = om.getPyomoSymbol(sc)
             cdat = c
             c = c.parent_component()  # Document the parent for indexed comps
@@ -310,11 +316,11 @@ def document_constraints(
         to_doc.append(d["object_map"])
         try:
             sy = comp.latex_symbol
-        except:
+        except AttributeError:
             sy = None
         try:
             d["latex_expr"] = comp.latex_nice_expr
-        except:
+        except AttributeError:
             pass
         if sy is not None:
             if doc:
@@ -331,7 +337,7 @@ def document_constraints(
         to_doc.append(d["object_map"])
         try:
             return f"$${comp.latex_nice_expr}$$"
-        except:
+        except AttributeError:
             pass
         if comp.upper != comp.lower:
             if doc:
@@ -366,7 +372,7 @@ def document_constraints(
                 cs.append(f"**Fixed Var:** {c} = {value(c)}")
                 try:
                     sy = c.latex_symbol
-                except:
+                except AttributeError:
                     sy = None
                 if sy is not None:
                     cs.append(

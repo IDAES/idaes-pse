@@ -20,15 +20,14 @@ different state variables and the associated splits.
 
 __author__ = "Jaffer Ghouse"
 
-from pandas import DataFrame
 from enum import Enum
+from pandas import DataFrame
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
 from pyomo.environ import (
     Reference,
-    Expression,
     Var,
     Constraint,
     value,
@@ -49,9 +48,7 @@ from idaes.core import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import (
-    PropertyPackageError,
     ConfigurationError,
-    PropertyNotSupportedError,
     InitializationError,
 )
 from idaes.core.solvers import get_solver
@@ -61,11 +58,19 @@ _log = idaeslog.getLogger(__name__)
 
 
 class CondenserType(Enum):
+    """
+    Enum for supported condenser types.
+    """
+
     totalCondenser = 0
     partialCondenser = 1
 
 
 class TemperatureSpec(Enum):
+    """
+    Enum for temperature specifications.
+    """
+
     atBubblePoint = 0
     customTemperature = 1
 

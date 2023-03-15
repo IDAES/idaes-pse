@@ -10,6 +10,12 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
+
+# Model needs to access private flow terms
+# pylint: disable=protected-access
 
 import os
 import time as wall_clock
@@ -30,7 +36,6 @@ import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.su
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.steam_cycle_flowsheet as stc
 from idaes.core.util.dyn_utils import copy_values_at_time, copy_non_time_indexed_values
 import idaes.logger as idaeslog
-import os
 import idaes.core.util.tables as tables
 from idaes.core.util.tags import svg_tag, ModelTagGroup
 from idaes.core.solvers import get_solver
@@ -66,7 +71,7 @@ def set_scaling_factors(m):
         iscale.set_scaling_factor(ww.energy_holdup_metal, 1e-6)
         iscale.set_scaling_factor(ww.N_Re, 1e-6)
         iscale.set_scaling_factor(ww.pitch, 1e3)
-        for j, c in ww.hconv_lo_eqn.items():
+        for c in ww.hconv_lo_eqn.values():
             iscale.constraint_scaling_transform(c, 1e-2)
 
     iscale.set_scaling_factor(fs.aRoof.heat_fireside, 1e-7)

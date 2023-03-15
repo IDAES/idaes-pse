@@ -12,6 +12,12 @@
 #################################################################################
 """Generic Helmholtz EOS Functions and Parameters
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 __author__ = "John Eslick"
 
 import enum
@@ -45,12 +51,16 @@ _log = idaeslog.getLogger(__name__)
 _data_dir = os.path.join(idaes.bin_directory, "helm_data")
 _data_dir = os.path.join(_data_dir, "")
 
+# General Helmholtz functions return variables for all phases,
+# but single phase properties do not need all of these.
+# pylint: disable=W0612
+
 try:
     # When compiling these, I don't bother changing the extension based on OS,
     # so the file name is always ends in .so. It's fine.
     _flib = find_library("general_helmholtz_external.so")
     ctypes.cdll.LoadLibrary(_flib)
-except:
+except Exception:  # pylint: disable=W0703
     _flib = None
 
 
@@ -661,7 +671,7 @@ class HelmholtzThermoExpressions(object):
 
     @staticmethod
     def _sv_str(**kwargs):
-        a = [x for x in kwargs if kwargs[x] is not None]
+        a = [x for x, k in kwargs.items() if k is not None]
         return ", ".join(a)
 
     def add_funcs(self, names=None):
@@ -1630,6 +1640,7 @@ change.
                 f"Component {self.config.pure_component} not supported."
             )
         # This is imported here to avoid a circular import
+        # pylint: disable-next=import-outside-toplevel
         from idaes.models.properties.general_helmholtz.helmholtz_state import (
             HelmholtzStateBlock,
         )

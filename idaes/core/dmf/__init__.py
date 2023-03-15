@@ -20,14 +20,14 @@ __author__ = "Dan Gunter"
 
 import logging
 
+# DMF version is the same as IDAES version
+from idaes import __version__  # noqa
+
 from .dmfbase import DMF, DMFConfig  # noqa: F401
 from .dmfbase import create_configuration  # noqa: F401
 from .getver import get_version_info  # noqa: F401
 from .userapi import get_workspace  # noqa: F401
 from . import resource  # noqa: F401
-
-# DMF version is the same as IDAES version
-from idaes import __version__  # noqa
 
 
 # default log format

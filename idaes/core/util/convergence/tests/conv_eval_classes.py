@@ -15,14 +15,13 @@ Test classes for the convergence evaluation testing module
 
 Author: Carl Laird
 """
+# pylint: disable=missing-class-docstring
+
 import pyomo.environ as pe
 import idaes.core.util.convergence.convergence_base as cb
 
 
 class ConvEvalFixedVarMutableParam(cb.ConvergenceEvaluation):
-    def __init__(self):
-        super(ConvEvalFixedVarMutableParam, self).__init__()
-
     def get_specification(self):
         s = cb.ConvergenceEvaluationSpecification()
 
@@ -59,9 +58,6 @@ class ConvEvalFixedVarMutableParam(cb.ConvergenceEvaluation):
 
 
 class ConvEvalFixedVarImmutableParam(ConvEvalFixedVarMutableParam):
-    def __init__(self):
-        super(ConvEvalFixedVarImmutableParam, self).__init__()
-
     def get_initialized_model(self):
         # create a model with two inputs for the convergence evaluation
         # one that is a fixed variable and one that is a mutable param
@@ -82,9 +78,6 @@ class ConvEvalFixedVarImmutableParam(ConvEvalFixedVarMutableParam):
 
 
 class ConvEvalUnfixedVarMutableParam(ConvEvalFixedVarMutableParam):
-    def __init__(self):
-        super(ConvEvalUnfixedVarMutableParam, self).__init__()
-
     def get_initialized_model(self):
         # create a model with two inputs for the convergence evaluation
         # one that is a fixed variable and one that is a mutable param

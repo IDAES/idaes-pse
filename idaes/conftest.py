@@ -10,8 +10,12 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-import pytest
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
+
 import sys
+import pytest
 
 ####
 # Uncomment this to collect list of all test files
@@ -83,7 +87,7 @@ def _skip_for_unsupported_platforms(item, all_platforms=None, negate_tag=None):
     if (excluded_platforms and negate_tag(plat) in excluded_platforms) or (
         supported_platforms and plat not in supported_platforms
     ):
-        pytest.skip("cannot run on platform {}".format(plat))
+        pytest.skip(f"cannot run on platform {plat}")
 
 
 def _validate_required_markers(item, required_markers=None, expected_count=1):

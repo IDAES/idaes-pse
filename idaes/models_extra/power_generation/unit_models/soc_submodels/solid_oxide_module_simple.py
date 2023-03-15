@@ -35,6 +35,12 @@ Expressions:
     - ``electrical_work[t]``: Rate of energy added to module. Greater than zero means energy added to module
       (electrolysis mode) and less than zero means energy removed from module (fuel cell mode)
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 __author__ = "Douglas Allan"
 
 from pyomo.common.config import ConfigValue, ConfigBlock
@@ -116,10 +122,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
 
     def build(self):
         super().build()
-        has_holdup = self.config.has_holdup
-        dynamic = self.config.dynamic
         tset = self.flowsheet().config.time
-        t0 = tset.first()
 
         self.number_cells = pyo.Var(
             initialize=1e5,
@@ -262,11 +265,8 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         current_density_guess=None,
         temperature_guess=None,
     ):
-        t0 = self.flowsheet().time.first()
-
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
-        tset = self.flowsheet().config.time
 
         solver_obj = get_solver(solver, optarg)
 

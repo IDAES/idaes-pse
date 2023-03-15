@@ -297,7 +297,7 @@ class ThermalGeneratorModelData(GeneratorModelData):
 
         if len(production_cost_bid_pairs) < 2:
             raise ValueError(
-                f"A valid production_cost_bid_pairs requires at least 2 points"
+                "A valid production_cost_bid_pairs requires at least 2 points"
             )
 
         if (

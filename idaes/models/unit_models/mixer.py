@@ -58,11 +58,19 @@ _log = idaeslog.getLogger(__name__)
 
 # Enumerate options for balances
 class MixingType(Enum):
+    """
+    Enum of supported mixing types.
+    """
+
     none = 0
     extensive = 1
 
 
 class MomentumMixingType(Enum):
+    """
+    Enum of supported approaches to pressure mixing.
+    """
+
     none = 0
     minimize = 1
     equality = 2
@@ -850,10 +858,8 @@ objects linked to all inlet states and the mixed state,
                     # If fixed, use current value
                     # otherwise calculate guess from mixed state
                     if not s_vars[s][k].fixed:
-                        for i in range(len(i_block_list)):
-                            i_vars.append(
-                                getattr(i_block_list[i][t], s_vars[s].local_name)
-                            )
+                        for ib in i_block_list:
+                            i_vars.append(getattr(ib[t], s_vars[s].local_name))
 
                         if s == "pressure":
                             # If pressure, use minimum as initial guess
@@ -1024,7 +1030,7 @@ objects linked to all inlet states and the mixed state,
             for t, c in self.enthalpy_mixing_equations.items():
 
                 def scale_gen():
-                    for v in self.mixed_state[t].phase_list:
+                    for p in self.mixed_state[t].phase_list:
                         yield self.mixed_state[t].get_enthalpy_flow_terms(p)
 
                 s = iscale.min_scaling_factor(scale_gen(), default=1)

@@ -16,6 +16,12 @@ Methods for calculating fugacity of Henry's Law components
 For now, only mole fraction basis (Kpx) form is fully supported. The remainder
 is prototype code
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from enum import Enum
 
 from pyomo.environ import log, Var
@@ -181,6 +187,8 @@ def henry_units(henry_type, units):
 
 
 class ConstantH:
+    """Methods for invariant Henry constant"""
+
     @staticmethod
     def build_parameters(cobj, p, h_type):
         b = cobj.parent_block()

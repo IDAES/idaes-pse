@@ -17,6 +17,8 @@ what could be considered a typical SCPC plant, producing around 620 MW gross.
 This model is for demonstration and tutorial purposes only. Before looking at the
 model, it may be useful to look at the process flow diagram (PFD).
 """
+# Model needs to access private flow terms
+# pylint: disable=protected-access
 
 __author__ = "John Eslick, Maojian Wang"
 
@@ -629,13 +631,13 @@ def set_model_input(m):
     m.fs.turb.throttle_valve[3].valve_opening.fix(0.9)
     m.fs.turb.throttle_valve[4].valve_opening.fix(0.9)
     # Set the efficiency and pressure ratios of stages other than inlet and outlet
-    for i, s in m.fs.turb.hp_stages.items():
+    for s in m.fs.turb.hp_stages.values():
         s.ratioP.fix(0.80)
         s.efficiency_isentropic.fix(0.9)
-    for i, s in m.fs.turb.ip_stages.items():
+    for s in m.fs.turb.ip_stages.values():
         s.ratioP.fix(0.78)
         s.efficiency_isentropic.fix(0.9)
-    for i, s in m.fs.turb.lp_stages.items():
+    for s in m.fs.turb.lp_stages.values():
         s.ratioP[:].fix(0.76)
         s.efficiency_isentropic[:].fix(0.9)
     ############################################################################

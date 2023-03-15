@@ -49,6 +49,13 @@ Instances of ``Var`` that must be fixed:
     - ``resistivity_thermal_exponent_dividend``: Parameter divided by temperature in resistivity equation, in K.
       Would be something like (reduced) activation energy, but it can be both negative and positive.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 __author__ = "John Eslick, Douglas Allan"
 
 from pyomo.common.config import ConfigValue, Bool, ListOf
@@ -764,7 +771,6 @@ class PorousConductiveSlabData(UnitModelBlockData):
         pressure_guess=None,
         mole_frac_guess=None,
     ):
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         comps = self.component_list
@@ -932,7 +938,6 @@ class PorousConductiveSlabData(UnitModelBlockData):
         sR = 1e-1  # Scaling factor for R
         sD = 1e5  # Heuristic scaling factor for diffusion coefficient
         sy_def = 10  # Mole frac comp scaling
-        sh = 1e-2  # Heat xfer coeff
         sH = 1e-4  # Enthalpy/int energy
         sk = 0.1  # Fudge factor to scale temperature_deviation_x
         sLx = sgsf(self.length_x, len(self.ixnodes) / self.length_x.value)
@@ -961,7 +966,7 @@ class PorousConductiveSlabData(UnitModelBlockData):
                     ssf(self.temperature_deviation_x1, sq1 * sLx / sk)
 
                 sqx = min(sq0, sq1)
-                sqz = 10 * sqx  # Heuristic
+                # sqz = 10 * sqx  # Heuristic
 
                 smaterial_flux_x = {}
                 for j in self.component_list:

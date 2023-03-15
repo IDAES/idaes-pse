@@ -11,6 +11,9 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
 
 import importlib
 import inspect
@@ -41,8 +44,8 @@ def declare_beta_module(message=None):
 
     if message is None:
         message = (
-            "Module '%s' is in beta and must be imported using "
-            "idaes.beta.import_beta()." % (mod_name,)
+            f"Module '{mod_name}' is in beta and must be imported using "
+            f"idaes.beta.import_beta()."
         )
     raise ImportError(message)
 
@@ -69,17 +72,14 @@ def import_beta(name, package=None):
                 # Remove this (BETA) module from sys.modules so that
                 # subsequent imports will re-trigger the
                 # declare_beta_module test in the module.
-                print("removing %s" % (absolute_name,))
+                print(f"removing {absolute_name}")
                 del sys.modules[absolute_name]
             else:
                 idaeslog.getLogger(absolute_name).info(
-                    "Module '%s' imported module '%s' as a Beta module.  "
-                    "This module is not declared beta and can be imported "
-                    "using Python's normal import mechanisms."
-                    % (
-                        _caller_module_name(),
-                        absolute_name,
-                    )
+                    f"Module '{_caller_module_name()}' imported module "
+                    f"'{absolute_name}' as a Beta module. "
+                    f"This module is not declared beta and can be imported "
+                    f"using Python's normal import mechanisms."
                 )
                 # Remove this (standard) module from the
                 # _imported_beta_modules cache

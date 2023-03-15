@@ -13,11 +13,13 @@
 """
 Base command for 'idaes' commandline script
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 __author__ = "John Eslick"
 
-import click
 import logging
+import click
 
 # separate command logging from normal IDAES logging
 _log = logging.getLogger("idaes.commands")
@@ -55,9 +57,9 @@ def how_to_report_an_error(embed=False):
         "message, in the report.",
     ]
     if not embed:
-        bar = "-" * 50
-        msg.insert(0, bar)
-        msg.append(bar)
+        bar_ = "-" * 50
+        msg.insert(0, bar_)
+        msg.append(bar_)
     return "\n".join(msg)
 
 
@@ -88,7 +90,7 @@ def command_base(verbose, quiet):
 
 
 @command_base.command(help="Show IDAES copyright information")
-def copyright():
+def copyright():  # pylint: disable=W0622
     click.echo(
         """
 ================================================================================
@@ -108,6 +110,8 @@ def copyright():
 
 @command_base.command(help="Show how long it takes to import command modules")
 def import_time(name="import-time"):
+    # Avoid circular import
+    # pylint: disable=import-outside-toplevel
     from idaes.commands import _command_import_total_time
 
     click.echo(f"Time: {_command_import_total_time}")

@@ -10,14 +10,17 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
 
 import time
 
+# Need to time imports, so must start timer before importing
+# pylint: disable=wrong-import-position
 _command_import_start_time = time.time()
 
-from idaes.commands.base import command_base as cb
-
 import pkgutil
+from idaes.commands.base import command_base as cb
 
 # import all the commands
 for loader, module_name, is_pkg in pkgutil.walk_packages(__path__):

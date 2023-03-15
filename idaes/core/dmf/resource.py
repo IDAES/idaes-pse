@@ -11,8 +11,12 @@
 # for full copyright and license information.
 #################################################################################
 """
-Resource representaitons.
+Resource representations.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 # stdlib
 import abc
 import argparse
@@ -343,6 +347,7 @@ class Resource:
             empty string.
             If there are no tables, this will return an empty dict.
         """
+        # pylint: disable-next=import-outside-toplevel
         from idaes.core.dmf.tables import Table  # avoid circular import
 
         try:
@@ -674,6 +679,8 @@ class Resource:
             ValueError: if file_format is "infer" but it cannot be inferred
             IOError: if reading the data file fails
         """
+        # Avoid circular import
+        # pylint: disable-next=import-outside-toplevel
         from idaes.core.dmf.tables import Table
 
         table = Table.read_table(path, inline, file_format)

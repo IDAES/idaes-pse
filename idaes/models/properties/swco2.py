@@ -10,6 +10,9 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+Span-Wager property package for CO2.
+"""
 
 __author__ = "John Eslick"
 
@@ -17,6 +20,9 @@ __author__ = "John Eslick"
 from idaes.core import declare_process_block_class
 
 import idaes.logger as idaeslog
+
+# Some of these are convenience imports
+# pylint: disable=W0611
 from idaes.models.properties.general_helmholtz import (
     helmholtz_available,
     HelmholtzParameterBlockData,
@@ -65,8 +71,12 @@ def htpx(T=None, P=None, x=None):
 
 @declare_process_block_class("SWCO2ParameterBlock")
 class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
+    """Span-Wager Parameter Block class"""
+
     CONFIG = HelmholtzParameterBlockData.CONFIG()
     CONFIG.pure_component = "CO2"
+    # TODO: Might need to refactor this
+    # pylint: disable=protected-access
     CONFIG.get("pure_component")._default = "CO2"
 
 
@@ -75,4 +85,4 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
     block_class=_StateBlock,
 )
 class SWCO2StateBlockData(HelmholtzStateBlockData):
-    pass
+    """Span-Wager State Block class."""

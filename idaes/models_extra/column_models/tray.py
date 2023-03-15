@@ -24,14 +24,10 @@ have a side vapor draw if required.
 
 __author__ = "Jaffer Ghouse"
 
-import idaes.logger as idaeslog
-
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
 from pyomo.environ import (
-    Reference,
-    Expression,
     Var,
     Set,
     value,
@@ -43,12 +39,11 @@ from idaes.core import declare_process_block_class, UnitModelBlockData, useDefau
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import (
     ConfigurationError,
-    PropertyPackageError,
-    PropertyNotSupportedError,
     InitializationError,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
+import idaes.logger as idaeslog
 from idaes.models_extra.column_models.util import make_phase_split
 
 _log = idaeslog.getLogger(__name__)

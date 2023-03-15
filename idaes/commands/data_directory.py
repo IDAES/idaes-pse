@@ -11,12 +11,17 @@
 # for full copyright and license information.
 #################################################################################
 """Commandline Utilities for Managing the IDAES Data Directory"""
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: protected access issues
+# pylint: disable=protected-access
 
 __author__ = "John Eslick"
 
 import os
-import idaes
 import click
+import idaes
 from idaes.commands import cb
 
 

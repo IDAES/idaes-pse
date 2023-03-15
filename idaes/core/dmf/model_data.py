@@ -10,7 +10,6 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
 """
 This module contains functions to read and manage data for use in parameter
 esitmation, data reconciliation, and validation.
@@ -20,14 +19,15 @@ __author__ = "John Eslick"
 
 import logging
 import csv
+import os
+import warnings
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import pint
-import os
 
 import pyomo.environ as pyo
-import warnings
 
 try:
     import seaborn as sns
@@ -293,9 +293,10 @@ def update_metadata_model_references(model, metadata):
     Returns:
         None
     """
-    for tag, md in metadata.items():
+    for tag, md in metadata.items():  # pylint: disable=unused-variable
         if md["reference_string"]:
             try:
+                # pylint: disable=W0123
                 md["reference"] = pyo.Reference(
                     eval(md["reference_string"], {"m": model})
                 )
@@ -390,7 +391,7 @@ def read_data(
             ambient_pressure = np.array(df[ambient_pressure])
         except KeyError:
             _log.exception(
-                "Tag '{}' does not exist for ambient pressure".format(ambient_pressure)
+                f"Tag '{ambient_pressure}' does not exist for ambient pressure"
             )
             raise
 

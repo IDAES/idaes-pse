@@ -29,6 +29,9 @@ from .heat_exchanger import HeatExchangerData
     "HeatExchangerLumpedCapacitance", doc="0D heat exchanger for transient simulations"
 )
 class HeatExchangerLumpedCapacitanceData(HeatExchangerData):
+    """
+    Lumped capacitance HX unit class.
+    """
 
     CONFIG = HeatExchangerData.CONFIG(implicit=True)
 
@@ -37,7 +40,7 @@ class HeatExchangerLumpedCapacitanceData(HeatExchangerData):
         ConfigValue(
             default=useDefault,
             domain=DefaultBool,
-            doc="""Indicates whether heat holdup in the wall material should 
+            doc="""Indicates whether heat holdup in the wall material should
 be included in the overall energy balance,
 **default** - useDefault.
 **Valid values:** {

@@ -10,20 +10,24 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
 
 __author__ = "Oluwamayowa Amusat"
 
 # Imports from the python standard library
 import os.path
+import pickle
 
 # Imports from third parties
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-import pickle
-from pyomo.core import Param, exp
 from scipy.optimize import basinhopping
 import scipy.optimize as opt
+
+from pyomo.core import Param, exp
 
 # Imports from IDAES namespace
 from idaes.core.surrogate.pysmo.sampling import FeatureScaling as fs
@@ -242,7 +246,7 @@ class KrigingModel:
         """
         try:
             inverse_x = np.linalg.inv(x)
-        except np.linalg.LinAlgError as LAE:
+        except np.linalg.LinAlgError:
             inverse_x = np.linalg.pinv(x)
         return inverse_x
 
@@ -341,31 +345,34 @@ class KrigingModel:
             # log_like = (0.5 * ns * np.log(ssd)) + (0.5 * np.log(np.abs(np.linalg.det(cov_mat))))
             log_like = (0.5 * ns * np.log(ssd)) + (0.5 * lndetcov)
             conc_log_like = log_like[0, 0]
-        except:  # When Cholesky fails - non-positive definite covariance matrix
+        except Exception:  # pylint: disable=W0703
+            # When Cholesky fails - non-positive definite covariance matrix
             conc_log_like = 1e4
         return conc_log_like
 
     def numerical_gradient(self, var_vector, x, y, p):
         """
-        The numerical_gradient method calculates numerical gradients for the Kriging hyperparameters via central differencing,
+        The numerical_gradient method calculates numerical gradients for the Kriging hyperparameters
+        via central differencing,
 
         grad(theta) = (f(theta + eps) - f(theta - eps))/(2 * eps)
 
         Args:
-            var_vector(NumPy Array)        : Numpy array containing the Kriging paramaters (Kriging weights and regularization parameter)
-            x(NumPy Array)                 : Scaled version of input features/variables
-            y(NumPy Array)                 : Output variable y (unscaled)
-            p(float)                       : Kriging model exponent (fixed to 2) to ensure model smoothness
+            var_vector(NumPy Array): Numpy array containing the Kriging parameters (Kriging weights and
+                regularization parameter)
+            x(NumPy Array): Scaled version of input features/variables
+            y(NumPy Array): Output variable y (unscaled)
+            p(float): Kriging model exponent (fixed to 2) to ensure model smoothness
 
         Returns:
-            grad_vec(NumPy Array)          : Array of the gradients of the variables in var_vector
+            grad_vec(NumPy Array): Array of the gradients of the variables in var_vector
 
         """
         eps = 1e-6
         grad_vec = np.zeros(
             len(var_vector),
         )
-        for i in range(0, len(var_vector)):
+        for i in range(0, len(var_vector)):  # pylint: disable=consider-using-enumerate
             var_vector_plus = np.copy(var_vector)
             var_vector_plus[i] = var_vector[i] + eps
             var_vector_minus = np.copy(var_vector)
@@ -621,7 +628,11 @@ class KrigingModel:
             optimal_ymu,
         ) = self.optimal_parameter_evaluation(bh_results.x, p)
         # Training performance
-        training_ss_error, rmse_error, y_training_predictions = self.error_calculation(
+        (
+            training_ss_error,  # pylint: disable=unused-variable
+            rmse_error,
+            y_training_predictions,
+        ) = self.error_calculation(
             optimal_theta,
             p,
             optimal_mean,

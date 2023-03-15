@@ -13,6 +13,9 @@
 """
 Test utility functions
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 # standard library
 import importlib
 import logging
@@ -169,7 +172,9 @@ class TempDir(object):
         if self._d is not None:
             # remove files in dir
             rmdirs = []
-            for dirpath, subdirs, files in os.walk(self._d):
+            for dirpath, subdirs, files in os.walk(  # pylint: disable=unused-variable
+                self._d
+            ):
                 for f in files:
                     os.unlink(os.path.join(dirpath, f))
                 rmdirs.append(dirpath)
@@ -191,11 +196,11 @@ def tmp_dmf():
     dmf = dmfbase.DMF(path=tmpdir, create=True)
     yield dmf
     removed = False
-    for i in range(3):
+    for i in range(3):  # pylint: disable=unused-variable
         try:
             shutil.rmtree(tmpdir)
             removed = True
-        except Exception as err:
+        except Exception:  # pylint: disable=W0703
             time.sleep(1)
     if not removed:
         warnings.warn(f"failed to remove temporary directory: {tmpdir}")

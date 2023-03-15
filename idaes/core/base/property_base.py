@@ -13,6 +13,8 @@
 """
 This module contains classes for property blocks and property parameter blocks.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 import sys
 
@@ -32,9 +34,7 @@ from idaes.core.base.phases import PhaseData
 from idaes.core.base.components import ComponentData
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import (
-    BurntToast,
     ConfigurationError,
-    PropertyNotSupportedError,
     PropertyPackageError,
 )
 from idaes.core.util.misc import add_object_reference
@@ -545,22 +545,32 @@ should be constructed in this state block,
 
     @property
     def component_list(self):
+        # TODO: Should refactor parent so this is not private
+        # pylint: disable-next=protected-access
         return self.parent_component()._return_component_list()
 
     @property
     def phase_list(self):
+        # TODO: Should refactor parent so this is not private
+        # pylint: disable-next=protected-access
         return self.parent_component()._return_phase_list()
 
     @property
     def phase_component_set(self):
+        # TODO: Should refactor parent so this is not private
+        # pylint: disable-next=protected-access
         return self.parent_component()._return_phase_component_set()
 
     @property
     def has_inherent_reactions(self):
+        # TODO: Should refactor parent so this is not private
+        # pylint: disable-next=protected-access
         return self.parent_component()._has_inherent_reactions()
 
     @property
     def include_inherent_reactions(self):
+        # TODO: Should refactor parent so this is not private
+        # pylint: disable-next=protected-access
         return self.parent_component()._include_inherent_reactions()
 
     def build(self):
@@ -587,9 +597,9 @@ should be constructed in this state block,
         force users to overload this.
         """
         raise NotImplementedError(
-            "{} property package has not implemented the"
-            " define_state_vars method. Please contact "
-            "the property package developer."
+            f"{self.name} property package has not implemented the"
+            f" define_state_vars method. Please contact "
+            f"the property package developer."
         )
 
     def define_port_members(self):

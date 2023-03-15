@@ -10,6 +10,9 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
 
 __author__ = "John Eslick, Douglas Allan"
 
@@ -146,12 +149,8 @@ def _interpolate_channel(iz, ifaces, nodes, faces, phi_func, phi_inlet, opposite
     # I don't always need these, but it doesn't take long to calculate them
     if not opposite_flow:
         izu = iz - 1  # adjacent node upstream of the face
-        izuu = iz - 2  # node upstream adacjent to node upstream adjacent to face
-        izd = iz  # downstream node adjacent to face
     else:
         izu = iz  # adjacent node upstream of the face
-        izuu = iz + 1  # node upstream adacjent to node upstream adjacent to face
-        izd = iz - 1  # downstream node adjacent to face
     if iz == ifaces.first() and not opposite_flow:
         return phi_inlet
     if iz == ifaces.last() and opposite_flow:

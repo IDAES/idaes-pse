@@ -22,6 +22,9 @@ Costing package based on methods from:
 Currently, this costing package only includes methods for capital costing of
 unit operations.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 import pyomo.environ as pyo
 
 # TODO: HX1D not supported - does not define area (has shell_area & tube_area)
@@ -234,7 +237,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         # TODO: Do we have any process level methods to add here?
 
     @staticmethod
-    def initialize_build(self):
+    def initialize_build(*args, **kwargs):
         """
         Here we can add intialization steps for the things we built in
         build_process_costs.

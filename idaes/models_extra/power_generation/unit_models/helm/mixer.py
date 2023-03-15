@@ -404,7 +404,7 @@ between flow and pressure driven simulations.}""",
         for t, v in self.outlet.pressure.items():
             if not v.fixed:
                 v.value = min(
-                    [value(self.inlet_blocks[i][t].pressure) for i in self.inlet_blocks]
+                    [value(i[t].pressure) for i in self.inlet_blocks.values()]
                 )
         self.outlet.unfix()
 
@@ -414,7 +414,7 @@ between flow and pressure driven simulations.}""",
         ):
             # If using the equal pressure constraint fix the outlet and free
             # the inlet pressures, this is typical for pressure driven flow
-            for i, b in self.inlet_blocks.items():
+            for b in self.inlet_blocks.values():
                 for bdat in b.values():
                     bdat.pressure.unfix()
             self.outlet.pressure.fix()
@@ -438,6 +438,6 @@ between flow and pressure driven simulations.}""",
                 s = iscale.get_scaling_factor(self.mixed_state[t].pressure)
                 iscale.constraint_scaling_transform(c, s, overwrite=False)
         if hasattr(self, "pressure_equality_constraints"):
-            for (t, i), c in self.pressure_equality_constraints.items():
+            for (t, _), c in self.pressure_equality_constraints.items():
                 s = iscale.get_scaling_factor(self.mixed_state[t].pressure)
                 iscale.constraint_scaling_transform(c, s, overwrite=False)

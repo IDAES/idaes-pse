@@ -10,10 +10,10 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
-__author__ = "John Eslick"
-
 """Transformation to replace variables with other variables."""
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.core.base.transformation import TransformationFactory
 from pyomo.core.plugins.transform.hierarchy import NonIsomorphicTransformation
 from pyomo.core.expr import current as EXPR
@@ -22,6 +22,9 @@ from pyomo.core.base.var import _GeneralVarData, Var
 from pyomo.core.base.constraint import Constraint
 from pyomo.core.base.expression import Expression
 from pyomo.core.base.objective import Objective
+
+
+__author__ = "John Eslick"
 
 
 def _is_var(v):

@@ -55,6 +55,10 @@ _log = idaeslog.getLogger(__name__)
 
 
 class HeatExchangerFlowPattern(Enum):
+    """
+    Enum of supported flow patterns for heat exchangers.
+    """
+
     countercurrent = 1
     cocurrent = 2
     crossflow = 3
@@ -661,7 +665,7 @@ class HeatExchangerData(UnitModelBlockData):
             for i in self.hot_side.heat:
                 self.hot_side.heat[i].value = s1_duty
         else:
-            cd_fixed = True
+            cs_fixed = True
             for i in self.hot_side.heat:
                 self.hot_side.heat[i].set_value(self.cold_side.heat[i])
 

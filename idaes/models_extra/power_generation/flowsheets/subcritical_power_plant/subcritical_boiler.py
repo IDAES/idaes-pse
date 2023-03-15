@@ -28,7 +28,13 @@ feedwater pump), and steam outlet to superheaters.
 For a detailed description see Jupyter Notebook
 authors: Boiler Subsystem Team (J. Ma, M. Zamarripa)
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 import os
+
+# import plotting libraries
+import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
 import pyomo.environ as pyo
@@ -54,9 +60,6 @@ from idaes.models_extra.power_generation.unit_models.waterwall_section import (
 from idaes.models_extra.power_generation.properties.flue_gas_ideal import (
     FlueGasParameterBlock,
 )
-
-# import plotting libraries
-import matplotlib.pyplot as plt
 
 _log = idaeslog.getModelLogger(__name__)
 

@@ -17,6 +17,12 @@ particular to the CLI.
 Call functions defined in 'api' module to handle logic
 that is common to the API and CLI.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: protected access issues
+# pylint: disable=protected-access
+
 # stdlib
 from datetime import datetime
 import glob
@@ -64,10 +70,10 @@ def workspace_init(dirname, metadata):
         raise CommandError("init", "parse config", str(err))
     except WorkspaceError as err:
         raise CommandError("init", "initialize workspace", str(err))
-    _log.info("Created new workspace in: {}".format(dirname))
+    _log.info(f"Created new workspace in: {dirname}")
     if metadata:
         ws.set_meta(metadata)
-        _log.info("Set metadata for: {}".format(strlist(list(metadata))))
+        _log.info(f"Set metadata for: {strlist(list(metadata))}")
 
 
 def workspace_info(dirname):
@@ -181,7 +187,7 @@ def workspace_import(path, patterns, exit_on_error):
         for filename in glob.glob(pattern):
             # Skip directories
             if os.path.isdir(filename):
-                _log.warning('Not importing directory "{}"'.format(filename))
+                _log.warning(f'Not importing directory "{filename}"')
                 continue
             # For Jupyter Notebooks, first create a (temporary)
             # JSON resource from the original data.

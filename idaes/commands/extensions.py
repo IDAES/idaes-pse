@@ -11,12 +11,19 @@
 # for full copyright and license information.
 #################################################################################
 """Commandline Utilities for Managing the IDAES Data Directory"""
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: protected access issues
+# pylint: disable=protected-access
 
 __author__ = "John Eslick"
 
 import os
-import click
 import logging
+
+import click
+
 import idaes
 import idaes.commands.util.download_bin
 from idaes.commands import cb
@@ -186,9 +193,9 @@ def hash_extensions(release, path):
 @cb.command(name="bin-platform", help="Show the compatible binary build.")
 @click.option("--distro", default="auto")
 def bin_platform(distro):
-    fd, arch = idaes.commands.util.download_bin._get_file_downloader(False, None)
+    fd, _ = idaes.commands.util.download_bin._get_file_downloader(False, None)
     try:
-        arch, platform = idaes.commands.util.download_bin._get_arch_and_platform(
+        _, platform = idaes.commands.util.download_bin._get_arch_and_platform(
             fd, distro
         )
         platform = idaes.commands.util.download_bin._get_release_platform(platform)

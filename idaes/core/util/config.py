@@ -42,14 +42,16 @@ def is_physical_parameter_block(val):
         ConfigurationError if val is not an instance of PhysicalParameterBlock
         or useDefault
     """
+    # Top-level import creates circular import
+    # pylint: disable=import-outside-toplevel
     from idaes.core.base.property_base import PhysicalParameterBlock
 
     if isinstance(val, PhysicalParameterBlock) or val == useDefault:
         return val
     else:
         _log.error(
-            "Property package argument {} should == useDefault or "
-            "be an instance of PhysicalParameterBlock".format(val)
+            f"Property package argument {val} should == useDefault or "
+            f"be an instance of PhysicalParameterBlock"
         )
         raise ConfigurationError(
             """Property package argument should be an instance
@@ -66,6 +68,8 @@ def is_reaction_parameter_block(val):
     Returns:
         ConfigurationError if val is not an instance of ReactionParameterBlock
     """
+    # Top-level import creates circular import
+    # pylint: disable=import-outside-toplevel
     from idaes.core.base.reaction_base import ReactionParameterBlock
 
     if isinstance(val, ReactionParameterBlock):
@@ -87,6 +91,8 @@ def is_state_block(val):
         ConfigurationError if val is not an instance of StateBlock
         or None
     """
+    # Top-level import creates circular import
+    # pylint: disable=import-outside-toplevel
     from idaes.core.base.property_base import StateBlock
 
     if isinstance(val, StateBlock) or val is None:

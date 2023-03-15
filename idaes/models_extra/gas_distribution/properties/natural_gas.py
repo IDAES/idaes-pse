@@ -19,6 +19,8 @@ Data sources:
         Operations. V. Zavala, 2014, Comp. Chem. Eng.
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
 
 from pyomo.core.base.units_container import units as pyunits
 from pyomo.core.base.var import Var
@@ -49,7 +51,9 @@ _log = idaeslog.getLogger(__name__)
 
 @declare_process_block_class("NaturalGasParameterBlock")
 class NaturalGasParameterBlockData(PhysicalParameterBlock):
-    """ """
+    """
+    Property package for natural gas with a single pseudo-component.
+    """
 
     def build(self):
         super(NaturalGasParameterBlockData, self).build()
@@ -92,7 +96,6 @@ class NaturalGasParameterBlockData(PhysicalParameterBlock):
         kgkmolK = pyunits.kg / pyunits.kmol / pyunits.K
         kmolm3 = pyunits.kmol / pyunits.m**3
         kgm3 = pyunits.kg / pyunits.m**3
-        mps = pyunits.m / pyunits.s
         kmolhr = pyunits.kmol / pyunits.hr
         obj.add_properties(
             {

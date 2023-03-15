@@ -13,8 +13,11 @@
 """
 Sub-methods for eNRTL activity coefficient method.
 
-Includes temperature dependance rules for alpha and tau
+Includes temperature dependence rules for alpha and tau
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import Reals, units as pyunits, Var
 
 from idaes.core.util.exceptions import BurntToast, ConfigurationError
@@ -25,6 +28,8 @@ _log = idaeslog.getLogger(__name__)
 
 
 class ConstantAlpha(object):
+    """Class for methods assuming constant alpha"""
+
     @staticmethod
     def build_parameters(b):
         param_block = b.parent_block()
@@ -105,6 +110,8 @@ class ConstantAlpha(object):
 
 
 class ConstantTau(object):
+    """Class for methods assuming consant tau"""
+
     @staticmethod
     def build_parameters(b):
         param_block = b.parent_block()

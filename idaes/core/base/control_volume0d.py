@@ -13,6 +13,12 @@
 """
 Base class for control volumes.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# We use some private attributes here to hide these from the user
+# pylint: disable=protected-access
+
 __author__ = "Andrew Lee"
 
 # Import Pyomo libraries
@@ -63,19 +69,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
     momentum balances. The form of the terms used in these constraints is
     specified in the chosen property package.
     """
-
-    def build(self):
-        """
-        Build method for ControlVolume0DBlock blocks.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # Call build method from base class
-        super(ControlVolume0DBlockData, self).build()
 
     def add_geometry(self):
         """

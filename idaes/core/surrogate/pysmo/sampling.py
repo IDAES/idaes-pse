@@ -10,15 +10,16 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
-from __future__ import division, print_function
-from six import string_types
-
-# from builtins import int, str
-import numpy as np
-import pandas as pd
 import warnings
 import itertools
+
+import numpy as np
+import pandas as pd
 
 __author__ = "Oluwamayowa Amusat"
 
@@ -512,7 +513,7 @@ class LatinHypercubeSampling(SamplingMethods):
             sampling_type = "creation"
             self.sampling_type = sampling_type
             print("Creation-type sampling will be used.")
-        elif not isinstance(sampling_type, string_types):
+        elif not isinstance(sampling_type, str):
             raise Exception("Invalid sampling type entry. Must be of type <str>.")
         elif (sampling_type.lower() == "creation") or (
             sampling_type.lower() == "selection"
@@ -626,7 +627,7 @@ class LatinHypercubeSampling(SamplingMethods):
             sample_points_vector(NumPy Array): Array containing the columns of the random samples generated in each strata.
         """
 
-        ns, nf = np.shape(self.x_data)
+        ns, nf = np.shape(self.x_data)  # pylint: disable=unused-variable
         sample_points_vector = np.zeros(
             (self.number_of_samples, nf)
         )  # Array containing points in each interval for each variable
@@ -752,7 +753,7 @@ class UniformSampling(SamplingMethods):
             sampling_type = "creation"
             self.sampling_type = sampling_type
             print("Creation-type sampling will be used.")
-        elif not isinstance(sampling_type, string_types):
+        elif not isinstance(sampling_type, str):
             raise Exception("Invalid sampling type entry. Must be of type <str>.")
         elif (sampling_type.lower() == "creation") or (
             sampling_type.lower() == "selection"
@@ -932,7 +933,7 @@ class HaltonSampling(SamplingMethods):
             sampling_type = "creation"
             self.sampling_type = sampling_type
             print("Creation-type sampling will be used.")
-        elif not isinstance(sampling_type, string_types):
+        elif not isinstance(sampling_type, str):
             raise Exception("Invalid sampling type entry. Must be of type <str>.")
         elif (sampling_type.lower() == "creation") or (
             sampling_type.lower() == "selection"
@@ -1110,7 +1111,7 @@ class HammersleySampling(SamplingMethods):
             sampling_type = "creation"
             self.sampling_type = sampling_type
             print("Creation-type sampling will be used.")
-        elif not isinstance(sampling_type, string_types):
+        elif not isinstance(sampling_type, str):
             raise Exception("Invalid sampling type entry. Must be of type <str>.")
         elif (sampling_type.lower() == "creation") or (
             sampling_type.lower() == "selection"
@@ -1218,7 +1219,7 @@ class HammersleySampling(SamplingMethods):
         sample_points[:, 0] = (
             np.arange(0, self.number_of_samples)
         ) / self.number_of_samples
-        for i in range(0, len(prime_list)):
+        for i in range(0, len(prime_list)):  # pylint: disable=consider-using-enumerate
             sample_points[:, i + 1] = self.data_sequencing(
                 self.number_of_samples, prime_list[i]
             )
@@ -1299,7 +1300,7 @@ class CVTSampling(SamplingMethods):
             sampling_type = "creation"
             self.sampling_type = sampling_type
             print("Creation-type sampling will be used.")
-        elif not isinstance(sampling_type, string_types):
+        elif not isinstance(sampling_type, str):
             raise Exception("Invalid sampling type entry. Must be of type <str>.")
         elif (sampling_type.lower() == "creation") or (
             sampling_type.lower() == "selection"
@@ -1391,7 +1392,8 @@ class CVTSampling(SamplingMethods):
                 "Tolerance too tight. CVT algorithm may take long time to converge."
             )
         elif (tolerance < 0.1) and (tolerance > 1e-9):
-            tolerance = tolerance
+            # valid tolerance
+            pass
         else:
             raise Exception("Invalid tolerance input")
         self.eps = tolerance
@@ -1464,7 +1466,7 @@ class CVTSampling(SamplingMethods):
         current_centres = current_centres.reshape(current_centres.shape[0], 1)
         for i in range(0, initial_centres.shape[0]):
             data_matrix = current_random_points[current_centres[:, 0] == i]
-            m_prime, n_prime = data_matrix.shape
+            m_prime, n_prime = data_matrix.shape  # pylint: disable=unused-variable
             if m_prime == 0:
                 centres[i, :] = np.mean(initial_centres, axis=0)
             else:

@@ -14,6 +14,12 @@
 Methods for setting up FpcTP as the state variables in a generic property
 package
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import (
     Constraint,
     Expression,
@@ -27,10 +33,10 @@ from idaes.core import MaterialFlowBasis, MaterialBalanceType, EnergyBalanceType
 from idaes.models.properties.modular_properties.base.utility import (
     get_bounds_from_config,
 )
-from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -143,11 +149,11 @@ def define_state(b):
     )
 
     def rule_mole_frac_phase_comp(b, p, j):
-        # Calcualting mole frac phase comp is degenerate if there is only one
+        # Calculating mole frac phase comp is degenerate if there is only one
         # component in phase.
         # Count components
         comp_count = 0
-        for p1, j1 in b.phase_component_set:
+        for p1, _ in b.phase_component_set:
             if p1 == p:
                 comp_count += 1
 
@@ -348,6 +354,8 @@ do_not_initialize = []
 
 
 class FpcTP(object):
+    """Phase-component flow, temperature, pressure state."""
+
     set_metadata = set_metadata
     define_state = define_state
     state_initialization = state_initialization

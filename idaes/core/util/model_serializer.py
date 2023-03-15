@@ -13,15 +13,30 @@
 """
 Functions for saving and loading Pyomo objects to json
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
-from pyomo.environ import *
-from pyomo.dae import *
-from pyomo.core.base.component import ComponentData
+# We need to work with some Pyomo internals for this
+# pylint: disable=protected-access
+
 import json
 import datetime
 import time
 import gzip
 import logging
+
+from pyomo.environ import (
+    Param,
+    Var,
+    BooleanVar,
+    Expression,
+    Block,
+    Constraint,
+    Suffix,
+    value,
+)
+from pyomo.core.base.param import _ParamData
+from pyomo.core.base.component import ComponentData
 
 _log = logging.getLogger(__name__)
 
@@ -241,7 +256,7 @@ class StoreSpec(object):
                     None,
                 ),
                 BooleanVar._ComponentDataClass: (("fixed", "stale", "value"), None),
-                pyomo.core.base.param._ParamData: (("value",), None),
+                _ParamData: (("value",), None),
                 int: (("value",), None),
                 float: (("value",), None),
                 str: (("value",), None),
@@ -457,7 +472,7 @@ class StoreSpec(object):
                 data_classes={
                     Var._ComponentDataClass: (("value", "fixed"), _only_fixed),
                     BooleanVar._ComponentDataClass: (("value", "fixed"), _only_fixed),
-                    pyomo.core.base.param._ParamData: (("value",), None),
+                    _ParamData: (("value",), None),
                     Constraint._ComponentDataClass: (("active",), None),
                     Block._ComponentDataClass: (("active",), None),
                 },
@@ -474,7 +489,7 @@ class StoreSpec(object):
                 data_classes={
                     Var._ComponentDataClass: (("value", "fixed"), None),
                     BooleanVar._ComponentDataClass: (("value", "fixed"), None),
-                    pyomo.core.base.param._ParamData: (("value",), None),
+                    _ParamData: (("value",), None),
                     Constraint._ComponentDataClass: (("active",), None),
                     Block._ComponentDataClass: (("active",), None),
                 },
@@ -517,7 +532,7 @@ def _write_component(sd, o, wts, count=None, lookup=None, suffixes=None):
 
     # Get list of attributes to save, also returns ff, which is a filter
     # function and only used in reading stuff back in.
-    alist, ff = wts.get_class_attr_list(o)
+    alist, ff = wts.get_class_attr_list(o)  # pylint: disable=unused-variable
     if alist is None:
         return  # alist is none means skip this component type
     # Get the component name, doesn't need to be fully qualified or unique because
@@ -600,7 +615,8 @@ def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
             else:
                 el = o[key]
             if frst:  # assume all item are same type, use first to get alist
-                alist, ff = wts.get_data_class_attr_list(el)  # get attributes
+                # Get all attributes
+                (alist, _) = wts.get_data_class_attr_list(el)
                 if alist is None:
                     return  # if None then skip writing
             frst = False  # done with first only stuff
@@ -643,7 +659,8 @@ def component_data_to_dict(o, wts):
     Component data to a dict.
     """
     el = o
-    alist, ff = wts.get_data_class_attr_list(el)  # get attributes
+    # get attributes
+    alist, ff = wts.get_data_class_attr_list(el)  # pylint: disable=unused-variable
     if alist is None:
         return  # if None then skip writing
     edict = {}  # if not writing suffixes don't need ids
@@ -780,7 +797,7 @@ def _read_component(sd, o, wts, lookup=None, suffixes=None, root_name=None):
         if wts.ignore_missing:
             return
         else:
-            raise (e)
+            raise e
     if ff is not None:
         alist = ff(o, odict)
     if Suffix in wts.classes:
@@ -798,7 +815,7 @@ def _read_component(sd, o, wts, lookup=None, suffixes=None, root_name=None):
             if wts.ignore_missing:
                 return
             else:
-                raise (e)
+                raise e
     if isinstance(o, Suffix):
         if wts.suffix_filter is None or oname in wts.suffix_filter:
             suffixes[odict["__id__"]] = odict["data"]  # is populated
@@ -847,7 +864,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
             if wts.ignore_missing:
                 return  # if ignore missing option its okay
             else:
-                raise (e)  # else raise exception
+                raise e  # else raise exception
         if ff is not None:  # if a filer function was given, use it to make a
             # new a list based on the model and whats stored for the state
             # this lets you conditionally load things, for example only load
@@ -868,7 +885,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
                 if wts.ignore_missing:
                     return  # if ignore option then is okay
                 else:
-                    raise (e)  # otherwise raise an exception
+                    raise e  # otherwise raise an exception
         if _may_have_subcomponents(el) and "__pyomo_components__" in edict:
             # read sub-components of block-like
             for o2 in el.component_objects(descend_into=False):
@@ -904,7 +921,7 @@ def component_data_from_dict(sd, o, wts):
             if wts.ignore_missing:
                 return  # if ignore option then is okay
             else:
-                raise (e)  # otherwise raise an exception
+                raise e  # otherwise raise an exception
     if _may_have_subcomponents(el):  # read sub-components of block-like
         for o2 in el.component_objects(descend_into=False):
             # recursive read here

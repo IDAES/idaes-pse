@@ -46,6 +46,9 @@ Example::
         # do the work of the class.
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import units
 from pyomo.core.base.units_container import _PyomoUnit, InconsistentUnitsError
 
@@ -81,6 +84,8 @@ class HasPropertyClassMetadata(object):
             cls._metadata = pcm
 
             # Check that the metadata was actually populated
+            # Check requires looking at private attributes
+            # pylint: disable-next=protected-access
             if pcm._properties is None or pcm._default_units is None:
                 raise PropertyPackageError(
                     "Property package did not populate all expected metadata."
@@ -477,7 +482,7 @@ class PropertyClassMetadata(object):
             self._default_units.set_units(**u)
         except TypeError:
             raise TypeError(
-                f"Unexpected argument for base quantities found when creating UnitSet. "
+                "Unexpected argument for base quantities found when creating UnitSet. "
                 "Please ensure that units are only defined for the seven base quantities."
             )
 
@@ -556,7 +561,7 @@ class PropertyClassMetadata(object):
         Returns:
             None
         """
-        for k, v in p.items():
+        for k in p.keys():
             try:
                 self._properties[k].set_required(True)
             except KeyError:

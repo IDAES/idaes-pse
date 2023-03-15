@@ -73,12 +73,9 @@ class fake_module:
 
 @pytest.mark.unit
 def test_more_func():
-    import six
-
-    # doesn't have __path__ but has __loader__ with path
-    dmf.get_version_info(six)
     # __loader__ without path
     dmf.get_version_info(fake_module)
+    # TODO: No assert!
 
 
 @pytest.mark.unit

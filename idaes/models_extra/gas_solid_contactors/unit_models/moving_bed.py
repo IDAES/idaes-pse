@@ -34,7 +34,6 @@ Property package contains temperature and pressure variables.
 Property package contains minimum fluidization velocity.
 
 """
-from __future__ import division
 
 # Import Python libraries
 import matplotlib.pyplot as plt
@@ -940,7 +939,7 @@ see reaction package for documentation.}""",
                     )
                     / (
                         pyunits.convert(
-                            b.solid_phase.properties[t, x]._params.particle_dia,
+                            b.solid_phase.properties[t, x].params.particle_dia,
                             to_units=units_meta_solid("length"),
                         )
                         ** 2
@@ -960,7 +959,7 @@ see reaction package for documentation.}""",
                     ** 2
                     / (
                         pyunits.convert(
-                            b.solid_phase.properties[t, x]._params.particle_dia,
+                            b.solid_phase.properties[t, x].params.particle_dia,
                             to_units=units_meta_solid("length"),
                         )
                         * b.bed_voidage**3
@@ -1046,7 +1045,7 @@ see reaction package for documentation.}""",
                     b.solid_phase.heat[t, x],
                     to_units=units_meta_gas("power") / units_meta_gas("length"),
                 ) * pyunits.convert(
-                    b.solid_phase.properties[t, x]._params.particle_dia,
+                    b.solid_phase.properties[t, x].params.particle_dia,
                     to_units=units_meta_gas("length"),
                 ) == 6 * b.gas_solid_htc[
                     t, x
@@ -1072,7 +1071,7 @@ see reaction package for documentation.}""",
                     b.Re_particle[t, x] * b.gas_phase.properties[t, x].visc_d
                     == b.velocity_superficial_gas[t, x]
                     * pyunits.convert(
-                        b.solid_phase.properties[t, x]._params.particle_dia,
+                        b.solid_phase.properties[t, x].params.particle_dia,
                         to_units=units_meta_gas("length"),
                     )
                     * b.gas_phase.properties[t, x].dens_mass
@@ -1114,7 +1113,7 @@ see reaction package for documentation.}""",
                 return (
                     b.gas_solid_htc[t, x]
                     * pyunits.convert(
-                        b.solid_phase.properties[t, x]._params.particle_dia,
+                        b.solid_phase.properties[t, x].params.particle_dia,
                         to_units=units_meta_gas("length"),
                     )
                     == b.Nu_particle[t, x] * b.gas_phase.properties[t, x].therm_cond
@@ -1128,7 +1127,7 @@ see reaction package for documentation.}""",
             )
             def gas_phase_heat_transfer(b, t, x):
                 return b.gas_phase.heat[t, x] * pyunits.convert(
-                    b.solid_phase.properties[t, x]._params.particle_dia,
+                    b.solid_phase.properties[t, x].params.particle_dia,
                     to_units=units_meta_gas("length"),
                 ) == -6 * b.gas_solid_htc[t, x] * (
                     b.gas_phase.properties[t, x].temperature
@@ -1624,7 +1623,7 @@ see reaction package for documentation.}""",
                         )
                         sf2 = 1 / value(
                             pyunits.convert(
-                                self.solid_phase.properties[t, x]._params.particle_dia,
+                                self.solid_phase.properties[t, x].params.particle_dia,
                                 to_units=units_meta_gas("length"),
                             )
                         )

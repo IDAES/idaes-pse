@@ -15,6 +15,13 @@ Common methods used by generic framework
 
 Author: A Lee
 """
+# TODO: Missing doc strings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from enum import Enum
 
 from pyomo.environ import units as pyunits
@@ -38,6 +45,7 @@ class StateIndex(Enum):
 class GenericPropertyPackageError(PropertyPackageError):
     # Error message for when a property is called for but no option provided
     def __init__(self, block, prop):
+        super().__init__()
         self.prop = prop
         self.block = block
 

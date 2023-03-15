@@ -14,6 +14,9 @@
 The 'experiment' is a root container for a coherent
 set of 'resources'.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # stdlib
 from copy import deepcopy
 import logging

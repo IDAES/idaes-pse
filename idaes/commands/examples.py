@@ -22,8 +22,9 @@ directory into a package called "idaes_examples".
 Options let the user choose a different version, directory, and
 whether to actually download or install.
 """
-# Pyomo utility for delayed import
-from pyomo.common.dependencies import attempt_import
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 # stdlib
 from collections import namedtuple
@@ -41,9 +42,16 @@ from uuid import uuid4
 from zipfile import ZipFile
 import json
 
-
 # third-party
 import click
+
+# Pyomo utility for delayed import
+from pyomo.common.dependencies import attempt_import
+
+# package
+from idaes.commands import cb
+from idaes.commands.base import how_to_report_an_error
+from idaes.ver import package_version as V
 
 # third-party slow
 nb_exporters = attempt_import("nbconvert.exporters")[0]
@@ -52,10 +60,6 @@ traitlets_config = attempt_import("traitlets.config")[0]
 nbformat = attempt_import("nbformat")[0]
 requests = attempt_import("requests")[0]
 
-# package
-from idaes.commands import cb
-from idaes.commands.base import how_to_report_an_error
-from idaes.ver import package_version as V
 
 __author__ = "Dan Gunter"
 
@@ -146,7 +150,7 @@ Release = namedtuple("Release", ["date", "tag", "info"])
 @click.option(
     "--version",
     "-V",
-    help=f"Version of examples to download",
+    help="Version of examples to download",
     default=None,
     show_default=False,
 )
@@ -288,7 +292,7 @@ def print_summary(version, dirname, installed):
     if installed:
         print(f"Package: {INSTALL_PKG}")
     else:
-        print(f"Package: not installed")
+        print("Package: not installed")
     print(sep2)
 
 
@@ -384,21 +388,21 @@ def download_contents(target_dir, version):
     Raises:
         DownloadError: if the GET on the release URL returns non-200 status
     """
-    global g_tempdir
+    global g_tempdir  # pylint: disable=global-statement
     url = archive_file_url(version)
     _log.info(f"get examples from: {url}")
     # stream out to a big .zip file
     req = requests.get(url, stream=True)
     if req.status_code != 200:
         if req.status_code in (400, 404):
-            raise DownloadError(f"file not found")
+            raise DownloadError("file not found")
         raise DownloadError(f"status={req.status_code}")
     # note: mkdtemp() creates a directory that seems un-removable on Windows.
     # So, instead, just create the directory yourself in the current directory
     random_name = str(uuid4())
     try:
         os.mkdir(random_name)
-    except Exception as err:
+    except Exception as err:  # pylint: disable=W0703
         _log.fatal(f"making directory '{random_name}': {err}")
         click.echo("Cannot make temporary directory in current directory. Abort.")
         sys.exit(-1)
@@ -431,7 +435,7 @@ def copy_contents(target_dir, repo_root):
         raise CopyError(err)
     except FileNotFoundError:
         raise CopyError(f"Could not find file '{subdir}'")
-    except Exception as err:
+    except Exception as err:  # pylint: disable=W0703
         raise CopyError(f"Unknown problem copying: {err}")
     _log.info(f"copy.local.end from={subdir} to={target_dir}")
 
@@ -443,6 +447,7 @@ def clean_up_temporary_files():
         _log.debug(f"remove temporary directory.start name='{d}'")
         try:
             shutil.rmtree(d)
+        # pylint: disable=W0703
         except Exception as err:  # WTF
             _log.warning(f"remove temporary directory.error name='{d}' msg='{err}'")
         else:
@@ -452,7 +457,7 @@ def clean_up_temporary_files():
         _log.debug(f"remove setuptools egg path='{g_egg}'")
         try:
             shutil.rmtree(g_egg.name)
-        except Exception as err:
+        except Exception as err:  # pylint: disable=W0703
             _log.warning(f"remove temporary directory.error name='{g_egg}' msg='{err}'")
     # dist directory created by setuptools
     d = Path("dist")
@@ -460,7 +465,7 @@ def clean_up_temporary_files():
         for f in d.glob("idaes_examples-*.egg"):
             try:
                 f.unlink()
-            except Exception as err:
+            except Exception as err:  # pylint: disable=W0703
                 _log.warning(f"could not remove distribution file {f}: {err}")
         # remove directory, if now empty
         num_files = len(list(d.glob("*")))
@@ -468,7 +473,7 @@ def clean_up_temporary_files():
             _log.info(f"removing dist directory '{d.absolute()}'")
             try:
                 d.rmdir()
-            except Exception as err:
+            except Exception as err:  # pylint: disable=W0703
                 _log.warning(f"could not remove distribution directory {d}: {err}")
 
 
@@ -562,9 +567,10 @@ def install_src(version, target_dir):
     When done, name the directory back to 'src', and remove '__init__.py' files.
     Then clean up whatever cruft is left behind..
     """
+    # pylint: disable-next=import-outside-toplevel
     from setuptools import setup, find_packages  # import here due to slowness
 
-    global g_egg
+    global g_egg  # pylint: disable=global-statement
     orig_dir = Path(os.curdir).absolute()
     target_dir = Path(target_dir.absolute())
     root_dir = target_dir.parent
@@ -591,6 +597,7 @@ def install_src(version, target_dir):
     # if there is a 'build' directory, move it aside
     build_dir = root_dir / "build"
     if build_dir.exists():
+        # pylint: disable-next=import-outside-toplevel
         from uuid import uuid1
 
         random_letters = str(uuid1())
@@ -637,7 +644,7 @@ def install_src(version, target_dir):
     _log.info(f"remove build directory '{build_dir}'")
     try:
         shutil.rmtree(build_dir)
-    except Exception as err:
+    except Exception as err:  # pylint: disable=W0703
         _log.warning(f"failed to remove build directory {build_dir}: {err}")
     if moved_build_dir is not None:
         _log.info(f"restore build dir '{build_dir}' from '{moved_build_dir}'")

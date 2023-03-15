@@ -15,8 +15,10 @@ Command Line Interface for idaes.core.dmf.
 
 Uses "Click" to handle command-line parsing and dispatch.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # stdlib
-import time
 from collections import namedtuple
 from datetime import datetime
 from enum import Enum
@@ -45,6 +47,7 @@ from idaes.core.dmf.util import (
     parse_datetime,
     size_prefix,
 )
+from idaes.core.dmf import datasets
 
 __author__ = "Dan Gunter"
 
@@ -107,7 +110,6 @@ class AliasedGroup(click.Group):
         self._aliases = aliases
 
     def get_command(self, ctx, cmd_name):
-        t0 = time.time()
         command = click.Group.get_command(self, ctx, cmd_name)
         if command is None:
             commands = self.list_commands(ctx)
@@ -1090,8 +1092,6 @@ def rm(identifier, yes, multiple, list_resources):
     help="Load into global IDAES data workspace (by default, use current workspace)",
 )
 def load_data(datadir, global_):
-    from idaes.core.dmf import datasets
-
     def echolog(msg, error=False):
         if error:
             _log.error(f"Error: {msg}")

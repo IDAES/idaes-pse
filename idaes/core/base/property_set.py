@@ -495,6 +495,8 @@ class PropertySetBase:
         unsupported = []
         for a in self._defined_properties:  # pylint: disable=E1101
             aobj = getattr(self, a)
+            # TODO: Should refactor parent so this is not private
+            # pylint: disable-next=protected-access
             for i in aobj._indices:
                 if aobj[i].required:
                     try:
@@ -514,6 +516,8 @@ class PropertySetBase:
         """
         slist = []
         for p in self:
+            # TODO: Should refactor parent so this is not private
+            # pylint: disable-next=protected-access
             for i in p._indices:
                 if p[i].supported:
                     slist.append(p[i])
@@ -528,6 +532,8 @@ class PropertySetBase:
         """
         ulist = []
         for p in self:
+            # TODO: Should refactor parent so this is not private
+            # pylint: disable-next=protected-access
             for i in p._indices:
                 if not p[i].supported:
                     ulist.append(p[i])
@@ -542,6 +548,8 @@ class PropertySetBase:
         """
         rlist = []
         for p in self:
+            # TODO: Should refactor parent so this is not private
+            # pylint: disable-next=protected-access
             for i in p._indices:
                 if p[i].required:
                     rlist.append(p[i])

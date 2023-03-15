@@ -13,6 +13,10 @@
 """
 Search through the code and index static information in the DMF.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 # stdlib
 import glob
 import importlib
@@ -131,7 +135,7 @@ class ModuleClassWalker(Walker):
                 expr_list.append("{sl}{d}".format(sl=psep, d=ed))
         self._exclude_expr = re.compile(r"|".join(expr_list))
         self._history = []
-        _log.debug("exclude expr={}".format(self._exclude_expr.pattern))
+        _log.debug(f"exclude expr={self._exclude_expr.pattern}")
 
     def walk(self, visitor):
         modules = self._get_modules()
@@ -141,7 +145,7 @@ class ModuleClassWalker(Walker):
         return self._history
 
     def _get_modules(self):
-        _log.debug("getting modules from root: {}".format(self._root))
+        _log.debug(f"getting modules from root: {self._root}")
         # change file paths at 'root' to module paths from 'pkgroot'
         n, module_list = len(self._root), []
         for f in self._python_files():
@@ -164,14 +168,12 @@ class ModuleClassWalker(Walker):
 
     def _visit_subclasses(self, modules, visit):
         for modname in modules:
-            _log.debug("visit module: {}".format(modname))
+            _log.debug(f"visit module: {modname}")
             try:
                 mod = importlib.import_module(modname)
-            except Exception:
+            except Exception:  # pylint: disable=W0703
                 if self._warn:
-                    _log.warn(
-                        "Error during import of module: {}. Ignoring.".format(modname)
-                    )
+                    _log.warning(f"Error during import of module: {modname}. Ignoring.")
                 continue
             for item in dir(mod):
                 x = getattr(mod, item)
@@ -225,17 +227,13 @@ class PropertyMetadataVisitor(Visitor):
             meta = obj.get_metadata()
         except (AttributeError, TypeError) as err:
             module = obj.__module__
-            _log.debug(
-                "Cannot get metadata for {}.{}: {}".format(module, obj.__name__, err)
-            )
+            _log.debug(f"Cannot get metadata for {module}.{obj.__name__}: {err}")
             result = False
         except NotImplementedError:
             module = obj.__module__
             #            if not module.startswith('idaes.core.'):
-            _log.warn(
-                '{} in module "{}" does not define its metadata'.format(
-                    obj.__name__, module
-                )
+            _log.warning(
+                f'{obj.__name__} in module "{module}" does not define its metadata'
             )
             result = False
         if result:

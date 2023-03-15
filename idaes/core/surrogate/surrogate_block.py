@@ -10,9 +10,15 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+
+import collections
+
 from pyomo.core.base.block import declare_custom_block, _BlockData
 from pyomo.environ import Var, Set
-import collections
+
 import idaes.logger as idaeslog
 
 __author__ = "Carl Laird, Andrew Lee"
@@ -21,10 +27,11 @@ _log = idaeslog.getLogger(__name__)
 
 @declare_custom_block(name="SurrogateBlock")
 class SurrogateBlockData(_BlockData):
+    # pylint: disable=W0235
     def __init__(self, component):
         """
         This custom block is used for importing surrogates into IDAES
-        
+
         Example usage without specifying inputs and outputs:
         > # Load the surrogate object
         > alamo_surrogate = AlamoSurrogate.load_from_file('alamo_reformer.json')
@@ -123,9 +130,7 @@ class SurrogateBlockData(_BlockData):
         if len(kwargs) > 0:
             raise ValueError(
                 "Error in keyword arguments passed to build_model."
-                " The following arguments were not used: {}".format(
-                    [k for k in kwargs.keys()]
-                )
+                " The following arguments were not used: {}".format([k for k in kwargs])
             )
 
     def _setup_inputs_outputs(
@@ -218,28 +223,26 @@ class SurrogateBlockData(_BlockData):
         return {self._output_labels[i]: v for i, v in enumerate(self._output_vars)}
 
 
-def _extract_var_data_gen(vars):
-    if vars is None:
+def _extract_var_data_gen(_vars):
+    if _vars is None:
         return
-    elif getattr(vars, "ctype", None) is Var:
-        if vars.is_indexed():
-            if not vars.index_set().isordered():
+    elif getattr(_vars, "ctype", None) is Var:
+        if _vars.is_indexed():
+            if not _vars.index_set().isordered():
                 raise ValueError(
-                    "Expected IndexedVar: {} to be indexed over an ordered set.".format(
-                        vars
-                    )
+                    f"Expected IndexedVar: {_vars} to be indexed over an ordered set."
                 )
-            yield from vars.values()
+            yield from _vars.values()
         else:
-            yield vars
-    elif isinstance(vars, collections.abc.Sequence):
-        for v in vars:
+            yield _vars
+    elif isinstance(_vars, collections.abc.Sequence):
+        for v in _vars:
             yield from _extract_var_data_gen(v)
     else:
-        raise ValueError("Unknown variable type of {} for {}".format(type(vars), vars))
+        raise ValueError(f"Unknown variable type of {type(_vars)} for {_vars}")
 
 
-def _extract_var_data(vars):
-    if vars is None:
+def _extract_var_data(_vars):
+    if _vars is None:
         return None
-    return list(_extract_var_data_gen(vars))
+    return list(_extract_var_data_gen(_vars))

@@ -17,6 +17,9 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
     for Use in a Process Simulation Software Environment." Journal of Engineering
     for Gas Turbines and Power. v136, November
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 import copy
 
 import pyomo.environ as pyo
@@ -668,17 +671,11 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             None
         """
         # Setup loggers
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Store initial model specs, restored at the end of initializtion, so
         # the problem is not altered.  This can restore fixed/free vars,
         # active/inactive constraints, and fixed variable values.
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
-
-        # Assume the flow into the turbine is a reasonable guess for
-        # initializtion
-        flow_guess = self.inlet_split.inlet.flow_mol[0].value
 
         for it_count in range(flow_iterate):
             self.inlet_split.initialize(outlvl=outlvl, solver=solver, optarg=optarg)

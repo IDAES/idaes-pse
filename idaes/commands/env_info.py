@@ -12,11 +12,15 @@
 #################################################################################
 """Get info about the environment IDAES is running in and the IDAES version
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 __author__ = "John Eslick"
 
 import click
+
 from idaes.commands import cb
+from idaes.core.util.env_info import EnvironmentInfo
 
 
 @cb.command(
@@ -25,8 +29,6 @@ from idaes.commands import cb
 @click.option("--solver", multiple=True, help="Add solvers to list of solvers to check")
 @click.option("--json", default=None, help="Write output ot a file")
 def environment_info(solver, json):
-    from idaes.core.util.env_info import EnvironmentInfo
-
     info = EnvironmentInfo(additional_solvers=solver)
     d = info.to_dict()
     if json is None:

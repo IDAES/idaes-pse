@@ -10,20 +10,23 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+Common utilities for cubic EoS property packages.
+"""
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
-import os
 import enum
 import ctypes
 from pyomo.environ import ExternalFunction, units as pyunits
 from pyomo.common.fileutils import find_library
-from idaes import bin_directory
 
 try:
     # When compiling these, I don't bother changing the extension based on OS,
     # so the file name is always ends in .so. It's fine.
     cubic_so_path = find_library("cubic_roots.so")
     ctypes.cdll.LoadLibrary(cubic_so_path)
-except:
+except Exception:  # pylint: disable=W0703
     cubic_so_path = None
 
 
@@ -37,6 +40,8 @@ def cubic_roots_available():
 
 
 class CubicType(enum.Enum):
+    """enum of supported cubic types."""
+
     PR = 0
     SRK = 1
 

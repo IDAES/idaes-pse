@@ -10,6 +10,8 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
 
 # stdlib
 from collections import namedtuple
@@ -99,7 +101,7 @@ def visualize(
         :mod:`idaes.core.ui.fsvis.errors.VisualizerError`: Any other errors
         RuntimeError: If too many versions of the save file already exist. See :data:`MAX_SAVED_VERSIONS`.
     """
-    global web_server
+    global web_server  # pylint: disable=global-statement
 
     # Initialize IDAES logging
     _init_logging(log_level)
@@ -180,7 +182,7 @@ def visualize(
     if browser:
         success = webbrowser.open(url)
         if success:
-            _log.debug(f"Flowsheet opened in browser window")
+            _log.debug("Flowsheet opened in browser window")
         else:
             _log.warning(f"Could not open flowsheet URL '{url}' in browser")
             if not quiet:

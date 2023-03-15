@@ -18,6 +18,12 @@ Miller, D.C., 2018, A Smooth, Square Flash Formulation for Equation-Oriented
 Flowsheet Optimization. Proceedings of the 13th International Symposium on
 Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import Constraint, Param, Var, value
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_max, smooth_min
@@ -29,6 +35,8 @@ import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 class SmoothVLE(object):
+    """Methods for constructing equations associated with Smooth VLE formulation."""
+
     @staticmethod
     def phase_equil(b, phase_pair):
         # This method is called via StateBlock.build, thus does not need clean-up
@@ -39,8 +47,8 @@ class SmoothVLE(object):
         (
             l_phase,
             v_phase,
-            vl_comps,
-            henry_comps,
+            _,
+            _,
             l_only_comps,
             v_only_comps,
         ) = _valid_VL_component_list(b, phase_pair)

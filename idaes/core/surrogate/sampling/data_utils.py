@@ -10,8 +10,11 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-import numpy as np
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+
 import math
+import numpy as np
 
 
 def split_training_validation(dataframe, training_fraction, seed=None):

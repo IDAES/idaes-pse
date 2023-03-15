@@ -22,8 +22,12 @@ main equations:
 
 Created: April 2019 by Jinliang Ma
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.environ import value, Var, Reference
 
 # Import IDAES cores
 from idaes.core import (
@@ -40,10 +44,6 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.constants import Constants as const
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
-
-
-# Additional import for the unit operation
-from pyomo.environ import value, Var, Reference
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 __version__ = "2.0.0"

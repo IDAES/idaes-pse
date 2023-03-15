@@ -173,7 +173,7 @@ jobs:
           echo "::group::Display pylint version"
           pip show pylint astroid
           echo "::endgroup::"
-          pylint --rcfile=./.pylint/pylintrc --disable=W,C,R,I --enable=W0102,W0105,W0107 --output-format=idaes_reporters.MultiReporter "$pylint_target_dir" --ignore-patterns=test_.*?py
+          pylint --rcfile=./.pylint/pylintrc --disable=C,R,I --output-format=idaes_reporters.MultiReporter "$pylint_target_dir"
       - name: Generate pylint report on failure
         if: failure()
         run: |

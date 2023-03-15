@@ -13,6 +13,8 @@
 """
 Shared (utility) code for UI tests.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 
 def dict_diff(d1, d2, result=None, pfx=""):
@@ -27,11 +29,12 @@ def dict_diff(d1, d2, result=None, pfx=""):
         else:
             pass  # good enough
     elif not isinstance(d1, dict) or not isinstance(d2, dict):
-        if type(d1) == type(d2):
+        if type(d1) == type(d2):  # pylint: disable=unidiomatic-typecheck
             same = None
             try:
                 same = d1 == d2
-            except:  # cannot compare them
+            except Exception:  # pylint: disable=W0703
+                # cannot compare them
                 pass  # good enough
             if same is False:
                 result.append(f"value at {pfx} first != second")

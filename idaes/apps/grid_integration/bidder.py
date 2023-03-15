@@ -634,7 +634,7 @@ class StochasticProgramBidder(AbstractBidder):
             for t in time_index:
                 try:
                     price = realized_day_ahead_prices[t + hour]
-                except IndexError as ex:
+                except IndexError:
                     self.real_time_model.fs[s].day_ahead_energy_price[t] = forecasts[s][
                         (t + hour) - 24
                     ]
@@ -660,7 +660,7 @@ class StochasticProgramBidder(AbstractBidder):
             for t in time_index:
                 try:
                     dispatch = realized_day_ahead_dispatches[t + hour]
-                except IndexError as ex:
+                except IndexError:
                     self.real_time_model.fs[s].day_ahead_power[t].unfix()
                     # unrelax the DA offering UB
                     self.real_time_model.fs[s].real_time_underbid_power[t].fix(0)
@@ -1247,7 +1247,7 @@ class Bidder(StochasticProgramBidder):
                         gen_name=gen,
                         t=t,
                     )
-                except NameError as ex:
+                except NameError:
                     raise RuntimeError(
                         "'egret' must be installed to use this functionality"
                     )

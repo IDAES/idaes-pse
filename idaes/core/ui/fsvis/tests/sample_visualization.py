@@ -11,10 +11,12 @@
 # for full copyright and license information.
 #################################################################################
 """
-This is a sample visualization script. This script builds a simple model and 
-calls visualize("sample_visualization") in order to pop up a webpage with 
+This is a sample visualization script. This script builds a simple model and
+calls visualize("sample_visualization") in order to pop up a webpage with
 a sample visualization.
 """
+# pylint: disable=missing-function-docstring
+
 import sys
 import time
 from idaes.models.flowsheets.demo_flowsheet import build_flowsheet

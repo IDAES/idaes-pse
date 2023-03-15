@@ -10,10 +10,15 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-import pyomo.common.config
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
+
 import logging.config
 import json
 import os
+
+import pyomo.common.config
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
@@ -498,11 +503,11 @@ def read_config(val, cfg):
             with open(config_file, "r") as f:
                 val = json.load(f)
         except IOError:  # don't require config file
-            _log.debug("Config file {} not found (this is okay)".format(config_file))
+            _log.debug(f"Config file {config_file} not found (this is okay)")
             return
     cfg.set_value(val)
     if config_file is not None:
-        _log.debug("Read config {}".format(config_file))
+        _log.debug(f"Read config {config_file}")
     reconfig(cfg)
 
 

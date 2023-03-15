@@ -13,18 +13,26 @@
 """
 Methods for calculating equilibrium constants
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import exp, log, Var, units as pyunits, value
 
 from idaes.models.properties.modular_properties.base.utility import ConcentrationForm
-from .dh_rxn import constant_dh_rxn
 from idaes.core.util.misc import set_param_from_config
 from idaes.core.util.constants import Constants as c
 from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from .dh_rxn import constant_dh_rxn
 
 
 # -----------------------------------------------------------------------------
 # Constant Keq
 class ConstantKeq:
+    """Methods for invariant equilibrium constant."""
+
     @staticmethod
     def build_parameters(rblock, config):
         parent = rblock.parent_block()
@@ -102,6 +110,8 @@ class ConstantKeq:
 # -----------------------------------------------------------------------------
 # van t'Hoff equation (constant dh_rxn)
 class van_t_hoff:
+    """Methods for equilibrium constant using van t'Hoff equation"""
+
     @staticmethod
     def build_parameters(rblock, config):
         parent = rblock.parent_block()
@@ -197,6 +207,8 @@ class van_t_hoff:
 # -----------------------------------------------------------------------------
 # Constant dh_rxn and ds_rxn
 class gibbs_energy:
+    """Methods for equilibrium constant based of constant heat and entropy of reaction."""
+
     @staticmethod
     def build_parameters(rblock, config):
         parent = rblock.parent_block()

@@ -10,10 +10,13 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
 """
 This module contains utility functions for use in testing IDAES models.
 """
+# These are methods for testing, and break a few conventions
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=protected-access
 
 __author__ = "Andrew Lee"
 
@@ -215,13 +218,13 @@ class SBlockBase(StateBlock):
         hold_state=False,
         state_args=None,
     ):
-        for k in blk.keys():
-            blk[k].init_test = True
-            blk[k].hold_state = hold_state
+        for k in blk.values():
+            k.init_test = True
+            k.hold_state = hold_state
 
     def release_state(blk, flags=None, outlvl=idaeslog.NOTSET):
-        for k in blk.keys():
-            blk[k].hold_state = not blk[k].hold_state
+        for k in blk.values():
+            k.hold_state = not k.hold_state
 
 
 @declare_process_block_class("TestStateBlock", block_class=SBlockBase)
@@ -366,7 +369,7 @@ class _ReactionParameterBlock(ReactionParameterBlock):
         )
 
     @classmethod
-    def get_required_properties(self):
+    def get_required_properties(cls):
         return {}
 
 
@@ -374,8 +377,8 @@ class RBlockBase(ReactionBlockBase):
     def initialize(
         blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None, state_vars_fixed=False
     ):
-        for k in blk.keys():
-            blk[k].init_test = True
+        for k in blk.values():
+            k.init_test = True
 
 
 @declare_process_block_class("ReactionBlock", block_class=RBlockBase)

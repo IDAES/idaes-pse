@@ -10,15 +10,18 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-def functions_lib():
-    import os
-    import idaes
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
 
+import os
+import idaes
+
+
+def functions_lib():
     plib = os.path.join(idaes.bin_directory, "functions.so")
     return plib
 
 
 def functions_available():
-    import os
-
     return os.path.isfile(functions_lib())

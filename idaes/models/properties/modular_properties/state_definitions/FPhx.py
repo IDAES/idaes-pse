@@ -14,6 +14,12 @@
 Methods for setting up FPhx as the state variables in a generic property
 package
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import (
     Constraint,
     Expression,
@@ -29,10 +35,10 @@ from idaes.models.properties.modular_properties.base.utility import (
 from idaes.models.properties.modular_properties.state_definitions.FTPx import (
     state_initialization,
 )
-from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -515,6 +521,8 @@ do_not_initialize = ["sum_mole_frac_out"]
 
 
 class FPhx(object):
+    """Total flow, pressure, enthalpy, mole fraction state."""
+
     set_metadata = set_metadata
     define_state = define_state
     state_initialization = state_initialization

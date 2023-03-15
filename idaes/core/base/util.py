@@ -10,6 +10,12 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+
+# Build on demand needs to play with some private attributes
+# pylint: disable=protected-access
+
 from idaes.core.util.exceptions import (
     PropertyPackageError,
     PropertyNotSupportedError,
@@ -108,11 +114,11 @@ def build_on_demand(self, attr):
                 # attr method is calling itself
                 self.__getattrcalls.append(attr)
                 raise PropertyPackageError(
-                    "{} _{} made a recursive call to "
-                    "itself, indicating a potential "
-                    "recursive loop. This is generally "
-                    "caused by the {} method failing to "
-                    "create the {} component.".format(self.name, attr, attr, attr)
+                    f"{self.name} _{attr} made a recursive call to "
+                    f"itself, indicating a potential "
+                    f"recursive loop. This is generally "
+                    f"caused by the {attr} method failing to "
+                    f"create the {attr} component."
                 )
             else:
                 self.__getattrcalls.append(attr)

@@ -17,6 +17,9 @@ Created on Tue Feb 18 10:54:52 2020
 
 @author: alee
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from enum import Enum
 
 from pyomo.environ import Set
@@ -27,6 +30,10 @@ from idaes.core.base.process_base import declare_process_block_class, ProcessBlo
 
 # Enumerate recognised Phase types
 class PhaseType(Enum):
+    """
+    Enum indicating phase type.
+    """
+
     undefined = 0
     liquidPhase = 1
     vaporPhase = 2
@@ -37,6 +44,10 @@ class PhaseType(Enum):
 # TODO: Document EoS options and parameter_Data
 @declare_process_block_class("Phase")
 class PhaseData(ProcessBlockData):
+    """
+    Standard phase object class.
+    """
+
     CONFIG = ConfigBlock()
     CONFIG.declare(
         "component_list",
@@ -101,9 +112,12 @@ class PhaseData(ProcessBlockData):
         super(PhaseData, self).build()
 
         # If the phase_list does not exist, add a reference to the new Phase
-        # The IF is mostly for backwards compatability, to allow for old-style
+        # The IF is mostly for backwards compatibility, to allow for old-style
         # property packages where the phase_list already exists but we need to
         # add new Phase objects
+
+        # We control config
+        # pylint: disable-next=protected-access
         if not self.config._phase_list_exists:
             self.__add_to_phase_list()
 
@@ -147,6 +161,10 @@ class PhaseData(ProcessBlockData):
 
 @declare_process_block_class("LiquidPhase", block_class=Phase)
 class LiquidPhaseData(PhaseData):
+    """
+    Liquid phase object class.
+    """
+
     def is_liquid_phase(self):
         return True
 
@@ -159,6 +177,10 @@ class LiquidPhaseData(PhaseData):
 
 @declare_process_block_class("SolidPhase", block_class=Phase)
 class SolidPhaseData(PhaseData):
+    """
+    Solid phase object class.
+    """
+
     def is_liquid_phase(self):
         return False
 
@@ -171,6 +193,10 @@ class SolidPhaseData(PhaseData):
 
 @declare_process_block_class("VaporPhase", block_class=Phase)
 class VaporPhaseData(PhaseData):
+    """
+    Vapor phase object class.
+    """
+
     def is_liquid_phase(self):
         return False
 
@@ -183,6 +209,10 @@ class VaporPhaseData(PhaseData):
 
 @declare_process_block_class("AqueousPhase", block_class=LiquidPhase)
 class AqueousPhaseData(LiquidPhaseData):
+    """
+    Aqueous phase object class.
+    """
+
     # Special phase type for liquid phases involving electrolytes
     # This is used to determine if we need to do the more complex component
     # list determinations

@@ -13,10 +13,16 @@
 """
 Base for IDAES process model objects.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into if this is necessary
+# pylint: disable=protected-access
 
 import sys
 import logging
 import textwrap
+from enum import Enum
 
 from pandas import DataFrame
 
@@ -25,7 +31,6 @@ from pyomo.common.formatting import tabular_writer
 from pyomo.environ import Block
 from pyomo.gdp import Disjunct
 from pyomo.common.config import ConfigBlock
-from enum import Enum
 
 from idaes.core.base.process_block import declare_process_block_class
 from idaes.core.initialization import BlockTriangularizationInitializer
@@ -44,7 +49,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.units_of_measurement import report_quantity
 
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
 
@@ -60,6 +65,10 @@ _log = logging.getLogger(__name__)
 
 # Enumerate options for material flow basis
 class MaterialFlowBasis(Enum):
+    """
+    Material flow basis Enum
+    """
+
     molar = 0
     mass = 1
     other = 2
@@ -229,7 +238,7 @@ class ProcessBlockData(_BlockData):
         idx_map = self.parent_component()._idx_map  # index map function
         try:
             idx = self.index()
-        except:
+        except AttributeError:
             idx = None
         if idx_map is not None:
             idx = idx_map(idx)
@@ -579,7 +588,7 @@ class ProcessBlockData(_BlockData):
                     "no default defined by parent flowsheet(s).".format(self.name)
                 )
             elif parent.config.default_property_package is not None:
-                _log.info("{} Using default property package".format(self.name))
+                _log.info(f"{self.name} Using default property package")
                 return parent.config.default_property_package
 
             parent = parent.flowsheet()

@@ -17,6 +17,9 @@ Main assumptions:
     - ideal gas
     - components in flue gas: O2, N2, NO, CO2, H2O, SO2
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo libraries
 from pyomo.environ import (
     Constraint,
@@ -509,7 +512,7 @@ class _FlueGasStateBlock(StateBlock):
                 )
         # ---------------------------------------------------------------------
         # Solve 1st stage
-        for k, b in self.items():
+        for b in self.values():
             deactivate_list = []
             if hasattr(b, "enthalpy_correlation"):
                 deactivate_list.append(b.enthalpy_correlation)
@@ -1010,7 +1013,7 @@ class FlueGasStateBlockData(StateBlockData):
                 overwrite=False,
             )
         if self.is_property_constructed("enthalpy_correlation"):
-            for p, c in self.enthalpy_correlation.items():
+            for c in self.enthalpy_correlation.values():
                 iscale.constraint_scaling_transform(
                     c,
                     iscale.get_scaling_factor(self.enth_mol)

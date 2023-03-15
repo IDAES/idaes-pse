@@ -10,6 +10,8 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
 
 __author__ = "John Eslick"
 
@@ -471,18 +473,11 @@ class SoecDesignData(UnitModelBlockData):
         )
         self.electrolysis_prop_params.set_default_scaling("flow_mol_phase", scale)
 
-        for (
-            t,
-            i,
-        ), v in self.electrolysis_reactor.control_volume.rate_reaction_extent.items():
+        for v in self.electrolysis_reactor.control_volume.rate_reaction_extent.values():
             iscale.set_scaling_factor(v, scale)
         for (
-            t,
-            p,
-            i,
-        ), v in (
-            self.electrolysis_reactor.control_volume.rate_reaction_generation.items()
-        ):
+            v
+        ) in self.electrolysis_reactor.control_volume.rate_reaction_generation.values():
             iscale.set_scaling_factor(v, scale)
 
     def set_heat_scale(self, scale=1e-5):
@@ -699,7 +694,7 @@ class SoecDesignData(UnitModelBlockData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver_obj.solve(self, tee=slc.tee)
         if not pyo.check_optimal_termination(res):
-            raise InitializationError(f"SOEC failed to initialize.")
+            raise InitializationError("SOEC failed to initialize.")
 
         from_json(self, sd=istate, wts=sp)
         init_log.info_high("SOEC Initialization Complete")
