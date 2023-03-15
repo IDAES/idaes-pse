@@ -214,8 +214,6 @@ class TestBuild:
 
     @pytest.mark.unit
     def test_states(self, model):
-        assert isinstance(model.fs.unit.states, RangeSet)
-        assert len(model.fs.unit.states) == 3
         assert isinstance(model.fs.unit.stages, RangeSet)
         assert len(model.fs.unit.stages) == 2
 
@@ -229,16 +227,22 @@ class TestBuild:
             ]
 
         assert isinstance(model.fs.unit.stream1, StateBlock1)
-        assert len(model.fs.unit.stream1) == 3
-        assert model.fs.unit.stream1[0, 0].config.defined_state
+        assert len(model.fs.unit.stream1) == 2
         assert not model.fs.unit.stream1[0, 1].config.defined_state
         assert not model.fs.unit.stream1[0, 2].config.defined_state
 
+        assert isinstance(model.fs.unit.stream1_inlet_state, StateBlock1)
+        assert len(model.fs.unit.stream1_inlet_state) == 1
+        assert model.fs.unit.stream1_inlet_state[0].config.defined_state
+
         assert isinstance(model.fs.unit.stream2, StateBlock2)
-        assert len(model.fs.unit.stream2) == 3
-        assert not model.fs.unit.stream2[0, 0].config.defined_state
+        assert len(model.fs.unit.stream2) == 2
         assert not model.fs.unit.stream2[0, 1].config.defined_state
-        assert model.fs.unit.stream2[0, 2].config.defined_state
+        assert not model.fs.unit.stream2[0, 2].config.defined_state
+
+        assert isinstance(model.fs.unit.stream2_inlet_state, StateBlock2)
+        assert len(model.fs.unit.stream2_inlet_state) == 1
+        assert model.fs.unit.stream2_inlet_state[0].config.defined_state
 
     @pytest.mark.unit
     def test_material_balances(self, model):
@@ -252,50 +256,59 @@ class TestBuild:
         assert isinstance(model.fs.unit.stream1_material_balance, Constraint)
         # 1 time point, 2 stages, 4 components
         assert len(model.fs.unit.stream1_material_balance) == 8
-        for s in [1, 2]:
-            for j in ["solvent1", "solute3"]:  # no mass transfer, forward flow
-                assert str(
-                    model.fs.unit.stream1_material_balance[0, s, j]._expr
-                ) == str(
-                    0
-                    == model.fs.unit.stream1[0, s - 1].flow_mol_phase_comp["phase1", j]
-                    - model.fs.unit.stream1[0, s].flow_mol_phase_comp["phase1", j]
-                )
-            for j in ["solute1", "solute2"]:  # has +ve mass transfer, forward flow
-                assert str(
-                    model.fs.unit.stream1_material_balance[0, s, j]._expr
-                ) == str(
-                    0
-                    == model.fs.unit.stream1[0, s - 1].flow_mol_phase_comp["phase1", j]
-                    - model.fs.unit.stream1[0, s].flow_mol_phase_comp["phase1", j]
-                    + model.fs.unit.material_transfer_term[
-                        0, s, "stream1", "stream2", j
-                    ]
-                )
+
+        for j in ["solvent1", "solute3"]:  # no mass transfer, forward flow
+            assert str(model.fs.unit.stream1_material_balance[0, 1, j]._expr) == str(
+                0
+                == model.fs.unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", j]
+                - model.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
+            )
+            assert str(model.fs.unit.stream1_material_balance[0, 2, j]._expr) == str(
+                0
+                == model.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
+                - model.fs.unit.stream1[0, 2].flow_mol_phase_comp["phase1", j]
+            )
+        for j in ["solute1", "solute2"]:  # has +ve mass transfer, forward flow
+            assert str(model.fs.unit.stream1_material_balance[0, 1, j]._expr) == str(
+                0
+                == model.fs.unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", j]
+                - model.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
+                + model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
+            )
+            assert str(model.fs.unit.stream1_material_balance[0, 2, j]._expr) == str(
+                0
+                == model.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
+                - model.fs.unit.stream1[0, 2].flow_mol_phase_comp["phase1", j]
+                + model.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
+            )
 
         assert isinstance(model.fs.unit.stream2_material_balance, Constraint)
         # 1 time point, 2 stages, 3 components
         assert len(model.fs.unit.stream2_material_balance) == 6
-        for s in [1, 2]:
-            for j in ["solvent2"]:  # no mass transfer, reverse flow
-                assert str(
-                    model.fs.unit.stream2_material_balance[0, s, j]._expr
-                ) == str(
-                    0
-                    == model.fs.unit.stream2[0, s].flow_mol_phase_comp["phase1", j]
-                    - model.fs.unit.stream2[0, s - 1].flow_mol_phase_comp["phase1", j]
-                )
-            for j in ["solute1", "solute2"]:  # has -ve mass transfer, reverse flow
-                assert str(
-                    model.fs.unit.stream2_material_balance[0, s, j]._expr
-                ) == str(
-                    0
-                    == model.fs.unit.stream2[0, s].flow_mol_phase_comp["phase1", j]
-                    - model.fs.unit.stream2[0, s - 1].flow_mol_phase_comp["phase1", j]
-                    - model.fs.unit.material_transfer_term[
-                        0, s, "stream1", "stream2", j
-                    ]
-                )
+        for j in ["solvent2"]:  # no mass transfer, reverse flow
+            assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
+                0
+                == model.fs.unit.stream2_inlet_state[0].flow_mol_phase_comp["phase1", j]
+                - model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
+            )
+            assert str(model.fs.unit.stream2_material_balance[0, 1, j]._expr) == str(
+                0
+                == model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
+                - model.fs.unit.stream2[0, 1].flow_mol_phase_comp["phase1", j]
+            )
+        for j in ["solute1", "solute2"]:  # has -ve mass transfer, reverse flow
+            assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
+                0
+                == model.fs.unit.stream2_inlet_state[0].flow_mol_phase_comp["phase1", j]
+                - model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
+                - model.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
+            )
+            assert str(model.fs.unit.stream2_material_balance[0, 1, j]._expr) == str(
+                0
+                == model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
+                - model.fs.unit.stream2[0, 1].flow_mol_phase_comp["phase1", j]
+                - model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
+            )
 
     @pytest.mark.unit
     def test_ports(self, model):
@@ -303,7 +316,7 @@ class TestBuild:
         for p, j in model.fs.unit.stream1.phase_component_set:
             assert (
                 model.fs.unit.stream1_inlet.flow_mol_phase_comp[0, p, j]
-                is model.fs.unit.stream1[0, 0].flow_mol_phase_comp[p, j]
+                is model.fs.unit.stream1_inlet_state[0].flow_mol_phase_comp[p, j]
             )
 
         assert isinstance(model.fs.unit.stream1_outlet, Port)
@@ -317,14 +330,14 @@ class TestBuild:
         for p, j in model.fs.unit.stream2.phase_component_set:
             assert (
                 model.fs.unit.stream2_inlet.flow_mol_phase_comp[0, p, j]
-                is model.fs.unit.stream2[0, 2].flow_mol_phase_comp[p, j]
+                is model.fs.unit.stream2_inlet_state[0].flow_mol_phase_comp[p, j]
             )
 
         assert isinstance(model.fs.unit.stream2_outlet, Port)
         for p, j in model.fs.unit.stream2.phase_component_set:
             assert (
                 model.fs.unit.stream2_outlet.flow_mol_phase_comp[0, p, j]
-                is model.fs.unit.stream2[0, 0].flow_mol_phase_comp[p, j]
+                is model.fs.unit.stream2[0, 1].flow_mol_phase_comp[p, j]
             )
 
     @pytest.mark.unit

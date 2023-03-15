@@ -18,7 +18,7 @@ IDAES model for a generic multiple-stream, multi-stage extractor cascade.
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, RangeSet, Set, units, Var
-from pyomo.common.config import ConfigDict, ConfigList, ConfigValue, In
+from pyomo.common.config import ConfigDict, ConfigList, ConfigValue, Bool, In
 
 # Import IDAES cores
 from idaes.core import (
@@ -88,6 +88,16 @@ class ExtractorCascadeData(UnitModelBlockData):
             "flow for given stream. Default=FlowDirection.forward.",
         ),
     )
+    _stream_config.declare(
+        "has_feed",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            doc="Bool indicating whether stream has a feed.",
+            description="Bool indicating whether stream has a feed Port and inlet "
+            "state, or if all flow is provided via mass transfer. DEfault=True.",
+        ),
+    )
 
     CONFIG.declare(
         "streams",
@@ -140,12 +150,6 @@ class ExtractorCascadeData(UnitModelBlockData):
             self.config.number_of_stages,
             doc="Set of stages in cascade (1 to number of stages)",
         )
-        self.states = RangeSet(
-            0,
-            self.config.number_of_stages,
-            doc="Set of material states in cascade. Equivalent to stages with an "
-            "extra point at 0 (0 to number of stages)",
-        )
 
         self.stream_component_interactions = Set(
             doc="Set of interacting components between streams."
@@ -183,37 +187,41 @@ class ExtractorCascadeData(UnitModelBlockData):
             ppack = pconfig.property_package
             flow_dir = pconfig.flow_direction
 
-            d1 = dict(**pconfig.property_package_args)
-            d1["defined_state"] = False
-            d0 = dict(**pconfig.property_package_args)
-            d0["defined_state"] = True
-
-            def idx_map(i):  # i = (t, s)
-                if flow_dir == FlowDirection.forward and i[1] == self.states.first():
-                    return 0
-                if flow_dir == FlowDirection.backward and i[1] == self.states.last():
-                    return 0
-                return 1
+            arg_dict1 = dict(**pconfig.property_package_args)
+            arg_dict1["defined_state"] = False
+            # d0 = dict(**pconfig.property_package_args)
+            # d0["defined_state"] = True
 
             state = ppack.build_state_block(
                 self.flowsheet().time,
-                self.states,
-                doc=f"States for stream {stream}",
-                initialize={0: d0, 1: d1},
-                idx_map=idx_map,
+                self.stages,
+                doc=f"States for stream {stream} in each stage.",
+                **arg_dict1,
             )
             self.add_component(stream, state)
+
+            # Add feed state if required
+            if pconfig.has_feed:
+                arg_dict0 = dict(**pconfig.property_package_args)
+                arg_dict0["defined_state"] = True
+
+                inlet_state = ppack.build_state_block(
+                    self.flowsheet().time,
+                    doc=f"Inlet states for stream {stream}.",
+                    **arg_dict0,
+                )
+                self.add_component(stream + "_inlet_state", inlet_state)
 
             if flow_basis is None:
                 # Set unit level flow basis and units from first stream
                 t = self.flowsheet().time.first()
-                s = self.states.first()
+                s = self.stages.first()
                 flow_basis = state[t, s].get_material_flow_basis()
                 uom = state[t, s].params.get_metadata().derived_units
             else:
                 # Check that flow basis is consistent
                 t = self.flowsheet().time.first()
-                s = self.states.first()
+                s = self.stages.first()
                 if not state[t, s].get_material_flow_basis() == flow_basis:
                     raise ConfigurationError(
                         f"Property packages use different flow bases: ExtractionCascade "
@@ -237,9 +245,10 @@ class ExtractorCascadeData(UnitModelBlockData):
             self.stream_component_interactions,
             initialize=0,
             units=mb_units,
-            doc="Interstream mass transfer term",
+            doc="Inter-stream mass transfer term",
         )
 
+        # Build balance equations
         for stream, pconfig in self.config.streams.items():
             # Material balance for stream
             state_block = getattr(self, stream)
@@ -250,15 +259,18 @@ class ExtractorCascadeData(UnitModelBlockData):
 
             def material_balance_rule(b, t, s, j):
                 if flow_dir == FlowDirection.forward:
-                    in_state = state_block[t, b.states.prev(s)]
-                    out_state = state_block[t, s]
+                    if s == b.stages.first():
+                        in_state = getattr(self, stream + "_inlet_state")[t]
+                    else:
+                        in_state = state_block[t, b.stages.prev(s)]
                 elif flow_dir == FlowDirection.backward:
-                    in_state = state_block[t, s]
-                    out_state = state_block[t, b.states.prev(s)]
+                    if s == b.stages.last():
+                        in_state = getattr(self, stream + "_inlet_state")[t]
+                    else:
+                        in_state = state_block[t, b.stages.next(s)]
                 else:
-                    raise BurntToast(
-                        "If/else overrun when constructing material balances"
-                    )
+                    raise BurntToast("If/else overrun when constructing balances")
+                out_state = state_block[t, s]
 
                 # As overall units come from the first StateBlock constructed, we
                 # cannot guarantee that any units are consistent, so convert all flow terms
@@ -299,19 +311,19 @@ class ExtractorCascadeData(UnitModelBlockData):
             sblock = getattr(self, stream)
             flow_dir = pconfig.flow_direction
 
+            if pconfig.has_feed:
+                inlet_state = getattr(self, stream + "_inlet_state")
+                in_port, _ = inlet_state.build_port(
+                    f"{stream} Inlet", slice_index=(slice(None))
+                )
+                self.add_component(stream + "_inlet", in_port)
+
             if flow_dir == FlowDirection.forward:
-                inlet = self.states.first()
-                outlet = self.states.last()
+                outlet = self.stages.last()
             elif flow_dir == FlowDirection.backward:
-                inlet = self.states.last()
-                outlet = self.states.first()
+                outlet = self.stages.first()
             else:
                 raise BurntToast("If/else overrun when constructing Ports")
-
-            in_port, _ = sblock.build_port(
-                f"{stream} Inlet", slice_index=(slice(None), inlet)
-            )
-            self.add_component(stream + "_inlet", in_port)
 
             out_port, _ = sblock.build_port(
                 f"{stream} Outlet", slice_index=(slice(None), outlet)
