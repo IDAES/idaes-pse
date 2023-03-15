@@ -24,13 +24,13 @@ Authors: Andres J Calderon, Andrew Lee
 import pytest
 import types
 
-from pyomo.environ import ConcreteModel, Block, value, Var, units as pyunits
+from pyomo.environ import ConcreteModel, Block, value, units as pyunits
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.models.properties.modular_properties.pure.ConstantProperties import *
 from idaes.core.util.misc import add_object_reference
-from idaes.core.base.property_meta import PropertyClassMetadata, UnitSet
+from idaes.core.base.property_meta import PropertyClassMetadata
 
 
 @pytest.fixture()

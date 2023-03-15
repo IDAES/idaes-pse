@@ -17,17 +17,8 @@ mixing rules because they both rely on the same phi_ij terms.
 
 Method taken from Properties of Gases and Liquids, 5th Ed., Sections 10-6-1 and 10-6-2
 """
-from pyomo.environ import log, Var, units as pyunits
-import pyomo.environ as pyo
 
-from idaes.core.util.misc import set_param_from_config
-from idaes.core.util.constants import Constants
-from idaes.models.properties.modular_properties.base.utility import get_component_object
-from idaes.models.properties.modular_properties.transport_properties.viscosity_wilke import (
-    ViscosityWilke,
-    wilke_phi_ij_callback,
-    herring_zimmer_phi_ij_callback,
-)
+from idaes.models.properties.modular_properties.transport_properties.viscosity_wilke import ViscosityWilke
 
 
 class ThermalConductivityWMS(object):

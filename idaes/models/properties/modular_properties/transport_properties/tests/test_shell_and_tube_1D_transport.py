@@ -19,7 +19,6 @@ Author: Douglas Allan, Jaffer Ghouse
 import pyomo.common.unittest as unittest
 
 import pytest
-from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -29,16 +28,9 @@ from pyomo.environ import (
 )
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 import pyomo.environ as pyo
-from pyomo.common.config import ConfigBlock
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
-import idaes
 from idaes.core import (
     FlowsheetBlock,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-    useDefault,
 )
 from idaes.models.unit_models.shell_and_tube_1d import ShellAndTube1D as HX1D
 from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern

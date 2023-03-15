@@ -18,11 +18,9 @@ Authors: Douglas Allan
 """
 
 import pytest
-import types
 from sys import modules
 
-from pyomo.environ import ConcreteModel, Block, value, Var, Param, units as pyunits
-from pyomo.common.config import ConfigBlock
+from pyomo.environ import ConcreteModel, value, Var, units as pyunits
 from pyomo.util.check_units import assert_units_equivalent
 import pyomo.environ as pyo
 
@@ -32,8 +30,6 @@ from idaes.models.properties.modular_properties.transport_properties.viscosity_w
     herring_zimmer_phi_ij_callback,
 )
 
-from idaes.core.util.misc import add_object_reference
-from idaes.core.base.property_meta import PropertyClassMetadata
 from idaes.core import declare_process_block_class, LiquidPhase, VaporPhase
 
 from idaes.models.properties.modular_properties.base.generic_property import (
@@ -41,8 +37,6 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 )
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.pure import ConstantProperties
-from idaes.core.util.exceptions import ConfigurationError
-import idaes.logger as idaeslog
 
 
 @declare_process_block_class("DummyParameterBlock")

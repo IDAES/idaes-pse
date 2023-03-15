@@ -26,18 +26,17 @@ Authors: Andrew Lee
 import pytest
 import types
 
-from pyomo.environ import ConcreteModel, Block, value, Var, Param, units as pyunits
+import pyomo.environ as pyo
+from pyomo.environ import ConcreteModel, Block, value, Var, units as pyunits
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_equivalent
 
-from idaes.models.properties.modular_properties.pure.ChungPure import *
+from idaes.models.properties.modular_properties.pure.ChungPure import ChungViscosityPure
 from idaes.models.properties.modular_properties.pure.ChapmanEnskog import (
     collision_integral_neufeld_callback,
 )
 from idaes.core.util.misc import add_object_reference
-from idaes.core.base.property_meta import PropertyClassMetadata, UnitSet
-from idaes.core.util.exceptions import ConfigurationError
-import idaes.logger as idaeslog
+from idaes.core.base.property_meta import PropertyClassMetadata
 
 
 @pytest.mark.unit

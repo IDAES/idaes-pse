@@ -20,12 +20,7 @@ to 12%. Those error figures are using experimentally-determined pure component
 viscosity; additional error can accumulate when those viscosities must be
 estimated.
 """
-from pyomo.environ import log, Var, units as pyunits
 import pyomo.environ as pyo
-
-from idaes.core.util.misc import set_param_from_config
-from idaes.core.util.constants import Constants
-from idaes.models.properties.modular_properties.base.utility import get_component_object
 
 
 class ViscosityWilke(object):
