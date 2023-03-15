@@ -98,6 +98,7 @@ class StateBlock1Data(StateBlockData):
         self.enth_flow = Var(
             units=units.J / units.s,
         )
+        self.pressure = Var(units=units.Pa)
 
     def get_material_flow_terms(self, p, j):
         return self.flow_mol_phase_comp[p, j]
@@ -112,6 +113,7 @@ class StateBlock1Data(StateBlockData):
         return {
             "flow_mol_phase_comp": self.flow_mol_phase_comp,
             "enth_flow": self.enth_flow,
+            "pressure": self.pressure,
         }
 
 
@@ -163,6 +165,7 @@ class StateBlock2Data(StateBlockData):
         self.enth_flow = Var(
             units=units.J / units.s,
         )
+        self.pressure = Var(units=units.Pa)
 
     def get_material_flow_terms(self, p, j):
         return self.flow_mol_phase_comp[p, j]
@@ -177,6 +180,7 @@ class StateBlock2Data(StateBlockData):
         return {
             "flow_mol_phase_comp": self.flow_mol_phase_comp,
             "enth_flow": self.enth_flow,
+            "pressure": self.pressure,
         }
 
 
@@ -311,6 +315,98 @@ class TestBuild:
             )
 
     @pytest.mark.unit
+    def test_energy_balances(self, model):
+        # TODO: Check transfer terms
+
+        assert isinstance(model.fs.unit.stream1_energy_balance, Constraint)
+        # 1 time point, 2 stages
+        assert len(model.fs.unit.stream1_energy_balance) == 2
+
+        assert str(model.fs.unit.stream1_energy_balance[0, 1]._expr) == str(
+            0
+            == units.convert(
+                model.fs.unit.stream1_inlet_state[0].enth_flow
+                - model.fs.unit.stream1[0, 1].enth_flow,
+                units.kg * units.m**2 / units.s**3,
+            )
+        )
+        assert str(model.fs.unit.stream1_energy_balance[0, 2]._expr) == str(
+            0
+            == units.convert(
+                model.fs.unit.stream1[0, 1].enth_flow
+                - model.fs.unit.stream1[0, 2].enth_flow,
+                units.kg * units.m**2 / units.s**3,
+            )
+        )
+
+        assert isinstance(model.fs.unit.stream2_energy_balance, Constraint)
+        # 1 time point, 2 stages
+        assert len(model.fs.unit.stream2_energy_balance) == 2
+
+        assert str(model.fs.unit.stream2_energy_balance[0, 2]._expr) == str(
+            0
+            == units.convert(
+                model.fs.unit.stream2_inlet_state[0].enth_flow
+                - model.fs.unit.stream2[0, 2].enth_flow,
+                units.kg * units.m**2 / units.s**3,
+            )
+        )
+        assert str(model.fs.unit.stream2_energy_balance[0, 1]._expr) == str(
+            0
+            == units.convert(
+                model.fs.unit.stream2[0, 2].enth_flow
+                - model.fs.unit.stream2[0, 1].enth_flow,
+                units.kg * units.m**2 / units.s**3,
+            )
+        )
+
+    @pytest.mark.unit
+    def test_pressure_balances(self, model):
+        # TODO: Check deltaP terms
+
+        assert isinstance(model.fs.unit.stream1_pressure_balance, Constraint)
+        # 1 time point, 2 stages
+        assert len(model.fs.unit.stream1_pressure_balance) == 2
+
+        assert str(model.fs.unit.stream1_pressure_balance[0, 1]._expr) == str(
+            0
+            == units.convert(
+                model.fs.unit.stream1_inlet_state[0].pressure
+                - model.fs.unit.stream1[0, 1].pressure,
+                units.kg / units.m / units.s**2,
+            )
+        )
+        assert str(model.fs.unit.stream1_pressure_balance[0, 2]._expr) == str(
+            0
+            == units.convert(
+                model.fs.unit.stream1[0, 1].pressure
+                - model.fs.unit.stream1[0, 2].pressure,
+                units.kg / units.m / units.s**2,
+            )
+        )
+
+        assert isinstance(model.fs.unit.stream2_pressure_balance, Constraint)
+        # 1 time point, 2 stages
+        assert len(model.fs.unit.stream2_pressure_balance) == 2
+
+        assert str(model.fs.unit.stream2_pressure_balance[0, 2]._expr) == str(
+            0
+            == units.convert(
+                model.fs.unit.stream2_inlet_state[0].pressure
+                - model.fs.unit.stream2[0, 2].pressure,
+                units.kg / units.m / units.s**2,
+            )
+        )
+        assert str(model.fs.unit.stream2_pressure_balance[0, 1]._expr) == str(
+            0
+            == units.convert(
+                model.fs.unit.stream2[0, 2].pressure
+                - model.fs.unit.stream2[0, 1].pressure,
+                units.kg / units.m / units.s**2,
+            )
+        )
+
+    @pytest.mark.unit
     def test_ports(self, model):
         assert isinstance(model.fs.unit.stream1_inlet, Port)
         for p, j in model.fs.unit.stream1.phase_component_set:
@@ -318,6 +414,10 @@ class TestBuild:
                 model.fs.unit.stream1_inlet.flow_mol_phase_comp[0, p, j]
                 is model.fs.unit.stream1_inlet_state[0].flow_mol_phase_comp[p, j]
             )
+        assert (
+            model.fs.unit.stream1_inlet.enth_flow[0]
+            is model.fs.unit.stream1_inlet_state[0].enth_flow
+        )
 
         assert isinstance(model.fs.unit.stream1_outlet, Port)
         for p, j in model.fs.unit.stream1.phase_component_set:
@@ -325,6 +425,10 @@ class TestBuild:
                 model.fs.unit.stream1_outlet.flow_mol_phase_comp[0, p, j]
                 is model.fs.unit.stream1[0, 2].flow_mol_phase_comp[p, j]
             )
+        assert (
+            model.fs.unit.stream1_outlet.enth_flow[0]
+            is model.fs.unit.stream1[0, 2].enth_flow
+        )
 
         assert isinstance(model.fs.unit.stream2_inlet, Port)
         for p, j in model.fs.unit.stream2.phase_component_set:
@@ -332,6 +436,10 @@ class TestBuild:
                 model.fs.unit.stream2_inlet.flow_mol_phase_comp[0, p, j]
                 is model.fs.unit.stream2_inlet_state[0].flow_mol_phase_comp[p, j]
             )
+        assert (
+            model.fs.unit.stream2_inlet.enth_flow[0]
+            is model.fs.unit.stream2_inlet_state[0].enth_flow
+        )
 
         assert isinstance(model.fs.unit.stream2_outlet, Port)
         for p, j in model.fs.unit.stream2.phase_component_set:
@@ -339,11 +447,15 @@ class TestBuild:
                 model.fs.unit.stream2_outlet.flow_mol_phase_comp[0, p, j]
                 is model.fs.unit.stream2[0, 1].flow_mol_phase_comp[p, j]
             )
+        assert (
+            model.fs.unit.stream2_outlet.enth_flow[0]
+            is model.fs.unit.stream2[0, 1].enth_flow
+        )
 
     @pytest.mark.unit
     def test_degrees_of_freedom(self, model):
-        # Expect 11 DoF: 4 stream1 inlets, 3 stream2 inlets and 2x2 mass transfer terms
-        assert (degrees_of_freedom(model)) == 11
+        # Expect 15 DoF: 6 stream1 inlets, 5 stream2 inlets and 2x2 mass transfer terms
+        assert (degrees_of_freedom(model)) == 15
 
     @pytest.mark.component
     def test_unit_consistency(self, model):
@@ -373,10 +485,14 @@ def test_toy_problem():
     model.fs.unit.stream1_inlet.flow_mol_phase_comp[0, "phase1", "solute1"].fix(3)
     model.fs.unit.stream1_inlet.flow_mol_phase_comp[0, "phase1", "solute2"].fix(4)
     model.fs.unit.stream1_inlet.flow_mol_phase_comp[0, "phase1", "solute3"].fix(5)
+    model.fs.unit.stream1_inlet.enth_flow[0].fix(5000)
+    model.fs.unit.stream1_inlet.pressure[0].fix(1.2e5)
 
     model.fs.unit.stream2_inlet.flow_mol_phase_comp[0, "phase1", "solvent2"].fix(11)
     model.fs.unit.stream2_inlet.flow_mol_phase_comp[0, "phase1", "solute1"].fix(12)
     model.fs.unit.stream2_inlet.flow_mol_phase_comp[0, "phase1", "solute2"].fix(13)
+    model.fs.unit.stream2_inlet.enth_flow[0].fix(7000)
+    model.fs.unit.stream2_inlet.pressure[0].fix(2e5)
 
     model.fs.unit.material_transfer_term[0, :, "stream1", "stream2", "solute1"].fix(0.5)
     model.fs.unit.material_transfer_term[0, :, "stream1", "stream2", "solute2"].fix(
@@ -420,3 +536,17 @@ def test_toy_problem():
     ) == pytest.approx(
         14, rel=1e-5
     )  # 13 + 0.5 + 0.5
+
+    assert value(model.fs.unit.stream1_outlet.enth_flow[0]) == pytest.approx(
+        5000, rel=1e-5
+    )
+    assert value(model.fs.unit.stream2_outlet.enth_flow[0]) == pytest.approx(
+        7000, rel=1e-5
+    )
+
+    assert value(model.fs.unit.stream1_outlet.pressure[0]) == pytest.approx(
+        1.2e5, rel=1e-5
+    )
+    assert value(model.fs.unit.stream2_outlet.pressure[0]) == pytest.approx(
+        2e5, rel=1e-5
+    )
