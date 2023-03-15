@@ -35,6 +35,9 @@ class PylintRecord:
         path_url = f"{base_url}/{path}"
         line_url = f"{path_url}#L{line}"
         return cls(
+            type=d.pop("type"),
+            module=d.pop("module"),
+            obj=d.pop("obj"),
             message_id=d.pop("message-id"),
             path=path,
             line=line,
