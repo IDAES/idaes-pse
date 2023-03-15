@@ -81,5 +81,5 @@ assuming that the installation was done using one of the methods described earli
 
 4. Install the IDAES example Jupyter notebooks.
 
-.. include:: install_templates/examples.md
+.. include:: install_templates/examples.txt
 

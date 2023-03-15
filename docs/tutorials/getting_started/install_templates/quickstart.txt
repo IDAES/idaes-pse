@@ -6,7 +6,7 @@ conda activate my-idaes-env
 idaes get-extensions --extra petsc
 
 # Install IDAES Examples (optional)
-idaes get-examples
+pip install idaes-examples
 
 # Run Tests
 pytest --pyargs idaes -W ignore
