@@ -147,7 +147,7 @@ jobs:
           retention-days: 7
 
   pylint:
-    name: pylint (errors only)
+    name: Pylint
     runs-on: ubuntu-latest
     needs: [code-formatting]
     env:
