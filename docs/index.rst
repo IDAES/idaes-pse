@@ -1,27 +1,15 @@
 ﻿.. index::
     pair: idaes;Home
+.. Include 'entities' e.g. |middot|. See https://docutils.sourceforge.io/docs/ref/rst/definitions.html
+.. include:: <isonum.txt>
+.. include:: <isoamsa.txt>
 
 Institute for the Design of Advanced Energy Systems (IDAES)
 ===========================================================
 
-Project Goals
--------------
-The Institute for the Design of Advanced Energy Systems (IDAES) will be the
-world’s premier resource for the development and analysis of innovative
-advanced energy systems through the use of process systems engineering tools
-and approaches. IDAES and its capabilities will be applicable to the development
-of the full range of advanced fossil energy systems, including chemical looping
-and other transformational |CO2| capture technologies, as well as integration with
-other new technologies such as supercritical |CO2|.
-
-For a more detailed overview of the :term:`IDAES integrated platform <IDAES-IP>`, see :doc:`this page <explanations/concepts>`.
-
-Contents
---------
-.. Include 'entities' e.g. |middot|. See https://docutils.sourceforge.io/docs/ref/rst/definitions.html
-
-.. include:: <isonum.txt>
-.. include:: <isoamsa.txt>
+The Institute for Design of Advanced Energy Systems (IDAES) was originated to bring the most advanced modeling and optimization capabilities to the challenges of transforming and decarbonizing the world’s energy systems to make them environmentally sustainable while maintaining high reliability and low cost.
+For more information about the project, see the `IDAES website`_.
+See also :doc:`IDAES concepts <explanations/concepts>` in this documentation.
 
 .. list-table::
    :class: index-table
@@ -86,13 +74,12 @@ The IDAES team is comprised of collaborators from the following institutions:
 
 Contact us
 -----------
-General, background and overview information is available at the `IDAES main
-website <https://www.idaes.org>`_.  Framework development happens at our `GitHub
-repo <https://github.com/IDAES/idaes-pse>`_ where you can `report issues/bugs
-<https://github.com/IDAES/idaes-pse/issues>`_ or `make contributions
-<https://github.com/IDAES/idaes-pse/pulls>`_.  For further enquiries, send an
-email to: <idaes-support@idaes.org>
+General, background and overview information is available at the `IDAES website`_.
+Framework development happens at our `GitHub repo <https://github.com/IDAES/idaes-pse>`_ where you can `report issues/bugs <https://github.com/IDAES/idaes-pse/issues>`_ or `make contributions
+<https://github.com/IDAES/idaes-pse/pulls>`_.
+For further enquiries, send an email to: <idaes-support@idaes.org>
 
+.. _IDAES website: https://idaes.org
 
 Indices and tables
 ------------------
