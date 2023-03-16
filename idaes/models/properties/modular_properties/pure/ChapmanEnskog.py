@@ -49,8 +49,7 @@ class ChapmanEnskogLennardJones(object):
 
         @staticmethod
         def build_parameters(cobj, p):
-            """Build Lennard Jones parameters and add callback for"""
-            """viscosity collision integral"""
+            """Build Lennard Jones parameters and add callback for viscosity collision integral"""
             ChapmanEnskogLennardJones.build_lennard_jones_parameters(cobj)
             if not hasattr(cobj, "viscosity_collision_integral_callback"):
                 cobj.viscosity_collision_integral_callback = (
