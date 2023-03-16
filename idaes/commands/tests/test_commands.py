@@ -633,7 +633,7 @@ def test_conf_file_paths(runner):
         os.remove(fname)
 
 
-@pytest.mark.skip(reason="Maybe fails on Python 3.11")
+@pytest.mark.skipif(sys.version_info[:2] == (3, 11), reason="Fails on Python 3.11")
 @pytest.mark.unit
 def test_conf_set(runner):
     fname = os.path.join(idaes.testing_directory, "conf_test.json")
