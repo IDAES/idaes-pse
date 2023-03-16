@@ -13,6 +13,8 @@
 """
 Install IDAES example files locally.
 """
+import sys
+
 # third-party
 import click
 
@@ -43,3 +45,4 @@ and the idaes-examples page on PyPI at https://pypi.org/project/idaes-examples/
 def get_examples():
     """Legacy get-examples command."""
     click.echo(MESSAGE)
+    sys.exit(0)
