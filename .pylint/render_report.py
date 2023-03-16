@@ -103,9 +103,7 @@ class Options:
     @classmethod
     def from_cli_args(cls, args: Optional[Iterable[str]] = None) -> "Options":
         parser = argparse.ArgumentParser()
-        parser.add_argument(
-            "--pylint-data-path", default="./pylint.json"
-        )
+        parser.add_argument("--pylint-data-path", default="./pylint.json")
         parser.add_argument(
             "--base-url",
             default="https://github.com/IDAES/idaes-pse/tree/main",
@@ -119,7 +117,9 @@ class Options:
         return cls(
             pylint_data_path=Path(parsed.pylint_data_path),
             base_url=str(parsed.base_url),
-            markdown_output_path=Path(parsed.markdown_output_path) if parsed.markdown_output_path else None
+            markdown_output_path=Path(parsed.markdown_output_path)
+            if parsed.markdown_output_path
+            else None,
         )
 
 
