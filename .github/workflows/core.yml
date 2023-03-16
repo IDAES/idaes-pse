@@ -147,7 +147,7 @@ jobs:
           retention-days: 7
 
   pylint:
-    name: pylint (errors only)
+    name: Pylint
     runs-on: ubuntu-latest
     needs: [code-formatting]
     env:
@@ -178,7 +178,14 @@ jobs:
         if: failure()
         run: |
           base_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blame/$GITHUB_SHA"
-          python .pylint/render_report.py --base-url="$base_url" "$pylint_output_path"
+
+          echo '
+          ## Pylint failures
+
+          For more information, refer to the [Pylint section](https://github.com/IDAES/idaes-pse/wiki/IDAES-Check-Suite#pylint) of the [IDAES check suite Wiki page](https://github.com/IDAES/idaes-pse/wiki/IDAES-Check-Suite).
+
+          ' >> "$GITHUB_STEP_SUMMARY"
+          python .pylint/render_report.py --base-url="$base_url" --markdown-output-path="$GITHUB_STEP_SUMMARY" --pylint-data-path="$pylint_output_path"
       - name: Show PYLINT-TODO comments left in the codebase
         if: always()
         run: |
