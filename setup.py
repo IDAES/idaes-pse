@@ -69,7 +69,6 @@ kwargs = dict(
     install_requires=[
         # idaes core / dmf
         "backports.shutil_get_terminal_size",
-        "bunch",
         "click>=8",
         "colorama",
         "distro",  # help identify linux distros for binary downloads
