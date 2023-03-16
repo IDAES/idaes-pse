@@ -65,14 +65,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/display-debug-info
-      - name: Write variables context to step summary
+      - name: Write vars context to step summary
         run: |
           cat <<'EOF' >> $GITHUB_STEP_SUMMARY
 
-          ## Contents of the `variables` context
+          ## Contents of the `vars` context
 
           ```json
-          ${{ toJSON(variables) }}
+          ${{ toJSON(vars) }}
           ```
           ---
 
