@@ -283,6 +283,7 @@ class ExtractorCascadeData(UnitModelBlockData):
             # Material balance for stream
             def material_balance_rule(b, t, s, j):
                 in_state, out_state = _get_state_blocks(b, t, s, stream)
+                print(stream, t, s, j, in_state, out_state)
 
                 if in_state is not None:
                     rhs = sum(
@@ -368,6 +369,10 @@ class ExtractorCascadeData(UnitModelBlockData):
                 def pressure_balance_rule(b, t, s):
                     in_state, out_state = _get_state_blocks(b, t, s, stream)
 
+                    if in_state is None:
+                        # If there is no feed, then there is no need for a pressure balance
+                        return Constraint.Skip
+
                     rhs = in_state.pressure - out_state.pressure
 
                     # As overall units come from the first StateBlock constructed, we
@@ -428,16 +433,20 @@ def _get_state_blocks(b, t, s, stream):
     """
     state_block = getattr(b, stream)
 
-    if not b.config.streams[stream].has_feed:
-        in_state = None
-    elif b.config.streams[stream].flow_direction == FlowDirection.forward:
+    if b.config.streams[stream].flow_direction == FlowDirection.forward:
         if s == b.stages.first():
-            in_state = getattr(b, stream + "_inlet_state")[t]
+            if not b.config.streams[stream].has_feed:
+                in_state = None
+            else:
+                in_state = getattr(b, stream + "_inlet_state")[t]
         else:
             in_state = state_block[t, b.stages.prev(s)]
     elif b.config.streams[stream].flow_direction == FlowDirection.backward:
         if s == b.stages.last():
-            in_state = getattr(b, stream + "_inlet_state")[t]
+            if not b.config.streams[stream].has_feed:
+                in_state = None
+            else:
+                in_state = getattr(b, stream + "_inlet_state")[t]
         else:
             in_state = state_block[t, b.stages.next(s)]
     else:
