@@ -15,7 +15,7 @@ IDAES model for a generic multiple-stream, multi-stage extractor cascade.
 """
 # Import Pyomo libraries
 from pyomo.environ import Constraint, RangeSet, Set, units, Var
-from pyomo.common.config import ConfigDict, ConfigList, ConfigValue, Bool, In
+from pyomo.common.config import ConfigDict, ConfigValue, Bool, In
 
 # Import IDAES cores
 from idaes.core import (
