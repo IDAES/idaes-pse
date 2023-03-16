@@ -47,7 +47,7 @@ class ViscosityWilke(object):
         pobj = b.params.get_phase(p)
 
         if not hasattr(b, "_visc_d_phase_comp"):
-            b._make_visc_d_phase_comp()
+            b._make_visc_d_phase_comp()  # pylint: disable=protected-access
 
         if not hasattr(b, "visc_d_phi_ij"):
             mw_dict = {
@@ -79,7 +79,7 @@ class ViscosityWilke(object):
             return sum(
                 [
                     b.mole_frac_phase_comp[p, i]
-                    * b._visc_d_phase_comp[p, i]
+                    * b._visc_d_phase_comp[p, i]  # pylint: disable=protected-access
                     / sum(
                         [
                             b.mole_frac_phase_comp[p, j] * b.visc_d_phi_ij[i, j]
@@ -100,8 +100,8 @@ def wilke_phi_ij_callback(b, i, j, pname, mw_dict):
 
     in which :math:`M_i` is the molecular weight of component :math:`i`.
     """
-    visc_i = b._visc_d_phase_comp[pname, i]
-    visc_j = b._visc_d_phase_comp[pname, j]
+    visc_i = b._visc_d_phase_comp[pname, i]  # pylint: disable=protected-access
+    visc_j = b._visc_d_phase_comp[pname, j]  # pylint: disable=protected-access
     return (
         1 + pyo.sqrt(visc_i / visc_j) * (mw_dict[j] / mw_dict[i]) ** 0.25
     ) ** 2 / pyo.sqrt(8 * (1 + mw_dict[i] / mw_dict[j]))

@@ -35,13 +35,13 @@ class ThermalConductivityWMS(object):
             # and Eq. 10-6.4
             ViscosityWilke.build_phi_ij(b, p)
             if not hasattr(b, "_therm_cond_phase_comp"):
-                b._make_therm_cond_phase_comp()
+                b._make_therm_cond_phase_comp()  # pylint: disable=protected-access
 
             # Properties of Gases and Liquids, Eq. 10-6.2
             return sum(
                 [
                     b.mole_frac_phase_comp[p, i]
-                    * b._therm_cond_phase_comp[p, i]
+                    * b._therm_cond_phase_comp[p, i]  # pylint: disable=protected-access
                     / sum(
                         [
                             b.mole_frac_phase_comp[p, j] * b.visc_d_phi_ij[i, j]
