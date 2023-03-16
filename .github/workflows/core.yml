@@ -77,7 +77,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ${{ fromJSON(variables.python_versions_json) }}
+        python-version: ${{ fromJSON(vars.python_versions_json) }}
         os:
           - linux
           - win64
