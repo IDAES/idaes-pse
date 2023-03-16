@@ -150,6 +150,7 @@ kwargs = dict(
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
         "pyomo @ https://github.com/IDAES/pyomo/archive/6.5.0.zip",
+        "pint",  # required to use Pyomo units
         "numpy",
         "pandas",
         "scipy",
