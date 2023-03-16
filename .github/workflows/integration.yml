@@ -65,6 +65,18 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/display-debug-info
+      - name: Write variables context to step summary
+        run: |
+          cat <<'EOF' >> $GITHUB_STEP_SUMMARY
+
+          ## Contents of the `variables` context
+
+          ```json
+          ${{ toJSON(variables) }}
+          ```
+          ---
+
+          EOF
       - id: check-pr-approval
         uses: ./.github/actions/check-pr-approval
         if: contains(github.event_name, 'pull_request')
