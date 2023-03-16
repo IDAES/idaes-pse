@@ -24,13 +24,19 @@ from idaes.models.properties.modular_properties.transport_properties.viscosity_w
 
 
 class ThermalConductivityWMS(object):
+    """Class to use the Wassiljew-Mason-Saxena rules to obtain mixture thermal conductivity"""
+
     class therm_cond_phase(object):
+        """Implement gas mixture thermal conductivity using Wassiljew-Mason-Saxena rules"""
+
         @staticmethod
         def build_parameters(pobj):
+            """The parameters needed by this method are the same as the ViscosityWilke method"""
             ViscosityWilke.build_parameters(pobj)
 
         @staticmethod
         def return_expression(b, p):
+            """Return expression for therm_cond_phase"""
             # Properties of Gases and Liquids, Eq. 9-5.14
             # and Eq. 10-6.4
             ViscosityWilke.build_phi_ij(b, p)

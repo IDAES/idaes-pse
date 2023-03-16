@@ -24,8 +24,11 @@ from idaes.core.util.misc import set_param_from_config
 
 
 class ChapmanEnskogLennardJones(object):
+    """Class implementing physical properties from Chapman Enskog theory"""
+
     @staticmethod
     def build_lennard_jones_parameters(cobj):
+        """Method to build Lennard Jones parameters"""
         units = cobj.parent_block().get_metadata().derived_units
         if not hasattr(cobj, "lennard_jones_sigma"):
             cobj.lennard_jones_sigma = Var(
@@ -42,8 +45,12 @@ class ChapmanEnskogLennardJones(object):
             set_param_from_config(cobj, param="lennard_jones_epsilon_reduced")
 
     class visc_d_phase_comp(object):
+        """Implementation of pure component dynamic viscosity from Chapman Enskog Theory"""
+
         @staticmethod
         def build_parameters(cobj, p):
+            """Build Lennard Jones parameters and add callback for"""
+            """viscosity collision integral"""
             ChapmanEnskogLennardJones.build_lennard_jones_parameters(cobj)
             if not hasattr(cobj, "viscosity_collision_integral_callback"):
                 cobj.viscosity_collision_integral_callback = (
@@ -52,6 +59,7 @@ class ChapmanEnskogLennardJones(object):
 
         @staticmethod
         def return_expression(b, cobj, p, T):
+            """Return expression for visc_d_phase_comp"""
             # Properties of Gases and Liquids, Eq. 9.3.9
             units = b.params.get_metadata().derived_units
 

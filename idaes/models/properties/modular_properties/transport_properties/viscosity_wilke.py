@@ -24,8 +24,16 @@ import pyomo.environ as pyo
 
 
 class ViscosityWilke(object):
+    """Class to implement Wilke method to calculate mixture dynamic viscosity"""
+
     @staticmethod
     def build_parameters(pobj):
+        """
+        Ensures there's a method to build phi_ij associated with the phase. The problem: the
+        transport_properties_options dictionary may not exist, and, if it does exist, it may not have
+        an explicit method assigned for the callback. Therefore create the dictionary if it doesn't exist
+        and ensure the correct field is populated with the default callback.
+        """
         try:
             assert (
                 "viscosity_phi_ij_callback"
@@ -44,6 +52,7 @@ class ViscosityWilke(object):
 
     @staticmethod
     def build_phi_ij(b, p):
+        """Method to build mixing function phi_ij"""
         pobj = b.params.get_phase(p)
 
         if not hasattr(b, "_visc_d_phase_comp"):
@@ -67,12 +76,16 @@ class ViscosityWilke(object):
             )
 
     class visc_d_phase(object):
+        """Method to construct gas mixture dynamic viscosity"""
+
         @staticmethod
         def build_parameters(pobj):
+            """Build parameters"""
             ViscosityWilke.build_parameters(pobj)
 
         @staticmethod
         def return_expression(b, p):
+            """Return expression for visc_d_phase"""
             # Properties of Gases and Liquids, Eq. 9-5.14
             ViscosityWilke.build_phi_ij(b, p)
 

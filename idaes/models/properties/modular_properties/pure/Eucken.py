@@ -24,9 +24,14 @@ from idaes.core.util.exceptions import ConfigurationError
 
 
 class Eucken(object):
+    """Class to implement Eucken correlation for gas-phase thermal conductivity"""
+
     class therm_cond_phase_comp(object):
+        """Eucken correlation for thermal conductivity"""
+
         @staticmethod
         def build_parameters(cobj, p):
+            """Builds dimensionless parameter f_int"""
             # Properties of Gases and Liquids 10-3-1: Three common values for f_int: f_int=1, which is Eucken
             # classic, f_int=1.32, which is "Modified Eucken", and f_int=1.15, which is a compromise suggested by
             # Stiel, L. I., and G. Thodos:AIChE J., 10: 26 (1964)
@@ -39,6 +44,7 @@ class Eucken(object):
 
         @staticmethod
         def return_expression(b, cobj, p, T):
+            """Returns expression for therm_cond_phase_comp"""
             # Properties of Gases and Liquids, Eq. 10-3.2
             units = b.params.get_metadata().derived_units
 

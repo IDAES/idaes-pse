@@ -27,8 +27,11 @@ from idaes.models.properties.modular_properties.pure.ChapmanEnskog import (
 
 
 class ChungViscosityPure(object):
+    """Container class for physical property calculations via methods of Chung et al."""
+
     @staticmethod
     def build_common_parameters(cobj):
+        """Build dipole moment and association factor"""
         units = cobj.parent_block().get_metadata().derived_units
         if not hasattr(cobj, "dipole_moment"):
             cobj.dipole_moment = Var(
@@ -45,8 +48,14 @@ class ChungViscosityPure(object):
             set_param_from_config(cobj, param="association_factor_chung")
 
     class visc_d_phase_comp(object):
+        """
+        Implementation of pure component gas dynamic viscosity via the method of Chung et al. as described in The Properties
+         of Gases and Liquids, Section 9-4-2.
+        """
+
         @staticmethod
         def build_parameters(cobj, p):
+            """Build common parameters and viscosity collision integral callback"""
             ChungViscosityPure.build_common_parameters(cobj)
             if not hasattr(cobj, "viscosity_collision_integral_callback"):
                 cobj.viscosity_collision_integral_callback = (
@@ -55,6 +64,7 @@ class ChungViscosityPure(object):
 
         @staticmethod
         def return_expression(b, cobj, p, T):
+            """Return expression for visc_d_phase_comp"""
             # Properties of Gases and Liquids 5th Ed., Section 9-4-2
             units = b.params.get_metadata().derived_units
 
