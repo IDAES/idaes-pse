@@ -78,7 +78,7 @@ kwargs = dict(
         "numpy",
         "omlt==1.1",  # fix the version for now as package evolves
         "pandas",
-        "pyomo @ https://github.com/IDAES/pyomo/archive/6.5.0.zip",
+        "pyomo ~= 6.5",
         "sympy",  # pyomo differentiation
         "pint",  # pyomo units
         "networkx",  # pyomo network
