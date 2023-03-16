@@ -108,6 +108,14 @@ class ExtractorCascadeData(UnitModelBlockData):
             doc="Bool indicating whether to include pressure balance for stream. Default=True.",
         ),
     )
+    _stream_config.declare(
+        "side_streams",
+        ConfigValue(
+            default=None,
+            domain=list,
+            doc="List of stages at which a side stream should be included.",
+        ),
+    )
 
     CONFIG.declare(
         "streams",
@@ -232,6 +240,27 @@ class ExtractorCascadeData(UnitModelBlockData):
                 )
                 self.add_component(stream + "_inlet_state", inlet_state)
 
+            # Add side streams if required
+            if pconfig.side_streams is not None:
+                # First, verify side stream set is a sub-set of stages
+                for ss in pconfig.side_streams:
+                    if ss not in self.stages:
+                        raise ConfigurationError(
+                            f"side_streams must be a sub-set of the set of stages. "
+                            f"Found {ss} in side_streams which is not in stages."
+                        )
+                # Add indexing Set for side streams
+                ss_set = Set(initialize=pconfig.side_streams)
+                self.add_component(stream + "_side_stream_set", ss_set)
+
+                ss_state = ppack.build_state_block(
+                    self.flowsheet().time,
+                    ss_set,
+                    doc=f"States for {stream} side streams in each stage.",
+                    **arg_dict1,
+                )
+                self.add_component(stream + "_side_stream_state", ss_state)
+
             tref = self.flowsheet().time.first()
             sref = self.stages.first()
             if flow_basis is None:
@@ -282,8 +311,7 @@ class ExtractorCascadeData(UnitModelBlockData):
 
             # Material balance for stream
             def material_balance_rule(b, t, s, j):
-                in_state, out_state = _get_state_blocks(b, t, s, stream)
-                print(stream, t, s, j, in_state, out_state)
+                in_state, out_state, side_state = _get_state_blocks(b, t, s, stream)
 
                 if in_state is not None:
                     rhs = sum(
@@ -298,6 +326,14 @@ class ExtractorCascadeData(UnitModelBlockData):
                 else:
                     rhs = -sum(
                         out_state.get_material_flow_terms(p, j)
+                        for p in phase_list
+                        if (p, j) in pc_set
+                    )
+
+                # Add side stream energy flow if required
+                if side_state is not None:
+                    rhs += sum(
+                        side_state.get_material_flow_terms(p, j)
                         for p in phase_list
                         if (p, j) in pc_set
                     )
@@ -333,7 +369,7 @@ class ExtractorCascadeData(UnitModelBlockData):
                 phase_list = state_block.phase_list
 
                 def energy_balance_rule(b, t, s):
-                    in_state, out_state = _get_state_blocks(b, t, s, stream)
+                    in_state, out_state, side_state = _get_state_blocks(b, t, s, stream)
 
                     if in_state is not None:
                         rhs = sum(
@@ -344,6 +380,12 @@ class ExtractorCascadeData(UnitModelBlockData):
                     else:
                         rhs = -sum(
                             out_state.get_enthalpy_flow_terms(p) for p in phase_list
+                        )
+
+                    # Add side stream energy flow if required
+                    if side_state is not None:
+                        rhs += sum(
+                            side_state.get_enthalpy_flow_terms(p) for p in phase_list
                         )
 
                     # As overall units come from the first StateBlock constructed, we
@@ -367,7 +409,7 @@ class ExtractorCascadeData(UnitModelBlockData):
             if pconfig.has_pressure_balance:
 
                 def pressure_balance_rule(b, t, s):
-                    in_state, out_state = _get_state_blocks(b, t, s, stream)
+                    in_state, out_state, _ = _get_state_blocks(b, t, s, stream)
 
                     if in_state is None:
                         # If there is no feed, then there is no need for a pressure balance
@@ -389,6 +431,25 @@ class ExtractorCascadeData(UnitModelBlockData):
                     rule=pressure_balance_rule,
                 )
                 self.add_component(stream + "_pressure_balance", pbal)
+
+                # Add side stream pressure equality if required
+                if hasattr(self, stream + "_side_stream_state"):
+                    side_set = getattr(self, stream + "_side_stream_set")
+
+                    def ss_presure_rule(b, t, s):
+                        stage_state = getattr(b, stream)[t, s]
+                        side_state = getattr(b, stream + "_side_stream_state")[t, s]
+
+                        return stage_state.pressure == side_state.pressure
+
+                    side_pbal = Constraint(
+                        self.flowsheet().time,
+                        side_set,
+                        rule=ss_presure_rule,
+                    )
+                    self.add_component(
+                        stream + "_side_stream_pressure_balance", side_pbal
+                    )
 
     def _build_ports(self):
         # Add Ports
@@ -454,4 +515,12 @@ def _get_state_blocks(b, t, s, stream):
 
     out_state = state_block[t, s]
 
-    return in_state, out_state
+    # Look for side state
+    side_state = None
+    if hasattr(b, stream + "_side_stream_state"):
+        try:
+            side_state = getattr(b, stream + "_side_stream_state")[t, s]
+        except KeyError:
+            pass
+
+    return in_state, out_state, side_state
