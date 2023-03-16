@@ -65,18 +65,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/display-debug-info
-      - name: Write vars context to step summary
-        run: |
-          cat <<'EOF' >> $GITHUB_STEP_SUMMARY
-
-          ## Contents of the `vars` context
-
-          ```json
-          ${{ toJSON(vars) }}
-          ```
-          ---
-
-          EOF
       - id: check-pr-approval
         uses: ./.github/actions/check-pr-approval
         if: contains(github.event_name, 'pull_request')
@@ -143,7 +131,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ${{ fromJSON(vars.PYTHON_VERSIONS_JSON) }}
+        python-version: ['3.8', '3.9', '3.10', '3.11']
         os:
           - linux
           - win64
@@ -180,7 +168,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ${{ fromJSON(vars.PYTHON_VERSIONS_JSON) }}
+        python-version: ['3.8', '3.9', '3.10', '3.11']
         os:
           - linux
           - win64
