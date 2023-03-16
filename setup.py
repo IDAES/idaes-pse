@@ -62,7 +62,7 @@ def dmf_data_files(root: str = DMF_DATA_ROOT) -> List[Tuple[str, List[str]]]:
 class ExtraDependencies:
     """
     A convenience shorthand to define and combine dependencies for ``extras_require``.
-    
+
     >>> extras = ExtraDependencies()
     >>> extras["ui"]
     ['requests', 'pint']
@@ -81,21 +81,23 @@ class ExtraDependencies:
         "nbconvert",
         "nbformat",
     ]
-    dmf = [
-        # all modules relative to idaes.core.dmf
-        "jsonschema",  # commands, resource, workspace
-        "setuptools",  # provides pkg_resources?
-        "traitlets",  # dmfbase
-        "lxml",  # help
-        "seaborn",  # model_data (optional^2)
-        "PyPDF2",  # model_data (optional^2)
-        "colorama", # util
-        "ipython",  # magics
-        "pyyaml", # workspace
-        "tinydb",  # resourcedb
-        "xlrd",  # tables (implicitly by pandas.read_excel())
-        "openpyxl",  # tables (implicitly by pandas.read_excel())
-    ],
+    dmf = (
+        [
+            # all modules relative to idaes.core.dmf
+            "jsonschema",  # commands, resource, workspace
+            "setuptools",  # provides pkg_resources?
+            "traitlets",  # dmfbase
+            "lxml",  # help
+            "seaborn",  # model_data (optional^2)
+            "PyPDF2",  # model_data (optional^2)
+            "colorama",  # util
+            "ipython",  # magics
+            "pyyaml",  # workspace
+            "tinydb",  # resourcedb
+            "xlrd",  # tables (implicitly by pandas.read_excel())
+            "openpyxl",  # tables (implicitly by pandas.read_excel())
+        ],
+    )
     surrogate = [
         "omlt==1.1",  # fix the version for now as package evolves
     ]
