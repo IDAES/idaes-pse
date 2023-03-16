@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Costing package based on methods from:
@@ -19,9 +19,12 @@ Costing package based on methods from:
     Chapter 22. Cost Accounting and Capital Cost Estimation
     22.2 Cost Indexes and Capital Investment
 
-Curently, this costing package only includes methods for capital costing of
+Currently, this costing package only includes methods for capital costing of
 unit operations.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 import pyomo.environ as pyo
 
 # TODO: HX1D not supported - does not define area (has shell_area & tube_area)
@@ -203,7 +206,6 @@ class BlowerMaterial(StrEnum):
 
 @declare_process_block_class("SSLWCosting")
 class SSLWCostingData(FlowsheetCostingBlockData):
-
     # Register currency and conversion rates based on CE Index
     register_idaes_currency_units()
 
@@ -233,18 +235,16 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         4. self.aggregate_flow_costs (indexed by flow type)
         """
         # TODO: Do we have any process level methods to add here?
-        pass
 
     @staticmethod
-    def initialize_build(self):
+    def initialize_build(*args, **kwargs):
         """
         Here we can add intialization steps for the things we built in
         build_process_costs.
 
         Note that the aggregate costs will be initialized by the framework.
         """
-        # TODO: For now,  no additional process level costs to initialize
-        pass
+        # TODO: For now, no additional process level costs to initialize
 
     def cost_heat_exchanger(
         blk,
@@ -700,7 +700,6 @@ class SSLWCostingData(FlowsheetCostingBlockData):
     def _cost_distillation_trays(
         blk, tray_material, tray_type, vessel_diameter, number_of_trays
     ):
-
         # Check arguments
         if tray_material not in TrayMaterial:
             raise ConfigurationError(
@@ -1618,7 +1617,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         to call the specific sub-methods directly as required.
 
         Args:
-            mover_type: optional arguemnt to indicate type of pressure changer.
+            mover_type: optional argument to indicate type of pressure changer.
         """
         if not blk.unit_model.config.compressor or mover_type == "turbine":
             # Unit is a turbine
@@ -1641,7 +1640,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             SSLWCostingData.cost_fan(blk, **kwargs)
         else:
             raise ConfigurationError(
-                f"{blk.name} - unrecognised value for mover_type argument: "
+                f"{blk.name} - unrecognized value for mover_type argument: "
                 f"{mover_type}."
             )
 

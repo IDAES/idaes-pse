@@ -1,28 +1,32 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Get project version and/or git hash
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 # stdlib
 from collections import namedtuple
 import importlib
 import json
 import logging
 from pathlib import Path
-import pkg_resources
 import subprocess
 from types import ModuleType
 from typing import Union
+
+import pkg_resources
 
 _log = logging.getLogger(__name__)
 
@@ -109,12 +113,12 @@ class Versioned:
         Returns:
             The Git hash (which may be None) and the version (a string)
         """
-        hash = None
+        _hash = None
         try:
-            hash = self.git_hash
+            _hash = self.git_hash
         except GetVersionError:
             pass
-        return VersionInfo(git_hash=hash, version=self.version)
+        return VersionInfo(git_hash=_hash, version=self.version)
 
     @property
     def name(self) -> str:
@@ -155,7 +159,7 @@ class Versioned:
         version = None
         try:
             version = pkg_resources.get_distribution(self._name).version
-        except Exception as err:
+        except Exception as err:  # pylint: disable=W0703
             _log.warning(
                 f"Could not get version from pkg_resources.get_distribution; trying pip ({self.PIP}). "
                 f"Error message was: {err}"

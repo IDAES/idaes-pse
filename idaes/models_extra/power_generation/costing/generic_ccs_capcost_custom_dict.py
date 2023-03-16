@@ -1,15 +1,18 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+
 import os
 import json
 from pyomo.common.fileutils import this_file_dir
@@ -647,12 +650,13 @@ def load_generic_ccs_costing_dictionary(path=None):
 
         generic_ccs_costing_data = generic_ccs_costing_params
 
-        for tech in generic_ccs_costing_data.keys():  # do one technology at a time
+        for (
+            tech,
+            gccsd,
+        ) in generic_ccs_costing_data.items():  # do one technology at a time
             for ccs in ["A", "B"]:
-                if (
-                    ccs in generic_ccs_costing_data[tech]
-                ):  # check if CCS = A, for indexing
-                    accounts_dict = generic_ccs_costing_data[tech][ccs]  # shorter alias
+                if ccs in gccsd:  # check if CCS = A, for indexing
+                    accounts_dict = gccsd[ccs]  # shorter alias
                     for account in accounts_dict.keys():  # do one account at a time
                         if account == "5.1.a.epri":
                             accounts_dict[account][
@@ -675,7 +679,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                             key: accounts_dict[account][key]
                             for key in sorted_accountkeys
                         }  # re-add the keys in alphabetical order
-                    generic_ccs_costing_data[tech][
+                    gccsd[
                         ccs
                     ] = accounts_dict  # use the alias to update the original dictionary
 

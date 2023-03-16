@@ -2,14 +2,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains utility functions for reporting structural statistics of
@@ -56,10 +56,16 @@ def number_total_blocks(block):
     Returns:
         Number of Block components in block (including block itself)
     """
-    b = 1  # Start at 1 to include main model
-    for o in block.component_data_objects(ctype=Block, active=None, descend_into=True):
-        b += 1
-    return b
+    # +1 to include main model
+    return (
+        sum(
+            1
+            for _ in block.component_data_objects(
+                ctype=Block, active=None, descend_into=True
+            )
+        )
+        + 1
+    )
 
 
 def activated_blocks_set(block):
@@ -97,10 +103,12 @@ def number_activated_blocks(block):
     b = 0
     if block.active:
         b = 1
-        for o in block.component_data_objects(
-            ctype=Block, active=True, descend_into=True
-        ):
-            b += 1
+        b += sum(
+            1
+            for _ in block.component_data_objects(
+                ctype=Block, active=True, descend_into=True
+            )
+        )
     return b
 
 
@@ -162,10 +170,7 @@ def number_total_constraints(block):
     Returns:
         Number of Constraint components in block
     """
-    tc = 0
-    for c in activated_block_component_generator(block, ctype=Constraint):
-        tc += 1
-    return tc
+    return sum(1 for _ in activated_block_component_generator(block, ctype=Constraint))
 
 
 def activated_constraints_generator(block):
@@ -207,10 +212,7 @@ def number_activated_constraints(block):
     Returns:
         Number of activated Constraint components in block
     """
-    tc = 0
-    for c in activated_constraints_generator(block):
-        tc += 1
-    return tc
+    return sum(1 for _ in activated_constraints_generator(block))
 
 
 def deactivated_constraints_generator(block):
@@ -253,10 +255,7 @@ def number_deactivated_constraints(block):
     Returns:
         Number of deactivated Constraint components in block
     """
-    tc = 0
-    for c in deactivated_constraints_generator(block):
-        tc += 1
-    return tc
+    return sum(1 for _ in deactivated_constraints_generator(block))
 
 
 # -------------------------------------------------------------------------
@@ -301,10 +300,7 @@ def number_total_equalities(block):
     Returns:
         Number of equality Constraint components in block
     """
-    tc = 0
-    for c in total_equalities_generator(block):
-        tc += 1
-    return tc
+    return sum(1 for _ in total_equalities_generator(block))
 
 
 def activated_equalities_generator(block):
@@ -354,10 +350,7 @@ def number_activated_equalities(block):
     Returns:
         Number of activated equality Constraint components in block
     """
-    tc = 0
-    for o in activated_equalities_generator(block):
-        tc += 1
-    return tc
+    return sum(1 for _ in activated_equalities_generator(block))
 
 
 def deactivated_equalities_generator(block):
@@ -403,10 +396,7 @@ def number_deactivated_equalities(block):
     Returns:
         Number of deactivated equality Constraint components in block
     """
-    tc = 0
-    for c in deactivated_equalities_generator(block):
-        tc += 1
-    return tc
+    return sum(1 for _ in deactivated_equalities_generator(block))
 
 
 # -------------------------------------------------------------------------
@@ -452,10 +442,7 @@ def number_total_inequalities(block):
     Returns:
         Number of inequality Constraint components in block
     """
-    c = 0
-    for o in total_inequalities_generator(block):
-        c += 1
-    return c
+    return sum(1 for _ in total_inequalities_generator(block))
 
 
 def activated_inequalities_generator(block):
@@ -501,10 +488,7 @@ def number_activated_inequalities(block):
     Returns:
         Number of activated inequality Constraint components in block
     """
-    c = 0
-    for o in activated_inequalities_generator(block):
-        c += 1
-    return c
+    return sum(1 for _ in activated_inequalities_generator(block))
 
 
 def deactivated_inequalities_generator(block):
@@ -550,16 +534,13 @@ def number_deactivated_inequalities(block):
     Returns:
         Number of deactivated inequality Constraint components in block
     """
-    c = 0
-    for o in deactivated_inequalities_generator(block):
-        c += 1
-    return c
+    return sum(1 for _ in deactivated_inequalities_generator(block))
 
 
 # -------------------------------------------------------------------------
 # Basic Variable Methods
 # Always use ComponentSets for Vars to avoid duplication of References
-# i.e. number methods should alwys use the ComponentSet, not a generator
+# i.e. number methods should always use the ComponentSet, not a generator
 def variables_set(block):
     """
     Method to return a ComponentSet of all Var components in a model.
@@ -1175,10 +1156,7 @@ def number_total_objectives(block):
     Returns:
         Number of Objective components which appear in block
     """
-    c = 0
-    for o in total_objectives_generator(block):
-        c += 1
-    return c
+    return sum(1 for _ in total_objectives_generator(block))
 
 
 def activated_objectives_generator(block):
@@ -1222,10 +1200,7 @@ def number_activated_objectives(block):
     Returns:
         Number of activated Objective components which appear in block
     """
-    c = 0
-    for o in activated_objectives_generator(block):
-        c += 1
-    return c
+    return sum(1 for _ in activated_objectives_generator(block))
 
 
 def deactivated_objectives_generator(block):
@@ -1269,10 +1244,7 @@ def number_deactivated_objectives(block):
     Returns:
         Number of deactivated Objective components which appear in block
     """
-    c = 0
-    for o in deactivated_objectives_generator(block):
-        c += 1
-    return c
+    return sum(1 for _ in deactivated_objectives_generator(block))
 
 
 # -------------------------------------------------------------------------

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This model contains equations relating to the electrochemistry occurring at the
@@ -43,6 +43,13 @@ and related approximations for calculating activation losses in solid oxide
 fuel cell models. Journal of Power Sources, 152(1–2), 175–181.
 https://doi.org/10.1016/j.jpowsour.2005.03.174
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 __author__ = "Douglas Allan"
 
 import copy
@@ -138,7 +145,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         # Set up some sets for the space and time indexing
         tset = self.flowsheet().config.time
         # Set up node and face sets and get integer indices for them
-        izfaces, iznodes = common._face_initializer(
+        izfaces, iznodes = common._face_initializer(  # pylint: disable=unused-variable
             self, self.config.control_volume_zfaces, "z"
         )
         comps = self.component_list = pyo.Set(
@@ -419,7 +426,6 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
     def initialize_build(
         self, outlvl=idaeslog.NOTSET, solver=None, optarg=None, fix_x0=False
     ):
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         self.temperature_deviation_x.fix()
@@ -469,10 +475,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         def cst(c, s):
             iscale.constraint_scaling_transform(c, s, overwrite=False)
 
-        sR = 1e-1  # Scaling factor for R
         sy_def = 10  # Mole frac comp scaling
-        sLy = 1 / self.length_y[None].value
-        sLz = len(self.iznodes) / self.length_z[None].value
 
         for t in self.flowsheet().time:
             for iz in self.iznodes:

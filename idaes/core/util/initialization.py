@@ -2,14 +2,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains utility functions for initialization of IDAES models.
@@ -241,6 +241,7 @@ def solve_indexed_blocks(solver, blocks, **kwds):
     Returns:
         A Pyomo solver results object
     """
+    # We need to play with Pyomo internals for this
     # Check blocks argument, and convert to a list of Blocks
     if isinstance(blocks, Block):
         blocks = [blocks]
@@ -261,8 +262,10 @@ def solve_indexed_blocks(solver, blocks, **kwds):
                 )
             # Append components of BlockData to temporary Block
             try:
-                tmp._decl["block_%s" % i] = i
-                tmp._decl_order.append((b, i + 1 if i < nBlocks - 1 else None))
+                tmp._decl["block_%s" % i] = i  # pylint: disable=protected-access
+                tmp._decl_order.append(  # pylint: disable=protected-access
+                    (b, i + 1 if i < nBlocks - 1 else None)
+                )
             except Exception:
                 raise Exception(
                     "solve_indexed_blocks method failed adding "
@@ -270,7 +273,11 @@ def solve_indexed_blocks(solver, blocks, **kwds):
                 )
 
         # Set ctypes on temporary Block
-        tmp._ctypes[Block] = [0, nBlocks - 1, nBlocks]
+        tmp._ctypes[Block] = [  # pylint: disable=protected-access
+            0,
+            nBlocks - 1,
+            nBlocks,
+        ]
 
         # Solve temporary Block
         results = solver.solve(tmp, **kwds)
@@ -278,9 +285,9 @@ def solve_indexed_blocks(solver, blocks, **kwds):
     finally:
         # Clean up temporary Block contents so they are not removed when Block
         # is garbage collected.
-        tmp._decl = {}
-        tmp._decl_order = []
-        tmp._ctypes = {}
+        tmp._decl = {}  # pylint: disable=protected-access
+        tmp._decl_order = []  # pylint: disable=protected-access
+        tmp._ctypes = {}  # pylint: disable=protected-access
 
     # Return results
     return results
@@ -313,27 +320,30 @@ def initialize_by_time_element(fs, time, **kwargs):
         raise ValueError("ContinuousSet must be discretized")
 
     scheme = time.get_discretization_info()["scheme"]
-    fep_list = time.get_finite_elements()
     nfe = time.get_discretization_info()["nfe"]
 
     if scheme == "LAGRANGE-RADAU":
         ncp = time.get_discretization_info()["ncp"]
     elif scheme == "LAGRANGE-LEGENDRE":
-        msg = "Initialization does not support collocation with Legendre roots"
-        raise NotImplementedError(msg)
+        raise NotImplementedError(
+            "Initialization does not support collocation with Legendre roots"
+        )
     elif scheme == "BACKWARD Difference":
         ncp = 1
     elif scheme == "FORWARD Difference":
         ncp = 1
-        msg = "Forward initialization (explicit Euler) has not yet been implemented"
-        raise NotImplementedError(msg)
+        raise NotImplementedError(
+            "Forward initialization (explicit Euler) has not yet been implemented"
+        )
     elif scheme == "CENTRAL Difference":
-        msg = "Initialization does not support central finite difference"
-        raise NotImplementedError(msg)
+        raise NotImplementedError(
+            "Initialization does not support central finite difference"
+        )
     else:
-        msg = "Unrecognized discretization scheme. "
-        "Has the model been discretized along the provided ContinuousSet?"
-        raise ValueError(msg)
+        raise ValueError(
+            "Unrecognized discretization scheme. "
+            "Has the model been discretized along the provided ContinuousSet?"
+        )
     # Disallow Central/Legendre discretizations.
     # Neither of these seem to be square by default for multi-finite element
     # initial value problems.
@@ -484,8 +494,8 @@ def initialize_by_time_element(fs, time, **kwargs):
             if degrees_of_freedom(fs) != 0:
                 msg = (
                     f"Model has nonzero degrees of freedom at finite element"
-                    " {i}. This was unexpected. "
-                    "Use keyword arg igore_dof=True to skip this check."
+                    f" {i}. This was unexpected. "
+                    f"Use keyword arg ignore_dof=True to skip this check."
                 )
                 init_log.error(msg)
                 raise ValueError("Nonzero degrees of freedom")

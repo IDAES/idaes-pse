@@ -1,18 +1,25 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Dynamic sub-flowsheet for a subcritical 300MWe boiler system
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# Model needs to access private flow terms
+# pylint: disable=protected-access
+
+import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
 import pyomo.environ as pyo
@@ -54,8 +61,6 @@ from idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.gene
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util.dyn_utils import copy_values_at_time, copy_non_time_indexed_values
-
-import matplotlib.pyplot as plt
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 
@@ -1030,7 +1035,7 @@ def set_scaling_factors(m):
         iscale.set_scaling_factor(ww.energy_holdup_metal, 1e-6)
         iscale.set_scaling_factor(ww.N_Re, 1e-6)
         iscale.set_scaling_factor(ww.pitch, 1e3)
-        for j, c in ww.hconv_lo_eqn.items():
+        for c in ww.hconv_lo_eqn.values():
             iscale.constraint_scaling_transform(c, 1e-2)
 
     iscale.set_scaling_factor(fs.aRoof.heat_fireside, 1e-6)
@@ -1049,7 +1054,7 @@ def set_scaling_factors(m):
     iscale.set_scaling_factor(fs.aDrum.control_volume.energy_holdup, 1e-10)
     iscale.set_scaling_factor(fs.aDrum.control_volume.material_holdup, 1e-5)
     if m.dynamic:
-        for t, c in fs.aDrum.control_volume.energy_accumulation_disc_eq.items():
+        for c in fs.aDrum.control_volume.energy_accumulation_disc_eq.values():
             iscale.constraint_scaling_transform(c, 1e-4)
 
     iscale.set_scaling_factor(fs.aDowncomer.control_volume.energy_holdup, 1e-10)
@@ -1069,36 +1074,36 @@ def set_scaling_factors(m):
     iscale.set_scaling_factor(fs.aECON.tube.enthalpy_flow_dx, 1e-7)
     iscale.set_scaling_factor(fs.aECON.shell.heat, 1e-7)
     iscale.set_scaling_factor(fs.aECON.tube.heat, 1e-7)
-    for t, c in fs.aECON.shell.enthalpy_flow_dx_disc_eq.items():
+    for c in fs.aECON.shell.enthalpy_flow_dx_disc_eq.values():
         iscale.constraint_scaling_transform(c, 1e-7)
-    for t, c in fs.aECON.tube.enthalpy_flow_dx_disc_eq.items():
+    for c in fs.aECON.tube.enthalpy_flow_dx_disc_eq.values():
         iscale.constraint_scaling_transform(c, 1e-7)
 
     iscale.set_scaling_factor(fs.aPSH.shell._enthalpy_flow, 1e-8)
     iscale.set_scaling_factor(fs.aPSH.tube._enthalpy_flow, 1e-8)
     iscale.set_scaling_factor(fs.aPSH.shell.enthalpy_flow_dx, 1e-7)
     iscale.set_scaling_factor(fs.aPSH.tube.enthalpy_flow_dx, 1e-7)
-    for t, c in fs.aPSH.shell.enthalpy_flow_dx_disc_eq.items():
+    for c in fs.aPSH.shell.enthalpy_flow_dx_disc_eq.values():
         iscale.constraint_scaling_transform(c, 1e-7)
-    for t, c in fs.aPSH.tube.enthalpy_flow_dx_disc_eq.items():
+    for c in fs.aPSH.tube.enthalpy_flow_dx_disc_eq.values():
         iscale.constraint_scaling_transform(c, 1e-7)
 
     iscale.set_scaling_factor(fs.aRH1.shell._enthalpy_flow, 1e-8)
     iscale.set_scaling_factor(fs.aRH1.tube._enthalpy_flow, 1e-8)
     iscale.set_scaling_factor(fs.aRH1.shell.enthalpy_flow_dx, 1e-7)
     iscale.set_scaling_factor(fs.aRH1.tube.enthalpy_flow_dx, 1e-7)
-    for t, c in fs.aRH1.shell.enthalpy_flow_dx_disc_eq.items():
+    for c in fs.aRH1.shell.enthalpy_flow_dx_disc_eq.values():
         iscale.constraint_scaling_transform(c, 1e-7)
-    for t, c in fs.aRH1.tube.enthalpy_flow_dx_disc_eq.items():
+    for c in fs.aRH1.tube.enthalpy_flow_dx_disc_eq.values():
         iscale.constraint_scaling_transform(c, 1e-7)
 
     iscale.set_scaling_factor(fs.aRH2.shell._enthalpy_flow, 1e-8)
     iscale.set_scaling_factor(fs.aRH2.tube._enthalpy_flow, 1e-8)
     iscale.set_scaling_factor(fs.aRH2.shell.enthalpy_flow_dx, 1e-7)
     iscale.set_scaling_factor(fs.aRH2.tube.enthalpy_flow_dx, 1e-7)
-    for t, c in fs.aRH2.shell.enthalpy_flow_dx_disc_eq.items():
+    for c in fs.aRH2.shell.enthalpy_flow_dx_disc_eq.values():
         iscale.constraint_scaling_transform(c, 1e-7)
-    for t, c in fs.aRH2.tube.enthalpy_flow_dx_disc_eq.items():
+    for c in fs.aRH2.tube.enthalpy_flow_dx_disc_eq.values():
         iscale.constraint_scaling_transform(c, 1e-7)
 
     # Calculate calculated scaling factors
@@ -1192,7 +1197,6 @@ def main_dynamic():
 
     solver = get_solver()
 
-    dof = degrees_of_freedom(m_dyn.fs_main)
     # solving dynamic model at steady-state
     print("solving dynamic model at steady-state...")
     solver.solve(m_dyn.fs_main, tee=True)

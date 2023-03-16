@@ -2,14 +2,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains utility functions for mathematical operators of use in
@@ -35,7 +35,7 @@ def smooth_abs(a, eps=1e-4):
         An expression for the smoothed absolute value operation.
     """
     # Check type of eps
-    if not (isinstance(eps, (float, int, Param))):
+    if not isinstance(eps, (float, int, Param)):
         raise TypeError(
             "smooth_abs eps argument must be a float, int or " "Pyomo Param"
         )
@@ -68,7 +68,7 @@ def smooth_minmax(a, b, eps=1e-4, sense="max"):
         An expression for the smoothed minimum or maximum operation.
     """
     # Check type of eps
-    if not (isinstance(eps, (float, int, Param))):
+    if not isinstance(eps, (float, int, Param)):
         raise TypeError(
             "Smooth {} eps argument must be a float, int or "
             "Pyomo Param".format(sense)

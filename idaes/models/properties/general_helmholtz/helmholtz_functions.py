@@ -1,17 +1,23 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """Generic Helmholtz EOS Functions and Parameters
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 __author__ = "John Eslick"
 
 import enum
@@ -45,21 +51,24 @@ _log = idaeslog.getLogger(__name__)
 _data_dir = os.path.join(idaes.bin_directory, "helm_data")
 _data_dir = os.path.join(_data_dir, "")
 
+# General Helmholtz functions return variables for all phases,
+# but single phase properties do not need all of these.
+# pylint: disable=W0612
+
 try:
-    # When compling these, I don't bother changing the extension based on OS,
+    # When compiling these, I don't bother changing the extension based on OS,
     # so the file name is always ends in .so. It's fine.
     _flib = find_library("general_helmholtz_external.so")
     ctypes.cdll.LoadLibrary(_flib)
-except:
+except Exception:  # pylint: disable=W0703
     _flib = None
 
 
 def helmholtz_available():
-    """Returns True if the shared library is installed and loads propertly
+    """Returns True if the shared library is installed and loads properly
     otherwise returns False
     """
     if _flib is None:
-        _log.error("Shared library 'general_helmholtz_external' not found.")
         return False
     if not os.path.exists(_data_dir):
         _log.error(f"The Helmholtz EoS data directory {_data_dir} does not exist.")
@@ -89,7 +98,7 @@ class PhaseType(enum.Enum):
     MIX = 1  # Looks like a single phase called mixed with a vapor fraction
     LG = 2  # Looks like two phases vapor and liquid
     L = 3  # Assume only liquid is present
-    G = 4  # Assume only vapor is pressent
+    G = 4  # Assume only vapor is present
 
 
 class AmountBasis(enum.Enum):
@@ -124,7 +133,7 @@ _external_function_map = {
         "arg_units": [dimensionless, dimensionless, dimensionless],
         "doc": "s(comp, delta, tau)",
     },
-    "h_func": {  # enthaply
+    "h_func": {  # enthalpy
         "fname": "h",
         "units": pyo.units.kJ / pyo.units.kg,
         "arg_units": [dimensionless, dimensionless, dimensionless],
@@ -154,11 +163,196 @@ _external_function_map = {
         "arg_units": [dimensionless, dimensionless, dimensionless],
         "doc": "cp(comp, delta, tau)",
     },
-    "w_func": {  # entropy
+    "w_func": {  # speed of sound
         "fname": "w",
         "units": pyo.units.m / pyo.units.s,
         "arg_units": [dimensionless, dimensionless, dimensionless],
         "doc": "w(comp, delta, tau)",
+    },
+    "v_func": {  # specific volume
+        "fname": "v",
+        "units": pyo.units.m**3 / pyo.units.kg,
+        "arg_units": [dimensionless, dimensionless, dimensionless],
+        "doc": "v(comp, delta, tau)",
+    },
+    # Functions of (h, p)
+    "u_hp_func": {  # internal energy
+        "fname": "u_hp",
+        "units": pyo.units.kJ / pyo.units.kg,
+        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg, pyo.units.kPa],
+        "doc": "u(comp, enthalpy, pressure)",
+    },
+    "s_hp_func": {  # entropy
+        "fname": "s_hp",
+        "units": pyo.units.kJ / pyo.units.kg / pyo.units.K,
+        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg, pyo.units.kPa],
+        "doc": "s(comp, enthalpy, pressure)",
+    },
+    "g_hp_func": {  # Gibbs free energy
+        "fname": "g_hp",
+        "units": pyo.units.kJ / pyo.units.kg,
+        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg, pyo.units.kPa],
+        "doc": "g(comp, enthalpy, pressure)",
+    },
+    "f_hp_func": {  # Helmholtz free energy
+        "fname": "f_hp",
+        "units": pyo.units.kJ / pyo.units.kg,
+        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg, pyo.units.kPa],
+        "doc": "f(comp, enthalpy, pressure)",
+    },
+    "cv_hp_func": {  # constant volume heat capacity
+        "fname": "cv_hp",
+        "units": pyo.units.kJ / pyo.units.kg / pyo.units.K,
+        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg, pyo.units.kPa],
+        "doc": "cv(comp, enthalpy, pressure)",
+    },
+    "cp_hp_func": {  # constant pressure heat capacity
+        "fname": "cp_hp",
+        "units": pyo.units.kJ / pyo.units.kg / pyo.units.K,
+        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg, pyo.units.kPa],
+        "doc": "cp(comp, enthalpy, pressure)",
+    },
+    "w_hp_func": {  # speed of sound
+        "fname": "w_hp",
+        "units": pyo.units.m / pyo.units.s,
+        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg, pyo.units.kPa],
+        "doc": "w(comp, enthalpy, pressure)",
+    },
+    "v_hp_func": {  # specific volume
+        "fname": "v_hp",
+        "units": pyo.units.m**3 / pyo.units.kg,
+        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg, pyo.units.kPa],
+        "doc": "v(comp, enthalpy, pressure)",
+    },
+    # Functions of (s, p)
+    "u_sp_func": {  # internal energy
+        "fname": "u_sp",
+        "units": pyo.units.kJ / pyo.units.kg,
+        "arg_units": [
+            dimensionless,
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kPa,
+        ],
+        "doc": "u(comp, entropy, pressure)",
+    },
+    "h_sp_func": {  # enthalpy
+        "fname": "h_sp",
+        "units": pyo.units.kJ / pyo.units.kg,
+        "arg_units": [
+            dimensionless,
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kPa,
+        ],
+        "doc": "h(comp, entropy, pressure)",
+    },
+    "g_sp_func": {  # Gibbs free energy
+        "fname": "g_sp",
+        "units": pyo.units.kJ / pyo.units.kg,
+        "arg_units": [
+            dimensionless,
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kPa,
+        ],
+        "doc": "g(comp, entropy, pressure)",
+    },
+    "f_sp_func": {  # Helmholtz free energy
+        "fname": "f_sp",
+        "units": pyo.units.kJ / pyo.units.kg,
+        "arg_units": [
+            dimensionless,
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kPa,
+        ],
+        "doc": "f(comp, entropy, pressure)",
+    },
+    "cv_sp_func": {  # constant volume heat capacity
+        "fname": "cv_sp",
+        "units": pyo.units.kJ / pyo.units.kg / pyo.units.K,
+        "arg_units": [
+            dimensionless,
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kPa,
+        ],
+        "doc": "cv(comp, entropy, pressure)",
+    },
+    "cp_sp_func": {  # constant pressure heat capacity
+        "fname": "cp_sp",
+        "units": pyo.units.kJ / pyo.units.kg / pyo.units.K,
+        "arg_units": [
+            dimensionless,
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kPa,
+        ],
+        "doc": "cp(comp, entropy, pressure)",
+    },
+    "w_sp_func": {  # speed of sound
+        "fname": "w_sp",
+        "units": pyo.units.m / pyo.units.s,
+        "arg_units": [
+            dimensionless,
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kPa,
+        ],
+        "doc": "w(comp, entropy, pressure)",
+    },
+    "v_sp_func": {  # specific volume
+        "fname": "v_sp",
+        "units": pyo.units.m**3 / pyo.units.kg,
+        "arg_units": [
+            dimensionless,
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+            pyo.units.kPa,
+        ],
+        "doc": "v(comp, entropy, pressure)",
+    },
+    # Functions of (u, p)
+    "h_up_func": {  # enthalpy
+        "fname": "h_up",
+        "units": pyo.units.kJ / pyo.units.kg,
+        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg, pyo.units.kPa],
+        "doc": "h(comp, internal energy, pressure)",
+    },
+    "s_up_func": {  # entropy
+        "fname": "s_up",
+        "units": pyo.units.kJ / pyo.units.kg / pyo.units.K,
+        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg, pyo.units.kPa],
+        "doc": "s(comp, internal energy, pressure)",
+    },
+    "g_up_func": {  # Gibbs free energy
+        "fname": "g_up",
+        "units": pyo.units.kJ / pyo.units.kg,
+        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg, pyo.units.kPa],
+        "doc": "g(comp, internal energy, pressure)",
+    },
+    "f_up_func": {  # Helmholtz free energy
+        "fname": "f_up",
+        "units": pyo.units.kJ / pyo.units.kg,
+        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg, pyo.units.kPa],
+        "doc": "f(comp, internal energy, pressure)",
+    },
+    "cv_up_func": {  # constant volume heat capacity
+        "fname": "cv_up",
+        "units": pyo.units.kJ / pyo.units.kg / pyo.units.K,
+        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg, pyo.units.kPa],
+        "doc": "cv(comp, internal energy, pressure)",
+    },
+    "cp_up_func": {  # constant pressure heat capacity
+        "fname": "cp_up",
+        "units": pyo.units.kJ / pyo.units.kg / pyo.units.K,
+        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg, pyo.units.kPa],
+        "doc": "cp(comp, internal energy, pressure)",
+    },
+    "w_up_func": {  # speed of sound
+        "fname": "w_up",
+        "units": pyo.units.m / pyo.units.s,
+        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg, pyo.units.kPa],
+        "doc": "w(comp, internal energy, pressure)",
+    },
+    "v_up_func": {  # specific volume
+        "fname": "v_up",
+        "units": pyo.units.m**3 / pyo.units.kg,
+        "arg_units": [dimensionless, pyo.units.kJ / pyo.units.kg, pyo.units.kPa],
+        "doc": "v(comp, internal energy, pressure)",
     },
     # Dimensionless Helmholtz energy to calculate other thermo properties
     "phi0_func": {  # ideal part
@@ -451,10 +645,10 @@ class HelmholtzThermoExpressions(object):
     """Class to write thermodynamic property expressions.  Take one of these
     possible sets of state variables: {h, p}, {u, p}, {s, p}, {s, T}, {T, x},
     {P, x}, or {T, P, x}, and return an expression for a thermo property.
-    This works by converting the given state varaibles to temperature, density,
+    This works by converting the given state variables to temperature, density,
     and vapor fraction expressions then using those to write an expression for
     requested property. This writes expressions in a way that looks like a
-    thermodynaic property function.
+    thermodynamic property function.
     """
 
     def __init__(self, blk, parameters, amount_basis=None):
@@ -467,6 +661,8 @@ class HelmholtzThermoExpressions(object):
         Returns:
             HelmholtzThermoExpressions
         """
+        if not helmholtz_available():
+            raise RuntimeError("Helmholtz EoS external functions not available")
         if amount_basis is None:
             amount_basis = parameters.config.amount_basis
         self.param = parameters
@@ -475,11 +671,46 @@ class HelmholtzThermoExpressions(object):
 
     @staticmethod
     def _sv_str(**kwargs):
-        a = [x for x in kwargs if kwargs[x] is not None]
+        a = [x for x, k in kwargs.items() if k is not None]
         return ", ".join(a)
 
     def add_funcs(self, names=None):
         add_helmholtz_external_functions(self.blk, names=names)
+
+    def _state_vars(self, **kwargs):
+        """
+        This function takes the state variable args, and if they are in
+        one of the sets (h, p), (s, p) or (u, p), it returns
+        (enum for state variable set, block with external function objects,
+        the component string, the first state variable with units for
+        external function, and the second state variable with units for
+        the external functions).  If the state variable set is not one
+        of the above, this function returns None for all but the block and
+        component.
+        """
+        c = self.param.pure_component  # string for chemical component
+        blk = self.blk  # block with external functions
+        if "p" in kwargs and kwargs["p"] is not None:
+            p = kwargs["p"] * self.param.uc["Pa to kPa"]
+            if "h" in kwargs and kwargs["h"] is not None:
+                if self.amount_basis == AmountBasis.MOLE:
+                    h = kwargs["h"] * self.param.uc["J/mol to kJ/kg"]
+                else:
+                    h = kwargs["h"] * self.param.uc["J/kg to kJ/kg"]
+                return StateVars.PH, blk, c, h, p
+            if "s" in kwargs and kwargs["s"] is not None:
+                if self.amount_basis == AmountBasis.MOLE:
+                    s = kwargs["s"] * self.param.uc["J/mol/K to kJ/kg/K"]
+                else:
+                    s = kwargs["s"] * self.param.uc["J/kg/K to kJ/kg/K"]
+                return StateVars.PS, blk, c, s, p
+            if "u" in kwargs and kwargs["u"] is not None:
+                if self.amount_basis == AmountBasis.MOLE:
+                    u = kwargs["u"] * self.param.uc["J/mol to kJ/kg"]
+                else:
+                    u = kwargs["u"] * self.param.uc["J/kg to kJ/kg"]
+                return StateVars.PU, blk, c, u, p
+        return None, blk, c, None, None
 
     def basic_calculations(
         self, h=None, s=None, p=None, T=None, u=None, x=None, tau=None
@@ -490,7 +721,6 @@ class HelmholtzThermoExpressions(object):
         temperature, which can be used to write an expression for any thermo
         quantity.
         """
-        mw = self.param.mw
         c = self.param.pure_component
 
         # 1.) convert units to those expected by external functions
@@ -517,7 +747,7 @@ class HelmholtzThermoExpressions(object):
         # 2.) find the block with the external functions
         blk = self.blk
 
-        # 3.) Take given state varaibles and convert to density, T, and x
+        # 3.) Take given state variables and convert to density, T, and x
         if h is not None and p is not None:
             # h, p
             self.add_funcs(names=["tau_func", "vf_func"])
@@ -563,12 +793,22 @@ class HelmholtzThermoExpressions(object):
 
     def s(self, **kwargs):
         """Mixed phase entropy"""
-        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        self.add_funcs(names=["s_func"])
-        s = (
-            blk.s_func(c, delta_liq, tau, _data_dir) * (1 - x)
-            + blk.s_func(c, delta_vap, tau, _data_dir) * x
-        )
+        sv, blk, c, u, p = self._state_vars(**kwargs)
+        if sv == StateVars.PH:
+            self.add_funcs(names=["s_hp_func"])
+            s = blk.s_hp_func(c, u, p, _data_dir)
+        elif sv == StateVars.PU:
+            self.add_funcs(names=["s_up_func"])
+            s = blk.s_up_func(c, u, p, _data_dir)
+        elif sv == StateVars.PS:
+            s = u
+        else:
+            blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+            self.add_funcs(names=["s_func"])
+            s = (
+                blk.s_func(c, delta_liq, tau, _data_dir) * (1 - x)
+                + blk.s_func(c, delta_vap, tau, _data_dir) * x
+            )
         if self.amount_basis == AmountBasis.MOLE:
             return s * self.param.uc["kJ/kg/K to J/mol/K"]
         return s * self.param.uc["kJ/kg/K to J/kg/K"]
@@ -593,12 +833,22 @@ class HelmholtzThermoExpressions(object):
 
     def h(self, **kwargs):
         """Mixed phase enthalpy"""
-        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        self.add_funcs(names=["h_func"])
-        h = (
-            blk.h_func(c, delta_liq, tau, _data_dir) * (1 - x)
-            + blk.h_func(c, delta_vap, tau, _data_dir) * x
-        )
+        sv, blk, c, u, p = self._state_vars(**kwargs)
+        if sv == StateVars.PH:
+            h = u
+        elif sv == StateVars.PU:
+            self.add_funcs(names=["h_up_func"])
+            h = blk.h_up_func(c, u, p, _data_dir)
+        elif sv == StateVars.PS:
+            self.add_funcs(names=["h_sp_func"])
+            h = blk.h_sp_func(c, u, p, _data_dir)
+        else:
+            blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+            self.add_funcs(names=["h_func"])
+            h = (
+                blk.h_func(c, delta_liq, tau, _data_dir) * (1 - x)
+                + blk.h_func(c, delta_vap, tau, _data_dir) * x
+            )
         if self.amount_basis == AmountBasis.MOLE:
             return h * self.param.uc["kJ/kg to J/mol"]
         return h * self.param.uc["kJ/kg to J/kg"]
@@ -623,12 +873,22 @@ class HelmholtzThermoExpressions(object):
 
     def u(self, **kwargs):
         """Mixed phase internal energy"""
-        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        self.add_funcs(names=["u_func"])
-        u = (
-            blk.u_func(c, delta_liq, tau, _data_dir) * (1 - x)
-            + blk.u_func(c, delta_vap, tau, _data_dir) * x
-        )
+        sv, blk, c, u, p = self._state_vars(**kwargs)
+        if sv == StateVars.PH:
+            self.add_funcs(names=["u_hp_func"])
+            u = blk.u_hp_func(c, u, p, _data_dir)
+        elif sv == StateVars.PU:
+            pass
+        elif sv == StateVars.PS:
+            self.add_funcs(names=["u_sp_func"])
+            u = blk.u_sp_func(c, u, p, _data_dir)
+        else:
+            blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+            self.add_funcs(names=["u_func"])
+            u = (
+                blk.u_func(c, delta_liq, tau, _data_dir) * (1 - x)
+                + blk.u_func(c, delta_vap, tau, _data_dir) * x
+            )
         if self.amount_basis == AmountBasis.MOLE:
             return u * self.param.uc["kJ/kg to J/mol"]
         return u * self.param.uc["kJ/kg to J/kg"]
@@ -652,19 +912,30 @@ class HelmholtzThermoExpressions(object):
         return u * self.param.uc["kJ/kg to J/kg"]
 
     def g(self, **kwargs):
-        """Mixed phase Gibb's free energy"""
-        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        self.add_funcs(names=["g_func"])
-        g = (
-            blk.g_func(c, delta_liq, tau, _data_dir) * (1 - x)
-            + blk.g_func(c, delta_vap, tau, _data_dir) * x
-        )
+        """Mixed phase Gibbs free energy"""
+        sv, blk, c, u, p = self._state_vars(**kwargs)
+        if sv == StateVars.PH:
+            self.add_funcs(names=["g_hp_func"])
+            g = blk.g_hp_func(c, u, p, _data_dir)
+        elif sv == StateVars.PU:
+            self.add_funcs(names=["g_up_func"])
+            g = blk.g_up_func(c, u, p, _data_dir)
+        elif sv == StateVars.PS:
+            self.add_funcs(names=["g_sp_func"])
+            g = blk.g_sp_func(c, u, p, _data_dir)
+        else:
+            blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+            self.add_funcs(names=["g_func"])
+            g = (
+                blk.g_func(c, delta_liq, tau, _data_dir) * (1 - x)
+                + blk.g_func(c, delta_vap, tau, _data_dir) * x
+            )
         if self.amount_basis == AmountBasis.MOLE:
             return g * self.param.uc["kJ/kg to J/mol"]
         return g * self.param.uc["kJ/kg to J/kg"]
 
     def g_liq(self, **kwargs):
-        """Liquid phase Gibb's free energy"""
+        """Liquid phase Gibbs free energy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["g_func"])
         g = blk.g_func(c, delta_liq, tau, _data_dir)
@@ -673,7 +944,7 @@ class HelmholtzThermoExpressions(object):
         return g * self.param.uc["kJ/kg to J/kg"]
 
     def g_vap(self, **kwargs):
-        """Vapor phase Gibb's free energy"""
+        """Vapor phase Gibbs free energy"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["g_func"])
         g = blk.g_func(c, delta_vap, tau, _data_dir)
@@ -683,12 +954,23 @@ class HelmholtzThermoExpressions(object):
 
     def f(self, **kwargs):
         """Mixed phase Helmholtz free energy"""
-        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        self.add_funcs(names=["f_func"])
-        f = (
-            blk.f_func(c, delta_liq, tau, _data_dir) * (1 - x)
-            + blk.f_func(c, delta_vap, tau, _data_dir) * x
-        )
+        sv, blk, c, u, p = self._state_vars(**kwargs)
+        if sv == StateVars.PH:
+            self.add_funcs(names=["f_hp_func"])
+            f = blk.f_hp_func(c, u, p, _data_dir)
+        elif sv == StateVars.PU:
+            self.add_funcs(names=["f_up_func"])
+            f = blk.f_up_func(c, u, p, _data_dir)
+        elif sv == StateVars.PS:
+            self.add_funcs(names=["f_sp_func"])
+            f = blk.f_sp_func(c, u, p, _data_dir)
+        else:
+            blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+            self.add_funcs(names=["f_func"])
+            f = (
+                blk.f_func(c, delta_liq, tau, _data_dir) * (1 - x)
+                + blk.f_func(c, delta_vap, tau, _data_dir) * x
+            )
         if self.amount_basis == AmountBasis.MOLE:
             return f * self.param.uc["kJ/kg to J/mol"]
         return f * self.param.uc["kJ/kg to J/kg"]
@@ -713,24 +995,39 @@ class HelmholtzThermoExpressions(object):
 
     def p(self, **kwargs):
         """Pressure"""
-        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        self.add_funcs(names=["p_func"])
-        # The following line looks a bit weird, but it is okay.  When in the
-        # two-phase region the pressure for both phases is the same
-        p = (
-            blk.p_func(c, delta_liq, tau, _data_dir) * (1 - x)
-            + blk.p_func(c, delta_vap, tau, _data_dir) * x
-        )
+        sv, blk, c, u, p = self._state_vars(**kwargs)
+        if sv is not None:
+            pass
+        else:
+            blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+            self.add_funcs(names=["p_func"])
+            # The following line looks a bit weird, but it is okay.  When in the
+            # two-phase region the pressure for both phases is the same
+            p = (
+                blk.p_func(c, delta_liq, tau, _data_dir) * (1 - x)
+                + blk.p_func(c, delta_vap, tau, _data_dir) * x
+            )
         return p * self.param.uc["kPa to Pa"]
 
     def v_mol(self, **kwargs):
         """Mixed phase molar volume"""
-        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        v = (
-            ((1 - x) / delta_liq + x / delta_vap)
-            / self.param.dens_mass_star
-            * self.param.mw
-        )
+        sv, blk, c, u, p = self._state_vars(**kwargs)
+        if sv == StateVars.PH:
+            self.add_funcs(names=["v_hp_func"])
+            v = blk.v_hp_func(c, u, p, _data_dir) * self.param.mw
+        elif sv == StateVars.PU:
+            self.add_funcs(names=["v_up_func"])
+            v = blk.v_up_func(c, u, p, _data_dir) * self.param.mw
+        elif sv == StateVars.PS:
+            self.add_funcs(names=["v_sp_func"])
+            v = blk.v_sp_func(c, u, p, _data_dir) * self.param.mw
+        else:
+            blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+            v = (
+                ((1 - x) / delta_liq + x / delta_vap)
+                / self.param.dens_mass_star
+                * self.param.mw
+            )
         return v
 
     def v_mol_liq(self, **kwargs):
@@ -747,8 +1044,19 @@ class HelmholtzThermoExpressions(object):
 
     def v_mass(self, **kwargs):
         """Mixed phase molar volume"""
-        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        v = ((1 - x) / delta_liq + x / delta_vap) / self.param.dens_mass_star
+        sv, blk, c, u, p = self._state_vars(**kwargs)
+        if sv == StateVars.PH:
+            self.add_funcs(names=["v_hp_func"])
+            v = blk.v_hp_func(c, u, p, _data_dir)
+        elif sv == StateVars.PU:
+            self.add_funcs(names=["v_up_func"])
+            v = blk.v_up_func(c, u, p, _data_dir)
+        elif sv == StateVars.PS:
+            self.add_funcs(names=["v_sp_func"])
+            v = blk.v_sp_func(c, u, p, _data_dir)
+        else:
+            blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+            v = ((1 - x) / delta_liq + x / delta_vap) / self.param.dens_mass_star
         return v
 
     def v_mass_liq(self, **kwargs):
@@ -770,12 +1078,34 @@ class HelmholtzThermoExpressions(object):
 
     def T(self, **kwargs):
         """Temperature"""
-        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        sv, blk, c, u, p = self._state_vars(**kwargs)
+        if sv == StateVars.PH:
+            self.add_funcs(names=["tau_func"])
+            tau = blk.tau_func(c, u, p, _data_dir)
+        elif sv == StateVars.PU:
+            self.add_funcs(names=["tauu_func"])
+            tau = blk.tauu_func(c, u, p, _data_dir)
+        elif sv == StateVars.PS:
+            self.add_funcs(names=["taus_func"])
+            tau = blk.taus_func(c, u, p, _data_dir)
+        else:
+            blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         return self.param.temperature_star / tau
 
     def tau(self, **kwargs):
         """Critical Temperature (K)/Temperature (K)"""
-        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+        sv, blk, c, u, p = self._state_vars(**kwargs)
+        if sv == StateVars.PH:
+            self.add_funcs(names=["tau_func"])
+            tau = blk.tau_func(c, u, p, _data_dir)
+        elif sv == StateVars.PU:
+            self.add_funcs(names=["tauu_func"])
+            tau = blk.tauu_func(c, u, p, _data_dir)
+        elif sv == StateVars.PS:
+            self.add_funcs(names=["taus_func"])
+            tau = blk.taus_func(c, u, p, _data_dir)
+        else:
+            blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         return tau
 
     def delta_liq(self, **kwargs):
@@ -818,7 +1148,7 @@ class HelmholtzThermoExpressions(object):
         return cv * self.param.uc["kJ/kg/K to J/kg/K"]
 
     def cv_mol_liq(self, **kwargs):
-        """Backward Compatability; Return liquid phase molar cv expression"""
+        """Backward Compatibility; Return liquid phase molar cv expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["cv_func"])
         cv = blk.cv_func(c, delta_liq, tau, _data_dir)
@@ -834,7 +1164,7 @@ class HelmholtzThermoExpressions(object):
         return cv * self.param.uc["kJ/kg/K to J/kg/K"]
 
     def cv_mol_vap(self, **kwargs):
-        """Backward Compatability; Return vapor phase molar cv expression"""
+        """Backward Compatibility; Return vapor phase molar cv expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["cv_func"])
         cv = blk.cv_func(c, delta_vap, tau, _data_dir)
@@ -850,7 +1180,7 @@ class HelmholtzThermoExpressions(object):
         return cp * self.param.uc["kJ/kg/K to J/kg/K"]
 
     def cp_mol_liq(self, **kwargs):
-        """Backward Compatability; Return liquid phase molar cp expression"""
+        """Backward Compatibility; Return liquid phase molar cp expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["cp_func"])
         cp = blk.cp_func(c, delta_liq, tau, _data_dir)
@@ -866,7 +1196,7 @@ class HelmholtzThermoExpressions(object):
         return cp * self.param.uc["kJ/kg/K to J/kg/K"]
 
     def cp_mol_vap(self, **kwargs):
-        """Backward Compatability; Return liquid phase molar cp expression"""
+        """Backward Compatibility; Return liquid phase molar cp expression"""
         blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
         self.add_funcs(names=["cp_func"])
         cp = blk.cp_func(c, delta_vap, tau, _data_dir)
@@ -876,12 +1206,23 @@ class HelmholtzThermoExpressions(object):
         """Return speed of sound expression, this may not make sense
         in the two phase region
         """
-        blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
-        self.add_funcs(names=["w_func"])
-        return (
-            blk.w_func(c, delta_liq, tau, _data_dir) * (1 - x)
-            + blk.w_func(c, delta_vap, tau, _data_dir) * x
-        )
+        sv, blk, c, u, p = self._state_vars(**kwargs)
+        if sv == StateVars.PH:
+            self.add_funcs(names=["w_hp_func"])
+            return blk.w_hp_func(c, u, p, _data_dir)
+        elif sv == StateVars.PU:
+            self.add_funcs(names=["w_up_func"])
+            return blk.w_up_func(c, u, p, _data_dir)
+        elif sv == StateVars.PS:
+            self.add_funcs(names=["w_sp_func"])
+            return blk.w_sp_func(c, u, p, _data_dir)
+        else:
+            blk, delta_liq, delta_vap, tau, x, c = self.basic_calculations(**kwargs)
+            self.add_funcs(names=["w_func"])
+            return (
+                blk.w_func(c, delta_liq, tau, _data_dir) * (1 - x)
+                + blk.w_func(c, delta_vap, tau, _data_dir) * x
+            )
 
     def w_liq(self, **kwargs):
         """Return liquid phase speed of sound expression"""
@@ -977,7 +1318,7 @@ class HelmholtzThermoExpressions(object):
 @declare_process_block_class("HelmholtzParameterBlock")
 class HelmholtzParameterBlockData(PhysicalParameterBlock):
     """
-    This is a base clase for Helmholtz equations of state using IDAES standard
+    This is a base class for Helmholtz equations of state using IDAES standard
     Helmholtz EOS external functions written in C++.
     """
 
@@ -989,7 +1330,7 @@ class HelmholtzParameterBlockData(PhysicalParameterBlock):
             default=None,
             domain=str,
             description="Pure chemical component",
-            doc="Pure component to calculate properies for",
+            doc="Pure component to calculate properties for",
         ),
     )
     CONFIG.declare(
@@ -1049,7 +1390,7 @@ change.
     )
 
     def available(self):
-        """Returns True if the shared library is installed and loads propertly
+        """Returns True if the shared library is installed and loads properly
         otherwise returns False
         """
         return helmholtz_available()
@@ -1074,11 +1415,11 @@ change.
             T: Temperature
             P: Pressure, None if saturated
             x: Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
-                superheated or subcooled
+                superheated or sub-cooled
             units: The units to report the result in, if None use the default
-                units appropriate for the ammount basis.
+                units appropriate for the amount basis.
             amount_basis (AmountBasis): Whether to use a mass or mole basis
-            with_units (bool): if Ture return an expression with units
+            with_units (bool): if True return an expression with units
         Returns:
             Total molar enthalpy.
         """
@@ -1104,7 +1445,7 @@ change.
 
         if not sum((p is None, T is None, x is None)) == 1:
             raise RuntimeError(
-                "htpx function must be provided exaclty two of the arguments T, p, x"
+                "htpx function must be provided exactly two of the arguments T, p, x"
             )
         if T is not None:
             T = pyo.units.convert(T, to_units=pyo.units.K)
@@ -1120,7 +1461,7 @@ change.
                     f"p = {pyo.value(p)}, ({pmin} kPa <= p <= {pmax} kPa)"
                 )
             if T is not None:
-                # P, T may be underspecified, but assume you know it's clearly a
+                # P, T may be under-specified, but assume you know it's clearly a
                 # vapor or liquid so figure out which and set x.
                 psat = te.p_sat(T)
                 if pyo.value(p) < pyo.value(psat):
@@ -1209,7 +1550,7 @@ change.
         self.set_default_scaling("flow_vol", 100)
         self.set_default_scaling("flow_mass", 1)
 
-        # Set some scalings with reasonable a priori values
+        # Set some scaling with reasonable a priori values
         self.set_default_scaling("temperature_crit", 1e-2)
         self.set_default_scaling("temperature_star", 1e-2)
         self.set_default_scaling("enth_mol", 1e-3)
@@ -1290,13 +1631,16 @@ change.
             self.Vap = VaporPhase()
 
     def build(self):
+        if not self.available():
+            raise RuntimeError("Helmholtz EoS external functions not available")
         super().build()
-        # Check if the specified compoent is supported
+        # Check if the specified component is supported
         if not component_registered(self.config.pure_component):
             raise ConfigurationError(
                 f"Component {self.config.pure_component} not supported."
             )
         # This is imported here to avoid a circular import
+        # pylint: disable-next=import-outside-toplevel
         from idaes.models.properties.general_helmholtz.helmholtz_state import (
             HelmholtzStateBlock,
         )
@@ -1304,8 +1648,8 @@ change.
         self._state_block_class = HelmholtzStateBlock
         # set the component_list as required for the generic IDAES properties
         self.component_list = pyo.Set(initialize=[self.config.pure_component])
-        # sinice this a only a pure component package, have a specific
-        # pure_component attirbute
+        # since this a only a pure component package, have a specific
+        # pure_component attribute
         self.pure_component = self.config.pure_component
         # State var set
         self.state_vars = self.config.state_vars
@@ -1438,14 +1782,17 @@ change.
             "J/mol to J/kg": 1.0 / self.mw,
             "kJ/kg to J/mol": (pyo.units.J * 1000 / pyo.units.kJ) * self.mw,
             "J/mol/K to kJ/kg/K": (pyo.units.kJ / 1000 / pyo.units.J) / self.mw,
-            "J/mol/K to J/kg/K": 1.0 / self.mw,
+            "J/mol/K to J/kg/K": 1 / self.mw,
             "kJ/kg/K to J/mol/K": (pyo.units.J * 1000 / pyo.units.kJ) * self.mw,
             "J/kg to kJ/kg": (pyo.units.kJ / 1000 / pyo.units.J),
+            "J/kg to J/mol": self.mw,
+            "J/kg/K to J/mol/K": self.mw,
             "kJ/kg to J/kg": (pyo.units.J * 1000 / pyo.units.kJ),
             "J/kg/K to kJ/kg/K": (pyo.units.kJ / 1000 / pyo.units.J),
             "kJ/kg/K to J/kg/K": (pyo.units.J * 1000 / pyo.units.kJ),
             "kPa to Pa": (pyo.units.Pa * 1000 / pyo.units.kPa),
             "Pa to kPa": (pyo.units.kPa / 1000 / pyo.units.Pa),
+            "kg/m3 to mol/m3": 1 / self.mw,
         }
         self.add_param(
             "enthalpy_mol_min",
@@ -1897,13 +2244,16 @@ change.
         self,
         ylim=None,
         xlim=None,
-        points={},
+        points=None,
         figsize=None,
         dpi=None,
         isotherms=None,
         isotherms_line_format=None,
         isotherms_label=True,
     ):
+        if points is None:
+            points = {}
+
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
         if ylim is not None:
@@ -1991,8 +2341,11 @@ change.
         ax.set_ylabel("Pressure (kPa)")
         return fig, ax
 
-    def ts_diagram(self, ylim=None, xlim=None, points={}, figsize=None, dpi=None):
+    def ts_diagram(self, ylim=None, xlim=None, points=None, figsize=None, dpi=None):
         # Add external functions needed to plot PH-diagram
+        if points is None:
+            points = {}
+
         add_helmholtz_external_functions(
             self,
             [
@@ -2046,7 +2399,8 @@ change.
         ax.set_ylabel("Temperature (K)")
         return fig, ax
 
-    def pt_diagram(self, ylim=None, xlim=None, points={}, figsize=None, dpi=None):
+    # TODO: points argument is unused
+    def pt_diagram(self, ylim=None, xlim=None, points=None, figsize=None, dpi=None):
         # Add external functions needed to plot PH-diagram
         add_helmholtz_external_functions(
             self,

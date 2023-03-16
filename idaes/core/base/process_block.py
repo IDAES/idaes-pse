@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 The process_block module simplifies inheritance of Pyomo blocks. The main
@@ -16,6 +16,8 @@ reason to subclass a Pyomo block is to create a block that comes with
 pre-defined model equations. This is used in the IDAES modeling framework to
 create modular process model blocks.
 """
+# TODO: Look into if this is necessary
+# pylint: disable=protected-access
 
 import sys
 import logging
@@ -38,7 +40,7 @@ def _rule_default(b, *args):
     try:
         b.build()
     except Exception:
-        logging.getLogger(__name__).exception("Failure in build: {}".format(b))
+        logging.getLogger(__name__).exception(f"Failure in build: {b}")
         raise
 
 
@@ -103,7 +105,7 @@ def _process_kwargs(o, kwargs):
 class _IndexedProcessBlockMeta(type):
     """Metaclass used to create an indexed model class."""
 
-    def __new__(meta, name, bases, dct):
+    def __new__(cls, name, bases, dct):
         def __init__(self, *args, **kwargs):
             _pyomo_kwargs = _process_kwargs(self, kwargs)
             bases[0].__init__(self, *args, **_pyomo_kwargs)
@@ -112,13 +114,13 @@ class _IndexedProcessBlockMeta(type):
         dct["__process_block__"] = "indexed"
         # provide function ``base_class_module()`` to get unit module, for visualizer
         dct["base_class_module"] = lambda cls: bases[0].__module__
-        return type.__new__(meta, name, bases, dct)
+        return type.__new__(cls, name, bases, dct)
 
 
 class _ScalarProcessBlockMeta(type):
     """Metaclass used to create a scalar model class."""
 
-    def __new__(meta, name, bases, dct):
+    def __new__(cls, name, bases, dct):
         def __init__(self, *args, **kwargs):
             _pyomo_kwargs = _process_kwargs(self, kwargs)
             bases[0].__init__(self, component=self)
@@ -128,7 +130,7 @@ class _ScalarProcessBlockMeta(type):
         dct["__process_block__"] = "scalar"
         # provide function ``base_class_module()`` to get unit module, for visualizer
         dct["base_class_module"] = lambda cls: bases[0].__module__
-        return type.__new__(meta, name, bases, dct)
+        return type.__new__(cls, name, bases, dct)
 
 
 class ProcessBlock(Block):
@@ -205,7 +207,7 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
             )
             cb_doc += "\n"
             cb_doc = "\n".join(" " * 12 + x for x in cb_doc.splitlines())
-        except:
+        except Exception:  # pylint: disable=W0703
             cb_doc = ""
         if cb_doc != "":
             cb_doc = _config_block_keys_docstring.format(cb_doc)

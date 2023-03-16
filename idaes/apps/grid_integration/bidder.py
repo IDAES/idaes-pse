@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 import pandas as pd
 import pyomo.environ as pyo
@@ -43,8 +43,6 @@ class AbstractBidder(ABC):
             None
         """
 
-        pass
-
     @abstractmethod
     def update_real_time_model(self, **kwargs):
 
@@ -57,8 +55,6 @@ class AbstractBidder(ABC):
         Returns:
             None
         """
-
-        pass
 
     @abstractmethod
     def compute_day_ahead_bids(self, date, hour, **kwargs):
@@ -79,8 +75,6 @@ class AbstractBidder(ABC):
             None
         """
 
-        pass
-
     @abstractmethod
     def compute_real_time_bids(self, date, hour, **kwargs):
 
@@ -100,8 +94,6 @@ class AbstractBidder(ABC):
             None
         """
 
-        pass
-
     @abstractmethod
     def write_results(self, path):
 
@@ -114,8 +106,6 @@ class AbstractBidder(ABC):
         Return:
             None
         """
-
-        pass
 
     @abstractmethod
     def formulate_DA_bidding_problem(self):
@@ -131,8 +121,6 @@ class AbstractBidder(ABC):
             None
         """
 
-        pass
-
     @abstractmethod
     def formulate_RT_bidding_problem(self):
 
@@ -146,8 +134,6 @@ class AbstractBidder(ABC):
         Returns:
             None
         """
-
-        pass
 
     @abstractmethod
     def record_bids(self, bids, model, date, hour):
@@ -169,8 +155,6 @@ class AbstractBidder(ABC):
             None
 
         """
-
-        pass
 
     @property
     @abstractmethod
@@ -650,7 +634,7 @@ class StochasticProgramBidder(AbstractBidder):
             for t in time_index:
                 try:
                     price = realized_day_ahead_prices[t + hour]
-                except IndexError as ex:
+                except IndexError:
                     self.real_time_model.fs[s].day_ahead_energy_price[t] = forecasts[s][
                         (t + hour) - 24
                     ]
@@ -676,7 +660,7 @@ class StochasticProgramBidder(AbstractBidder):
             for t in time_index:
                 try:
                     dispatch = realized_day_ahead_dispatches[t + hour]
-                except IndexError as ex:
+                except IndexError:
                     self.real_time_model.fs[s].day_ahead_power[t].unfix()
                     # unrelax the DA offering UB
                     self.real_time_model.fs[s].real_time_underbid_power[t].fix(0)
@@ -1263,7 +1247,7 @@ class Bidder(StochasticProgramBidder):
                         gen_name=gen,
                         t=t,
                     )
-                except NameError as ex:
+                except NameError:
                     raise RuntimeError(
                         "'egret' must be installed to use this functionality"
                     )

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Condenser model for distillation.
@@ -20,15 +20,14 @@ different state variables and the associated splits.
 
 __author__ = "Jaffer Ghouse"
 
-from pandas import DataFrame
 from enum import Enum
+from pandas import DataFrame
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
 from pyomo.environ import (
     Reference,
-    Expression,
     Var,
     Constraint,
     value,
@@ -49,9 +48,7 @@ from idaes.core import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import (
-    PropertyPackageError,
     ConfigurationError,
-    PropertyNotSupportedError,
     InitializationError,
 )
 from idaes.core.solvers import get_solver
@@ -61,11 +58,19 @@ _log = idaeslog.getLogger(__name__)
 
 
 class CondenserType(Enum):
+    """
+    Enum for supported condenser types.
+    """
+
     totalCondenser = 0
     partialCondenser = 1
 
 
 class TemperatureSpec(Enum):
+    """
+    Enum for temperature specifications.
+    """
+
     atBubblePoint = 0
     customTemperature = 1
 

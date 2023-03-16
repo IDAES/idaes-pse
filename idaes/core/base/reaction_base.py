@@ -1,18 +1,20 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains classes for reaction blocks and reaction parameter blocks.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool
@@ -23,8 +25,6 @@ from idaes.core.base.process_block import ProcessBlock
 from idaes.core import ProcessBlockData, MaterialFlowBasis
 from idaes.core.base import property_meta
 from idaes.core.util.exceptions import (
-    BurntToast,
-    PropertyNotSupportedError,
     PropertyPackageError,
 )
 from idaes.core.util.config import (
@@ -89,10 +89,6 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
             description="Default arguments to use with Property Package", implicit=True
         ),
     )
-
-    def __init__(self, *args, **kwargs):
-        self.__reaction_block_class = None
-        super().__init__(*args, **kwargs)
 
     def build(self):
         """

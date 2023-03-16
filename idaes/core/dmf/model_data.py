@@ -1,16 +1,15 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
-
 """
 This module contains functions to read and manage data for use in parameter
 esitmation, data reconciliation, and validation.
@@ -20,14 +19,15 @@ __author__ = "John Eslick"
 
 import logging
 import csv
+import os
+import warnings
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import pint
-import os
 
 import pyomo.environ as pyo
-import warnings
 
 try:
     import seaborn as sns
@@ -203,9 +203,9 @@ def unit_convert(
     frm,
     to=None,
     system=None,
-    unit_string_map={},
-    ignore_units=[],
-    gauge_pressures={},
+    unit_string_map=None,
+    ignore_units=None,
+    gauge_pressures=None,
     ambient_pressure=1.0,
     ambient_pressure_unit="atm",
 ):
@@ -236,6 +236,13 @@ def unit_convert(
     Returns:
         (tuple): quantity and unit string
     """
+    if unit_string_map is None:
+        unit_string_map = {}
+    if ignore_units is None:
+        ignore_units = []
+    if gauge_pressures is None:
+        gauge_pressures = {}
+
     ureg = pint.UnitRegistry(system=system)
     for u in _register_new_units:
         ureg.define(u)
@@ -286,9 +293,10 @@ def update_metadata_model_references(model, metadata):
     Returns:
         None
     """
-    for tag, md in metadata.items():
+    for tag, md in metadata.items():  # pylint: disable=unused-variable
         if md["reference_string"]:
             try:
+                # pylint: disable=W0123
                 md["reference"] = pyo.Reference(
                     eval(md["reference_string"], {"m": model})
                 )
@@ -383,7 +391,7 @@ def read_data(
             ambient_pressure = np.array(df[ambient_pressure])
         except KeyError:
             _log.exception(
-                "Tag '{}' does not exist for ambient pressure".format(ambient_pressure)
+                f"Tag '{ambient_pressure}' does not exist for ambient pressure"
             )
             raise
 
@@ -451,11 +459,11 @@ def bin_stdev(df, bin_no, min_data=4):
     Args:
         df (pandas.DataFrame): pandas data frame that is a bin number column
         bin_no (str): Column to group by, usually contains bin number
-        min_data (int): Minimum number of data points requitred to calculate
+        min_data (int): Minimum number of data points required to calculate
             standard deviation for a bin (default=4)
 
     Returns:
-        dict: key is the bin number and the value is a pandas.Serries with column
+        dict: key is the bin number and the value is a pandas.Series with column
             standard deviations
     """
     nos = np.unique(df[bin_no])
@@ -478,7 +486,7 @@ def data_rec_plot_book(
     xlabel=None,
     metadata=None,
     cols=None,
-    skip_cols=[],
+    skip_cols=None,
 ):
     """
     Make box and whisker plots from process data compared to data rec results
@@ -502,6 +510,9 @@ def data_rec_plot_book(
         None
 
     """
+    if skip_cols is None:
+        skip_cols = []
+
     if sns is None:
         _log.error(
             "Plotting data requires the 'seaborn' and 'PyPDF2' packages. "
@@ -568,7 +579,7 @@ def data_plot_book(
     xlabel=None,
     metadata=None,
     cols=None,
-    skip_cols=[],
+    skip_cols=None,
 ):
     """
     Make box and whisker plots from process data based on bins from the
@@ -586,6 +597,9 @@ def data_plot_book(
         None
 
     """
+    if skip_cols is None:
+        skip_cols = []
+
     if sns is None:
         _log.error(
             "Plotting data requires the 'seaborn' and 'PyPDF2' packages. "

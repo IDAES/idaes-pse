@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Drum model
@@ -47,11 +47,14 @@ are mixed before entering drum
 
 Created: August 19 2020
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 import pyomo.environ as pyo
+from pyomo.network import Port, Arc
 
-# Import IDAES cores
 from idaes.core import (
     ControlVolume0DBlock,
     declare_process_block_class,
@@ -62,17 +65,10 @@ from idaes.core import (
     useDefault,
 )
 import idaes.logger as idaeslog
-
 from idaes.core.util.config import is_physical_parameter_block, DefaultBool
-
-# Additional import for the unit operation
-from pyomo.environ import Var, asin, cos
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
-from pyomo.network import Port
 import idaes.core.util.scaling as iscale
-from pyomo.network import Arc
-
 from idaes.models_extra.power_generation.unit_models.helm.phase_separator import (
     HelmPhaseSeparator,
 )
@@ -347,24 +343,24 @@ see property package for documentation.}""",
         units_meta = self.config.property_package.get_metadata()
 
         # Inside diameter of drum
-        self.drum_diameter = Var(
+        self.drum_diameter = pyo.Var(
             initialize=1.0,
             doc="Inside diameter of drum",
             units=units_meta.get_derived_units("length"),
         )
         # Length of drum
-        self.drum_length = Var(
+        self.drum_length = pyo.Var(
             initialize=10,
             doc="Horizontal length of drum",
             units=units_meta.get_derived_units("length"),
         )
         # Number of downcomers connected at the bottom of drum,
         # used to calculate contrac
-        self.number_downcomers = Var(
+        self.number_downcomers = pyo.Var(
             initialize=4, doc="Number of downcomers connected to drum"
         )
         # Inside diameter of downcomer
-        self.downcomer_diameter = Var(
+        self.downcomer_diameter = pyo.Var(
             initialize=0.6,
             doc="Inside diameter of downcomer",
             units=units_meta.get_derived_units("length"),
@@ -377,7 +373,7 @@ see property package for documentation.}""",
         units_meta = self.config.property_package.get_metadata()
 
         # Add performance variables
-        self.drum_level = Var(
+        self.drum_level = pyo.Var(
             self.flowsheet().time,
             within=pyo.PositiveReals,
             initialize=1.0,
@@ -386,7 +382,7 @@ see property package for documentation.}""",
         )
 
         # Velocity of fluid inside downcomer pipe
-        self.downcomer_velocity = Var(
+        self.downcomer_velocity = pyo.Var(
             self.flowsheet().time,
             initialize=10.0,
             doc="Liquid water velocity at the top of downcomer",
@@ -394,7 +390,7 @@ see property package for documentation.}""",
         )
 
         # Pressure change due to contraction
-        self.deltaP_contraction = Var(
+        self.deltaP_contraction = pyo.Var(
             self.flowsheet().time,
             initialize=-1.0,
             doc="Pressure change due to contraction",
@@ -402,7 +398,7 @@ see property package for documentation.}""",
         )
 
         # Pressure change due to gravity
-        self.deltaP_gravity = Var(
+        self.deltaP_gravity = pyo.Var(
             self.flowsheet().time,
             initialize=1.0,
             doc="Pressure change due to gravity",
@@ -419,7 +415,8 @@ see property package for documentation.}""",
         @self.Expression(self.flowsheet().time, doc="angle of water level")
         def alpha_drum(b, t):
             return (
-                asin((b.drum_level[t] - b.drum_radius) / b.drum_radius) / pyo.units.rad
+                pyo.asin((b.drum_level[t] - b.drum_radius) / b.drum_radius)
+                / pyo.units.rad
             )
 
         # Constraint for volume liquid in drum
@@ -430,7 +427,7 @@ see property package for documentation.}""",
                 == (
                     (b.alpha_drum[t] + 0.5 * const.pi) * b.drum_radius**2
                     + b.drum_radius
-                    * cos(b.alpha_drum[t])
+                    * pyo.cos(b.alpha_drum[t])
                     * (b.drum_level[t] - b.drum_radius)
                 )
                 * b.drum_length

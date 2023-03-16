@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains model diagnostic utility functions for use in IDAES (Pyomo) models.
@@ -18,6 +18,7 @@ import pytest
 
 # Need to update
 import pyomo.environ as pyo
+from pyomo.contrib.pynumero.asl import AmplInterface
 import numpy as np
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -81,6 +82,9 @@ def v_exp():
     ).T
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.unit
 def test_dense_svd(dummy_problem, u_exp, s_exp, v_exp):
     m = dummy_problem
@@ -91,6 +95,9 @@ def test_dense_svd(dummy_problem, u_exp, s_exp, v_exp):
     assert v_exp == pytest.approx(np.abs(dh.v), 1e-6, abs=1e-10)
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.unit
 def test_sparse_svd(dummy_problem, u_exp, s_exp, v_exp):
     m = dummy_problem
@@ -101,6 +108,9 @@ def test_sparse_svd(dummy_problem, u_exp, s_exp, v_exp):
     assert v_exp == pytest.approx(np.abs(dh.v), 1e-6, abs=1e-10)
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.unit
 def test_scaling(dummy_problem, u_exp, s_exp, v_exp):
     ssf = iscale.set_scaling_factor
@@ -121,6 +131,9 @@ def test_scaling(dummy_problem, u_exp, s_exp, v_exp):
     assert dh.s == pytest.approx(np.ones((4,)), 1e-6)
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.unit
 def test_underdetermined_variables_and_constraints(dummy_problem, capsys):
     m = dummy_problem
@@ -156,6 +169,9 @@ def test_underdetermined_variables_and_constraints(dummy_problem, capsys):
     assert captured.out == ("Column:    Variable\n\nRow:    Constraint\n")
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.unit
 def test_underdetermined_calls_svd_analysis(dummy_problem, capsys):
     m = dummy_problem
@@ -170,6 +186,9 @@ def test_underdetermined_calls_svd_analysis(dummy_problem, capsys):
     )
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.unit
 def test_sv_value_error(dummy_problem):
     m = dummy_problem
@@ -184,6 +203,9 @@ def test_sv_value_error(dummy_problem):
         dh.svd_analysis(n_sv=-1)
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.unit
 def test_single_eq_error(capsys):
     m = pyo.ConcreteModel()
@@ -272,6 +294,9 @@ def extract_constraint_names(cs):
 
 
 # Problem 1
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
 @pytest.mark.unit
 def test_problem1():
@@ -324,10 +349,12 @@ def test_problem1():
 
 
 # Problem 2 without degenerate constraint
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
 @pytest.mark.unit
 def test_problem2_without_degenerate_constraint():
-
     # Create test problem instance
     m2 = example2(with_degenerate_constraint=False)
 
@@ -371,10 +398,12 @@ def test_problem2_without_degenerate_constraint():
 
 
 # Problem 2 with degenerate constraint
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
 @pytest.mark.unit
 def test_problem2_with_degenerate_constraint():
-
     # Create test problem instance
     m2 = example2(with_degenerate_constraint=True)
 
