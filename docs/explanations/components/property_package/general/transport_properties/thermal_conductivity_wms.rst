@@ -20,7 +20,7 @@ Thermal conductivity is given by the formula
 
 in which :math:`k_m` is the mixture thermal conductivity, :math:`k_i` is the pure component thermal conductivity of component :math:`i`, 
 :math:`y_i` is the gas mole fraction of component :math:`i`, and :math:`\phi_{ij}` is a mixing function shared with the 
-:ref:`Wilke method for calculating mixture viscosity<reference_guides/model_libraries/generic/property_models/transport_properties/viscosity_wilke:Callbacks for Mixing Function>`. 
+:ref:`Wilke method for calculating mixture viscosity<explanations/components/property_package/general/transport_properties/viscosity_wilke:Callbacks for Mixing Function>`. 
 
 List of Parameters
 ------------------

@@ -46,7 +46,7 @@ verison of the reduced temperature:
   T^* = 1.2593\frac{T}{T_c}
 
 in which :math:`T_c` is the critical temperature. Callbacks for the collision integral are described 
-:ref:`here<reference_guides/model_libraries/generic/property_models/transport_properties/chapman_enskog:Defined Collision Integral Callbacks>`.
+:ref:`here<explanations/components/property_package/general/transport_properties/chapman_enskog:Defined Collision Integral Callbacks>`.
 
 List of Parameters
 ------------------
