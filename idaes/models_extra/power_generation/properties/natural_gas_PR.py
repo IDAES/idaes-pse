@@ -50,6 +50,7 @@ from idaes.models.properties.modular_properties.base.generic_reaction import (
 from idaes.models.properties.modular_properties.transport_properties import (
     ViscosityWilke,
     ThermalConductivityWMS,
+    NoMethod,
 )
 from idaes.models.properties.modular_properties.transport_properties.viscosity_wilke import (
     wilke_phi_ij_callback,
@@ -94,8 +95,8 @@ _phase_dicts_pr = {
         "type": LiquidPhase,
         "equation_of_state": Cubic,
         "equation_of_state_options": {"type": CubicType.PR},
-        "visc_d_phase": None,
-        "therm_cond_phase": None,
+        "visc_d_phase": NoMethod,
+        "therm_cond_phase": NoMethod,
     },
 }
 

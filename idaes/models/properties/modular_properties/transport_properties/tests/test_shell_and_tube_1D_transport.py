@@ -283,14 +283,14 @@ class Test_transport_properties_ideal(object):
     def hx(self):
         return build_model(eos=EosType.IDEAL)
 
-    @pytest.mark.component
+    @pytest.mark.integration
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, hx):
         results = initialize_model(hx)
         assert check_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_solution(self, hx):
         hx.fs.unit.temperature_wall.display()
         assert pytest.approx(5, rel=1e-5) == value(
@@ -314,7 +314,7 @@ class Test_transport_properties_ideal(object):
         )
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_conservation(self, hx):
         assert (
             abs(
@@ -357,14 +357,14 @@ class Test_transport_properties_ideal_chung(object):
     def hx(self):
         return build_model(eos=EosType.IDEAL, visc_d_phase_comp=ChungViscosityPure)
 
-    @pytest.mark.component
+    @pytest.mark.integration
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, hx):
         results = initialize_model(hx)
         assert check_optimal_termination(results)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_solution(self, hx):
         hx.fs.unit.temperature_wall.display()
         assert pytest.approx(5, rel=1e-5) == value(
@@ -388,7 +388,7 @@ class Test_transport_properties_ideal_chung(object):
         )
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_conservation(self, hx):
         assert (
             abs(
@@ -432,7 +432,6 @@ class Test_transport_properties_PR(object):
     def hx(self):
         return build_model(eos=EosType.PR)
 
-    # TODO These tests can become component tests when the new NL writer comes--Doug, Nov. 2022
     @pytest.mark.integration
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, hx):

@@ -34,18 +34,11 @@ class ViscosityWilke(object):
         an explicit method assigned for the callback. Therefore create the dictionary if it doesn't exist
         and ensure the correct field is populated with the default callback.
         """
-        try:
-            assert (
-                "viscosity_phi_ij_callback"
-                in pobj.config.transport_property_options.keys()
-            )
-        except AttributeError:
-            # No transport options dictionary passed to config, need to create dictionary wholesale
-            pobj.config.transport_property_options = {
-                "viscosity_phi_ij_callback": wilke_phi_ij_callback
-            }
-        except AssertionError:
-            # Transport options dictionary exists but does not have a callback
+        # Have to use get method because transport_properties_options dictionary may not exist
+        if (
+            pobj.config.transport_property_options.get("viscosity_phi_ij_callback")
+            is None
+        ):
             pobj.config.transport_property_options[
                 "viscosity_phi_ij_callback"
             ] = wilke_phi_ij_callback

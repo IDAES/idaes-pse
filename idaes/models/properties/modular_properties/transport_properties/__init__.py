@@ -12,3 +12,4 @@
 #################################################################################
 from .thermal_conductivity_wms import ThermalConductivityWMS
 from .viscosity_wilke import ViscosityWilke
+from .no_method import NoMethod

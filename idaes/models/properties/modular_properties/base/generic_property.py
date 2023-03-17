@@ -3821,11 +3821,7 @@ class GenericStateBlockData(StateBlockData):
         try:
 
             def rule_therm_cond_phase(b, p):
-                try:
-                    return get_phase_method(b, "therm_cond_phase", p)(b, p)
-                except GenericPropertyPackageError:
-                    # Handle case where thermal conductivity isn't defined for a phase
-                    return Expression.Skip
+                return get_phase_method(b, "therm_cond_phase", p)(b, p)
 
             self.therm_cond_phase = Expression(
                 self.phase_list,
@@ -3867,11 +3863,7 @@ class GenericStateBlockData(StateBlockData):
         try:
 
             def rule_visc_d_phase(b, p):
-                try:
-                    return get_phase_method(b, "visc_d_phase", p)(b, p)
-                except GenericPropertyPackageError:
-                    # Handle case where viscosity isn't defined for a phase
-                    return Expression.Skip
+                return get_phase_method(b, "visc_d_phase", p)(b, p)
 
             self.visc_d_phase = Expression(
                 self.phase_list,
