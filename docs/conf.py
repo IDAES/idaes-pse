@@ -138,8 +138,9 @@ todo_include_todos = False
 # Used here to define substitutions for re-used URLs, e.g. just add "|examples-site|" to
 # any page and it will be replaced with the hyperlink and text shown below.
 rst_epilog = """
-.. |python-min| replace:: 3.7
-.. |python-max| replace:: 3.10
+.. |python-min| replace:: 3.8
+.. |python-max| replace:: 3.11
+.. |python-default| replace:: 3.10
 
 .. |examples-site| replace:: `examples online documentation page`_
 .. _examples online documentation page: https://idaes.github.io/examples-pse/latest/index.html
