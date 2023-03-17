@@ -34,7 +34,6 @@ __author__ = "Andrew Lee"
 
 
 # TODO: Add heat transfer, enthalpy transfer, pressure change, reactions, heat of reaction, phase change
-# TODO: Side feed/draw
 
 
 @declare_process_block_class("ExtractorCascade")
