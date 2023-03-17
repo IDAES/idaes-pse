@@ -17,7 +17,7 @@ Utility functions.
 # pylint: disable=missing-function-docstring
 
 # stdlib
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 import importlib
 import json
 from json import JSONDecodeError
