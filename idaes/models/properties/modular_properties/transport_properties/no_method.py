@@ -39,7 +39,6 @@ class NoMethod(object):
             _log.warning(
                 f"Skipping construction of dynamic viscosity for phase {pobj.local_name}"
             )
-            pass
 
         @staticmethod
         def return_expression(b, p):
@@ -55,7 +54,6 @@ class NoMethod(object):
             _log.warning(
                 f"Skipping construction of thermal conductivity for phase {pobj.local_name}"
             )
-            pass
 
         @staticmethod
         def return_expression(b, p):
