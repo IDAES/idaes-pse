@@ -69,7 +69,6 @@ kwargs = dict(
     install_requires=[
         # idaes core / dmf
         "backports.shutil_get_terminal_size",
-        "bunch",
         "click>=8",
         "colorama",
         "distro",  # help identify linux distros for binary downloads
@@ -83,7 +82,7 @@ kwargs = dict(
         "numpy",
         "networkx",
         "omlt==1.1",  # fix the version for now as package evolves
-        "pandas<1.5",
+        "pandas",
         "pint",
         "psutil",
         "pyomo @ https://github.com/IDAES/pyomo/archive/6.5.0.zip",
@@ -98,7 +97,6 @@ kwargs = dict(
         "xlrd",  # for DMF read of old .xls Excel files
         "openpyxl",  # for DMF read of new .xls Excel files
         # lbianchi-lbl: see https://github.com/IDAES/idaes-pse/issues/661
-        "ipython<8.0.0",
     ],
     entry_points={
         "console_scripts": [
@@ -163,10 +161,10 @@ kwargs = dict(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",
