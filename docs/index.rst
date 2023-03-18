@@ -20,7 +20,7 @@ See also :doc:`IDAES concepts <explanations/concepts>` in this documentation.
             |middot| :doc:`MacOS <tutorials/getting_started/mac_osx>`
             |middot| :doc:`Linux <tutorials/getting_started/linux>`
          | :doc:`Installing IDAES for Contributors <tutorials/advanced_install/index>`
-         | |nbsp|
+         |
          | :doc:`IDAES Examples <tutorials/tutorials_examples>`
            |rarrhk| `website <https://idaes-examples.readthedocs.io/en/latest/>`_
      - How-To Guides
@@ -43,6 +43,7 @@ See also :doc:`IDAES concepts <explanations/concepts>` in this documentation.
          | :doc:`IDAES Core <reference_guides/core/index>`
          | :doc:`Model Scaling Toolbox <reference_guides/scaling>`
          | :doc:`Initializing Models <reference_guides/initialization/index>`
+         |
          | :doc:`Command-line tools <reference_guides/commands/index>`
          | :doc:`Configuration <reference_guides/configuration>`
          | :doc:`Logging Processing & Outputs <reference_guides/logging>`
