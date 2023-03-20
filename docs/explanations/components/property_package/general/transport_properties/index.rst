@@ -19,3 +19,4 @@ Mixture Property Models
 
     viscosity_wilke
     thermal_conductivity_wms
+    no_method
