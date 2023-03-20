@@ -20,7 +20,7 @@ Authors: Douglas Allan
 import pytest
 from sys import modules
 
-from pyomo.environ import ConcreteModel, units as pyunits
+from pyomo.environ import ConcreteModel, Expression, units as pyunits
 
 from idaes.models.properties.modular_properties.transport_properties import NoMethod
 
@@ -51,24 +51,21 @@ def set_metadata(b):
     pass
 
 
-def construct_dummy_model(component_dict):
+def construct_dummy_model():
     m = ConcreteModel()
-    components = [comp for comp in component_dict.keys()]
-    comp1 = components[0]
-    comp2 = components[1]
 
     m.params = DummyParameterBlock(
         components={
-            comp1: {
+            "N2": {
                 "visc_d_phase_comp": {"Vap": ConstantProperties},
                 "parameter_data": {
-                    "mw": (component_dict[comp1]["mw"], pyunits.g / pyunits.mol),
+                    "mw": (28.014, pyunits.g / pyunits.mol),
                 },
             },
-            comp2: {
+            "CO2": {
                 "visc_d_phase_comp": {"Vap": ConstantProperties},
                 "parameter_data": {
-                    "mw": (component_dict[comp2]["mw"], pyunits.g / pyunits.mol),
+                    "mw": (44.009, pyunits.g / pyunits.mol),
                 },
             },
         },
@@ -97,11 +94,7 @@ def construct_dummy_model(component_dict):
 
 @pytest.mark.unit
 def test_NoMethod_visc_d_phase(caplog):
-    component_dict = {
-        "N2": {"mw": 28.014},
-        "CO2": {"mw": 44.009},
-    }
-    m = construct_dummy_model(component_dict)
+    m = construct_dummy_model()
     caplog.clear()
     NoMethod.visc_d_phase.build_parameters(m.params.Vap)
     assert len(caplog.records) == 1
@@ -109,17 +102,13 @@ def test_NoMethod_visc_d_phase(caplog):
         caplog.records[0].message
         == "Skipping construction of dynamic viscosity for phase Vap"
     )
-    NoMethod.visc_d_phase.return_expression(m.props[1], "Vap")
+    assert NoMethod.visc_d_phase.return_expression(m.props[1], "Vap") == Expression.Skip
     assert len(caplog.records) == 1
 
 
 @pytest.mark.unit
 def test_NoMethod_therm_cond_phase(caplog):
-    component_dict = {
-        "N2": {"mw": 28.014},
-        "CO2": {"mw": 44.009},
-    }
-    m = construct_dummy_model(component_dict)
+    m = construct_dummy_model()
     caplog.clear()
 
     NoMethod.therm_cond_phase.build_parameters(m.params.Vap)
@@ -128,5 +117,8 @@ def test_NoMethod_therm_cond_phase(caplog):
         caplog.records[0].message
         == "Skipping construction of thermal conductivity for phase Vap"
     )
-    NoMethod.therm_cond_phase.return_expression(m.props[1], "Vap")
+    assert (
+        NoMethod.therm_cond_phase.return_expression(m.props[1], "Vap")
+        == Expression.Skip
+    )
     assert len(caplog.records) == 1

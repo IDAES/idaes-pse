@@ -1,5 +1,5 @@
-Wassiljewa-Mason-Saxena Method for Mixture Thermal Conductivity
-===============================================================
+Wassiljewa-Mason-Saxena Method for Low-pressure Gas Mixture Thermal Conductivity
+================================================================================
 
 .. index::
    pair: idaes.models.properties.modular_properties.transport_properties.thermal_conductivity_wms; ThermalConductivityWMS
@@ -38,10 +38,27 @@ framework.
 
 .. code-block:: python
 
+  from idaes.models.properties.modular_properties.pure import Eucken
   from idaes.models.properties.modular_properties.transport_properties import ThermalConductivityWMS
   from idaes.models.properties.modular_properties.transport_properties.viscosity_wilke import wilke_phi_ij_callback
 
   configuration = {
+    "components":{
+      "H2O": {
+        "type": Component,
+        "valid_phase_types": [PhaseType.vaporPhase],
+        ...
+        "therm_cond_phase_comp": {"Vap": Eucken}
+        ...
+      }
+      "H2": {
+        "type": Component,
+        "valid_phase_types": [PhaseType.vaporPhase],
+        ...
+        "therm_cond_phase_comp": {"Vap": Eucken}
+        ...
+      }
+    }
     "phases":{
       "Vap": {
         "type": VaporPhase,

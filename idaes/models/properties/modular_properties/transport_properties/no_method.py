@@ -11,14 +11,9 @@
 # license information.
 #################################################################################
 """
-"Argh!" shouted the cyclops, "IDAES is throwing an error!"
-"Give us the stack trace," replied the developers, "Which method is throwing an error?"
-"NoMethod is!" roared the cyclops, "NoMethod is throwing the error!"
-"Don't waste our time," said the developers, "if no method is throwing an error, you
-don't need our help."
-
-And so Codysseus and his crew were able to sneak out of the cyclops cave and embark
-once more on the wine-dark sea.
+Class for users who deliberately do not want to assign a method of calculation for a property in a particular phase.
+Upon constructing a parameter block, a warning is logged that no method is assigned for a property-phase combination.
+When the Expression is constructed, an Expression.Skip is returned for this phase.
 """
 
 from pyomo.environ import Expression

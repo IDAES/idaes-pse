@@ -1,5 +1,5 @@
-Wilke Method for Mixture Viscosity
-==================================
+Wilke Method for Low-pressure Gas Mixture Viscosity
+===================================================
 
 .. index::
    pair: idaes.models.properties.modular_properties.transport_properties.viscosity_wilke; ViscosityWilke
@@ -51,10 +51,27 @@ framework.
 
 .. code-block:: python
 
+  from idaes.models.properties.modular_properties.pure import ChapmanEnskogLennardJones
   from idaes.models.properties.modular_properties.transport_properties import ViscosityWilke
   from idaes.models.properties.modular_properties.transport_properties.viscosity_wilke import wilke_phi_ij_callback, herring_zimmer_phi_ij_callback
 
   configuration = {
+    "components":{
+      "H2O": {
+        "type": Component,
+        "valid_phase_types": [PhaseType.vaporPhase],
+        ...
+        "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones}
+        ...
+      }
+      "H2": {
+        "type": Component,
+        "valid_phase_types": [PhaseType.vaporPhase],
+        ...
+        "visc_d_phase_comp": {"Vap": ChapmanEnskogLennardJones}
+        ...
+      }
+    }
     "phases":{
       "Vap": {
         "type": VaporPhase,
