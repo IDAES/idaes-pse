@@ -32,7 +32,10 @@ from idaes.core.util.exceptions import ConfigurationError, BurntToast
 
 __author__ = "Andrew Lee"
 
-
+# TODO: Initializer object
+# TODO: Consider renaming stages to elements
+# TODO: Consider possibility of using Pyomo DAE for elements (makes side feeds harder to implement)
+# TODO: Ordering of interaction terms
 # TODO: Add heat transfer, enthalpy transfer, pressure change, reactions, heat of reaction, phase change
 
 

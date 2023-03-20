@@ -21,13 +21,15 @@ from pyomo.environ import (
     assert_optimal_termination,
     ConcreteModel,
     Constraint,
+    log,
     RangeSet,
     Set,
+    TransformationFactory,
     units,
     value,
     Var,
 )
-from pyomo.network import Port
+from pyomo.network import Arc, Port
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
@@ -41,7 +43,9 @@ from idaes.core import (
     Component,
     Phase,
     MaterialFlowBasis,
+    MaterialBalanceType,
 )
+from idaes.models.unit_models import Mixer, MixingType, MomentumMixingType
 from idaes.models.unit_models.extractor import (
     ExtractorCascade,
     ExtractorCascadeData,
@@ -50,6 +54,7 @@ from idaes.models.unit_models.extractor import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.initialization import propagate_state
 
 
 # -----------------------------------------------------------------------------
@@ -1436,3 +1441,274 @@ class TestToyProblem:
         assert value(model.fs.unit.stream2_outlet.pressure[0]) == pytest.approx(
             2e5, rel=1e-5
         )
+
+    # -----------------------------------------------------------------------------
+    # Li-Co Diafiltration example
+    @declare_process_block_class("LiCoParameters")
+    class LiCoParameterData(PhysicalParameterBlock):
+        def build(self):
+            super().build()
+
+            self.phase1 = Phase()
+
+            self.solvent = Component()
+            self.Li = Component()
+            self.Co = Component()
+
+            self._state_block_class = LiCoStateBlock
+
+        @classmethod
+        def define_metadata(cls, obj):
+            obj.add_default_units(
+                {
+                    "time": units.hour,
+                    "length": units.m,
+                    "mass": units.kg,
+                    "amount": units.mol,
+                    "temperature": units.K,
+                }
+            )
+
+    class LiCoSBlockBase(StateBlock):
+        def initialize(blk, **kwargs):
+            pass
+
+        def release_state(blk, **kwargs):
+            pass
+
+    @declare_process_block_class("LiCoStateBlock", block_class=LiCoSBlockBase)
+    class LiCoStateBlock1Data(StateBlockData):
+        CONFIG = ConfigBlock(implicit=True)
+
+        def build(self):
+            super().build()
+
+            self.flow_vol = Var(
+                units=units.m**3 / units.hour,
+                bounds=(1e-8, None),
+            )
+            self.conc_mass_solute = Var(
+                ["Li", "Co"],
+                units=units.kg / units.m**3,
+                bounds=(1e-8, None),
+            )
+
+        def get_material_flow_terms(self, p, j):
+            if j == "solvent":
+                # Assume constant density of pure water
+                return self.flow_vol * 1000 * units.kg / units.m**3
+            else:
+                return self.flow_vol * self.conc_mass_solute[j]
+
+        def get_material_flow_basis(self):
+            return MaterialFlowBasis.mass
+
+        def define_state_vars(self):
+            return {
+                "flow_vol": self.flow_vol,
+                "conc_mass_solute": self.conc_mass_solute,
+            }
+
+
+class TestLiCODiafiltration:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = LiCoParameters()
+
+        # Add separation stages
+        m.fs.stage2 = ExtractorCascade(
+            number_of_stages=10,
+            streams={
+                "retentate": {
+                    "property_package": m.fs.properties,
+                    "has_energy_balance": False,
+                    "has_pressure_balance": False,
+                },
+                "permeate": {
+                    "property_package": m.fs.properties,
+                    "has_feed": False,
+                    "has_energy_balance": False,
+                    "has_pressure_balance": False,
+                },
+            },
+        )
+
+        m.fs.stage3 = ExtractorCascade(
+            number_of_stages=10,
+            streams={
+                "retentate": {
+                    "property_package": m.fs.properties,
+                    "side_streams": [10],
+                    "has_energy_balance": False,
+                    "has_pressure_balance": False,
+                },
+                "permeate": {
+                    "property_package": m.fs.properties,
+                    "has_feed": False,
+                    "has_energy_balance": False,
+                    "has_pressure_balance": False,
+                },
+            },
+        )
+
+        # Add mixers
+        m.fs.mix2 = Mixer(
+            num_inlets=2,
+            property_package=m.fs.properties,
+            material_balance_type=MaterialBalanceType.total,
+            energy_mixing_type=MixingType.none,
+            momentum_mixing_type=MomentumMixingType.none,
+        )
+
+        # Connect units
+        m.fs.stream3 = Arc(
+            source=m.fs.stage2.permeate_outlet,
+            destination=m.fs.mix2.inlet_2,
+        )
+        m.fs.stream4 = Arc(
+            source=m.fs.mix2.outlet,
+            destination=m.fs.stage3.retentate_inlet,
+        )
+
+        TransformationFactory("network.expand_arcs").apply_to(m)
+
+        # Global constants
+        J = 0.1 * units.m / units.hour
+        w = 1.5 * units.m
+        rho = 1000 * units.kg / units.m**3
+
+        # Add mass transfer variables and constraints
+        m.fs.solutes = Set(initialize=["Li", "Co"])
+
+        m.fs.sieving_coefficient = Var(
+            m.fs.solutes,
+            units=units.dimensionless,
+        )
+        m.fs.sieving_coefficient["Li"].fix(1.3)
+        m.fs.sieving_coefficient["Co"].fix(0.5)
+
+        m.fs.stage3.length = Var(units=units.m)
+        m.fs.stage2.length = Var(units=units.m)
+
+        m.fs.stage2.length.fix(10)  # TODO: Update with correct value
+        m.fs.stage3.length.fix(10)  # TODO: Update with correct value
+
+        def solvent_rule(b, s):
+            return (
+                b.material_transfer_term[0, s, "permeate", "retentate", "solvent"]
+                == J * b.length * w * rho / 10
+            )
+
+        def solute_rule(b, s, j):
+            if s == 1:
+                in_state = b.retentate_inlet_state[0]
+            else:
+                sp = b.stages.prev(s)
+                in_state = b.retentate[0, sp]
+
+            return log(b.retentate[0, s].conc_mass_solute[j]) + (
+                m.fs.sieving_coefficient[j] - 1
+            ) * log(in_state.flow_vol) == log(in_state.conc_mass_solute[j]) + (
+                m.fs.sieving_coefficient[j] - 1
+            ) * log(
+                b.retentate[0, s].flow_vol
+            )
+
+        m.fs.stage2.solvent_flux = Constraint(
+            m.fs.stage2.stages,
+            rule=solvent_rule,
+        )
+        m.fs.stage2.solute_sieving = Constraint(
+            m.fs.stage2.stages,
+            m.fs.solutes,
+            rule=solute_rule,
+        )
+
+        m.fs.stage3.solvent_flux = Constraint(
+            m.fs.stage3.stages,
+            rule=solvent_rule,
+        )
+        m.fs.stage3.solute_sieving = Constraint(
+            m.fs.stage3.stages,
+            m.fs.solutes,
+            rule=solute_rule,
+        )
+
+        return m
+
+    @pytest.mark.component
+    def test_diafiltration_build(self, model):
+        assert isinstance(model.fs.stage3.retentate_inlet, Port)
+        assert isinstance(model.fs.stage3.retentate_outlet, Port)
+        assert not hasattr(model.fs.stage3, "permeate_inlet")
+        assert isinstance(model.fs.stage3.permeate_outlet, Port)
+
+    @pytest.mark.integration
+    def test_initialize_and_solve(self, model):
+        # Start with stage 3
+        # Initial feed guess is pure diafiltrate (no recycle)
+        model.fs.stage3.retentate_inlet.flow_vol[0].fix(30)
+        model.fs.stage3.retentate_inlet.conc_mass_solute[0, "Li"].fix(0.1)
+        model.fs.stage3.retentate_inlet.conc_mass_solute[0, "Co"].fix(0.2)
+
+        # Fresh feed stream is side feed at element 10
+        model.fs.stage3.retentate_side_stream_state[0, 10].flow_vol.fix(100)
+        model.fs.stage3.retentate_side_stream_state[0, 10].conc_mass_solute["Li"].fix(
+            1.7
+        )
+        model.fs.stage3.retentate_side_stream_state[0, 10].conc_mass_solute["Co"].fix(
+            17
+        )
+
+        # Initialize flow and conc values to avoid log(0)
+        for s in model.fs.stage3.retentate.values():
+            s.flow_vol.set_value(30)
+            s.conc_mass_solute["Li"].set_value(0.1)
+            s.conc_mass_solute["Co"].set_value(0.2)
+
+        assert degrees_of_freedom(model.fs.stage3) == 0
+
+        solver = get_solver(options={"halt_on_ampl_error": "yes"})
+        res = solver.solve(model.fs.stage3, tee=True)
+        assert_optimal_termination(res)
+
+        # Stage 2 next - feed is retentate of stage 3
+        Q = value(model.fs.stage3.retentate_outlet.flow_vol[0])
+        C_Li = value(model.fs.stage3.retentate_outlet.conc_mass_solute[0, "Li"])
+        C_Co = value(model.fs.stage3.retentate_outlet.conc_mass_solute[0, "Co"])
+
+        model.fs.stage2.retentate_inlet.flow_vol[0].fix(Q)
+        model.fs.stage2.retentate_inlet.conc_mass_solute[0, "Li"].fix(C_Li)
+        model.fs.stage2.retentate_inlet.conc_mass_solute[0, "Co"].fix(C_Co)
+
+        # Initialize flow and conc values to avoid log(0)
+        for s in model.fs.stage2.retentate.values():
+            s.flow_vol.set_value(Q)
+            s.conc_mass_solute["Li"].set_value(C_Li)
+            s.conc_mass_solute["Co"].set_value(C_Co)
+
+        assert degrees_of_freedom(model.fs.stage2) == 0
+
+        res = solver.solve(model.fs.stage2, tee=True)
+        assert_optimal_termination(res)
+
+        # Initialize Mixer 2
+        # Inlet 1 is fresh diafilatrate
+        model.fs.mix2.inlet_1.flow_vol[0].fix(30)
+        model.fs.mix2.inlet_1.conc_mass_solute[0, "Li"].fix(0.1)
+        model.fs.mix2.inlet_1.conc_mass_solute[0, "Co"].fix(0.2)
+
+        propagate_state(
+            destination=model.fs.mix2.inlet_2,
+            source=model.fs.stage2.permeate_outlet,
+        )
+
+        m.fs.mix2.initialize()  # TODO: Update to Initializer object
+
+        # model.fs.stage3.retentate_outlet.display()
+        # model.fs.stage3.permeate_outlet.display()
+
+        assert False
