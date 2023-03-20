@@ -68,32 +68,25 @@ kwargs = dict(
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
         # idaes core / dmf
-        "backports.shutil_get_terminal_size",
         "click>=8",
         "colorama",
-        "distro",  # help identify linux distros for binary downloads
-        "flask",  # for ui/fsvis
-        "flask-cors",
         "jupyter",
         "lxml",
         "matplotlib",
         "nbconvert",
         "nbformat",
         "numpy",
-        "networkx",
         "omlt==1.1",  # fix the version for now as package evolves
         "pandas",
-        "pint",
-        "psutil",
-        "pyomo @ https://github.com/IDAES/pyomo/archive/6.5.0.zip",
+        "pyomo ~= 6.5",
+        "sympy",  # pyomo differentiation
+        "pint",  # pyomo units
+        "networkx",  # pyomo network
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
-        "python-slugify",  # for ui/fsvis
         "scipy",
-        "sympy",
         "tinydb",
-        "rbfopt",
         "xlrd",  # for DMF read of old .xls Excel files
         "openpyxl",  # for DMF read of new .xls Excel files
         # lbianchi-lbl: see https://github.com/IDAES/idaes-pse/issues/661
@@ -108,6 +101,7 @@ kwargs = dict(
     extras_require={
         "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
         "optional": [
+            "sympy",  # idaes.core.util.expr_doc
             "tensorflow",  # idaes.core.surrogate.keras_surrogate
             "gridx-prescient>=2.2.1",  # idaes.tests.prescient
             # A Lee 11-Jan-22: no precompiled version of CoolProp available for Pyhton 3.9
