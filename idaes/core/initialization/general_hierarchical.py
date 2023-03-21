@@ -70,9 +70,9 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
             model: Pyomo Block to be initialized
             plugin_initializer_args: dict-of-dicts containing arguments to be passed to plug-in Initializers.
                 Keys should be submodel components.
-            copy_inlet_state: bool (default=False). Whether to copy inlet state to other sttes or not.
-                Copying will generally be faster, but inlet states may not contain all properties
-                required elsewhere.
+            copy_inlet_state: bool (default=False). Whether to copy inlet state to other states or not
+                (0-D control volumes only). Copying will generally be faster, but inlet states may not contain
+                all properties required elsewhere.
 
         Returns:
             Pyomo solver results object
@@ -177,28 +177,22 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
     def _init_props_0D(self, model, copy_inlet_state):
         # Initialize inlet properties - inlet state should already be fixed
-        prop_init = self.get_submodel_initializer(model.control_volume.properties_in)
+        prop_init = self.get_submodel_initializer(model.control_volume.properties_in)()
 
         if prop_init is not None:
             prop_init.initialize(
-                model.control_volume.properties_in,
-                solver=self.config.solver,
-                optarg=self.config.solver_options,
-                outlvl=self.config.output_level,
+                model=model.control_volume.properties_in,
             )
 
         if not copy_inlet_state:
             # Just in case the user set a different initializer for the outlet
             prop_init = self.get_submodel_initializer(
                 model.control_volume.properties_out
-            )
+            )()
 
             if prop_init is not None:
                 prop_init.initialize(
-                    model.control_volume.properties_out,
-                    solver=self.config.solver,
-                    optarg=self.config.solver_options,
-                    outlvl=self.config.output_level,
+                    model=model.control_volume.properties_out,
                 )
         else:
             # Map solution from inlet properties to outlet properties
@@ -219,9 +213,6 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         if prop_init is not None:
             prop_init.initialize(
                 model.control_volume.properties,
-                solver=self.config.solver,
-                optarg=self.config.solver_options,
-                outlvl=self.config.output_level,
             )
 
     def _init_rxns(self, model):

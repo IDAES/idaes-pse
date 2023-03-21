@@ -47,6 +47,9 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.base.util import build_on_demand
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+)
 
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
@@ -227,6 +230,9 @@ class StateBlock(ProcessBlock):
     PropertyData objects, and contains methods that can be applied to
     multiple StateBlockData objects simultaneously.
     """
+
+    # Set default initializer
+    default_initializer = BlockTriangularizationInitializer
 
     @property
     def component_list(self):

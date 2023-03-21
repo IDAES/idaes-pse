@@ -149,7 +149,7 @@ class InitializerBase:
         # 5. try: Call specified initialization routine
         try:
             # Base method does not have a return (NotImplementedError),
-            # # but we expect this ot be overloaded, disable pylint warning
+            # but we expect this to be overloaded, disable pylint warning
             # pylint: disable=E1111
             results = self.initialization_routine(model)
         # 6. finally: Restore model state
