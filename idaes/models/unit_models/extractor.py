@@ -34,8 +34,8 @@ __author__ = "Andrew Lee"
 
 # TODO: Initializer object
 # TODO: Consider renaming stages to elements
-# TODO: Consider possibility of using Pyomo DAE for elements (makes side feeds harder to implement)
-# TODO: Ordering of interaction terms
+# TODO: Consider possibility of using Pyomo DAE for elements (makes side feeds harder to implement?)
+# TODO: Ordering of interaction terms, and n-1 issue/verification
 # TODO: Add heat transfer, enthalpy transfer, pressure change, reactions, heat of reaction, phase change
 
 
