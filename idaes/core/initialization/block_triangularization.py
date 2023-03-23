@@ -77,12 +77,24 @@ class BlockTriangularizationInitializer(InitializerBase):
         """
         super().precheck(model)
 
-        igraph = IncidenceGraphInterface(model, include_inequality=False)
+        if model.is_indexed():
+            for d in model.values():
+                self._check_matching(d)
+        else:
+            self._check_matching(model)
+
+    def _check_matching(self, block_data):
+        """
+        Run incidence analysis on given block data and check matching.
+        """
+        igraph = IncidenceGraphInterface(block_data, include_inequality=False)
         matching = igraph.maximum_matching()
         if len(matching) != len(igraph.variables):
-            self._update_summary(model, "status", InitializationStatus.PrecheckFailed)
+            self._update_summary(
+                block_data, "status", InitializationStatus.PrecheckFailed
+            )
             raise InitializationError(
-                f"Perfect matching not found for {model.name}. "
+                f"Perfect matching not found for {block_data.name}. "
                 f"This suggests that the model is structurally singular."
             )
 
@@ -93,11 +105,21 @@ class BlockTriangularizationInitializer(InitializerBase):
         if self.config.block_solver is not None:
             solver = SolverFactory(self.config.block_solver)
         else:
-            solver = get_solver(None)
+            solver = get_solver()
 
+        if model.is_indexed():
+            for d in model.values():
+                self._solve_block_data(d, solver)
+        else:
+            self._solve_block_data(model, solver)
+
+    def _solve_block_data(self, block_data, solver):
+        """
+        Call solve_strongly_connected_components on a given BlockData.
+        """
         # TODO: Can we get diagnostic output from this method?
         solve_strongly_connected_components(
-            model,
+            block_data,
             solver=solver,
             solve_kwds=self.config.block_solver_options,
             calc_var_kwds=self.config.calculate_variable_options,

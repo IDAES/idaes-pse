@@ -112,7 +112,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         for sm in model.initialization_order:
             if sm is not model:
                 # Get initializers for plug-ins
-                sub_initializers[sm] = self.get_submodel_initializer(sm)()
+                sub_initializers[sm] = self.get_submodel_initializer(sm)
 
                 if sm not in plugin_initializer_args.keys():
                     plugin_initializer_args[sm] = {}
@@ -177,7 +177,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
     def _init_props_0D(self, model, copy_inlet_state):
         # Initialize inlet properties - inlet state should already be fixed
-        prop_init = self.get_submodel_initializer(model.control_volume.properties_in)()
+        prop_init = self.get_submodel_initializer(model.control_volume.properties_in)
 
         if prop_init is not None:
             prop_init.initialize(
@@ -188,7 +188,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
             # Just in case the user set a different initializer for the outlet
             prop_init = self.get_submodel_initializer(
                 model.control_volume.properties_out
-            )()
+            )
 
             if prop_init is not None:
                 prop_init.initialize(

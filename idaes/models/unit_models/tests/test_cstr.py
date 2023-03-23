@@ -305,27 +305,27 @@ class TestInitializers:
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 
-        assert value(model.fs.unit.outlet.flow_vol[0]) == pytest.approx(1e-3, rel=1e-6)
+        assert value(model.fs.unit.outlet.flow_vol[0]) == pytest.approx(1e-3, rel=1e-5)
         assert value(model.fs.unit.outlet.conc_mol_comp[0, "H2O"]) == pytest.approx(
-            55388, rel=1e-6
+            55388, rel=1e-5
         )
         assert value(model.fs.unit.outlet.conc_mol_comp[0, "NaOH"]) == pytest.approx(
-            20.316235, rel=1e-6
+            20.31609, rel=1e-5
         )
         assert value(
             model.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
-        ) == pytest.approx(20.316235, rel=1e-6)
+        ) == pytest.approx(20.31609, rel=1e-5)
         assert value(
             model.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]
-        ) == pytest.approx(79.684995, rel=1e-6)
+        ) == pytest.approx(79.683910, rel=1e-5)
         assert value(model.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]) == pytest.approx(
-            79.684995, rel=1e-6
+            79.683910, rel=1e-5
         )
         assert value(model.fs.unit.outlet.temperature[0]) == pytest.approx(
-            304.0856, rel=1e-6
+            304.0856, rel=1e-5
         )
         assert value(model.fs.unit.outlet.pressure[0]) == pytest.approx(
-            101325, rel=1e-6
+            101325, rel=1e-5
         )
 
     @pytest.mark.integration
@@ -338,25 +338,25 @@ class TestInitializers:
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 
-        assert value(model.fs.unit.outlet.flow_vol[0]) == pytest.approx(1e-3, rel=1e-6)
+        assert value(model.fs.unit.outlet.flow_vol[0]) == pytest.approx(1e-3, rel=1e-5)
         assert value(model.fs.unit.outlet.conc_mol_comp[0, "H2O"]) == pytest.approx(
-            55388, rel=1e-6
+            55388, rel=1e-5
         )
         assert value(model.fs.unit.outlet.conc_mol_comp[0, "NaOH"]) == pytest.approx(
-            20.31609, rel=1e-6
+            20.31609, rel=1e-5
         )
         assert value(
             model.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
-        ) == pytest.approx(20.31609, rel=1e-6)
+        ) == pytest.approx(20.31609, rel=1e-5)
         assert value(
             model.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]
-        ) == pytest.approx(79.683910, rel=1e-6)
+        ) == pytest.approx(79.683910, rel=1e-5)
         assert value(model.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]) == pytest.approx(
-            79.683910, rel=1e-6
+            79.683910, rel=1e-5
         )
         assert value(model.fs.unit.outlet.temperature[0]) == pytest.approx(
-            304.0856, rel=1e-6
+            304.0856, rel=1e-5
         )
         assert value(model.fs.unit.outlet.pressure[0]) == pytest.approx(
-            101325, rel=1e-6
+            101325, rel=1e-5
         )

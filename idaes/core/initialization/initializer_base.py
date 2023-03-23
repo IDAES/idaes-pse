@@ -347,10 +347,18 @@ class InitializerBase:
                 active_vars = None
 
             uninit_vars = []
-            for v in model.component_data_objects(Var, descend_into=True):
-                if v.value is None:
-                    if not exclude_unused_vars or v in active_vars:
-                        uninit_vars.append(v)
+
+            def _append_uninit_vars(block_data):
+                for v in block_data.component_data_objects(Var, descend_into=True):
+                    if v.value is None:
+                        if not exclude_unused_vars or v in active_vars:
+                            uninit_vars.append(v)
+
+            if model.is_indexed():
+                for d in model.values():
+                    _append_uninit_vars(d)
+            else:
+                _append_uninit_vars(model)
 
             # Next check for unconverged equality constraints
             uninit_const = large_residuals_set(model, self.config.constraint_tolerance)
@@ -563,5 +571,8 @@ class ModularInitializerBase(InitializerBase):
             _log.warning(
                 f"No Initializer found for submodel {submodel.name} - attempting to continue."
             )
+
+        if callable(initializer):
+            initializer = initializer()
 
         return initializer
