@@ -1,5 +1,5 @@
-Comon Use Initializers
-======================
+Common Use Initializers
+=======================
 
 The following ``Initializers`` are generally applicable to a wide range of model types.
 
