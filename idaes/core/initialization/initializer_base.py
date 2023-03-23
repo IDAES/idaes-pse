@@ -107,17 +107,31 @@ class InitializerBase:
 
         self.initial_state = {}
         self.summary = {}
+        self._local_logger_level = (
+            None  # To allow calls to initialize to override global setting
+        )
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         cls.__doc__ = add_docstring_list(cls.__doc__ if cls.__doc__ else "", cls.CONFIG)
 
+    def get_output_level(self):
+        outlvl = self._local_logger_level
+        if outlvl is None:
+            outlvl = self.config.output_level
+
+        return outlvl
+
     def get_logger(self, model):
         """Get logger for model by name"""
-        return idaeslog.getInitLogger(model.name, self.config.output_level)
+        return idaeslog.getInitLogger(model.name, self.get_output_level())
 
     def initialize(
-        self, model: Block, initial_guesses: dict = None, json_file: str = None
+        self,
+        model: Block,
+        initial_guesses: dict = None,
+        json_file: str = None,
+        output_level=None,
     ):
         """
         Execute full initialization routine.
@@ -126,12 +140,15 @@ class InitializerBase:
             model: Pyomo model to be initialized.
             initial_guesses: dict of initial guesses to load.
             json_file: file name of json file to load initial guesses from as str.
+            output_level: (optional) output level to use during initialization run (overrides global setting).
 
         Note - can only provide one of initial_guesses or json_file.
 
         Returns:
             InitializationStatus Enum
         """
+        self._local_logger_level = output_level
+
         # 1. Get current model state
         self.get_current_state(model)
 
@@ -155,6 +172,9 @@ class InitializerBase:
         # 6. finally: Restore model state
         finally:
             self.restore_model_state(model)
+            # Also revert local logger level so it does not get carried over to
+            # later runs
+            self._local_logger_level = None
 
         # 7. Check convergence
         return self.postcheck(model, results_obj=results)

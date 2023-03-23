@@ -165,7 +165,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
         # Solve main model
         solve_log = idaeslog.getSolveLogger(
-            model.name, self.config.output_level, tag="unit"
+            model.name, self.get_output_level(), tag="unit"
         )
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -182,6 +182,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         if prop_init is not None:
             prop_init.initialize(
                 model=model.control_volume.properties_in,
+                output_level=self.get_output_level(),
             )
 
         if not copy_inlet_state:
@@ -193,6 +194,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
             if prop_init is not None:
                 prop_init.initialize(
                     model=model.control_volume.properties_out,
+                    output_level=self.get_output_level(),
                 )
         else:
             # Map solution from inlet properties to outlet properties
@@ -213,12 +215,14 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         if prop_init is not None:
             prop_init.initialize(
                 model.control_volume.properties,
+                output_level=self.get_output_level(),
             )
 
     def _init_rxns(self, model):
         rxn_init = self.get_submodel_initializer(model.control_volume.reactions)
 
         if rxn_init is not None:
+            # TODO: Update this
             rxn_init.initialize(
                 model.control_volume.reactions,
                 solver=self.config.solver,
@@ -231,7 +235,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         if len(model.initialization_order) > 1:
             # Solve model with plugins
             solve_log = idaeslog.getSolveLogger(
-                model.name, self.config.output_level, tag="unit"
+                model.name, self.get_output_level(), tag="unit"
             )
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = self._get_solver().solve(model, tee=slc.tee)
