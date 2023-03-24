@@ -35,6 +35,7 @@ from idaes.core.util.exceptions import (
     DynamicError,
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock
+from idaes.core.initialization import SingleControlVolumeUnitInitializer
 
 
 @declare_process_block_class("Flowsheet")
@@ -57,6 +58,8 @@ def test_config_block():
 
     assert len(m.u.config) == 2
     assert m.u.config.dynamic == useDefault
+
+    assert m.u.default_initializer is SingleControlVolumeUnitInitializer
 
 
 @pytest.mark.unit

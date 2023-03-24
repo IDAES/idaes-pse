@@ -19,6 +19,7 @@ import pytest
 
 from pyomo.environ import ConcreteModel, value, units as pyunits
 from pyomo.util.check_units import assert_units_consistent
+from pyomo.contrib.pynumero.asl import AmplInterface
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.feed import Feed
@@ -34,6 +35,12 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
+
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    SingleControlVolumeUnitInitializer,
+    InitializationStatus,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -293,4 +300,46 @@ class TestIAPWS(object):
         )
         assert pytest.approx(0.5953, abs=1e-4) == value(
             iapws.fs.unit.properties[0].phase_frac["Liq"]
+        )
+
+
+class TestInitializers:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock(
+            phase_presentation=iapws95.PhaseType.LG
+        )
+
+        m.fs.unit = Feed(property_package=m.fs.properties)
+
+        m.fs.unit.flow_mol.fix(100)
+        m.fs.unit.enth_mol.fix(24000)
+        m.fs.unit.pressure.fix(101325)
+
+        return m
+
+    @pytest.mark.integration
+    @pytest.mark.skipif(
+        not AmplInterface.available(), reason="pynumero_ASL is not available"
+    )
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(101325.0, abs=1e3) == value(
+            model.fs.unit.outlet.pressure[0]
+        )
+        assert pytest.approx(24000, abs=1e3) == value(model.fs.unit.outlet.enth_mol[0])
+        assert pytest.approx(100.0, abs=1e-2) == value(model.fs.unit.outlet.flow_mol[0])
+
+        assert pytest.approx(373.12, abs=1e-2) == value(
+            model.fs.unit.properties[0].temperature
+        )
+        assert pytest.approx(0.5953, abs=1e-4) == value(
+            model.fs.unit.properties[0].phase_frac["Liq"]
         )

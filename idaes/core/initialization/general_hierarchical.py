@@ -15,7 +15,7 @@ Initializer class for implementing Hierarchical initialization routines for
 IDAES models with standard forms (e.g. units with 1 control volume)
 """
 from pyomo.environ import Block
-from pyomo.common.config import ConfigDict, ConfigValue
+from pyomo.common.config import ConfigDict, ConfigValue, Bool
 
 from idaes.core.initialization.initializer_base import ModularInitializerBase
 from idaes.core.solvers import get_solver
@@ -50,6 +50,16 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         ConfigDict(
             implicit=True,
             description="Dict of options to pass to solver",
+        ),
+    )
+    CONFIG.declare(
+        "always_estimate_states",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            doc="Whether initialization routine should estimate values for "
+            "state variables that already have values. Note that if set to True, this will "
+            "overwrite any initial guesses provided.",
         ),
     )
 
@@ -132,7 +142,9 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
         for sm in model.initialization_order:
             if sm is model:
-                results = self._initialize_main_model(model, copy_inlet_state, logger)
+                results = self._initialize_control_volume(
+                    model, copy_inlet_state, logger
+                )
             else:
                 sub_initializers[sm].plugin_initialize(
                     sm, **plugin_initializer_args[sm]
@@ -148,7 +160,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
         return results
 
-    def _initialize_main_model(self, model, copy_inlet_state, logger):
+    def _initialize_control_volume(self, model, copy_inlet_state, logger):
         # Initialize properties
         try:
             # Guess a 0-D control volume
@@ -192,6 +204,11 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
                 model.control_volume.properties_out
             )
 
+            # Estimate missing values for outlet state
+            model.control_volume.estimate_outlet_state(
+                always_estimate=self.config.always_estimate_states
+            )
+
             if prop_init is not None:
                 prop_init.initialize(
                     model=model.control_volume.properties_out,
@@ -212,6 +229,11 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
     def _init_props_1D(self, model):
         prop_init = self.get_submodel_initializer(model.control_volume.properties)
+
+        # Estimate missing values for states
+        model.control_volume.estimate_states(
+            always_estimate=self.config.always_estimate_states
+        )
 
         if prop_init is not None:
             prop_init.initialize(

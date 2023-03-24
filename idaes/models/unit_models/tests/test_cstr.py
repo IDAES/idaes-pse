@@ -83,6 +83,8 @@ def test_config():
     assert m.fs.unit.config.property_package is m.fs.properties
     assert m.fs.unit.config.reaction_package is m.fs.reactions
 
+    assert m.fs.unit.default_initializer is SingleControlVolumeUnitInitializer
+
 
 # -----------------------------------------------------------------------------
 class TestSaponification(object):
