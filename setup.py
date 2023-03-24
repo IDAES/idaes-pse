@@ -84,7 +84,6 @@ kwargs = dict(
         "networkx",  # pyomo network
         "pytest",
         "pyyaml",
-        "requests",  # for ui/fsvis
         "scipy",
         "tinydb",
         "xlrd",  # for DMF read of old .xls Excel files
