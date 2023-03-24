@@ -22,6 +22,7 @@ from idaes.core.solvers import get_solver
 from idaes.core.util import to_json, from_json, StoreSpec
 from idaes.core.util.exceptions import InitializationError
 import idaes.logger as idaeslog
+from idaes.core.util.model_statistics import variables_in_activated_constraints_set
 
 __author__ = "Andrew Lee"
 
@@ -222,13 +223,30 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         rxn_init = self.get_submodel_initializer(model.control_volume.reactions)
 
         if rxn_init is not None:
-            # TODO: Update this
+            # Reaction blocks depend on vars from other blocks
+            # Need to make sure these are all fixed before initializing
+            fixed_vars = []
+            vset = variables_in_activated_constraints_set(
+                model.control_volume.reactions
+            )
+            for v in vset:
+                if (
+                    v.parent_block().parent_component()
+                    is not model.control_volume.reactions
+                ):
+                    # Variable external to reactions
+                    if not v.fixed:
+                        v.fix()
+                        fixed_vars.append(v)
+
             rxn_init.initialize(
                 model.control_volume.reactions,
-                solver=self.config.solver,
-                optarg=self.config.solver_options,
-                outlvl=self.config.output_level,
+                output_level=self.get_output_level(),
             )
+
+            # Unfix any vars we fixed previously
+            for v in fixed_vars:
+                v.unfix()
 
     def _solve_full_model(self, model, logger, results):
         # Check to see if there are any plug-ins

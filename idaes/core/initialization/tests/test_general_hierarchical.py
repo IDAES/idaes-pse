@@ -261,6 +261,10 @@ def test_init_rxns():
     m.control_volume = Block()
     m.control_volume.reactions = Block()
 
+    # Add a constraint that to the reactions that used a var from outside the block
+    m.control_volume.var = Var()
+    m.control_volume.reactions.cons = Constraint(expr=m.control_volume.var == 10)
+
     initializer = SingleControlVolumeUnitInitializer()
     log = initializer.get_logger(m)
 
@@ -268,6 +272,7 @@ def test_init_rxns():
     initializer._init_rxns(m)
 
     assert m.control_volume.reactions._initialized
+    assert not m.control_volume.var.fixed
 
 
 @pytest.mark.unit

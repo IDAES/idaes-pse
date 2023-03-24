@@ -299,7 +299,7 @@ class TestInitializers:
     def test_general_hierarchical(self, model):
         import idaes.logger as idaeslog
 
-        initializer = SingleControlVolumeUnitInitializer(output_level=idaeslog.DEBUG)
+        initializer = SingleControlVolumeUnitInitializer()
         initializer.initialize(model.fs.unit)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
@@ -309,16 +309,16 @@ class TestInitializers:
             55388, rel=1e-5
         )
         assert value(model.fs.unit.outlet.conc_mol_comp[0, "NaOH"]) == pytest.approx(
-            0, abs=1e-5
+            0.01611, abs=1e-5
         )
         assert value(
             model.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
-        ) == pytest.approx(0, abs=1e-5)
+        ) == pytest.approx(0.01611, abs=1e-5)
         assert value(
             model.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]
-        ) == pytest.approx(100, rel=1e-6)
+        ) == pytest.approx(99.984, rel=1e-5)
         assert value(model.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]) == pytest.approx(
-            100, rel=1e-6
+            99.984, rel=1e-5
         )
         assert value(model.fs.unit.outlet.temperature[0]) == pytest.approx(
             304.32, rel=1e-2
