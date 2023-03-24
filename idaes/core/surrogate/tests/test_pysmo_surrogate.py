@@ -1155,9 +1155,8 @@ class TestPysmoSurrogate:
             for i in range(len(x1))
         ]
         x = {"x1": x1, "x2": x2, "z1": z1, "z2": z2}
-        training_data = pd.DataFrame(x, columns={"x1", "x2", "z1", "z2"})
+        training_data = pd.DataFrame(x, columns=["x1", "x2", "z1", "z2"])
 
-        # training_data = pd.DataFrame(x, columns={'x1', 'x2', 'z1', 'z2'})
         validation_data = {
             "x1": [1, 2, 3, 4],
             "x2": [5, 6, 7, 8],
@@ -1282,9 +1281,8 @@ class TestPysmoSurrogate:
             for i in range(len(x1))
         ]
         x = {"x1": x1, "x2": x2, "z1": z1, "z2": z2}
-        training_data = pd.DataFrame(x, columns={"x1", "x2", "z1", "z2"})
+        training_data = pd.DataFrame(x, columns=["x1", "x2", "z1", "z2"])
 
-        # training_data = pd.DataFrame(x, columns={'x1', 'x2', 'z1', 'z2'})
         validation_data = {
             "x1": [1, 2, 3, 4],
             "x2": [5, 6, 7, 8],

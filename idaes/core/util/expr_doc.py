@@ -14,6 +14,7 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-function-docstring
 
+import logging
 import re
 
 from pyomo.core.expr.sympy_tools import (
@@ -30,12 +31,20 @@ from pyomo.core.expr.numeric_expr import ExternalFunctionExpression
 from pyomo.core.expr import current as EXPR, native_types
 from pyomo.common.collections import ComponentMap
 
+
+_log = logging.getLogger(__name__)
+
+
 try:
     import sympy
 
     _configure_sympy(sympy, True)
-except ImportError:
-    pass
+except ModuleNotFoundError:
+    _log.warning(
+        "Module 'sympy' (optional dependency) not found."
+        " It must be installed separately to enable this functionality."
+    )
+
 
 # TODO<jce> Look into things like sum operator and template expressions
 

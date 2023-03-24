@@ -17,3 +17,6 @@ from .RPP4 import RPP4
 from .RPP5 import RPP5
 from .ConstantProperties import Constant
 from .electrolyte import relative_permittivity_constant
+from .ChapmanEnskog import ChapmanEnskogLennardJones
+from .ChungPure import ChungViscosityPure
+from .Eucken import Eucken

@@ -23,7 +23,7 @@ Created on Tue Feb 18 10:54:52 2020
 from enum import Enum
 
 from pyomo.environ import Set
-from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.common.config import ConfigBlock, ConfigDict, ConfigValue
 
 from idaes.core.base.process_base import declare_process_block_class, ProcessBlockData
 
@@ -106,6 +106,13 @@ class PhaseData(ProcessBlockData):
     CONFIG.declare(
         "visc_d_phase",
         ConfigValue(description="Method to calculate dynamic viscosity of phase"),
+    )
+    CONFIG.declare(
+        "transport_property_options",
+        ConfigDict(
+            implicit=True,
+            description="Options for transport properties like viscosity, surface tension, and thermal conductivity",
+        ),
     )
 
     def build(self):

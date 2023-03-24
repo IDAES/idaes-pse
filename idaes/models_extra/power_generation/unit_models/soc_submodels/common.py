@@ -477,7 +477,7 @@ h_params = {
         "G": 0.0,
         "H": 0.0,
     },
-    "O^2-": {  # Chosen to match O2 coeffs besides enthalpy and entropy of formation
+    "O^2-": {  # Chosen to match O2 coeffs
         "A": 0.5 * 30.03235,
         "B": 0.5 * 8.772972,
         "C": 0.5 * -3.988133,

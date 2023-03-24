@@ -11,12 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 
-try:
-    # Pyton 3.8+
-    from importlib import resources
-except ImportError:
-    # Python 3.7
-    import importlib_resources as resources
+from importlib import resources
 from numbers import Number
 from pathlib import Path
 from typing import Dict, Union
