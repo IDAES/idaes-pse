@@ -50,6 +50,8 @@ from idaes.core.base.util import build_on_demand
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
 )
+from idaes.core.util.initialization import fix_state_vars
+
 
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
@@ -298,6 +300,15 @@ class StateBlock(ProcessBlock):
                     )
             self._block_data_config_default["parameters"] = param
         return param
+
+    def fix_initialization_states(self):
+        """
+        Fixes state variables for state blocks.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError
 
     def initialize(self, *args, **kwargs):
         """

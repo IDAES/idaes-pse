@@ -46,6 +46,7 @@ from idaes.models.properties.general_helmholtz.components import (
 )
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+from idaes.core.util.initialization import fix_state_vars
 
 _log = idaeslog.getLogger(__name__)
 
@@ -73,6 +74,16 @@ class _StateBlock(StateBlock):
                     pass
         if hold:
             v.fix()
+
+    def fix_initialization_states(self):
+        """
+        Fixes state variables for state blocks.
+
+        Returns:
+            None
+        """
+        # Fix state variables
+        fix_state_vars(self)
 
     def initialize(self, *args, **kwargs):
         flags = {}

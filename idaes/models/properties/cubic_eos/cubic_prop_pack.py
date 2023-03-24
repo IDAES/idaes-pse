@@ -225,6 +225,20 @@ class _CubicStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
+    def fix_initialization_states(self):
+        """
+        Fixes state variables for state blocks.
+
+        Returns:
+            None
+        """
+        # Fix state variables
+        fix_state_vars(self)
+
+        # Also need to deactivate sum of mole fraction constraint
+        for k in self.values():
+            k.sum_mol_frac_out.deactivate()
+
     def initialize(
         blk,
         state_args=None,
