@@ -24,6 +24,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent
+from pyomo.contrib.pynumero.asl import AmplInterface
 
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.models.unit_models.feed_flash import FeedFlash, FlashType
@@ -42,6 +43,7 @@ from idaes.core.solvers import get_solver
 
 from idaes.core.initialization import (
     SingleControlVolumeUnitInitializer,
+    BlockTriangularizationInitializer,
     InitializationStatus,
 )
 
@@ -382,3 +384,5 @@ class TestInitializersBT:
         assert pytest.approx(0.396, abs=1e-3) == value(
             model.fs.unit.control_volume.properties_out[0].flow_mol_phase["Vap"]
         )
+
+    # TODO: BT Initializer does not solve

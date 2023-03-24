@@ -47,8 +47,41 @@ from idaes.models.properties.general_helmholtz.components import (
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util.initialization import fix_state_vars
+from idaes.core.initialization.initializer_base import (
+    InitializerBase,
+    InitializationStatus,
+)
 
 _log = idaeslog.getLogger(__name__)
+
+
+class HelmholtzEoSInitializer(InitializerBase):
+    """
+    Initializer object for Helmholtz EoS packages using external functions.
+
+    Due to the use of external functions, Helmholtz EoS StateBlocks have no constraints,
+    thus there is nothing to initialize. This Initializer replaces the general initialize
+    method with a no-op.
+
+    """
+
+    CONFIG = InitializerBase.CONFIG()
+
+    def initialize(
+        self,
+        model: pyo.Block,
+        initial_guesses: dict = None,
+        json_file: str = None,
+        output_level=None,
+    ):
+        """
+        Initialize method for Helmholtz EoS state blocks. This is a no-op.
+
+        Returns:
+            InitializationStatus.Ok
+        """
+        self._update_summary(model, "status", InitializationStatus.Ok)
+        return self.summary[model]["status"]
 
 
 class _StateBlock(StateBlock):
@@ -56,6 +89,9 @@ class _StateBlock(StateBlock):
     This class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
+    # Set default initializer
+    default_initializer = HelmholtzEoSInitializer
 
     @staticmethod
     def _set_fixed(v, f):
