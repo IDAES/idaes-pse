@@ -162,11 +162,11 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
     def _initialize_control_volume(self, model, copy_inlet_state, logger):
         # Initialize properties
-        try:
-            # Guess a 0-D control volume
+        if hasattr(model.control_volume, "properties_in"):
+            # 0-D control volume
             self._init_props_0D(model, copy_inlet_state)
-        except AttributeError:
-            # Assume it must be a 1-D control volume
+        else:
+            # 1-D control volume
             self._init_props_1D(model)
 
         logger.info_high("Step 2a: properties initialization complete")

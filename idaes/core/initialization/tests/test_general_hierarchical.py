@@ -14,6 +14,7 @@
 Tests for general hierarchical initialization routines
 """
 import pytest
+import types
 
 from pyomo.environ import Block, ConcreteModel, Constraint, value, Var
 
@@ -205,6 +206,13 @@ def test_init_props_0D_no_copy():
     m.control_volume.properties_out.v1 = Var()
     m.control_volume.properties_out.v2 = Var()
 
+    def estimate_outlet_state(block, *args, **kwargs):
+        block._estimated = True
+
+    m.control_volume.estimate_outlet_state = types.MethodType(
+        estimate_outlet_state, m.control_volume
+    )
+
     initializer = SingleControlVolumeUnitInitializer()
     log = initializer.get_logger(m)
 
@@ -214,6 +222,7 @@ def test_init_props_0D_no_copy():
 
     assert m.control_volume.properties_in._initialized
     assert m.control_volume.properties_out._initialized
+    assert m.control_volume._estimated
 
 
 @pytest.mark.unit
@@ -249,10 +258,18 @@ def test_init_props_1D():
     initializer = SingleControlVolumeUnitInitializer()
     log = initializer.get_logger(m)
 
+    def estimate_states(block, *args, **kwargs):
+        block._estimated = True
+
+    m.control_volume.estimate_states = types.MethodType(
+        estimate_states, m.control_volume
+    )
+
     initializer.add_submodel_initializer(m.control_volume.properties, DummyInit())
     initializer._init_props_1D(m)
 
     assert m.control_volume.properties._initialized
+    assert m.control_volume._estimated
 
 
 @pytest.mark.unit
@@ -276,7 +293,7 @@ def test_init_rxns():
 
 
 @pytest.mark.unit
-def test_initialize_main_model_no_copy():
+def test_initialize_control_volume_no_copy():
     m = ConcreteModel()
     m.control_volume = Block()
     m.control_volume.properties_in = Block()
@@ -298,6 +315,13 @@ def test_initialize_main_model_no_copy():
 
     m.control_volume.properties_in.v1.fix()
 
+    def estimate_outlet_state(block, *args, **kwargs):
+        block._estimated = True
+
+    m.control_volume.estimate_outlet_state = types.MethodType(
+        estimate_outlet_state, m.control_volume
+    )
+
     initializer = SingleControlVolumeUnitInitializer()
     log = initializer.get_logger(m)
 
@@ -305,7 +329,7 @@ def test_initialize_main_model_no_copy():
     initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
 
-    results = initializer._initialize_main_model(m, False, log)
+    results = initializer._initialize_control_volume(m, False, log)
 
     assert isinstance(results, dict)
     assert "Solution" in results
@@ -318,10 +342,11 @@ def test_initialize_main_model_no_copy():
     assert m.control_volume.properties_in._initialized
     assert m.control_volume.properties_out._initialized
     assert m.control_volume.reactions._initialized
+    assert m.control_volume._estimated
 
 
 @pytest.mark.unit
-def test_initialize_main_model_copy():
+def test_initialize_control_volume_copy():
     m = ConcreteModel()
     m.control_volume = Block()
     m.control_volume.properties_in = Block()
@@ -350,7 +375,7 @@ def test_initialize_main_model_copy():
     initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
 
-    results = initializer._initialize_main_model(m, True, log)
+    results = initializer._initialize_control_volume(m, True, log)
 
     assert isinstance(results, dict)
     assert "Solution" in results
@@ -412,6 +437,13 @@ def test_initialize_submodels_no_plugins_no_copy():
 
     m.control_volume.properties_in.v1.fix()
 
+    def estimate_outlet_state(block, *args, **kwargs):
+        block._estimated = True
+
+    m.control_volume.estimate_outlet_state = types.MethodType(
+        estimate_outlet_state, m.control_volume
+    )
+
     initializer = SingleControlVolumeUnitInitializer()
     log = initializer.get_logger(m)
 
@@ -432,6 +464,7 @@ def test_initialize_submodels_no_plugins_no_copy():
     assert m.control_volume.properties_in._initialized
     assert m.control_volume.properties_out._initialized
     assert m.control_volume.reactions._initialized
+    assert m.control_volume._estimated
     assert not hasattr(m.plugin, "_initialized")
     assert not hasattr(m.plugin, "_plugin_initialized")
 
