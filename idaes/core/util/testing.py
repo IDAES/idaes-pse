@@ -83,16 +83,17 @@ def initialization_tester(m, dof=0, unit=None, **init_kwargs):
     unit.__dummy_var = Var()
     unit.__dummy_equality = Constraint(expr=unit.__dummy_var == 5)
     unit.__dummy_inequality = Constraint(expr=unit.__dummy_var <= 10)
+    unit.__dummy_set = Set(initialize=[1])
 
     def deq_idx(b, i):
         return unit.__dummy_var == 5
 
-    unit.__dummy_equality_idx = Constraint([1], rule=deq_idx)
+    unit.__dummy_equality_idx = Constraint(unit.__dummy_set, rule=deq_idx)
 
     def dieq_idx(b, i):
         return unit.__dummy_var <= 10
 
-    unit.__dummy_inequality_idx = Constraint([1], rule=dieq_idx)
+    unit.__dummy_inequality_idx = Constraint(unit.__dummy_set, rule=dieq_idx)
 
     unit.__dummy_equality.deactivate()
     unit.__dummy_inequality.deactivate()
@@ -128,6 +129,7 @@ def initialization_tester(m, dof=0, unit=None, **init_kwargs):
     unit.del_component(unit.__dummy_inequality_idx)
     unit.del_component(unit.__dummy_equality_idx)
     unit.del_component(unit.__dummy_var)
+    unit.del_component(unit.__dummy_set)
 
 
 # -----------------------------------------------------------------------------
