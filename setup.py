@@ -72,6 +72,7 @@ kwargs = dict(
         "colorama",
         "jupyter",
         "lxml",
+        "requests",
         "matplotlib",
         "nbconvert",
         "nbformat",
