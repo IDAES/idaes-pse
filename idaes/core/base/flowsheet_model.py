@@ -39,6 +39,12 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import DynamicError, ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
 
+try:
+    # see :class:UI
+    import idaes_ui
+except ImportError:
+    idaes_ui = None
+
 import idaes.logger as idaeslog
 
 # Some more information about this module
@@ -64,14 +70,12 @@ class UI:
     """
 
     def __init__(self):
-        try:
-            import idaes_ui
-
-            self.visualize = idaes_ui.fsvis.visualize
-            self.installed = True
-        except ImportError:
+        if idaes_ui is None:
             self.visualize = self._visualize_null
             self.installed = False
+        else:
+            self.visualize = idaes_ui.fsvis.visualize
+            self.installed = True
 
     def _visualize_null(self, model, model_name, **kwargs):
         self._warn("idaes_ui.fsvis.visualize")
