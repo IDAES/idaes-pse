@@ -58,7 +58,7 @@ class UI:
     just print warnings if it is not.
 
     Functions:
-        - visualize(model, model_name, **kwargs)
+        - `visualize(model, model_name, **kwargs)`
 
     Also has an attribute 'installed' to check directly.
     """
