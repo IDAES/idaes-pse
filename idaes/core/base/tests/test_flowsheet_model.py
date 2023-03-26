@@ -474,4 +474,3 @@ def test_ui_warnings():
     # Call the function, which should raise a warning
     with pytest.raises(RuntimeWarning):
         flowsheet_model.ui.visualize(1, 2)
-

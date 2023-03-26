@@ -62,9 +62,11 @@ class UI:
 
     Also has an attribute 'installed' to check directly.
     """
+
     def __init__(self):
         try:
             import idaes_ui
+
             self.visualize = idaes_ui.fsvis.visualize
             self.installed = True
         except ImportError:
