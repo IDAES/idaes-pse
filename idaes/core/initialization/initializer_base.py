@@ -23,7 +23,7 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.core.base.var import _VarData
-from pyomo.common.config import ConfigBlock, ConfigValue, add_docstring_list
+from pyomo.common.config import ConfigBlock, ConfigValue, String_ConfigFormatter
 
 from idaes.core.util.model_serializer import to_json, from_json, StoreSpec, _only_fixed
 from idaes.core.util.exceptions import InitializationError
@@ -100,8 +100,6 @@ class InitializerBase:
         ),
     )
 
-    __doc__ = add_docstring_list(__doc__, CONFIG)
-
     def __init__(self, **kwargs):
         self.config = self.CONFIG(kwargs)
 
@@ -110,7 +108,17 @@ class InitializerBase:
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        cls.__doc__ = add_docstring_list(cls.__doc__ if cls.__doc__ else "", cls.CONFIG)
+        cls.__doc__ = cls.__doc__ + cls.CONFIG.generate_documentation(
+            format=String_ConfigFormatter(
+                block_start="",
+                block_end="",
+                item_start="%s\n",
+                item_body="%s",
+                item_end="\n",
+            ),
+            indent_spacing=4,
+            width=66,
+        )
 
     def get_logger(self, model):
         """Get logger for model by name"""
