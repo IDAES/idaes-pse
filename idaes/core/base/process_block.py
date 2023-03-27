@@ -197,12 +197,14 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
         # create a new class called name from block_class
         try:
             cb_doc = cls.CONFIG.generate_documentation(
-                block_start="",
-                block_end="",
-                item_start="%s\n",
+                format=pyomo.common.config.String_ConfigFormatter(
+                    block_start="",
+                    block_end="",
+                    item_start="%s\n",
+                    item_body="%s",
+                    item_end="\n",
+                ),
                 indent_spacing=4,
-                item_body="%s",
-                item_end="\n",
                 width=66,
             )
             cb_doc += "\n"
