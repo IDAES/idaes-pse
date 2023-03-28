@@ -685,6 +685,15 @@ class TestSingleConstraintScalingTransform:
         assert model.c3.lower.value == pytest.approx(1e3)
         assert model.c3.body() == pytest.approx(model.x.value)
 
+    @pytest.mark.unit
+    def test_remove_units(self, model):
+        sc.constraint_scaling_transform(model.c2, 1e-3 * pyo.units.m)
+        assert model.c2.lower.value == pytest.approx(1)
+        assert model.c2.body() == pytest.approx(model.x.value / 1e3)
+        assert model.c2.upper.value == pytest.approx(1)
+        assert sc.get_constraint_transform_applied_scaling_factor(model.c2) == 1e-3
+        assert model.constraint_transformed_scaling_factor[model.c2] == 1e-3
+
 
 class TestScaleSingleConstraint:
     @pytest.fixture(scope="class")
