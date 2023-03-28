@@ -1235,7 +1235,10 @@ class MEAColumnData(PackedColumnData):
                         "Liq", "MEA"
                     ]
                     + blk.log_diffus_liq_comp[t, x, "CO2"]
-                ) - log(blk.mass_transfer_coeff_liq[t, x, "CO2"])
+                ) - log(
+                        blk.mass_transfer_coeff_liq[t, x, "CO2"]
+                        / (lunits("length") / lunits("time"))
+                    )
                 # Scaled for Putta et al.
                 # return (
                 #     blk.Hatta[t, x] * blk.mass_transfer_coeff_liq[t, x, "CO2"]
@@ -1294,12 +1297,14 @@ class MEAColumnData(PackedColumnData):
                     to_units=lunits("pressure"),
                 )
                 return blk.log_conc_CO2_bulk[t, x] + log(
-                    blk.vapor_phase.properties[t, zf].mole_frac_comp["CO2"]
-                    * Pressure
-                    / blk.psi[t, zf]
-                    + blk.liquid_phase.properties[t, x].conc_mol_phase_comp_true[
+                    (
+                        blk.vapor_phase.properties[t, zf].mole_frac_comp["CO2"]
+                        * Pressure
+                        / blk.psi[t, zf]
+                        + blk.liquid_phase.properties[t, x].conc_mol_phase_comp_true[
                         "Liq", "CO2"
-                    ]
+                        ]
+                    ) / lunits("density_mole")
                 ) == blk.liquid_phase.properties[t, x].log_conc_mol_phase_comp_true[
                     "Liq", "CO2"
                 ] + log(

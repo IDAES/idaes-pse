@@ -537,6 +537,9 @@ and used when constructing these
             else:
                 return blk.liquid_phase.mass_transfer_term[t, x, "Liq", j] == 0.0
 
+        vunits = (
+            self.config.vapor_phase.property_package.get_metadata().get_derived_units
+        )
         @self.Constraint(
             self.flowsheet().time,
             self.vapor_phase.length_domain,
@@ -773,9 +776,10 @@ and used when constructing these
                     self.interphase_mass_transfer[t, x, j], default=1, warning=False
                 )
                 # Account for the fact that this equation is written on a vapor unit basis
-                sf_units = pyunits.convert(
-                    1 / (lunits("amount") / lunits("time") / lunits("length")),
-                    1 / (vunits("amount") / vunits("time") / vunits("length"))
+                sf_units = pyunits.convert_value(
+                    1,
+                    from_units=1 / (lunits("amount") / lunits("time") / lunits("length")),
+                    to_units=1 / (vunits("amount") / vunits("time") / vunits("length"))
                 )
                 sf *= sf_units
             except KeyError:
