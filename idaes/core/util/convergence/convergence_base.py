@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module provides the base classes and methods for running convergence
@@ -57,6 +57,10 @@ ConvergenceEvaluationSpecification), to run a convergence evaluation
 However, this package can also be executed using the command-line interface.
 See the documentation in convergence.py for more information.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 # stdlib
 from collections import OrderedDict
 import getpass
@@ -261,7 +265,7 @@ class ConvergenceEvaluation:
             raise ValueError(f"Problem reading json file: {baseline_filename}")
 
         # Run samples from baseline
-        inputs, samples, results = run_convergence_evaluation(basedict, self)
+        _, _, results = run_convergence_evaluation(basedict, self)
 
         return _compare_run_to_baseline(
             results, basedict["results"], rel_tol=rel_tol, abs_tol=abs_tol
@@ -726,7 +730,7 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
                 _set_model_parameters_from_sample(model, inputs, ss)
                 solver = conv_eval.get_solver()
                 (
-                    status_obj,
+                    status_obj,  # pylint: disable=unused-variable
                     solved,
                     iters,
                     iters_in_restoration,
@@ -775,7 +779,7 @@ def generate_baseline_statistics(
     jsondict["seed"] = seed
     jsondict["samples"] = generate_samples(eval_spec, n_points, seed)
 
-    inputs, samples, results = run_convergence_evaluation(jsondict, conv_eval)
+    _, _, results = run_convergence_evaluation(jsondict, conv_eval)
 
     jsondict["results"] = OrderedDict()
     for r in results:
@@ -818,7 +822,9 @@ def generate_baseline_statistics(
 def save_convergence_statistics(
     inputs, results, dmf=None, display=True, json_path=None, report_path=None
 ):
-    """ """
+    """
+    Save convergence statistics to json file or dmf
+    """
     s = Stats(inputs, results)
     if display:
         s.report()

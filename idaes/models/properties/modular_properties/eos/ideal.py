@@ -1,20 +1,26 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Methods for ideal equations of state.
 
 Currently only supports liquid and vapor phases
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import Expression, log
 
 from idaes.core import Apparent
@@ -23,15 +29,17 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     get_component_object as cobj,
 )
-from .eos_base import EoSBase
 from idaes.models.properties.modular_properties.phase_equil.henry import (
     henry_pressure,
     log_henry_pressure,
 )
+from .eos_base import EoSBase
 
 
 # TODO: Add support for ideal solids
 class Ideal(EoSBase):
+    """EoS class for ideal phases."""
+
     # Add attribute indicating support for electrolyte systems
     electrolyte_support = True
 
@@ -82,6 +90,10 @@ class Ideal(EoSBase):
             return 0
 
     @staticmethod
+    def cp_mass_phase(blk, p):
+        return blk.cp_mol_phase[p] / blk.mw_phase[p]
+
+    @staticmethod
     def cp_mol_phase(b, p):
         return sum(
             b.get_mole_frac(p)[p, j] * b.cp_mol_phase_comp[p, j]
@@ -99,6 +111,10 @@ class Ideal(EoSBase):
             return get_method(b, "cp_mol_sol_comp", j)(b, cobj(b, j), b.temperature)
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+
+    @staticmethod
+    def cv_mass_phase(blk, p):
+        return blk.cv_mol_phase[p] / blk.mw_phase[p]
 
     @staticmethod
     def cv_mol_phase(b, p):

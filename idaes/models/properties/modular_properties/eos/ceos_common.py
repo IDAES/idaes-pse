@@ -1,29 +1,32 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+"""
+Common utilities for cubic EoS property packages.
+"""
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
-import os
 import enum
 import ctypes
 from pyomo.environ import ExternalFunction, units as pyunits
 from pyomo.common.fileutils import find_library
-from idaes import bin_directory
 
 try:
     # When compiling these, I don't bother changing the extension based on OS,
     # so the file name is always ends in .so. It's fine.
     cubic_so_path = find_library("cubic_roots.so")
     ctypes.cdll.LoadLibrary(cubic_so_path)
-except:
+except Exception:  # pylint: disable=W0703
     cubic_so_path = None
 
 
@@ -37,6 +40,8 @@ def cubic_roots_available():
 
 
 class CubicType(enum.Enum):
+    """enum of supported cubic types."""
+
     PR = 0
     SRK = 1
 

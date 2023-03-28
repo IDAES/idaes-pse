@@ -10,6 +10,7 @@ scale-up, operation and troubleshooting of innovative, advanced energy systems.
 [![Integration](https://github.com/IDAES/idaes-pse/actions/workflows/integration.yml/badge.svg)](https://github.com/IDAES/idaes-pse/actions/workflows/integration.yml)
 [![codecov](https://codecov.io/gh/IDAES/idaes-pse/branch/main/graph/badge.svg?token=1lNQNbSB29)](https://codecov.io/gh/IDAES/idaes-pse)
 [![Documentation Status](https://readthedocs.org/projects/idaes-pse/badge/?version=latest)](https://idaes-pse.readthedocs.io/en/latest/?badge=latest)
+[![Services](https://github.com/Pyomo/jenkins-status/blob/main/idaes_services.svg)](https://pyomo-jenkins.sandia.gov/)
 [![GitHub contributors](https://img.shields.io/github/contributors/IDAES/idaes-pse.svg)](https://github.com/IDAES/idaes-pse/graphs/contributors)
 [![Merged PRs](https://img.shields.io/github/issues-pr-closed-raw/IDAES/idaes-pse.svg?label=merged+PRs)](https://github.com/IDAES/idaes-pse/pulls?q=is:pr+is:merged)
 [![Issue stats](http://isitmaintained.com/badge/resolution/IDAES/idaes-pse.svg)](http://isitmaintained.com/project/IDAES/idaes-pse)
@@ -24,7 +25,7 @@ While not required, we encourage the installation of [Anaconda](https://www.anac
 
 Use conda to create a new "idaes-pse" (could be any name you like) environment then activate that environment:
 ```bash
-conda create --name idaes-pse python=3
+conda create --name idaes-pse python=3.10
 conda activate idaes-pse
 ```
 
@@ -77,10 +78,10 @@ Most of the functionality is implemented in Python. In accordance with
 the end-of-life for many Python 2 libraries, the IDAES Toolkit is written
 for Python 3. The following sub-versions are supported:
 
-* Python 3.7
 * Python 3.8
 * Python 3.9
 * Python 3.10
+* Python 3.11
 
 Note that Python 3.6 is *not* supported.
 

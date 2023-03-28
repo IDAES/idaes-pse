@@ -76,11 +76,11 @@ But before you do that, you need to get the Python package manager fully up and 
 .. _Conda: https://conda.io/
 .. _Miniconda: https://conda.io/en/latest/miniconda.html
 
-After Miniconda is installed, we recommend creating a separate conda environment for IDAES. If you are unfamiliar with environments, a good starting guide is `here <https://towardsdatascience.com/getting-started-with-python-environments-using-conda-32e9f2779307>`__. Create and activate a conda environment for the new IDAES installation with the following commands (we officially support python 3.7, but you may choose a version you prefer):
+After Miniconda is installed, we recommend creating a separate conda environment for IDAES. If you are unfamiliar with environments, a good starting guide is `here <https://towardsdatascience.com/getting-started-with-python-environments-using-conda-32e9f2779307>`__. Create and activate a conda environment for the new IDAES installation with the following commands (we officially support python |python-min| through |python-max|, with |python-default| as a default):
 
 .. code-block:: sh
 
-    conda create -n idaes python=3.8
+    conda create -n idaes python=|python-default|
     conda activate idaes
 
 .. note::
@@ -121,5 +121,5 @@ The main branch of idaes-pse is frequently updated and a new IDAES release occur
 
 .. code-block:: sh
 
-    pip install -U idaes-pse
-    pip install -U .
+    pip install -r requirements-dev.txt
+    idaes get-extensions  # IDAES extensions should also be updated

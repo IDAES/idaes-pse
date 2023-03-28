@@ -1,25 +1,25 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """This module provides r134a property expressions
 
-Perkins, R.A.; Laesecke, A.; Howley, J.; Ramires, M.L.V.; Gurova, A.N.; Cusco, L., 
-    Experimental thermal conductivity values for the IUPAC round-robin sample of 
-    1,1,1,2-tetrafluoroethane (R134a), NIST Interagency/Internal Report (NISTIR) 
+Perkins, R.A.; Laesecke, A.; Howley, J.; Ramires, M.L.V.; Gurova, A.N.; Cusco, L.,
+    Experimental thermal conductivity values for the IUPAC round-robin sample of
+    1,1,1,2-tetrafluoroethane (R134a), NIST Interagency/Internal Report (NISTIR)
     - 6605, 2000, https://doi.org/10.6028/NIST.IR.6605.
 
-Huber, M.L.; Laesecke, A.; Perkins, R.A., Model for the Viscosity and Thermal 
-    Conductivity of Refrigerants, Including a New Correlation for the Viscosity 
-    of R134a, Ind. Eng. Chem. Res., 2003, 42, 13, 3163-3178, 
+Huber, M.L.; Laesecke, A.; Perkins, R.A., Model for the Viscosity and Thermal
+    Conductivity of Refrigerants, Including a New Correlation for the Viscosity
+    of R134a, Ind. Eng. Chem. Res., 2003, 42, 13, 3163-3178,
     https://doi.org/10.1021/ie0300880.
 
 Thermal conductivity parameter errata correction from CoolProp parameter file.

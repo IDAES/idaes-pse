@@ -1,17 +1,23 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """Generic Helmholtz EOS StateBlock Class
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 __author__ = "John Eslick"
 
 
@@ -469,7 +475,6 @@ class HelmholtzStateBlockData(StateBlockData):
         eps_pu = params.smoothing_pressure_under
         eps_po = params.smoothing_pressure_over
         priv_plist = params.private_phase_list
-        plist = params.phase_list
         rho_star = params.dens_mass_crit
         # Convert pressures to kPa for external functions and nicer scaling in
         # the complementarity-type constraints.
@@ -537,7 +542,6 @@ class HelmholtzStateBlockData(StateBlockData):
         # Public phase list
         pub_phlist = params.phase_list
         component_list = params.component_list
-        phase_set = params.config.phase_presentation
         self.phase_equilibrium_list = params.phase_equilibrium_list
 
         # Add component mole fraction for standardization
@@ -705,7 +709,7 @@ class HelmholtzStateBlockData(StateBlockData):
 
         self.entr_mass_sat_phase = pyo.Expression(
             phlist,
-            rule=rule_entr_mol_sat_phase,
+            rule=rule_entr_mass_sat_phase,
             doc="Saturated entropy of the phases at pressure",
         )
 

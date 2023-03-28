@@ -1,15 +1,21 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+
+# Changing existing config block attributes
+# pylint: disable=protected-access
+
 import pyomo.environ as pyo
 from pyomo.common.config import In
 from idaes.core import declare_process_block_class
@@ -28,7 +34,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 def _assert_properties(pb):
-    """Assert that the properies parameter block conforms to the requirements"""
+    """Assert that the properties parameter block conforms to the requirements"""
     try:
         assert isinstance(pb, hltz.HelmholtzParameterBlockData)
         assert pb.config.phase_presentation in {
@@ -163,14 +169,13 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         efficency, inlet, and one of pressure ratio, pressure change or outlet
         pressure.
         """
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         # Create solver
         slvr = get_solver(solver, optarg)
 
         # Store original specification so initialization doesn't change the model
-        # This will only resore the values of varaibles that were originally fixed
+        # This will only restore the values of variables that were originally fixed
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
         # Check for alternate pressure specs
@@ -204,7 +209,7 @@ class HelmIsentropicTurbineData(BalanceBlockData):
             self.outlet.flow_mol[t] = pyo.value(self.inlet.flow_mol[t])
         # Solve the model (should be already solved from above)
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = slvr.solve(self, tee=slc.tee)
+            slvr.solve(self, tee=slc.tee)
         from_json(self, sd=istate, wts=sp)
 
     def calculate_scaling_factors(self):

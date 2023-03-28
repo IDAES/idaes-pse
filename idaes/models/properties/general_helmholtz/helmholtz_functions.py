@@ -1,17 +1,23 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """Generic Helmholtz EOS Functions and Parameters
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 __author__ = "John Eslick"
 
 import enum
@@ -45,12 +51,16 @@ _log = idaeslog.getLogger(__name__)
 _data_dir = os.path.join(idaes.bin_directory, "helm_data")
 _data_dir = os.path.join(_data_dir, "")
 
+# General Helmholtz functions return variables for all phases,
+# but single phase properties do not need all of these.
+# pylint: disable=W0612
+
 try:
     # When compiling these, I don't bother changing the extension based on OS,
     # so the file name is always ends in .so. It's fine.
     _flib = find_library("general_helmholtz_external.so")
     ctypes.cdll.LoadLibrary(_flib)
-except:
+except Exception:  # pylint: disable=W0703
     _flib = None
 
 
@@ -661,7 +671,7 @@ class HelmholtzThermoExpressions(object):
 
     @staticmethod
     def _sv_str(**kwargs):
-        a = [x for x in kwargs if kwargs[x] is not None]
+        a = [x for x, k in kwargs.items() if k is not None]
         return ", ".join(a)
 
     def add_funcs(self, names=None):
@@ -1630,6 +1640,7 @@ change.
                 f"Component {self.config.pure_component} not supported."
             )
         # This is imported here to avoid a circular import
+        # pylint: disable-next=import-outside-toplevel
         from idaes.models.properties.general_helmholtz.helmholtz_state import (
             HelmholtzStateBlock,
         )
@@ -2233,13 +2244,16 @@ change.
         self,
         ylim=None,
         xlim=None,
-        points={},
+        points=None,
         figsize=None,
         dpi=None,
         isotherms=None,
         isotherms_line_format=None,
         isotherms_label=True,
     ):
+        if points is None:
+            points = {}
+
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
         if ylim is not None:
@@ -2327,8 +2341,11 @@ change.
         ax.set_ylabel("Pressure (kPa)")
         return fig, ax
 
-    def ts_diagram(self, ylim=None, xlim=None, points={}, figsize=None, dpi=None):
+    def ts_diagram(self, ylim=None, xlim=None, points=None, figsize=None, dpi=None):
         # Add external functions needed to plot PH-diagram
+        if points is None:
+            points = {}
+
         add_helmholtz_external_functions(
             self,
             [
@@ -2382,7 +2399,8 @@ change.
         ax.set_ylabel("Temperature (K)")
         return fig, ax
 
-    def pt_diagram(self, ylim=None, xlim=None, points={}, figsize=None, dpi=None):
+    # TODO: points argument is unused
+    def pt_diagram(self, ylim=None, xlim=None, points=None, figsize=None, dpi=None):
         # Add external functions needed to plot PH-diagram
         add_helmholtz_external_functions(
             self,

@@ -1,23 +1,26 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
-import idaes
-import logging
-import threading
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
 
+import logging
 from contextlib import contextmanager
+
 from pyomo.common.tee import capture_output
 from pyomo.common.log import LogStream
 
+import idaes
 
 # Throw the standard levels in here, just let you access it all in one place
 CRITICAL = logging.CRITICAL  # 50
@@ -161,10 +164,10 @@ def condition(res):
     try:
         if "ipopt" in str(res.solver.message).lower():
             solver_message = " ".join(str(res.solver.message).split(" ")[2:])
-            return "{} - {}".format(s, solver_message)
+            return f"{s} - {solver_message}"
         else:
-            return "{} - {}".format(s, str(res.solver.message))
-    except:
+            return f"{s} - {str(res.solver.message)}"
+    except:  # pylint: disable=bare-except
         return s
 
 
@@ -211,7 +214,7 @@ def set_log_tags(tags):
     """
     for m in tags:
         if m not in idaes.cfg.valid_logger_tags.union({None}):
-            raise ValueError("{} is not a valid logging tag".format(m))
+            raise ValueError(f"{m} is not a valid logging tag")
     idaes.cfg.logger_tags = set(tags)
 
 
@@ -225,7 +228,7 @@ def add_log_tag(tag):
         None
     """
     if tag not in idaes.cfg.valid_logger_tags.union({None}):
-        raise ValueError("{} is not a valid logging tag".format(tag))
+        raise ValueError(f"{tag} is not a valid logging tag")
     idaes.cfg.logger_tags.add(tag)
 
 
@@ -278,5 +281,5 @@ def solver_log(logger, level=logging.ERROR):
     if not solver_capture():
         yield SolverLogInfo(tee=tee)
     else:
-        with capture_output(LogStream(level, logger)) as s:
+        with capture_output(LogStream(level, logger)):
             yield SolverLogInfo(tee=tee)

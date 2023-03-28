@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Utility functions for column models
@@ -16,10 +16,10 @@ Utility functions for column models
 
 __author__ = "Jaffer Ghouse, Alejandro Garcia-Diego"
 
-import idaes.logger as idaeslog
+# TODO: look into protected access issues - probably need to refactor
+# pylint: disable=protected-access
 
 # Import Pyomo libraries
-from pyomo.network import Port
 from pyomo.environ import (
     Reference,
     Expression,
@@ -30,6 +30,7 @@ from idaes.core.util.exceptions import (
     PropertyPackageError,
     PropertyNotSupportedError,
 )
+import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
@@ -252,8 +253,8 @@ def make_phase_split(
 
                 phase_set = model.config.property_package.phase_list
 
-                # If statement to skip in case equimpment is not a Tray
-                if equipmentType == None:
+                # If statement to skip in case equipment is not a Tray
+                if equipmentType is None:
 
                     def rule_flow(model, t, p, i):
                         if (phase is model._liquid_set and p in model._liquid_set) or (

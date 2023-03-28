@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """This module provides h2o property expressions
 
@@ -68,7 +68,7 @@ def _thermal_conductivity(blk, delta, tau, on_blk=None):
     return (
         (
             pyo.sqrt(1.0 / tau)
-            / sum(L0[i] * tau**i for i in L0)
+            / sum(l0i * tau**i for i, l0i in L0.items())
             * pyo.exp(
                 delta
                 * sum(
@@ -134,7 +134,7 @@ def _viscosity(blk, delta, tau, on_blk=None):
         (
             1e-4
             * pyo.sqrt(1.0 / tau)
-            / sum(H0[i] * tau**i for i in H0)
+            / sum(h0i * tau**i for i, h0i in H0.items())
             * pyo.exp(
                 delta
                 * sum(

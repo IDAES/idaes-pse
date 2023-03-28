@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 
 """
@@ -136,9 +136,9 @@ def set_param_from_config(b, param, config=None, index=None):
             param_obj = getattr(b, param + "_" + index)
         except AttributeError:
             raise AttributeError(
-                "{} - set_param_from_config method was provided with param and"
-                " index arguments {} {}, but no attribute with that "
-                "combination ({}_{}) exists.".format(b.name, param, index, param, index)
+                f"{b.name} - set_param_from_config method was provided with param and"
+                f" index arguments {param} {index}, but no attribute with that "
+                f"combination ({param}_{index}) exists."
             )
 
         try:

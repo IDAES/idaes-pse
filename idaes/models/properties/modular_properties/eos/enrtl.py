@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Methods for eNRTL activity coefficient method.
@@ -26,11 +26,14 @@ Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 Note that "charge number" in the paper referes to the absolute value of the
 ionic charge.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import Expression, exp, log, Set, units as pyunits
 
-from .ideal import Ideal
-from .enrtl_reference_states import Symmetric
-from .enrtl_parameters import ConstantAlpha, ConstantTau
 from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     get_component_object as cobj,
@@ -39,6 +42,10 @@ from idaes.models.properties.modular_properties.base.generic_property import Sta
 from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
+
+from .ideal import Ideal
+from .enrtl_reference_states import Symmetric
+from .enrtl_parameters import ConstantAlpha, ConstantTau
 
 
 # Set up logger
@@ -55,6 +62,8 @@ ClosestApproach = 14.9
 
 
 class ENRTL(Ideal):
+    """EoS class for eNRTL based property packages."""
+
     # Add attribute indicating support for electrolyte systems
     electrolyte_support = True
 

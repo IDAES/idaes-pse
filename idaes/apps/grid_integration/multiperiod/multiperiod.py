@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 import pyomo.environ as pyo
 from pyomo.common.timing import TicTocTimer
@@ -61,13 +61,20 @@ class MultiPeriodModel(pyo.ConcreteModel):
         set_scenarios=None,
         initialization_func=None,
         unfix_dof_func=None,
-        flowsheet_options={},
-        initialization_options={},
-        unfix_dof_options={},
+        flowsheet_options=None,
+        initialization_options=None,
+        unfix_dof_options=None,
         solver=None,
         outlvl=logging.WARNING,
     ):  # , state_variable_func=None):
         super().__init__()
+
+        if flowsheet_options is None:
+            flowsheet_options = {}
+        if initialization_options is None:
+            initialization_options = {}
+        if unfix_dof_options is None:
+            unfix_dof_options = {}
 
         self.n_time_points = n_time_points
 
@@ -128,9 +135,9 @@ class MultiPeriodModel(pyo.ConcreteModel):
     def build_multi_period_model(
         self,
         model_data_kwargs=None,
-        flowsheet_options={},
-        initialization_options={},
-        unfix_dof_options={},
+        flowsheet_options=None,
+        initialization_options=None,
+        unfix_dof_options=None,
         solver=None,
     ):
         """
@@ -146,9 +153,17 @@ class MultiPeriodModel(pyo.ConcreteModel):
             unfix_dof_options: dict containing the arguments needed for `unfix_dof_func`
             solver: pyomo solver object
         """
+        if flowsheet_options is None:
+            flowsheet_options = {}
+        if initialization_options is None:
+            initialization_options = {}
+        if unfix_dof_options is None:
+            unfix_dof_options = {}
+
         # use default empty dictionaries if no kwargs dict provided
-        if model_data_kwargs == None:
+        if model_data_kwargs is None:
             model_data_kwargs = {t: {} for t in range(self.n_time_points)}
+        # TODO: Replace this with a proper exception and message
         assert list(range(len(model_data_kwargs))) == sorted(model_data_kwargs)
 
         m = self
@@ -331,8 +346,8 @@ class MultiPeriodModel(pyo.ConcreteModel):
             # link blocks together. loop over every time index except the last one
             if self.get_linking_variable_pairs is None:
                 _logger.warning(
-                    f"linking_variable_func is not provided, so variables across"
-                    f" time periods are not linked."
+                    "linking_variable_func is not provided, so variables across"
+                    " time periods are not linked."
                 )
                 return
 
@@ -393,9 +408,9 @@ class MultiPeriodModel(pyo.ConcreteModel):
             # Check if a method for periodic constraints is given
             if self.get_periodic_variable_pairs is not None:
                 _logger.warning(
-                    f"A method is provided for get_periodic_variable_pairs. "
-                    f"build_stochastic_multi_period method does not support periodic "
-                    f"constraints, so the user needs to add them manually."
+                    "A method is provided for get_periodic_variable_pairs. "
+                    "build_stochastic_multi_period method does not support periodic "
+                    "constraints, so the user needs to add them manually."
                 )
 
         # Begin the formulation of the multiperiod optimization problem
@@ -440,8 +455,8 @@ class MultiPeriodModel(pyo.ConcreteModel):
         """
         if self.initialization_func is None:
             _logger.warning(
-                f"Initialization function is not provided. "
-                f"Returning the multiperiod model without initialization."
+                "Initialization function is not provided. "
+                "Returning the multiperiod model without initialization."
             )
             return
 
@@ -452,9 +467,9 @@ class MultiPeriodModel(pyo.ConcreteModel):
 
         if not pyo.check_optimal_termination(result):
             raise Exception(
-                f"Flowsheet did not converge to optimality after fixing the degrees of freedom. "
-                f"To create the multi-period model without initialization, do not provide "
-                f"initialization_func argument."
+                "Flowsheet did not converge to optimality after fixing the degrees of freedom. "
+                "To create the multi-period model without initialization, do not provide "
+                "initialization_func argument."
             )
 
         # Store the initialized model in `init_model` object
@@ -495,8 +510,8 @@ class MultiPeriodModel(pyo.ConcreteModel):
         """
         if self.unfix_dof_func is None:
             _logger.warning(
-                f"unfix_dof function is not provided. "
-                f"Returning the model without unfixing degrees of freedom"
+                "unfix_dof function is not provided. "
+                "Returning the model without unfixing degrees of freedom"
             )
             return
 
@@ -660,8 +675,8 @@ class MultiPeriodModel(pyo.ConcreteModel):
         """
         if len(schedule) > 4:
             raise Exception(
-                f"Number of elements in schedule exceeds four: "
-                f"the maximum number of subplots the function supports."
+                "Number of elements in schedule exceeds four: "
+                "the maximum number of subplots the function supports."
             )
 
         key_list = {index + 1: value for index, value in enumerate(schedule)}

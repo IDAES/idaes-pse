@@ -1,16 +1,15 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
-
 """
 Power Plant costing library
 This method leverages NETL costing capabilities. Two main methods have been
@@ -32,12 +31,17 @@ Other methods:
     - check_sCO2_costing_bounds() to display a warning if costing model have
       been used outside the range that where designed for
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 __author__ = "Costing Team (A. Noring, B. Paul, D. Caballero, and M. Zamarripa)"
 __version__ = "1.0.0"
 
-from pandas import DataFrame
 from sys import stdout
 import textwrap
+
+from pandas import DataFrame
 
 from pyomo.environ import (
     Param,
@@ -66,10 +70,7 @@ from idaes.models_extra.power_generation.costing.generic_ccs_capcost_custom_dict
 )
 
 from idaes.core.util.tables import stream_table_dataframe_to_string
-
 import idaes.logger as idaeslog
-
-import pyomo.environ as pyo
 from idaes.core import declare_process_block_class
 
 _log = idaeslog.getLogger(__name__)
@@ -85,8 +86,8 @@ def custom_power_plant_currency_units():
     """
     register_idaes_currency_units()
     if (
-        "USD_2008_Nov" in pyo.units._pint_registry
-        and "USD_2019_Sep" in pyo.units._pint_registry
+        "USD_2008_Nov" in pyunits._pint_registry  # pylint: disable=protected-access
+        and "USD_2019_Sep" in pyunits._pint_registry  # pylint: disable=protected-access
     ):
         # Assume that custom power plant units have already been registered
         # Log a message and end
@@ -96,7 +97,7 @@ def custom_power_plant_currency_units():
             "call of custom_power_plant_currency_units."
         )
     else:
-        pyo.units.load_definitions_from_strings(
+        pyunits.load_definitions_from_strings(
             [
                 "USD_2008_Nov = 500/566.2 * USD_CE500",
                 "USD_2019_Sep = 500/599.3 * USD_CE500",
@@ -120,9 +121,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         for each costing method to separate the parameters for each method.
         """
         # Set the base year for all costs
-        self.base_currency = pyo.units.USD_2018
+        self.base_currency = pyunits.USD_2018
         # Set a base period for all operating costs
-        self.base_period = pyo.units.year
+        self.base_period = pyunits.year
 
     def build_process_costs(
         self,
@@ -283,10 +284,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             )
 
             if land_cost is not None:
-                if (
-                    (type(land_cost) in [Expression, ScalarExpression])
-                    or (type(land_cost) is Param and land_cost.get_units is None)
-                    or (type(land_cost) is Var and land_cost.get_units is None)
+                if isinstance(land_cost, (Expression, ScalarExpression)) or (
+                    isinstance(land_cost, (Param, Var)) and land_cost.get_units is None
                 ):
                     land_cost_units_factor = 1 * CE_index_units
                 else:
@@ -391,7 +390,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 )
 
     @staticmethod
-    def initialize_build(self):
+    def initialize_build(*args, **kwargs):
         """
         Here we can add intialization steps for the things we built in
         build_process_costs.
@@ -399,7 +398,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         Note that the aggregate costs will be initialized by the framework.
         """
         # TODO: For now,  no additional process level costs to initialize
-        pass
 
     def report(self, export=False):
 
@@ -622,7 +620,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         }
 
         # preloaded account handling
-        if type(cost_accounts) == str:
+        if isinstance(cost_accounts, str):
             if tech in [1, 2]:
                 cost_accounts = PC_preloaded_accounts[cost_accounts]
             elif tech in [3, 4, 5]:
@@ -737,7 +735,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     costing_params[str(tech)][ccs][account]["BEC"] * 1e-3
                 )
 
-                if type(process_params[account]) == list:
+                if isinstance(process_params[account], list):
                     for i, processparam in enumerate(process_params[account]):
                         reference_params[account, processparam] = costing_params[
                             str(tech)
@@ -746,7 +744,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             str(tech)
                         ][ccs][account]["Cost scaling fraction"][i]
 
-                elif type(process_params[account]) == str:
+                elif isinstance(process_params[account], str):
                     reference_params[account] = costing_params[str(tech)][ccs][account][
                         "RP Value"
                     ]
@@ -877,18 +875,18 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             % (cost_accounts[0], ref_units[0] + "/" + ref_units[1])
                         )
 
-            if type(scaled_param) is list:
-                for j in range(len(scaled_param)):
-                    if scaled_param[j].get_units() is None:
+            if isinstance(scaled_param, list):
+                for sp in scaled_param:
+                    if sp.get_units() is None:
                         raise ValueError(
                             "Account %s uses units of %s. "
                             "Units of %s were passed. "
                             "Scaled_param must have units."
-                            % (cost_accounts[0], ref_units, scaled_param[j].get_units())
+                            % (cost_accounts[0], ref_units, sp.get_units())
                         )
                     else:
                         try:
-                            pyunits.convert(scaled_param[j], ref_units)
+                            pyunits.convert(sp, ref_units)
                         except InconsistentUnitsError:
                             raise Exception(
                                 "Account %s uses units of %s. "
@@ -897,7 +895,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                                 % (
                                     cost_accounts[0],
                                     ref_units,
-                                    scaled_param[j].get_units(),
+                                    sp.get_units(),
                                 )
                             )
             else:
@@ -952,7 +950,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             # currency units
         )
 
-        if type(process_params[cost_accounts[0]]) == list:
+        if isinstance(process_params[cost_accounts[0]], list):
             if len(process_params[cost_accounts[0]]) > 1:
                 blk.ref_param = Param(
                     cost_accounts,
@@ -969,7 +967,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     initialize=cost_scaling_fractions,
                     doc="reference parameter for account",
                 )
-        elif type(process_params[cost_accounts[0]]) == str:
+        elif isinstance(process_params[cost_accounts[0]], str):
             blk.ref_param = Param(
                 cost_accounts,
                 mutable=True,
@@ -1036,7 +1034,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             elif ref_cost_units[0] == "M":  # millions of $
                 ref_cost_units = getattr(pyunits, "MUSD_" + ref_cost_units[1])
 
-            if type(process_params[i]) == list:
+            if isinstance(process_params[i], list):
                 if len(process_params[i]) > 1:
                     return costing.bare_erected_cost[i] == (
                         pyunits.convert(
@@ -1052,7 +1050,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             for j, p in enumerate(process_params[i])
                         )
                     )
-            elif type(process_params[i]) == str:
+            elif isinstance(process_params[i], str):
                 return costing.bare_erected_cost[i] == (
                     pyunits.convert(
                         costing.ref_cost[i] * ref_cost_units, CE_index_units
@@ -1130,7 +1128,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # check to see if a costing block already exists
         if (
             self.parent_block().name
-            in self.config.flowsheet_costing_block._registered_unit_costing
+            in self.config.flowsheet_costing_block._registered_unit_costing  # pylint: disable=protected-access
         ):
             raise AttributeError(
                 "{} already has an attribute costing. "
@@ -1388,7 +1386,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # check to see if a costing block already exists
         if (
             self.parent_block().name
-            in self.config.flowsheet_costing_block._registered_unit_costing
+            in self.config.flowsheet_costing_block._registered_unit_costing  # pylint: disable=protected-access
         ):
             raise AttributeError(
                 "{} already has an attribute costing. "
@@ -1746,7 +1744,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         b,
         resources,
         rates,
-        prices={},
+        prices=None,
         CE_index_year="2018",
         capacity_factor=0.85,
     ):
@@ -1770,6 +1768,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             None.
 
         """
+        if prices is None:
+            prices = {}
 
         if not hasattr(b.parent_block(), "time"):  # flowsheet is not dynamic
             b.parent_block().time = [0]
@@ -1786,11 +1786,11 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             )
 
         # assert arguments are correct types
-        if type(resources) is not list:
+        if not isinstance(resources, list):
             raise TypeError("resources argument must be a list")
-        if type(rates) is not list:
+        if not isinstance(rates, list):
             raise TypeError("rates argument must be a list")
-        if type(prices) is not dict:
+        if not isinstance(prices, dict):
             raise TypeError("prices argument must be a dictionary")
 
         # assert lists are the same length

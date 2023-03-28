@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Ideal gas + Ideal/Non-ideal liquid property package.
@@ -38,6 +38,11 @@ References:
 3. H. Renon and J.M. Prausnitz, "Local compositions in thermodynamic excess functions for liquid mixtures.", AIChE Journal Vol. 14, No.1, 1968.
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -357,19 +362,19 @@ class _ActivityCoeffStateBlock(StateBlock):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="properties")
 
-        for k in blk.keys():
-            if (blk[k].config.defined_state is False) and (
-                blk[k].params.config.state_vars == "FTPz"
+        for k in blk.values():
+            if (k.config.defined_state is False) and (
+                k.params.config.state_vars == "FTPz"
             ):
-                blk[k].eq_mol_frac_out.deactivate()
+                k.eq_mol_frac_out.deactivate()
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
             flags = fix_state_vars(blk, state_args)
         else:
             # Check when the state vars are fixed already result in dof 0
-            for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
+            for k in blk.values():
+                if degrees_of_freedom(k) != 0:
                     raise Exception(
                         "State vars fixed but degrees of freedom "
                         "for state block is not zero during "
@@ -382,12 +387,11 @@ class _ActivityCoeffStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Initialization sequence: Deactivating certain constraints
         # for 1st solve
-        for k in blk.keys():
-            for c in blk[k].component_objects(Constraint):
+        for k in blk.values():
+            for c in k.component_objects(Constraint):
                 if c.local_name in [
                     "eq_total",
                     "eq_comp",
-                    "eq_mole_frac" "eq_sum_mol_frac",
                     "eq_phase_equilibrium",
                     "eq_enth_mol_phase",
                     "eq_entr_mol_phase",
@@ -403,11 +407,11 @@ class _ActivityCoeffStateBlock(StateBlock):
         # no constraints are active.
         # NOTE: "k" is the last value from the previous for loop
         # only for the purpose of having a valid index. The assumption
-        # here is that for all values of "k", the attribute exists.
+        # here is that for all values of "blk[k]", the attribute exists.
         if (
-            (blk[k].config.has_phase_equilibrium)
-            or (blk[k].config.parameters.config.valid_phase == ("Liq", "Vap"))
-            or (blk[k].config.parameters.config.valid_phase == ("Vap", "Liq"))
+            (k.config.has_phase_equilibrium)
+            or (k.config.parameters.config.valid_phase == ("Liq", "Vap"))
+            or (k.config.parameters.config.valid_phase == ("Vap", "Liq"))
         ):
 
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -418,18 +422,17 @@ class _ActivityCoeffStateBlock(StateBlock):
         init_log.info("Initialization Step 1 {}.".format(idaeslog.condition(res)))
 
         # Continue initialization sequence and activate select constraints
-        for k in blk.keys():
-            for c in blk[k].component_objects(Constraint):
+        for k in blk.values():
+            for c in k.component_objects(Constraint):
                 if c.local_name in [
                     "eq_total",
                     "eq_comp",
-                    "eq_sum_mol_frac",
                     "eq_phase_equilibrium",
                 ]:
                     c.activate()
-            if blk[k].config.parameters.config.activity_coeff_model != "Ideal":
+            if k.config.parameters.config.activity_coeff_model != "Ideal":
                 # assume ideal and solve
-                blk[k].activity_coeff_comp.fix(1)
+                k.activity_coeff_comp.fix(1)
 
         # Second solve for the active constraints
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -437,9 +440,9 @@ class _ActivityCoeffStateBlock(StateBlock):
         init_log.info("Initialization Step 2 {}.".format(idaeslog.condition(res)))
 
         # Activate activity coefficient specific constraints
-        for k in blk.keys():
-            if blk[k].config.parameters.config.activity_coeff_model != "Ideal":
-                for c in blk[k].component_objects(Constraint):
+        for k in blk.values():
+            if k.config.parameters.config.activity_coeff_model != "Ideal":
+                for c in k.component_objects(Constraint):
                     if c.local_name in ["eq_Gij_coeff", "eq_A", "eq_B"]:
                         c.activate()
 
@@ -447,17 +450,17 @@ class _ActivityCoeffStateBlock(StateBlock):
             res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         init_log.info("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
-        for k in blk.keys():
-            if blk[k].config.parameters.config.activity_coeff_model != "Ideal":
-                blk[k].eq_activity_coeff.activate()
-                blk[k].activity_coeff_comp.unfix()
+        for k in blk.values():
+            if k.config.parameters.config.activity_coeff_model != "Ideal":
+                k.eq_activity_coeff.activate()
+                k.activity_coeff_comp.unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         init_log.info("Initialization Step 4 {}.".format(idaeslog.condition(res)))
 
-        for k in blk.keys():
-            for c in blk[k].component_objects(Constraint):
+        for k in blk.values():
+            for c in k.component_objects(Constraint):
                 if c.local_name in ["eq_enth_mol_phase", "eq_entr_mol_phase"]:
                     c.activate()
 
@@ -490,12 +493,9 @@ class _ActivityCoeffStateBlock(StateBlock):
             outlvl : sets output level of of logging
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
-        for k in blk.keys():
-            if (
-                not blk[k].config.defined_state
-                and blk[k].params.config.state_vars == "FTPz"
-            ):
-                blk[k].eq_mol_frac_out.activate()
+        for k in blk.values():
+            if not k.config.defined_state and k.params.config.state_vars == "FTPz":
+                k.eq_mol_frac_out.activate()
 
         if flags is None:
             init_log.debug("No flags passed to release_state().")

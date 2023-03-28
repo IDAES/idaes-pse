@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Demonstration flowsheet for testing purposes.
@@ -34,6 +34,7 @@ import idaes.logger as idaeslog
 
 
 def build_flowsheet():
+    """Build demo flowsheet"""
     m = ConcreteModel()
 
     m.fs = FlowsheetBlock(dynamic=False)
@@ -55,6 +56,7 @@ def build_flowsheet():
 
 
 def set_scaling(m):
+    """Set scaling for demo flowsheet"""
     m.fs.BT_props.set_default_scaling(
         "flow_mol_phase_comp", 1e2, index=("Liq", "benzene")
     )
@@ -412,6 +414,7 @@ def set_scaling(m):
 
 
 def set_dof(m):
+    """Set degrees of freedom for demo flowsheet"""
     m.fs.M01.inlet_1.flow_mol.fix(1.0)
     m.fs.M01.inlet_1.mole_frac_comp[:, "benzene"].fix(1)
     m.fs.M01.inlet_1.mole_frac_comp[:, "toluene"].fix(1e-5)
@@ -431,7 +434,7 @@ def set_dof(m):
 
 
 def initialize_flowsheet(m):
-
+    """Initialize demo flowsheet"""
     m.fs.M01.initialize(outlvl=idaeslog.WARNING)
 
     propagate_state(m.fs.s01)
@@ -441,11 +444,13 @@ def initialize_flowsheet(m):
 
 
 def solve_flowsheet(m, stee=False):
+    """Solve demo flowsheet"""
     solver = get_solver()
     solver.solve(m, tee=stee)
 
 
 def display_results(m):
+    """Display results for flowsheet"""
     m.fs.M01.outlet.display()
     m.fs.H02.outlet.display()
     m.fs.F03.vap_outlet.display()

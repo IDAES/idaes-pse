@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 IDAES 1D Fixed Bed model.
@@ -481,8 +481,7 @@ should be constructed,
         )
 
         # =========================================================================
-        """ Build Control volume 1D for gas phase and
-            populate gas control volume"""
+        # Build Control volume 1D for gas phase and populate gas control volume
 
         self.gas_phase = ControlVolume1DBlock(
             transformation_method=self.config.transformation_method,
@@ -533,8 +532,7 @@ should be constructed,
         )
 
         # =========================================================================
-        """ Build Control volume 1D for solid phase and
-            populate solid control volume"""
+        # Build Control volume 1D for solid phase and populate solid control volume
 
         # Build Solid Phase StateBlock
         # As there is no solid flow, there is not need for a control volume as a
@@ -572,13 +570,12 @@ should be constructed,
             )
 
         # =========================================================================
-        """ Add ports"""
         # Add Ports for gas side
         self.add_inlet_port(name="gas_inlet", block=self.gas_phase)
         self.add_outlet_port(name="gas_outlet", block=self.gas_phase)
 
         # =========================================================================
-        """ Add performace equation method"""
+        # Add performance equation method
         self._apply_transformation()
         self._make_performance()
 
@@ -782,7 +779,7 @@ should be constructed,
             return (
                 b.gas_phase.area[t, x]
                 == pyunits.convert(b.bed_area, to_units=units_meta_gas("area"))
-                * b.solid_properties[t, x]._params.voidage
+                * b.solid_properties[t, x].params.voidage
             )
 
         @self.Constraint(
@@ -790,7 +787,7 @@ should be constructed,
         )
         def solid_phase_area_constraint(b, t, x):
             return b.solid_phase_area[t, x] == b.bed_area * (
-                1 - b.solid_properties[t, x]._params.voidage
+                1 - b.solid_properties[t, x].params.voidage
             )
 
         # ---------------------------------------------------------------------
@@ -851,28 +848,28 @@ should be constructed,
                     to_units=units_meta_solid("pressure") / units_meta_solid("length"),
                 ) == (
                     (150 * pyunits.dimensionless)
-                    * (1 - b.solid_properties[t, x]._params.voidage) ** 2
+                    * (1 - b.solid_properties[t, x].params.voidage) ** 2
                     * b.gas_phase.properties[t, x].visc_d
                     * b.velocity_superficial_gas[t, x]
                     / (
                         pyunits.convert(
-                            b.solid_properties[t, x]._params.particle_dia,
+                            b.solid_properties[t, x].params.particle_dia,
                             to_units=units_meta_solid("length"),
                         )
                         ** 2
-                        * b.solid_properties[t, x]._params.voidage ** 3
+                        * b.solid_properties[t, x].params.voidage ** 3
                     )
                 ) + (
                     (1.75 * pyunits.dimensionless)
                     * b.gas_phase.properties[t, x].dens_mass
-                    * (1 - b.solid_properties[t, x]._params.voidage)
+                    * (1 - b.solid_properties[t, x].params.voidage)
                     * b.velocity_superficial_gas[t, x] ** 2
                     / (
                         pyunits.convert(
-                            b.solid_properties[t, x]._params.particle_dia,
+                            b.solid_properties[t, x].params.particle_dia,
                             to_units=units_meta_solid("length"),
                         )
-                        * b.solid_properties[t, x]._params.voidage ** 3
+                        * b.solid_properties[t, x].params.voidage ** 3
                     )
                 )
 
@@ -950,7 +947,7 @@ should be constructed,
             if solid_phase.reaction_package is not None:
                 return b.solid_material_accumulation[t, x, j] == (
                     b.solid_phase_area[t, x]
-                    * b.solid_properties[t, x]._params.mw_comp[j]
+                    * b.solid_properties[t, x].params.mw_comp[j]
                     * sum(
                         b.solid_reactions[t, x].reaction_rate[r]
                         * solid_phase.reaction_package.rate_reaction_stoichiometry[
@@ -974,7 +971,7 @@ should be constructed,
             else:
                 return 1 == sum(
                     b.solid_properties[t, x].mass_frac_comp[j]
-                    for j in b.solid_properties[t, x]._params.component_list
+                    for j in b.solid_properties[t, x].params.component_list
                 )
 
         # ---------------------------------------------------------------------
@@ -990,7 +987,7 @@ should be constructed,
                     b.solid_phase_heat[t, x],
                     to_units=units_meta_gas("power") / units_meta_gas("length"),
                 ) * pyunits.convert(
-                    b.solid_properties[t, x]._params.particle_dia,
+                    b.solid_properties[t, x].params.particle_dia,
                     to_units=units_meta_gas("length"),
                 ) == 6 * b.gas_solid_htc[
                     t, x
@@ -1054,7 +1051,7 @@ should be constructed,
                     b.Re_particle[t, x] * b.gas_phase.properties[t, x].visc_d
                     == b.velocity_superficial_gas[t, x]
                     * pyunits.convert(
-                        b.solid_properties[t, x]._params.particle_dia,
+                        b.solid_properties[t, x].params.particle_dia,
                         to_units=units_meta_gas("length"),
                     )
                     * b.gas_phase.properties[t, x].dens_mass
@@ -1096,7 +1093,7 @@ should be constructed,
                 return (
                     b.gas_solid_htc[t, x]
                     * pyunits.convert(
-                        b.solid_properties[t, x]._params.particle_dia,
+                        b.solid_properties[t, x].params.particle_dia,
                         to_units=units_meta_gas("length"),
                     )
                     == b.Nu_particle[t, x] * b.gas_phase.properties[t, x].therm_cond
@@ -1110,7 +1107,7 @@ should be constructed,
             )
             def gas_phase_heat_transfer(b, t, x):
                 return b.gas_phase.heat[t, x] * pyunits.convert(
-                    b.solid_properties[t, x]._params.particle_dia,
+                    b.solid_properties[t, x].params.particle_dia,
                     to_units=units_meta_gas("length"),
                 ) == -6 * b.gas_solid_htc[t, x] * (
                     b.gas_phase.properties[t, x].temperature
@@ -1164,11 +1161,11 @@ should be constructed,
 
         # Set default scaling values for some CV1D vars (to avoid warnings)
         if hasattr(self.gas_phase, "heat"):
-            for (t, x), v in self.gas_phase.heat.items():
+            for v in self.gas_phase.heat.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1e-6)
         if hasattr(self.gas_phase, "area"):
-            for (t, x), v in self.gas_phase.area.items():
+            for v in self.gas_phase.area.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1)
 
@@ -1799,7 +1796,7 @@ should be constructed,
                         )
                         sf2 = 1 / value(
                             pyunits.convert(
-                                self.solid_properties[t, x]._params.particle_dia,
+                                self.solid_properties[t, x].params.particle_dia,
                                 to_units=units_meta_gas("length"),
                             )
                         )
@@ -2053,7 +2050,7 @@ should be constructed,
                 for (t, x, j), c in self.solid_material_balances.items():
                     sf1 = iscale.get_scaling_factor(self.solid_phase_area[t, x])
                     sf2 = iscale.get_scaling_factor(
-                        self.solid_properties[t, x]._params.mw_comp[j],
+                        self.solid_properties[t, x].params.mw_comp[j],
                         default=1e1,
                     )
                     sf3 = iscale.get_scaling_factor(
@@ -2066,7 +2063,7 @@ should be constructed,
                 for (t, x, j), c in self.solid_material_balances.items():
                     sf1 = iscale.get_scaling_factor(self.solid_phase_area[t, x])
                     sf2 = iscale.get_scaling_factor(
-                        self.solid_properties[t, x]._params.mw_comp[j],
+                        self.solid_properties[t, x].params.mw_comp[j],
                         default=1e1,
                     )
                     iscale.constraint_scaling_transform(c, sf1 * sf2, overwrite=False)
@@ -2107,8 +2104,13 @@ should be constructed,
             if hasattr(self.gas_phase, "enthalpy_balances"):
                 phase_list = self.gas_phase.properties.phase_list
                 for (t, x), c in self.gas_phase.enthalpy_balances.items():
+                    # This is OK
                     sf = iscale.min_scaling_factor(
-                        [self.gas_phase._enthalpy_flow[t, x, p] for p in phase_list]
+                        [
+                            # pylint: disable-next=protected-access
+                            self.gas_phase._enthalpy_flow[t, x, p]
+                            for p in phase_list
+                        ]
                     )
                     iscale.constraint_scaling_transform(c, 1e-3 * sf, overwrite=True)
 

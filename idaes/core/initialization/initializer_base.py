@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Base class for initializer objects
@@ -51,12 +51,25 @@ class InitializationStatus(Enum):
     Error = -4  # Exception raised during execution (other than DoF or convergence)
 
 
+# Store spec needs to use some internals from Pyomo
 StoreState = StoreSpec(
     data_classes={
-        Var._ComponentDataClass: (("fixed", "value"), _only_fixed),
-        BooleanVar._ComponentDataClass: (("fixed", "value"), _only_fixed),
-        Block._ComponentDataClass: (("active",), None),
-        Constraint._ComponentDataClass: (("active",), None),
+        Var._ComponentDataClass: (  # pylint: disable=protected-access
+            ("fixed", "value"),
+            _only_fixed,
+        ),
+        BooleanVar._ComponentDataClass: (  # pylint: disable=protected-access
+            ("fixed", "value"),
+            _only_fixed,
+        ),
+        Block._ComponentDataClass: (  # pylint: disable=protected-access
+            ("active",),
+            None,
+        ),
+        Constraint._ComponentDataClass: (  # pylint: disable=protected-access
+            ("active",),
+            None,
+        ),
     }
 )
 
@@ -100,6 +113,7 @@ class InitializerBase:
         cls.__doc__ = add_docstring_list(cls.__doc__ if cls.__doc__ else "", cls.CONFIG)
 
     def get_logger(self, model):
+        """Get logger for model by name"""
         return idaeslog.getInitLogger(model.name, self.config.output_level)
 
     def initialize(
@@ -134,6 +148,9 @@ class InitializerBase:
 
         # 5. try: Call specified initialization routine
         try:
+            # Base method does not have a return (NotImplementedError),
+            # # but we expect this ot be overloaded, disable pylint warning
+            # pylint: disable=E1111
             results = self.initialization_routine(model)
         # 6. finally: Restore model state
         finally:
@@ -261,8 +278,6 @@ class InitializerBase:
         """
         self._update_summary(model, "status", InitializationStatus.Error)
         raise NotImplementedError()
-
-        return None
 
     def restore_model_state(self, model: Block):
         """
@@ -408,7 +423,6 @@ class InitializerBase:
         Returns:
             None.
         """
-        pass
 
     def _load_values_from_dict(self, model, initial_guesses, exception_on_fixed=True):
         """

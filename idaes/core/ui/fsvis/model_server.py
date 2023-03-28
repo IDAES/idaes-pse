@@ -1,20 +1,22 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Visualization server back-end.
 
 The main class is `FlowsheetServer`, which is instantiated from the `visualize()` function.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # stdlib
 import http.server
@@ -25,6 +27,7 @@ import socket
 import threading
 from typing import Dict, Union
 from urllib.parse import urlparse
+import time
 
 # package
 from idaes import logger
@@ -198,7 +201,6 @@ class FlowsheetServer(http.server.HTTPServer):
         if not diff:
             # If no difference do nothing
             _log.debug("Stored flowsheet is the same as the flowsheet in memory")
-            merged = saved
         else:
             # Otherwise, save this merged value before returning it
             num, pl = len(diff), "s" if len(diff) > 1 else ""
@@ -229,7 +231,7 @@ class FlowsheetServer(http.server.HTTPServer):
         _log.debug(f"Serve forever on localhost:{self._port}")
         try:
             self.serve_forever()
-        except Exception as err:
+        except Exception as err:  # pylint: disable=W0703
             _log.info(f"Shutting down server due to error: {err}")
             self.shutdown()
 
@@ -351,7 +353,7 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         except errors.ProcessingError as err:
             self._write_text(400, message=str(err))
             return
-        except Exception as err:
+        except Exception as err:  # pylint: disable=W0703
             self._write_text(500, message=str(err))
             return
         self._write_text(200, message="success")
@@ -410,8 +412,6 @@ def utf8_decode(b: bytes):
 
 
 def find_free_port():
-    import time
-
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(("127.0.0.1", 0))
     port = s.getsockname()[1]

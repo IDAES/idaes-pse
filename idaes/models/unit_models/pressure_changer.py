@@ -1,19 +1,23 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
-
 """
 Standard IDAES pressure changer model.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# Changing existing config block attributes
+# pylint: disable=protected-access
 
 # Import Python libraries
 from enum import Enum
@@ -53,6 +57,10 @@ _log = idaeslog.getLogger(__name__)
 
 
 class ThermodynamicAssumption(Enum):
+    """
+    Enum of supported thermodynamic assumptions.
+    """
+
     isothermal = 1
     isentropic = 2
     pump = 3
@@ -89,7 +97,7 @@ class IsentropicPerformanceCurveData(ProcessBlockData):
     )
 
     def has_constraints(self):
-        for o in self.component_data_objects(Constraint):
+        for _ in self.component_data_objects(Constraint):
             return True
         return False
 
@@ -1145,7 +1153,10 @@ see property package for documentation.}""",
 
 @declare_process_block_class("Turbine", doc="Isentropic turbine model")
 class TurbineData(PressureChangerData):
-    # Pressure changer with isentropic turbine options
+    """
+    Pressure changer with isentropic turbine options
+    """
+
     CONFIG = PressureChangerData.CONFIG()
     CONFIG.compressor = False
     CONFIG.get("compressor")._default = False
@@ -1156,7 +1167,8 @@ class TurbineData(PressureChangerData):
 
 @declare_process_block_class("Compressor", doc="Isentropic compressor model")
 class CompressorData(PressureChangerData):
-    # Pressure changer with isentropic turbine options
+    """Pressure changer with isentropic compressor options"""
+
     CONFIG = PressureChangerData.CONFIG()
     CONFIG.compressor = True
     CONFIG.get("compressor")._default = True
@@ -1167,7 +1179,8 @@ class CompressorData(PressureChangerData):
 
 @declare_process_block_class("Pump", doc="Pump model")
 class PumpData(PressureChangerData):
-    # Pressure changer with isentropic turbine options
+    """Pressure changer with pump options"""
+
     CONFIG = PressureChangerData.CONFIG()
     CONFIG.compressor = True
     CONFIG.get("compressor")._default = True

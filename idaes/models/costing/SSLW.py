@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Costing package based on methods from:
@@ -22,6 +22,9 @@ Costing package based on methods from:
 Currently, this costing package only includes methods for capital costing of
 unit operations.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 import pyomo.environ as pyo
 
 # TODO: HX1D not supported - does not define area (has shell_area & tube_area)
@@ -232,18 +235,16 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         4. self.aggregate_flow_costs (indexed by flow type)
         """
         # TODO: Do we have any process level methods to add here?
-        pass
 
     @staticmethod
-    def initialize_build(self):
+    def initialize_build(*args, **kwargs):
         """
         Here we can add intialization steps for the things we built in
         build_process_costs.
 
         Note that the aggregate costs will be initialized by the framework.
         """
-        # TODO: For now,  no additional process level costs to initialize
-        pass
+        # TODO: For now, no additional process level costs to initialize
 
     def cost_heat_exchanger(
         blk,

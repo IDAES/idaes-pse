@@ -2,14 +2,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains a collection of tools for diagnosing modeling issues.
@@ -84,15 +84,14 @@ class DegeneracyHunter:
 
             self.candidate_eqns = None
 
-        elif type(block_or_jac) is np.array:
+        elif type(block_or_jac) is np.array:  # pylint: disable=unidiomatic-typecheck
             raise NotImplementedError(
                 "Degeneracy Hunter currently only supports analyzing a Pyomo model"
             )
 
-            # TODO: Need to refactor, document, and test support for Jacobian
-            self.jac_eq = block_or_jac
-
-            self.eq_con_list = None
+            # # TODO: Need to refactor, document, and test support for Jacobian
+            # self.jac_eq = block_or_jac
+            # self.eq_con_list = None
 
         else:
             raise TypeError("Check the type for 'block_or_jac'")
@@ -100,9 +99,6 @@ class DegeneracyHunter:
         # number of equality constraints, variables
         self.n_eq = self.jac_eq.shape[0]
         self.n_var = self.jac_eq.shape[1]
-
-        # Define default candidate equations (enumerate)
-        candidate_eqns = range(self.n_eq)
 
         # Initialize solver
         if solver is None:
@@ -354,10 +350,6 @@ class DegeneracyHunter:
         m_dh.y_pos = pyo.Var(m_dh.C, domain=pyo.Binary)
         m_dh.y_neg = pyo.Var(m_dh.C, domain=pyo.Binary)
         m_dh.abs_nu = pyo.Var(m_dh.C, bounds=(0, M + m_small))
-
-        # Positive exclusive or negative
-        def eq_pos_xor_negative(m, c):
-            return m.y_pos[c] + m.y_neg[c] <= 1
 
         m_dh.pos_xor_neg = pyo.Constraint(m_dh.C)
 

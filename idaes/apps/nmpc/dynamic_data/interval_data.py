@@ -1,15 +1,17 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
 
 
 def assert_disjoint_intervals(intervals):
@@ -71,7 +73,7 @@ def load_inputs_into_model(model, time, input_data, time_tol=0):
 
         intervals = list(sorted(inputs.keys()))
         assert_disjoint_intervals(intervals)
-        for i, interval in enumerate(intervals):
+        for i, interval in enumerate(intervals):  # pylint: disable=unused-variable
             idx0 = time.find_nearest_index(interval[0], tolerance=time_tol)
             idx1 = time.find_nearest_index(interval[1], tolerance=time_tol)
             if idx0 is None or idx1 is None:
