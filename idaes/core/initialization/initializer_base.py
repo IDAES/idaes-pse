@@ -492,6 +492,7 @@ class ModularInitializerBase(InitializerBase):
 
     This extends the base Initializer class to include attributes and methods for
     defining initializer objects for sub-models.
+
     """
 
     CONFIG = InitializerBase.CONFIG()

@@ -23,7 +23,7 @@ import sys
 import logging
 import inspect
 
-from pyomo.common.config import ConfigBlock
+from pyomo.common.config import ConfigBlock, String_ConfigFormatter
 from pyomo.environ import Block
 from pyomo.common.pyomo_typing import get_overloads_for
 
@@ -197,7 +197,7 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
         # create a new class called name from block_class
         try:
             cb_doc = cls.CONFIG.generate_documentation(
-                format=pyomo.common.config.String_ConfigFormatter(
+                format=String_ConfigFormatter(
                     block_start="",
                     block_end="",
                     item_start="%s\n",
