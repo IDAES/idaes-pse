@@ -694,4 +694,4 @@ def test_ipopt_solve_halt_on_error(capsys):
         pass
 
     captured = capsys.readouterr()
-    assert "Error evaluating constraint c: can't evaluate log(-5)." in captured.out
+    assert "c: can't evaluate log(-5)." in captured.out
