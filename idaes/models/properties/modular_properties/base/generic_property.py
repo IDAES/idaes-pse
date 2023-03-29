@@ -33,6 +33,7 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigBlock, ConfigDict, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from pyomo.contrib.incidence_analysis import solve_strongly_connected_components
 
 # Import IDAES cores
 from idaes.core import (
@@ -1198,7 +1199,22 @@ class GenericParameterData(PhysicalParameterBlock):
 
 class ModularPropertiesInitializer(ModularInitializerBase):
     """
-    TODO
+    General Initializer for modular property packages.
+
+    This Initializer uses a hierarchical routine to initialize the
+    property package using the following steps:
+
+    1. Initialize bubble and dew point calculations (if present)
+    2. Estimate vapor-liquid equilibrium T_eq (if present)
+    3. Solve for phase-equilibrium conditions
+    4. Initialize all remaining properties
+
+    The Pyomo solve_strongly_connected_components method is used at each
+    step to converge the probelm.
+
+    Note that for systems without vapor-liquid equilibrium the generic
+    BlockTriangularizationInitializer is probably sufficient for initializing
+    the property package.
 
     """
 
@@ -1207,7 +1223,6 @@ class ModularPropertiesInitializer(ModularInitializerBase):
         "solver",
         ConfigValue(
             default=None,
-            # At the moment there is an issue with the scipy solvers not supporting the tee argument.
             description="Solver to use for initialization",
         ),
     )
@@ -1216,6 +1231,17 @@ class ModularPropertiesInitializer(ModularInitializerBase):
         ConfigDict(
             implicit=True,
             description="Dict of options to pass to solver",
+        ),
+    )
+    CONFIG.declare(
+        "calculate_variable_options",
+        ConfigDict(
+            implicit=True,
+            description="Dict of options to pass to 1x1 block solver",
+            doc="Dict of options to pass to calc_var_kwds argument in "
+            "solve_strongly_connected_components method. NOTE: models "
+            "involving ExternalFunctions must set "
+            "'diff_mode=differentiate.Modes.reverse_numeric'",
         ),
     )
 
@@ -1228,7 +1254,7 @@ class ModularPropertiesInitializer(ModularInitializerBase):
         self,
         model: Block,
     ):
-        # TODO: Update logging
+        # Setup loggers
         init_log = idaeslog.getInitLogger(
             model.name, self.config.output_level, tag="properties"
         )
@@ -1236,9 +1262,10 @@ class ModularPropertiesInitializer(ModularInitializerBase):
             model.name, self.config.output_level, tag="properties"
         )
 
-        init_log.info("Starting initialization")
+        # Create solver object
+        solver_obj = get_solver(self.config.solver, self.config.solver_options)
 
-        res = None
+        init_log.info("Starting initialization routine")
 
         for k in model.values():
             # Deactivate the constraints specific for outlet block i.e.
@@ -1254,10 +1281,6 @@ class ModularPropertiesInitializer(ModularInitializerBase):
                     or k.params.config.state_components == StateIndex.true
                 ):
                     k.inherent_equilibrium_constraint.deactivate()
-
-        # Create solver
-        # TODO: change opt
-        opt = get_solver(self.config.solver, self.config.solver_options)
 
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations
@@ -1303,37 +1326,32 @@ class ModularPropertiesInitializer(ModularInitializerBase):
 
         # If StateBlock has active constraints (i.e. has bubble and/or dew
         # point calculations), solve the block to converge these
-        n_cons = 0
-        dof = 0
-        for k in model.values():
-            n_cons += number_activated_constraints(k)
-            dof += degrees_of_freedom(k)
-        if n_cons > 0:
-            if dof > 0:
-                raise InitializationError(
-                    f"{model.name} Unexpected degrees of freedom during "
-                    f"initialization at bubble and dew point step: {dof}."
-                )
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = solve_indexed_blocks(opt, [model], tee=slc.tee)
-            init_log.info(
-                "Dew and bubble point initialization: {}.".format(
-                    idaeslog.condition(res)
-                )
-            )
+        for b in model.values():
+            if number_activated_constraints(b) > 0:
+                if not degrees_of_freedom(b) == 0:
+                    raise InitializationError(
+                        f"{b.name} Unexpected degrees of freedom during "
+                        f"initialization at bubble and dew point step: {degrees_of_freedom(b)}."
+                    )
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    solve_strongly_connected_components(
+                        b,
+                        solver=solver_obj,
+                        solve_kwds={"tee": slc.tee},
+                        calc_var_kwds=self.config.calculate_variable_options,
+                    )
+        init_log.info("Dew and bubble point initialization completed.")
+
         # ---------------------------------------------------------------------
         # Calculate _teq if required
-        # Using iterator k outside of for loop - this should be OK as we just need
-        # a valid StateBlockData an assume they are all the same.
-        # TODO: Fix use of k outside of loop, or at least use a differnt name inside next loop
-        if k.params.config.phases_in_equilibrium is not None and (
-            not k.config.defined_state or k.always_flash
-        ):
-            for k in model.values():
+        for k in model.values():
+            if k.params.config.phases_in_equilibrium is not None and (
+                not k.config.defined_state or k.always_flash
+            ):
                 for pp in k.params._pe_pairs:
                     k.params.config.phase_equilibrium_state[pp].calculate_teq(k, pp)
 
-            init_log.info("Equilibrium temperature initialization completed.")
+        init_log.info("Equilibrium temperature initialization completed.")
 
         # ---------------------------------------------------------------------
         # Initialize flow rates and compositions
@@ -1400,13 +1418,9 @@ class ModularPropertiesInitializer(ModularInitializerBase):
                     sum(k._teq[i] for i in k.params._pe_pairs) / len(k.params._pe_pairs)
                 )
 
-        if self.config.output_level > 0:  # TODO: Update to use logger Enum
-            init_log.info("State variable initialization completed.")
+        init_log.info("State variable initialization completed.")
 
         # ---------------------------------------------------------------------
-        n_cons = 0
-        dof = 0
-        skip = False
         Tfix = {}  # In enth based state defs, need to also fix T until later
         for k, b in model.items():
             if b.params.config.phase_equilibrium_state is not None and (
@@ -1446,24 +1460,25 @@ class ModularPropertiesInitializer(ModularInitializerBase):
                         pp
                     ].phase_equil_initialization(b, pp)
 
-            n_cons += number_activated_constraints(b)
-            dof += degrees_of_freedom(b)
-            if degrees_of_freedom(b) < 0:
+            if number_activated_constraints(b) > 0:
+                dof = degrees_of_freedom(b)
+                if degrees_of_freedom(b) == 0:
+                    with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                        solve_strongly_connected_components(
+                            b,
+                            solver=solver_obj,
+                            solve_kwds={"tee": slc.tee},
+                            calc_var_kwds=self.config.calculate_variable_options,
+                        )
+                elif dof > 0:
+                    raise InitializationError(
+                        f"{b.name} Unexpected degrees of freedom during "
+                        f"initialization at phase equilibrium step: {dof}."
+                    )
                 # Skip solve if DoF < 0 - this is probably due to a
                 # phase-component flow state with flash
-                skip = True
 
-        if n_cons > 0 and not skip:
-            if dof > 0:
-                raise InitializationError(
-                    f"{model.name} Unexpected degrees of freedom during "
-                    f"initialization at phase equilibrium step: {dof}."
-                )
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = solve_indexed_blocks(opt, [model], tee=slc.tee)
-            init_log.info(
-                "Phase equilibrium initialization: {}.".format(idaeslog.condition(res))
-            )
+        init_log.info("Phase equilibrium initialization completed.")
 
         # ---------------------------------------------------------------------
         # Initialize other properties
@@ -1511,29 +1526,27 @@ class ModularPropertiesInitializer(ModularInitializerBase):
                         lc = log(c)
                         v.set_value(value(lc))
 
-        n_cons = 0
-        dof = 0
-        skip = False
-        for k in model.values():
-            if degrees_of_freedom(k) < 0:
+            if number_activated_constraints(b) > 0:
+                dof = degrees_of_freedom(b)
+                if degrees_of_freedom(b) == 0:
+                    with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                        solve_strongly_connected_components(
+                            b,
+                            solver=solver_obj,
+                            solve_kwds={"tee": slc.tee},
+                            calc_var_kwds=self.config.calculate_variable_options,
+                        )
+                elif dof > 0:
+                    raise InitializationError(
+                        f"{b.name} Unexpected degrees of freedom during "
+                        f"initialization at phase equilibrium step: {dof}."
+                    )
                 # Skip solve if DoF < 0 - this is probably due to a
                 # phase-component flow state with flash
-                skip = True
-            n_cons += number_activated_constraints(k)
-            dof += degrees_of_freedom(k)
-        if n_cons > 0 and not skip:
-            if dof > 0:
-                raise InitializationError(
-                    f"{model.name} Unexpected degrees of freedom during "
-                    f"initialization at property initialization step: {dof}."
-                )
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = solve_indexed_blocks(opt, [model], tee=slc.tee)
-            init_log.info(
-                "Property initialization: {}.".format(idaeslog.condition(res))
-            )
 
-        return res
+        init_log.info("Property initialization routine finished.")
+
+        return None
 
 
 class _GenericStateBlock(StateBlock):
