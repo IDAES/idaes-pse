@@ -109,3 +109,46 @@ def test_wflash(build_phase_separator):
     assert pytest.approx(
         pyo.value(m.fs.unit.mixed_state[0].enth_mol_phase["Vap"]), abs=1e-3
     ) == pyo.value(m.fs.unit.vap_state[0].enth_mol)
+
+
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
+@pytest.mark.unit
+def test_get_stream_table_contents(build_phase_separator):
+    stable = build_phase_separator.fs.unit._get_stream_table_contents()
+
+    expected = {
+        "Units": {
+            "Mass Flow": getattr(pyo.units.pint_registry, "kg/s"),
+            "Molar Flow": getattr(pyo.units.pint_registry, "mol/s"),
+            "Molar Enthalpy": getattr(pyo.units.pint_registry, "J/mol"),
+            "P": getattr(pyo.units.pint_registry, "Pa"),
+            "T": getattr(pyo.units.pint_registry, "K"),
+            "Vapor Fraction": getattr(pyo.units.pint_registry, "dimensionless"),
+        },
+        "Inlet": {
+            "Mass Flow": 0.018015268,
+            "Molar Flow": 1.0,
+            "Molar Enthalpy": 0.011021387135833309,
+            "P": 11032305.8275,
+            "T": 270.4877112932753,
+            "Vapor Fraction": 0.0,
+        },
+        "Vapor Outlet": {
+            "Mass Flow": 0.018015268,
+            "Molar Flow": 1.0,
+            "Molar Enthalpy": 0.011021387135833309,
+            "P": 11032305.8275,
+            "T": 270.4877112932753,
+            "Vapor Fraction": 0.0,
+        },
+        "Liquid Outlet": {
+            "Mass Flow": 0.018015268,
+            "Molar Flow": 1.0,
+            "Molar Enthalpy": 0.011021387135833309,
+            "P": 11032305.8275,
+            "T": 270.4877112932753,
+            "Vapor Fraction": 0.0,
+        },
+    }
+
+    assert stable.to_dict() == expected

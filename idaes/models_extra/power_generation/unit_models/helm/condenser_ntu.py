@@ -346,10 +346,10 @@ class HelmNtuCondenserData(UnitModelBlockData):
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
             {
-                "Hot Inlet": self.hot_inlet,
-                "Hot Outlet": self.hot_outlet,
-                "Cold Inlet": self.cold_inlet,
-                "Cold Outlet": self.cold_outlet,
+                "Hot Inlet": self.hot_side_inlet,
+                "Hot Outlet": self.hot_side_outlet,
+                "Cold Inlet": self.cold_side_inlet,
+                "Cold Outlet": self.cold_side_outlet,
             },
             time_point=time_point,
         )

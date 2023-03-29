@@ -128,8 +128,36 @@ def test_initialize_calc_cf_dyn(build_turbine_dyn):
     assert degrees_of_freedom(m) == 0
 
 
-@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.unit
-def test_report(build_turbine):
-    m = build_turbine
-    m.fs.turb.report()
+def test_get_stream_table_contents(build_turbine):
+    stable = build_turbine.fs.turb._get_stream_table_contents()
+
+    expected = {
+        "Units": {
+            "Mass Flow": getattr(pyunits.pint_registry, "kg/s"),
+            "Molar Flow": getattr(pyunits.pint_registry, "mol/s"),
+            "Molar Enthalpy": getattr(pyunits.pint_registry, "J/mol"),
+            "P": getattr(pyunits.pint_registry, "Pa"),
+            "T": getattr(pyunits.pint_registry, "K"),
+            "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
+        },
+        "Inlet": {
+            "Mass Flow": 0.018015268,
+            "Molar Flow": 1.0,
+            "Molar Enthalpy": 0.011021387135833309,
+            "P": 11032305.8275,
+            "T": 270.4877112932753,
+            "Vapor Fraction": 0.0,
+        },
+        "Outlet": {
+            "Mass Flow": 0.018015268,
+            "Molar Flow": 1.0,
+            "Molar Enthalpy": 0.011021387135833309,
+            "P": 11032305.8275,
+            "T": 270.4877112932753,
+            "Vapor Fraction": 0.0,
+        },
+    }
+
+    assert stable.to_dict() == expected

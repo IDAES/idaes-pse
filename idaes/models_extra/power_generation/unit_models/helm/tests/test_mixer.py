@@ -105,3 +105,63 @@ def test_mixer2():
     assert pyo.value(m.fs.unit.i1.pressure[0]) == pytest.approx(Pout, rel=1e-7)
     assert pyo.value(m.fs.unit.i2.pressure[0]) == pytest.approx(Pout, rel=1e-7)
     assert pyo.value(m.fs.unit.i3.pressure[0]) == pytest.approx(Pout, rel=1e-7)
+
+
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
+@pytest.mark.unit
+def test_get_stream_table_contents():
+    m = pyo.ConcreteModel()
+    m.fs = idaes.core.FlowsheetBlock(dynamic=False)
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
+    m.fs.unit = HelmMixer(
+        momentum_mixing_type=MomentumMixingType.equality,
+        property_package=m.fs.properties,
+        inlet_list=["i1", "i2", "i3"],
+    )
+
+    stable = m.fs.unit._get_stream_table_contents()
+
+    expected = {
+        "Units": {
+            "Mass Flow": getattr(pyo.units.pint_registry, "kg/s"),
+            "Molar Flow": getattr(pyo.units.pint_registry, "mol/s"),
+            "Molar Enthalpy": getattr(pyo.units.pint_registry, "J/mol"),
+            "P": getattr(pyo.units.pint_registry, "Pa"),
+            "T": getattr(pyo.units.pint_registry, "K"),
+            "Vapor Fraction": getattr(pyo.units.pint_registry, "dimensionless"),
+        },
+        "i1": {
+            "Mass Flow": 0.018015268,
+            "Molar Flow": 1.0,
+            "Molar Enthalpy": 0.011021387135833309,
+            "P": 11032305.8275,
+            "T": 270.4877112932753,
+            "Vapor Fraction": 0.0,
+        },
+        "i2": {
+            "Mass Flow": 0.018015268,
+            "Molar Flow": 1.0,
+            "Molar Enthalpy": 0.011021387135833309,
+            "P": 11032305.8275,
+            "T": 270.4877112932753,
+            "Vapor Fraction": 0.0,
+        },
+        "i3": {
+            "Mass Flow": 0.018015268,
+            "Molar Flow": 1.0,
+            "Molar Enthalpy": 0.011021387135833309,
+            "P": 11032305.8275,
+            "T": 270.4877112932753,
+            "Vapor Fraction": 0.0,
+        },
+        "outlet": {
+            "Mass Flow": 0.018015268,
+            "Molar Flow": 1.0,
+            "Molar Enthalpy": 0.011021387135833309,
+            "P": 11032305.8275,
+            "T": 270.4877112932753,
+            "Vapor Fraction": 0.0,
+        },
+    }
+
+    assert stable.to_dict() == expected

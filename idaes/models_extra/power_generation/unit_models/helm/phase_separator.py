@@ -29,6 +29,7 @@ from idaes.core import declare_process_block_class, UnitModelBlockData, useDefau
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
+from idaes.core.util.tables import create_stream_table_dataframe
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa, A. Lee)"
 
@@ -208,3 +209,25 @@ see property package for documentation.}""",
 
     def calculate_scaling_factors(self):
         pass
+
+    def _get_stream_table_contents(self, time_point=0):
+        """
+        Assume unit has standard configuration of 1 inlet and 1 outlet.
+
+        Developers should overload this as appropriate.
+        """
+        try:
+            return create_stream_table_dataframe(
+                {
+                    "Inlet": self.inlet,
+                    "Liquid Outlet": self.liq_outlet,
+                    "Vapor Outlet": self.vap_outlet,
+                },
+                time_point=time_point,
+            )
+        except AttributeError:
+            raise ConfigurationError(
+                f"Unit model {self.name} does not have the standard Port "
+                f"names (inet and outlet). Please contact the unit model "
+                f"developer to develop a unit specific stream table."
+            )
