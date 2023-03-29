@@ -39,12 +39,6 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import DynamicError, ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
 
-try:
-    # see :class:UI
-    import idaes_ui
-except ImportError:
-    idaes_ui = None
-
 import idaes.logger as idaeslog
 
 # Some more information about this module
@@ -70,25 +64,26 @@ class UI:
     """
 
     def __init__(self):
+        try:
+            import idaes_ui
+        except ImportError:
+            idaes_ui = None
+
         if idaes_ui is None:
             self.visualize = self._visualize_null
             self.installed = False
         else:
-            self.visualize = idaes_ui.fsvis.visualize
+            self.visualize = idaes_ui.fv.visualize
             self.installed = True
 
     def _visualize_null(self, model, model_name, **kwargs):
-        self._warn("idaes_ui.fsvis.visualize")
+        self._warn("idaes_ui.fv.visualize")
 
     @staticmethod
     def _warn(name):
         message = f"Call to {name}() ignored: 'idaes_ui' package is not installed"
         # with stacklevel=3, show the caller of this function's caller
         warn(message, category=RuntimeWarning, stacklevel=3)
-
-
-# Global instantiation of UI wrapper
-ui = UI()
 
 
 @declare_process_block_class(
@@ -272,12 +267,12 @@ within this flowsheet if not otherwise specified,
             model_name : The name of the model
 
         Keyword Args:
-            **kwargs: Additional keywords for :func:`idaes.core.ui.fsvis.visualize()`
+            **kwargs: Additional keywords for :func:`idaes.core.ui.fv.visualize()`
 
         Returns:
             None
         """
-        ui.visualize(self, model_name, **kwargs)
+        UI().visualize(self, model_name, **kwargs)
 
     def _get_stream_table_contents(self, time_point=0):
         """
