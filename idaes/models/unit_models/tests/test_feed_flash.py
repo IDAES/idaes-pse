@@ -344,7 +344,7 @@ class TestInitializersIAWPS:
             model.fs.unit.control_volume.properties_out[0].phase_frac["Liq"]
         )
 
-    # TODO: BTInitializer fails
+    # TODO: BTInitializer fails, probably due to VLE
 
 
 class TestInitializersBT:
@@ -385,4 +385,4 @@ class TestInitializersBT:
             model.fs.unit.control_volume.properties_out[0].flow_mol_phase["Vap"]
         )
 
-    # TODO: BT Initializer does not solve
+    # TODO: BT Initializer does not solve, probably due to VLE
