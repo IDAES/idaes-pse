@@ -124,6 +124,16 @@ class InitializerBase:
         )
 
     def get_output_level(self):
+        """
+        Get local output level.
+
+        This method returns either the local logger level set when calling
+        initialize, or if that was not set then the logger level set in
+        the Initializer configuration.
+
+        Returns:
+            Output level to use in log handler
+        """
         outlvl = self._local_logger_level
         if outlvl is None:
             outlvl = self.config.output_level

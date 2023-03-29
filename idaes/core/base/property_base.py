@@ -50,7 +50,6 @@ from idaes.core.base.util import build_on_demand
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
 )
-from idaes.core.util.initialization import fix_state_vars
 
 
 # Some more information about this module
