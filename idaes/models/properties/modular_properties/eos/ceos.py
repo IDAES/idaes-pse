@@ -560,6 +560,10 @@ class Cubic(EoSBase):
         )
 
     @staticmethod
+    def cp_mass_phase(blk, p):
+        return blk.cp_mol_phase[p] / blk.mw_phase[p]
+
+    @staticmethod
     def cp_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)
         cname = pobj._cubic_type.name
@@ -599,6 +603,10 @@ class Cubic(EoSBase):
         )
 
         return cp_ideal_gas + cp_departure
+
+    @staticmethod
+    def cv_mass_phase(blk, p):
+        return blk.cv_mol_phase[p] / blk.mw_phase[p]
 
     @staticmethod
     def cv_mol_phase(blk, p):
