@@ -47,8 +47,8 @@ from idaes.core import (
 )
 from idaes.models.unit_models import Mixer, MixingType, MomentumMixingType
 from idaes.models.unit_models.extractor import (
-    ExtractorCascade,
-    ExtractorCascadeData,
+    Extractor,
+    ExtractorData,
     _get_state_blocks,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -244,9 +244,9 @@ class StateBlock3Data(StateBlockData):
 # -----------------------------------------------------------------------------
 # Frame class for unit testing
 @declare_process_block_class("ECFrame")
-class ECFrameData(ExtractorCascadeData):
+class ECFrameData(ExtractorData):
     def build(self):
-        super(ExtractorCascadeData, self).build()
+        super(ExtractorData, self).build()
 
 
 # -----------------------------------------------------------------------------
@@ -260,7 +260,7 @@ class TestBuild:
         m.fs.properties2 = Parameters2()
 
         m.fs.unit = ECFrame(
-            number_of_stages=2,
+            number_of_finite_elements=2,
             streams={
                 "stream1": {"property_package": m.fs.properties1},
                 "stream2": {
@@ -276,7 +276,7 @@ class TestBuild:
     def test_config(self, model):
         assert not model.fs.unit.config.dynamic
         assert not model.fs.unit.config.has_holdup
-        assert model.fs.unit.config.number_of_stages == 2
+        assert model.fs.unit.config.number_of_finite_elements == 2
         assert "stream1" in model.fs.unit.config.streams
         assert "stream2" in model.fs.unit.config.streams
         assert model.fs.unit.config.interacting_streams is None
@@ -317,7 +317,7 @@ class TestBuild:
         m.fs.properties1 = Parameters1()
 
         m.fs.unit = ECFrame(
-            number_of_stages=2,
+            number_of_finite_elements=2,
             streams={
                 "stream1": {"property_package": m.fs.properties1},
             },
@@ -325,7 +325,7 @@ class TestBuild:
 
         with pytest.raises(
             ConfigurationError,
-            match="ExtractorCascade models must define at least two streams; received "
+            match="Extractor models must define at least two streams; received "
             "\['stream1'\]",
         ):
             m.fs.unit._verify_inputs()
@@ -338,7 +338,7 @@ class TestBuild:
         m.fs.properties1 = Parameters1()
 
         m.fs.unit = ECFrame(
-            number_of_stages=2,
+            number_of_finite_elements=2,
             streams={
                 "stream1": {"property_package": m.fs.properties1},
                 "stream2": {"property_package": m.fs.properties1},
@@ -347,7 +347,7 @@ class TestBuild:
 
         with pytest.raises(
             NotImplementedError,
-            match="ExtractorCascade model does not support dynamics yet.",
+            match="Extractor model does not support dynamics yet.",
         ):
             m.fs.unit._verify_inputs()
 
@@ -360,7 +360,7 @@ class TestBuild:
         m.fs.properties3 = Parameters3()
 
         m.fs.unit = ECFrame(
-            number_of_stages=2,
+            number_of_finite_elements=2,
             streams={
                 "stream1": {"property_package": m.fs.properties1},
                 "stream2": {"property_package": m.fs.properties3},
@@ -379,8 +379,8 @@ class TestBuild:
     def test_verify_inputs_construct_components(self, model):
         model.fs.unit._verify_inputs()
 
-        assert isinstance(model.fs.unit.stages, RangeSet)
-        assert len(model.fs.unit.stages) == 2
+        assert isinstance(model.fs.unit.elements, RangeSet)
+        assert len(model.fs.unit.elements) == 2
 
         assert isinstance(model.fs.unit.stream_component_interactions, Set)
         # One stream pair with two common components
@@ -496,8 +496,8 @@ class TestBuild:
 
         with pytest.raises(
             ConfigurationError,
-            match="side_streams must be a sub-set of the set of stages. "
-            "Found 10 in side_streams which is not in stages.",
+            match="side_streams must be a sub-set of the set of elements. "
+            "Found 10 in side_streams which is not in elements.",
         ):
             model.fs.unit._build_state_blocks()
 
@@ -510,7 +510,7 @@ class TestBuild:
         m.fs.properties3 = Parameters3()
 
         m.fs.unit = ECFrame(
-            number_of_stages=2,
+            number_of_finite_elements=2,
             streams={
                 "stream1": {"property_package": m.fs.properties1},
                 # Properties3 has a different flow basis
@@ -518,7 +518,7 @@ class TestBuild:
             },
         )
 
-        m.fs.unit.stages = Set(initialize=[1, 2])
+        m.fs.unit.elements = Set(initialize=[1, 2])
 
         with pytest.raises(
             ConfigurationError,
@@ -639,14 +639,14 @@ class TestBuild:
         model.fs.unit._build_material_balance_constraints(flow_basis, uom)
 
         assert isinstance(model.fs.unit.material_transfer_term, Var)
-        # One stream pair with two common components over two stages and 1 time point
+        # One stream pair with two common components over two elements and 1 time point
         assert len(model.fs.unit.material_transfer_term) == 4
         assert_units_equivalent(
             model.fs.unit.material_transfer_term._units, units.mol / units.s
         )
 
         assert isinstance(model.fs.unit.stream1_material_balance, Constraint)
-        # 1 time point, 2 stages, 4 components
+        # 1 time point, 2 elements, 4 components
         assert len(model.fs.unit.stream1_material_balance) == 8
 
         for j in ["solvent1", "solute3"]:  # no mass transfer, forward flow
@@ -675,7 +675,7 @@ class TestBuild:
             )
 
         assert isinstance(model.fs.unit.stream2_material_balance, Constraint)
-        # 1 time point, 2 stages, 3 components
+        # 1 time point, 2 elements, 3 components
         assert len(model.fs.unit.stream2_material_balance) == 6
         for j in ["solvent2"]:  # no mass transfer, reverse flow
             assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
@@ -710,14 +710,14 @@ class TestBuild:
         model.fs.unit._build_material_balance_constraints(flow_basis, uom)
 
         assert isinstance(model.fs.unit.material_transfer_term, Var)
-        # One stream pair with two common components over two stages and 1 time point
+        # One stream pair with two common components over two elements and 1 time point
         assert len(model.fs.unit.material_transfer_term) == 4
         assert_units_equivalent(
             model.fs.unit.material_transfer_term._units, units.mol / units.s
         )
 
         assert isinstance(model.fs.unit.stream1_material_balance, Constraint)
-        # 1 time point, 2 stages, 4 components
+        # 1 time point, 2 elements, 4 components
         assert len(model.fs.unit.stream1_material_balance) == 8
 
         for j in ["solvent1", "solute3"]:  # no mass transfer, forward flow
@@ -746,7 +746,7 @@ class TestBuild:
             )
 
         assert isinstance(model.fs.unit.stream2_material_balance, Constraint)
-        # 1 time point, 2 stages, 3 components
+        # 1 time point, 2 elements, 3 components
         assert len(model.fs.unit.stream2_material_balance) == 6
         for j in ["solvent2"]:  # no mass transfer, reverse flow
             assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
@@ -778,14 +778,14 @@ class TestBuild:
         model.fs.unit._build_material_balance_constraints(flow_basis, uom)
 
         assert isinstance(model.fs.unit.material_transfer_term, Var)
-        # One stream pair with two common components over two stages and 1 time point
+        # One stream pair with two common components over two elements and 1 time point
         assert len(model.fs.unit.material_transfer_term) == 4
         assert_units_equivalent(
             model.fs.unit.material_transfer_term._units, units.mol / units.s
         )
 
         assert isinstance(model.fs.unit.stream1_material_balance, Constraint)
-        # 1 time point, 2 stages, 4 components
+        # 1 time point, 2 elements, 4 components
         assert len(model.fs.unit.stream1_material_balance) == 8
 
         for j in ["solvent1", "solute3"]:  # no mass transfer, forward flow
@@ -814,7 +814,7 @@ class TestBuild:
             )
 
         assert isinstance(model.fs.unit.stream2_material_balance, Constraint)
-        # 1 time point, 2 stages, 3 components
+        # 1 time point, 2 elements, 3 components
         assert len(model.fs.unit.stream2_material_balance) == 6
         for j in ["solvent2"]:  # no mass transfer, reverse flow
             assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
@@ -855,7 +855,7 @@ class TestBuild:
         # TODO: Check transfer terms
 
         assert isinstance(model.fs.unit.stream1_energy_balance, Constraint)
-        # 1 time point, 2 stages
+        # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_energy_balance) == 2
 
         assert str(model.fs.unit.stream1_energy_balance[0, 1]._expr) == str(
@@ -876,7 +876,7 @@ class TestBuild:
         )
 
         assert isinstance(model.fs.unit.stream2_energy_balance, Constraint)
-        # 1 time point, 2 stages
+        # 1 time point, 2 elements
         assert len(model.fs.unit.stream2_energy_balance) == 2
 
         assert str(model.fs.unit.stream2_energy_balance[0, 2]._expr) == str(
@@ -905,7 +905,7 @@ class TestBuild:
         # TODO: Check transfer terms
 
         assert isinstance(model.fs.unit.stream1_energy_balance, Constraint)
-        # 1 time point, 2 stages
+        # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_energy_balance) == 2
 
         assert str(model.fs.unit.stream1_energy_balance[0, 1]._expr) == str(
@@ -926,7 +926,7 @@ class TestBuild:
         )
 
         assert isinstance(model.fs.unit.stream2_energy_balance, Constraint)
-        # 1 time point, 2 stages
+        # 1 time point, 2 elements
         assert len(model.fs.unit.stream2_energy_balance) == 2
 
         assert str(model.fs.unit.stream2_energy_balance[0, 2]._expr) == str(
@@ -954,7 +954,7 @@ class TestBuild:
         # TODO: Check transfer terms
 
         assert isinstance(model.fs.unit.stream1_energy_balance, Constraint)
-        # 1 time point, 2 stages
+        # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_energy_balance) == 2
 
         assert str(model.fs.unit.stream1_energy_balance[0, 1]._expr) == str(
@@ -985,7 +985,7 @@ class TestBuild:
         # TODO: Check transfer terms
 
         assert isinstance(model.fs.unit.stream1_energy_balance, Constraint)
-        # 1 time point, 2 stages
+        # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_energy_balance) == 2
 
         assert str(model.fs.unit.stream1_energy_balance[0, 1]._expr) == str(
@@ -1006,7 +1006,7 @@ class TestBuild:
         )
 
         assert isinstance(model.fs.unit.stream2_energy_balance, Constraint)
-        # 1 time point, 2 stages
+        # 1 time point, 2 elements
         assert len(model.fs.unit.stream2_energy_balance) == 2
 
         assert str(model.fs.unit.stream2_energy_balance[0, 2]._expr) == str(
@@ -1035,7 +1035,7 @@ class TestBuild:
         # TODO: Check deltaP terms
 
         assert isinstance(model.fs.unit.stream1_pressure_balance, Constraint)
-        # 1 time point, 2 stages
+        # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_pressure_balance) == 2
 
         assert str(model.fs.unit.stream1_pressure_balance[0, 1]._expr) == str(
@@ -1056,7 +1056,7 @@ class TestBuild:
         )
 
         assert isinstance(model.fs.unit.stream2_pressure_balance, Constraint)
-        # 1 time point, 2 stages
+        # 1 time point, 2 elements
         assert len(model.fs.unit.stream2_pressure_balance) == 2
 
         assert str(model.fs.unit.stream2_pressure_balance[0, 2]._expr) == str(
@@ -1088,7 +1088,7 @@ class TestBuild:
         # TODO: Check deltaP terms
 
         assert isinstance(model.fs.unit.stream1_pressure_balance, Constraint)
-        # 1 time point, 2 stages
+        # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_pressure_balance) == 2
 
         assert str(model.fs.unit.stream1_pressure_balance[0, 1]._expr) == str(
@@ -1109,7 +1109,7 @@ class TestBuild:
         )
 
         assert isinstance(model.fs.unit.stream2_pressure_balance, Constraint)
-        # 1 time point, 1 stages; No balance at feed end
+        # 1 time point, 1 elements; No balance at feed end
         assert len(model.fs.unit.stream2_pressure_balance) == 1
 
         assert str(model.fs.unit.stream2_pressure_balance[0, 1]._expr) == str(
@@ -1133,7 +1133,7 @@ class TestBuild:
         # TODO: Check deltaP terms
 
         assert isinstance(model.fs.unit.stream1_pressure_balance, Constraint)
-        # 1 time point, 2 stages
+        # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_pressure_balance) == 2
 
         assert str(model.fs.unit.stream1_pressure_balance[0, 1]._expr) == str(
@@ -1167,7 +1167,7 @@ class TestBuild:
         # TODO: Check deltaP terms
 
         assert isinstance(model.fs.unit.stream1_pressure_balance, Constraint)
-        # 1 time point, 2 stages
+        # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_pressure_balance) == 2
 
         assert str(model.fs.unit.stream1_pressure_balance[0, 1]._expr) == str(
@@ -1188,7 +1188,7 @@ class TestBuild:
         )
 
         assert isinstance(model.fs.unit.stream2_pressure_balance, Constraint)
-        # 1 time point, 2 stages
+        # 1 time point, 2 elements
         assert len(model.fs.unit.stream2_pressure_balance) == 2
 
         assert str(model.fs.unit.stream2_pressure_balance[0, 2]._expr) == str(
@@ -1350,8 +1350,8 @@ class TestToyProblem:
         m.fs.properties1 = Parameters1()
         m.fs.properties2 = Parameters2()
 
-        m.fs.unit = ExtractorCascade(
-            number_of_stages=2,
+        m.fs.unit = Extractor(
+            number_of_finite_elements=2,
             streams={
                 "stream1": {"property_package": m.fs.properties1},
                 "stream2": {
@@ -1531,8 +1531,8 @@ class TestLiCODiafiltration:
         m.fs.properties = LiCoParameters()
 
         # Add separation stages
-        m.fs.stage1 = ExtractorCascade(
-            number_of_stages=10,
+        m.fs.stage1 = Extractor(
+            number_of_finite_elements=10,
             streams={
                 "retentate": {
                     "property_package": m.fs.properties,
@@ -1548,8 +1548,8 @@ class TestLiCODiafiltration:
             },
         )
 
-        m.fs.stage2 = ExtractorCascade(
-            number_of_stages=10,
+        m.fs.stage2 = Extractor(
+            number_of_finite_elements=10,
             streams={
                 "retentate": {
                     "property_package": m.fs.properties,
@@ -1565,8 +1565,8 @@ class TestLiCODiafiltration:
             },
         )
 
-        m.fs.stage3 = ExtractorCascade(
-            number_of_stages=10,
+        m.fs.stage3 = Extractor(
+            number_of_finite_elements=10,
             streams={
                 "retentate": {
                     "property_package": m.fs.properties,
@@ -1662,7 +1662,7 @@ class TestLiCODiafiltration:
             if s == 1:
                 in_state = b.retentate_inlet_state[0]
             else:
-                sp = b.stages.prev(s)
+                sp = b.elements.prev(s)
                 in_state = b.retentate[0, sp]
 
             return log(b.retentate[0, s].conc_mass_solute[j]) + (
@@ -1674,21 +1674,21 @@ class TestLiCODiafiltration:
             )
 
         m.fs.stage1.solvent_flux = Constraint(
-            m.fs.stage1.stages,
+            m.fs.stage1.elements,
             rule=solvent_rule,
         )
         m.fs.stage1.solute_sieving = Constraint(
-            m.fs.stage1.stages,
+            m.fs.stage1.elements,
             m.fs.solutes,
             rule=solute_rule,
         )
 
         m.fs.stage2.solvent_flux = Constraint(
-            m.fs.stage2.stages,
+            m.fs.stage2.elements,
             rule=solvent_rule,
         )
         m.fs.stage2.solute_sieving = Constraint(
-            m.fs.stage2.stages,
+            m.fs.stage2.elements,
             m.fs.solutes,
             rule=solute_rule,
         )
@@ -1699,7 +1699,7 @@ class TestLiCODiafiltration:
                 q_in = b.retentate_inlet_state[0].flow_vol
                 c_in = b.retentate_inlet_state[0].conc_mass_solute[j]
             elif s == 10:
-                sp = b.stages.prev(s)
+                sp = b.elements.prev(s)
                 q_in = (
                     b.retentate[0, sp].flow_vol
                     + b.retentate_side_stream_state[0, 10].flow_vol
@@ -1710,7 +1710,7 @@ class TestLiCODiafiltration:
                     * b.retentate_side_stream_state[0, 10].flow_vol
                 ) / q_in
             else:
-                sp = b.stages.prev(s)
+                sp = b.elements.prev(s)
                 q_in = b.retentate[0, sp].flow_vol
                 c_in = b.retentate[0, sp].conc_mass_solute[j]
 
@@ -1721,11 +1721,11 @@ class TestLiCODiafiltration:
             )
 
         m.fs.stage3.solvent_flux = Constraint(
-            m.fs.stage3.stages,
+            m.fs.stage3.elements,
             rule=solvent_rule,
         )
         m.fs.stage3.solute_sieving = Constraint(
-            m.fs.stage3.stages,
+            m.fs.stage3.elements,
             m.fs.solutes,
             rule=stage3_solute_rule,
         )

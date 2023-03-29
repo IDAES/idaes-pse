@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-IDAES model for a generic multiple-stream, multi-stage extractor cascade.
+IDAES model for a generic multiple-stream, extractor unit.
 """
 # Import Pyomo libraries
 from pyomo.environ import Constraint, RangeSet, Set, units, Var
@@ -33,16 +33,15 @@ from idaes.core.util.exceptions import ConfigurationError, BurntToast
 __author__ = "Andrew Lee"
 
 # TODO: Initializer object
-# TODO: Consider renaming stages to elements
 # TODO: Consider possibility of using Pyomo DAE for elements (makes side feeds harder to implement?)
 # TODO: Ordering of interaction terms, and n-1 issue/verification
 # TODO: Add heat transfer, enthalpy transfer, pressure change, reactions, heat of reaction, phase change
 
 
-@declare_process_block_class("ExtractorCascade")
-class ExtractorCascadeData(UnitModelBlockData):
+@declare_process_block_class("Extractor")
+class ExtractorData(UnitModelBlockData):
     """
-    Standard Extractor Cascade Unit Model Class
+    Standard Extractor Unit Model Class
     """
 
     CONFIG = UnitModelBlockData.CONFIG()
@@ -79,7 +78,7 @@ class ExtractorCascadeData(UnitModelBlockData):
         ConfigValue(
             default=FlowDirection.forward,
             domain=In(FlowDirection),
-            doc="Direction of flow in stages",
+            doc="Direction of flow for stream",
             description="FlowDirection Enum indicating direction of "
             "flow for given stream. Default=FlowDirection.forward.",
         ),
@@ -115,7 +114,7 @@ class ExtractorCascadeData(UnitModelBlockData):
         ConfigValue(
             default=None,
             domain=list,
-            doc="List of stages at which a side stream should be included.",
+            doc="List of finite elements at which a side stream should be included.",
         ),
     )
 
@@ -130,8 +129,8 @@ class ExtractorCascadeData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
-        "number_of_stages",
-        ConfigValue(domain=int, description="Number of stages in cascade"),
+        "number_of_finite_elements",
+        ConfigValue(domain=int, description="Number of finite elements to use"),
     )
     CONFIG.declare(
         "interacting_streams",
@@ -165,20 +164,18 @@ class ExtractorCascadeData(UnitModelBlockData):
         # Check that at least two streams were declared
         if len(self.config.streams) < 2:
             raise ConfigurationError(
-                f"ExtractorCascade models must define at least two streams; received "
+                f"Extractor models must define at least two streams; received "
                 f"{list(self.config.streams.keys())}"
             )
 
         if self.config.dynamic:
-            raise NotImplementedError(
-                "ExtractorCascade model does not support dynamics yet."
-            )
+            raise NotImplementedError("Extractor model does not support dynamics yet.")
 
         # Build indexing sets
-        self.stages = RangeSet(
+        self.elements = RangeSet(
             1,
-            self.config.number_of_stages,
-            doc="Set of stages in cascade (1 to number of stages)",
+            self.config.number_of_finite_elements,
+            doc="Set of finite elements in cascade (1 to number of elements)",
         )
 
         self.stream_component_interactions = Set(
@@ -224,7 +221,7 @@ class ExtractorCascadeData(UnitModelBlockData):
 
             state = ppack.build_state_block(
                 self.flowsheet().time,
-                self.stages,
+                self.elements,
                 doc=f"States for stream {stream} in each stage.",
                 **arg_dict1,
             )
@@ -244,12 +241,12 @@ class ExtractorCascadeData(UnitModelBlockData):
 
             # Add side streams if required
             if pconfig.side_streams is not None:
-                # First, verify side stream set is a sub-set of stages
+                # First, verify side stream set is a sub-set of elements
                 for ss in pconfig.side_streams:
-                    if ss not in self.stages:
+                    if ss not in self.elements:
                         raise ConfigurationError(
-                            f"side_streams must be a sub-set of the set of stages. "
-                            f"Found {ss} in side_streams which is not in stages."
+                            f"side_streams must be a sub-set of the set of elements. "
+                            f"Found {ss} in side_streams which is not in elements."
                         )
                 # Add indexing Set for side streams
                 ss_set = Set(initialize=pconfig.side_streams)
@@ -264,7 +261,7 @@ class ExtractorCascadeData(UnitModelBlockData):
                 self.add_component(stream + "_side_stream_state", ss_state)
 
             tref = self.flowsheet().time.first()
-            sref = self.stages.first()
+            sref = self.elements.first()
             if flow_basis is None:
                 # Set unit level flow basis and units from first stream
 
@@ -297,7 +294,7 @@ class ExtractorCascadeData(UnitModelBlockData):
         # the first stream from the second stream for a given component.
         self.material_transfer_term = Var(
             self.flowsheet().time,
-            self.stages,
+            self.elements,
             self.stream_component_interactions,
             initialize=0,
             units=mb_units,
@@ -357,7 +354,7 @@ class ExtractorCascadeData(UnitModelBlockData):
 
             mbal = Constraint(
                 self.flowsheet().time,
-                self.stages,
+                self.elements,
                 component_list,
                 rule=material_balance_rule,
             )
@@ -400,7 +397,7 @@ class ExtractorCascadeData(UnitModelBlockData):
 
                 ebal = Constraint(
                     self.flowsheet().time,
-                    self.stages,
+                    self.elements,
                     rule=energy_balance_rule,
                 )
                 self.add_component(stream + "_energy_balance", ebal)
@@ -429,7 +426,7 @@ class ExtractorCascadeData(UnitModelBlockData):
 
                 pbal = Constraint(
                     self.flowsheet().time,
-                    self.stages,
+                    self.elements,
                     rule=pressure_balance_rule,
                 )
                 self.add_component(stream + "_pressure_balance", pbal)
@@ -467,9 +464,9 @@ class ExtractorCascadeData(UnitModelBlockData):
                 self.add_component(stream + "_inlet", in_port)
 
             if flow_dir == FlowDirection.forward:
-                outlet = self.stages.last()
+                outlet = self.elements.last()
             elif flow_dir == FlowDirection.backward:
-                outlet = self.stages.first()
+                outlet = self.elements.first()
             else:
                 raise BurntToast("If/else overrun when constructing Ports")
 
@@ -497,21 +494,21 @@ def _get_state_blocks(b, t, s, stream):
     state_block = getattr(b, stream)
 
     if b.config.streams[stream].flow_direction == FlowDirection.forward:
-        if s == b.stages.first():
+        if s == b.elements.first():
             if not b.config.streams[stream].has_feed:
                 in_state = None
             else:
                 in_state = getattr(b, stream + "_inlet_state")[t]
         else:
-            in_state = state_block[t, b.stages.prev(s)]
+            in_state = state_block[t, b.elements.prev(s)]
     elif b.config.streams[stream].flow_direction == FlowDirection.backward:
-        if s == b.stages.last():
+        if s == b.elements.last():
             if not b.config.streams[stream].has_feed:
                 in_state = None
             else:
                 in_state = getattr(b, stream + "_inlet_state")[t]
         else:
-            in_state = state_block[t, b.stages.next(s)]
+            in_state = state_block[t, b.elements.next(s)]
     else:
         raise BurntToast("If/else overrun when constructing balances")
 
