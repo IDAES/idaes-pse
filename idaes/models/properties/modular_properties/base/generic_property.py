@@ -1210,7 +1210,7 @@ class ModularPropertiesInitializer(ModularInitializerBase):
     4. Initialize all remaining properties
 
     The Pyomo solve_strongly_connected_components method is used at each
-    step to converge the probelm.
+    step to converge the problem.
 
     Note that for systems without vapor-liquid equilibrium the generic
     BlockTriangularizationInitializer is probably sufficient for initializing
@@ -1254,6 +1254,15 @@ class ModularPropertiesInitializer(ModularInitializerBase):
         self,
         model: Block,
     ):
+        """
+        Sequential initialization routine for modular properties.
+
+        Args:
+            model: model to be initialized
+
+        Returns:
+            None
+        """
         # Setup loggers
         init_log = idaeslog.getInitLogger(
             model.name, self.config.output_level, tag="properties"
