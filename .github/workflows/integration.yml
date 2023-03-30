@@ -192,7 +192,10 @@ jobs:
       - name: Fetch and run examples
         uses: ./.github/actions/run-examples
         with:
-          git-ref: main
+          examples-repository: IDAES/examples
+          examples-ref: main
+          reinstall-target: -r requirements-dev.txt
+          notebook-cell-exec-timeout: '600'
           working-dir: ${{ runner.temp }}
       - name: Display error logs
         if: failure()
