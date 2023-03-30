@@ -331,6 +331,7 @@ class ExtractorData(UnitModelBlockData):
                 # Add extents of reaction and stoichiometric constraints
                 inherent_reaction_extent = Var(
                     self.flowsheet().time,
+                    self.elements,
                     sconfig.property_package.inherent_reaction_idx,
                     domain=Reals,
                     initialize=0.0,
@@ -342,23 +343,45 @@ class ExtractorData(UnitModelBlockData):
                     inherent_reaction_extent,
                 )
 
-                # @self.Constraint(
-                #     self.flowsheet().time, pc_set, doc="Inherent reaction stoichiometry"
-                # )
-                # def inherent_reaction_stoichiometry_constraint(b, t, p, j):
-                #     if (p, j) in pc_set:
-                #         return b.inherent_reaction_generation[t, p, j] == (
-                #             sum(
-                #                 b.properties_out[t].params.inherent_reaction_stoichiometry[
-                #                     r, p, j
-                #                 ]
-                #                 * b.inherent_reaction_extent[t, r]
-                #                 for r in b.config.property_package.inherent_reaction_idx
-                #             )
-                #         )
-                #     else:
-                #         return Constraint.Skip
-                assert False
+                inherent_reaction_generation = Var(
+                    self.flowsheet().time,
+                    self.elements,
+                    pc_set,
+                    domain=Reals,
+                    initialize=0.0,
+                    doc=f"Generation due to inherent reactions in stream {stream}",
+                    units=mb_units,
+                )
+                self.add_component(
+                    stream + "_inherent_reaction_generation",
+                    inherent_reaction_generation,
+                )
+
+                def inherent_reaction_rule(b, t, s, p, j):
+                    if (p, j) in pc_set:
+                        return inherent_reaction_generation[t, s, p, j] == (
+                            sum(
+                                state_block[
+                                    t, s
+                                ].params.inherent_reaction_stoichiometry[r, p, j]
+                                * inherent_reaction_extent[t, s, r]
+                                for r in sconfig.property_package.inherent_reaction_idx
+                            )
+                        )
+                    else:
+                        return Constraint.Skip
+
+                inherent_reaction_constraint = Constraint(
+                    self.flowsheet().time,
+                    self.elements,
+                    pc_set,
+                    doc=f"Inherent reaction stoichiometry for stream {stream}",
+                    rule=inherent_reaction_rule,
+                )
+                self.add_component(
+                    stream + "_inherent_reaction_constraint",
+                    inherent_reaction_constraint,
+                )
 
             # Material balance for stream
             def material_balance_rule(b, t, s, j):
@@ -394,6 +417,7 @@ class ExtractorData(UnitModelBlockData):
                 if mb_units is not None:
                     rhs = units.convert(rhs, mb_units)
 
+                # Add mass transfer terms
                 for k in b.stream_component_interactions:
                     if k[0] == stream and k[2] == j:
                         # Positive mass transfer
@@ -401,6 +425,12 @@ class ExtractorData(UnitModelBlockData):
                     elif k[1] == stream and k[2] == j:
                         # Negative mass transfer
                         rhs += -b.material_transfer_term[t, s, k]
+
+                # Add inherent reactions (if required)
+                if state_block.include_inherent_reactions:
+                    rhs += sum(
+                        inherent_reaction_generation[t, s, p, j] for p in phase_list
+                    )
 
                 return 0 == rhs
 

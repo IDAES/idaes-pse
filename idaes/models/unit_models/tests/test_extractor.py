@@ -1514,7 +1514,150 @@ class TestReactions:
         model.fs.unit._verify_inputs()
         flow_basis, uom = model.fs.unit._build_state_blocks()
         model.fs.unit._build_material_balance_constraints(flow_basis, uom)
-        assert False
+
+        assert isinstance(model.fs.unit.stream1_inherent_reaction_extent, Var)
+        assert len(model.fs.unit.stream1_inherent_reaction_extent) == 4
+        for k in model.fs.unit.stream1_inherent_reaction_extent:
+            assert k in [(0, 1, "i1"), (0, 1, "i2"), (0, 2, "i1"), (0, 2, "i2")]
+
+        assert isinstance(model.fs.unit.stream1_inherent_reaction_generation, Var)
+        assert len(model.fs.unit.stream1_inherent_reaction_generation) == 8
+        for k in model.fs.unit.stream1_inherent_reaction_generation:
+            assert k in [
+                (0, 1, "p1", "c1"),
+                (0, 1, "p1", "c2"),
+                (0, 1, "p2", "c1"),
+                (0, 1, "p2", "c2"),
+                (0, 2, "p1", "c1"),
+                (0, 2, "p1", "c2"),
+                (0, 2, "p2", "c1"),
+                (0, 2, "p2", "c2"),
+            ]
+
+        assert isinstance(
+            model.fs.unit.stream1_inherent_reaction_constraint, Constraint
+        )
+        assert len(model.fs.unit.stream1_inherent_reaction_constraint) == 8
+        for k in model.fs.unit.stream1_inherent_reaction_constraint:
+            assert k in [
+                (0, 1, "p1", "c1"),
+                (0, 1, "p1", "c2"),
+                (0, 1, "p2", "c1"),
+                (0, 1, "p2", "c2"),
+                (0, 2, "p1", "c1"),
+                (0, 2, "p1", "c2"),
+                (0, 2, "p2", "c1"),
+                (0, 2, "p2", "c2"),
+            ]
+
+        for j in [
+            "c1",
+            "c2",
+        ]:  # has +ve mass transfer, forward flow, inherent reactions
+            assert str(model.fs.unit.stream1_material_balance[0, 1, j]._expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream1_inlet_state[0].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream1[0, 1].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                + model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
+                + sum(
+                    model.fs.unit.stream1_inherent_reaction_generation[0, 1, p, j]
+                    for p in ["p1", "p2"]
+                )
+            )
+            assert str(model.fs.unit.stream1_material_balance[0, 2, j]._expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream1[0, 1].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream1[0, 2].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                + model.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
+                + sum(
+                    model.fs.unit.stream1_inherent_reaction_generation[0, 2, p, j]
+                    for p in ["p1", "p2"]
+                )
+            )
+
+        assert isinstance(model.fs.unit.stream2_inherent_reaction_extent, Var)
+        assert len(model.fs.unit.stream2_inherent_reaction_extent) == 4
+        for k in model.fs.unit.stream2_inherent_reaction_extent:
+            assert k in [(0, 1, "i1"), (0, 1, "i2"), (0, 2, "i1"), (0, 2, "i2")]
+
+        assert isinstance(model.fs.unit.stream2_inherent_reaction_generation, Var)
+        assert len(model.fs.unit.stream2_inherent_reaction_generation) == 8
+        for k in model.fs.unit.stream2_inherent_reaction_generation:
+            assert k in [
+                (0, 1, "p1", "c1"),
+                (0, 1, "p1", "c2"),
+                (0, 1, "p2", "c1"),
+                (0, 1, "p2", "c2"),
+                (0, 2, "p1", "c1"),
+                (0, 2, "p1", "c2"),
+                (0, 2, "p2", "c1"),
+                (0, 2, "p2", "c2"),
+            ]
+
+        assert isinstance(
+            model.fs.unit.stream2_inherent_reaction_constraint, Constraint
+        )
+        assert len(model.fs.unit.stream2_inherent_reaction_constraint) == 8
+        for k in model.fs.unit.stream2_inherent_reaction_constraint:
+            assert k in [
+                (0, 1, "p1", "c1"),
+                (0, 1, "p1", "c2"),
+                (0, 1, "p2", "c1"),
+                (0, 1, "p2", "c2"),
+                (0, 2, "p1", "c1"),
+                (0, 2, "p1", "c2"),
+                (0, 2, "p2", "c1"),
+                (0, 2, "p2", "c2"),
+            ]
+
+        for j in [
+            "c1",
+            "c2",
+        ]:  # has -ve mass transfer, forward flow, inherent reactions
+            assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream2_inlet_state[0].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream2[0, 2].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - model.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
+                + sum(
+                    model.fs.unit.stream2_inherent_reaction_generation[0, 2, p, j]
+                    for p in ["p1", "p2"]
+                )
+            )
+            assert str(model.fs.unit.stream2_material_balance[0, 1, j]._expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream2[0, 2].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream2[0, 1].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
+                + sum(
+                    model.fs.unit.stream2_inherent_reaction_generation[0, 1, p, j]
+                    for p in ["p1", "p2"]
+                )
+            )
 
 
 class TestToyProblem:
