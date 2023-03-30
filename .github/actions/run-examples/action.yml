@@ -34,10 +34,11 @@ runs:
       # -l needed to be able to run this step correctly within a Conda environment
       shell: bash -l {0}
       env:
-        PIP_PROGRESS_BAR: "off"
+        PIP_PROGRESS_BAR: 'off'
+        _pip_extras: '[jb,dev]'
         _pip_install_url: https://github.com/${{ inputs.examples-repository }}@${{ inputs.examples-ref }}
       run: |
-        pip install "idaes_examples[jb] @ git+${_pip_install_url}"
+        pip install "idaes_examples${_pip_extras} @ git+${_pip_install_url}"
         # uninstall IDAES if installed through idaes_examples so that the version under test can be used
         pip uninstall --yes ides-pse
 
