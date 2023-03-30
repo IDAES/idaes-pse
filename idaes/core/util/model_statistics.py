@@ -709,7 +709,7 @@ def variables_near_bounds_generator(
             continue
 
         if relative:
-            sf = get_scaling_factor(v)
+            sf = get_scaling_factor(v, default=1)
         else:
             sf = 1
 
