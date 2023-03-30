@@ -61,3 +61,9 @@ runs:
       run: |
         rm -rf *  # ensure directory is empty
         pytest
+
+    - name: Display content of working directory after run
+      shell: bash -l {0}
+      working-directory: ${{ inputs.working-dir }}
+      run: |
+        ls -Ralh
