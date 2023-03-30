@@ -59,6 +59,10 @@ from idaes.core.util.initialization import (
     fix_state_vars,
     revert_state_vars,
 )
+from idaes.core.util.testing import (
+    PhysicalParameterTestBlock,
+    ReactionParameterTestBlock,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -1479,6 +1483,38 @@ class TestBuild:
             model.fs.unit.stream2_outlet.pressure[0]
             is model.fs.unit.stream2[0, 1].pressure
         )
+
+
+class TestReactions:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        m.fs.unit = ECFrame(
+            number_of_finite_elements=2,
+            streams={
+                "stream1": {"property_package": m.fs.properties},
+                "stream2": {
+                    "property_package": m.fs.properties,
+                    "flow_direction": FlowDirection.backward,
+                },
+            },
+        )
+
+        return m
+
+    @pytest.mark.unit
+    def test_inherent_reactions(self, model):
+        # Activate inherent reactions for testing
+        model.fs.properties._has_inherent_reactions = True
+
+        model.fs.unit._verify_inputs()
+        flow_basis, uom = model.fs.unit._build_state_blocks()
+        model.fs.unit._build_material_balance_constraints(flow_basis, uom)
+        assert False
 
 
 class TestToyProblem:

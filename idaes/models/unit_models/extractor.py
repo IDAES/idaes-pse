@@ -14,7 +14,7 @@
 IDAES model for a generic multiple-stream extractor unit.
 """
 # Import Pyomo libraries
-from pyomo.environ import Constraint, RangeSet, Set, units, Var
+from pyomo.environ import Constraint, RangeSet, Reals, Set, units, Var
 from pyomo.common.config import ConfigDict, ConfigValue, Bool, In
 
 # Import IDAES cores
@@ -320,11 +320,45 @@ class ExtractorData(UnitModelBlockData):
         )
 
         # Build balance equations
-        for stream in self.config.streams:
+        for stream, sconfig in self.config.streams.items():
             state_block = getattr(self, stream)
             component_list = state_block.component_list
             phase_list = state_block.phase_list
             pc_set = state_block.phase_component_set
+
+            # Inherent reaction terms (if required)
+            if state_block.include_inherent_reactions:
+                # Add extents of reaction and stoichiometric constraints
+                inherent_reaction_extent = Var(
+                    self.flowsheet().time,
+                    sconfig.property_package.inherent_reaction_idx,
+                    domain=Reals,
+                    initialize=0.0,
+                    doc=f"Extent of inherent reactions in stream {stream}",
+                    units=mb_units,
+                )
+                self.add_component(
+                    stream + "_inherent_reaction_extent",
+                    inherent_reaction_extent,
+                )
+
+                # @self.Constraint(
+                #     self.flowsheet().time, pc_set, doc="Inherent reaction stoichiometry"
+                # )
+                # def inherent_reaction_stoichiometry_constraint(b, t, p, j):
+                #     if (p, j) in pc_set:
+                #         return b.inherent_reaction_generation[t, p, j] == (
+                #             sum(
+                #                 b.properties_out[t].params.inherent_reaction_stoichiometry[
+                #                     r, p, j
+                #                 ]
+                #                 * b.inherent_reaction_extent[t, r]
+                #                 for r in b.config.property_package.inherent_reaction_idx
+                #             )
+                #         )
+                #     else:
+                #         return Constraint.Skip
+                assert False
 
             # Material balance for stream
             def material_balance_rule(b, t, s, j):
