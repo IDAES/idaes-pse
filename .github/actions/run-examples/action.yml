@@ -52,12 +52,13 @@ runs:
       env:
         PYTEST_ADDOPTS: >-
           --color=yes
-          --pyargs=idaes_examples.notebooks.docs
-          --pyargs=idaes_examples.notebooks.active
+          --durations=0
+          -n=auto
           --nbmake
           --nbmake-timeout=${{ inputs.notebook-cell-exec-timeout }}
-          -n=auto
-          --durations=0
+          --pyargs
+          idaes_examples.notebooks.docs
+          idaes_examples.notebooks.active
       run: |
         rm -rf *  # ensure directory is empty
         pytest
