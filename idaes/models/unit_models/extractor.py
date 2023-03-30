@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-IDAES model for a generic multiple-stream, extractor unit.
+IDAES model for a generic multiple-stream extractor unit.
 """
 # Import Pyomo libraries
 from pyomo.environ import Constraint, RangeSet, Set, units, Var
@@ -33,9 +33,9 @@ from idaes.core.util.exceptions import ConfigurationError, BurntToast
 __author__ = "Andrew Lee"
 
 # TODO: Initializer object
-# TODO: Consider possibility of using Pyomo DAE for elements (makes side feeds harder to implement?)
-# TODO: Ordering of interaction terms, and n-1 issue/verification
-# TODO: Add heat transfer, enthalpy transfer, pressure change, reactions, heat of reaction, phase change
+# TODO: Could look at using Pyomo DAE for the length domain, but this would make
+# it harder to do side feeds.
+# TODO: reactions, heat of reaction
 
 
 @declare_process_block_class("Extractor")
@@ -102,11 +102,29 @@ class ExtractorData(UnitModelBlockData):
         ),
     )
     _stream_config.declare(
+        "has_heat_transfer",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            doc="Bool indicating whether to include external heat transfer terms in energy "
+            "balance for stream. Default=False.",
+        ),
+    )
+    _stream_config.declare(
         "has_pressure_balance",
         ConfigValue(
             default=True,
             domain=Bool,
             doc="Bool indicating whether to include pressure balance for stream. Default=True.",
+        ),
+    )
+    _stream_config.declare(
+        "has_pressure_change",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            doc="Bool indicating whether to include deltaP terms in pressure balance for "
+            "stream. Default=False.",
         ),
     )
     _stream_config.declare(
@@ -178,29 +196,29 @@ class ExtractorData(UnitModelBlockData):
             doc="Set of finite elements in cascade (1 to number of elements)",
         )
 
+        interacting_streams = self.config.interacting_streams
+        # If user did not provide interacting streams list, assume all steams interact
+        if interacting_streams is None:
+            interacting_streams = []
+            for s1 in self.config.streams:
+                for s2 in self.config.streams:
+                    if not s1 == s2 and (s2, s1) not in interacting_streams:
+                        interacting_streams.append((s1, s2))
+        self.stream_interactions = Set(
+            initialize=interacting_streams, doc="Set of interacting streams."
+        )
+
         self.stream_component_interactions = Set(
             doc="Set of interacting components between streams."
         )
-        for stream1 in self.config.streams:
-            for stream2 in self.config.streams:
-                if stream1 == stream2:
-                    continue
-                if self.config.interacting_streams is not None and not (
-                    (stream1, stream2) in self.config.interacting_streams
-                    or (stream2, stream1) in self.config.interacting_streams
+        for (stream1, stream2) in self.stream_interactions:
+            for j in self.config.streams[stream1].property_package.component_list:
+                if (
+                    j in self.config.streams[stream2].property_package.component_list
+                    and (stream2, stream1, j) not in self.stream_component_interactions
                 ):
-                    # Not an interacting stream pair, or one we already caught
-                    continue
-                # Interacting stream pair
-                for j in self.config.streams[stream1].property_package.component_list:
-                    if (
-                        j
-                        in self.config.streams[stream2].property_package.component_list
-                        and (stream2, stream1, j)
-                        not in self.stream_component_interactions
-                    ):
-                        # Common component, assume interaction
-                        self.stream_component_interactions.add((stream1, stream2, j))
+                    # Common component, assume interaction
+                    self.stream_component_interactions.add((stream1, stream2, j))
         if len(self.stream_component_interactions) == 0:
             raise ConfigurationError(
                 "No common components found in property packages. Extractor model assumes "
@@ -362,10 +380,35 @@ class ExtractorData(UnitModelBlockData):
 
     def _build_energy_balance_constraints(self, uom):
         # Energy Balances
+
+        # Assume that if energy balances are enabled that energy transfer
+        # occurs between all interacting phases.
+        # # For now, we will not distinguish different types of energy transfer.
+        # Convention is that a positive material flow term indicates flow into
+        # the first stream from the second stream.
+        self.energy_transfer_term = Var(
+            self.flowsheet().time,
+            self.elements,
+            self.stream_interactions,
+            initialize=0,
+            units=uom.POWER,
+            doc="Inter-stream mass transfer term",
+        )
+
         for stream, pconfig in self.config.streams.items():
             if pconfig.has_energy_balance:
                 state_block = getattr(self, stream)
                 phase_list = state_block.phase_list
+
+                if pconfig.has_heat_transfer:
+                    heat = Var(
+                        self.flowsheet().time,
+                        self.elements,
+                        initialize=0,
+                        units=uom.POWER,
+                        doc=f"External heat transfer term for stream {stream}",
+                    )
+                    self.add_component(stream + "_heat", heat)
 
                 def energy_balance_rule(b, t, s):
                     in_state, out_state, side_state = _get_state_blocks(b, t, s, stream)
@@ -391,7 +434,18 @@ class ExtractorData(UnitModelBlockData):
                     # cannot guarantee that any units are consistent, so convert all flow terms
                     rhs = units.convert(rhs, uom.POWER)
 
-                    # TODO: Add transfer terms
+                    # Add interstream transfer terms
+                    for k in b.stream_interactions:
+                        if k[0] == stream:
+                            # Positive mass transfer
+                            rhs += b.energy_transfer_term[t, s, k]
+                        elif k[1] == stream:
+                            # Negative mass transfer
+                            rhs += -b.energy_transfer_term[t, s, k]
+
+                    # Add external heat term if required
+                    if pconfig.has_heat_transfer:
+                        rhs += heat[t, s]
 
                     return 0 == rhs
 
@@ -407,6 +461,16 @@ class ExtractorData(UnitModelBlockData):
         for stream, pconfig in self.config.streams.items():
             if pconfig.has_pressure_balance:
 
+                if pconfig.has_pressure_change:
+                    deltaP = Var(
+                        self.flowsheet().time,
+                        self.elements,
+                        initialize=0,
+                        units=uom.PRESSURE,
+                        doc=f"DeltaP term for stream {stream}",
+                    )
+                    self.add_component(stream + "_deltaP", deltaP)
+
                 def pressure_balance_rule(b, t, s):
                     in_state, out_state, _ = _get_state_blocks(b, t, s, stream)
 
@@ -420,7 +484,9 @@ class ExtractorData(UnitModelBlockData):
                     # cannot guarantee that any units are consistent, so convert all flow terms
                     rhs = units.convert(rhs, uom.PRESSURE)
 
-                    # TODO: Add deltaP terms
+                    # Add deltaP term if required
+                    if pconfig.has_pressure_change:
+                        rhs += deltaP[t, s]
 
                     return 0 == rhs
 
