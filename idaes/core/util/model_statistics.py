@@ -25,6 +25,8 @@ from pyomo.dae import DerivativeVar
 from pyomo.core.expr.current import identify_variables
 from pyomo.common.collections import ComponentSet
 
+from idaes.core.util.scaling import get_scaling_factor
+
 
 # -------------------------------------------------------------------------
 # Generator to handle cases where the input is an indexed Block
@@ -707,24 +709,13 @@ def variables_near_bounds_generator(
             continue
 
         if relative:
-            # First, determine absolute tolerance to apply to bounds
-            if v.ub is not None and v.lb is not None:
-                # Both upper and lower bounds, apply tol to (upper - lower)
-                atol = value((v.ub - v.lb) * tol)
-            elif v.ub is not None:
-                # Only upper bound, apply tol to bound value
-                atol = abs(value(v.ub * tol))
-            elif v.lb is not None:
-                # Only lower bound, apply tol to bound value
-                atol = abs(value(v.lb * tol))
-            else:
-                continue
+            sf = get_scaling_factor(v)
         else:
-            atol = tol
+            sf = 1
 
-        if v.ub is not None and not skip_lb and value(v.ub - v.value) <= atol:
+        if v.ub is not None and not skip_lb and sf * value(v.ub - v.value) <= tol:
             yield v
-        elif v.lb is not None and not skip_ub and value(v.value - v.lb) <= atol:
+        elif v.lb is not None and not skip_ub and sf * value(v.value - v.lb) <= tol:
             yield v
 
 
