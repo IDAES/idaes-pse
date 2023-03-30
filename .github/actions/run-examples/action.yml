@@ -41,7 +41,7 @@ runs:
         # uninstall IDAES if installed through idaes_examples so that the version under test can be used
         pip uninstall --yes ides-pse
 
-    - step: Reinstall IDAES
+    - name: Reinstall IDAES
       shell: bash -l {0}
       run: |
         pip install ${{ inputs.reinstall-target }}
