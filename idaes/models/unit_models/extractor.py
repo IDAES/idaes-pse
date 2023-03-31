@@ -40,7 +40,7 @@ __author__ = "Andrew Lee"
 # TODO: Initializer object
 # TODO: Could look at using Pyomo DAE for the length domain, but this would make
 # it harder to do side feeds.
-# TODO: reactions, heat of reaction
+# TODO: heat of reaction
 
 
 @declare_process_block_class("Extractor")
@@ -154,6 +154,15 @@ class ExtractorData(UnitModelBlockData):
             domain=Bool,
             doc="Bool indicating whether to include external heat transfer terms in energy "
             "balance for stream. Default=False.",
+        ),
+    )
+    _stream_config.declare(
+        "has_heat_of_reaction",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            doc="Bool indicating whether heat of reaction terms should be included in energy "
+            "balance for stream (required reactions). Default=False.",
         ),
     )
     _stream_config.declare(
@@ -720,6 +729,37 @@ class ExtractorData(UnitModelBlockData):
                     # Add external heat term if required
                     if pconfig.has_heat_transfer:
                         rhs += heat[t, s]
+
+                    # Add heat of reaction terms if required
+                    if pconfig.has_heat_of_reaction:
+                        if not (
+                            hasattr(b, stream + "_rate_reaction_extent")
+                            or hasattr(b, stream + "_equilibrium_reaction_extent")
+                        ):
+                            raise ConfigurationError(
+                                f"Stream {stream} was set to include heats of reaction, "
+                                "but no extent of reactions terms could be found. "
+                                "Please ensure that you defined a reaction package for this "
+                                "stream and that the material balances were set to include "
+                                "reactions."
+                            )
+                        reactions = getattr(b, stream + "_reactions")
+
+                        if hasattr(b, stream + "_rate_reaction_extent"):
+                            rate_extent = getattr(b, stream + "_rate_reaction_extent")
+                            rhs += -sum(
+                                rate_extent[t, s, r] * reactions[t, s].dh_rxn[r]
+                                for r in pconfig.reaction_package.rate_reaction_idx
+                            )
+
+                        if hasattr(b, stream + "_equilibrium_reaction_extent"):
+                            equil_extent = getattr(
+                                b, stream + "_equilibrium_reaction_extent"
+                            )
+                            rhs += -sum(
+                                equil_extent[t, s, e] * reactions[t, s].dh_rxn[e]
+                                for e in pconfig.reaction_package.equilibrium_reaction_idx
+                            )
 
                     return 0 == rhs
 

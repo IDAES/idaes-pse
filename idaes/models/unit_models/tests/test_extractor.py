@@ -1830,7 +1830,7 @@ class TestReactions:
             )
 
     @pytest.mark.unit
-    def test_equilibrium_reactions(self, model):
+    def test_rate_reactions(self, model):
         model.fs.unit.config.streams["stream2"].reaction_package = model.fs.reactions
         model.fs.unit.config.streams["stream2"].has_rate_reactions = True
 
@@ -1940,6 +1940,172 @@ class TestReactions:
                     for p in ["p1", "p2"]
                 )
             )
+
+    @pytest.mark.unit
+    def test_heat_of_reaction_rate(self, model):
+        model.fs.unit.config.streams["stream2"].reaction_package = model.fs.reactions
+        model.fs.unit.config.streams["stream2"].has_rate_reactions = True
+        model.fs.unit.config.streams["stream2"].has_heat_of_reaction = True
+
+        model.fs.unit._verify_inputs()
+        flow_basis, uom = model.fs.unit._build_state_blocks()
+        model.fs.unit._build_material_balance_constraints(flow_basis, uom)
+        model.fs.unit._build_energy_balance_constraints(uom)
+
+        assert str(model.fs.unit.stream1_energy_balance[0, 1]._expr) == str(
+            0
+            == units.convert(
+                sum(
+                    model.fs.unit.stream1_inlet_state[0].get_enthalpy_flow_terms(p)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream1[0, 1].get_enthalpy_flow_terms(p)
+                    for p in ["p1", "p2"]
+                ),
+                units.kg * units.m**2 / units.s**3,
+            )
+            + model.fs.unit.energy_transfer_term[0, 1, "stream1", "stream2"]
+        )
+        assert str(model.fs.unit.stream1_energy_balance[0, 2]._expr) == str(
+            0
+            == units.convert(
+                sum(
+                    model.fs.unit.stream1[0, 1].get_enthalpy_flow_terms(p)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream1[0, 2].get_enthalpy_flow_terms(p)
+                    for p in ["p1", "p2"]
+                ),
+                units.kg * units.m**2 / units.s**3,
+            )
+            + model.fs.unit.energy_transfer_term[0, 2, "stream1", "stream2"]
+        )
+
+        assert str(model.fs.unit.stream2_energy_balance[0, 2]._expr) == str(
+            0
+            == units.convert(
+                sum(
+                    model.fs.unit.stream2_inlet_state[0].get_enthalpy_flow_terms(p)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream2[0, 2].get_enthalpy_flow_terms(p)
+                    for p in ["p1", "p2"]
+                ),
+                units.kg * units.m**2 / units.s**3,
+            )
+            - model.fs.unit.energy_transfer_term[0, 2, "stream1", "stream2"]
+            - sum(
+                model.fs.unit.stream2_rate_reaction_extent[0, 2, r]
+                * model.fs.unit.stream2_reactions[0, 2].dh_rxn[r]
+                for r in ["r1", "r2"]
+            )
+        )
+        assert str(model.fs.unit.stream2_energy_balance[0, 1]._expr) == str(
+            0
+            == units.convert(
+                sum(
+                    model.fs.unit.stream2[0, 2].get_enthalpy_flow_terms(p)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream2[0, 1].get_enthalpy_flow_terms(p)
+                    for p in ["p1", "p2"]
+                ),
+                units.kg * units.m**2 / units.s**3,
+            )
+            - model.fs.unit.energy_transfer_term[0, 1, "stream1", "stream2"]
+            - sum(
+                model.fs.unit.stream2_rate_reaction_extent[0, 1, r]
+                * model.fs.unit.stream2_reactions[0, 1].dh_rxn[r]
+                for r in ["r1", "r2"]
+            )
+        )
+
+    @pytest.mark.unit
+    def test_heat_of_reaction_equilibrium(self, model):
+        model.fs.unit.config.streams["stream2"].reaction_package = model.fs.reactions
+        model.fs.unit.config.streams["stream2"].has_equilibrium_reactions = True
+        model.fs.unit.config.streams["stream2"].has_heat_of_reaction = True
+
+        model.fs.unit._verify_inputs()
+        flow_basis, uom = model.fs.unit._build_state_blocks()
+        model.fs.unit._build_material_balance_constraints(flow_basis, uom)
+        model.fs.unit._build_energy_balance_constraints(uom)
+
+        assert str(model.fs.unit.stream1_energy_balance[0, 1]._expr) == str(
+            0
+            == units.convert(
+                sum(
+                    model.fs.unit.stream1_inlet_state[0].get_enthalpy_flow_terms(p)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream1[0, 1].get_enthalpy_flow_terms(p)
+                    for p in ["p1", "p2"]
+                ),
+                units.kg * units.m**2 / units.s**3,
+            )
+            + model.fs.unit.energy_transfer_term[0, 1, "stream1", "stream2"]
+        )
+        assert str(model.fs.unit.stream1_energy_balance[0, 2]._expr) == str(
+            0
+            == units.convert(
+                sum(
+                    model.fs.unit.stream1[0, 1].get_enthalpy_flow_terms(p)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream1[0, 2].get_enthalpy_flow_terms(p)
+                    for p in ["p1", "p2"]
+                ),
+                units.kg * units.m**2 / units.s**3,
+            )
+            + model.fs.unit.energy_transfer_term[0, 2, "stream1", "stream2"]
+        )
+
+        assert str(model.fs.unit.stream2_energy_balance[0, 2]._expr) == str(
+            0
+            == units.convert(
+                sum(
+                    model.fs.unit.stream2_inlet_state[0].get_enthalpy_flow_terms(p)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream2[0, 2].get_enthalpy_flow_terms(p)
+                    for p in ["p1", "p2"]
+                ),
+                units.kg * units.m**2 / units.s**3,
+            )
+            - model.fs.unit.energy_transfer_term[0, 2, "stream1", "stream2"]
+            - sum(
+                model.fs.unit.stream2_equilibrium_reaction_extent[0, 2, e]
+                * model.fs.unit.stream2_reactions[0, 2].dh_rxn[e]
+                for e in ["e1", "e2"]
+            )
+        )
+        assert str(model.fs.unit.stream2_energy_balance[0, 1]._expr) == str(
+            0
+            == units.convert(
+                sum(
+                    model.fs.unit.stream2[0, 2].get_enthalpy_flow_terms(p)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream2[0, 1].get_enthalpy_flow_terms(p)
+                    for p in ["p1", "p2"]
+                ),
+                units.kg * units.m**2 / units.s**3,
+            )
+            - model.fs.unit.energy_transfer_term[0, 1, "stream1", "stream2"]
+            - sum(
+                model.fs.unit.stream2_equilibrium_reaction_extent[0, 1, e]
+                * model.fs.unit.stream2_reactions[0, 1].dh_rxn[e]
+                for e in ["e1", "e2"]
+            )
+        )
 
 
 class TestToyProblem:
