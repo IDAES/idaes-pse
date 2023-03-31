@@ -197,11 +197,6 @@ jobs:
           reinstall-target: -r requirements-dev.txt
           notebook-cell-exec-timeout: '600'
           working-dir: ${{ runner.temp }}
-      - name: Display error logs
-        if: failure()
-        working-directory: ${{ runner.temp }}
-        run: |
-          cat *errors.txt || echo "No error logs found"
 
   pytest-site-packages:
     name: Run tests from site-packages (non-editable) installation (${{ matrix.install-mode }}/${{ matrix.os }})
