@@ -25,7 +25,10 @@ def pytest_configure(config: pytest.Config):
         "*/held/*": pytest.mark.xfail(run=False, reason="notebook has 'held' status"),
         "*/archive/*": pytest.mark.skip(reason="notebook is archived"),
         "*/surrogates/best_practices_optimization*": pytest.mark.xfail(
-            condition=sys.version_info > (3, 12), run=True, strict=False, reason="tensorflow ImportError on 3.11",
+            condition=sys.version_info > (3, 11),
+            run=True,
+            strict=False,
+            reason="tensorflow ImportError on 3.11",
         ),
     }
     config.stash[marked] = []
@@ -60,9 +63,7 @@ def pytest_collection_modifyitems(config: pytest.Config, items):
 def pytest_report_collectionfinish(config: pytest.Session):
     lines = []
     for item, pattern, marker in config.stash[marked]:
-        lines += [
-            f"\t{item.nodeid=}\t{pattern=}\t{marker.mark}"
-        ]
+        lines += [f"\t{item.nodeid=}\t{pattern=}\t{marker.mark}"]
     if lines:
         lines.insert(0, "The following items have been marked:")
     return lines
