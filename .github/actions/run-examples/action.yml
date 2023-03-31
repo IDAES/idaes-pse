@@ -40,7 +40,7 @@ runs:
       run: |
         pip install "idaes_examples${_pip_extras} @ git+${_pip_install_url}"
         # uninstall IDAES if installed through idaes_examples so that the version under test can be used
-        pip uninstall --yes ides-pse
+        pip uninstall --yes idaes-pse
 
     - name: Reinstall IDAES
       shell: bash -l {0}
