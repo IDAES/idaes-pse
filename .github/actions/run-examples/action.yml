@@ -36,7 +36,7 @@ runs:
       env:
         PIP_PROGRESS_BAR: 'off'
         _pip_extras: '[jb,dev]'
-        _pip_install_url: https://github.com/${{ inputs.examples-repository }}@${{ inputs.examples-ref }}
+        _pip_install_url: ${{ github.server_url}}/${{ inputs.examples-repository }}@${{ inputs.examples-ref }}
       run: |
         pip install "idaes_examples${_pip_extras} @ git+${_pip_install_url}"
         # uninstall IDAES if installed through idaes_examples so that the version under test can be used
@@ -51,18 +51,15 @@ runs:
       working-directory: ${{ inputs.working-dir }}
       shell: bash -l {0}
       env:
+        PYTONPATH: ${{ github.action_path }}
         PYTEST_ADDOPTS: >-
           --color=yes
           --durations=0
-          -n=auto
-          --nbmake
+          -p no:xdist
           --nbmake-timeout=${{ inputs.notebook-cell-exec-timeout }}
-          --pyargs
-          idaes_examples.notebooks.docs
-          idaes_examples.notebooks.active
       run: |
         rm -rf *  # ensure directory is empty
-        pytest
+        python -m examples_for_idaes_ci
 
     - name: Display content of working directory after run
       shell: bash -l {0}
