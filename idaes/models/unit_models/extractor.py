@@ -40,7 +40,6 @@ __author__ = "Andrew Lee"
 # TODO: Initializer object
 # TODO: Could look at using Pyomo DAE for the length domain, but this would make
 # it harder to do side feeds.
-# TODO: heat of reaction
 
 
 @declare_process_block_class("Extractor")
@@ -457,8 +456,7 @@ class ExtractorData(UnitModelBlockData):
                                 for r in sconfig.reaction_package.rate_reaction_idx
                             )
                         )
-                    else:
-                        return Constraint.Skip
+                    return Constraint.Skip
 
                 rate_reaction_constraint = Constraint(
                     self.flowsheet().time,
@@ -520,8 +518,7 @@ class ExtractorData(UnitModelBlockData):
                                 for r in sconfig.reaction_package.equilibrium_reaction_idx
                             )
                         )
-                    else:
-                        return Constraint.Skip
+                    return Constraint.Skip
 
                 equilibrium_reaction_constraint = Constraint(
                     self.flowsheet().time,
@@ -577,8 +574,7 @@ class ExtractorData(UnitModelBlockData):
                                 for r in sconfig.property_package.inherent_reaction_idx
                             )
                         )
-                    else:
-                        return Constraint.Skip
+                    return Constraint.Skip
 
                 inherent_reaction_constraint = Constraint(
                     self.flowsheet().time,
