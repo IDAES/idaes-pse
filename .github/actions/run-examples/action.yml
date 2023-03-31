@@ -26,6 +26,11 @@ inputs:
     required: false
     default: ${{ runner.temp }}
 
+  pytest-extra-flags:
+    description: Extra flag to pass to pytest
+    required: false
+    default: ''
+
 runs:
   using: composite
   steps:
@@ -61,6 +66,7 @@ runs:
           --durations=0
           -p no:xdist
           --nbmake-timeout=${{ inputs.notebook-cell-exec-timeout }}
+          ${{ inputs.pytest-extra-flags }}
       run: |
         rm -rf *  # ensure directory is empty
         python -m examples_for_idaes_ci
