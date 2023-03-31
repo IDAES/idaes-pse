@@ -38,14 +38,18 @@ runs:
         _pip_extras: '[jb,dev]'
         _pip_install_url: ${{ github.server_url}}/${{ inputs.examples-repository }}@${{ inputs.examples-ref }}
       run: |
+        echo '::group::Output of `pip install idaes_examples`'
         pip install "idaes_examples${_pip_extras} @ git+${_pip_install_url}"
+        echo '::endgroup::'
         # uninstall IDAES if installed through idaes_examples so that the version under test can be used
         pip uninstall --yes idaes-pse
 
     - name: Reinstall IDAES
       shell: bash -l {0}
       run: |
+        echo '::group::Output of `pip install ${{ inputs.reinstall-target }}`'
         pip install ${{ inputs.reinstall-target }}
+        echo '::endgroup::'
 
     - name: Run notebooks through pytest
       working-directory: ${{ inputs.working-dir }}
