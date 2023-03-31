@@ -69,9 +69,11 @@ def run_pytest(
     if ignore_conftest:
         args += ["--noconftest"]
     if ignore_inifile:
-        args += ["-c", os.devnull]
+        empty_file_for_ignoring = rootdir / "__empty__"
+        empty_file_for_ignoring.write_text("")
+        args += ["-c", empty_file_for_ignoring]
 
-    with _temp_cwd(rootdir):
+    with _temp_cwd(rootdir) as p:
         res = pytest.main(
             args,
             **kwargs,
