@@ -16,6 +16,21 @@ from idaes_examples import notebooks
 from idaes_examples import build
 
 
+matchmarker = pytest.StashKey()
+marked = pytest.StashKey()
+
+
+def pytest_configure(config: pytest.Config):
+    config.stash[matchmarker] = {
+        "*/held/*": pytest.mark.xfail(run=False, reason="notebook has 'held' status"),
+        "*/archive/*": pytest.mark.skip(reason="notebook is archived"),
+        "*/surrogates/best_practices_optimization*": pytest.mark.xfail(
+            condition=sys.version_info > (3, 12), run=True, strict=False, reason="tensorflow ImportError on 3.11",
+        ),
+    }
+    config.stash[marked] = []
+
+
 def pytest_sessionstart(session: pytest.Session):
     build.preprocess(session.config.rootpath)
 
@@ -32,15 +47,25 @@ def pytest_ignore_collect(collection_path: Path, config: pytest.Config):
         return True
 
 
-def pytest_collection_modifyitems(items):
+def pytest_collection_modifyitems(config: pytest.Config, items):
+
     for item in items:
-        parts = item.path.parts
-        if "held" in parts:
-            item.add_marker(
-                pytest.mark.xfail(run=False, reason="notebook has 'held' status")
-            )
-        if "archive" in parts:
-            item.add_marker(pytest.mark.skip(reason="notebook is archived"))
+        path = item.path
+        for pattern, marker in config.stash[matchmarker].items():
+            if path.match(pattern):
+                item.add_marker(marker)
+                config.stash[marked].append((item, pattern, marker))
+
+
+def pytest_report_collectionfinish(config: pytest.Session):
+    lines = []
+    for item, pattern, marker in config.stash[marked]:
+        lines += [
+            f"\t{item.nodeid=}\t{pattern=}\t{marker.mark}"
+        ]
+    if lines:
+        lines.insert(0, "The following items have been marked:")
+    return lines
 
 
 @contextmanager
