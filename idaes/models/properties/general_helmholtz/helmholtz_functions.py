@@ -63,7 +63,7 @@ _data_dir = os.path.join(_data_dir, "")
 try:
     # When compiling these, I don't bother changing the extension based on OS,
     # so the file name is always ends in .so. It's fine.
-    _flib = find_library("general_helmholtz_external.so")
+    _flib = find_library("general_helmholtz_external")
     ctypes.cdll.LoadLibrary(_flib)
 except Exception:  # pylint: disable=W0703
     _flib = None

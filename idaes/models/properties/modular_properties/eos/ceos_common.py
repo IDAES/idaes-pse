@@ -24,7 +24,7 @@ from pyomo.common.fileutils import find_library
 try:
     # When compiling these, I don't bother changing the extension based on OS,
     # so the file name is always ends in .so. It's fine.
-    cubic_so_path = find_library("cubic_roots.so")
+    cubic_so_path = find_library("cubic_roots")
     ctypes.cdll.LoadLibrary(cubic_so_path)
 except Exception:  # pylint: disable=W0703
     cubic_so_path = None

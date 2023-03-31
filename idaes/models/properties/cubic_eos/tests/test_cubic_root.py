@@ -17,6 +17,7 @@ import pytest
 import pyomo.environ as pyo
 import idaes
 from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
+from idaes.models.properties.modular_properties.eos.ceos_common import cubic_so_path
 
 
 def cubic_function(z, b, c, d):
@@ -56,7 +57,7 @@ def test_cubic_eos_available():
 @pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 @pytest.mark.unit
 def test_general_cubic_root_finder():
-    plib = os.path.join(idaes.bin_directory, "cubic_roots.so")
+    plib = cubic_so_path
     m = pyo.ConcreteModel()
     m.croot_l = pyo.ExternalFunction(library=plib, function="cubic_root_l")
     m.croot_h = pyo.ExternalFunction(library=plib, function="cubic_root_h")
