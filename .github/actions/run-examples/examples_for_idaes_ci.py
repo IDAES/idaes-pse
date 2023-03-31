@@ -36,7 +36,9 @@ def pytest_collection_modifyitems(items):
     for item in items:
         parts = item.path.parts
         if "held" in parts:
-            item.add_marker(pytest.mark.xfail(run=False, reason="notebook has 'held' status"))
+            item.add_marker(
+                pytest.mark.xfail(run=False, reason="notebook has 'held' status")
+            )
         if "archive" in parts:
             item.add_marker(pytest.mark.skip(reason="notebook is archived"))
 
@@ -52,12 +54,12 @@ def _temp_cwd(path: Path):
 
 
 def run_pytest(
-        rootdir: Path,
-        args: List[str],
-        ignore_conftest: bool = True,
-        ignore_inifile: bool = True,
-        **kwargs,
-    ):
+    rootdir: Path,
+    args: List[str],
+    ignore_conftest: bool = True,
+    ignore_inifile: bool = True,
+    **kwargs,
+):
     args = [
         str(rootdir),
         f"--rootdir={rootdir}",
@@ -95,5 +97,5 @@ def main(args):
     return res
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
