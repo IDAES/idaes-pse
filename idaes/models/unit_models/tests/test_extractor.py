@@ -62,6 +62,7 @@ from idaes.core.util.initialization import (
 from idaes.core.util.testing import (
     PhysicalParameterTestBlock,
     ReactionParameterTestBlock,
+    ReactionBlock,
 )
 
 
@@ -290,11 +291,15 @@ class TestBuild:
             is model.fs.properties1
         )
         assert model.fs.unit.config.streams["stream1"].property_package_args == {}
+        assert model.fs.unit.config.streams["stream1"].reaction_package is None
+        assert model.fs.unit.config.streams["stream1"].reaction_package_args == {}
         assert (
             model.fs.unit.config.streams["stream1"].flow_direction
             is FlowDirection.forward
         )
         assert model.fs.unit.config.streams["stream1"].has_feed
+        assert not model.fs.unit.config.streams["stream1"].has_rate_reactions
+        assert not model.fs.unit.config.streams["stream1"].has_equilibrium_reactions
         assert model.fs.unit.config.streams["stream1"].side_streams is None
         assert model.fs.unit.config.streams["stream1"].has_energy_balance
         assert model.fs.unit.config.streams["stream1"].has_pressure_balance
@@ -305,11 +310,15 @@ class TestBuild:
             is model.fs.properties2
         )
         assert model.fs.unit.config.streams["stream2"].property_package_args == {}
+        assert model.fs.unit.config.streams["stream2"].reaction_package is None
+        assert model.fs.unit.config.streams["stream2"].reaction_package_args == {}
         assert (
             model.fs.unit.config.streams["stream2"].flow_direction
             is FlowDirection.backward
         )
         assert model.fs.unit.config.streams["stream2"].has_feed
+        assert not model.fs.unit.config.streams["stream2"].has_rate_reactions
+        assert not model.fs.unit.config.streams["stream2"].has_equilibrium_reactions
         assert model.fs.unit.config.streams["stream2"].side_streams is None
         assert model.fs.unit.config.streams["stream2"].has_energy_balance
         assert model.fs.unit.config.streams["stream2"].has_pressure_balance
@@ -378,6 +387,31 @@ class TestBuild:
             match="No common components found in property packages. Extractor "
             "model assumes mass transfer occurs between components with the "
             "same name in different streams.",
+        ):
+            m.fs.unit._verify_inputs()
+
+    @pytest.mark.unit
+    def test_verify_inputs_reactions_with_no_package(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties1 = Parameters1()
+
+        m.fs.unit = ECFrame(
+            number_of_finite_elements=2,
+            streams={
+                "stream1": {
+                    "property_package": m.fs.properties1,
+                    "has_rate_reactions": True,
+                },
+                "stream2": {"property_package": m.fs.properties1},
+            },
+        )
+
+        with pytest.raises(
+            ConfigurationError,
+            match="Stream stream1 was set to include reactions, "
+            "but no reaction package was provided.",
         ):
             m.fs.unit._verify_inputs()
 
@@ -1492,6 +1526,7 @@ class TestReactions:
         m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = PhysicalParameterTestBlock()
+        m.fs.reactions = ReactionParameterTestBlock(property_package=m.fs.properties)
 
         m.fs.unit = ECFrame(
             number_of_finite_elements=2,
@@ -1655,6 +1690,141 @@ class TestReactions:
                 - model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
                 + sum(
                     model.fs.unit.stream2_inherent_reaction_generation[0, 1, p, j]
+                    for p in ["p1", "p2"]
+                )
+            )
+
+    @pytest.mark.unit
+    def test_reaction_blocks(self, model):
+        model.fs.unit.config.streams["stream1"].reaction_package = model.fs.reactions
+        model.fs.unit.config.streams["stream2"].reaction_package = model.fs.reactions
+        model.fs.unit.config.streams["stream2"].has_equilibrium_reactions = True
+
+        model.fs.unit._verify_inputs()
+        model.fs.unit._build_state_blocks()
+
+        assert isinstance(model.fs.unit.stream1_reactions, ReactionBlock)
+        assert len(model.fs.unit.stream1_reactions) == 2
+        for k, b in model.fs.unit.stream1_reactions.items():
+            assert k in [(0, 1), (0, 2)]
+            assert not b.config.has_equilibrium
+
+        assert isinstance(model.fs.unit.stream2_reactions, ReactionBlock)
+        assert len(model.fs.unit.stream2_reactions) == 2
+        for k, b in model.fs.unit.stream2_reactions.items():
+            assert k in [(0, 1), (0, 2)]
+            assert b.config.has_equilibrium
+
+    @pytest.mark.unit
+    def test_equilibrium_reactions(self, model):
+        model.fs.unit.config.streams["stream2"].reaction_package = model.fs.reactions
+        model.fs.unit.config.streams["stream2"].has_equilibrium_reactions = True
+
+        model.fs.unit._verify_inputs()
+        flow_basis, uom = model.fs.unit._build_state_blocks()
+        model.fs.unit._build_material_balance_constraints(flow_basis, uom)
+
+        assert not hasattr(model.fs.unit, "stream1_equilibrium_reaction_extent")
+        assert not hasattr(model.fs.unit, "stream1_equilibrium_reaction_generation")
+        assert not hasattr(model.fs.unit, "stream1_equilibrium_reaction_constraint")
+
+        assert isinstance(model.fs.unit.stream2_equilibrium_reaction_extent, Var)
+        assert len(model.fs.unit.stream2_equilibrium_reaction_extent) == 4
+        for k in model.fs.unit.stream2_equilibrium_reaction_extent:
+            assert k in [(0, 1, "e1"), (0, 1, "e2"), (0, 2, "e1"), (0, 2, "e2")]
+
+        assert isinstance(model.fs.unit.stream2_equilibrium_reaction_generation, Var)
+        assert len(model.fs.unit.stream2_equilibrium_reaction_generation) == 8
+        for k in model.fs.unit.stream2_equilibrium_reaction_generation:
+            assert k in [
+                (0, 1, "p1", "c1"),
+                (0, 1, "p1", "c2"),
+                (0, 1, "p2", "c1"),
+                (0, 1, "p2", "c2"),
+                (0, 2, "p1", "c1"),
+                (0, 2, "p1", "c2"),
+                (0, 2, "p2", "c1"),
+                (0, 2, "p2", "c2"),
+            ]
+
+        assert isinstance(
+            model.fs.unit.stream2_equilibrium_reaction_constraint, Constraint
+        )
+        assert len(model.fs.unit.stream2_equilibrium_reaction_constraint) == 8
+        for k in model.fs.unit.stream2_equilibrium_reaction_constraint:
+            assert k in [
+                (0, 1, "p1", "c1"),
+                (0, 1, "p1", "c2"),
+                (0, 1, "p2", "c1"),
+                (0, 1, "p2", "c2"),
+                (0, 2, "p1", "c1"),
+                (0, 2, "p1", "c2"),
+                (0, 2, "p2", "c1"),
+                (0, 2, "p2", "c2"),
+            ]
+
+        for j in [
+            "c1",
+            "c2",
+        ]:  # has +ve mass transfer, forward flow, no reactions
+            assert str(model.fs.unit.stream1_material_balance[0, 1, j]._expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream1_inlet_state[0].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream1[0, 1].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                + model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
+            )
+            assert str(model.fs.unit.stream1_material_balance[0, 2, j]._expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream1[0, 1].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream1[0, 2].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                + model.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
+            )
+
+        for j in [
+            "c1",
+            "c2",
+        ]:  # has -ve mass transfer, forward flow, equilibrium reactions
+            assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream2_inlet_state[0].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream2[0, 2].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - model.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
+                + sum(
+                    model.fs.unit.stream2_equilibrium_reaction_generation[0, 2, p, j]
+                    for p in ["p1", "p2"]
+                )
+            )
+            assert str(model.fs.unit.stream2_material_balance[0, 1, j]._expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream2[0, 2].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream2[0, 1].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
+                + sum(
+                    model.fs.unit.stream2_equilibrium_reaction_generation[0, 1, p, j]
                     for p in ["p1", "p2"]
                 )
             )

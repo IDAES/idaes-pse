@@ -27,6 +27,7 @@ from idaes.core import (
 )
 from idaes.core.util.config import (
     is_physical_parameter_block,
+    is_reaction_parameter_block,
 )
 from idaes.core.util.exceptions import ConfigurationError, BurntToast
 
@@ -74,6 +75,31 @@ class ExtractorData(UnitModelBlockData):
         ),
     )
     _stream_config.declare(
+        "reaction_package",
+        ConfigValue(
+            default=None,
+            domain=is_reaction_parameter_block,
+            description="Reaction package to use for stream",
+            doc="""Reaction parameter object used to define reaction calculations
+    for stream. **default** - None.
+    **Valid values:** {
+    **None** - no reaction package,
+    **ReactionParameterBlock** - a ReactionParameterBlock object.}""",
+        ),
+    )
+    _stream_config.declare(
+        "reaction_package_args",
+        ConfigDict(
+            implicit=True,
+            description="Arguments to use for constructing reaction packages",
+            doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
+    and used when constructing these,
+    **default** - None.
+    **Valid values:** {
+    see reaction package for documentation.}""",
+        ),
+    )
+    _stream_config.declare(
         "flow_direction",
         ConfigValue(
             default=FlowDirection.forward,
@@ -91,6 +117,22 @@ class ExtractorData(UnitModelBlockData):
             doc="Bool indicating whether stream has a feed.",
             description="Bool indicating whether stream has a feed Port and inlet "
             "state, or if all flow is provided via mass transfer. Default=True.",
+        ),
+    )
+    _stream_config.declare(
+        "has_rate_reactions",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            doc="Bool indicating whether rate-based reactions occur in stream.",
+        ),
+    )
+    _stream_config.declare(
+        "has_equilibrium_reactions",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            doc="Bool indicating whether equilibrium-based reactions occur in stream.",
         ),
     )
     _stream_config.declare(
@@ -225,6 +267,15 @@ class ExtractorData(UnitModelBlockData):
                 "mass transfer occurs between components with the same name in different streams."
             )
 
+        # Check that reaction block was provided if reactions requested
+        for s, sconfig in self.config.streams.items():
+            if (
+                sconfig.has_rate_reactions or sconfig.has_equilibrium_reactions
+            ) and sconfig.reaction_package is None:
+                raise ConfigurationError(
+                    f"Stream {s} was set to include reactions, but no reaction package was provided."
+                )
+
     def _build_state_blocks(self):
         # Build state blocks
         # Placeholders for things we will get from first StateBlock
@@ -295,6 +346,20 @@ class ExtractorData(UnitModelBlockData):
                         f"whilst first stream uses {flow_basis}."
                     )
 
+            # Build reactions blocks if provided
+            if pconfig.reaction_package is not None:
+                tmp_dict = dict(**pconfig.reaction_package_args)
+                tmp_dict["state_block"] = state
+                tmp_dict["has_equilibrium"] = pconfig.has_equilibrium_reactions
+
+                reactions = pconfig.reaction_package.build_reaction_block(
+                    self.flowsheet().time,
+                    self.elements,
+                    doc=f"Reaction properties for stream {stream}",
+                    **tmp_dict,
+                )
+                self.add_component(stream + "_reactions", reactions)
+
         return flow_basis, uom
 
     def _build_material_balance_constraints(self, flow_basis, uom):
@@ -325,6 +390,73 @@ class ExtractorData(UnitModelBlockData):
             component_list = state_block.component_list
             phase_list = state_block.phase_list
             pc_set = state_block.phase_component_set
+
+            # Get reaction block if present
+            if hasattr(self, stream + "_reactions"):
+                reaction_block = getattr(self, stream + "_reactions")
+
+            # Add equilibrium reaction terms (if required)
+            if sconfig.has_equilibrium_reactions:
+                if not hasattr(sconfig.reaction_package, "equilibrium_reaction_idx"):
+                    raise PropertyNotSupportedError(
+                        f"Reaction package for {stream} does not contain a list of "
+                        "equilibrium reactions (equilibrium_reaction_idx), thus "
+                        "does not support equilibrium-based reactions."
+                    )
+                # Add extents of reaction and stoichiometric constraints
+                equilibrium_reaction_extent = Var(
+                    self.flowsheet().time,
+                    self.elements,
+                    sconfig.reaction_package.equilibrium_reaction_idx,
+                    domain=Reals,
+                    initialize=0.0,
+                    doc=f"Extent of equilibrium reactions in stream {stream}",
+                    units=mb_units,
+                )
+                self.add_component(
+                    stream + "_equilibrium_reaction_extent",
+                    equilibrium_reaction_extent,
+                )
+
+                equilibrium_reaction_generation = Var(
+                    self.flowsheet().time,
+                    self.elements,
+                    pc_set,
+                    domain=Reals,
+                    initialize=0.0,
+                    doc=f"Generation due to equilibrium reactions in stream {stream}",
+                    units=mb_units,
+                )
+                self.add_component(
+                    stream + "_equilibrium_reaction_generation",
+                    equilibrium_reaction_generation,
+                )
+
+                def equilibrium_reaction_rule(b, t, s, p, j):
+                    if (p, j) in pc_set:
+                        return equilibrium_reaction_generation[t, s, p, j] == (
+                            sum(
+                                reaction_block[
+                                    t, s
+                                ].params.equilibrium_reaction_stoichiometry[r, p, j]
+                                * equilibrium_reaction_extent[t, s, r]
+                                for r in sconfig.reaction_package.equilibrium_reaction_idx
+                            )
+                        )
+                    else:
+                        return Constraint.Skip
+
+                equilibrium_reaction_constraint = Constraint(
+                    self.flowsheet().time,
+                    self.elements,
+                    pc_set,
+                    doc=f"Equilibrium reaction stoichiometry for stream {stream}",
+                    rule=equilibrium_reaction_rule,
+                )
+                self.add_component(
+                    stream + "_equilibrium_reaction_constraint",
+                    equilibrium_reaction_constraint,
+                )
 
             # Inherent reaction terms (if required)
             if state_block.include_inherent_reactions:
@@ -425,6 +557,12 @@ class ExtractorData(UnitModelBlockData):
                     elif k[1] == stream and k[2] == j:
                         # Negative mass transfer
                         rhs += -b.material_transfer_term[t, s, k]
+
+                # Add equilibrium reactions (if required)
+                if sconfig.has_equilibrium_reactions:
+                    rhs += sum(
+                        equilibrium_reaction_generation[t, s, p, j] for p in phase_list
+                    )
 
                 # Add inherent reactions (if required)
                 if state_block.include_inherent_reactions:
