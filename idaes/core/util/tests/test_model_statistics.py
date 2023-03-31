@@ -31,6 +31,7 @@ from pyomo.common.collections import ComponentSet
 
 from idaes.core.util.model_statistics import *
 from idaes.core.util.model_statistics import _iter_indexed_block_data_objects
+import idaes.core.util.scaling as iscale
 
 
 @pytest.mark.unit
@@ -327,6 +328,21 @@ def test_variables_near_bounds_set(m):
             ]
         )
 
+    # No scaling factors set, variable near bound set is the same
+    tset = variables_near_bounds_set(m, relative=True)
+    assert len(tset) == 6
+    for i in tset:
+        assert i in ComponentSet(
+            [
+                m.b2["a"].v1,
+                m.b2["b"].v1,
+                m.b2["a"].v2["a"],
+                m.b2["a"].v2["b"],
+                m.b2["b"].v2["a"],
+                m.b2["b"].v2["b"],
+            ]
+        )
+
     m.b2["a"].v1.value = 1.001
     tset = variables_near_bounds_set(m)
     assert len(tset) == 5
@@ -376,12 +392,32 @@ def test_variables_near_bounds_set(m):
         assert i in ComponentSet(
             [m.b2["b"].v1, m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]]
         )
-
-    m.b2["a"].v2["b"].value = None
-    tset = variables_near_bounds_set(m)
-    assert len(tset) == 3
+    # Without scaling factors, nothing changes
+    tset = variables_near_bounds_set(m, relative=True)
+    assert len(tset) == 4
     for i in tset:
-        assert i in ComponentSet([m.b2["b"].v1, m.b2["b"].v2["a"], m.b2["b"].v2["b"]])
+        assert i in ComponentSet(
+            [m.b2["b"].v1, m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]]
+        )
+
+    # When the scaling factor is added the absolute set doesn't change
+    iscale.set_scaling_factor(m.v, 1e-6)
+    tset = variables_near_bounds_set(m, relative=False)
+    assert len(tset) == 4
+    for i in tset:
+        assert i in ComponentSet(
+            [m.b2["b"].v1, m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]]
+        )
+
+    tset = variables_near_bounds_set(m, relative=True)
+    assert len(tset) == 15
+    for i in tset:
+        assert i in ComponentSet(
+            [var for var in m.v.values()]
+            + [m.b2["b"].v1, m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]]
+        )
+    # Clean up
+    iscale.unset_scaling_factor(m.v)
 
 
 @pytest.mark.unit
