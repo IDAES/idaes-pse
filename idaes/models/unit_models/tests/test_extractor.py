@@ -1829,6 +1829,118 @@ class TestReactions:
                 )
             )
 
+    @pytest.mark.unit
+    def test_equilibrium_reactions(self, model):
+        model.fs.unit.config.streams["stream2"].reaction_package = model.fs.reactions
+        model.fs.unit.config.streams["stream2"].has_rate_reactions = True
+
+        model.fs.unit._verify_inputs()
+        flow_basis, uom = model.fs.unit._build_state_blocks()
+        model.fs.unit._build_material_balance_constraints(flow_basis, uom)
+
+        assert not hasattr(model.fs.unit, "stream1_rate_reaction_extent")
+        assert not hasattr(model.fs.unit, "stream1_rate_reaction_generation")
+        assert not hasattr(model.fs.unit, "stream1_rate_reaction_constraint")
+
+        assert isinstance(model.fs.unit.stream2_rate_reaction_extent, Var)
+        assert len(model.fs.unit.stream2_rate_reaction_extent) == 4
+        for k in model.fs.unit.stream2_rate_reaction_extent:
+            assert k in [(0, 1, "r1"), (0, 1, "r2"), (0, 2, "r1"), (0, 2, "r2")]
+
+        assert isinstance(model.fs.unit.stream2_rate_reaction_generation, Var)
+        assert len(model.fs.unit.stream2_rate_reaction_generation) == 8
+        for k in model.fs.unit.stream2_rate_reaction_generation:
+            assert k in [
+                (0, 1, "p1", "c1"),
+                (0, 1, "p1", "c2"),
+                (0, 1, "p2", "c1"),
+                (0, 1, "p2", "c2"),
+                (0, 2, "p1", "c1"),
+                (0, 2, "p1", "c2"),
+                (0, 2, "p2", "c1"),
+                (0, 2, "p2", "c2"),
+            ]
+
+        assert isinstance(model.fs.unit.stream2_rate_reaction_constraint, Constraint)
+        assert len(model.fs.unit.stream2_rate_reaction_constraint) == 8
+        for k in model.fs.unit.stream2_rate_reaction_constraint:
+            assert k in [
+                (0, 1, "p1", "c1"),
+                (0, 1, "p1", "c2"),
+                (0, 1, "p2", "c1"),
+                (0, 1, "p2", "c2"),
+                (0, 2, "p1", "c1"),
+                (0, 2, "p1", "c2"),
+                (0, 2, "p2", "c1"),
+                (0, 2, "p2", "c2"),
+            ]
+
+        for j in [
+            "c1",
+            "c2",
+        ]:  # has +ve mass transfer, forward flow, no reactions
+            assert str(model.fs.unit.stream1_material_balance[0, 1, j]._expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream1_inlet_state[0].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream1[0, 1].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                + model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
+            )
+            assert str(model.fs.unit.stream1_material_balance[0, 2, j]._expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream1[0, 1].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream1[0, 2].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                + model.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
+            )
+
+        for j in [
+            "c1",
+            "c2",
+        ]:  # has -ve mass transfer, forward flow, rate reactions
+            assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream2_inlet_state[0].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream2[0, 2].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - model.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
+                + sum(
+                    model.fs.unit.stream2_rate_reaction_generation[0, 2, p, j]
+                    for p in ["p1", "p2"]
+                )
+            )
+            assert str(model.fs.unit.stream2_material_balance[0, 1, j]._expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream2[0, 2].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream2[0, 1].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
+                + sum(
+                    model.fs.unit.stream2_rate_reaction_generation[0, 1, p, j]
+                    for p in ["p1", "p2"]
+                )
+            )
+
 
 class TestToyProblem:
     @pytest.fixture(scope="class")

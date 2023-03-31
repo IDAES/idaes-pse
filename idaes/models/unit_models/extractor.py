@@ -29,7 +29,11 @@ from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
 )
-from idaes.core.util.exceptions import ConfigurationError, BurntToast
+from idaes.core.util.exceptions import (
+    ConfigurationError,
+    BurntToast,
+    PropertyNotSupportedError,
+)
 
 __author__ = "Andrew Lee"
 
@@ -396,6 +400,70 @@ class ExtractorData(UnitModelBlockData):
                 reaction_block = getattr(self, stream + "_reactions")
 
             # Add equilibrium reaction terms (if required)
+            if sconfig.has_rate_reactions:
+                if not hasattr(sconfig.reaction_package, "rate_reaction_idx"):
+                    raise PropertyNotSupportedError(
+                        f"Reaction package for {stream} does not contain a list of "
+                        "rate reactions (rate_reaction_idx), thus "
+                        "does not support rate-based reactions."
+                    )
+                # Add extents of reaction and stoichiometric constraints
+                # We will assume the user will define how extent will be calculated
+                rate_reaction_extent = Var(
+                    self.flowsheet().time,
+                    self.elements,
+                    sconfig.reaction_package.rate_reaction_idx,
+                    domain=Reals,
+                    initialize=0.0,
+                    doc=f"Extent of rate-based reactions in stream {stream}",
+                    units=mb_units,
+                )
+                self.add_component(
+                    stream + "_rate_reaction_extent",
+                    rate_reaction_extent,
+                )
+
+                rate_reaction_generation = Var(
+                    self.flowsheet().time,
+                    self.elements,
+                    pc_set,
+                    domain=Reals,
+                    initialize=0.0,
+                    doc=f"Generation due to rate-based reactions in stream {stream}",
+                    units=mb_units,
+                )
+                self.add_component(
+                    stream + "_rate_reaction_generation",
+                    rate_reaction_generation,
+                )
+
+                def rate_reaction_rule(b, t, s, p, j):
+                    if (p, j) in pc_set:
+                        return rate_reaction_generation[t, s, p, j] == (
+                            sum(
+                                reaction_block[t, s].params.rate_reaction_stoichiometry[
+                                    r, p, j
+                                ]
+                                * rate_reaction_extent[t, s, r]
+                                for r in sconfig.reaction_package.rate_reaction_idx
+                            )
+                        )
+                    else:
+                        return Constraint.Skip
+
+                rate_reaction_constraint = Constraint(
+                    self.flowsheet().time,
+                    self.elements,
+                    pc_set,
+                    doc=f"Rate-based reaction stoichiometry for stream {stream}",
+                    rule=rate_reaction_rule,
+                )
+                self.add_component(
+                    stream + "_rate_reaction_constraint",
+                    rate_reaction_constraint,
+                )
+
+            # Add equilibrium reaction terms (if required)
             if sconfig.has_equilibrium_reactions:
                 if not hasattr(sconfig.reaction_package, "equilibrium_reaction_idx"):
                     raise PropertyNotSupportedError(
@@ -557,6 +625,10 @@ class ExtractorData(UnitModelBlockData):
                     elif k[1] == stream and k[2] == j:
                         # Negative mass transfer
                         rhs += -b.material_transfer_term[t, s, k]
+
+                # Add rate reactions (if required)
+                if sconfig.has_rate_reactions:
+                    rhs += sum(rate_reaction_generation[t, s, p, j] for p in phase_list)
 
                 # Add equilibrium reactions (if required)
                 if sconfig.has_equilibrium_reactions:
