@@ -45,9 +45,9 @@ jobs:
     name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.runner-image }}
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
-        python-version: ['3.8', '3.11']
+        python-version: ['3.8', '3.10']
         os:
           - linux
           - win64
