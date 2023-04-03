@@ -830,6 +830,6 @@ class HelmTurbineMultistageData(UnitModelBlockData):
 
     def _get_stream_table_contents(self, time_point=0):
         raise NotImplementedError(
-            "The multi-stage turbine model ha not implemented the code necessary to "
+            "The multi-stage turbine model has not implemented the code necessary to "
             "construct a stream table."
         )
