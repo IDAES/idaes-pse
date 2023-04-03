@@ -109,3 +109,46 @@ def test_wflash(build_phase_separator):
     assert pytest.approx(
         pyo.value(m.fs.unit.mixed_state[0].enth_mol_phase["Vap"]), abs=1e-3
     ) == pyo.value(m.fs.unit.vap_state[0].enth_mol)
+
+
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
+@pytest.mark.unit
+def test_get_stream_table_contents(build_phase_separator):
+    stable = build_phase_separator.fs.unit._get_stream_table_contents()
+
+    expected = {
+        "Units": {
+            "Mass Flow": getattr(pyo.units.pint_registry, "kg/s"),
+            "Molar Flow": getattr(pyo.units.pint_registry, "mol/s"),
+            "Molar Enthalpy": getattr(pyo.units.pint_registry, "J/mol"),
+            "P": getattr(pyo.units.pint_registry, "Pa"),
+            "T": getattr(pyo.units.pint_registry, "K"),
+            "Vapor Fraction": getattr(pyo.units.pint_registry, "dimensionless"),
+        },
+        "Inlet": {
+            "Mass Flow": pytest.approx(0.01801527, rel=1e-5),
+            "Molar Flow": pytest.approx(1.0, rel=1e-5),
+            "Molar Enthalpy": pytest.approx(0.01102139, rel=1e-5),
+            "P": pytest.approx(11032300, rel=1e-5),
+            "T": pytest.approx(270.4877, rel=1e-5),
+            "Vapor Fraction": pytest.approx(0.0, abs=1e-5),
+        },
+        "Vapor Outlet": {
+            "Mass Flow": pytest.approx(0.01801527, rel=1e-5),
+            "Molar Flow": pytest.approx(1.0, rel=1e-5),
+            "Molar Enthalpy": pytest.approx(0.01102139, rel=1e-5),
+            "P": pytest.approx(11032300, rel=1e-5),
+            "T": pytest.approx(270.4877, rel=1e-5),
+            "Vapor Fraction": pytest.approx(0.0, abs=1e-5),
+        },
+        "Liquid Outlet": {
+            "Mass Flow": pytest.approx(0.01801527, rel=1e-5),
+            "Molar Flow": pytest.approx(1.0, rel=1e-5),
+            "Molar Enthalpy": pytest.approx(0.01102139, rel=1e-5),
+            "P": pytest.approx(11032300, rel=1e-5),
+            "T": pytest.approx(270.4877, rel=1e-5),
+            "Vapor Fraction": pytest.approx(0.0, abs=1e-5),
+        },
+    }
+
+    assert stable.to_dict() == expected
