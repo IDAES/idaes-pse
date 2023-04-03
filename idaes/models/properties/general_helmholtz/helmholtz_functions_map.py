@@ -10,7 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""Information about units of measure and mapping between Pyomo function names 
+"""Information about units of measure and mapping between Pyomo function names
 and external function names.
 """
 
