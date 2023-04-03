@@ -376,7 +376,7 @@ class HelmholtzThermoExpressions(object):
             x = blk.vf_up_func(c, state1, p, _data_dir)
         elif sv == StateVars.TPX:
             if x is None:
-                raise RuntimeError(f"There is no nice way to calculate x from T and P")
+                raise RuntimeError("There is no nice way to calculate x from T and P")
         return x
 
     def s(self, **kwargs):

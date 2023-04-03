@@ -16,7 +16,6 @@
 
 import os
 from pyomo.common.fileutils import find_library
-import idaes
 
 
 def functions_lib():

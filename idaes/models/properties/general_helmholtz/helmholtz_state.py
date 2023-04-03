@@ -474,7 +474,6 @@ class HelmholtzStateBlockData(StateBlockData):
 
     def _tpx_phase_eq(self):
         params = self.config.parameters
-        cmp = params.pure_component
         eps_pu = params.smoothing_pressure_under
         eps_po = params.smoothing_pressure_over
         priv_plist = params.private_phase_list
@@ -575,9 +574,6 @@ class HelmholtzStateBlockData(StateBlockData):
         # constraints. Beyond this everything else is common.
         self._state_vars()
 
-        # Some parameters/variables show up in several expressions, so to
-        # enhance readability and compactness, give them short aliases
-        mw = self.mw
         # P is pressure in kPa for external function calls
         P = self.pressure * params.uc["Pa to kPa"]
         T = self.temperature
