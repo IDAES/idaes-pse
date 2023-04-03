@@ -998,7 +998,7 @@ external_function_map = {
         "units": pu.kJ / pu.kg,
         "arg_units": [pu.dimensionless, pu.kPa, pu.dimensionless],
         "doc": "h_v(p, tau)",
-        "latex_symbol": "\h_v",
+        "latex_symbol": "h_v",
     },
     "hlpt_func": {  # liquid enthalpy
         "fname": "hlpt",
