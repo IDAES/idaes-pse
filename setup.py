@@ -75,7 +75,7 @@ kwargs = dict(
         "nbformat",
         "numpy",
         "omlt==1.1",  # fix the version for now as package evolves
-        "pandas < 2",
+        "pandas",
         "pyomo @ https://github.com/IDAES/pyomo/archive/6.5.1.idaes.2023.03.28.zip",
         "sympy",  # pyomo differentiation
         "pint",  # pyomo units
