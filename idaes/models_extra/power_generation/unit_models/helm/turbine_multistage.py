@@ -827,3 +827,9 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             )
             # Set power equation scale factor
             iscale.constraint_scaling_transform(c, power_scale, overwrite=False)
+
+    def _get_stream_table_contents(self, time_point=0):
+        raise NotImplementedError(
+            "The multi-stage turbine model has not implemented the code necessary to "
+            "construct a stream table."
+        )

@@ -686,7 +686,8 @@ def test_ipopt_solve_halt_on_error(capsys):
     m = pyo.ConcreteModel()
 
     m.v = pyo.Var(initialize=-5, bounds=(None, -1))
-    m.c = pyo.Constraint(expr=pyo.log(m.v) == 1)
+    m.e = pyo.Expression(expr=pyo.log(m.v))
+    m.c = pyo.Constraint(expr=m.e == 1)
 
     try:
         results = ipopt_solve_halt_on_error(m)
@@ -694,4 +695,4 @@ def test_ipopt_solve_halt_on_error(capsys):
         pass
 
     captured = capsys.readouterr()
-    assert "Error evaluating constraint c: can't evaluate log(-5)." in captured.out
+    assert "c: can't evaluate log(-5)." in captured.out

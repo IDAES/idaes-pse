@@ -153,7 +153,20 @@ class ComponentData(ProcessBlockData):
             "phase. Must be a dict with keys being phase names."
         ),
     )
-
+    CONFIG.declare(
+        "visc_d_phase_comp",
+        ConfigValue(
+            description="Method to calculate pure component viscosities in each "
+            "phase. Must be a dict with keys being phase names."
+        ),
+    )
+    CONFIG.declare(
+        "therm_cond_phase_comp",
+        ConfigValue(
+            description="Method to calculate pure component thermal conductivities in each "
+            "phase. Must be a dict with keys being phase names."
+        ),
+    )
     CONFIG.declare(
         "has_vapor_pressure",
         ConfigValue(
