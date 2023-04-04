@@ -335,13 +335,20 @@ class PropertyTestHarness(object):
 
     @pytest.mark.component
     def test_CV_integration(self, frame):
+        # Phase equilibrium does not make sense for single phase systems, so check
+        # and only set to True if more than one phase present.
+        if len(frame.fs.params.phase_list) > 1:
+            has_pe = True
+        else:
+            has_pe = False
+
         frame.fs.cv = ControlVolume0DBlock(property_package=frame.fs.params)
 
         frame.fs.cv.add_geometry()
 
-        frame.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+        frame.fs.cv.add_state_blocks(has_phase_equilibrium=has_pe)
 
-        frame.fs.cv.add_material_balances(has_phase_equilibrium=True)
+        frame.fs.cv.add_material_balances(has_phase_equilibrium=has_pe)
 
         frame.fs.cv.add_energy_balances()
 

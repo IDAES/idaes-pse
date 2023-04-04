@@ -49,3 +49,61 @@ def test_splitter():
     assert pyo.value(m.fs.unit.o1.enth_mol[0]) == pytest.approx(4000, rel=1e-7)
     assert pyo.value(m.fs.unit.o2.enth_mol[0]) == pytest.approx(4000, rel=1e-7)
     assert pyo.value(m.fs.unit.o3.enth_mol[0]) == pytest.approx(4000, rel=1e-7)
+
+
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
+@pytest.mark.unit
+def test_get_stream_table_contents():
+    m = pyo.ConcreteModel()
+    m.fs = idaes.core.FlowsheetBlock(dynamic=False)
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
+    m.fs.unit = HelmSplitter(
+        property_package=m.fs.properties, outlet_list=["o1", "o2", "o3"]
+    )
+
+    stable = m.fs.unit._get_stream_table_contents()
+
+    expected = {
+        "Units": {
+            "Mass Flow": getattr(pyo.units.pint_registry, "kg/s"),
+            "Molar Flow": getattr(pyo.units.pint_registry, "mol/s"),
+            "Molar Enthalpy": getattr(pyo.units.pint_registry, "J/mol"),
+            "P": getattr(pyo.units.pint_registry, "Pa"),
+            "T": getattr(pyo.units.pint_registry, "K"),
+            "Vapor Fraction": getattr(pyo.units.pint_registry, "dimensionless"),
+        },
+        "inlet": {
+            "Mass Flow": pytest.approx(0.01801527, rel=1e-5),
+            "Molar Flow": pytest.approx(1.0, rel=1e-5),
+            "Molar Enthalpy": pytest.approx(0.01102139, rel=1e-5),
+            "P": pytest.approx(11032300, rel=1e-5),
+            "T": pytest.approx(270.4877, rel=1e-5),
+            "Vapor Fraction": pytest.approx(0.0, abs=1e-5),
+        },
+        "o1": {
+            "Mass Flow": pytest.approx(0.01801527, rel=1e-5),
+            "Molar Flow": pytest.approx(1.0, rel=1e-5),
+            "Molar Enthalpy": pytest.approx(0.01102139, rel=1e-5),
+            "P": pytest.approx(11032300, rel=1e-5),
+            "T": pytest.approx(270.4877, rel=1e-5),
+            "Vapor Fraction": pytest.approx(0.0, abs=1e-5),
+        },
+        "o2": {
+            "Mass Flow": pytest.approx(0.01801527, rel=1e-5),
+            "Molar Flow": pytest.approx(1.0, rel=1e-5),
+            "Molar Enthalpy": pytest.approx(0.01102139, rel=1e-5),
+            "P": pytest.approx(11032300, rel=1e-5),
+            "T": pytest.approx(270.4877, rel=1e-5),
+            "Vapor Fraction": pytest.approx(0.0, abs=1e-5),
+        },
+        "o3": {
+            "Mass Flow": pytest.approx(0.01801527, rel=1e-5),
+            "Molar Flow": pytest.approx(1.0, rel=1e-5),
+            "Molar Enthalpy": pytest.approx(0.01102139, rel=1e-5),
+            "P": pytest.approx(11032300, rel=1e-5),
+            "T": pytest.approx(270.4877, rel=1e-5),
+            "Vapor Fraction": pytest.approx(0.0, abs=1e-5),
+        },
+    }
+
+    assert stable.to_dict() == expected

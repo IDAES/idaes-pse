@@ -297,6 +297,17 @@ class HelmholtzStateBlockData(StateBlockData):
         params = self.config.parameters
         cmp = params.pure_component
         phase_set = params.config.phase_presentation
+
+        # Check for inconsistent phase presentation and phase equilibrium
+        if phase_set == PhaseType.MIX and self.config.has_phase_equilibrium:
+            _log.warning(
+                "Helmholtz EoS packages using Mixed phase representation ignore the "
+                "'has_phase_equilibrium' configuration argument. However, setting "
+                "this to True can result in errors when constructing material balances "
+                "due to only having a single phase (thus phase transfer terms cannot "
+                "be constructed)."
+            )
+
         # Add flow variable
         if self.amount_basis == AmountBasis.MOLE:
             self.flow_mol = pyo.Var(
