@@ -57,10 +57,9 @@ def test_cubic_eos_available():
 @pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 @pytest.mark.unit
 def test_general_cubic_root_finder():
-    plib = cubic_so_path
     m = pyo.ConcreteModel()
-    m.croot_l = pyo.ExternalFunction(library=plib, function="cubic_root_l")
-    m.croot_h = pyo.ExternalFunction(library=plib, function="cubic_root_h")
+    m.croot_l = pyo.ExternalFunction(library=cubic_so_path, function="cubic_root_l")
+    m.croot_h = pyo.ExternalFunction(library=cubic_so_path, function="cubic_root_h")
     param_dict = {
         1: {"b": -3, "c": 0.5, "d": -1, "three": False},
         2: {"b": -3, "c": 0.5, "d": 1, "three": True},
