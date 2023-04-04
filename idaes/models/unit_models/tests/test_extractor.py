@@ -2297,6 +2297,17 @@ class LiCoStateBlock1Data(StateBlockData):
 
 
 class TestLiCODiafiltration:
+    """
+    Test case based on:
+
+    Wamble, N.P., Eugene, E.A., Phillip, W.A., Dowling, A.W.,
+    'Optimal Diafiltration Membrane Cascades Enable Green Recycling
+    of Spent Lithium-Ion Batteries',
+    ACS Sustainable Chem. Eng. 2022, 10, 12207−12225
+
+    Configuration and results based on Figure 2, Case III
+    """
+
     @pytest.fixture
     def model(self):
         m = ConcreteModel()
