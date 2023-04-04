@@ -494,7 +494,7 @@ Must be True if dynamic = True,
         except AttributeError:
             raise ConfigurationError(
                 f"Unit model {self.name} does not have the standard Port "
-                f"names (inet and outlet). Please contact the unit model "
+                f"names (inlet and outlet). Please contact the unit model "
                 f"developer to develop a unit specific stream table."
             )
 

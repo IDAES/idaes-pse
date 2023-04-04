@@ -31,7 +31,7 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.config import is_physical_parameter_block
-
+from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.solvers import get_solver
@@ -341,3 +341,9 @@ from 1 to num_outlets).}""",
             o_block = getattr(self, "{}_state".format(i))
             s = iscale.get_scaling_factor(o_block[t].flow_mol)
             iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+    def _get_stream_table_contents(self, time_point=0):
+        io_dict = {"inlet": self.inlet}
+        for i in self.outlet_list:
+            io_dict[i] = getattr(self, i)
+        return create_stream_table_dataframe(io_dict, time_point=time_point)
