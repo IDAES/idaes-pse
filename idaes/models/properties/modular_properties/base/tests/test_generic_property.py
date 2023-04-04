@@ -25,6 +25,7 @@ from pyomo.util.check_units import assert_units_equivalent
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterData,
     GenericStateBlock,
+    ModularPropertiesInitializer,
 )
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 
@@ -1200,6 +1201,7 @@ class TestGenericStateBlock(object):
     def test_build(self, frame):
         assert isinstance(frame.props, Block)
         assert len(frame.props) == 1
+        assert frame.props.default_initializer == ModularPropertiesInitializer
 
         # Check for expected behaviour for dummy methods
         assert frame.props[1].state_defined

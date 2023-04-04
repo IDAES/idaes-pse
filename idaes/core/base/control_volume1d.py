@@ -436,6 +436,13 @@ argument).""",
                         )
 
         if has_phase_equilibrium:
+            # First, check that phase equilibrium makes sense
+            if len(self.config.property_package.phase_list) < 2:
+                raise ConfigurationError(
+                    "Property package has only one phase; control volume cannot include phase "
+                    "equilibrium terms. Some property packages support phase equilibrium "
+                    "implicitly in which case additional terms are not necessary."
+                )
             # Check that state blocks are set to calculate equilibrium
             for t in self.flowsheet().time:
                 for x in self.length_domain:

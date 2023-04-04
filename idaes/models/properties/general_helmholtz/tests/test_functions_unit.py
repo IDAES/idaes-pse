@@ -21,8 +21,12 @@ from idaes.models.properties.general_helmholtz import (
     AmountBasis,
     add_helmholtz_external_functions,
     helmholtz_available as available,
+    HelmholtzEoSInitializer,
 )
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.initialization.initializer_base import (
+    InitializationStatus,
+)
 
 
 @pytest.mark.unit
@@ -1714,3 +1718,26 @@ def test_plot_no_excpetion():
     m.hparam.ph_diagram(isotherms=True)
     m.hparam.st_diagram()
     m.hparam.pt_diagram()
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_default_initializer():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="r1234ze", amount_basis=AmountBasis.MASS
+    )
+    m.state = m.hparam.build_state_block([0])
+
+    assert m.state.default_initializer is HelmholtzEoSInitializer
+
+
+@pytest.mark.unit
+def test_HelmholtzEoSInitializer():
+    m = pyo.ConcreteModel()
+    m.b = pyo.Block()
+
+    init = HelmholtzEoSInitializer()
+
+    assert init.initialize(m.b) == InitializationStatus.Ok
+    assert init.summary[m.b]["status"] == InitializationStatus.Ok

@@ -51,6 +51,7 @@ from idaes.models.properties.general_helmholtz.helmholtz_functions_map import (
     external_function_map as _external_function_map,
 )
 
+
 _log = idaeslog.getLogger(__name__)
 
 _data_dir = os.path.join(idaes.bin_directory, "helm_data")
