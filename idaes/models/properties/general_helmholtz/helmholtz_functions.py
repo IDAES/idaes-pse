@@ -46,6 +46,7 @@ from idaes.models.properties.general_helmholtz.components import (
 )
 import idaes.logger as idaeslog
 
+
 _log = idaeslog.getLogger(__name__)
 
 _data_dir = os.path.join(idaes.bin_directory, "helm_data")

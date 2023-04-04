@@ -33,6 +33,9 @@ from idaes.core.util.exceptions import InitializationError
 from pyomo.core.base.var import _VarData
 from pyomo.core.base.param import _ParamData
 from pyomo.core.base.expression import _ExpressionData
+from idaes.core.initialization.initializer_base import (
+    InitializationStatus,
+)
 
 _scalable = (_VarData, _ParamData, _ExpressionData)
 
@@ -370,3 +373,28 @@ class PropertyTestHarness(object):
                 frame.fs.props[1].config.parameters.get_default_scaling(name, index)
                 is None
             )
+
+    @pytest.mark.component
+    def test_default_initializer(self):
+        m = ConcreteModel()
+        self.configure_class(m)
+
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.params = self.prop_pack(**self.param_args)
+
+        m.fs.props = m.fs.params.build_state_block(
+            [1], defined_state=True, **m.prop_args
+        )
+
+        # Check that a default initializer is defined
+        initializer = m.fs.props.default_initializer
+        assert initializer is not None
+
+        # Most cases will probably have specified the class for the initializer, but
+        # in case an instance was provided check ot see if it is callable.
+        if callable(initializer):
+            initializer = initializer()
+
+        # Check that we get a valid solution with the default initializer
+        assert initializer.initialize(m.fs.props) == InitializationStatus.Ok

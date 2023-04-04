@@ -105,6 +105,9 @@ class InitializerBase:
 
         self.initial_state = {}
         self.summary = {}
+        self._local_logger_level = (
+            None  # To allow calls to initialize to override global setting
+        )
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -120,12 +123,33 @@ class InitializerBase:
             width=66,
         )
 
+    def get_output_level(self):
+        """
+        Get local output level.
+
+        This method returns either the local logger level set when calling
+        initialize, or if that was not set then the logger level set in
+        the Initializer configuration.
+
+        Returns:
+            Output level to use in log handler
+        """
+        outlvl = self._local_logger_level
+        if outlvl is None:
+            outlvl = self.config.output_level
+
+        return outlvl
+
     def get_logger(self, model):
         """Get logger for model by name"""
-        return idaeslog.getInitLogger(model.name, self.config.output_level)
+        return idaeslog.getInitLogger(model.name, self.get_output_level())
 
     def initialize(
-        self, model: Block, initial_guesses: dict = None, json_file: str = None
+        self,
+        model: Block,
+        initial_guesses: dict = None,
+        json_file: str = None,
+        output_level=None,
     ):
         """
         Execute full initialization routine.
@@ -134,12 +158,15 @@ class InitializerBase:
             model: Pyomo model to be initialized.
             initial_guesses: dict of initial guesses to load.
             json_file: file name of json file to load initial guesses from as str.
+            output_level: (optional) output level to use during initialization run (overrides global setting).
 
         Note - can only provide one of initial_guesses or json_file.
 
         Returns:
             InitializationStatus Enum
         """
+        self._local_logger_level = output_level
+
         # 1. Get current model state
         self.get_current_state(model)
 
@@ -157,12 +184,15 @@ class InitializerBase:
         # 5. try: Call specified initialization routine
         try:
             # Base method does not have a return (NotImplementedError),
-            # # but we expect this ot be overloaded, disable pylint warning
+            # but we expect this to be overloaded, disable pylint warning
             # pylint: disable=E1111
             results = self.initialization_routine(model)
         # 6. finally: Restore model state
         finally:
             self.restore_model_state(model)
+            # Also revert local logger level so it does not get carried over to
+            # later runs
+            self._local_logger_level = None
 
         # 7. Check convergence
         return self.postcheck(model, results_obj=results)
@@ -355,10 +385,18 @@ class InitializerBase:
                 active_vars = None
 
             uninit_vars = []
-            for v in model.component_data_objects(Var, descend_into=True):
-                if v.value is None:
-                    if not exclude_unused_vars or v in active_vars:
-                        uninit_vars.append(v)
+
+            def _append_uninit_vars(block_data):
+                for v in block_data.component_data_objects(Var, descend_into=True):
+                    if v.value is None:
+                        if not exclude_unused_vars or v in active_vars:
+                            uninit_vars.append(v)
+
+            if model.is_indexed():
+                for d in model.values():
+                    _append_uninit_vars(d)
+            else:
+                _append_uninit_vars(model)
 
             # Next check for unconverged equality constraints
             uninit_const = large_residuals_set(model, self.config.constraint_tolerance)
@@ -572,5 +610,8 @@ class ModularInitializerBase(InitializerBase):
             _log.warning(
                 f"No Initializer found for submodel {submodel.name} - attempting to continue."
             )
+
+        if callable(initializer):
+            initializer = initializer()
 
         return initializer
