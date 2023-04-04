@@ -17,7 +17,7 @@ Author: John Eslick
 """
 import pytest
 
-from pyomo.environ import ConcreteModel
+from pyomo.environ import ConcreteModel, units as pyunits
 
 from idaes.core import FlowsheetBlock
 from idaes.models_extra.power_generation.unit_models.helm import HelmTurbineStage
@@ -77,8 +77,36 @@ def test_initialize(build_turbine):
     assert degrees_of_freedom(m) == 3  # inlet was't fixed and still shouldn't be
 
 
-@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.unit
-def test_report(build_turbine):
-    m = build_turbine
-    m.fs.turb.report()
+def test_get_stream_table_contents(build_turbine):
+    stable = build_turbine.fs.turb._get_stream_table_contents()
+
+    expected = {
+        "Units": {
+            "Mass Flow": getattr(pyunits.pint_registry, "kg/s"),
+            "Molar Flow": getattr(pyunits.pint_registry, "mol/s"),
+            "Molar Enthalpy": getattr(pyunits.pint_registry, "J/mol"),
+            "P": getattr(pyunits.pint_registry, "Pa"),
+            "T": getattr(pyunits.pint_registry, "K"),
+            "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
+        },
+        "Inlet": {
+            "Mass Flow": pytest.approx(0.01801527, rel=1e-5),
+            "Molar Flow": pytest.approx(1.0, rel=1e-5),
+            "Molar Enthalpy": pytest.approx(0.01102139, rel=1e-5),
+            "P": pytest.approx(11032300, rel=1e-5),
+            "T": pytest.approx(270.4877, rel=1e-5),
+            "Vapor Fraction": pytest.approx(0.0, abs=1e-5),
+        },
+        "Outlet": {
+            "Mass Flow": pytest.approx(0.01801527, rel=1e-5),
+            "Molar Flow": pytest.approx(1.0, rel=1e-5),
+            "Molar Enthalpy": pytest.approx(0.01102139, rel=1e-5),
+            "P": pytest.approx(11032300, rel=1e-5),
+            "T": pytest.approx(270.4877, rel=1e-5),
+            "Vapor Fraction": pytest.approx(0.0, abs=1e-5),
+        },
+    }
+
+    assert stable.to_dict() == expected
