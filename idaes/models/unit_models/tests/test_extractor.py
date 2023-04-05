@@ -50,6 +50,7 @@ from idaes.models.unit_models.extractor import (
     Extractor,
     ExtractorData,
     _get_state_blocks,
+    ExtractorSMInitializer,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
@@ -2294,6 +2295,40 @@ class LiCoStateBlock1Data(StateBlockData):
             "flow_vol": self.flow_vol,
             "conc_mass_solute": self.conc_mass_solute,
         }
+
+
+class TestExtractorSMInitializer:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = LiCoParameters()
+
+        # Add separation stages
+        m.fs.stage1 = Extractor(
+            number_of_finite_elements=10,
+            streams={
+                "retentate": {
+                    "property_package": m.fs.properties,
+                    "has_energy_balance": False,
+                    "has_pressure_balance": False,
+                },
+                "permeate": {
+                    "property_package": m.fs.properties,
+                    "has_feed": False,
+                    "has_energy_balance": False,
+                    "has_pressure_balance": False,
+                },
+            },
+        )
+
+        return m
+
+    @pytest.mark.unit
+    def test_default_initializer(self, model):
+        assert ExtractorData.default_initializer is ExtractorSMInitializer
+        assert model.fs.stage1.default_initializer is ExtractorSMInitializer
 
 
 class TestLiCODiafiltration:

@@ -34,6 +34,7 @@ from idaes.core.util.exceptions import (
     BurntToast,
     PropertyNotSupportedError,
 )
+from idaes.core.initialization import SingleControlVolumeUnitInitializer
 
 __author__ = "Andrew Lee"
 
@@ -42,11 +43,24 @@ __author__ = "Andrew Lee"
 # it harder to do side feeds.
 
 
+class ExtractorSMInitializer(SingleControlVolumeUnitInitializer):
+    """
+    This is a general purpose sequential-modular Initializer object for
+    Extractor unit models.
+
+    For details of the initialization routine, please see the documentation.
+
+    """
+
+
 @declare_process_block_class("Extractor")
 class ExtractorData(UnitModelBlockData):
     """
     Standard Extractor Unit Model Class
     """
+
+    # Set default initializer
+    default_initializer = ExtractorSMInitializer
 
     CONFIG = UnitModelBlockData.CONFIG()
 
