@@ -141,6 +141,21 @@ class _StateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
+    def fix_initialization_states(self):
+        """
+        Fixes state variables for state blocks.
+
+        Returns:
+            None
+        """
+        # Fix state variables
+        fix_state_vars(self)
+
+        # Constraint on water concentration at outlet - unfix in these cases
+        for b in self.values():
+            if b.config.defined_state is False:
+                b.conc_mol_comp["H2O"].unfix()
+
     def initialize(
         blk,
         state_args=None,
