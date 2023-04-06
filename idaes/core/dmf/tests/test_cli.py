@@ -22,7 +22,7 @@ from click.testing import CliRunner
 import pytest
 
 # package
-cli = pytest.importorskip("idaes.core.dmf.cli", reason="DMF optional dependencies not available")
+from idaes.core.dmf import cli
 
 __author__ = "Dan Gunter"
 

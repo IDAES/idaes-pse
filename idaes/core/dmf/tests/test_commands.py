@@ -21,9 +21,7 @@ import shutil
 import pytest
 
 #
-commands = pytest.importorskip("idaes.core.dmf.commands", reason="DMF optional dependencies not available")
-
-from idaes.core.dmf import dmfbase, errors
+from idaes.core.dmf import dmfbase, commands, errors
 from idaes.core.dmf.util import mkdtemp
 from .util import init_logging
 
