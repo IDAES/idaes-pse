@@ -101,7 +101,7 @@ kwargs = dict(
         "optional": [
             "sympy",  # idaes.core.util.expr_doc
             "tensorflow",  # idaes.core.surrogate.keras_surrogate
-            "gridx-prescient>=2.2.1",  # idaes.tests.prescient
+            "gridx-prescient>=2.2.2",  # idaes.tests.prescient
             # A Lee 11-Jan-22: no precompiled version of CoolProp available for Pyhton 3.9
             "coolprop; python_version < '3.9'",  # idaes.generic_models.properties.general.coolprop
         ],

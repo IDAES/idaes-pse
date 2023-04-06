@@ -46,8 +46,42 @@ from idaes.models.properties.general_helmholtz.components import (
 )
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+from idaes.core.util.initialization import fix_state_vars
+from idaes.core.initialization.initializer_base import (
+    InitializerBase,
+    InitializationStatus,
+)
 
 _log = idaeslog.getLogger(__name__)
+
+
+class HelmholtzEoSInitializer(InitializerBase):
+    """
+    Initializer object for Helmholtz EoS packages using external functions.
+
+    Due to the use of external functions, Helmholtz EoS StateBlocks have no constraints,
+    thus there is nothing to initialize. This Initializer replaces the general initialize
+    method with a no-op.
+
+    """
+
+    CONFIG = InitializerBase.CONFIG()
+
+    def initialize(
+        self,
+        model: pyo.Block,
+        initial_guesses: dict = None,
+        json_file: str = None,
+        output_level=None,
+    ):
+        """
+        Initialize method for Helmholtz EoS state blocks. This is a no-op.
+
+        Returns:
+            InitializationStatus.Ok
+        """
+        self._update_summary(model, "status", InitializationStatus.Ok)
+        return self.summary[model]["status"]
 
 
 class _StateBlock(StateBlock):
@@ -55,6 +89,9 @@ class _StateBlock(StateBlock):
     This class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
+    # Set default initializer
+    default_initializer = HelmholtzEoSInitializer
 
     @staticmethod
     def _set_fixed(v, f):
@@ -73,6 +110,16 @@ class _StateBlock(StateBlock):
                     pass
         if hold:
             v.fix()
+
+    def fix_initialization_states(self):
+        """
+        Fixes state variables for state blocks.
+
+        Returns:
+            None
+        """
+        # Fix state variables
+        fix_state_vars(self)
 
     def initialize(self, *args, **kwargs):
         flags = {}
@@ -250,6 +297,17 @@ class HelmholtzStateBlockData(StateBlockData):
         params = self.config.parameters
         cmp = params.pure_component
         phase_set = params.config.phase_presentation
+
+        # Check for inconsistent phase presentation and phase equilibrium
+        if phase_set == PhaseType.MIX and self.config.has_phase_equilibrium:
+            _log.warning(
+                "Helmholtz EoS packages using Mixed phase representation ignore the "
+                "'has_phase_equilibrium' configuration argument. However, setting "
+                "this to True can result in errors when constructing material balances "
+                "due to only having a single phase (thus phase transfer terms cannot "
+                "be constructed)."
+            )
+
         # Add flow variable
         if self.amount_basis == AmountBasis.MOLE:
             self.flow_mol = pyo.Var(

@@ -456,6 +456,8 @@ def constraint_scaling_transform(c, s, overwrite=True):
     Returns:
         None
     """
+    # Want to clear away any units that may have incidentally become attached to s
+    s = pyo.value(s)
     if not isinstance(c, _ConstraintData):
         raise TypeError(f"{c} is not a constraint or is an indexed constraint")
     st = get_constraint_transform_applied_scaling_factor(c, default=None)
