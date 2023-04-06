@@ -38,21 +38,6 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
     CONFIG = ModularInitializerBase.CONFIG()
     CONFIG.declare(
-        "solver",
-        ConfigValue(
-            default=None,  # TODO: Can we add a square problem solver as the default here?
-            # At the moment there is an issue with the scipy solvers not supporting the tee argument.
-            description="Solver to use for initialization",
-        ),
-    )
-    CONFIG.declare(
-        "solver_options",
-        ConfigDict(
-            implicit=True,
-            description="Dict of options to pass to solver",
-        ),
-    )
-    CONFIG.declare(
         "always_estimate_states",
         ConfigValue(
             default=False,
@@ -62,11 +47,6 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
             "overwrite any initial guesses provided.",
         ),
     )
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        self._solver = None
 
     def initialization_routine(
         self,

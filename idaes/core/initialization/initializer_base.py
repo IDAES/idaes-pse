@@ -23,7 +23,7 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.core.base.var import _VarData
-from pyomo.common.config import ConfigBlock, ConfigValue, String_ConfigFormatter
+from pyomo.common.config import ConfigDict, ConfigValue, String_ConfigFormatter
 
 from idaes.core.util.model_serializer import to_json, from_json, StoreSpec, _only_fixed
 from idaes.core.util.exceptions import InitializationError
@@ -84,7 +84,7 @@ class InitializerBase:
 
     """
 
-    CONFIG = ConfigBlock()
+    CONFIG = ConfigDict()
     CONFIG.declare(
         "constraint_tolerance",
         ConfigValue(
@@ -537,6 +537,21 @@ class ModularInitializerBase(InitializerBase):
     CONFIG = InitializerBase.CONFIG()
 
     CONFIG.declare(
+        "solver",
+        ConfigValue(
+            default=None,  # TODO: Can we add a square problem solver as the default here?
+            # At the moment there is an issue with the scipy solvers not supporting the tee argument.
+            description="Solver to use for initialization",
+        ),
+    )
+    CONFIG.declare(
+        "solver_options",
+        ConfigDict(
+            implicit=True,
+            description="Dict of options to pass to solver",
+        ),
+    )
+    CONFIG.declare(
         "default_submodel_initializer",
         ConfigValue(
             default=None,
@@ -549,6 +564,7 @@ class ModularInitializerBase(InitializerBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self._solver = None
         self.submodel_initializers = {}
 
     def add_submodel_initializer(self, submodel: Block, initializer: InitializerBase):
