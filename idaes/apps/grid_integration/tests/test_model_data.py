@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 
 import pytest
@@ -195,7 +195,7 @@ def test_bid_missing_pmin(generator_params):
 
 @pytest.mark.unit
 def test_bid_missing_pmax(generator_params):
-    generator_params["production_cost_bid_pairs"].pop()
+    generator_params["production_cost_bid_pairs"] = [(30, 0), (45, 0)]
     with pytest.raises(
         ValueError, match=r"^(The last power output in the bid should be the Pmax)"
     ):
@@ -208,6 +208,16 @@ def test_invalid_start_up_bid(generator_params):
     with pytest.raises(
         ValueError,
         match=r"^(The first startup lag should be the same as minimum down time)",
+    ):
+        ThermalGeneratorModelData(**generator_params)
+
+
+@pytest.mark.unit
+def test_invalid_pcost(generator_params):
+    generator_params["production_cost_bid_pairs"] = [(30, 0)]
+    with pytest.raises(
+        ValueError,
+        match=r"^(A valid production_cost_bid_pairs requires at least 2 points)",
     ):
         ThermalGeneratorModelData(**generator_params)
 
@@ -232,6 +242,7 @@ def test_model_data_iterator(generator_data_object):
         "generator_type",
         "initial_status",
         "initial_p_output",
+        "include_default_p_cost",
     ]
     iter_result = [name for name, value in generator_data_object]
 

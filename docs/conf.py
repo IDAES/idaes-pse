@@ -145,6 +145,24 @@ rst_epilog = """
 .. _Github issues page: https://github.com/IDAES/idaes-pse/issues
 """
 
+
+class RobustReplacements(dict):
+    def __call__(self, app, docname, source):
+        text = source[0]
+        for to_replace, replace_with in self.items():
+            text = text.replace(to_replace, replace_with)
+        source[0] = text
+
+
+_python_versions_replacements = RobustReplacements(
+    {
+        "|python-min|": "3.8",
+        "|python-max|": "3.11",
+        "|python-default|": "3.10",
+    }
+)
+
+
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -427,3 +445,7 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {"https://docs.python.org/": None}
+
+
+def setup(app):
+    app.connect("source-read", _python_versions_replacements)

@@ -1,27 +1,28 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Initializer class for implementing Hierarchical initialization routines for
 IDAES models with standard forms (e.g. units with 1 control volume)
 """
 from pyomo.environ import Block
-from pyomo.common.config import ConfigDict, ConfigValue
+from pyomo.common.config import ConfigDict, ConfigValue, Bool
 
 from idaes.core.initialization.initializer_base import ModularInitializerBase
 from idaes.core.solvers import get_solver
 from idaes.core.util import to_json, from_json, StoreSpec
 from idaes.core.util.exceptions import InitializationError
 import idaes.logger as idaeslog
+from idaes.core.util.model_statistics import variables_in_activated_constraints_set
 
 __author__ = "Andrew Lee"
 
@@ -51,6 +52,16 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
             description="Dict of options to pass to solver",
         ),
     )
+    CONFIG.declare(
+        "always_estimate_states",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            doc="Whether initialization routine should estimate values for "
+            "state variables that already have values. Note that if set to True, this will "
+            "overwrite any initial guesses provided.",
+        ),
+    )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -70,9 +81,9 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
             model: Pyomo Block to be initialized
             plugin_initializer_args: dict-of-dicts containing arguments to be passed to plug-in Initializers.
                 Keys should be submodel components.
-            copy_inlet_state: bool (default=False). Whether to copy inlet state to other sttes or not.
-                Copying will generally be faster, but inlet states may not contain all properties
-                required elsewhere.
+            copy_inlet_state: bool (default=False). Whether to copy inlet state to other states or not
+                (0-D control volumes only). Copying will generally be faster, but inlet states may not contain
+                all properties required elsewhere.
 
         Returns:
             Pyomo solver results object
@@ -112,7 +123,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         for sm in model.initialization_order:
             if sm is not model:
                 # Get initializers for plug-ins
-                sub_initializers[sm] = self.get_submodel_initializer(sm)()
+                sub_initializers[sm] = self.get_submodel_initializer(sm)
 
                 if sm not in plugin_initializer_args.keys():
                     plugin_initializer_args[sm] = {}
@@ -131,7 +142,9 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
         for sm in model.initialization_order:
             if sm is model:
-                results = self._initialize_main_model(model, copy_inlet_state, logger)
+                results = self._initialize_control_volume(
+                    model, copy_inlet_state, logger
+                )
             else:
                 sub_initializers[sm].plugin_initialize(
                     sm, **plugin_initializer_args[sm]
@@ -147,13 +160,13 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
         return results
 
-    def _initialize_main_model(self, model, copy_inlet_state, logger):
+    def _initialize_control_volume(self, model, copy_inlet_state, logger):
         # Initialize properties
-        try:
-            # Guess a 0-D control volume
+        if hasattr(model.control_volume, "properties_in"):
+            # 0-D control volume
             self._init_props_0D(model, copy_inlet_state)
-        except AttributeError:
-            # Assume it must be a 1-D control volume
+        else:
+            # 1-D control volume
             self._init_props_1D(model)
 
         logger.info_high("Step 2a: properties initialization complete")
@@ -165,7 +178,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
         # Solve main model
         solve_log = idaeslog.getSolveLogger(
-            model.name, self.config.output_level, tag="unit"
+            model.name, self.get_output_level(), tag="unit"
         )
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -181,10 +194,8 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
 
         if prop_init is not None:
             prop_init.initialize(
-                model.control_volume.properties_in,
-                solver=self.config.solver,
-                optarg=self.config.solver_options,
-                outlvl=self.config.output_level,
+                model=model.control_volume.properties_in,
+                output_level=self.get_output_level(),
             )
 
         if not copy_inlet_state:
@@ -193,12 +204,15 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
                 model.control_volume.properties_out
             )
 
+            # Estimate missing values for outlet state
+            model.control_volume.estimate_outlet_state(
+                always_estimate=self.config.always_estimate_states
+            )
+
             if prop_init is not None:
                 prop_init.initialize(
-                    model.control_volume.properties_out,
-                    solver=self.config.solver,
-                    optarg=self.config.solver_options,
-                    outlvl=self.config.output_level,
+                    model=model.control_volume.properties_out,
+                    output_level=self.get_output_level(),
                 )
         else:
             # Map solution from inlet properties to outlet properties
@@ -216,31 +230,52 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
     def _init_props_1D(self, model):
         prop_init = self.get_submodel_initializer(model.control_volume.properties)
 
+        # Estimate missing values for states
+        model.control_volume.estimate_states(
+            always_estimate=self.config.always_estimate_states
+        )
+
         if prop_init is not None:
             prop_init.initialize(
                 model.control_volume.properties,
-                solver=self.config.solver,
-                optarg=self.config.solver_options,
-                outlvl=self.config.output_level,
+                output_level=self.get_output_level(),
             )
 
     def _init_rxns(self, model):
         rxn_init = self.get_submodel_initializer(model.control_volume.reactions)
 
         if rxn_init is not None:
+            # Reaction blocks depend on vars from other blocks
+            # Need to make sure these are all fixed before initializing
+            fixed_vars = []
+            vset = variables_in_activated_constraints_set(
+                model.control_volume.reactions
+            )
+            for v in vset:
+                if (
+                    v.parent_block().parent_component()
+                    is not model.control_volume.reactions
+                ):
+                    # Variable external to reactions
+                    if not v.fixed:
+                        v.fix()
+                        fixed_vars.append(v)
+
             rxn_init.initialize(
                 model.control_volume.reactions,
-                solver=self.config.solver,
-                optarg=self.config.solver_options,
-                outlvl=self.config.output_level,
+                output_level=self.get_output_level(),
             )
+
+            # Unfix any vars we fixed previously
+            for v in fixed_vars:
+                v.unfix()
 
     def _solve_full_model(self, model, logger, results):
         # Check to see if there are any plug-ins
         if len(model.initialization_order) > 1:
             # Solve model with plugins
             solve_log = idaeslog.getSolveLogger(
-                model.name, self.config.output_level, tag="unit"
+                model.name, self.get_output_level(), tag="unit"
             )
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = self._get_solver().solve(model, tee=slc.tee)

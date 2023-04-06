@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 General purpose mixer block for IDAES models
@@ -23,11 +23,10 @@ from idaes.core import (
 )
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
-
 from idaes.core.util.math import smooth_min
 from idaes.models.unit_models import MomentumMixingType
 from idaes.core.util import from_json, to_json, StoreSpec
-
+from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 
@@ -163,8 +162,6 @@ between flow and pressure driven simulations.}""",
         self._get_property_package()
 
         # Create list of inlet names
-        # PYLINT-TODO: assigning the result of self.create_inlet_list() to unused local variable inlet_list
-        # causes pylint error assignment-from-no-return; check if removing assignment is OK
         self.create_inlet_list()
 
         # Build StateBlocks
@@ -311,6 +308,7 @@ between flow and pressure driven simulations.}""",
         constraints equal to the number of inlets, enforcing equality between
         all inlets and the mixed stream.
         """
+
         # Create equality constraints
         @self.Constraint(
             self.flowsheet().time,
@@ -403,7 +401,7 @@ between flow and pressure driven simulations.}""",
         for t, v in self.outlet.pressure.items():
             if not v.fixed:
                 v.value = min(
-                    [value(self.inlet_blocks[i][t].pressure) for i in self.inlet_blocks]
+                    [value(i[t].pressure) for i in self.inlet_blocks.values()]
                 )
         self.outlet.unfix()
 
@@ -413,7 +411,7 @@ between flow and pressure driven simulations.}""",
         ):
             # If using the equal pressure constraint fix the outlet and free
             # the inlet pressures, this is typical for pressure driven flow
-            for i, b in self.inlet_blocks.items():
+            for b in self.inlet_blocks.values():
                 for bdat in b.values():
                     bdat.pressure.unfix()
             self.outlet.pressure.fix()
@@ -437,6 +435,12 @@ between flow and pressure driven simulations.}""",
                 s = iscale.get_scaling_factor(self.mixed_state[t].pressure)
                 iscale.constraint_scaling_transform(c, s, overwrite=False)
         if hasattr(self, "pressure_equality_constraints"):
-            for (t, i), c in self.pressure_equality_constraints.items():
+            for (t, _), c in self.pressure_equality_constraints.items():
                 s = iscale.get_scaling_factor(self.mixed_state[t].pressure)
                 iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+    def _get_stream_table_contents(self, time_point=0):
+        io_dict = {"outlet": self.outlet}
+        for i in self.inlet_list:
+            io_dict[i] = getattr(self, i)
+        return create_stream_table_dataframe(io_dict, time_point=time_point)

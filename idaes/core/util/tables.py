@@ -1,18 +1,23 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+
+from collections import OrderedDict
 
 from pandas import DataFrame
-from collections import OrderedDict
+
 from pyomo.environ import value
 from pyomo.network import Arc, Port
 from pyomo.core.base.var import _GeneralVarData, Var
@@ -106,7 +111,7 @@ def stream_states_dict(streams, time_point=0):
                     # properties without state blocks, or the port could
                     # be used to serve the purpose of a translator block.
                     sb = _get_state_from_port(a.ports[1], time_point)
-                except:
+                except:  # pylint: disable=W0702
                     sb = _get_state_from_port(a.ports[0], time_point)
                 _stream_dict_add(sb, n, i)
         elif isinstance(streams[n], Port):
@@ -214,6 +219,7 @@ def create_stream_table_ui(
     Returns:
         A pandas DataFrame containing the stream table data.
     """
+
     # Variable Types:
     class VariableTypes:
         UNFIXED = "unfixed"

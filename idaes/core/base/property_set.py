@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module defines the sets of properties used by IDAES.
@@ -38,12 +38,18 @@ class _PropertyMetadataIndex:
         method: str = None,
         supported: bool = False,
         required: bool = False,
+        valid_range=None,
     ):
         super().__setattr__("_parent", parent)
         super().__setattr__("_idx", idx)
         super().__setattr__("_method", method)
         super().__setattr__("_supported", supported)
         super().__setattr__("_required", required)
+
+        super().__setattr__("_valid_range", None)
+        self._set_valid_range(
+            valid_range
+        )  # This method does some basic validation of input
 
         # TODO: For future, this would be the place to store default scaling information, etc.
         # TODO: Could also define default bounds, nominal values, etc.
@@ -102,6 +108,19 @@ class _PropertyMetadataIndex:
         """
         return self._required  # pylint: disable=E1101
 
+    @property
+    def valid_range(self):
+        """
+        Tuple indicating valid range of values for this property based on the data and method used
+        to calculate it. This should take the form of (lower range, upper range) and can be used to
+        set and verify bounds on properties before and after solving in order to inform users of any
+        cases where the property values are being extrapolated.
+
+        It is strongly recommended that developers set valid ranges for all state variables in
+        a property package, as well as any other key properties.
+        """
+        return self._valid_range  # pylint: disable=E1101
+
     def set_method(self, meth: str):
         """
         Set method attribute of property.
@@ -142,8 +161,38 @@ class _PropertyMetadataIndex:
         """
         super().__setattr__("_required", bool(required))
 
+    def _set_valid_range(self, valid_range: tuple):
+        """
+        Set valid_range attribute of property. WARNING: users should generally not change
+        the valid_range of a property, as this is determined by the data and method used
+        to fit the property correlation.
+
+        Args:
+            valid_range: 2-tuple with valid range of values for property (lower, upper)
+
+        Returns:
+            None
+        """
+        if valid_range is not None:
+            # Do some basic verification
+            if not isinstance(valid_range, tuple) or not len(valid_range) == 2:
+                raise ValueError(
+                    f"valid_range must be a tuple of length 2 (got {valid_range})"
+                )
+            elif valid_range[0] > valid_range[1]:
+                raise ValueError(
+                    f"valid_range must be a 2-tuple with form (lower, upper): first value "
+                    f"was greater than second value: {valid_range}"
+                )
+
+        super().__setattr__("_valid_range", valid_range)
+
     def update_property(
-        self, method: str = None, required: bool = None, supported: bool = None
+        self,
+        method: str = None,
+        required: bool = None,
+        supported: bool = None,
+        valid_range: tuple = None,
     ):
         """
         Update attributes of this property.
@@ -153,6 +202,7 @@ class _PropertyMetadataIndex:
             required : bool indicating whether this property package requires this property to be
                 defined by another package
             supported : bool indicating whether this property package supports this property
+            valid_range: 2-tuple with valid range of values for property (lower, upper)
 
         Returns:
             None
@@ -169,6 +219,8 @@ class _PropertyMetadataIndex:
             # Assume supported if not explicitly stated
             # TODO: Reconsider in the future, for now do this for backwards compatibility
             self.set_supported(True)
+        if valid_range is not None:
+            self._set_valid_range(valid_range)
 
 
 class PropertyMetadata:
@@ -443,6 +495,8 @@ class PropertySetBase:
         unsupported = []
         for a in self._defined_properties:  # pylint: disable=E1101
             aobj = getattr(self, a)
+            # TODO: Should refactor parent so this is not private
+            # pylint: disable-next=protected-access
             for i in aobj._indices:
                 if aobj[i].required:
                     try:
@@ -462,6 +516,8 @@ class PropertySetBase:
         """
         slist = []
         for p in self:
+            # TODO: Should refactor parent so this is not private
+            # pylint: disable-next=protected-access
             for i in p._indices:
                 if p[i].supported:
                     slist.append(p[i])
@@ -476,6 +532,8 @@ class PropertySetBase:
         """
         ulist = []
         for p in self:
+            # TODO: Should refactor parent so this is not private
+            # pylint: disable-next=protected-access
             for i in p._indices:
                 if not p[i].supported:
                     ulist.append(p[i])
@@ -490,6 +548,8 @@ class PropertySetBase:
         """
         rlist = []
         for p in self:
+            # TODO: Should refactor parent so this is not private
+            # pylint: disable-next=protected-access
             for i in p._indices:
                 if p[i].required:
                     rlist.append(p[i])

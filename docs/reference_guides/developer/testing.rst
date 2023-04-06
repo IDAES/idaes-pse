@@ -42,7 +42,7 @@ more than a couple of minutes to run, it will introduce a significant
 bottleneck in the development workflow.
 
 For Python code, we use the `pytest <pytest.org>`_ testing framework. This is
-compatible with the built-in Python `unittest <https://docs.python.org/3.7/library/unittest.html>`_
+compatible with the built-in Python `unittest <https://docs.python.org/3/library/unittest.html>`_
 framework, but has many nice features that make it easier and more powerful.
 
 The best way to learn how to use pytest is to look at existing unit tests, e.g.

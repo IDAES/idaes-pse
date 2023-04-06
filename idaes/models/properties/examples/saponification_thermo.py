@@ -1,19 +1,21 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Example property package for the saponification of Ethyl Acetate with NaOH
 Assumes dilute solutions with properties of H2O.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -139,6 +141,21 @@ class _StateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
+    def fix_initialization_states(self):
+        """
+        Fixes state variables for state blocks.
+
+        Returns:
+            None
+        """
+        # Fix state variables
+        fix_state_vars(self)
+
+        # Constraint on water concentration at outlet - unfix in these cases
+        for b in self.values():
+            if b.config.defined_state is False:
+                b.conc_mol_comp["H2O"].unfix()
+
     def initialize(
         blk,
         state_args=None,
@@ -197,9 +214,9 @@ class _StateBlock(StateBlock):
         # when defined state is False
         # This is needed as fixing state vars fixes conc_mol_comp["H2O"],
         # which is also specified by the conc_water_eqn constraint
-        for k in blk.keys():
-            if blk[k].config.defined_state is False:
-                blk[k].conc_water_eqn.deactivate()
+        for k in blk.values():
+            if k.config.defined_state is False:
+                k.conc_water_eqn.deactivate()
 
         if state_vars_fixed is False:
             # Fix state variables if not already fixed
@@ -207,8 +224,8 @@ class _StateBlock(StateBlock):
 
         else:
             # Check when the state vars are fixed already result in dof 0
-            for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
+            for k in blk.values():
+                if degrees_of_freedom(k) != 0:
                     raise Exception(
                         "State vars fixed but degrees of freedom "
                         "for state block is not zero during "
@@ -237,9 +254,9 @@ class _StateBlock(StateBlock):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
 
         # Reactivate conc_water_eqn
-        for k in blk.keys():
-            if not blk[k].config.defined_state:
-                blk[k].conc_water_eqn.activate()
+        for k in blk.values():
+            if not k.config.defined_state:
+                k.conc_water_eqn.activate()
 
         if flags is None:
             return

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Multistage steam turbine for power generation.
@@ -17,6 +17,9 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
     for Use in a Process Simulation Software Environment." Journal of Engineering
     for Gas Turbines and Power. v136, November
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 import copy
 
 import pyomo.environ as pyo
@@ -668,17 +671,11 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             None
         """
         # Setup loggers
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Store initial model specs, restored at the end of initializtion, so
         # the problem is not altered.  This can restore fixed/free vars,
         # active/inactive constraints, and fixed variable values.
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
-
-        # Assume the flow into the turbine is a reasonable guess for
-        # initializtion
-        flow_guess = self.inlet_split.inlet.flow_mol[0].value
 
         for it_count in range(flow_iterate):
             self.inlet_split.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
@@ -830,3 +827,9 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             )
             # Set power equation scale factor
             iscale.constraint_scaling_transform(c, power_scale, overwrite=False)
+
+    def _get_stream_table_contents(self, time_point=0):
+        raise NotImplementedError(
+            "The multi-stage turbine model has not implemented the code necessary to "
+            "construct a stream table."
+        )

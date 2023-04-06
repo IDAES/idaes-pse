@@ -33,9 +33,7 @@ def rglob(path, glob):
     return list(map(str, p.rglob(glob)))
 
 
-DEPENDENCIES_FOR_PRERELEASE_VERSION = [
-    "pyomo @ https://github.com/IDAES/pyomo/archive/6.4.5.idaes.2023.01.31.zip"
-]
+DEPENDENCIES_FOR_PRERELEASE_VERSION = []
 
 # For included DMF data
 DMF_DATA_ROOT = "data"
@@ -68,37 +66,28 @@ kwargs = dict(
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
         # idaes core / dmf
-        "backports.shutil_get_terminal_size",
-        "bunch",
         "click>=8",
         "colorama",
-        "distro",  # help identify linux distros for binary downloads
-        "flask",  # for ui/fsvis
-        "flask-cors",
         "jupyter",
         "lxml",
         "matplotlib",
         "nbconvert",
         "nbformat",
         "numpy",
-        "networkx",
-        "omlt==0.3.1",  # fix the version for now as package evolves
-        "pandas<1.5",
-        "pint",
-        "psutil",
-        "pyomo @ https://github.com/IDAES/pyomo/archive/6.4.5.idaes.2023.01.31.zip",
+        "omlt==1.1",  # fix the version for now as package evolves
+        "pandas",
+        "pyomo @ https://github.com/IDAES/pyomo/archive/6.5.1.idaes.2023.03.28.zip",
+        "sympy",  # pyomo differentiation
+        "pint",  # pyomo units
+        "networkx",  # pyomo network
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
-        "python-slugify",  # for ui/fsvis
         "scipy",
-        "sympy",
         "tinydb",
-        "rbfopt",
         "xlrd",  # for DMF read of old .xls Excel files
         "openpyxl",  # for DMF read of new .xls Excel files
         # lbianchi-lbl: see https://github.com/IDAES/idaes-pse/issues/661
-        "ipython<8.0.0",
     ],
     entry_points={
         "console_scripts": [
@@ -110,8 +99,9 @@ kwargs = dict(
     extras_require={
         "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
         "optional": [
+            "sympy",  # idaes.core.util.expr_doc
             "tensorflow",  # idaes.core.surrogate.keras_surrogate
-            "gridx-prescient>=2.1",  # idaes.tests.prescient
+            "gridx-prescient>=2.2.2",  # idaes.tests.prescient
             # A Lee 11-Jan-22: no precompiled version of CoolProp available for Pyhton 3.9
             "coolprop; python_version < '3.9'",  # idaes.generic_models.properties.general.coolprop
         ],
@@ -163,10 +153,10 @@ kwargs = dict(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",

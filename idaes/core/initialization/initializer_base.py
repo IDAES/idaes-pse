@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Base class for initializer objects
@@ -23,7 +23,7 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.core.base.var import _VarData
-from pyomo.common.config import ConfigBlock, ConfigValue, add_docstring_list
+from pyomo.common.config import ConfigBlock, ConfigValue, String_ConfigFormatter
 
 from idaes.core.util.model_serializer import to_json, from_json, StoreSpec, _only_fixed
 from idaes.core.util.exceptions import InitializationError
@@ -51,12 +51,25 @@ class InitializationStatus(Enum):
     Error = -4  # Exception raised during execution (other than DoF or convergence)
 
 
+# Store spec needs to use some internals from Pyomo
 StoreState = StoreSpec(
     data_classes={
-        Var._ComponentDataClass: (("fixed", "value"), _only_fixed),
-        BooleanVar._ComponentDataClass: (("fixed", "value"), _only_fixed),
-        Block._ComponentDataClass: (("active",), None),
-        Constraint._ComponentDataClass: (("active",), None),
+        Var._ComponentDataClass: (  # pylint: disable=protected-access
+            ("fixed", "value"),
+            _only_fixed,
+        ),
+        BooleanVar._ComponentDataClass: (  # pylint: disable=protected-access
+            ("fixed", "value"),
+            _only_fixed,
+        ),
+        Block._ComponentDataClass: (  # pylint: disable=protected-access
+            ("active",),
+            None,
+        ),
+        Constraint._ComponentDataClass: (  # pylint: disable=protected-access
+            ("active",),
+            None,
+        ),
     }
 )
 
@@ -87,23 +100,56 @@ class InitializerBase:
         ),
     )
 
-    __doc__ = add_docstring_list(__doc__, CONFIG)
-
     def __init__(self, **kwargs):
         self.config = self.CONFIG(kwargs)
 
         self.initial_state = {}
         self.summary = {}
+        self._local_logger_level = (
+            None  # To allow calls to initialize to override global setting
+        )
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        cls.__doc__ = add_docstring_list(cls.__doc__ if cls.__doc__ else "", cls.CONFIG)
+        cls.__doc__ = cls.__doc__ + cls.CONFIG.generate_documentation(
+            format=String_ConfigFormatter(
+                block_start="",
+                block_end="",
+                item_start="%s\n",
+                item_body="%s",
+                item_end="\n",
+            ),
+            indent_spacing=4,
+            width=66,
+        )
+
+    def get_output_level(self):
+        """
+        Get local output level.
+
+        This method returns either the local logger level set when calling
+        initialize, or if that was not set then the logger level set in
+        the Initializer configuration.
+
+        Returns:
+            Output level to use in log handler
+        """
+        outlvl = self._local_logger_level
+        if outlvl is None:
+            outlvl = self.config.output_level
+
+        return outlvl
 
     def get_logger(self, model):
-        return idaeslog.getInitLogger(model.name, self.config.output_level)
+        """Get logger for model by name"""
+        return idaeslog.getInitLogger(model.name, self.get_output_level())
 
     def initialize(
-        self, model: Block, initial_guesses: dict = None, json_file: str = None
+        self,
+        model: Block,
+        initial_guesses: dict = None,
+        json_file: str = None,
+        output_level=None,
     ):
         """
         Execute full initialization routine.
@@ -112,12 +158,15 @@ class InitializerBase:
             model: Pyomo model to be initialized.
             initial_guesses: dict of initial guesses to load.
             json_file: file name of json file to load initial guesses from as str.
+            output_level: (optional) output level to use during initialization run (overrides global setting).
 
         Note - can only provide one of initial_guesses or json_file.
 
         Returns:
             InitializationStatus Enum
         """
+        self._local_logger_level = output_level
+
         # 1. Get current model state
         self.get_current_state(model)
 
@@ -134,10 +183,16 @@ class InitializerBase:
 
         # 5. try: Call specified initialization routine
         try:
+            # Base method does not have a return (NotImplementedError),
+            # but we expect this to be overloaded, disable pylint warning
+            # pylint: disable=E1111
             results = self.initialization_routine(model)
         # 6. finally: Restore model state
         finally:
             self.restore_model_state(model)
+            # Also revert local logger level so it does not get carried over to
+            # later runs
+            self._local_logger_level = None
 
         # 7. Check convergence
         return self.postcheck(model, results_obj=results)
@@ -262,8 +317,6 @@ class InitializerBase:
         self._update_summary(model, "status", InitializationStatus.Error)
         raise NotImplementedError()
 
-        return None
-
     def restore_model_state(self, model: Block):
         """
         Restore model state to that stored in self.initial_state.
@@ -332,10 +385,18 @@ class InitializerBase:
                 active_vars = None
 
             uninit_vars = []
-            for v in model.component_data_objects(Var, descend_into=True):
-                if v.value is None:
-                    if not exclude_unused_vars or v in active_vars:
-                        uninit_vars.append(v)
+
+            def _append_uninit_vars(block_data):
+                for v in block_data.component_data_objects(Var, descend_into=True):
+                    if v.value is None:
+                        if not exclude_unused_vars or v in active_vars:
+                            uninit_vars.append(v)
+
+            if model.is_indexed():
+                for d in model.values():
+                    _append_uninit_vars(d)
+            else:
+                _append_uninit_vars(model)
 
             # Next check for unconverged equality constraints
             uninit_const = large_residuals_set(model, self.config.constraint_tolerance)
@@ -408,7 +469,6 @@ class InitializerBase:
         Returns:
             None.
         """
-        pass
 
     def _load_values_from_dict(self, model, initial_guesses, exception_on_fixed=True):
         """
@@ -470,6 +530,7 @@ class ModularInitializerBase(InitializerBase):
 
     This extends the base Initializer class to include attributes and methods for
     defining initializer objects for sub-models.
+
     """
 
     CONFIG = InitializerBase.CONFIG()
@@ -549,5 +610,8 @@ class ModularInitializerBase(InitializerBase):
             _log.warning(
                 f"No Initializer found for submodel {submodel.name} - attempting to continue."
             )
+
+        if callable(initializer):
+            initializer = initializer()
 
         return initializer

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for 0D heat exchanger models.
@@ -53,7 +53,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
-
+from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -477,6 +477,7 @@ class TestSaponification(object):
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 class TestBT_Generic(object):
     @pytest.fixture(scope="class")
     def btg(self):

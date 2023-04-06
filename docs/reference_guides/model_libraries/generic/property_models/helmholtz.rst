@@ -63,6 +63,12 @@ two-phase presentation.  The mixed-phase presentation can be used with most
 standard unit models that do not provide phase separation.  If phase separation
 is required, either use the two-phase presentation or create a custom model.
 
+.. warning::
+    The "has_phase_equilibrium" argument is ignored when constructing Helmholtz
+    property packages using mixed phase presentation. However, setting this to
+    `True` may cause errors in unit models as it is not possible to construct
+    phase equilibrium transfer terms with only one phase present.
+
 The ``PhaseType.LG`` option appears to the IDAES framework to be two phases "Vap"
 and "Liq".  This option requires one of two unit model options to be set.  You
 can use the total material balance option for unit models, to specify that only

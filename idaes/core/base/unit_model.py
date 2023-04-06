@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Base class for unit models
@@ -39,6 +39,7 @@ import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import DefaultBool
 from idaes.core.util.initialization import fix_state_vars
+from idaes.core.initialization import SingleControlVolumeUnitInitializer
 
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -56,6 +57,9 @@ class UnitModelBlockData(ProcessBlockData):
     This is the class for process unit operations models. These are models that
     would generally appear in a process flowsheet or superstructure.
     """
+
+    # Set default initializer
+    default_initializer = SingleControlVolumeUnitInitializer
 
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
@@ -231,8 +235,11 @@ Must be True if dynamic = True,
                     sblock = block.properties
 
                     # Need to determine correct subset of indices to add to Port
+                    # Look at private attributes on control volume
+                    # pylint: disable-next=protected-access
                     if block._flow_direction == FlowDirection.forward:
                         _idx = block.length_domain.first()
+                    # pylint: disable-next=protected-access
                     elif block._flow_direction == FlowDirection.backward:
                         _idx = block.length_domain.last()
 
@@ -326,8 +333,11 @@ Must be True if dynamic = True,
                     sblock = block.properties
 
                     # Need to determine correct subset of indices to add to Port
+                    # Look at private attribute on control volume
+                    # pylint: disable-next=protected-access
                     if block._flow_direction == FlowDirection.backward:
                         _idx = block.length_domain.first()
+                    # pylint: disable-next=protected-access
                     elif block._flow_direction == FlowDirection.forward:
                         _idx = block.length_domain.last()
 
@@ -484,7 +494,7 @@ Must be True if dynamic = True,
         except AttributeError:
             raise ConfigurationError(
                 f"Unit model {self.name} does not have the standard Port "
-                f"names (inet and outlet). Please contact the unit model "
+                f"names (inlet and outlet). Please contact the unit model "
                 f"developer to develop a unit specific stream table."
             )
 

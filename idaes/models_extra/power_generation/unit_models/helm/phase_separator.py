@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Simplified Flash Unit Model, only for IAPWS with mixed state.
@@ -17,15 +17,19 @@ streams.
 
 Created: August 21 2020
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.environ import value
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
-from pyomo.environ import value
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
+from idaes.core.util.tables import create_stream_table_dataframe
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa, A. Lee)"
 
@@ -112,6 +116,7 @@ see property package for documentation.}""",
 
         self.add_port("vap_outlet", self.vap_state)
         self.add_port("liq_outlet", self.liq_state)
+
         # vapor outlet state
         @self.Constraint(self.flowsheet().time)
         def vap_material_balance(b, t):
@@ -204,3 +209,13 @@ see property package for documentation.}""",
 
     def calculate_scaling_factors(self):
         pass
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {
+                "Inlet": self.inlet,
+                "Liquid Outlet": self.liq_outlet,
+                "Vapor Outlet": self.vap_outlet,
+            },
+            time_point=time_point,
+        )

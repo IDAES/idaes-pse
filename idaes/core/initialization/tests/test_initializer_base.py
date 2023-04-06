@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for InitializerBase class
@@ -676,6 +676,10 @@ class TestSubMethods:
         assert expected in caplog.text
 
 
+class dummy_initializer:
+    pass
+
+
 class TestModularInitializerBase:
     @pytest.mark.unit
     def test_base_attributed(self):
@@ -684,46 +688,43 @@ class TestModularInitializerBase:
         assert initializer.submodel_initializers == {}
         assert initializer.config.default_submodel_initializer is None
 
-    def dummy_initializer(self):
-        pass
-
     @pytest.mark.unit
     def test_get_submodel_initializer_specific_model(self):
         m = ConcreteModel()
 
         initializer = ModularInitializerBase()
-        initializer.submodel_initializers[m] = self.dummy_initializer
+        initializer.submodel_initializers[m] = dummy_initializer
 
-        assert initializer.get_submodel_initializer(m) == self.dummy_initializer
+        assert isinstance(initializer.get_submodel_initializer(m), dummy_initializer)
 
     @pytest.mark.unit
     def test_get_submodel_initializer_model_type(self):
         m = ConcreteModel()
 
         initializer = ModularInitializerBase()
-        initializer.submodel_initializers[ConcreteModel] = self.dummy_initializer
+        initializer.submodel_initializers[ConcreteModel] = dummy_initializer
 
-        assert initializer.get_submodel_initializer(m) == self.dummy_initializer
+        assert isinstance(initializer.get_submodel_initializer(m), dummy_initializer)
 
     @pytest.mark.unit
     def test_get_submodel_initializer_model_default(self):
         m = ConcreteModel()
-        m.default_initializer = self.dummy_initializer
+        m.default_initializer = dummy_initializer
 
         initializer = ModularInitializerBase()
 
-        assert initializer.get_submodel_initializer(m) == self.dummy_initializer
+        assert isinstance(initializer.get_submodel_initializer(m), dummy_initializer)
 
     @pytest.mark.unit
     def test_get_submodel_initializer_global_default(self):
         m = ConcreteModel()
 
         initializer = ModularInitializerBase(
-            default_submodel_initializer=self.dummy_initializer
+            default_submodel_initializer=dummy_initializer
         )
-        assert initializer.config.default_submodel_initializer == self.dummy_initializer
+        assert initializer.config.default_submodel_initializer == dummy_initializer
 
-        assert initializer.get_submodel_initializer(m) == self.dummy_initializer
+        assert isinstance(initializer.get_submodel_initializer(m), dummy_initializer)
 
     @pytest.mark.unit
     def test_get_submodel_initializer_model_w_params(self):
@@ -736,9 +737,9 @@ class TestModularInitializerBase:
         m.params = dummy_param
 
         initializer = ModularInitializerBase()
-        initializer.submodel_initializers[dummy_param] = self.dummy_initializer
+        initializer.submodel_initializers[dummy_param] = dummy_initializer
 
-        assert initializer.get_submodel_initializer(m) == self.dummy_initializer
+        assert isinstance(initializer.get_submodel_initializer(m), dummy_initializer)
 
     @pytest.mark.unit
     def test_get_submodel_initializer_none(self, caplog):
@@ -756,9 +757,8 @@ class TestModularInitializerBase:
         m.b = ProcessBaseBlock()
 
         initializer = ModularInitializerBase()
-        assert (
-            initializer.get_submodel_initializer(m.b)
-            is BlockTriangularizationInitializer
+        assert isinstance(
+            initializer.get_submodel_initializer(m.b), BlockTriangularizationInitializer
         )
 
     @pytest.mark.unit

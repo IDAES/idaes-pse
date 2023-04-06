@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Basic property package for flue gas.
@@ -17,6 +17,9 @@ Main assumptions:
     - ideal gas
     - components in flue gas: O2, N2, NO, CO2, H2O, SO2
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo libraries
 from pyomo.environ import (
     Constraint,
@@ -499,20 +502,6 @@ class _FlueGasStateBlock(StateBlock):
         # Create solver
         opt = get_solver(solver, optarg)
 
-        if state_args is None:
-            state_args = {
-                "flow_mol_comp": {
-                    "N2": 1.0,
-                    "CO2": 1.0,
-                    "NO": 1.0,
-                    "O2": 1.0,
-                    "H2O": 1.0,
-                    "SO2": 1.0,
-                },
-                "pressure": 1e5,
-                "temperature": 495.0,
-            }
-
         if state_vars_fixed is False:
             flags = fix_state_vars(self, state_args)
         # Check when the state vars are fixed already result in dof 0
@@ -523,7 +512,7 @@ class _FlueGasStateBlock(StateBlock):
                 )
         # ---------------------------------------------------------------------
         # Solve 1st stage
-        for k, b in self.items():
+        for b in self.values():
             deactivate_list = []
             if hasattr(b, "enthalpy_correlation"):
                 deactivate_list.append(b.enthalpy_correlation)
@@ -1024,7 +1013,7 @@ class FlueGasStateBlockData(StateBlockData):
                 overwrite=False,
             )
         if self.is_property_constructed("enthalpy_correlation"):
-            for p, c in self.enthalpy_correlation.items():
+            for c in self.enthalpy_correlation.values():
                 iscale.constraint_scaling_transform(
                     c,
                     iscale.get_scaling_factor(self.enth_mol)
