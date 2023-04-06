@@ -2359,6 +2359,35 @@ class TestPysmoSurrogate:
             )
 
     @pytest.mark.unit
+    def test_rbf_print_msg(self, capsys):
+        # Test that correct BRF basis function is printed to screen at all times.
+        jstring_rbf_single = (
+            '{"model_encoding": '
+            '{"z1": {"attr": {"x_data_columns": ["x1", "x2"], '
+            '"x_data": [[0.0, 0.0], [0.25, 0.25], [0.5, 0.5], [0.75, 0.75], [1.0, 1.0]], '
+            '"centres": [[0.0, 0.0], [0.25, 0.25], [0.5, 0.5], [0.75, 0.75], [1.0, 1.0]], '
+            '"basis_function": "gaussian", '
+            '"weights": [[-69.10791015625], [-319807.1317138672], [959336.2551269531], [-959973.7440185547], [320514.66677856445]], '
+            '"sigma": 0.05, "regularization_parameter": 0.0, '
+            '"rmse": 0.0005986693684275349, "R2": 0.9999971327598984, '
+            '"x_data_min": [[1, 5]], "x_data_max": [[5, 9]], "y_data_min": [10], "y_data_max": [50]}, '
+            '"map": {"x_data_columns": "list", "x_data": "numpy", "centres": "numpy", '
+            '"basis_function": "str", "weights": "numpy", "sigma": "str", "regularization_parameter": "str", '
+            '"rmse": "str", "R2": "str", "x_data_min": "numpy", "x_data_max": "numpy", "y_data_min": "numpy", '
+            '"y_data_max": "numpy"}}}, '
+            '"input_labels": ["x1", "x2"], '
+            '"output_labels": ["z1", "z2"], '
+            '"input_bounds": {"x1": [0, 5], "x2": [0, 10]}, '
+            '"surrogate_type": "rbf"}'
+        )
+        for bf in ["cubic", "gaussian", "imq", "cubic", "mq", "linear", "spline"]:
+            changed_str = jstring_rbf_single[:]
+            changed_str = changed_str.replace("gaussian", bf)
+            pysmo_surr_rbf = PysmoSurrogate.load(StringIO(changed_str))
+            cs = capsys.readouterr()
+            assert bool(re.search(bf, str(cs.out))) == True
+
+    @pytest.mark.unit
     def test_load_rbf(self):
         # Try for polynomial with multiple outputs and other user-defined functions
         m = ConcreteModel()
