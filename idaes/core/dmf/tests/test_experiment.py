@@ -20,6 +20,8 @@ from typing import Union
 
 import pytest
 
+_ = pytest.importorskip("idaes.core.dmf.experiment", reason="DMF optional dependencies not available")
+
 from idaes.core.dmf import experiment, errors, DMF
 from idaes.core.dmf.resource import Predicates
 from .util import init_logging

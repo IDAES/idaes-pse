@@ -22,7 +22,7 @@ import pandas as pd
 
 from pyomo.common.fileutils import this_file_dir
 
-import idaes.core.dmf.model_data as da
+da = pytest.importorskip("idaes.core.dmf.model_data", reason="DMF optional dependencies not available")
 
 _data_dir = os.path.join(this_file_dir(), "data_files")
 

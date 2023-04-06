@@ -14,10 +14,13 @@
 Tests for idaes.core.dmf.help module
 """
 import pytest
-from .util import tmp_dmf
 from pathlib import Path
+
+_ = pytest.importorskip("idaes.core.dmf.help", reason="DMF optional dependencies not available")
+
 from idaes.core.dmf.dmfbase import DMFConfig
 from idaes.core.dmf.help import get_html_docs
+from .util import tmp_dmf
 
 
 @pytest.mark.unit

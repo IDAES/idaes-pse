@@ -27,6 +27,8 @@ from typing import Union
 import pytest
 
 # package
+_ = pytest.importorskip("idaes.core.dmf.dmfbase", reason="DMF optional dependencies not available")
+
 from idaes.core.dmf import resource
 from idaes.core.dmf import errors
 from idaes.core.dmf.dmfbase import DMFConfig, DMF

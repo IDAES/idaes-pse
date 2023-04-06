@@ -24,8 +24,9 @@ import shutil
 # third-party
 import pytest
 
+resource = pytest.importorskip("idaes.core.dmf.resource", reason="DMF optional dependencies not installed")
+
 # local
-from idaes.core.dmf import resource
 from idaes.core.dmf.resource import Predicates
 from idaes.core.dmf.util import mkdtemp
 

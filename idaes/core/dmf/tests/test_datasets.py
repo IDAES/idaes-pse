@@ -17,7 +17,8 @@ import copy
 import json
 import pytest
 import uuid
-from idaes.core.dmf import datasets
+
+datasets = pytest.importorskip("idaes.core.dmf.datasets", reason="DMF optional dependencies not available")
 
 
 # Constants

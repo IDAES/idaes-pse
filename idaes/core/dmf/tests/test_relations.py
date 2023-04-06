@@ -23,6 +23,8 @@ from typing import Union
 # third-party
 import pytest
 
+_ = pytest.importorskip("idaes.core.dmf.resourcedb", reason="DMF optional dependencies not installed")
+
 # local
 from idaes.core.dmf import experiment, resource, DMF
 from idaes.core.dmf.resource import Predicates

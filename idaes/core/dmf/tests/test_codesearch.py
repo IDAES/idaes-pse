@@ -25,7 +25,9 @@ import pytest
 
 # package
 import idaes
-from idaes.core.dmf import codesearch
+
+codesearch = pytest.importorskip("idaes.core.dmf.codesearch", reason="DMF optional dependencies not available")
+
 from idaes.core.base import property_meta
 from idaes.core.dmf.util import mkdtemp
 from .util import init_logging

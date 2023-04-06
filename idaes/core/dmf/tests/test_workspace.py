@@ -21,6 +21,7 @@ import os
 import pytest
 
 # local
+_ = pytest.importorskip("idaes.core.dmf.workspace", reason="DMF optional dependencies not available")
 from idaes.core.dmf import workspace, errors
 from idaes.core.dmf.util import TempDir
 

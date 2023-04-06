@@ -23,6 +23,8 @@ import webbrowser
 # third-party
 import pytest
 
+_ = pytest.importorskip("idaes.core.dmf.magics", reason="DMF optional dependencies not available")
+
 # local
 from idaes.core.dmf import magics, DMF
 from idaes.core.dmf.magics import DMFMagicError

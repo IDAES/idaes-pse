@@ -14,12 +14,13 @@
 Tests for idaes.core.dmf.getver module
 """
 
-import idaes
-from idaes.core import dmf
-from idaes.core.dmf import getver
 import uuid
 
 import pytest
+
+import idaes
+getver = pytest.importorskip("idaes.core.dmf.getver", reason="DMF optional dependencies not available")
+from idaes.core import dmf
 
 
 @pytest.fixture

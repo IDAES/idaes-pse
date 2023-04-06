@@ -17,6 +17,9 @@ __author__ = "Dan Gunter"
 
 from pathlib import Path
 import pytest
+
+_ = pytest.importorskip("idaes.core.dmf.tables", reason="DMF optional dependencies not installed")
+
 from idaes.core.dmf.tables import Table, DataFormatError
 from idaes.core.dmf import resource, DMF
 
