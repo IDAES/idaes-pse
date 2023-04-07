@@ -221,11 +221,15 @@ class HelmholtzThermoExpressions(object):
         component.
         """
         result_basis = kwargs.pop("result_basis", self.amount_basis)
+        convert_args = kwargs.pop("convert_args", True)
         kwargs, kwset = self._validate_args(kwargs)
         c = self.param.pure_component  # string for chemical component
         blk = self.blk  # block with external functions
         if "p" in kwargs:
-            p = kwargs["p"] * self.param.uc["Pa to kPa"]
+            if convert_args:
+                p = kwargs["p"] * self.param.uc["Pa to kPa"]
+            else:
+                p = kwargs["p"]
         if "x" in kwargs:
             x = kwargs["x"]
         else:
@@ -233,22 +237,31 @@ class HelmholtzThermoExpressions(object):
         if "T" in kwargs:
             T = kwargs["T"]
         if {"h", "p"} == kwset:
-            if self.amount_basis == AmountBasis.MOLE:
-                h = kwargs["h"] * self.param.uc["J/mol to kJ/kg"]
+            if convert_args:
+                if self.amount_basis == AmountBasis.MOLE:
+                    h = kwargs["h"] * self.param.uc["J/mol to kJ/kg"]
+                else:
+                    h = kwargs["h"] * self.param.uc["J/kg to kJ/kg"]
             else:
-                h = kwargs["h"] * self.param.uc["J/kg to kJ/kg"]
+                h = kwargs["h"]
             return StateVars.PH, result_basis, blk, c, h, p, None
         if {"s", "p"} == kwset:
-            if self.amount_basis == AmountBasis.MOLE:
-                s = kwargs["s"] * self.param.uc["J/mol/K to kJ/kg/K"]
+            if convert_args:
+                if self.amount_basis == AmountBasis.MOLE:
+                    s = kwargs["s"] * self.param.uc["J/mol/K to kJ/kg/K"]
+                else:
+                    s = kwargs["s"] * self.param.uc["J/kg/K to kJ/kg/K"]
             else:
-                s = kwargs["s"] * self.param.uc["J/kg/K to kJ/kg/K"]
+                s = kwargs["s"]
             return StateVars.PS, result_basis, blk, c, s, p, None
         if {"u", "p"} == kwset:
-            if self.amount_basis == AmountBasis.MOLE:
-                u = kwargs["u"] * self.param.uc["J/mol to kJ/kg"]
+            if convert_args:
+                if self.amount_basis == AmountBasis.MOLE:
+                    u = kwargs["u"] * self.param.uc["J/mol to kJ/kg"]
+                else:
+                    u = kwargs["u"] * self.param.uc["J/kg to kJ/kg"]
             else:
-                u = kwargs["u"] * self.param.uc["J/kg to kJ/kg"]
+                u = kwargs["u"]
             return StateVars.PU, result_basis, blk, c, u, p, None
         if {"T", "x"} == kwset:
             self.add_funcs(names=["p_sat_t_func"])
@@ -400,7 +413,7 @@ class HelmholtzThermoExpressions(object):
                 blk.s_liq_tp_func(c, state1, p, _data_dir) * (1 - x)
                 + blk.s_vap_tp_func(c, state1, p, _data_dir) * x
             )
-        if self.amount_basis == AmountBasis.MOLE:
+        if result_basis == AmountBasis.MOLE:
             return s * self.param.uc["kJ/kg/K to J/mol/K"]
         return s * self.param.uc["kJ/kg/K to J/kg/K"]
 
@@ -448,7 +461,7 @@ class HelmholtzThermoExpressions(object):
                 blk.h_liq_tp_func(c, state1, p, _data_dir) * (1 - x)
                 + blk.h_vap_tp_func(c, state1, p, _data_dir) * x
             )
-        if self.amount_basis == AmountBasis.MOLE:
+        if result_basis == AmountBasis.MOLE:
             return h * self.param.uc["kJ/kg to J/mol"]
         return h * self.param.uc["kJ/kg to J/kg"]
 
@@ -496,7 +509,7 @@ class HelmholtzThermoExpressions(object):
                 blk.u_liq_tp_func(c, state1, p, _data_dir) * (1 - x)
                 + blk.u_vap_tp_func(c, state1, p, _data_dir) * x
             )
-        if self.amount_basis == AmountBasis.MOLE:
+        if result_basis == AmountBasis.MOLE:
             return u * self.param.uc["kJ/kg to J/mol"]
         return u * self.param.uc["kJ/kg to J/kg"]
 
@@ -878,13 +891,14 @@ class HelmholtzThermoExpressions(object):
             * self.param.uc["kPa to Pa"]
         )
 
-    def T_sat(self, p):
+    def T_sat(self, p, convert_args=True):
         """Return saturation temperature as a function of p"""
-        p *= self.param.uc["Pa to kPa"]
+        if convert_args:
+            p *= self.param.uc["Pa to kPa"]
         self.add_funcs(names=["t_sat_func"])
         return self.blk.t_sat_func(self.param.pure_component, p, _data_dir)
 
-    def h_vap_sat(self, T=None, p=None, result_basis=None):
+    def h_vap_sat(self, T=None, p=None, result_basis=None, convert_args=True):
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -892,13 +906,14 @@ class HelmholtzThermoExpressions(object):
             h = self.blk.h_vap_sat_t_func(self.param.pure_component, T, _data_dir)
         elif p is not None:
             self.add_funcs(names=["h_vap_sat_p_func"])
-            p *= self.param.uc["Pa to kPa"]
+            if convert_args:
+                p *= self.param.uc["Pa to kPa"]
             h = self.blk.h_vap_sat_p_func(self.param.pure_component, p, _data_dir)
         if result_basis == AmountBasis.MOLE:
             return h * self.param.uc["kJ/kg to J/mol"]
         return h * self.param.uc["kJ/kg to J/kg"]
 
-    def h_liq_sat(self, T=None, p=None, result_basis=None):
+    def h_liq_sat(self, T=None, p=None, result_basis=None, convert_args=True):
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -906,13 +921,14 @@ class HelmholtzThermoExpressions(object):
             h = self.blk.h_liq_sat_t_func(self.param.pure_component, T, _data_dir)
         elif p is not None:
             self.add_funcs(names=["h_liq_sat_p_func"])
-            p *= self.param.uc["Pa to kPa"]
+            if convert_args:
+                p *= self.param.uc["Pa to kPa"]
             h = self.blk.h_liq_sat_p_func(self.param.pure_component, p, _data_dir)
         if result_basis == AmountBasis.MOLE:
             return h * self.param.uc["kJ/kg to J/mol"]
         return h * self.param.uc["kJ/kg to J/kg"]
 
-    def s_vap_sat(self, T=None, p=None, result_basis=None):
+    def s_vap_sat(self, T=None, p=None, result_basis=None, convert_args=True):
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -920,13 +936,14 @@ class HelmholtzThermoExpressions(object):
             s = self.blk.s_vap_sat_t_func(self.param.pure_component, T, _data_dir)
         elif p is not None:
             self.add_funcs(names=["s_vap_sat_p_func"])
-            p *= self.param.uc["Pa to kPa"]
+            if convert_args:
+                p *= self.param.uc["Pa to kPa"]
             s = self.blk.s_vap_sat_p_func(self.param.pure_component, p, _data_dir)
         if result_basis == AmountBasis.MOLE:
             return s * self.param.uc["kJ/kg/K to J/mol/K"]
         return s * self.param.uc["kJ/kg/K to J/kg/K"]
 
-    def s_liq_sat(self, T=None, p=None, result_basis=None):
+    def s_liq_sat(self, T=None, p=None, result_basis=None, convert_args=True):
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -934,13 +951,14 @@ class HelmholtzThermoExpressions(object):
             s = self.blk.s_liq_sat_t_func(self.param.pure_component, T, _data_dir)
         elif p is not None:
             self.add_funcs(names=["s_liq_sat_p_func"])
-            p *= self.param.uc["Pa to kPa"]
+            if convert_args:
+                p *= self.param.uc["Pa to kPa"]
             s = self.blk.s_liq_sat_p_func(self.param.pure_component, p, _data_dir)
         if result_basis == AmountBasis.MOLE:
             return s * self.param.uc["kJ/kg/K to J/mol/K"]
         return s * self.param.uc["kJ/kg/K to J/kg/K"]
 
-    def u_vap_sat(self, T=None, p=None, result_basis=None):
+    def u_vap_sat(self, T=None, p=None, result_basis=None, convert_args=True):
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -948,13 +966,14 @@ class HelmholtzThermoExpressions(object):
             u = self.blk.u_vap_sat_t_func(self.param.pure_component, T, _data_dir)
         elif p is not None:
             self.add_funcs(names=["u_vap_sat_p_func"])
-            p *= self.param.uc["Pa to kPa"]
+            if convert_args:
+                p *= self.param.uc["Pa to kPa"]
             u = self.blk.u_vap_sat_p_func(self.param.pure_component, p, _data_dir)
         if result_basis == AmountBasis.MOLE:
             return u * self.param.uc["kJ/kg to J/mol"]
         return u * self.param.uc["kJ/kg to J/kg"]
 
-    def u_liq_sat(self, T=None, p=None, result_basis=None):
+    def u_liq_sat(self, T=None, p=None, result_basis=None, convert_args=True):
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -962,13 +981,14 @@ class HelmholtzThermoExpressions(object):
             u = self.blk.u_liq_sat_t_func(self.param.pure_component, T, _data_dir)
         elif p is not None:
             self.add_funcs(names=["u_liq_sat_p_func"])
-            p *= self.param.uc["Pa to kPa"]
+            if convert_args:
+                p *= self.param.uc["Pa to kPa"]
             u = self.blk.u_liq_sat_p_func(self.param.pure_component, p, _data_dir)
         if result_basis == AmountBasis.MOLE:
             return u * self.param.uc["kJ/kg to J/mol"]
         return u * self.param.uc["kJ/kg to J/kg"]
 
-    def v_vap_sat(self, T=None, p=None, result_basis=None):
+    def v_vap_sat(self, T=None, p=None, result_basis=None, convert_args=True):
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -976,13 +996,14 @@ class HelmholtzThermoExpressions(object):
             v = self.blk.v_vap_sat_t_func(self.param.pure_component, T, _data_dir)
         elif p is not None:
             self.add_funcs(names=["v_vap_sat_p_func"])
-            p *= self.param.uc["Pa to kPa"]
+            if convert_args:
+                p *= self.param.uc["Pa to kPa"]
             v = self.blk.v_vap_sat_p_func(self.param.pure_component, p, _data_dir)
         if result_basis == AmountBasis.MOLE:
             return v * self.param.uc["m3/kg to m3/mol"]
         return v
 
-    def v_liq_sat(self, T=None, p=None, result_basis=None):
+    def v_liq_sat(self, T=None, p=None, result_basis=None, convert_args=True):
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -990,7 +1011,8 @@ class HelmholtzThermoExpressions(object):
             v = self.blk.v_liq_sat_t_func(self.param.pure_component, T, _data_dir)
         elif p is not None:
             self.add_funcs(names=["v_liq_sat_p_func"])
-            p *= self.param.uc["Pa to kPa"]
+            if convert_args:
+                p *= self.param.uc["Pa to kPa"]
             v = self.blk.v_liq_sat_p_func(self.param.pure_component, p, _data_dir)
         if result_basis == AmountBasis.MOLE:
             return v * self.param.uc["m3/kg to m3/mol"]
