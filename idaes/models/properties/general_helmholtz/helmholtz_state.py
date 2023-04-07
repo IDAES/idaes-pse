@@ -1410,9 +1410,13 @@ class HelmholtzStateBlockData(StateBlockData):
 
             def rule_visc_d_phase(b, p):
                 if p == "Liq":
-                    return self.expression_writer.viscosity_liq(**sv_dict_liq, convert_args=False)
+                    return self.expression_writer.viscosity_liq(
+                        **sv_dict_liq, convert_args=False
+                    )
                 else:
-                    return self.expression_writer.viscosity_vap(**sv_dict_vap, convert_args=False)
+                    return self.expression_writer.viscosity_vap(
+                        **sv_dict_vap, convert_args=False
+                    )
 
             self.visc_d_phase = pyo.Expression(
                 phlist,
@@ -1423,12 +1427,16 @@ class HelmholtzStateBlockData(StateBlockData):
             def rule_visc_k_phase(b, p):
                 if p == "Liq":
                     return (
-                        self.expression_writer.viscosity_liq(**sv_dict_liq, convert_args=False)
+                        self.expression_writer.viscosity_liq(
+                            **sv_dict_liq, convert_args=False
+                        )
                         / self.dens_mass_phase[p]
                     )
                 else:
                     return (
-                        self.expression_writer.viscosity_vap(**sv_dict_vap, convert_args=False)
+                        self.expression_writer.viscosity_vap(
+                            **sv_dict_vap, convert_args=False
+                        )
                         / self.dens_mass_phase[p]
                     )
 
@@ -1460,7 +1468,9 @@ class HelmholtzStateBlockData(StateBlockData):
 
             self.surf_tens = pyo.Expression(
                 phlist,
-                expr=self.expression_writer.surface_tension(**sv_dict_liq, convert_args=False),
+                expr=self.expression_writer.surface_tension(
+                    **sv_dict_liq, convert_args=False
+                ),
                 doc="Thermal conductivity of phase",
             )
 
