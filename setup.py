@@ -33,9 +33,7 @@ def rglob(path, glob):
     return list(map(str, p.rglob(glob)))
 
 
-DEPENDENCIES_FOR_PRERELEASE_VERSION = [
-    "pyomo @ https://github.com/IDAES/pyomo/archive/6.5.0.zip"
-]
+DEPENDENCIES_FOR_PRERELEASE_VERSION = []
 
 # For included DMF data
 DMF_DATA_ROOT = "data"
@@ -78,7 +76,7 @@ kwargs = dict(
         "numpy",
         "omlt==1.1",  # fix the version for now as package evolves
         "pandas",
-        "pyomo ~= 6.5",
+        "pyomo @ https://github.com/IDAES/pyomo/archive/6.5.1.idaes.2023.03.28.zip",
         "sympy",  # pyomo differentiation
         "pint",  # pyomo units
         "networkx",  # pyomo network
@@ -103,7 +101,7 @@ kwargs = dict(
         "optional": [
             "sympy",  # idaes.core.util.expr_doc
             "tensorflow",  # idaes.core.surrogate.keras_surrogate
-            "gridx-prescient>=2.2.1",  # idaes.tests.prescient
+            "gridx-prescient>=2.2.2",  # idaes.tests.prescient
             # A Lee 11-Jan-22: no precompiled version of CoolProp available for Pyhton 3.9
             "coolprop; python_version < '3.9'",  # idaes.generic_models.properties.general.coolprop
         ],

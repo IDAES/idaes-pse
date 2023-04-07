@@ -34,12 +34,10 @@ from idaes.core.util.config import (
 )
 from idaes.core.util.misc import add_object_reference
 from idaes.core.base.util import build_on_demand
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+)
 
-# WHY on Python 3.6, using the alternate syntax "import idaes.core.util.scaling as iscale"
-# fails with "AttributeError: module 'idaes' has no attribute 'core'"
-# this is likely due to a bug/limitation in how the Python import mechanism resolves circular imports
-# for more information, see https://stackoverflow.com/questions/24807434
-# and the official Python bug report: http://bugs.python.org/issue30024
 from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
 
@@ -184,6 +182,9 @@ class ReactionBlockBase(ProcessBlock):
     PropertyData objects, and contains methods that can be applied to
     multiple ReactionBlockData objects simultaneously.
     """
+
+    # Set default initializer
+    default_initializer = BlockTriangularizationInitializer
 
     def initialize(self, *args):
         """

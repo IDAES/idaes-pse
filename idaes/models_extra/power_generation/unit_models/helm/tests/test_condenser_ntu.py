@@ -93,3 +93,65 @@ def test_condenser_dynamic():
         assert pyo.value(m.fs.unit.shell_inlet.pressure[t]) == pytest.approx(
             14036.3360, rel=1e-2
         )
+
+
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
+@pytest.mark.unit
+def test_get_stream_table_contents():
+    m = pyo.ConcreteModel()
+    m.fs = idaes.core.FlowsheetBlock(
+        dynamic=True, time_set=[0, 3], time_units=pyo.units.s
+    )
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
+    m.fs.unit = HelmNtuCondenser(
+        dynamic=False,
+        shell={"has_pressure_change": False, "property_package": m.fs.properties},
+        tube={"has_pressure_change": False, "property_package": m.fs.properties},
+    )
+
+    stable = m.fs.unit._get_stream_table_contents()
+
+    expected = {
+        "Units": {
+            "Mass Flow": getattr(pyo.units.pint_registry, "kg/s"),
+            "Molar Flow": getattr(pyo.units.pint_registry, "mol/s"),
+            "Molar Enthalpy": getattr(pyo.units.pint_registry, "J/mol"),
+            "P": getattr(pyo.units.pint_registry, "Pa"),
+            "T": getattr(pyo.units.pint_registry, "K"),
+            "Vapor Fraction": getattr(pyo.units.pint_registry, "dimensionless"),
+        },
+        "Hot Inlet": {
+            "Mass Flow": pytest.approx(0.01801527, rel=1e-5),
+            "Molar Flow": pytest.approx(1.0, rel=1e-5),
+            "Molar Enthalpy": pytest.approx(0.01102139, rel=1e-5),
+            "P": pytest.approx(11032300, rel=1e-5),
+            "T": pytest.approx(270.4877, rel=1e-5),
+            "Vapor Fraction": pytest.approx(0.0, abs=1e-5),
+        },
+        "Hot Outlet": {
+            "Mass Flow": pytest.approx(0.01801527, rel=1e-5),
+            "Molar Flow": pytest.approx(1.0, rel=1e-5),
+            "Molar Enthalpy": pytest.approx(0.01102139, rel=1e-5),
+            "P": pytest.approx(11032300, rel=1e-5),
+            "T": pytest.approx(270.4877, rel=1e-5),
+            "Vapor Fraction": pytest.approx(0.0, abs=1e-5),
+        },
+        "Cold Inlet": {
+            "Mass Flow": pytest.approx(0.01801527, rel=1e-5),
+            "Molar Flow": pytest.approx(1.0, rel=1e-5),
+            "Molar Enthalpy": pytest.approx(0.01102139, rel=1e-5),
+            "P": pytest.approx(11032300, rel=1e-5),
+            "T": pytest.approx(270.4877, rel=1e-5),
+            "Vapor Fraction": pytest.approx(0.0, abs=1e-5),
+        },
+        "Cold Outlet": {
+            "Mass Flow": pytest.approx(0.01801527, rel=1e-5),
+            "Molar Flow": pytest.approx(1.0, rel=1e-5),
+            "Molar Enthalpy": pytest.approx(0.01102139, rel=1e-5),
+            "P": pytest.approx(11032300, rel=1e-5),
+            "T": pytest.approx(270.4877, rel=1e-5),
+            "Vapor Fraction": pytest.approx(0.0, abs=1e-5),
+        },
+    }
+
+    assert stable.to_dict() == expected
