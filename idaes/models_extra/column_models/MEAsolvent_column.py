@@ -955,7 +955,7 @@ class MEAColumnData(PackedColumnData):
                       volumetric mass transfer coefficient correlation""",
         )
 
-        self.log_kl = Var(
+        self.log_mass_transfer_coeff_liq = Var(
             self.flowsheet().time,
             self.liquid_phase.length_domain,
             solute_comp_list,
@@ -970,12 +970,12 @@ class MEAColumnData(PackedColumnData):
             solute_comp_list,
             doc="""Defines log variable for the liquid mass transfer coeff""",
         )
-        def log_kl_eqn(blk, t, x, j):
+        def log_mass_transfer_coeff_liq_eqn(blk, t, x, j):
             if x == blk.liquid_phase.length_domain.last():
                 return Constraint.Skip
             else:
                 return (
-                    exp(blk.log_kl[t, x, j]) * lunits("velocity")
+                    exp(blk.log_mass_transfer_coeff_liq[t, x, j]) * lunits("velocity")
                     == blk.mass_transfer_coeff_liq[t, x, j]
                 )
 
@@ -1005,7 +1005,7 @@ class MEAColumnData(PackedColumnData):
                 return Constraint.Skip
             else:
                 log_hydraulic_diameter = log(blk.hydraulic_diameter / lunits("length"))
-                return blk.log_kl[t, x, j] == (
+                return blk.log_mass_transfer_coeff_liq[t, x, j] == (
                     blk.log_Cl_ref
                     + (1 / 6) * log(12)
                     + 0.5
@@ -1199,7 +1199,7 @@ class MEAColumnData(PackedColumnData):
                     to_units=pyunits.mol / pyunits.m**3,
                 )
 
-                # Updated expression with new reference - Puttas paper TODO Get reference
+                # Putta, Svendsen, Knuutila 2017 Eqn. 42
                 return log(
                     pyunits.convert(
                         3.1732e9
@@ -1293,7 +1293,7 @@ class MEAColumnData(PackedColumnData):
             else:
                 zf = blk.liquid_phase.length_domain.next(x)
                 Pressure = pyunits.convert(
-                    blk.vapor_phase.properties[t, x].pressure,
+                    blk.vapor_phase.properties[t, zf].pressure,
                     to_units=lunits("pressure"),
                 )
                 return blk.log_conc_CO2_bulk[t, x] + log(
@@ -1809,7 +1809,7 @@ class MEAColumnData(PackedColumnData):
                         warning=False,
                     )
                     ssf(self.mass_transfer_coeff_liq[t, x_liq, j], sf)
-                    cst(self.log_kl_eqn[t, x_liq, j], sf)
+                    cst(self.log_mass_transfer_coeff_liq_eqn[t, x_liq, j], sf)
 
                 sf = gsf(self.liquid_phase.properties[t, x_liq].visc_d_phase["Liq"])
                 cst(self.log_visc_d_liq_eqn[t, x_liq], sf)
@@ -1880,14 +1880,16 @@ class MEAColumnData(PackedColumnData):
                 ),
             )
 
+        # Scale variables
+        for t in self.flowsheet().time:
+            for x in self.liquid_phase.length_domain:
+                iscale.set_scaling_factor(self.conc_CO2_bulk[t, x], 10)
+                iscale.set_scaling_factor(self.conc_CO2_equil_bulk[t, x], 10)
+
         for (t, x), con in self.conc_CO2_bulk_eqn.items():
             zf = self.liquid_phase.length_domain.next(x)
             sf_C = gsf(self.conc_CO2_bulk[t, x])
             cst(con, sf_C)
-
-        # Scale variables
-        for x in self.liquid_phase.length_domain:
-            iscale.set_scaling_factor(self.conc_CO2_bulk[0, x], 10)
 
         # for x in self.liquid_phase.length_domain:
         #     iscale.set_scaling_factor(self.instant_E[0, x], 1e-3)
@@ -2303,7 +2305,7 @@ class MEAColumnData(PackedColumnData):
         ]
 
         mass_transfer_coeff_liq_constraints = [
-            "log_kl_eqn",
+            "log_mass_transfer_coeff_liq_eqn",
             "log_Cl_ref_eqn",
             "mass_transfer_coeff_liq_eqn",
         ]
@@ -2412,7 +2414,7 @@ class MEAColumnData(PackedColumnData):
 
         # Mass transfer coefficients
         blk.Cl_ref.fix()
-        blk.log_kl.fix()
+        blk.log_mass_transfer_coeff_liq.fix()
 
         blk.log_kv.fix()
         blk.log_holdup_vap.fix()
@@ -2700,7 +2702,7 @@ class MEAColumnData(PackedColumnData):
         blk.mass_transfer_coeff_liq.unfix()
 
         # blk.log_diffus_liq_comp.unfix()
-        blk.log_kl.unfix()
+        blk.log_mass_transfer_coeff_liq.unfix()
         # blk.Cl_ref.unfix()
         blk.mass_transfer_coeff_liq.unfix()
 
@@ -2712,12 +2714,12 @@ class MEAColumnData(PackedColumnData):
                 pass
             else:
                 calculate_variable_from_constraint(
-                    blk.log_kl[0, x, "CO2"],
+                    blk.log_mass_transfer_coeff_liq[0, x, "CO2"],
                     blk.mass_transfer_coeff_liq_eqn[0, x, "CO2"],
                 )
                 calculate_variable_from_constraint(
                     blk.mass_transfer_coeff_liq[0, x, "CO2"],
-                    blk.log_kl_eqn[0, x, "CO2"],
+                    blk.log_mass_transfer_coeff_liq_eqn[0, x, "CO2"],
                 )
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -2791,8 +2793,6 @@ class MEAColumnData(PackedColumnData):
                     blk.conc_CO2_equil_bulk_eqn[0, x],
                 )
 
-                # conc_CO2_bulk is weakly dependent on enhancemnt factor. Let's try leaving it out and seeing what
-                # happens
                 entangled_vars = [
                     blk.conc_interface_MEA[0, x],
                     blk.log_conc_interface_MEA[0, x],
