@@ -2677,7 +2677,7 @@ class TestLiCODiafiltration:
         assert_optimal_termination(res)
 
         # Increase stage length and re-solve
-        L = 754.4  # isotropic stages
+        L = 756.4  # isotropic stages
         model.fs.stage1.length.fix(L)
         model.fs.stage2.length.fix(L)
         model.fs.stage3.length.fix(L)
@@ -2753,5 +2753,5 @@ class TestLiCODiafiltration:
                 ]
             )
         )
-        assert R_Li == pytest.approx(0.9437, rel=1e-4)
-        assert R_Co == pytest.approx(0.6404, rel=1e-4)
+        assert R_Li == pytest.approx(0.9451, rel=1e-4)
+        assert R_Co == pytest.approx(0.6378, rel=1e-4)
