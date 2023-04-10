@@ -196,6 +196,7 @@ derived_quantities = {
         units.kg * units.m**2 * units.s**-2 * units.K**-1 * units.mol**-1
     ),
     "power": (units.kg * units.m**2 * units.s**-3),
+    "voltage": (units.kg * units.m**2 * units.s**-3 * units.ampere**-1),
     "pressure": (units.kg * units.m**-1 * units.s**-2),
     "heat_capacity_mass": (units.m**2 * units.s**-2 * units.K**-1),
     "heat_capacity_mole": (
