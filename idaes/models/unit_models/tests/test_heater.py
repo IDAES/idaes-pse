@@ -676,7 +676,25 @@ class TestInitializersModular:
             model.fs.unit.outlet.pressure[0]
         )
 
-    # TODO: BT Initializer fails with AMPL evaluation error
+    @pytest.mark.integration
+    @pytest.mark.skipif(
+        not AmplInterface.available(), reason="pynumero_ASL is not available"
+    )
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(
+            block_solver="ipopt", constraint_tolerance=1e-4
+        )
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, abs=1e-3) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(358.6, abs=1e-1) == value(
+            model.fs.unit.outlet.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            model.fs.unit.outlet.pressure[0]
+        )
 
 
 class TestInitializersCubicBTX:

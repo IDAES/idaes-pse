@@ -224,7 +224,7 @@ conditions, and thus corresponding constraints  should be included,
 
 class CubicEoSInitializer(InitializerBase):
     """
-    Initializer for CubicEoS property packages..
+    Initializer for CubicEoS property packages.
 
     This Initializer uses a hierarchical routine to initialize the
     property package using the following steps:

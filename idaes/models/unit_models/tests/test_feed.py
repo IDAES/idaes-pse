@@ -22,7 +22,7 @@ from pyomo.util.check_units import assert_units_consistent
 from pyomo.contrib.pynumero.asl import AmplInterface
 
 from idaes.core import FlowsheetBlock
-from idaes.models.unit_models.feed import Feed
+from idaes.models.unit_models.feed import Feed, FeedInitializer
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
 )
@@ -64,6 +64,8 @@ def test_config():
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.property_package is m.fs.properties
+
+    assert m.fs.unit.default_initializer is FeedInitializer
 
 
 # -----------------------------------------------------------------------------
@@ -320,6 +322,26 @@ class TestInitializers:
         m.fs.unit.pressure.fix(101325)
 
         return m
+
+    @pytest.mark.integration
+    def test_default_initializer(self, model):
+        initializer = FeedInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(101325.0, abs=1e3) == value(
+            model.fs.unit.outlet.pressure[0]
+        )
+        assert pytest.approx(24000, abs=1e3) == value(model.fs.unit.outlet.enth_mol[0])
+        assert pytest.approx(100.0, abs=1e-2) == value(model.fs.unit.outlet.flow_mol[0])
+
+        assert pytest.approx(373.12, abs=1e-2) == value(
+            model.fs.unit.properties[0].temperature
+        )
+        assert pytest.approx(0.5953, abs=1e-4) == value(
+            model.fs.unit.properties[0].phase_frac["Liq"]
+        )
 
     @pytest.mark.integration
     @pytest.mark.skipif(
