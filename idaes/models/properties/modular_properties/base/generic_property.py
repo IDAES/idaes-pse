@@ -1633,7 +1633,7 @@ class _GenericStateBlock(StateBlock):
         # Also need to deactivate sum of mole fraction constraint
         for k in self.values():
             try:
-                k.sum_mol_frac_out.deactivate()
+                k.sum_mole_frac_out.deactivate()
             except AttributeError:
                 pass
 

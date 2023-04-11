@@ -46,7 +46,6 @@ from idaes.core.util.testing import (
     initialization_tester,
 )
 from idaes.core.solvers import get_solver
-
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     SingleControlVolumeUnitInitializer,
