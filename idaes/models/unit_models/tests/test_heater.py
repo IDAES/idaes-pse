@@ -681,9 +681,7 @@ class TestInitializersModular:
         not AmplInterface.available(), reason="pynumero_ASL is not available"
     )
     def test_block_triangularization(self, model):
-        initializer = BlockTriangularizationInitializer(
-            block_solver="ipopt", constraint_tolerance=1e-4
-        )
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=1e-4)
         initializer.initialize(model.fs.unit)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok

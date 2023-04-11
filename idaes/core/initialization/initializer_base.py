@@ -361,7 +361,7 @@ class InitializerBase:
                 set of variables in active constraint. Default = False.
 
         Returns:
-            InitialationStatus Enum
+            InitializationStatus Enum
         """
         if results_obj is not None:
             self._update_summary(
@@ -409,7 +409,8 @@ class InitializerBase:
                 self._update_summary(model, "status", InitializationStatus.Failed)
                 raise InitializationError(
                     f"{model.name} failed to initialize successfully: uninitialized variables or "
-                    "unconverged equality constraints detected. Please check postcheck summary for more information."
+                    f"unconverged equality constraints detected. Please check postcheck summary "
+                    f"for more information."
                 )
 
         self._update_summary(model, "status", InitializationStatus.Ok)

@@ -344,7 +344,28 @@ class TestInitializersIAWPS:
             model.fs.unit.control_volume.properties_out[0].phase_frac["Liq"]
         )
 
-    # TODO: BTInitializer fails, probably due to VLE
+    @pytest.mark.integration
+    @pytest.mark.skipif(
+        not AmplInterface.available(), reason="pynumero_ASL is not available"
+    )
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(101325.0, abs=1e3) == value(
+            model.fs.unit.outlet.pressure[0]
+        )
+        assert pytest.approx(24000, abs=1e3) == value(model.fs.unit.outlet.enth_mol[0])
+        assert pytest.approx(100.0, abs=1e-2) == value(model.fs.unit.outlet.flow_mol[0])
+
+        assert pytest.approx(373.12, abs=1e-2) == value(
+            model.fs.unit.control_volume.properties_out[0].temperature
+        )
+        assert pytest.approx(0.5953, abs=1e-4) == value(
+            model.fs.unit.control_volume.properties_out[0].phase_frac["Liq"]
+        )
 
 
 class TestInitializersBT:
@@ -385,4 +406,23 @@ class TestInitializersBT:
             model.fs.unit.control_volume.properties_out[0].flow_mol_phase["Vap"]
         )
 
-    # TODO: BT Initializer does not solve, probably due to VLE
+    @pytest.mark.integration
+    @pytest.mark.skipif(
+        not AmplInterface.available(), reason="pynumero_ASL is not available"
+    )
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(101325.0, abs=1e3) == value(
+            model.fs.unit.outlet.pressure[0]
+        )
+        assert pytest.approx(368.00, abs=1e-0) == value(
+            model.fs.unit.outlet.temperature[0]
+        )
+        assert pytest.approx(1.0, abs=1e-2) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(0.396, abs=1e-3) == value(
+            model.fs.unit.control_volume.properties_out[0].flow_mol_phase["Vap"]
+        )

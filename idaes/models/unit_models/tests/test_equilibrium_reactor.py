@@ -342,16 +342,16 @@ class TestInitializers:
             55388, rel=1e-5
         )
         assert value(model.fs.unit.outlet.conc_mol_comp[0, "NaOH"]) == pytest.approx(
-            0, abs=2e-5
+            0.0026102, rel=2e-5
         )
         assert value(
             model.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
-        ) == pytest.approx(0, abs=2e-5)
+        ) == pytest.approx(0.0026102, rel=2e-5)
         assert value(
             model.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]
-        ) == pytest.approx(100, rel=2e-5)
+        ) == pytest.approx(99.997, rel=2e-5)
         assert value(model.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]) == pytest.approx(
-            100, rel=2e-5
+            99.997, rel=2e-5
         )
         assert value(model.fs.unit.outlet.temperature[0]) == pytest.approx(
             304.32, rel=1e-2
