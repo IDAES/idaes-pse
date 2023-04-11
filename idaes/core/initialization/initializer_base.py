@@ -638,7 +638,7 @@ class ModularInitializerBase(InitializerBase):
         self, model: Block, plugin_initializer_args: dict = None, **kwargs
     ):
         """
-        Common initialization routine for models with one control volume.
+        Common initialization routine for models with plugins.
 
         Args:
             model: Pyomo Block to be initialized
@@ -649,11 +649,6 @@ class ModularInitializerBase(InitializerBase):
         Returns:
             Pyomo solver results object
         """
-        if not hasattr(model, "control_volume"):
-            raise TypeError(
-                f"Model {model.name} does not appear to be a standard form unit model. "
-                f"Please use an Initializer specific to the model being initialized."
-            )
         if plugin_initializer_args is None:
             plugin_initializer_args = {}
 

@@ -32,6 +32,7 @@ __author__ = "Andrew Lee"
 @pytest.mark.unit
 def test_nonstandard_model():
     m = ConcreteModel()
+    m.initialization_order = [m]
 
     initializer = SingleControlVolumeUnitInitializer()
 
