@@ -15,12 +15,10 @@ Initializer class for implementing Hierarchical initialization routines for
 IDAES models with standard forms (e.g. units with 1 control volume)
 """
 from pyomo.environ import Block
-from pyomo.common.config import ConfigDict, ConfigValue, Bool
+from pyomo.common.config import ConfigValue, Bool
 
 from idaes.core.initialization.initializer_base import ModularInitializerBase
-from idaes.core.solvers import get_solver
 from idaes.core.util import to_json, from_json, StoreSpec
-from idaes.core.util.exceptions import InitializationError
 import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import variables_in_activated_constraints_set
 
