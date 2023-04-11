@@ -24,7 +24,6 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
-from pyomo.contrib.pynumero.asl import AmplInterface
 
 from idaes.core import (
     FlowsheetBlock,
@@ -626,9 +625,6 @@ class TestInitializersIAPWS:
         assert pytest.approx(101325, abs=1e2) == value(model.fs.unit.outlet.pressure[0])
 
     @pytest.mark.integration
-    @pytest.mark.skipif(
-        not AmplInterface.available(), reason="pynumero_ASL is not available"
-    )
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
         initializer.initialize(model.fs.unit)
@@ -677,9 +673,6 @@ class TestInitializersModular:
         )
 
     @pytest.mark.integration
-    @pytest.mark.skipif(
-        not AmplInterface.available(), reason="pynumero_ASL is not available"
-    )
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=1e-4)
         initializer.initialize(model.fs.unit)
@@ -732,9 +725,6 @@ class TestInitializersCubicBTX:
         )
 
     @pytest.mark.integration
-    @pytest.mark.skipif(
-        not AmplInterface.available(), reason="pynumero_ASL is not available"
-    )
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
         initializer.initialize(model.fs.unit)
@@ -791,9 +781,6 @@ class TestInitializersSapon:
         assert pytest.approx(101325, abs=1e2) == value(model.fs.unit.outlet.pressure[0])
 
     @pytest.mark.integration
-    @pytest.mark.skipif(
-        not AmplInterface.available(), reason="pynumero_ASL is not available"
-    )
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
         initializer.initialize(model.fs.unit)

@@ -19,7 +19,6 @@ import pytest
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, value, units
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
-from pyomo.contrib.pynumero.asl import AmplInterface
 
 from idaes.core import (
     FlowsheetBlock,
@@ -317,9 +316,6 @@ class TestInitializersSapon:
         )
 
     @pytest.mark.integration
-    @pytest.mark.skipif(
-        not AmplInterface.available(), reason="pynumero_ASL is not available"
-    )
     def test_block_triangularization(self, model):
         # Need to limit tolerance on 1x1 solver otherwise it exceeds the iteration limit
         initializer = BlockTriangularizationInitializer(
