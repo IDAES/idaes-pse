@@ -26,6 +26,7 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+from pyomo.core.expr.calculus.derivatives import differentiate
 
 from idaes.core import (
     FlowsheetBlock,
@@ -1021,7 +1022,13 @@ class TestInitializersTurbine1:
 
     @pytest.mark.integration
     def test_block_triangularization(self, model):
-        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        # Need to use reverse_numeric differentiation due to ExternalFunctions
+        initializer = BlockTriangularizationInitializer(
+            constraint_tolerance=2e-5,
+            calculate_variable_options={
+                "diff_mode": differentiate.Modes.reverse_numeric
+            },
+        )
         initializer.initialize(model.fs.unit)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok

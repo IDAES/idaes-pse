@@ -119,9 +119,21 @@ class BlockTriangularizationInitializer(InitializerBase):
         Call solve_strongly_connected_components on a given BlockData.
         """
         # TODO: Can we get diagnostic output from this method?
-        solve_strongly_connected_components(
-            block_data,
-            solver=solver,
-            solve_kwds=self.config.block_solver_options,
-            calc_var_kwds=self.config.calculate_variable_options,
-        )
+        try:
+            solve_strongly_connected_components(
+                block_data,
+                solver=solver,
+                solve_kwds=self.config.block_solver_options,
+                calc_var_kwds=self.config.calculate_variable_options,
+            )
+        except TypeError:
+            # ExternalFunctions do not ply nice with sympy differentiation
+            # (the default used in calculate_variable_from_constraint).
+            # If we see a TypeError, suggest users try using numeric
+            # differentiation.
+            raise TypeError(
+                "A TypeError was encountered in the scc solver. This can occur "
+                "in models that involve ExternalFunctions. We suggest you try "
+                "setting calculate_variable_options=\u007b'diff_mode': "
+                "pyomo.core.expr.calculus.differentiate.Modes.reverse_numeric\u007d. "
+            )

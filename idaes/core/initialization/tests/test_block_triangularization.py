@@ -16,11 +16,18 @@ Tests for Block Triangularization initialization
 import pytest
 import types
 
-from pyomo.environ import ConcreteModel, Constraint, value, Var
+from pyomo.environ import ConcreteModel, Constraint, units, value, Var
+
+from idaes.core import FlowsheetBlock
 from idaes.core.initialization.block_triangularization import (
     BlockTriangularizationInitializer,
 )
 from idaes.core.initialization.initializer_base import InitializationStatus
+from idaes.models.unit_models.pressure_changer import (
+    Turbine,
+)
+
+from idaes.models.properties import iapws95
 
 __author__ = "Andrew Lee"
 
@@ -75,3 +82,54 @@ class TestBTSubMethods:
         assert not model.v1.fixed
 
         assert status == InitializationStatus.Ok
+
+
+@pytest.mark.component
+def test_sympy_differentiate_failure():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+    def perf_callback(b):
+        unit_hd = units.J / units.kg
+        unit_vflw = units.m**3 / units.s
+
+        @b.Constraint(m.fs.time)
+        def pc_isen_eff_eqn(b, t):
+            prnt = b.parent_block()
+            vflw = prnt.control_volume.properties_in[t].flow_vol
+            return prnt.efficiency_isentropic[t] == 0.9 / 3.975 * vflw / unit_vflw
+
+        @b.Constraint(m.fs.time)
+        def pc_isen_head_eqn(b, t):
+            prnt = b.parent_block()
+            vflw = prnt.control_volume.properties_in[t].flow_vol
+            return (
+                b.head_isentropic[t] / 1000
+                == -75530.8 / 3.975 / 1000 * vflw / unit_vflw * unit_hd
+            )
+
+    m.fs.unit = Turbine(
+        property_package=m.fs.properties,
+        support_isentropic_performance_curves=True,
+        isentropic_performance_curves={"build_callback": perf_callback},
+    )
+
+    # set inputs
+    m.fs.unit.inlet.flow_mol[0].fix(1000)  # mol/s
+    Tin = 500  # K
+    Pin = 1000000  # Pa
+    hin = value(iapws95.htpx(Tin * units.K, Pin * units.Pa))
+    m.fs.unit.inlet.enth_mol[0].fix(hin)
+    m.fs.unit.inlet.pressure[0].fix(Pin)
+
+    initializer = BlockTriangularizationInitializer()
+
+    with pytest.raises(
+        TypeError,
+        match="A TypeError was encountered in the scc solver. This can occur "
+        "in models that involve ExternalFunctions. We suggest you try "
+        "setting calculate_variable_options=\u007b'diff_mode': "
+        "pyomo.core.expr.calculus.differentiate.Modes.reverse_numeric\u007d. ",
+    ):
+        initializer.initialize(m)
