@@ -90,13 +90,13 @@ class MixerInitializer(ModularInitializerBase):
         model: Block,
     ):
         """
-        Initialization routine for Feed Blocks.
+        Initialization routine for Mixer Blocks.
 
         Args:
             model: model to be initialized
 
         Returns:
-            None
+            Pyomo solver status object
         """
         init_log = idaeslog.getInitLogger(
             model.name, self.config.output_level, tag="unit"
