@@ -1565,7 +1565,7 @@ class _GenericStateBlock(StateBlock):
     """
 
     # Set default initializer
-    default_initializer = ModularPropertiesInitializer
+    # default_initializer = ModularPropertiesInitializer
 
     def _return_component_list(self):
         # Overload the _return_component_list method to handle electrolyte
