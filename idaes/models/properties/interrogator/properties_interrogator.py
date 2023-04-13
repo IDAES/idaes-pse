@@ -333,7 +333,7 @@ class InterrogatorStateBlockData(StateBlockData):
         self._dummy_var_phase_comp = Var(
             self.params.phase_list, self.params.component_list, initialize=1
         )
-        # T and P are often involved in unit conversion checks, so needtohave units
+        # T and P are often involved in unit conversion checks, so need to have units
         self._dummy_var_T = Var(initialize=1, units=pyunits.K)
         self._dummy_var_P = Var(initialize=1, units=pyunits.Pa)
 

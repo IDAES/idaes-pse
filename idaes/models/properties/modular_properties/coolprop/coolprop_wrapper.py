@@ -384,7 +384,7 @@ class CoolPropWrapper:
         _cached_components to avoid need for repeated calls to CoolProp.
 
         Args:
-            comp_name: name of componenttoretrieve parameters for.
+            comp_name: name of component to retrieve parameters for.
 
         Returns:
             dict constructed from json string retrieved from CoolProp database.

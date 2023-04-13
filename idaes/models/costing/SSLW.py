@@ -860,7 +860,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         """
         Specific case of vessel costing method for horizontal vessels.
 
-        Arguments which do not applytohorizontal vessels are excluded.
+        Arguments which do not apply to horizontal vessels are excluded.
 
         Args:
             material_type: VesselMaterial Enum indicating material of

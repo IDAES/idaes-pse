@@ -392,7 +392,7 @@ class PropertyTestHarness(object):
         assert initializer is not None
 
         # Most cases will probably have specified the class for the initializer, but
-        # in case an instance was provided checktosee if it is callable.
+        # in case an instance was provided check to see if it is callable.
         if callable(initializer):
             initializer = initializer()
 

@@ -205,7 +205,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         super().initialize_build(outlvl=outlvl, solver=solver, optarg=optarg)
         self.control_volume.properties_out[:].pressure.fix()
 
-        # Free eff_isen and activate special constraint
+        # Free eff_isen and activate special constraints
         self.efficiency_isentropic.unfix()
         self.outlet.pressure.fix()
         if calculate_cf:
