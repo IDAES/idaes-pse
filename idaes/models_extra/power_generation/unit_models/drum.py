@@ -513,7 +513,7 @@ see property package for documentation.}""",
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
                      * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
+                     * 3 = include solver output information (tee=True)
 
             optarg : solver options dictionary object (default=None, use
                      default solver options)

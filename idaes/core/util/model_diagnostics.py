@@ -486,7 +486,7 @@ class DegeneracyHunter:
             tee: Boolean, print solver output (default = False)
 
         Returns:
-            candidate_eqns: either None or list of indicies
+            candidate_eqns: either None or list of indices
             degenerate_set: either None or dictionary containing the degenerate_set
 
         """

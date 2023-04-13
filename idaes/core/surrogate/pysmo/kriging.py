@@ -36,7 +36,7 @@ from idaes.core.surrogate.pysmo.sampling import FeatureScaling as fs
 class MyBounds(object):
     """
     The Class MyBounds tests whether the reguularization parameter value is within the expected range.
-     The class is initialized with the preset valies in __init__; the __call__ function returns Booleans indicating whether the regularization parameter value is acceptable.
+     The class is initialized with the preset values in __init__; the __call__ function returns Booleans indicating whether the regularization parameter value is acceptable.
      The results of the __call__ function is fed into the Basinhopping algorithm using the accept_test parameter.
     """
 
@@ -315,7 +315,7 @@ class KrigingModel:
         The objective_function method calculates the concentrated likelihood function
 
         Args:
-            var_vector(NumPy Array)        : Numpy array containing the Kriging paramaters (Kriging weights and regularization parameter)
+            var_vector(NumPy Array)        : Numpy array containing the Kriging parameters (Kriging weights and regularization parameter)
             x(NumPy Array)                 : Scaled version of input features/variables
             y(NumPy Array)                 : Output variable y (unscaled)
             p(float)                      : Kriging model exponent (fixed to 2) to ensure model smoothness

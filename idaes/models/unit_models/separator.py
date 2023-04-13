@@ -102,7 +102,7 @@ class SeparatorData(UnitModelBlockData):
 
     When being used as a sub-model, Separator should only be used when a
     set of new StateBlocks are required for the streams to be separated. It
-    should not be used to separate streams to go to mutiple ControlVolumes in a
+    should not be used to separate streams to go to multiple ControlVolumes in a
     single unit model - in these cases the unit model developer should write
     their own splitting equations.
     """
@@ -380,7 +380,7 @@ objects linked the mixed state and all outlet states,
     def _validate_config_arguments(self):
         if self.config.has_phase_equilibrium and self.config.ideal_separation:
             raise ConfigurationError(
-                """{} recieved arguments has_phase_equilibrium = True and
+                """{} received arguments has_phase_equilibrium = True and
                     ideal_separation = True. These arguments are incompatible
                     with each other, and you should choose one or the other.""".format(
                     self.name
@@ -482,7 +482,7 @@ objects linked the mixed state and all outlet states,
                 raise BurntToast(
                     f"{self.name} get_mixed_state_block method called when the "
                     "mixed_state_block argument is None, and no mixed_state "
-                    "block is contained in seperator. This should not happen."
+                    "block is contained in separator. This should not happen."
                 )
         # Check that the user-provided StateBlock uses the same prop pack
         if (
@@ -532,7 +532,7 @@ objects linked the mixed state and all outlet states,
 
     def add_split_fractions(self, outlet_list, mixed_block):
         """
-        Creates outlet Port objects and tries to partiton mixed stream flows
+        Creates outlet Port objects and tries to partition mixed stream flows
         between these
 
         Args:
@@ -835,7 +835,7 @@ objects linked the mixed state and all outlet states,
 
     def partition_outlet_flows(self, mb, outlet_list):
         """
-        Creates outlet Port objects and tries to partiton mixed stream flows
+        Creates outlet Port objects and tries to partition mixed stream flows
         between these
 
         Args:

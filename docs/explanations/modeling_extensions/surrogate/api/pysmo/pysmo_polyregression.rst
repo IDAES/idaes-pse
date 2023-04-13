@@ -103,7 +103,7 @@ The result of the ``pysmo_surrogate.PysmoPolyTrainer`` method is a python object
 Confidence intervals for *PysmoPolyTrainer* models
 --------------------------------------------------------------------
 
-PySMO provides the user with the capability to compute confidence intervals for the regression paramaters using the ``get_confidence_intervals`` method. This can be done by passing the result of the model training and the confidence interval value (*default=0.95*) into the ``pysmo_surrogate.PysmoPolyTrainer`` object:
+PySMO provides the user with the capability to compute confidence intervals for the regression parameters using the ``get_confidence_intervals`` method. This can be done by passing the result of the model training and the confidence interval value (*default=0.95*) into the ``pysmo_surrogate.PysmoPolyTrainer`` object:
 
 .. code-block:: python
   

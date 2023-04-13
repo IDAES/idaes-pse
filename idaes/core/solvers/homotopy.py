@@ -94,7 +94,7 @@ def homotopy(
     if degrees_of_freedom(model) != 0:
         raise ConfigurationError(
             "Degrees of freedom in model are not equal to zero. Homotopy "
-            "should not be used on probelms which are not well-defined."
+            "should not be used on problems which are not well-defined."
         )
 
     # Validate variables and targets
@@ -191,7 +191,7 @@ def homotopy(
         )
     if min_step > max_step:
         raise ConfigurationError(
-            "Invalid argumnets: step_min must be less " "or equal to step_max."
+            "Invalid arguments: step_min must be less " "or equal to step_max."
         )
     if not min_step <= step_init <= max_step:
         raise ConfigurationError(

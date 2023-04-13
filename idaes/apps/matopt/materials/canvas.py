@@ -142,7 +142,7 @@ class Canvas(object):
                 PNs = Lat.getNeighbors(P)
                 result.addLocation(P, len(PNs))
                 # NOTE: At first, we checked if P needed to be added
-                #       (i.e., if it was not alreay in the Stack)
+                #       (i.e., if it was not already in the Stack)
                 #       but doing so was significantly slower than
                 #       just extending the Stack without checks and
                 #       just checking if P was already in the result
@@ -405,7 +405,7 @@ class Canvas(object):
         return result
 
     def makePeriodic(self, argTiling, NeighborsFunc):
-        """Make connections periodic accross the edges of Tiling.
+        """Make connections periodic across the edges of Tiling.
 
         Args:
             argTiling(Tiling: Tiling): Tiling to provide TilingDirections.
@@ -461,7 +461,7 @@ class Canvas(object):
         self.setNeighborsFromFunc(NeighborsFunc)
 
     def transform(self, TransF):
-        """Transform the Points in Canvas accroding to a functor.
+        """Transform the Points in Canvas according to a functor.
 
         Args:
             TransF(TransformFunc): Transformation to apply to Points.

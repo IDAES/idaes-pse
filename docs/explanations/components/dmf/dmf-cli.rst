@@ -742,7 +742,7 @@ You need to add the :option:`--no-unique` option to allow it.
 
 If you register a file ending in ".json", it will be parsed (unless it is
 over 1MB) and, if it passes, registered as type JSON. If the parse fails, it
-will be registerd as a generic file *unless* the :option:`--strict` option is
+will be registered as a generic file *unless* the :option:`--strict` option is
 given (with this option, failure to parse will be an error):
 
 .. code-block:: console

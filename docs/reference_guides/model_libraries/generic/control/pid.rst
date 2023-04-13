@@ -42,7 +42,7 @@ file "pid_steam_tank_pressure.pdf."
       umeta = b.config.property_package.get_metadata().get_derived_units
       b.Cv = pyo.Var(
           initialize=0.1,
-          doc="Valve flow coefficent",
+          doc="Valve flow coefficient",
           units=umeta("amount") / umeta("time") / umeta("pressure"),
       )
       b.Cv.fix()
@@ -138,9 +138,9 @@ file "pid_steam_tank_pressure.pdf."
       m.fs.fix_initial_conditions()
 
       # Fix the input variables
-      m.fs.valve_1.Cv.fix(0.001) # valve 1 flow coefficent
-      m.fs.valve_2.Cv.fix(0.001) # valve 2 flow coefficent
-      m.fs.ctrl.gain_p.fix(1e-6) # porportional gain
+      m.fs.valve_1.Cv.fix(0.001) # valve 1 flow coefficient
+      m.fs.valve_2.Cv.fix(0.001) # valve 2 flow coefficient
+      m.fs.ctrl.gain_p.fix(1e-6) # proportional gain
       m.fs.ctrl.gain_i.fix(1e-5) # integral error gain
       m.fs.ctrl.setpoint.fix(3e5) # setpoint is tank pressure of 300 kPa
       m.fs.ctrl.mv_ref.fix(0) # controller bias

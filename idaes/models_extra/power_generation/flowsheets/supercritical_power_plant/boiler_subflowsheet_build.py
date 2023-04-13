@@ -662,7 +662,7 @@ def print_results(m):
     )
     print("heat transfer area = ", value(m.fs.PrSH.area_heat_transfer))
     print(
-        "overal heat transfer = ", value(m.fs.PrSH.overall_heat_transfer_coefficient[0])
+        "overall heat transfer = ", value(m.fs.PrSH.overall_heat_transfer_coefficient[0])
     )
 
     print("\n\n ------------- Economizer   ---------")

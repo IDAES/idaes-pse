@@ -393,7 +393,7 @@ def find_comp_in_block(tgt_block, src_block, src_comp, allow_miss=False):
         src_block : Source block in which the original component is located
         src_comp : Component whose name will be searched for in target block
         allow_miss : If True, will ignore attribute and key errors due to
-                     searching for non-existant components in the target model
+                     searching for non-existent components in the target model
 
     Returns:
         Component with the same name in the target block
@@ -474,7 +474,7 @@ def find_comp_in_block_at_time(
         t0 : Index of the time set that will be used in the target
              component
         allow_miss : If True, will ignore attribute and key errors due to
-                     searching for non-existant components in the target model
+                     searching for non-existent components in the target model
 
     """
     # Could extend this to allow replacing indices of multiple sets

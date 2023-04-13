@@ -166,7 +166,7 @@ def test_scale_arcs(caplog):
     m.y[3] = 13
     m.y[4] = 14
 
-    # for all the arc constraints the differnce is 1 the scale factor is the
+    # for all the arc constraints the difference is 1 the scale factor is the
     # smallest scale factor for variables in a constraint.  Make sure the
     # constraints are scaled as expected.
     assert abs(m.arcs_expanded[1].x_equality.body()) == 5
@@ -268,7 +268,7 @@ def test_calculate_scaling_factors():
            / \
           f   g
     """
-    o = []  # list of compoent names in the order their calculate_scaling_factors
+    o = []  # list of component names in the order their calculate_scaling_factors
 
     # method is called
     def rule(blk):

@@ -163,7 +163,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             labor_burden: a percentage multiplier used to estimate non-salary
                 labor expenses
             operators_per_shift: average number of operators per shift
-            tech: int 1-7 representing the catagories in get_PP_costing, used
+            tech: int 1-7 representing the categories in get_PP_costing, used
                 to determine maintenance costs
             land_cost: Expression, Var or Param to calculate land costs
             net_power: actual plant output in MW, only required if calculating
@@ -392,7 +392,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
     @staticmethod
     def initialize_build(*args, **kwargs):
         """
-        Here we can add intialization steps for the things we built in
+        Here we can add initialization steps for the things we built in
         build_process_costs.
 
         Note that the aggregate costs will be initialized by the framework.
@@ -482,7 +482,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         This method relies on the capital cost scaling methodologies developed
         by NETL. Report #DOE/NETL-341/013113
         Multiple vendors quotes have been used to determine the cost of several
-        plant equipments (i.e. boiler, pumps, heat exchangers, etc.), other
+        plant equipment (i.e. boiler, pumps, heat exchangers, etc.), other
         cost incurred during the plant operation (i.e. solids handling, etc.)
 
         The scaling approach uses a main equation:
@@ -654,7 +654,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # load generic ccs costing dictionary
         generic_ccs_costing_params = load_generic_ccs_costing_dictionary()
 
-        # for comptability with potential custom accounts, the loop handles
+        # for compatibility with potential custom accounts, the loop handles
         # new technologies, new CCS types for existing technologies, and new
         # accounts for existing technology-CCS type pairs
         # Users should not be adding new entries for existing accounts
@@ -1538,7 +1538,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             labor_burden: a percentage multiplier used to estimate non-salary
                 labor expenses
             operators_per_shift: average number of operators per shift
-            tech: int 1-7 representing the catagories in get_PP_costing, used
+            tech: int 1-7 representing the categories in get_PP_costing, used
                 to determine maintenance costs
             fixed_TPC: The TPC in $MM that will be used to determine fixed O&M,
                 costs. If the value is None, the function will try to use the
@@ -1756,7 +1756,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         Args:
             b: costing block to add fixed cost variables and constraints to
-            resources: list of strings for the resorces to be costed
+            resources: list of strings for the resources to be costed
             rates: list of pyomo vars for resource consumption rates
             prices: dict of resource prices to be added to the premade
                 dictionary
@@ -1814,7 +1814,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             "thermal_reclaimer_unit_waste": 38 * 1e-6 * CE_index_units / pyunits.ton,
         }
 
-        # add entrys from prices to default_prices
+        # add entries from prices to default_prices
         for key in prices.keys():
             default_prices[key] = prices[key]
 

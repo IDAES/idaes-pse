@@ -697,8 +697,8 @@ def constraint_autoscale_large_jac(
         jac = nlp.evaluate_jacobian_eq().tocsr()
     else:
         jac = nlp.evaluate_jacobian().tocsr()
-    # Get lists of varibles and constraints to translate Jacobian indexes
-    # save them on the NLP for later, since genrating them seems to take a while
+    # Get lists of variables and constraints to translate Jacobian indexes
+    # save them on the NLP for later, since generating them seems to take a while
     if equality_constraints_only:
         nlp.clist = clist = nlp.get_pyomo_equality_constraints()
     else:
@@ -1201,7 +1201,7 @@ def set_variable_scaling_from_current_value(
 ):
     """
     Set scaling factor for variables based on current value. Component argument can be either a Pyomo Var or Block.
-    In case of a Block, this functon will attempt to scale all variables in the block using their current value,
+    In case of a Block, this function will attempt to scale all variables in the block using their current value,
 
     Args:
         component: component to scale

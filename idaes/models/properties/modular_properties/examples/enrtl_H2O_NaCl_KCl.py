@@ -23,7 +23,7 @@ AIChE Journal, 1982, Vol. 28(4), pgs. 588-596
 Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 
 [3] New Data on Activity Coefficients of Potassium, Nitrate, and Chloride Ions
-in Aqueous Solutions of KNO3 and KCl by Ion Selective Electrodes
+in Aqueous Solutions of KNOW3 and KCl by Ion Selective Electrodes
 Dash, D., Kumar, S., Mallika, C., Kamachi Mudali, U.,
 ISRN Chemical Engineering, 2012, doi:10.5402/2012/730154
 

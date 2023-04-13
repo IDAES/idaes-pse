@@ -315,7 +315,7 @@ within this flowsheet if not otherwise specified,
                             # If default, set default end point to be 1.0
                             self.config.time_set = [0.0, 1.0]
                         else:
-                            # Invalid user input, raise Excpetion
+                            # Invalid user input, raise Exception
                             raise DynamicError(
                                 "Flowsheet provided with invalid "
                                 "time_set attribute - must have at "

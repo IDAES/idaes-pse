@@ -10,8 +10,8 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""This module provides a list of suppored component and Pyomo expressions for
-some properties not implimented as external functions.
+"""This module provides a list of supported component and Pyomo expressions for
+some properties not implemented as external functions.
 """
 
 __author__ = "John Eslick"

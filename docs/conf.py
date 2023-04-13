@@ -49,7 +49,7 @@ extensions = [
 # Put type hints in the description, not signature
 autodoc_typehints = "description"
 
-# Avoid duplicating heading labels across parallely constructed documentation
+# Avoid duplicating heading labels across parallelly constructed documentation
 autosectionlabel_prefix_document = True
 
 # Add any paths that contain templates here, relative to this directory.

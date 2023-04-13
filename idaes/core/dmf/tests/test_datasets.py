@@ -206,7 +206,7 @@ def test_base_load_conf(dmf_workspace_path, tmp_path):
     # missing conf in path
     with pytest.raises(datasets.FileMissingError):
         ds._load_conf(tmp_path)
-    # unparseable conf
+    # unparsable conf
     conf = tmp_path / datasets.Dataset.CONF_NAME
     conf.open("w").write("Not valid JSON\n")
     with pytest.raises(datasets.ConfigurationError):

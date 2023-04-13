@@ -509,7 +509,7 @@ def set_arcs_and_constraints(m):
             == b.condenser_hotwell.aux_condensate_state[t].pressure * 1e-4
         )
 
-    # Constrait to set the mixed state pressure equal to the pressure of
+    # Constraint to set the mixed state pressure equal to the pressure of
     # auxiliary condenser
     @fs.condenser_hotwell.Constraint(fs.time)
     def mixer_pressure_constraint(b, t):
@@ -519,7 +519,7 @@ def set_arcs_and_constraints(m):
         )
 
     # Constraint to set deaerator tank outlet enthalpy equal to
-    # saturation enthalpy at inlet - 100 (sligtly sub-cooled)
+    # saturation enthalpy at inlet - 100 (slightly sub-cooled)
     # This constraint determines the steam extraction flow rate and
     # is very important to avoid flash of deaerator tank when load is
     # ramping down, which will causes convergence issue if the flash happens
@@ -1666,7 +1666,7 @@ def initialize(m):
 
         # Since the constraint to calculate flow rate based on valve opening
         # and pressure drop is based on the square of flow rate and opening,
-        # negative a valve opening is mathmatically valid.  Set valve openings
+        # negative a valve opening is mathematically valid.  Set valve openings
         # to physically valid positive numbers
         valve_open = fs.fwh2_valve.valve_opening[0].value
         if valve_open < 0:
@@ -1681,7 +1681,7 @@ def initialize(m):
         if valve_open < 0:
             fs.fwh6_valve.valve_opening[:].value = -valve_open
 
-        _log.info("Adding heat transfer coefficent correations...")
+        _log.info("Adding heat transfer coefficient correations...")
         _add_heat_transfer_correlation(fs)
 
     else:
@@ -1706,14 +1706,14 @@ def initialize(m):
 
 
 def _add_u_eq(blk, uex=0.8):
-    """Add heat transfer coefficent adjustment for feed water flow rate.
-    This is based on knowing the heat transfer coefficent at a particular flow
-    and assuming the heat transfer coefficent is porportial to feed water
+    """Add heat transfer coefficient adjustment for feed water flow rate.
+    This is based on knowing the heat transfer coefficient at a particular flow
+    and assuming the heat transfer coefficient is porportial to feed water
     flow rate raised to certain power (typically 0.8)
 
     Args:
         blk: Heat exchanger block to add correlation to
-        uex: Correlation parameter value (defalut 0.8)
+        uex: Correlation parameter value (default 0.8)
 
     Returns:
         None

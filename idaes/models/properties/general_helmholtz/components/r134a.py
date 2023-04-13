@@ -30,7 +30,7 @@ import pyomo.environ as pyo
 
 
 def _thermal_conductivity(blk, delta, tau, on_blk=None):
-    """Thermal condutivity (for now) ommiting critical enhancment"""
+    """Thermal condutivity (for now) omitting critical enhancement"""
     T = blk.temperature_star / tau / pyo.units.K
     rho = delta * blk.dens_mass_star / pyo.units.kg * pyo.units.m**3
     tau = T / blk.temperature_crit * pyo.units.K
