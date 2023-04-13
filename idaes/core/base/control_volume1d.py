@@ -2125,7 +2125,7 @@ argument).""",
         """
         raise NotImplementedError(
             """
-                Duetothe difficultly in presenting spatially distributed data
+                Due to the difficultly in presenting spatially distributed data
                 in a clean format, ControlVolume1D does not currently support
                 the report method."""
         )

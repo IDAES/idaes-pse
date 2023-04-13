@@ -187,7 +187,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         """
         This is where any global parameters, such as Lang factors or
         coefficients for costing methods that should be shared across the
-        process, should be declared. Sub-Blocks may be usedtohelp organize
+        process, should be declared. Sub-Blocks may be used to help organize
         parameters if required.
 
         Derived class must overload this method.

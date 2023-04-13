@@ -394,7 +394,7 @@ class TestUncertaintyPropagation:
     @pytest.mark.component
     def test_propagate_uncertainty_error(self):
         """
-        It tests a TypeError when the model_uncertian of function propagate_uncertainty is neither python function nor Pyomo ConcreteModel
+        It tests a TypeError when the model_uncertain of function propagate_uncertainty is neither python function nor Pyomo ConcreteModel
         """
         from idaes.apps.uncertainty_propagation.examples.rooney_biegler import (
             rooney_biegler_model,

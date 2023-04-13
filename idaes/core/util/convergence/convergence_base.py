@@ -228,7 +228,7 @@ class ConvergenceEvaluation:
 
         Args:
             filename - name of output file as a string.
-            n_points - number of sample pointstouse for baseline
+            n_points - number of sample points to use for baseline
             seed - (optional) seed for random sample generator
 
         Returns:
@@ -598,7 +598,7 @@ def run_convergence_evaluation_from_sample_file(sample_file):
     Run convergence evaluation using specified sample file.
 
     Args:
-        sample_file - name of sample filetouse
+        sample_file - name of sample file to use
 
     Returns:
         results of convergence evaluation
@@ -630,7 +630,7 @@ def run_single_sample_from_sample_file(sample_file, name):
     Run single convergence evaluation from sample in provided file.
 
     Args:
-        sample_file - name of filetouse to look up sample
+        sample_file - name of file to use to look up sample
         name - name of sample to run from sample_file
 
     Returns:
@@ -762,7 +762,7 @@ def generate_baseline_statistics(
     Generate and run samples to generate baseline convergence statistics.
 
     Args:
-        conv_eval: convergence evaluation objecttouse to generate baseline
+        conv_eval: convergence evaluation object to use to generate baseline
         n_points: number of points to generate for baseline
         seed: (optional) seed for random sample generator
         display: print a summary of the baseline

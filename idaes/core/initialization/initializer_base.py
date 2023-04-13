@@ -328,7 +328,7 @@ class InitializerBase:
             - active status of all Constraints and Blocks.
 
         Args:
-            model: Pyomo Blocktorestore state on.
+            model: Pyomo Block to restore state on.
 
         Returns:
             None
