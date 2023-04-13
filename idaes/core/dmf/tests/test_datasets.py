@@ -61,7 +61,7 @@ DS_CSV = "Column 1 [T],Column 2 [],Column3\n1,2,3\n"
 
 @pytest.fixture(scope="session")
 def dmf_publication_dataset(tmp_path_factory):
-    """Create and opulate a temporary directory with an example publication and
+    """Create and populate a temporary directory with an example publication and
        an associated table (CSV).
 
     Returns:
