@@ -71,7 +71,7 @@ jobs:
 
   spell-check:
     name: Check Spelling
-    runs-on: ubuntu-latest:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: crate-ci/typos@master
