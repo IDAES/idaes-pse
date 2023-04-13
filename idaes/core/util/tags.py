@@ -742,7 +742,7 @@ def svg_tag(
             new_tag = new_tag.replace(" ", "_")
             tag_map[new_tag] = tag
 
-    # True SVG string into XML document
+    # Turn SVG string into XML document
     doc = xml.dom.minidom.parseString(svg)
     # Get the text elements of the SVG
     texts = doc.getElementsByTagName("text")
