@@ -73,7 +73,8 @@ jobs:
     name: Check Spelling
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout source
+        uses: actions/checkout@v3
       - name: Run Spell Checker
         uses: crate-ci/typos@master
         with: 
