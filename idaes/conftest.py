@@ -14,7 +14,14 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-function-docstring
 
+from collections import defaultdict
+import contextlib
+import importlib.abc
+import importlib.machinery
 import sys
+from typing import Dict
+from typing import List
+
 import pytest
 
 ####
@@ -131,6 +138,70 @@ def pytest_configure(config):
             setattr(config.option, "markexpr", "not performance")
     else:
         setattr(config.option, "markexpr", "performance")
+
+
+class SkipLoader(importlib.abc.Loader):
+    def __init__(self, wrapped: importlib.abc.Loader, skip_if_not_found = any):
+        self._wrapped = wrapped
+        # self.skip_if_not_found = lambda name: True if skip_if_not_found == any else skip_if_not_found.__contains__
+        self.skip_if_not_found = list(skip_if_not_found)
+
+    def create_module(self, spec):
+        return self._wrapped.create_module(spec)
+
+    def exec_module(self, module):
+        try:
+            return self._wrapped.exec_module(module)
+        except ModuleNotFoundError as e:
+            print(e)
+            if e.name in self.skip_if_not_found:
+            # if self.skip_if_not_found(e.name):
+                pytest.skip(allow_module_level=True)
+            raise e
+
+
+class SkipFinder(importlib.abc.MetaPathFinder):
+    def __init__(self, registry: dict):
+        self._registry = registry
+
+    def find_spec(self, *args, **kwargs):
+        spec = importlib.machinery.PathFinder.find_spec(*args, **kwargs)
+        if spec is None:
+            return
+        skip_if_missing = self._registry.get(spec.name, None)
+        if skip_if_missing:
+            spec.loader = SkipLoader(spec.loader, skip_if_missing)
+        return spec
+
+
+class SkipIfImports:
+    def __init__(self, registry: Dict[str, List[str]]):
+        self._finder = SkipFinder(registry)
+
+    def pytest_configure(self):
+        sys.meta_path.insert(0, self._finder)
+
+    def pytest_unconfigure(self):
+        sys.meta_path.remove(self._finder)
+
+
+def pytest_addhooks(pluginmanager: pytest.PytestPluginManager):
+    skip_imports = SkipIfImports({
+        "idaes.core.dmf": ["traitlets", "tinydb"],
+        "idaes.core.surrogate.keras_surrogate": ["omlt"],
+        # "idaes.models.properties.general_helmholtz.helmholtz_functions": ["matplotlib"],
+        # "idaes.models_extra.gas_solid_contactors.unit_models.bubbling_fluidized_bed": ["matplotlib"],
+        # "idaes.core.surrogate.pysmo": ["matplotlib"],
+        # "idaes.apps.grid_integration.multiperiod.multiperiod": ["matplotlib"],
+        # "idaes.models_extra.power_generation.flowsheets.subcritical_power_plant": ["matplotlib"],
+        # "idaes.models.control.tests.test_antiwindup": ["matplotlib"],
+        # "idaes.core.util.utility_minimization": ["matplotlib"],
+        # "idaes.core.util.phase_equilibria": ["matplotlib"],
+        # "idaes.core.surrogate.plotting.sm_plotter": ["matplotlib"],
+    })
+
+    pluginmanager.register(skip_imports)
+
 
 
 ####
