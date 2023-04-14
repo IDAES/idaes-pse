@@ -473,7 +473,7 @@ class ActivityCoeffInitializer(InitializerBase):
                 res = solve_indexed_blocks(solver, [model], tee=slc.tee)
         init_log.info(f"Initialization Step 5 {idaeslog.condition(res)}.")
 
-        return None
+        return res
 
 
 class _ActivityCoeffStateBlock(StateBlock):
