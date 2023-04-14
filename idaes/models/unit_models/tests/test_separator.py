@@ -3466,102 +3466,76 @@ class TestInitializersSapon:
         )
 
 
-# TODO: BT solver seems to have trouble with the activity coeff model in this case
-# class TestInitializersBTX:
-#     @pytest.fixture
-#     def model(self):
-#         m = ConcreteModel()
-#         m.fs = FlowsheetBlock(dynamic=False)
-#
-#         m.fs.properties = BTXParameterBlock(
-#             valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
-#         )
-#
-#         m.fs.unit = Separator(
-#             property_package=m.fs.properties,
-#             material_balance_type=MaterialBalanceType.componentPhase,
-#             split_basis=SplittingType.phaseFlow,
-#             ideal_separation=False,
-#             has_phase_equilibrium=True,
-#         )
-#
-#         m.fs.unit.inlet.flow_mol[0].fix(1)  # mol/s
-#         m.fs.unit.inlet.temperature[0].fix(368)  # K
-#         m.fs.unit.inlet.pressure[0].fix(101325)  # Pa
-#         m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-#         m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
-#
-#         m.fs.unit.split_fraction[0, "outlet_1", "Vap"].fix(0.8)
-#         m.fs.unit.split_fraction[0, "outlet_2", "Liq"].fix(0.8)
-#
-#         return m
-#
-#     @pytest.mark.integration
-#     def test_separator_initializer(self, model):
-#         import logging
-#         initializer = SeparatorInitializer()
-#         try:
-#             initializer.initialize(model.fs.unit, output_level=logging.DEBUG)
-#         except:
-#             model.fs.unit.outlet_1_state.display()
-#             raise
-#
-#         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
-#
-#         assert pytest.approx(0.438, abs=1e-3) == value(model.fs.unit.outlet_1.flow_mol[0])
-#         assert pytest.approx(368.0, abs=1e-1) == value(
-#             model.fs.unit.outlet_1.temperature[0]
-#         )
-#         assert pytest.approx(101325, abs=1e3) == value(model.fs.unit.outlet_1.pressure[0])
-#         assert pytest.approx(0.573, abs=1e-3) == value(
-#             model.fs.unit.outlet_1.mole_frac_comp[0, "benzene"]
-#         )
-#         assert pytest.approx(0.427, abs=1e-3) == value(
-#             model.fs.unit.outlet_1.mole_frac_comp[0, "toluene"]
-#         )
-#
-#         assert pytest.approx(0.562, abs=1e-3) == value(model.fs.unit.outlet_2.flow_mol[0])
-#         assert pytest.approx(368.0, abs=1e-1) == value(
-#             model.fs.unit.outlet_2.temperature[0]
-#         )
-#         assert pytest.approx(101325, abs=1e3) == value(model.fs.unit.outlet_2.pressure[0])
-#         assert pytest.approx(0.443, abs=1e-3) == value(
-#             model.fs.unit.outlet_2.mole_frac_comp[0, "benzene"]
-#         )
-#         assert pytest.approx(0.557, abs=1e-3) == value(
-#             model.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]
-#         )
+class TestInitializersBTX:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
 
-# @pytest.mark.integration
-# def test_block_triangularization(self, model):
-#     initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
-#     initializer.initialize(model.fs.unit)
-#
-#     assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
-#
-#     assert pytest.approx(0.438, abs=1e-3) == value(model.fs.unit.outlet_1.flow_mol[0])
-#     assert pytest.approx(368.0, abs=1e-1) == value(
-#         model.fs.unit.outlet_1.temperature[0]
-#     )
-#     assert pytest.approx(101325, abs=1e3) == value(model.fs.unit.outlet_1.pressure[0])
-#     assert pytest.approx(0.573, abs=1e-3) == value(
-#         model.fs.unit.outlet_1.mole_frac_comp[0, "benzene"]
-#     )
-#     assert pytest.approx(0.427, abs=1e-3) == value(
-#         model.fs.unit.outlet_1.mole_frac_comp[0, "toluene"]
-#     )
-#
-#     assert pytest.approx(0.562, abs=1e-3) == value(model.fs.unit.outlet_2.flow_mol[0])
-#     assert pytest.approx(368.0, abs=1e-1) == value(
-#         model.fs.unit.outlet_2.temperature[0]
-#     )
-#     assert pytest.approx(101325, abs=1e3) == value(model.fs.unit.outlet_2.pressure[0])
-#     assert pytest.approx(0.443, abs=1e-3) == value(
-#         model.fs.unit.outlet_2.mole_frac_comp[0, "benzene"]
-#     )
-#     assert pytest.approx(0.557, abs=1e-3) == value(
-#         model.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]
-#     )
+        m.fs.properties = BTXParameterBlock(
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
+        )
+
+        m.fs.unit = Separator(
+            property_package=m.fs.properties,
+            material_balance_type=MaterialBalanceType.componentPhase,
+            split_basis=SplittingType.phaseFlow,
+            ideal_separation=False,
+            has_phase_equilibrium=True,
+        )
+
+        m.fs.unit.inlet.flow_mol[0].fix(1)  # mol/s
+        m.fs.unit.inlet.temperature[0].fix(368)  # K
+        m.fs.unit.inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.split_fraction[0, "outlet_1", "Vap"].fix(0.8)
+        m.fs.unit.split_fraction[0, "outlet_2", "Liq"].fix(0.8)
+
+        return m
+
+    @pytest.mark.integration
+    def test_separator_initializer(self, model):
+        initializer = SeparatorInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(0.438, abs=1e-3) == value(
+            model.fs.unit.outlet_1.flow_mol[0]
+        )
+        assert pytest.approx(368.0, abs=1e-1) == value(
+            model.fs.unit.outlet_1.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e3) == value(
+            model.fs.unit.outlet_1.pressure[0]
+        )
+        assert pytest.approx(0.573, abs=1e-3) == value(
+            model.fs.unit.outlet_1.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.427, abs=1e-3) == value(
+            model.fs.unit.outlet_1.mole_frac_comp[0, "toluene"]
+        )
+
+        assert pytest.approx(0.562, abs=1e-3) == value(
+            model.fs.unit.outlet_2.flow_mol[0]
+        )
+        assert pytest.approx(368.0, abs=1e-1) == value(
+            model.fs.unit.outlet_2.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e3) == value(
+            model.fs.unit.outlet_2.pressure[0]
+        )
+        assert pytest.approx(0.443, abs=1e-3) == value(
+            model.fs.unit.outlet_2.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.557, abs=1e-3) == value(
+            model.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]
+        )
+
+    # TODO: BT Initializer cannot solve this - note htat even the heirarchical
+    # routine cannot solve with the BT solver.
 
 
 class TestInitializersIAPWS:

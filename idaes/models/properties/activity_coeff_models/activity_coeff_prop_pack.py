@@ -408,6 +408,8 @@ class ActivityCoeffInitializer(InitializerBase):
         # here is that for all values of "blk[k]", the attribute exists.
         # TODO: This step can result in a non-square problem. This needs to be
         # investigated
+        # TODO: Block Triangularization solver does not like this routine for some
+        # reason, maybe related to the above issue
         if (
             (k.config.has_phase_equilibrium)
             or (k.config.parameters.config.valid_phase == ("Liq", "Vap"))
@@ -418,7 +420,7 @@ class ActivityCoeffInitializer(InitializerBase):
                 res = solve_indexed_blocks(solver, [model], tee=slc.tee)
         else:
             res = "skipped"
-        init_log.info("Initialization Step 1 {}.".format(idaeslog.condition(res)))
+        init_log.info(f"Initialization Step 1 {idaeslog.condition(res)}.")
 
         # Continue initialization sequence and activate select constraints
         for k in model.values():
@@ -435,13 +437,9 @@ class ActivityCoeffInitializer(InitializerBase):
 
         # Second solve for the active constraints
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            solve_strongly_connected_components(
-                k,
-                solver=solver,
-                solve_kwds={"tee": slc.tee},
-                calc_var_kwds=self.config.calculate_variable_options,
-            )
-        init_log.info("Initialization Step 2 completed.")
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(solver, [model], tee=slc.tee)
+        init_log.info(f"Initialization Step 2 {idaeslog.condition(res)}.")
 
         # Activate activity coefficient specific constraints
         for k in model.values():
@@ -451,13 +449,9 @@ class ActivityCoeffInitializer(InitializerBase):
                         c.activate()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            solve_strongly_connected_components(
-                k,
-                solver=solver,
-                solve_kwds={"tee": slc.tee},
-                calc_var_kwds=self.config.calculate_variable_options,
-            )
-        init_log.info("Initialization Step 3 completed.")
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(solver, [model], tee=slc.tee)
+        init_log.info(f"Initialization Step 3 {idaeslog.condition(res)}.")
 
         for k in model.values():
             if k.config.parameters.config.activity_coeff_model != "Ideal":
@@ -465,13 +459,9 @@ class ActivityCoeffInitializer(InitializerBase):
                 k.activity_coeff_comp.unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            solve_strongly_connected_components(
-                k,
-                solver=solver,
-                solve_kwds={"tee": slc.tee},
-                calc_var_kwds=self.config.calculate_variable_options,
-            )
-        init_log.info("Initialization Step 4 completed.")
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(solver, [model], tee=slc.tee)
+        init_log.info(f"Initialization Step 4 {idaeslog.condition(res)}.")
 
         for k in model.values():
             for c in k.component_objects(Constraint):
@@ -479,13 +469,9 @@ class ActivityCoeffInitializer(InitializerBase):
                     c.activate()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            solve_strongly_connected_components(
-                k,
-                solver=solver,
-                solve_kwds={"tee": slc.tee},
-                calc_var_kwds=self.config.calculate_variable_options,
-            )
-        init_log.info("Initialization Step 5 completed.")
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(solver, [model], tee=slc.tee)
+        init_log.info(f"Initialization Step 5 {idaeslog.condition(res)}.")
 
         return None
 
