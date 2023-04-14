@@ -636,7 +636,7 @@ class _CubicStateBlock(StateBlock):
     """
 
     # Set default initializer
-    # default_initializer = CubicEoSInitializer
+    default_initializer = CubicEoSInitializer
 
     def fix_initialization_states(self):
         """
