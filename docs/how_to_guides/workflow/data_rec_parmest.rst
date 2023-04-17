@@ -124,10 +124,10 @@ references can be accessed in the metadata dictionary as ``metadata[tag]["refere
 The reference strings are optional in the tag metadata file and can be added after reading
 the data. To add a reference string to the metadata, you can update the metadata dictionary
 like ``metadata[tag]["reference_string"] = reference_string``. If you update the reference
-string, the idaes.core.dmf.model_data.update_metadata_model_references()`` function can be used
+string, the idaes.core.dmf.model_data.upadate_metadata_model_references()`` function can be used
 to update the references in the tag metadata.
 
-.. autofunction:: update_metadata_model_references
+.. autofunction:: upadate_metadata_model_references
   :noindex:
 
 An easy way to create a new tag dictionary from tag metadata is to use dictionary

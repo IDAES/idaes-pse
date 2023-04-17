@@ -308,7 +308,7 @@ def update_metadata_model_references(model, metadata):
 
 
 # This prevents breakage, can remove after example updates.
-update_metadata_model_references = update_metadata_model_references
+upadate_metadata_model_references = update_metadata_model_references
 
 
 def read_data(
