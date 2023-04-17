@@ -127,9 +127,9 @@ class BlockTriangularizationInitializer(InitializerBase):
                 calc_var_kwds=self.config.calculate_variable_options,
             )
         except TypeError:
-            # ExternalFunctions do not ply nice with sympy differentiation
+            # ExternalFunctions do not play nice with sympy differentiation
             # (the default used in calculate_variable_from_constraint).
-            # If we see a TypeError, suggest users try using numeric
+            # If we see a TypeError, suggest users try using reverse_numeric
             # differentiation.
             raise TypeError(
                 "A TypeError was encountered in the scc solver. This can occur "
