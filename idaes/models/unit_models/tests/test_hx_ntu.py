@@ -30,7 +30,10 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import FlowsheetBlock
-from idaes.models.unit_models.heat_exchanger_ntu import HeatExchangerNTU as HXNTU
+from idaes.models.unit_models.heat_exchanger_ntu import (
+    HeatExchangerNTU as HXNTU,
+    HXNTUInitializer,
+)
 
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
@@ -42,6 +45,10 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester, PhysicalParameterTestBlock
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    InitializationStatus,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -270,6 +277,8 @@ class TestHXNTU(object):
 
         assert isinstance(model.fs.unit.energy_balance_constraint, Constraint)
         assert isinstance(model.fs.unit.heat_duty_constraint, Constraint)
+
+        assert model.fs.unit.default_initializer is HXNTUInitializer
 
     @pytest.mark.component
     def test_units(self, model):
@@ -502,3 +511,134 @@ class TestHXNTU(object):
 
         with pytest.raises(InitializationError):
             model.fs.unit.initialize()
+
+        # Revert DoF change to avoid contaminating subsequent tests
+        model.fs.unit.hot_side_outlet.pressure[0].unfix()
+
+    @pytest.mark.integration
+    def test_hx_ntu_initializer(self, model):
+        initializer = HXNTUInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(200650, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+        assert pytest.approx(200650, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+        assert pytest.approx(343.995, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.temperature[0]
+        )
+        assert pytest.approx(374.333, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.temperature[0]
+        )
+
+        assert pytest.approx(0.015800, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.mole_frac_comp[0, "CO2"]
+        )
+        assert pytest.approx(0.10950, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.mole_frac_comp[0, "MEA"]
+        )
+        assert pytest.approx(0.87470, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.mole_frac_comp[0, "H2O"]
+        )
+
+        assert pytest.approx(0.041400, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.mole_frac_comp[0, "CO2"]
+        )
+        assert pytest.approx(0.10770, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.mole_frac_comp[0, "MEA"]
+        )
+        assert pytest.approx(0.85090, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.mole_frac_comp[0, "H2O"]
+        )
+
+        Cmin = value(
+            model.fs.unit.hot_side.properties_in[0].flow_mol
+            * model.fs.unit.hot_side.properties_in[0].cp_mol
+        )
+        assert value(model.fs.unit.Cmin[0]) == pytest.approx(Cmin, rel=1e-5)
+        assert value(model.fs.unit.Cmax[0]) == pytest.approx(
+            value(
+                model.fs.unit.cold_side.properties_in[0].flow_mol
+                * model.fs.unit.cold_side.properties_in[0].cp_mol
+            ),
+            rel=1e-5,
+        )
+        assert value(model.fs.unit.NTU[0]) == pytest.approx(
+            value(
+                model.fs.unit.area * model.fs.unit.heat_transfer_coefficient[0] / Cmin
+            ),
+            rel=1e-5,
+        )
+
+        assert pytest.approx(0.7 * Cmin * (392.23 - 326.36), rel=1e-5) == value(
+            model.fs.unit.heat_duty[0]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization_initializer(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(200650, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+        assert pytest.approx(200650, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+        assert pytest.approx(343.995, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.temperature[0]
+        )
+        assert pytest.approx(374.333, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.temperature[0]
+        )
+
+        assert pytest.approx(0.015800, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.mole_frac_comp[0, "CO2"]
+        )
+        assert pytest.approx(0.10950, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.mole_frac_comp[0, "MEA"]
+        )
+        assert pytest.approx(0.87470, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.mole_frac_comp[0, "H2O"]
+        )
+
+        assert pytest.approx(0.041400, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.mole_frac_comp[0, "CO2"]
+        )
+        assert pytest.approx(0.10770, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.mole_frac_comp[0, "MEA"]
+        )
+        assert pytest.approx(0.85090, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.mole_frac_comp[0, "H2O"]
+        )
+
+        Cmin = value(
+            model.fs.unit.hot_side.properties_in[0].flow_mol
+            * model.fs.unit.hot_side.properties_in[0].cp_mol
+        )
+        assert value(model.fs.unit.Cmin[0]) == pytest.approx(Cmin, rel=1e-5)
+        assert value(model.fs.unit.Cmax[0]) == pytest.approx(
+            value(
+                model.fs.unit.cold_side.properties_in[0].flow_mol
+                * model.fs.unit.cold_side.properties_in[0].cp_mol
+            ),
+            rel=1e-5,
+        )
+        assert value(model.fs.unit.NTU[0]) == pytest.approx(
+            value(
+                model.fs.unit.area * model.fs.unit.heat_transfer_coefficient[0] / Cmin
+            ),
+            rel=1e-5,
+        )
+
+        assert pytest.approx(0.7 * Cmin * (392.23 - 326.36), rel=1e-5) == value(
+            model.fs.unit.heat_duty[0]
+        )

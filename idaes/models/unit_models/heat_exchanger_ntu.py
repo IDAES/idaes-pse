@@ -20,6 +20,7 @@ Assumptions:
 
 # Import Pyomo libraries
 from pyomo.environ import (
+    Block,
     check_optimal_termination,
     Constraint,
     Expression,
@@ -48,6 +49,7 @@ from idaes.core.util.math import smooth_min, smooth_max
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
 import idaes.logger as idaeslog
+from idaes.core.initialization import SingleControlVolumeUnitInitializer
 
 __author__ = "Paul Akula, Andrew Lee"
 
@@ -56,9 +58,119 @@ __author__ = "Paul Akula, Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 
+class HXNTUInitializer(SingleControlVolumeUnitInitializer):
+    """
+    Initializer for NTU Heat Exchanger units.
+
+    """
+
+    def initialization_routine(
+        self,
+        model: Block,
+        plugin_initializer_args: dict = None,
+        copy_inlet_state: bool = False,
+        duty=None,
+    ):
+        """
+        Common initialization routine for NTU Heat Exchangers.
+
+        Args:
+            model: Pyomo Block to be initialized
+            plugin_initializer_args: dict-of-dicts containing arguments to be passed to plug-in Initializers.
+                Keys should be submodel components.
+            copy_inlet_state: bool (default=False). Whether to copy inlet state to other states or not
+                (0-D control volumes only). Copying will generally be faster, but inlet states may not contain
+                all properties required elsewhere.
+            duty: initial guess for heat duty to assist with initialization. Can be a Pyomo expression with units.
+
+        Returns:
+            Pyomo solver results object
+        """
+        return super(SingleControlVolumeUnitInitializer, self).initialization_routine(
+            model=model,
+            plugin_initializer_args=plugin_initializer_args,
+            copy_inlet_state=copy_inlet_state,
+            duty=duty,
+        )
+
+    def initialize_main_model(
+        self,
+        model: Block,
+        copy_inlet_state: bool = False,
+        duty=None,
+    ):
+        """
+        Initialization routine for main NTU HX models.
+
+        Args:
+            model: Pyomo Block to be initialized.
+            copy_inlet_state: bool (default=False). Whether to copy inlet state to other states or not
+                (0-D control volumes only). Copying will generally be faster, but inlet states may not contain
+                all properties required elsewhere.
+            duty: initial guess for heat duty to assist with initialization. Can be a Pyomo expression with units.
+
+        Returns:
+            Pyomo solver results object.
+
+        """
+        # TODO: Aside from one differences in constraint names, this is
+        # identical to the Initializer for the 0D HX unit.
+        # Set solver options
+        init_log = idaeslog.getInitLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+
+        # Create solver
+        solver = get_solver(self.config.solver, self.config.solver_options)
+
+        self.initialize_control_volume(model.hot_side, copy_inlet_state)
+        init_log.info_high("Initialization Step 1a (hot side) Complete.")
+
+        self.initialize_control_volume(model.cold_side, copy_inlet_state)
+        init_log.info_high("Initialization Step 1b (cold side) Complete.")
+        # ---------------------------------------------------------------------
+        # Solve unit without heat transfer equation
+        model.energy_balance_constraint.deactivate()
+
+        # Check to see if heat duty is fixed
+        # We will assume that if the first point is fixed, it is fixed at all points
+        if not model.cold_side.heat[model.flowsheet().time.first()].fixed:
+            cs_fixed = False
+            if duty is None:
+                # Assume 1000 J/s
+                duty = 1000 * pyunits.W
+
+            model.cold_side.heat.fix(duty)
+            for i in model.hot_side.heat:
+                model.hot_side.heat[i].set_value(-duty)
+        else:
+            cs_fixed = True
+            for i in model.hot_side.heat:
+                model.hot_side.heat[i].set_value(model.cold_side.heat[i])
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(model, tee=slc.tee)
+        init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
+        if not cs_fixed:
+            model.cold_side.heat.unfix()
+        model.energy_balance_constraint.activate()
+        # ---------------------------------------------------------------------
+        # Solve unit
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(model, tee=slc.tee)
+        init_log.info("Initialization Completed, {}".format(idaeslog.condition(res)))
+
+        return res
+
+
 @declare_process_block_class("HeatExchangerNTU")
 class HeatExchangerNTUData(UnitModelBlockData):
     """Heat Exchanger Unit Model using NTU method."""
+
+    default_initializer = HXNTUInitializer
 
     CONFIG = UnitModelBlockData.CONFIG(implicit=True)
 
