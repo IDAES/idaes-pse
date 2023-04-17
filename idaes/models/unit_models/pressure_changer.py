@@ -90,10 +90,10 @@ class IsentropicPressureChangerInitializer(SingleControlVolumeUnitInitializer):
             Pyomo solver status object
         """
         init_log = idaeslog.getInitLogger(
-            model.name, self.config.output_level, tag="unit"
+            model.name, self.get_output_level(), tag="unit"
         )
         solve_log = idaeslog.getSolveLogger(
-            model.name, self.config.output_level, tag="unit"
+            model.name, self.get_output_level(), tag="unit"
         )
 
         # Create solver

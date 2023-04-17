@@ -80,7 +80,7 @@ class HX0DInitializer(SingleControlVolumeUnitInitializer):
         duty=None,
     ):
         """
-        Common initialization routine for models with one control volume.
+        Common initialization routine for 0D Heat Exchangers.
 
         Args:
             model: Pyomo Block to be initialized
@@ -94,10 +94,11 @@ class HX0DInitializer(SingleControlVolumeUnitInitializer):
         Returns:
             Pyomo solver results object
         """
-        return super().initialization_routine(
+        return super(SingleControlVolumeUnitInitializer, self).initialization_routine(
             model=model,
             plugin_initializer_args=plugin_initializer_args,
             copy_inlet_state=copy_inlet_state,
+            duty=duty,
         )
 
     def initialize_main_model(
@@ -106,12 +107,26 @@ class HX0DInitializer(SingleControlVolumeUnitInitializer):
         copy_inlet_state: bool = False,
         duty=None,
     ):
+        """
+        Initialization routine for main 0D HX models.
+
+        Args:
+            model: Pyomo Block to be initialized.
+            copy_inlet_state: bool (default=False). Whether to copy inlet state to other states or not
+                (0-D control volumes only). Copying will generally be faster, but inlet states may not contain
+                all properties required elsewhere.
+            duty: initial guess for heat duty to assist with initialization. Can be a Pyomo expression with units.
+
+        Returns:
+            Pyomo solver results object.
+
+        """
         # Set solver options
         init_log = idaeslog.getInitLogger(
-            model.name, self.config.output_level, tag="unit"
+            model.name, self.get_output_level(), tag="unit"
         )
         solve_log = idaeslog.getSolveLogger(
-            model.name, self.config.output_level, tag="unit"
+            model.name, self.get_output_level(), tag="unit"
         )
 
         # Create solver
@@ -126,39 +141,17 @@ class HX0DInitializer(SingleControlVolumeUnitInitializer):
         # Solve unit without heat transfer equation
         model.heat_transfer_equation.deactivate()
 
-        # Get side 1 and side 2 heat units, and convert duty as needed
-        s1_units = model.hot_side.heat.get_units()
-        s2_units = model.cold_side.heat.get_units()
-
         # Check to see if heat duty is fixed
         # We will assume that if the first point is fixed, it is fixed at all points
         if not model.cold_side.heat[model.flowsheet().time.first()].fixed:
             cs_fixed = False
             if duty is None:
-                # Assume 1000 J/s and check for unitless properties
-                if s1_units is None and s2_units is None:
-                    # Backwards compatibility for unitless properties
-                    s1_duty = -1000
-                    s2_duty = 1000
-                else:
-                    s1_duty = pyunits.convert_value(
-                        -1000, from_units=pyunits.W, to_units=s1_units
-                    )
-                    s2_duty = pyunits.convert_value(
-                        1000, from_units=pyunits.W, to_units=s2_units
-                    )
-            else:
-                # Duty provided with explicit units
-                s1_duty = -pyunits.convert_value(
-                    duty[0], from_units=duty[1], to_units=s1_units
-                )
-                s2_duty = pyunits.convert_value(
-                    duty[0], from_units=duty[1], to_units=s2_units
-                )
+                # Assume 1000 J/s
+                duty = 1000 * pyunits.W
 
-            model.cold_side.heat.fix(s2_duty)
+            model.cold_side.heat.fix(duty)
             for i in model.hot_side.heat:
-                model.hot_side.heat[i].value = s1_duty
+                model.hot_side.heat[i].set_value(-duty)
         else:
             cs_fixed = True
             for i in model.hot_side.heat:
