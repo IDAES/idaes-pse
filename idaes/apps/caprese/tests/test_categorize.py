@@ -353,7 +353,7 @@ def test_categorize_simple_model_with_constraints():
 
 @pytest.mark.unit
 def test_space_indexed_model():
-    """The case where a differential variable is "specifed"
+    """The case where a differential variable is "specified"
     by an input (boundary condition). This is the case that
     motivated the development of this categorization method.
     """

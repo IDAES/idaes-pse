@@ -39,7 +39,7 @@ _log = idaeslog.getLogger(__name__)
 
 def make_balance_control_volume(o, name, config, dynamic=None, has_holdup=None):
     """
-    This is seperated from the main heater class so it can be reused to create
+    This is separated from the main heater class so it can be reused to create
     control volumes for different types of heat exchange models.
     """
     if dynamic is None:
@@ -239,7 +239,7 @@ class BalanceBlockData(UnitModelBlockData):
         # Add Ports
         self.add_inlet_port()
         self.add_outlet_port()
-        # Add convienient references to control volume quantities deltaP.
+        # Add convenient references to control volume quantities deltaP.
         if (
             self.config.has_pressure_change is True
             and self.config.momentum_balance_type != MomentumBalanceType.none

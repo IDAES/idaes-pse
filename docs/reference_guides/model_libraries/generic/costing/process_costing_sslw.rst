@@ -14,7 +14,7 @@ Introduction
 .. note:: Process costing methods are available for most of the unit operations in the IDAES Unit Model Library (Compressor, CSTR, Flash, Heater, HeatExchanger, HeatExchangerNTU, PFR, PressureChanger, Pump, StoichiometricReactor, Turbine, and generic vessels).
 
 A process costing module has been developed primarily based on base cost and purchase cost correlations 
-from the following reference with some exceptions (noted in the documentation as appropiate):
+from the following reference with some exceptions (noted in the documentation as appropriate):
 
 Process and Product Design Principles: Synthesis, Analysis, and Evaluation. Seider, Seader, Lewin, Windagdo, 3rd Ed. John Wiley and Sons. Chapter 22. Cost Accounting and Capital Cost Estimation
 
@@ -140,7 +140,7 @@ Heat Exchanger Cost
 
 The purchse cost is computed based on the base unit cost and three correction factors (Eq. 22.43 in Seider et al.), and is adjusted by user-defined currency units with the appropriate CE index value. The base cost is computed depending on the heat exchanger type selected by the user.
 
-The heat exchanger costing method has three arguments, hx_type = heat exchanger type, material_type = construction material, and tube_lengh = tube length ('*' corresponds to the default options):
+The heat exchanger costing method has three arguments, hx_type = heat exchanger type, material_type = construction material, and tube_length = tube length ('*' corresponds to the default options):
 
 * hx_type : 
     * 'floating_head'
@@ -249,7 +249,7 @@ Pump       True        pump
 Mover      True        not pump, isothermal or adiabatic
 ========== =========== =================================
 
-Additionally, some unit types have different sub-types which can be costed appropiately. In these cases, 
+Additionally, some unit types have different sub-types which can be costed appropriately. In these cases, 
 an additional argument is provided to `cost_pressure_changer` to identify the sub-type to use which is detailed below.
 
 Turbine Cost Model
@@ -723,7 +723,7 @@ Cost of Pressure Vessels and Towers for Distillation
 
 Pressure vessels cost is based on the weight of the vessel, the cost of platforms and ladders can be included, and the cost of internal packing or trays can be calculated as well. 
 
-This method constructs by defaul the cost of pressure vessels with platforms and ladders, and trays cost can be calculated if trays = `True`. This method requires a few arguments to build the cost of vessel. 
+This method constructs by default the cost of pressure vessels with platforms and ladders, and trays cost can be calculated if trays = `True`. This method requires a few arguments to build the cost of vessel. 
 We recommend using this method to cost reactors (`StoichiometricReactor`, `CSTR`` or `PFR``), flash tanks, vessels, and distillation columns ('*' corresponds to the default options):
 
 * vertical:

@@ -543,7 +543,7 @@ see property package for documentation.}""",
             )
 
         # Equation to calculate tube boundary wall temperature
-        @self.Constraint(self.flowsheet().time, doc="tube bounary wall temperature")
+        @self.Constraint(self.flowsheet().time, doc="tube boundary wall temperature")
         def temperature_tube_boundary_eqn(b, t):
             return b.heat_flux_conv[
                 t
@@ -715,7 +715,7 @@ see property package for documentation.}""",
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
                      * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
+                     * 3 = include solver output information (tee=True)
 
             optarg : solver options dictionary object (default=None, use
                      default solver options)

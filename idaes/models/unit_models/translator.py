@@ -153,10 +153,10 @@ see property package for documentation.}""",
         # Call UnitModel.build to setup dynamics
         super(TranslatorData, self).build()
 
-        # Check construction argumnet consistency
+        # Check construction argument consistency
         if self.config.outlet_state_defined and self.config.has_phase_equilibrium:
             raise ConfigurationError(
-                "{} cannot calcuate phase equilibrium (has_phase_equilibrium "
+                "{} cannot calculate phase equilibrium (has_phase_equilibrium "
                 "= True) when outlet state is set to be fully defined ("
                 "outlet_state_defined = True).".format(self.name)
             )

@@ -10,7 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""This module containts utility classes that allow users to tag model quantities
+"""This module contains utility classes that allow users to tag model quantities
 and group them, for easy display, formatting, and input.
 """
 import xml.dom.minidom
@@ -742,7 +742,7 @@ def svg_tag(
             new_tag = new_tag.replace(" ", "_")
             tag_map[new_tag] = tag
 
-    # Ture SVG string into XML document
+    # Turn SVG string into XML document
     doc = xml.dom.minidom.parseString(svg)
     # Get the text elements of the SVG
     texts = doc.getElementsByTagName("text")

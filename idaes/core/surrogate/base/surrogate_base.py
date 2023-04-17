@@ -358,7 +358,7 @@ class SurrogateBase:
            strm: IO.TextIO
               This is the python stream like a file object or StringIO that will be used
               to serialize the surrogate object. This methods will often write a string
-              of json data to the stream, but hte format for derived classes need not be json.
+              of json data to the stream, but the format for derived classes need not be json.
         """
         raise NotImplementedError(
             '"save" should be implemented in the' " class derived from SurrogateBase"

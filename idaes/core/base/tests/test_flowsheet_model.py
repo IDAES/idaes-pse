@@ -408,7 +408,7 @@ class TestSubFlowsheetBuild(object):
     def testtime_units_inherit(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=True, time_units=units.s)
-        # Set differnt time units here to make sure they are ignored
+        # Set different time units here to make sure they are ignored
         m.fs.sub = FlowsheetBlock(time_units=units.min)
 
         # Time should come from parent, not local settings

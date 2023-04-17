@@ -30,18 +30,18 @@ class FeatureScalingTestCases(unittest.TestCase):
     test_data_scaling_minmax_01: Test behaviour when input is a numpy array and with 1D array.
     test_data_scaling_minmax_02: Test behaviour when input is a numpy array and with 2D array.
     test_data_scaling_minmax_03: Test behaviour when input is a numpy array and with 3D array.
-    test_data_scaling_minmax_04: Test behaviour when input is a numpy array and with 3D array with a varibale is constant.
+    test_data_scaling_minmax_04: Test behaviour when input is a numpy array and with 3D array with a variable is constant.
     test_data_scaling_minmax_05: Test behaviour list input TypeError
 
     test_data_scaling_minmax_06: Test behaviour when input is a Pandas DataFrame and with 1D array.
     test_data_scaling_minmax_07: Test behaviour when input is a Pandas DataFrame and with 2D array.
     test_data_scaling_minmax_08: Test behaviour when input is a Pandas DataFrame and with 3D array.
-    test_data_scaling_minmax_09: Test behaviour when input is a Pandas DataFrame and with 3D array with a varibale is constant.
+    test_data_scaling_minmax_09: Test behaviour when input is a Pandas DataFrame and with 3D array with a variable is constant.
 
     test_data_unscaling_minmax_01: Test behaviour when input is a numpy array and with 1D array.
     test_data_unscaling_minmax_02: Test behaviour when input is a numpy array and with 2D array.
     test_data_unscaling_minmax_03: Test behaviour when input is a numpy array and with 3D array.
-    test_data_unscaling_minmax_04: Test behaviour when input is a numpy array and with 3D array with a varibale is constant.
+    test_data_unscaling_minmax_04: Test behaviour when input is a numpy array and with 3D array with a variable is constant.
 
     test_data_unscaling_minmax_05: Test behaviour IndexError when input array size > array size
     test_data_unscaling_minmax_06: Test behaviour IndexError when input array size < array size
@@ -387,7 +387,7 @@ class SamplingMethodsTestCases(unittest.TestCase):
     test_nearest_neighbour_01: Test behaviour with array N x d = (10,3) data and a=[-0.5,1]
     test_nearest_neighbour_02: Test behaviour with array N x d = (10,2) data and a=[-0.5]
     test_nearest_neighbour_03: Test behaviour with array N x d = (10,1) data and a=[]
-    test_nearest_neighbour_04: working even with diffent input size
+    test_nearest_neighbour_04: working even with different input size
     test_nearest_neighbour_05: Test behaviour raise ValueError if dimension of point is not matching with array N x d = (10,3) 
     
     test_points_selection_01: Test behaviour with array N x d = (10,3) data and a=[[-0.5,10],[10,100]]

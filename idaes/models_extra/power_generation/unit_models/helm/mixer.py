@@ -334,7 +334,7 @@ between flow and pressure driven simulations.}""",
         self.add_port(name="outlet", block=self.mixed_state, doc="Outlet Port")
 
     def use_minimum_inlet_pressure_constraint(self):
-        """Activate the mixer pressure = mimimum inlet pressure constraint and
+        """Activate the mixer pressure = minimum inlet pressure constraint and
         deactivate the mixer pressure and all inlet pressures are equal
         constraints. This should only be used when momentum_mixing_type ==
         MomentumMixingType.minimize_and_equality.
@@ -350,7 +350,7 @@ between flow and pressure driven simulations.}""",
         self.pressure_equality_constraints.deactivate()
 
     def use_equal_pressure_constraint(self):
-        """Deactivate the mixer pressure = mimimum inlet pressure constraint
+        """Deactivate the mixer pressure = minimum inlet pressure constraint
         and activate the mixer pressure and all inlet pressures are equal
         constraints. This should only be used when momentum_mixing_type ==
         MomentumMixingType.minimize_and_equality.

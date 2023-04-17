@@ -1950,7 +1950,7 @@ change.
             self.energy_internal_mol_max,
         )
 
-        # Smoothing arameters for TPX complimentarity form
+        # Smoothing parameters for TPX complimentarity form
         if self.config.state_vars == StateVars.TPX:
             self.smoothing_pressure_over = pyo.Param(
                 mutable=True,
@@ -2001,7 +2001,7 @@ change.
             mol_unit (PyomoUnit): Mole unit of measure
 
         Returns:
-            dict: dictonary with the keys {'T', 'tau', 'p', 'delta_liq',
+            dict: dictionary with the keys {'T', 'tau', 'p', 'delta_liq',
                 'delta_vap', 'h_liq', 'h_vap', 's_liq', 's_vap'} each a list of
                 numbers corresponding to states along the two-phase dome.
         """
@@ -2019,7 +2019,7 @@ change.
             ],
         )
         # Set the amount basis, if not provided by the user get it from this
-        # paraemeter block (self)
+        # parameter block (self)
         if amount_basis is None:
             amount_basis = self.config.amount_basis
 
@@ -2471,7 +2471,7 @@ change.
         ax.set_xlabel("Temperature (K)")
         return fig, ax
 
-    # In case you can't rember the axis order in the diagrams
+    # In case you can't remember the axis order in the diagrams
     hp_diagram = ph_diagram
     tp_diagram = pt_diagram
     st_diagram = ts_diagram

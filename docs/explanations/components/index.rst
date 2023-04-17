@@ -23,7 +23,7 @@ detail with a link in their description.
 .. rubric:: Flowsheet
 
 :ref:`Flowsheet models<explanations/components/flowsheet/index:Flowsheet>`
-are the top level of the modeling heirachy. Flowsheet models represent 
+are the top level of the modeling hierarchy. Flowsheet models represent 
 traditional process flowsheets, containing a number of unit models connected together into a 
 flow network and the property packages.
 

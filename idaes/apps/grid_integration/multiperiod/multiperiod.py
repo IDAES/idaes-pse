@@ -40,7 +40,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
                              instance of the flowsheet.
         unfix_dof_func: function that unfixes a few degrees of freedom for optimization
         flowsheet_options: dictionary containing the arguments needed for `process_model_func`
-        initialization_options: dictionary contaning the arguments needed for `initialization_func`
+        initialization_options: dictionary containing the arguments needed for `initialization_func`
         unfix_dof_options: dictionary containing the arguments needed for `unfix_dof_func`
         solver: pyomo solver object
         outlvl: logging level
@@ -128,7 +128,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
                 solver,
             )
 
-        # optional initialzation features
+        # optional initialization features
         # self.initialization_points = None   #library of possible initial points
         # self.initialize_func = None         #function to perform the initialize
 
@@ -667,7 +667,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
             x_label: x-axis label. "time (hr)" is the default
             lmp_label: lmp-axis label. "LMP ($/MWh)" is the default.
             color: dict of colors for the plots.
-            draw_style: plot sytle. Must be either "steps" or "default".
+            draw_style: plot style. Must be either "steps" or "default".
             grid: grid shape of the plost.
 
         Returns:

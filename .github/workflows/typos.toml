@@ -1,0 +1,34 @@
+[files]
+extend-exclude = ["*.eps", "*.css", "*.map", "*.svg"]
+
+[default.extend-words]
+# Ignore IDAES
+IDAES = "IDAES"
+idaes = "idaes"
+IDAE = "IDAE"
+# HELMET - HELMholtz
+HEL = "HEL"
+# Datas
+Datas = "Datas"
+# ba triggers in docs
+ba = "ba"
+# Ignore complimentarity
+complimentarity = "complimentarity"
+# Attemp == Attemperator
+Attemp = "Attemp"
+attemp = "attemp"
+# Ficks Law
+Ficks = "Ficks"
+# scaling - ue
+ue = "ue"
+# Nd in Atom
+Nd = "Nd"
+nd = "nd"
+# suh in HELMholtz
+suh = "suh"
+# ther - assuming thermal
+ther = "ther"
+# KNO3
+KNO = "KNO"
+# TEMPORARY - Remove after example update
+upadate = "upadate"
