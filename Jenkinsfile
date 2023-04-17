@@ -14,7 +14,7 @@
 
 This file defines the build/test/post steps for Jenkins.
 
-Dependancies: failed-test-email.template  // This parses the output of Jenkins and formats the email that Jenkins sends
+Dependencies: failed-test-email.template  // This parses the output of Jenkins and formats the email that Jenkins sends
 */
 
 def email_to = "idaes.jenkins@lbl.gov"  // The email address that the build email will go to

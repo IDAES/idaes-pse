@@ -44,7 +44,7 @@ class InitializationStatus(Enum):
     Enum of expected outputs from Initialization routines.
     """
 
-    Ok = 1  # Succesfully converged to tolerance
+    Ok = 1  # Successfully converged to tolerance
     none = 0  # Initiazation has not yet been run
     Failed = -1  # Run, but failed to converge to tolerance
     DoF = -2  # Failed due to Degrees of Freedom issue
@@ -231,7 +231,7 @@ class InitializerBase:
             model: Pyomo model to be initialized.
             initial_guesses: dict of initial guesses to load.
             json_file: file name of json file to load initial guesses from as str.
-            exception_on_fixed: (optional, initial_guesses only) bool indicating whether to supress
+            exception_on_fixed: (optional, initial_guesses only) bool indicating whether to suppress
                                 exceptions when guess provided for a fixed variable (default=True).
 
         Note - can only provide one of initial_guesses or json_file.
@@ -330,10 +330,10 @@ class InitializerBase:
 
             - fixed status of all variables,
             - value of any fixed variables,
-            - active status of all Constraints and Blcoks.
+            - active status of all Constraints and Blocks.
 
         Args:
-            model: Pyomo Block ot restore state on.
+            model: Pyomo Block to restore state on.
 
         Returns:
             None
@@ -578,7 +578,7 @@ class ModularInitializerBase(InitializerBase):
 
         Args:
             submodel: submodel or type of submodel to define Initializer for.
-            initializer: Initalizer object to use for this/these submodels.
+            initializer: Initializer object to use for this/these submodels.
 
         Returns:
             None

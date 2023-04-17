@@ -244,7 +244,7 @@ class TestUncertaintyPropagation:
         """
         Using the analytic solution above, we can compute the sensitivies of x and v to
         perturbations in p1 and p2.
-        The matrix dx_dp constains the sensitivities of x to perturbations in p
+        The matrix dx_dp constrains the sensitivities of x to perturbations in p
         """
 
         # Initialize sensitivity matrix Nx x Np
@@ -394,7 +394,7 @@ class TestUncertaintyPropagation:
     @pytest.mark.component
     def test_propagate_uncertainty_error(self):
         """
-        It tests a TypeError when the modle_uncertian of function propagate_uncertainty is neither python function nor Pyomo ConcreteModel
+        It tests a TypeError when the model_uncertain of function propagate_uncertainty is neither python function nor Pyomo ConcreteModel
         """
         from idaes.apps.uncertainty_propagation.examples.rooney_biegler import (
             rooney_biegler_model,

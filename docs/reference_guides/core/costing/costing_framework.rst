@@ -30,7 +30,7 @@ To start, users may pick a custom costing package and add it to a flowsheet or m
 * The `register_idaes_currency_units` method defines conversion rates for US Dollars based on the CE (Chemical Engineering) Cost Index. The CE Index assigns relative values to relate costs across years; for example, costs are converted from a `USD_2016` basis (`CE = 541.7`) to a `USD_2018` basis (`CE = 603.1`) by the relation `USD_2018 = 603.1/541.7 * USD_2016`. To standardize conversion, IDAES converts costs to a CE Index of 500 before converting to the final, user-selected cost units.
 * Users may select cost units and set other base parameters via the `build_global_params` method, which scopes parameters for the entire costing package.
 * `build_process_costs` allows integration of global cost methods such as ways to automatically aggregate (sum) total costs. It is not required to add anything to this method, but users may utilize existing aggregate cost variables in any relations they define.
-* The `initialize_build` method allows for optional intialization steps for costs relations; note that unit model blocks and aggregate costs will already be initialized and don't need to be added here.
+* The `initialize_build` method allows for optional initialization steps for costs relations; note that unit model blocks and aggregate costs will already be initialized and don't need to be added here.
 
 Users should define their costing package as below to properly overload the base methods, and may add their own methods to replace `cost_example_method`:
 
@@ -72,7 +72,7 @@ Users should define their costing package as below to properly overload the base
 
         def initialize_build(self):
             """
-            Here we can add intialization steps for the things we built in
+            Here we can add initialization steps for the things we built in
             build_process_costs.
             Note that the aggregate costs will be initialized by the framework.
             """
@@ -234,7 +234,7 @@ Suppose our custom costing package defines the following costing method for fixe
             labor_burden: a percentage multiplier used to estimate non-salary
                 labor expenses
             operators_per_shift: average number of operators per shift
-            tech: int 1-7 representing the catagories in get_PP_costing, used to
+            tech: int 1-7 representing the categories in get_PP_costing, used to
                 determine maintenance costs
             TPC_value: The TPC in $MM that will be used to determine fixed O&M
             costs. If the value is None, the function will try to use the TPC
@@ -280,6 +280,6 @@ These costs are the sums of their respective quantities, for example `m.fs.costi
 Units of Measurement
 --------------------
 
-It is important to highlight that the units of measurement of the model are part of the variables and expressions themselves and are converted as neccessary. For example, if a costing package defines area in :math:`m^2`, while the cost correlations for heat exchangers require units to be in :math:`ft^2`, the costing method will convert the units to :math:`ft^2`. See the Pyomo Unit Containers documentation for further information on the subject: https://pyomo.readthedocs.io/en/stable/advanced_topics/units_container.html.
+It is important to highlight that the units of measurement of the model are part of the variables and expressions themselves and are converted as necessary. For example, if a costing package defines area in :math:`m^2`, while the cost correlations for heat exchangers require units to be in :math:`ft^2`, the costing method will convert the units to :math:`ft^2`. See the Pyomo Unit Containers documentation for further information on the subject: https://pyomo.readthedocs.io/en/stable/advanced_topics/units_container.html.
 
-The base costing framework provides a method to automatically register currency units for the costing block based on Chemical Engineering (CE) Cost Index conversion rates for US Dollars. Users may define their own units for currency via methods dicussed in the Pyomo units documentation linked above.
+The base costing framework provides a method to automatically register currency units for the costing block based on Chemical Engineering (CE) Cost Index conversion rates for US Dollars. Users may define their own units for currency via methods discussed in the Pyomo units documentation linked above.

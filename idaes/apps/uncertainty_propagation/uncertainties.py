@@ -110,7 +110,7 @@ def quantify_propagate_uncertainty(
             solution.
         - results.dsdp: scipy.sparse.csr.csr_matrix
             Ntheta by Nvar size sparse matrix. Gradient vector of the
-            (decision variables, parameters) with respect to paramerters
+            (decision variables, parameters) with respect to parameters
             (=theta_name). number of rows = len(theta_name),
             number of columns= len(col)
         - results.propagation_c: numpy.ndarray
@@ -260,7 +260,7 @@ def propagate_uncertainty(
             solution.
         - results.dsdp: scipy.sparse.csr.csr_matrix
             Ntheta by Nvar size sparse matrix. Gradient vector of the
-            (decision variables, parameters) with respect to paramerters
+            (decision variables, parameters) with respect to parameters
             (=theta_name). number of rows = len(theta_name),
             number of columns= len(col)
         - results.propagation_c: numpy.ndarray
@@ -329,7 +329,7 @@ def propagate_uncertainty(
         list(model.component_data_objects(Constraint, active=True, descend_into=True))
     )
 
-    # calculate error propagation of the objective fuction
+    # calculate error propagation of the objective function
     # = df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
     # = (df/ds*ds/dp)*cov*(df/ds*ds/dp)
     # step 1. df/ds*ds/dp
@@ -366,7 +366,7 @@ def propagate_uncertainty(
         # gradient_c rearrange.
         # k_aug sparse form is [col_idx, row_idx, val] with index starts from 1
         # python sparse form is [row_idx, col_idx, val] with index starts from 0
-        # note: vairable 'row' from get_dfds_dcds includes objecive function
+        # note: variable 'row' from get_dfds_dcds includes objecive function
         # name. i.e, Ncon = len(row)-1
         """
         row_idx = gradient_c[:,1]-1
@@ -434,7 +434,7 @@ def clean_variable_name(theta_names):
         - theta_names_out: list of strings
             List of Var names after removing  all ' and spaces
         - var_dic: dict
-            Dictionary with keys converted theta_names and values origianl
+            Dictionary with keys converted theta_names and values original
             theta_names
     """
     # Variable names cannot have "'" for parmest_class.theta_est(calc_cov=True)

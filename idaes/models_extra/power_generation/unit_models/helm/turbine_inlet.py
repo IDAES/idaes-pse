@@ -137,7 +137,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         Initialize the inlet turbine stage model.  This deactivates the
         specialized constraints, then does the isentropic turbine initialization,
         then reactivates the constraints and solves. This initializtion uses a
-        flow value guess, so some reasonable flow guess should be sepecified prior
+        flow value guess, so some reasonable flow guess should be specified prior
         to initializtion.
 
         Args:
@@ -168,7 +168,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
             self.efficiency_isentropic[t] = 0.9
         super().initialize_build(outlvl=outlvl, solver=solver, optarg=optarg)
 
-        # Free eff_isen and activate sepcial constarints
+        # Free eff_isen and activate special constraint
         self.inlet_flow_constraint.activate()
         self.efficiency_correlation.activate()
 
@@ -211,7 +211,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
 
         from_json(self, sd=istate, wts=sp)
         if calculate_cf:
-            # cf was probably fixed, so will have to set the value agian here
+            # cf was probably fixed, so will have to set the value again here
             # if you ask for it to be calculated.
             for t in self.flowsheet().time:
                 self.flow_coeff[t] = cf[t]

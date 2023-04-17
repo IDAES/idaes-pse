@@ -43,7 +43,7 @@ _log = idaeslog.getLogger(__name__)
 
 def swco2_available():
     """Make sure the compiled IAPWS-95 functions are available. Yes, in Windows
-    the .so extention is still used.
+    the .so extension is still used.
     """
     return helmholtz_available()
 

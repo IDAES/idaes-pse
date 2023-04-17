@@ -230,10 +230,10 @@ class Ideal(EoSBase):
                 b.get_mole_frac(p)[p, j] * b.pressure / b.params.pressure_ref
             )
         elif pobj.is_liquid_phase():
-            # Assume no pressure/volume dependecy of entropy for ideal liquids
+            # Assume no pressure/volume dependency of entropy for ideal liquids
             return get_method(b, "entr_mol_liq_comp", j)(b, cobj(b, j), b.temperature)
         elif pobj.is_solid_phase():
-            # Assume no pressure/volume dependecy of entropy for ideal solids
+            # Assume no pressure/volume dependency of entropy for ideal solids
             return get_method(b, "entr_mol_sol_comp", j)(b, cobj(b, j), b.temperature)
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
@@ -429,7 +429,7 @@ class Ideal(EoSBase):
 def _invalid_phase_msg(name, phase):
     return (
         "{} received unrecognised phase name {}. Ideal property "
-        "libray only supports Vap and Liq phases.".format(name, phase)
+        "library only supports Vap and Liq phases.".format(name, phase)
     )
 
 

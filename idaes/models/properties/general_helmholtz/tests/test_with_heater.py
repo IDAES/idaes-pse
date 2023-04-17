@@ -141,7 +141,7 @@ def test_heater_ph_lg_total():
 def test_heater_ph_lg_phase():
     """Test liquid/vapor form with P-H state vars and phase mass balances
 
-    This is known not to work so this is a place holder to demostrate the extra
+    This is known not to work so this is a place holder to demonstrate the extra
     equation and reserve a place for a test once the problem is fixed. The
     issue in case I forget is that the phase based mass balance writes a mass
     balnace for each phase, but the P-H formulation always calculates a phase

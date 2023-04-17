@@ -705,7 +705,7 @@ class PolynomialRegression:
         Returns:
             phi: The optimal linear regression weights found
 
-         For more details about the maximum likelihood estimate methos, see to Forrester et al.
+         For more details about the maximum likelihood estimate method, see to Forrester et al.
 
         """
         moore_penrose_inverse = np.linalg.pinv(x)  # Moore Penrose inverse of vector x

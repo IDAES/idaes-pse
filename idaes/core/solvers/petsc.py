@@ -116,7 +116,7 @@ class Petsc(ASL):
     def _default_executable(self):
         """In addition to looking for the petsc executable, optionally check for
         a WSL batch file on Windows. Users could potentially also compile a
-        cygwin exectable on Windows, so WSL isn't the only option, but it is the
+        cygwin executable on Windows, so WSL isn't the only option, but it is the
         easiest for Windows."""
         executable = Executable("petsc")
         if not executable:
@@ -476,7 +476,7 @@ def petsc_dae_by_time_element(
             of this model. New results will be appended to this trajectory object.
 
     Returns (PetscDAEResults):
-        See PetscDAEResults documentation for more informations.
+        See PetscDAEResults documentation for more information.
     """
     if interpolate:
         if ts_options is None:
@@ -504,7 +504,7 @@ def petsc_dae_by_time_element(
     solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options)
     save_trajectory = solver_dae.options.get("--ts_save_trajectory", 0)
 
-    # First calculate the inital conditions and non-time-indexed constraints
+    # First calculate the initial conditions and non-time-indexed constraints
     res_list = []
     t0 = between.first()
     # list of variables to add to initial condition problem
@@ -795,7 +795,7 @@ class PetscTrajectory(object):
             var (str or Var): Variable to get vector for.
             time (Set): Time index set
 
-        Retruns (list):
+        Returns (list):
             vector of variable values at each time point
 
         """

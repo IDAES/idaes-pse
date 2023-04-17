@@ -324,7 +324,7 @@ class ReactionBlockData2(ReactionBlockDataBase):
 
 @pytest.mark.unit
 def test_build():
-    # Test that ReactionBlockDataBase builds correctly with good argumnets
+    # Test that ReactionBlockDataBase builds correctly with good arguments
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
 

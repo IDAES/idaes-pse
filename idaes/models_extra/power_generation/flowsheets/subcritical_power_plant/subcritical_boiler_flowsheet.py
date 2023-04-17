@@ -298,7 +298,7 @@ def set_arcs_and_constraints(m):
     # Expand arcs. This must be called after discretization call
     pyo.TransformationFactory("network.expand_arcs").apply_to(fs)
 
-    # Follwing are flowsheet level constraints
+    # Following are flowsheet level constraints
     #
     # Constraint to set boiler zone heat duty equal to waterwall section duty
     @fs.Constraint(fs.time, fs.ww_zones, doc="boiler zone heat duty")
@@ -385,7 +385,7 @@ def set_arcs_and_constraints(m):
             30000 * b.aBoiler.flowrate_coal_raw[t] + 100000
         )
 
-    # The follwing three constraints are related to the actual operating
+    # The following three constraints are related to the actual operating
     # curves set by the controllers or by the boiler manufacturers
     #
     # Constraints to set tempering air (unheated) to total PA
@@ -1255,7 +1255,7 @@ def run_dynamic(m):
 def print_dynamic_results(m):
     fs = m.fs_main.fs_blr
 
-    # ploting results
+    # plotting results
     time = []
     coal_flow = []
     steam_flow = []

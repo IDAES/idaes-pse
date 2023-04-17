@@ -393,8 +393,8 @@ def delta_temperature_underwood_callback(b):
     dT2 = b.delta_temperature_out
     temp_units = pyunits.get_units(dT1[dT1.index_set().first()])
 
-    # external function that ruturns the real root, for the cuberoot of negitive
-    # numbers, so it will return without error for positive and negitive dT.
+    # external function that ruturns the real root, for the cuberoot of negative
+    # numbers, so it will return without error for positive and negative dT.
     b.cbrt = ExternalFunction(
         library=functions_lib(), function="cbrt", arg_units=[temp_units]
     )
@@ -665,7 +665,7 @@ class HeatExchangerData(UnitModelBlockData):
             )
 
         ########################################################################
-        # Add delta T calculations using callack function, lots of options,    #
+        # Add delta T calculations using callback function, lots of options,    #
         #   and users can provide their own if needed                          #
         ########################################################################
         config.delta_temperature_callback(self)
@@ -718,7 +718,7 @@ class HeatExchangerData(UnitModelBlockData):
                      default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
-            duty : an initial guess for the amount of heat transfered. This
+            duty : an initial guess for the amount of heat transferred. This
                 should be a tuple in the form (value, units), (default
                 = (1000 J/s))
 

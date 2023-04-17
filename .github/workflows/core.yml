@@ -69,11 +69,22 @@ jobs:
         run: |
           black --check .
 
+  spell-check:
+    name: Check Spelling
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+      - name: Run Spell Checker
+        uses: crate-ci/typos@master
+        with: 
+          config: ./.github/workflows/typos.toml
+
   pytest:
     # description: Run pytest with dev dependencies
     name: pytest (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.runner-image }}
-    needs: [code-formatting]
+    needs: [code-formatting, spell-check]
     strategy:
       fail-fast: false
       matrix:
@@ -118,7 +129,7 @@ jobs:
   build-docs:
     name: Build Sphinx docs
     runs-on: ubuntu-latest
-    needs: [code-formatting]
+    needs: [code-formatting, spell-check]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Conda environment
@@ -145,7 +156,7 @@ jobs:
   pylint:
     name: Pylint
     runs-on: ubuntu-latest
-    needs: [code-formatting]
+    needs: [code-formatting, spell-check]
     env:
       pylint_target_dir: idaes/
       pylint_output_path: pylint.json

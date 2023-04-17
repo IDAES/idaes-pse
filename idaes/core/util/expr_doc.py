@@ -129,7 +129,7 @@ class PyomoSympyBimap(object):
             i = self.i_func
             self.i_func += 1
         else:
-            raise Exception("Should be Var, Exression, or ExternalFunction")
+            raise Exception("Should be Var, Expression, or ExternalFunction")
 
         if parent_object.is_indexed() and parent_object in self.parent_symbol:
             x = self.parent_symbol[parent_object][0]
@@ -161,7 +161,7 @@ class PyomoSympyBimap(object):
 class Pyomo2SympyVisitor(StreamBasedExpressionVisitor):
     """
     This is based on the class of the same name in pyomo.core.base.symbolic, but
-    it catches ExternalFunctions and does not decend into named expressions.
+    it catches ExternalFunctions and does not descend into named expressions.
     """
 
     def __init__(self, object_map):
@@ -241,7 +241,7 @@ def _add_docs(object_map, docs, typ, head):
     Returns:
         A new string markdown table with added doc rows.
     """
-    docked = set()  # components already documented, mainly for indexed compoents
+    docked = set()  # components already documented, mainly for indexed components
     whead = True  # write heading before adding first item
 
     if not isinstance(object_map, (list, tuple)):

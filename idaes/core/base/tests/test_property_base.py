@@ -450,7 +450,7 @@ def test_StateBlock_build_port_2index_subset():
 
     m.state_block = TestStateBlock([1, 2, 3], [10, 20])
 
-    # Need to add define_port_memebers method to all state blocks
+    # Need to add define_port_members method to all state blocks
     def define_port_members(blk):
         return {
             "ScalarVar": blk.scalar_var,

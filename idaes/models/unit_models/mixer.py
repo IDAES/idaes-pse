@@ -215,7 +215,7 @@ class MixerData(UnitModelBlockData):
 
     When being used as a sub-model, Mixer should only be used when a set
     of new StateBlocks are required for the streams to be mixed. It should not
-    be used to mix streams from mutiple ControlVolumes in a single unit model -
+    be used to mix streams from multiple ControlVolumes in a single unit model -
     in these cases the unit model developer should write their own mixing
     equations.
     """
@@ -482,7 +482,7 @@ objects linked to all inlet states and the mixed state,
                 pass
             else:
                 raise ConfigurationError(
-                    "{} recieved unrecognised value for "
+                    "{} received unrecognised value for "
                     "momentum_mixing_type argument. This "
                     "should not occur, so please contact "
                     "the IDAES developers with this bug.".format(self.name)
@@ -762,7 +762,7 @@ objects linked to all inlet states and the mixed state,
         """
         Add pressure minimization equations. This is done by sequential
         comparisons of each inlet to the minimum pressure so far, using
-        the IDAES smooth minimum fuction.
+        the IDAES smooth minimum function.
         """
         if not hasattr(self, "inlet_idx"):
             self.inlet_idx = RangeSet(len(inlet_blocks))
@@ -886,7 +886,7 @@ objects linked to all inlet states and the mixed state,
                 )
 
     def use_minimum_inlet_pressure_constraint(self):
-        """Activate the mixer pressure = mimimum inlet pressure constraint and
+        """Activate the mixer pressure = minimum inlet pressure constraint and
         deactivate the mixer pressure and all inlet pressures are equal
         constraints. This should only be used when momentum_mixing_type ==
         MomentumMixingType.minimize_and_equality.
@@ -902,7 +902,7 @@ objects linked to all inlet states and the mixed state,
         self.pressure_equality_constraints.deactivate()
 
     def use_equal_pressure_constraint(self):
-        """Deactivate the mixer pressure = mimimum inlet pressure constraint
+        """Deactivate the mixer pressure = minimum inlet pressure constraint
         and activate the mixer pressure and all inlet pressures are equal
         constraints. This should only be used when momentum_mixing_type ==
         MomentumMixingType.minimize_and_equality.
