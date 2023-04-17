@@ -113,7 +113,7 @@ class TestModelSerialize(unittest.TestCase):
     @pytest.mark.unit
     def test01_name(self):
         """
-        Simple test of load save json with differnt model names
+        Simple test of load save json with different model names
         """
         model = self.setup_model01("m1")
         model2 = self.setup_model01("m2")

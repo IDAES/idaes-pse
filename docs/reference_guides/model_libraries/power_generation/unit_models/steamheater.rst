@@ -48,7 +48,7 @@ Variables
 Variable                    Symbol             Index Sets  Doc
 =========================== ================== =========== =============================================================================
 heat_duty                   :math:`Q`          time        Heat transferred from flue gas to tube side fluid
-hconv                       :math:`h_{conv}`   time        Overal convective heat transfer coefficient
+hconv                       :math:`h_{conv}`   time        Overall convective heat transfer coefficient
 temp_slag_boundary          :math:`T_{w,slag}` time        Temperature of the slag
 projected_area              :math:`A`          None        Heat transfer area (total projected area based on tube shape)
 =========================== ================== =========== =============================================================================
@@ -122,7 +122,7 @@ where:
 * Re : Reynolds number
 * V: fluid velocity (m/s)
 * k : thermal conductivity of the fluid (W / m / K)
-* MW: molecular weigth of water/steam (kmol/kg)
+* MW: molecular weight of water/steam (kmol/kg)
 
 Note that at the flowsheet level first waterwall section is connected to the economizer, arcs connecting section 2 to n-1 have to be constructed by the user, and the outlet of section n is connected to the drum model or superheater (subcritical and supercritical plant, respectively)
 

@@ -239,7 +239,7 @@ Expression                           Description
 ExternalFunctions
 ~~~~~~~~~~~~~~~~~
 
-This provides a list of ExternalFuctions available in the wrapper.  These
+This provides a list of ExternalFunctions available in the wrapper.  These
 functions do not use SI units and are not usually called directly.  If these
 functions are needed, they should be used with caution. Some of these are used
 in the property expressions, some are just provided to allow easier testing with

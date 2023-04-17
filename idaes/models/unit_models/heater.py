@@ -38,7 +38,7 @@ _log = idaeslog.getLogger(__name__)
 
 def _make_heater_control_volume(o, name, config, dynamic=None, has_holdup=None):
     """
-    This is seperated from the main heater class so it can be reused to create
+    This is separated from the main heater class so it can be reused to create
     control volumes for different types of heat exchange models.
     """
     if dynamic is None:
@@ -213,7 +213,7 @@ class HeaterData(UnitModelBlockData):
         # Add Ports
         self.add_inlet_port()
         self.add_outlet_port()
-        # Add a convienient reference to heat duty.
+        # Add a convenient reference to heat duty.
         self.heat_duty = Reference(self.control_volume.heat)
         if (
             self.config.has_pressure_change is True

@@ -44,7 +44,7 @@ class ReactionInterrogatorData(ReactionParameterBlock):
     Interrogator Parameter Block Class
 
     This class contains the methods and attributes for recording and displaying
-    the reaction properties requried by the flowsheet.
+    the reaction properties required by the flowsheet.
     """
 
     def build(self):

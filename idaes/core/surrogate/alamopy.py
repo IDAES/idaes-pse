@@ -812,7 +812,7 @@ class AlamoTrainer(SurrogateTrainer):
         AlamoModelTrainer are used.
 
         Args:
-            stream: stream that data should be writen to
+            stream: stream that data should be written to
             trace_fname: name for trace file (.trc) to be included in .alm file
             training_data: Pandas dataframe to use for training surrogate
             validation_data: Pandas dataframe to use for validating surrogate
@@ -911,7 +911,7 @@ class AlamoTrainer(SurrogateTrainer):
             return text
 
         stream.write("\nBEGIN_DATA\n")
-        # Columns will be writen in order in input and output lists
+        # Columns will be written in order in input and output lists
         training_data_str = _df_to_data_fragment(
             training_data,
             columns=self._input_labels + self._output_labels,
@@ -920,7 +920,7 @@ class AlamoTrainer(SurrogateTrainer):
         stream.write("\nEND_DATA\n")
 
         if validation_data is not None:
-            # Add validation data defintion
+            # Add validation data definition
             stream.write("\nBEGIN_VALDATA\n")
             val_data_str = _df_to_data_fragment(
                 validation_data,
@@ -1046,7 +1046,7 @@ class AlamoTrainer(SurrogateTrainer):
         except FileNotFoundError:
             # Trace file does not exist
             raise FileNotFoundError(
-                "Error occured when trying to read the ALAMO trace file - this probably "
+                "Error occurred when trying to read the ALAMO trace file - this probably "
                 "indicates that a trace file was not created by the ALAMO executable. "
                 "Please check the ALAMO output logs."
             )

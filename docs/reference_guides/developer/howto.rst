@@ -42,6 +42,7 @@ The code style is not entirely consistent. But some general guidelines are:
 * follow the `PEP8`_ style (or variants such as `Black`_)
 * use `Google-style`_ docstrings on classes, methods, and functions
 * format your docstrings as `reStructuredText`_ so they can be nicely rendered as HTML by Sphinx
+* check your spelling using `crate-ci-typos`_
 * add logging to your code by creating and using a global log object named
   for the module, which can be created like: ``_log = logging.getLogger(__name__)``
 * take credit by adding a global author variable: ``__author__ = 'yourname'``
@@ -50,6 +51,7 @@ The code style is not entirely consistent. But some general guidelines are:
 .. _Black: https://github.com/python/black
 .. _Google-style: https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html
 .. _reStructuredText: http://docutils.sourceforge.net/rst.html
+.. _crate-ci-typos: https://github.com/crate-ci/typos
 
 Tests
 -----

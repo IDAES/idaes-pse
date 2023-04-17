@@ -227,7 +227,7 @@ class CarbonProcessingUnitData(UnitModelBlockData):
         )
 
     def _add_material_balances(self):
-        # Sum of all componenet mole fractions in a stream equals 1
+        # Sum of all components mole fractions in a stream equals 1
         @self.Constraint(self.flowsheet().config.time)
         def mole_frac_comp_pureco2_eqn(b, t):
             return 0 == 1 - sum(

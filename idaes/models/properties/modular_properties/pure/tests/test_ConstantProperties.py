@@ -16,7 +16,7 @@ Tests for constant pure component properties
 Liquid properties are tested with with data for water
 Ideal gas properties are tested with data for Air
 
-All parameter indicies based on conventions used by the source
+All parameter indices based on conventions used by the source
 
 Authors: Andres J Calderon, Andrew Lee
 """

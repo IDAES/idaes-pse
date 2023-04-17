@@ -35,7 +35,7 @@ The components which make up a generic property package are as follows:
 3. Define the :ref:`phases of interest<explanations/components/property_package/general/phase_def:Defining Phases>` for the application, including equations of state and other phase specific decisions.
 4. Choose the set of :ref:`state variables<explanations/components/property_package/general/state_definition:State Definition>` you wish to use and a reference state for the system.
 5. (Optional) Define any :ref:`phase equilibria<explanations/components/property_package/general/phase_equilibrium:Defining Phase Equilibria>` which occurs in the system and methods associated with calculating this.
-6. (Optional) A number of :ref:`global options<explanations/components/property_package/general/global_options:Global Options>` are avaialble for further customizing behavior of certain property calculations.
+6. (Optional) A number of :ref:`global options<explanations/components/property_package/general/global_options:Global Options>` are available for further customizing behavior of certain property calculations.
 7. (Optional) Define :ref:`desired transport properties<explanations/components/property_package/general/transport_properties/index:Mixture Property Models>` for phases as necessary.
 
 The following sections will describe how to define a property package using the Generic Property Package Framework along with the libraries of sub-models currently available. Finally, the :ref:`developers<explanations/components/property_package/general/developers:Developing New Property Libraries>` section describes how to go about defining your own custom components to use when creating custom property packages.

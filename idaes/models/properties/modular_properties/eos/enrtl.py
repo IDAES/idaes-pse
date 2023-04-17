@@ -23,7 +23,7 @@ Reference:
 Song, Y. and Chen, C.-C., Symmetric Electrolyte Nonrandom Two-Liquid Activity
 Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 
-Note that "charge number" in the paper referes to the absolute value of the
+Note that "charge number" in the paper refers to the absolute value of the
 ionic charge.
 """
 # TODO: Missing docstrings
@@ -56,7 +56,7 @@ DefaultAlphaRule = ConstantAlpha
 DefaultTauRule = ConstantTau
 DefaultRefState = Symmetric
 
-# Closest appraoch parameter - implemented as a global constant for now
+# Closest approach parameter - implemented as a global constant for now
 # This is not something the user should be changing in most cases
 ClosestApproach = 14.9
 
@@ -708,7 +708,7 @@ def log_gamma_lc(b, pname, s, X, G, tau):
     # The same method can be used for both actual state and reference state
     # by providing different X, G and tau expressions.
 
-    # Indicies in expressions use same names as source paper
+    # Indices in expressions use same names as source paper
     # mp = m'
     molecular_set = b.params.solvent_set | b.params.solute_set
     aqu_species = b.params.true_species_set - b.params._non_aqueous_set

@@ -1237,7 +1237,7 @@ class TestIAPWS_countercurrent(object):
 
 
 # -----------------------------------------------------------------------------
-# @pytest.mark.skip(reason="Solutions vary with differnt versions of solver.")
+# @pytest.mark.skip(reason="Solutions vary with different versions of solver.")
 class TestSaponification_crossflow(object):
     @pytest.fixture(scope="class")
     def sapon(self):

@@ -167,7 +167,7 @@ the "wts" argument to ``to_json()``. Scalar and indexed components have the
 same structure. Scalar components have one entry in ``"data"`` with an index of
 ``"None"``.  Only components derived from Pyomo's ``_BlockData``
 have a ``"__pyomo_components__"`` field, and components appearing there are keyed
-by thier name. The data structure duplicates the hierarchical structure of the
+by their name. The data structure duplicates the hierarchical structure of the
 Pyomo model.
 
 Suffixes store extra attributes for Pyomo components that are not stored on the

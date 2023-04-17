@@ -18,7 +18,7 @@ All methods and parameters from:
 Perry's Chemical Engineers' Handbook, 7th Edition
 Perry, Green, Maloney, 1997, McGraw-Hill
 
-All parameter indicies based on conventions used by the source
+All parameter indices based on conventions used by the source
 
 Authors: Andrew Lee
 """

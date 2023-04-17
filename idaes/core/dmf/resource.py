@@ -1045,7 +1045,7 @@ def identifier_str(value=None, allow_prefix=False):
         value (str): If given, validate that it is a 32-byte str
                      If not given or None, set new random value.
     Raises:
-        ValuError, if a value is given, and it is invalid.
+        ValueError, if a value is given, and it is invalid.
     """
     # regular expression for identifier: hex string len=32
     if allow_prefix:

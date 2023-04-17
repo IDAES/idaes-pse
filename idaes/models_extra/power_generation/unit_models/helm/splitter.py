@@ -17,7 +17,7 @@ multiplies the flow by the split fractions for the outlets and has a constraint
 specify this unit is to have fix or have constraints that set the inlet, and
 have n_outlets - 1 specified split fractions or outlet flows.
 
-This model is psuedo-steady-state when used in dynamic mode.
+This model is pseudo-steady-state when used in dynamic mode.
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
@@ -51,8 +51,8 @@ _log = idaeslog.getLogger(__name__)
 class HelmSplitterData(UnitModelBlockData):
     """
     This is a basic stream splitter which splits flow into outlet streams based
-    on split fractions. This does not do phase seperation, and assumes that you
-    are using a Helmholtz EOS propery package with P-H state variables. In
+    on split fractions. This does not do phase separation, and assumes that you
+    are using a Helmholtz EOS property package with P-H state variables. In
     dynamic mode this uses a pseudo-steady-state model.
 
     """

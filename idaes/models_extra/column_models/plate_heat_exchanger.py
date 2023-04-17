@@ -576,7 +576,7 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
                      default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
-            duty : an initial guess for the amount of heat transfered. This
+            duty : an initial guess for the amount of heat transferred. This
                 should be a tuple in the form (value, units), (default
                 = (1000 J/s))
 
@@ -619,7 +619,7 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
         if duty is None:
             # Assume 1000 J/s and check for unitless properties
             if s1_units is None and s2_units is None:
-                # Backwards compatability for unitless properties
+                # Backwards compatibility for unitless properties
                 s1_duty = -1000
                 s2_duty = 1000
             else:

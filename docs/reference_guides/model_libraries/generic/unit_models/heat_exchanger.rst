@@ -81,7 +81,7 @@ These names are configurable using the ``hot_side_name`` and ``cold_side_name`` 
 aliases are assigned to the control volumes and associated Ports using the names provided (note that ``hot_side`` and
 ``cold_side`` will always work). The sign convention is that duty is positive for heat flowing from the hot side to the cold
 side.  Aside from the sign convention there is no requirement that the hot side be hotter than the cold side, however
-some formulations for the average temperature driving force may require that hte hot side be hotter than the cold side.
+some formulations for the average temperature driving force may require that the hot side be hotter than the cold side.
 
 The control volumes are configured the same as the ``ControlVolume0DBlock`` in the
 :ref:`Heater model <reference_guides/model_libraries/generic/unit_models/heater:Heater>`. The ``HeatExchanger`` model contains additional

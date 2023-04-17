@@ -347,7 +347,7 @@ def test_fix_state_vars_None_value(model):
 
 @pytest.mark.unit
 def test_fix_state_vars_guesses(model):
-    # Note that flow_mol_phase_comp is labled as component_flow
+    # Note that flow_mol_phase_comp is labeled as component_flow
     # in define_state_vars
     state_args = {
         "component_flow_phase": {
@@ -386,7 +386,7 @@ def test_fix_state_vars_guesses(model):
 
 @pytest.mark.unit
 def test_fix_state_vars_partial_guesses(model):
-    # Note that flow_mol_phase_comp is labled as compoennt_flow
+    # Note that flow_mol_phase_comp is labeled as component_flow
     # in define_state_vars
     state_args = {
         "component_flow_phase": {
@@ -423,7 +423,7 @@ def test_fix_state_vars_partial_guesses(model):
 
 @pytest.mark.unit
 def test_fix_state_vars_guesses_mismatch_index(model):
-    # Note that flow_mol_phase_comp is labled as compoennt_flow
+    # Note that flow_mol_phase_comp is labeled as component_flow
     # in define_state_vars
     state_args = {
         "component_flow_phase": {("p1", "c1"): 1, ("p1", "c2"): 2, ("p2", "c1"): 3},
@@ -437,7 +437,7 @@ def test_fix_state_vars_guesses_mismatch_index(model):
 
 @pytest.mark.unit
 def test_fix_state_vars_fixed_no_guesses(model):
-    # Note that flow_mol_phase_comp is labled as compoennt_flow
+    # Note that flow_mol_phase_comp is labeled as component_flow
     # in define_state_vars
     model.fs.sb.flow_mol_phase_comp["p1", "c1"].fix(10)
     model.fs.sb.pressure.fix(1.5e5)
@@ -469,7 +469,7 @@ def test_fix_state_vars_fixed_no_guesses(model):
 
 @pytest.mark.unit
 def test_fix_state_vars_fixed_guesses(model):
-    # Note that flow_mol_phase_comp is labled as compoennt_flow
+    # Note that flow_mol_phase_comp is labeled as component_flow
     # in define_state_vars
     model.fs.sb.flow_mol_phase_comp["p1", "c1"].fix(10)
     model.fs.sb.pressure.fix(1.5e5)
@@ -527,7 +527,7 @@ def test_revert_state_vars_basic(model):
 
 @pytest.mark.unit
 def test_revert_state_vars_guesses(model):
-    # Note that flow_mol_phase_comp is labled as compoennt_flow
+    # Note that flow_mol_phase_comp is labeled as component_flow
     # in define_state_vars
     state_args = {
         "component_flow_phase": {
@@ -561,7 +561,7 @@ def test_revert_state_vars_guesses(model):
 
 @pytest.mark.unit
 def test_revert_state_vars_fixed_no_guesses(model):
-    # Note that flow_mol_phase_comp is labled as compoennt_flow
+    # Note that flow_mol_phase_comp is labeled as component_flow
     # in define_state_vars
     model.fs.sb.flow_mol_phase_comp["p1", "c1"].fix(10)
     model.fs.sb.pressure.fix(1.5e5)
@@ -569,7 +569,7 @@ def test_revert_state_vars_fixed_no_guesses(model):
     flags = fix_state_vars(model.fs.sb)
     revert_state_vars(model.fs.sb, flags)
 
-    # Pressure and componet_flow[p1, c1] should still be fixed
+    # Pressure and component_flow[p1, c1] should still be fixed
     assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].fixed
     assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].value == 10
     assert not model.fs.sb.flow_mol_phase_comp[("p1", "c2")].fixed
@@ -587,7 +587,7 @@ def test_revert_state_vars_fixed_no_guesses(model):
 
 @pytest.mark.unit
 def test_revert_state_vars_fixed_guesses(model):
-    # Note that flow_mol_phase_comp is labled as compoennt_flow
+    # Note that flow_mol_phase_comp is labeled as component_flow
     # in define_state_vars
     model.fs.sb.flow_mol_phase_comp["p1", "c1"].fix(10)
     model.fs.sb.pressure.fix(1.5e5)
@@ -606,7 +606,7 @@ def test_revert_state_vars_fixed_guesses(model):
     flags = fix_state_vars(model.fs.sb, state_args)
     revert_state_vars(model.fs.sb, flags)
 
-    # Pressure and componet_flow[p1, c1] should still be fixed
+    # Pressure and component_flow[p1, c1] should still be fixed
     assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].fixed
     assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].value == 10
     assert not model.fs.sb.flow_mol_phase_comp[("p1", "c2")].fixed
@@ -774,7 +774,7 @@ def test_propagate_state_reverse():
 
     m.s1 = Arc(source=m.b1.p, destination=m.b2.p)
 
-    # Test reverse propogation - set values on second block
+    # Test reverse propagation - set values on second block
     m.b2.v1.value = 100
     m.b2.v2[1].value = 200
     m.b2.v2[2].value = 300
