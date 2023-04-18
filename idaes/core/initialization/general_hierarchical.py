@@ -66,14 +66,7 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         Returns:
             Pyomo solver results object
         """
-        # Check to make sure model has something named "control_volume"
-        if not hasattr(model, "control_volume"):
-            raise TypeError(
-                f"Model {model.name} does not appear to be a standard form unit model. "
-                f"Please use an Initializer specific to the model being initialized."
-            )
-
-        # From here, the default initialization_routine is sufficient
+        # The default initialization_routine is sufficient
         return super().initialization_routine(
             model=model,
             plugin_initializer_args=plugin_initializer_args,
@@ -94,6 +87,13 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
             Pyomo solver results object from solve of main model
 
         """
+        # Check to make sure model has something named "control_volume"
+        if not hasattr(model, "control_volume"):
+            raise TypeError(
+                f"Model {model.name} does not appear to be a standard form unit model. "
+                f"Please use an Initializer specific to the model being initialized."
+            )
+
         # Get logger
         _log = self.get_logger(model)
 
