@@ -47,7 +47,7 @@ class FeedInitializer(InitializerBase):
         model: Block,
     ):
         """
-        Initialization routine for Feeb Blocks.
+        Initialization routine for Feed Blocks.
 
         Args:
             model: model to be initialized
