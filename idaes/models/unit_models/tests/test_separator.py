@@ -3534,8 +3534,8 @@ class TestInitializersBTX:
             model.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]
         )
 
-    # TODO: BT Initializer cannot solve this - note htat even the heirarchical
-    # routine cannot solve with the BT solver.
+    # TODO: BT Initializer cannot solve this - note that even the
+    # hierarchical routine cannot solve with the BT solver.
 
 
 class TestInitializersIAPWS:
