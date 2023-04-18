@@ -66,27 +66,6 @@ class SingleControlVolumeUnitInitializer(ModularInitializerBase):
         Returns:
             Pyomo solver results object
         """
-        # The default initialization_routine is sufficient
-        return super().initialization_routine(
-            model=model,
-            plugin_initializer_args=plugin_initializer_args,
-            copy_inlet_state=copy_inlet_state,
-        )
-
-    def initialize_main_model(self, model: Block, copy_inlet_state: bool = False):
-        """
-        Initialization routine for models with a single control volume.
-
-        Args:
-            model: current model being initialized
-            copy_inlet_state: bool (default=False). Whether to copy inlet state to other states or not
-                (0-D control volumes only). Copying will generally be faster, but inlet states may not contain
-                all properties required elsewhere.
-
-        Returns:
-            Pyomo solver results object from solve of main model
-
-        """
         # Check to make sure model has something named "control_volume"
         if not hasattr(model, "control_volume"):
             raise TypeError(
