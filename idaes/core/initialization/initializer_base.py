@@ -653,11 +653,6 @@ class ModularInitializerBase(InitializerBase):
         Returns:
             Pyomo solver results object
         """
-        if not hasattr(model, "control_volume"):
-            raise TypeError(
-                f"Model {model.name} does not appear to be a standard form unit model. "
-                f"Please use an Initializer specific to the model being initialized."
-            )
         if plugin_initializer_args is None:
             plugin_initializer_args = {}
 
