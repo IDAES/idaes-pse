@@ -72,7 +72,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-from idaes.core.initialization.initializer_base import ModularInitializerBase
+from idaes.core.initialization.initializer_base import InitializerBase
 
 from idaes.models.properties.modular_properties.base.generic_reaction import (
     equil_rxn_config,
@@ -1197,7 +1197,7 @@ class GenericParameterData(PhysicalParameterBlock):
         )
 
 
-class ModularPropertiesInitializer(ModularInitializerBase):
+class ModularPropertiesInitializer(InitializerBase):
     """
     General Initializer for modular property packages.
 
@@ -1218,7 +1218,7 @@ class ModularPropertiesInitializer(ModularInitializerBase):
 
     """
 
-    CONFIG = ModularInitializerBase.CONFIG()
+    CONFIG = InitializerBase.CONFIG()
     CONFIG.declare(
         "solver",
         ConfigValue(
@@ -1633,7 +1633,7 @@ class _GenericStateBlock(StateBlock):
         # Also need to deactivate sum of mole fraction constraint
         for k in self.values():
             try:
-                k.sum_mol_frac_out.deactivate()
+                k.sum_mole_frac_out.deactivate()
             except AttributeError:
                 pass
 

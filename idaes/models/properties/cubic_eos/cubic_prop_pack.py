@@ -82,7 +82,7 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-from idaes.core.initialization.initializer_base import ModularInitializerBase
+from idaes.core.initialization.initializer_base import InitializerBase
 
 # cubic_roots_available is used elsewhere
 # pylint: disable=W0611
@@ -222,9 +222,9 @@ conditions, and thus corresponding constraints  should be included,
         )
 
 
-class CubicEoSInitializer(ModularInitializerBase):
+class CubicEoSInitializer(InitializerBase):
     """
-    Initializer for CubicEoS property packages..
+    Initializer for CubicEoS property packages.
 
     This Initializer uses a hierarchical routine to initialize the
     property package using the following steps:
@@ -243,7 +243,7 @@ class CubicEoSInitializer(ModularInitializerBase):
 
     """
 
-    CONFIG = ModularInitializerBase.CONFIG()
+    CONFIG = InitializerBase.CONFIG()
     CONFIG.declare(
         "solver",
         ConfigValue(

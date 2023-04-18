@@ -23,7 +23,7 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.core.base.var import _VarData
-from pyomo.common.config import ConfigBlock, ConfigValue, String_ConfigFormatter
+from pyomo.common.config import ConfigDict, ConfigValue, String_ConfigFormatter
 
 from idaes.core.util.model_serializer import to_json, from_json, StoreSpec, _only_fixed
 from idaes.core.util.exceptions import InitializationError
@@ -33,6 +33,7 @@ from idaes.core.util.model_statistics import (
     variables_in_activated_constraints_set,
 )
 import idaes.logger as idaeslog
+from idaes.core.solvers import get_solver
 
 __author__ = "Andrew Lee"
 _log = idaeslog.getLogger(__name__)
@@ -83,7 +84,7 @@ class InitializerBase:
 
     """
 
-    CONFIG = ConfigBlock()
+    CONFIG = ConfigDict()
     CONFIG.declare(
         "constraint_tolerance",
         ConfigValue(
@@ -360,7 +361,7 @@ class InitializerBase:
                 set of variables in active constraint. Default = False.
 
         Returns:
-            InitialationStatus Enum
+            InitializationStatus Enum
         """
         if results_obj is not None:
             self._update_summary(
@@ -408,7 +409,8 @@ class InitializerBase:
                 self._update_summary(model, "status", InitializationStatus.Failed)
                 raise InitializationError(
                     f"{model.name} failed to initialize successfully: uninitialized variables or "
-                    "unconverged equality constraints detected. Please check postcheck summary for more information."
+                    f"unconverged equality constraints detected. Please check postcheck summary "
+                    f"for more information."
                 )
 
         self._update_summary(model, "status", InitializationStatus.Ok)
@@ -536,6 +538,21 @@ class ModularInitializerBase(InitializerBase):
     CONFIG = InitializerBase.CONFIG()
 
     CONFIG.declare(
+        "solver",
+        ConfigValue(
+            default=None,  # TODO: Can we add a square problem solver as the default here?
+            # At the moment there is an issue with the scipy solvers not supporting the tee argument.
+            description="Solver to use for initialization",
+        ),
+    )
+    CONFIG.declare(
+        "solver_options",
+        ConfigDict(
+            implicit=True,
+            description="Dict of options to pass to solver",
+        ),
+    )
+    CONFIG.declare(
         "default_submodel_initializer",
         ConfigValue(
             default=None,
@@ -548,6 +565,7 @@ class ModularInitializerBase(InitializerBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self._solver = None
         self.submodel_initializers = {}
 
     def add_submodel_initializer(self, submodel: Block, initializer: InitializerBase):
@@ -615,3 +633,187 @@ class ModularInitializerBase(InitializerBase):
             initializer = initializer()
 
         return initializer
+
+    def initialization_routine(
+        self, model: Block, plugin_initializer_args: dict = None, **kwargs
+    ):
+        """
+        Common initialization routine for models with one control volume.
+
+        Args:
+            model: Pyomo Block to be initialized
+            plugin_initializer_args: dict-of-dicts containing arguments to be passed to plug-in Initializers.
+                Keys should be submodel components.
+            kwargs: case specific arguments to be passed to initialize_submodels method.
+
+        Returns:
+            Pyomo solver results object
+        """
+        if not hasattr(model, "control_volume"):
+            raise TypeError(
+                f"Model {model.name} does not appear to be a standard form unit model. "
+                f"Please use an Initializer specific to the model being initialized."
+            )
+        if plugin_initializer_args is None:
+            plugin_initializer_args = {}
+
+        # Get logger
+        _log = self.get_logger(model)
+
+        # Prepare plug-ins for initialization
+        sub_initializers, plugin_initializer_args = self.prepare_plugins(
+            model, plugin_initializer_args
+        )
+        _log.info_high("Step 1: preparation complete.")
+
+        # Initialize model and sub-models
+        results = self.initialize_submodels(
+            model, plugin_initializer_args, sub_initializers, **kwargs
+        )
+        _log.info_high("Step 2: sub-model initialization complete.")
+
+        # Solve full model including plug-ins
+        results = self.solve_full_model(model, results)
+        _log.info_high(
+            f"Step 3: full model initialization {idaeslog.condition(results)}."
+        )
+
+        # Clean up plug-ins
+        self.cleanup(model, plugin_initializer_args, sub_initializers)
+        _log.info_high("Step 4: clean up completed.")
+
+        return results
+
+    def prepare_plugins(self, model, plugin_initializer_args):
+        """
+        Prepare plugins for initialization.
+
+        Iterates through model.initialization_order and collects Initializer objects
+        for each plugin and calls plugin_prepare for each.
+
+        Args:
+            model: current model being initialized
+            plugin_initializer_args: dict of arguments to be passed to plugin Initializer methods
+
+        Returns:
+            dict of Initializers indexed by plugin
+            copy of plugin_initializer_args (to prevent mutation of origin dict)
+
+        """
+        sub_initializers = {}
+        plugin_initializer_args = dict(plugin_initializer_args)
+        for sm in model.initialization_order:
+            if sm is not model:
+                # Get initializers for plug-ins
+                sub_initializers[sm] = self.get_submodel_initializer(sm)
+
+                if sm not in plugin_initializer_args.keys():
+                    plugin_initializer_args[sm] = {}
+
+                # Call prepare method for plug-ins
+                sub_initializers[sm].plugin_prepare(sm, **plugin_initializer_args[sm])
+
+        return sub_initializers, plugin_initializer_args
+
+    def initialize_submodels(
+        self, model, plugin_initializer_args, sub_initializers, **kwargs
+    ):
+        """
+        Initialize sub-models in order defined by model.initialization_order.
+
+        For the main model, self.initialize_main_model is called. For plugins,
+        plugin_initialize is called from the associated Initializer.
+
+        Args:
+            model: current model being initialized
+            plugin_initializer_args: dict of arguments to be passed to plugin Initializer methods
+            sub_initializers: dict of Initializers for each plugin
+
+        Returns:
+            Pyomo solver results object returned from self.initialize_main_model
+        """
+        results = None
+
+        for sm in model.initialization_order:
+            if sm is model:
+                results = self.initialize_main_model(model, **kwargs)
+            else:
+                sub_initializers[sm].plugin_initialize(
+                    sm, **plugin_initializer_args[sm]
+                )
+
+        if results is None:
+            raise InitializationError(
+                f"Main model ({model.name}) was not initialized (no results returned). "
+                f"This is likely due to an error in the model.initialization_order."
+            )
+
+        return results
+
+    def initialize_main_model(self, model, **kwargs):
+        """
+        Placeholder method - derived classes should overload this with an appropriate
+        initialization routine.
+
+        Args:
+            model: current model being initialized
+            **kwargs: placeholder for case specific arguments
+
+        Returns:
+            This method is expected to return a Pyomo solver results object
+
+        """
+        return NotImplementedError(
+            "Initializer has not implemented an initialize_main_model method. Derived classes "
+            "are required to overload this."
+        )
+
+    def solve_full_model(self, model, results):
+        """
+        Call solver on full model. If no plugins are present, just return results from
+        previous solve step (main model).
+
+        Args:
+            model: current model being initialized
+            results: Pyomo solver results object from previous solver. This is used as
+                the final state if no plugins are present.
+
+        Returns:
+            Pyomo solver results object
+
+        """
+        # Check to see if there are any plug-ins
+        if len(model.initialization_order) > 1:
+            # Solve model with plugins
+            solve_log = idaeslog.getSolveLogger(
+                model.name, self.get_output_level(), tag="unit"
+            )
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                results = self._get_solver().solve(model, tee=slc.tee)
+
+        return results
+
+    def cleanup(self, model, plugin_initializer_args, sub_initializers):
+        """
+        Post-initialization clean-up of plugins.
+
+        Iterates through model.initialization_order in reverse and calls plugin_cleanup
+        method from the associated Initializer for each plugin.
+
+        Args:
+            model: current model being initialized
+            plugin_initializer_args: dict of arguments to be passed to plugin Initializer methods
+            sub_initializers: dict of Initializers for each plugin
+
+        Returns:
+            None
+        """
+        for sm in reversed(model.initialization_order):
+            if sm is not model:
+                sub_initializers[sm].plugin_finalize(sm, **plugin_initializer_args[sm])
+
+    def _get_solver(self):
+        if self._solver is None:
+            self._solver = get_solver(self.config.solver, self.config.solver_options)
+
+        return self._solver
