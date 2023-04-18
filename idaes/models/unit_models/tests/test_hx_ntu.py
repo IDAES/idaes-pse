@@ -515,9 +515,57 @@ class TestHXNTU(object):
         # Revert DoF change to avoid contaminating subsequent tests
         model.fs.unit.hot_side_outlet.pressure[0].unfix()
 
+
+class TestInitializers(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.hotside_properties = GenericParameterBlock(**aqueous_mea)
+        m.fs.coldside_properties = GenericParameterBlock(**aqueous_mea)
+
+        m.fs.unit = HXNTU(
+            hot_side={
+                "property_package": m.fs.hotside_properties,
+                "has_pressure_change": True,
+            },
+            cold_side={
+                "property_package": m.fs.coldside_properties,
+                "has_pressure_change": True,
+            },
+        )
+
+        # Hot fluid
+        m.fs.unit.hot_side_inlet.flow_mol[0].fix(60.54879)
+        m.fs.unit.hot_side_inlet.temperature[0].fix(392.23)
+        m.fs.unit.hot_side_inlet.pressure[0].fix(202650)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "CO2"].fix(0.0158)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "H2O"].fix(0.8747)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "MEA"].fix(0.1095)
+
+        # Cold fluid
+        m.fs.unit.cold_side_inlet.flow_mol[0].fix(63.01910)
+        m.fs.unit.cold_side_inlet.temperature[0].fix(326.36)
+        m.fs.unit.cold_side_inlet.pressure[0].fix(202650)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "CO2"].fix(0.0414)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "H2O"].fix(0.8509)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "MEA"].fix(0.1077)
+
+        # Unit design variables
+        m.fs.unit.area.fix(100)
+        m.fs.unit.heat_transfer_coefficient.fix(200)
+        m.fs.unit.effectiveness.fix(0.7)
+
+        m.fs.unit.hot_side.deltaP.fix(-2000)
+        m.fs.unit.cold_side.deltaP.fix(-2000)
+
+        return m
+
     @pytest.mark.integration
     def test_hx_ntu_initializer(self, model):
-        initializer = HXNTUInitializer()
+        # Need to estimate outlet state values based on heat duty
+        initializer = HXNTUInitializer(always_estimate_states=True)
         initializer.initialize(model.fs.unit)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok

@@ -131,31 +131,24 @@ class HXNTUInitializer(SingleControlVolumeUnitInitializer):
 
         self.initialize_control_volume(model.cold_side, copy_inlet_state)
         init_log.info_high("Initialization Step 1b (cold side) Complete.")
+
         # ---------------------------------------------------------------------
         # Solve unit without heat transfer equation
         model.energy_balance_constraint.deactivate()
 
-        # Check to see if heat duty is fixed
-        # We will assume that if the first point is fixed, it is fixed at all points
-        if not model.cold_side.heat[model.flowsheet().time.first()].fixed:
-            cs_fixed = False
-            if duty is None:
-                # Assume 1000 J/s
-                duty = 1000 * pyunits.W
+        if duty is None:
+            duty = 1000 * pyunits.W
 
-            model.cold_side.heat.fix(duty)
-            for i in model.hot_side.heat:
-                model.hot_side.heat[i].set_value(-duty)
-        else:
-            cs_fixed = True
-            for i in model.hot_side.heat:
-                model.hot_side.heat[i].set_value(model.cold_side.heat[i])
+        model.cold_side.heat.fix(duty)
+        for i in model.hot_side.heat:
+            model.hot_side.heat[i].set_value(-duty)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(model, tee=slc.tee)
+
         init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
-        if not cs_fixed:
-            model.cold_side.heat.unfix()
+
+        model.cold_side.heat.unfix()
         model.energy_balance_constraint.activate()
         # ---------------------------------------------------------------------
         # Solve unit
@@ -599,6 +592,8 @@ constructed,
                 f"{self.name} failed to initialize successfully. Please check "
                 f"the output logs for more information."
             )
+
+        return res
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
