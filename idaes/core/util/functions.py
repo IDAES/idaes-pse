@@ -15,11 +15,11 @@
 # pylint: disable=missing-function-docstring
 
 import os
-import idaes
+from pyomo.common.fileutils import find_library
 
 
 def functions_lib():
-    plib = os.path.join(idaes.bin_directory, "functions.so")
+    plib = find_library("functions")
     return plib
 
 

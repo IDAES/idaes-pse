@@ -10,32 +10,21 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""This module provides a list of supported component and Pyomo expressions for
-some properties not implemented as external functions.
-"""
+"""Test the parts of component registry that aren't usually hit."""
 
-__author__ = "John Eslick"
+import pytest
 
-from idaes.models.properties.general_helmholtz.components.registry import (
-    register_helmholtz_component,
+from idaes.models.properties.general_helmholtz.components import (
     viscosity_available,
     thermal_conductivity_available,
     surface_tension_available,
     component_registered,
 )
 
-register_helmholtz_component(
-    "h2o", viscosity=True, thermal_conductivity=True, surface_tension=True
-)
-register_helmholtz_component(
-    "co2", viscosity=True, thermal_conductivity=True, surface_tension=True
-)
-register_helmholtz_component(
-    "r134a", viscosity=True, thermal_conductivity=True, surface_tension=True
-)
-register_helmholtz_component(
-    "r1234ze", viscosity=True, thermal_conductivity=True, surface_tension=False
-)
-register_helmholtz_component(
-    "r227ea", viscosity=False, thermal_conductivity=False, surface_tension=False
-)
+
+@pytest.mark.unit
+def test_not_registered():
+    assert not viscosity_available("not real")
+    assert not thermal_conductivity_available("not real")
+    assert not surface_tension_available("not real")
+    assert not component_registered("not real")
