@@ -51,7 +51,6 @@ def pytest_ignore_collect(collection_path: Path, config: pytest.Config):
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items):
-
     for item in items:
         path = item.path
         for pattern, marker in config.stash[matchmarker].items():

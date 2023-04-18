@@ -261,7 +261,7 @@ class _ReactionBlock(ReactionBlockBase):
                  * 5 = Final initialization status and exceptions
                  * 6 = No output
             optarg : solver options dictionary object (default=None)
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = "ipopt")
         Returns:
             None

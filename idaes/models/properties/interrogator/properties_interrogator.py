@@ -56,7 +56,7 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
     Interrogator Parameter Block Class
 
     This class contains the methods and attributes for recording and displaying
-    the properties requried by the flowsheet.
+    the properties required by the flowsheet.
     """
 
     CONFIG = PhysicalParameterBlock.CONFIG()
@@ -333,7 +333,7 @@ class InterrogatorStateBlockData(StateBlockData):
         self._dummy_var_phase_comp = Var(
             self.params.phase_list, self.params.component_list, initialize=1
         )
-        # T and P are often involved in unit conversion checks, so need ot have units
+        # T and P are often involved in unit conversion checks, so need to have units
         self._dummy_var_T = Var(initialize=1, units=pyunits.K)
         self._dummy_var_P = Var(initialize=1, units=pyunits.Pa)
 

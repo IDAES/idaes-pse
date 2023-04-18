@@ -367,7 +367,7 @@ constructed,
         def pitch(b):
             return b.fin_length + b.radius_outer * 2.0
 
-        # Equivalent tube length (not neccesarily equal to height)
+        # Equivalent tube length (not necessarily equal to height)
         @self.Constraint(doc="Equivalent length of tube")
         def tube_length_eqn(b):
             return b.tube_length * b.pitch * b.number_tubes == b.projected_area
@@ -792,7 +792,7 @@ constructed,
             )
 
         # Equation to calculate tube boundary wall temperature
-        @self.Constraint(self.flowsheet().time, doc="tube bounary wall temperature")
+        @self.Constraint(self.flowsheet().time, doc="tube boundary wall temperature")
         def temperature_tube_boundary_eqn(b, t):
             return b.heat_flux_conv[
                 t

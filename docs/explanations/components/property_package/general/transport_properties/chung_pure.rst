@@ -39,7 +39,7 @@ in which :math:`p` is the (dimensionful) dipole moment and :math:`K` is a consta
 
 The collision integral is specific for the property of viscosity (e.g., there is a different collision integral for diffusivity calculations)
 and is given in terms of dimensionless temperature. For the purpose of this correlation, the dimensionless temperature used is a scaled
-verison of the reduced temperature:
+version of the reduced temperature:
 
 .. math::
 

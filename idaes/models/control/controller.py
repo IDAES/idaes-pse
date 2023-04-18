@@ -247,7 +247,7 @@ class PIDControllerData(UnitModelBlockData):
                     "User specified antiwindup method for unbounded MV."
                 )
 
-        # Get the appropriate units for various contoller varaibles
+        # Get the appropriate units for various controller variables
         mv_units = pyo.units.get_units(self.manipulated_var[t0])
         pv_units = pyo.units.get_units(self.process_var[t0])
         if mv_units is None:

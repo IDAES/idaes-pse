@@ -1425,14 +1425,14 @@ def number_large_residuals(block, tol=1e-5):
 def active_variables_in_deactivated_blocks_set(block):
     """
     Method to return a ComponentSet of any Var components which appear within
-    an active Constraint but belong to a deacitvated Block in a model.
+    an active Constraint but belong to a deactivated Block in a model.
 
     Args:
         block : model to be studied
 
     Returns:
         A ComponentSet including any Var components which belong to a
-        deacitvated Block but appear in an activate Constraint in block
+        deactivated Block but appear in an activate Constraint in block
     """
     var_set = ComponentSet()
     block_set = activated_blocks_set(block)
@@ -1445,13 +1445,13 @@ def active_variables_in_deactivated_blocks_set(block):
 def number_active_variables_in_deactivated_blocks(block):
     """
     Method to return the number of Var components which appear within an active
-    Constraint but belong to a deacitvated Block in a model.
+    Constraint but belong to a deactivated Block in a model.
 
     Args:
         block : model to be studied
 
     Returns:
-        Number of Var components which belong to a deacitvated Block but appear
+        Number of Var components which belong to a deactivated Block but appear
         in an activate Constraint in block
     """
     return len(active_variables_in_deactivated_blocks_set(block))

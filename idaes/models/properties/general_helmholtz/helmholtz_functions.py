@@ -2176,7 +2176,7 @@ change.
         ax.set_xlabel("Temperature (K)")
         return fig, ax
 
-    # In case you can't rember the axis order in the diagrams
+    # In case you can't remember the axis order in the diagrams
     hp_diagram = ph_diagram
     tp_diagram = pt_diagram
     st_diagram = ts_diagram

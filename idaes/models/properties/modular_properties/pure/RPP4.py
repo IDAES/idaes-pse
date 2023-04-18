@@ -16,7 +16,7 @@ Methods for calculating pure component properties from:
 The Properties of Gases & Liquids, 4th Edition
 Reid, Prausnitz and Polling, 1987, McGraw-Hill
 
-All parameter indicies and units based on conventions used by the source
+All parameter indices and units based on conventions used by the source
 """
 # TODO: Missing doc strings
 # pylint: disable=missing-class-docstring

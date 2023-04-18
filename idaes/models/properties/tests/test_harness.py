@@ -269,7 +269,7 @@ class PropertyTestHarness(object):
         for v in sv.values():
             if not isinstance(v, Var):
                 raise TypeError(
-                    "Invlaid entry in define_state_Vars, {}. All members must "
+                    "Invalid entry in define_state_Vars, {}. All members must "
                     "be Pyomo Vars.".format(v)
                 )
 
@@ -392,7 +392,7 @@ class PropertyTestHarness(object):
         assert initializer is not None
 
         # Most cases will probably have specified the class for the initializer, but
-        # in case an instance was provided check ot see if it is callable.
+        # in case an instance was provided check to see if it is callable.
         if callable(initializer):
             initializer = initializer()
 

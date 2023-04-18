@@ -185,7 +185,7 @@ The example callback below is the model default pressure-flow equation.
 
       b.Cv = pyo.Var(
           initialize=0.1,
-          doc="Valve flow coefficent",
+          doc="Valve flow coefficient",
           units=umeta("amount")/umeta("time")/umeta("pressure")**0.5
       )
       b.Cv.fix()

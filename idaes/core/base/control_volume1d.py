@@ -85,7 +85,7 @@ class DistributedVars(Enum):
 
     ControlVolume1DBlock should be used for any control volume with a defined
     volume and distinct inlets and outlets where there is a single spatial
-    domain parallel to the material flow direction. This encompases unit
+    domain parallel to the material flow direction. This encompasses unit
     operations such as plug flow reactors and pipes.""",
 )
 class ControlVolume1DBlockData(ControlVolumeBlockData):
@@ -108,7 +108,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             doc="""Argument defining whether area variable should be spatially
         variant or not. **default** - DistributedVars.uniform.
         **Valid values:** {
-        DistributedVars.uniform - area does not vary across spatial domian,
+        DistributedVars.uniform - area does not vary across spatial domain,
         DistributedVars.variant - area can vary over the domain and is indexed
         by time and space.}""",
         ),
@@ -261,7 +261,7 @@ argument).""",
         else:
             self._flow_direction_term = 1
 
-        # Add geomerty variables and constraints
+        # Add geometry variables and constraints
         if self.config.area_definition == DistributedVars.variant:
             self.area = Var(
                 self.flowsheet().time,
@@ -2125,7 +2125,7 @@ argument).""",
         """
         raise NotImplementedError(
             """
-                Due ot the difficultly in presenting spatially distributed data
+                Due to the difficultly in presenting spatially distributed data
                 in a clean format, ControlVolume1D does not currently support
                 the report method."""
         )

@@ -995,7 +995,7 @@ see reaction package for documentation.}""",
         # Add performance equations
 
         # ---------------------------------------------------------------------
-        # Geometry contraints
+        # Geometry constraints
 
         # Distributor design - Area of orifice
         @self.Constraint(doc="Area of Orifice")
@@ -1042,7 +1042,7 @@ see reaction package for documentation.}""",
             )
 
         # ---------------------------------------------------------------------
-        # Hydrodynamic contraints
+        # Hydrodynamic constraints
 
         # Emulsion region volume fraction
         @self.Constraint(
@@ -1587,7 +1587,7 @@ see reaction package for documentation.}""",
                 )
 
         # ---------------------------------------------------------------------
-        # Reaction  contraints
+        # Reaction  constraints
 
         # Build homogeneous reaction constraints
 
@@ -1674,7 +1674,7 @@ see reaction package for documentation.}""",
             )
 
         # Emulsion gas flowrate - this eqn indirectly calcs bubble voidage
-        # (delta) in conjuction with the mass conservation eqns in the
+        # (delta) in conjunction with the mass conservation eqns in the
         # gas_emulsion CV1D.
         # This eqn arises because the emulsion region gas is assumed to be at
         # minimum fluidization conditions (delta varies to account for this)
@@ -2008,7 +2008,7 @@ see reaction package for documentation.}""",
         units_meta_gas = gas_phase.property_package.get_metadata().get_derived_units
 
         # Keep all unit model geometry constraints, derivative_var constraints,
-        # and property block constraints active. Additionaly, in control
+        # and property block constraints active. Additionally, in control
         # volumes - keep conservation linking constraints and
         # holdup calculation (for dynamic flowsheets) constraints active
 
@@ -2096,7 +2096,7 @@ see reaction package for documentation.}""",
         # ---------------------------------------------------------------------
         # Initialize geometric constraints, property block constraints
         # and reaction block constraints
-        # Fix delta, delta_e and void_emul to inital values for square problem
+        # Fix delta, delta_e and void_emul to initial values for square problem
         blk.delta.fix()
         blk.delta_e.fix()
         blk.voidage_emulsion.fix()
@@ -2257,7 +2257,7 @@ see reaction package for documentation.}""",
         blk.voidage_emulsion.unfix()
         blk.bubble_diameter.unfix()
 
-        # Activate relavant constraints
+        # Activate relevant constraints
         blk.bubble_vol_frac_eqn.activate()  # delta
         blk.average_gas_density_eqn.activate()
 

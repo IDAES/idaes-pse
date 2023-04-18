@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-Tests for ControlVolumeBlockData.
+Tests for Gibbs reactor.
 
 Author: Andrew Lee
 """
@@ -42,6 +42,11 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    SingleControlVolumeUnitInitializer,
+    InitializationStatus,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -440,3 +445,141 @@ class TestMethane(object):
                 "Pressure Change": methane.fs.unit.deltaP[0],
             }
         }
+
+
+class TestInitializers:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = MethaneCombustionParameterBlock()
+
+        m.fs.unit = GibbsReactor(
+            property_package=m.fs.properties,
+            has_heat_transfer=True,
+            has_pressure_change=True,
+        )
+
+        m.fs.unit.inlet.flow_mol[0].fix(230.0)
+        m.fs.unit.inlet.mole_frac_comp[0, "H2"].fix(0.0435)
+        m.fs.unit.inlet.mole_frac_comp[0, "N2"].fix(0.6522)
+        m.fs.unit.inlet.mole_frac_comp[0, "O2"].fix(0.1739)
+        m.fs.unit.inlet.mole_frac_comp[0, "CO2"].fix(1e-5)
+        m.fs.unit.inlet.mole_frac_comp[0, "CH4"].fix(0.1304)
+        m.fs.unit.inlet.mole_frac_comp[0, "CO"].fix(1e-5)
+        m.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix(1e-5)
+        m.fs.unit.inlet.mole_frac_comp[0, "NH3"].fix(1e-5)
+        m.fs.unit.inlet.temperature[0].fix(1500.0)
+        m.fs.unit.inlet.pressure[0].fix(101325.0)
+
+        m.fs.unit.outlet.temperature[0].fix(2844.38)
+        m.fs.unit.deltaP.fix(0)
+
+        return m
+
+    @pytest.mark.integration
+    def test_general_hierarchical(self, model):
+        initializer = SingleControlVolumeUnitInitializer()
+        initializer.initialize(
+            model.fs.unit,
+            initial_guesses={
+                "control_volume.properties_out[0].pressure": 101325.0,
+                "control_volume.properties_out[0].flow_mol": 251.05,
+                "control_volume.properties_out[0].mole_frac_comp[CH4]": 1e-5,
+                "control_volume.properties_out[0].mole_frac_comp[CO]": 0.0916,
+                "control_volume.properties_out[0].mole_frac_comp[CO2]": 0.0281,
+                "control_volume.properties_out[0].mole_frac_comp[H2]": 0.1155,
+                "control_volume.properties_out[0].mole_frac_comp[H2O]": 0.1633,
+                "control_volume.properties_out[0].mole_frac_comp[N2]": 0.59478,
+                "control_volume.properties_out[0].mole_frac_comp[NH3]": 1e-5,
+                "control_volume.properties_out[0].mole_frac_comp[O2]": 0.0067,
+            },
+        )
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(250.06, abs=1e-2) == value(
+            model.fs.unit.outlet.flow_mol[0]
+        )
+        assert pytest.approx(0.0, abs=1e-4) == value(
+            model.fs.unit.outlet.mole_frac_comp[0, "CH4"]
+        )
+        assert pytest.approx(0.0974, abs=1e-4) == value(
+            model.fs.unit.outlet.mole_frac_comp[0, "CO"]
+        )
+        assert pytest.approx(0.0226, abs=1e-4) == value(
+            model.fs.unit.outlet.mole_frac_comp[0, "CO2"]
+        )
+        assert pytest.approx(0.1030, abs=1e-4) == value(
+            model.fs.unit.outlet.mole_frac_comp[0, "H2"]
+        )
+        assert pytest.approx(0.1769, abs=1e-4) == value(
+            model.fs.unit.outlet.mole_frac_comp[0, "H2O"]
+        )
+        assert pytest.approx(0.5999, abs=1e-4) == value(
+            model.fs.unit.outlet.mole_frac_comp[0, "N2"]
+        )
+        assert pytest.approx(0.0, abs=1e-5) == value(
+            model.fs.unit.outlet.mole_frac_comp[0, "NH3"]
+        )
+        assert pytest.approx(0.0002, abs=1e-4) == value(
+            model.fs.unit.outlet.mole_frac_comp[0, "O2"]
+        )
+        assert pytest.approx(-7454077, abs=1e2) == value(model.fs.unit.heat_duty[0])
+        assert pytest.approx(101325.0, abs=1e-2) == value(
+            model.fs.unit.outlet.pressure[0]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(
+            model.fs.unit,
+            initial_guesses={
+                "control_volume.properties_out[0].pressure": 101325.0,
+                "control_volume.properties_out[0].flow_mol": 251.05,
+                "control_volume.properties_out[0].mole_frac_comp[CH4]": 1e-5,
+                "control_volume.properties_out[0].mole_frac_comp[CO]": 0.0916,
+                "control_volume.properties_out[0].mole_frac_comp[CO2]": 0.0281,
+                "control_volume.properties_out[0].mole_frac_comp[H2]": 0.1155,
+                "control_volume.properties_out[0].mole_frac_comp[H2O]": 0.1633,
+                "control_volume.properties_out[0].mole_frac_comp[N2]": 0.59478,
+                "control_volume.properties_out[0].mole_frac_comp[NH3]": 1e-5,
+                "control_volume.properties_out[0].mole_frac_comp[O2]": 0.0067,
+            },
+        )
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(250.06, abs=1e-2) == value(
+            model.fs.unit.outlet.flow_mol[0]
+        )
+        assert pytest.approx(0.0, abs=1e-4) == value(
+            model.fs.unit.outlet.mole_frac_comp[0, "CH4"]
+        )
+        assert pytest.approx(0.0974, abs=1e-4) == value(
+            model.fs.unit.outlet.mole_frac_comp[0, "CO"]
+        )
+        assert pytest.approx(0.0226, abs=1e-4) == value(
+            model.fs.unit.outlet.mole_frac_comp[0, "CO2"]
+        )
+        assert pytest.approx(0.1030, abs=1e-4) == value(
+            model.fs.unit.outlet.mole_frac_comp[0, "H2"]
+        )
+        assert pytest.approx(0.1769, abs=1e-4) == value(
+            model.fs.unit.outlet.mole_frac_comp[0, "H2O"]
+        )
+        assert pytest.approx(0.5999, abs=1e-4) == value(
+            model.fs.unit.outlet.mole_frac_comp[0, "N2"]
+        )
+        assert pytest.approx(0.0, abs=1e-5) == value(
+            model.fs.unit.outlet.mole_frac_comp[0, "NH3"]
+        )
+        assert pytest.approx(0.0002, abs=1e-4) == value(
+            model.fs.unit.outlet.mole_frac_comp[0, "O2"]
+        )
+        assert pytest.approx(-7454077, abs=1e2) == value(model.fs.unit.heat_duty[0])
+        assert pytest.approx(101325.0, abs=1e-2) == value(
+            model.fs.unit.outlet.pressure[0]
+        )

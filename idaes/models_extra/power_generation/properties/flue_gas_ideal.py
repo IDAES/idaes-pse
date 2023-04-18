@@ -60,7 +60,7 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.logger as idaeslog
 
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Boiler Subsystem Team  J. Ma, M. Zamarripa, T. Burgard"
 __version__ = "3"
 
@@ -385,7 +385,7 @@ class FlueGasParameterData(PhysicalParameterBlock):
         self.set_default_scaling("flow_vol", 1)
 
         # For flow_mol_comp, will calculate from flow_mol and mole_frac_comp
-        # user should set a scale for both, and for each compoent of
+        # user should set a scale for both, and for each component of
         # mole_frac_comp
         self.set_default_scaling("pressure", 1e-5)
         self.set_default_scaling("temperature", 1e-1)
@@ -486,11 +486,11 @@ class _FlueGasStateBlock(StateBlock):
             hold_state: flag indicating whether the initialization routine
                 should unfix any state variables fixed during initialization
                 (default=False).
-                - True - states varaibles are not unfixed, and a dict of
+                - True - states variables are not unfixed, and a dict of
                          returned containing flags for which states were fixed
                          during initialization.
                 - False - state variables are unfixed after initialization by
-                          calling the relase_state method
+                          calling the release_state method
 
             Returns:
                 If hold_states is True, returns a dict containing flags for
@@ -558,7 +558,7 @@ class _FlueGasStateBlock(StateBlock):
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
-        Method to relase state variables fixed during initialisation.
+        Method to release state variables fixed during initialisation.
 
         Keyword Arguments:
             flags : dict containing information of which state variables
@@ -974,7 +974,7 @@ class FlueGasStateBlockData(StateBlockData):
         Model checks for property block
         """
         # Check temperature bounds
-        for v in self.compoent_object_data(Var, descend_into=True):
+        for v in self.component_object_data(Var, descend_into=True):
             if value(v) < v.lb:
                 _log.error(f"{v} is below lower bound in {self.name}")
             if value(v) > v.ub:

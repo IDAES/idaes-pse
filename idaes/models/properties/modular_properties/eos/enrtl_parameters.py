@@ -79,7 +79,7 @@ class ConstantAlpha(object):
                 # Molecular-molecular interaction, default value is 0.3
                 v = 0.3
             else:
-                # All other intereactions have default value 0.2
+                # All other interactions have default value 0.2
                 v = 0.2
             return v
 

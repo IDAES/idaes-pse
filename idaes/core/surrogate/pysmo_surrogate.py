@@ -826,7 +826,9 @@ class TrainedSurrogateDecoder(TSEBase):
         # Construct model with minimal arguments necessary
         columns = ["x", "y"]
         XY_data = pd.DataFrame({c: list(range(10)) for c in columns})
-        model = rbf.RadialBasisFunctions(XY_data)  # XXX
+        model = rbf.RadialBasisFunctions(
+            XY_data, basis_function=attr["basis_function"]
+        )  # XXX
         # Set model attributes from saved attributes
         for k, v in attr.items():
             setattr(model, k, decoders.get(mapping[k], null_decode)(v))

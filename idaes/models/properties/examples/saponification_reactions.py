@@ -33,7 +33,7 @@ from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Andrew Lee"
 
 

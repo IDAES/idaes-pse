@@ -926,7 +926,7 @@ class TestBTX(object):
 
 
 # -----------------------------------------------------------------------------
-# Tests for Mixer in cases where proeprties do not support pressure
+# Tests for Mixer in cases where properties do not support pressure
 @declare_process_block_class("NoPressureTestBlock")
 class _NoPressureParameterBlock(PhysicalParameterBlock):
     def build(self):

@@ -51,7 +51,7 @@ from idaes.models.unit_models import (  # basic IDAES unit models, and enum
 )
 from idaes.core.util.initialization import (
     propagate_state as _set_port,
-)  # for model intialization
+)  # for model initialization
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -663,7 +663,7 @@ def set_model_input(m):
     #  Low-pressure FWH section inputs                                         #
     ############################################################################
     # fwh1
-    # Heat transfer coefficent correlation constraints can be added to the
+    # Heat transfer coefficient correlation constraints can be added to the
     # feedwater heaters, but to keep this example simple, they are fixed
     # constant values here.
     m.fs.fwh1.condense.area.fix(400)
@@ -939,7 +939,7 @@ def pfd_result(m, df, svg):
         (str): SVG content.
     """
     tags = {}  # dict of tags and data to insert into SVG
-    for i in df.index:  # Create entires for streams
+    for i in df.index:  # Create entries for streams
         tags[i + "_F"] = df.loc[i, "Molar Flow"]
         tags[i + "_T"] = df.loc[i, "T"]
         tags[i + "_P"] = df.loc[i, "P"]
@@ -969,7 +969,7 @@ def pfd_result(m, df, svg):
 
 
 def main(initialize_from_file=None, store_initialization=None):
-    """Create and initalize a model and solver
+    """Create and initialize a model and solver
 
     Args:
         None
@@ -995,7 +995,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--initialize_from_file",
         help="File from which to load initialized values. If specified, the "
-        "initialization proceedure will be skipped.",
+        "initialization procedure will be skipped.",
         default=None,
     )
     parser.add_argument(

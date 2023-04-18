@@ -46,7 +46,7 @@ def test_available2():
 
 @pytest.mark.unit
 @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
-def test_add_funcion():
+def test_add_function():
     """Test mixed phase form with P-H state vars and phase mass balances"""
     m = pyo.ConcreteModel()
 
@@ -162,7 +162,7 @@ def test_htpx_mole():
 
 @pytest.mark.unit
 @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
-def test_expression_writter_mass():
+def test_expression_writer_mass():
     """Test mixed phase form with P-H state vars and phase mass balances"""
     m = pyo.ConcreteModel()
     m.hparam = HelmholtzParameterBlock(
@@ -901,7 +901,7 @@ def test_expression_writter_mass():
 
 @pytest.mark.unit
 @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
-def test_expression_writter_mole():
+def test_expression_writer_mole():
     """Test mixed phase form with P-H state vars and phase mass balances"""
     m = pyo.ConcreteModel()
     m.hparam = HelmholtzParameterBlock(
@@ -1239,7 +1239,7 @@ def test_expression_writter_mole():
 
 @pytest.mark.unit
 @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
-def test_expression_writter_sat():
+def test_expression_writer_sat():
     """Test mixed phase form with P-H state vars and phase mass balances"""
     m = pyo.ConcreteModel()
     m.hparam = HelmholtzParameterBlock(
@@ -1710,7 +1710,7 @@ def test_errors():
 
 @pytest.mark.unit
 @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
-def test_plot_no_excpetion():
+def test_plot_no_exception():
     m = pyo.ConcreteModel()
     m.hparam = HelmholtzParameterBlock(
         pure_component="r1234ze", amount_basis=AmountBasis.MASS
