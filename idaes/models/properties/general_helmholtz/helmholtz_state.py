@@ -77,6 +77,7 @@ class HelmholtzEoSInitializer(InitializerBase):
         initial_guesses: dict = None,
         json_file: str = None,
         output_level=None,
+        exclude_unused_vars: bool = False,
     ):
         """
         Initialize method for Helmholtz EoS state blocks. This is a no-op.

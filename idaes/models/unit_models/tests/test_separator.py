@@ -27,7 +27,7 @@ from pyomo.environ import (
     Var,
     units as pyunits,
 )
-
+from pyomo.core.expr.calculus.derivatives import differentiate
 from pyomo.network import Port
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_consistent
@@ -48,6 +48,7 @@ from idaes.models.unit_models.separator import (
     SeparatorData,
     SplittingType,
     EnergySplittingType,
+    SeparatorInitializer,
 )
 from idaes.core.util.exceptions import (
     BurntToast,
@@ -76,6 +77,10 @@ from idaes.core.util.testing import (
 )
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    InitializationStatus,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -124,6 +129,8 @@ class TestBaseConstruction(object):
             build.fs.sep.config.material_balance_type == MaterialBalanceType.useDefault
         )
         assert build.fs.sep.config.has_phase_equilibrium is False
+
+        assert build.fs.sep.default_initializer is SeparatorInitializer
 
     @pytest.mark.unit
     def test_validate_config_arguments(self, build):
@@ -2945,7 +2952,7 @@ class TestIdealConstruction(object):
 
 
 # -----------------------------------------------------------------------------
-class TestBTX_Ideal(object):
+class TestBTX_IdealSep(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
@@ -3191,3 +3198,425 @@ def test_initialization_error():
 
     with pytest.raises(InitializationError):
         m.fs.sep.initialize()
+
+
+class TestInitializersBTX_IdealSep:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = BTXParameterBlock()
+
+        m.fs.unit = Separator(
+            property_package=m.fs.properties,
+            material_balance_type=MaterialBalanceType.componentPhase,
+            split_basis=SplittingType.phaseFlow,
+            ideal_separation=True,
+            ideal_split_map={"Vap": "outlet_1", "Liq": "outlet_2"},
+            has_phase_equilibrium=False,
+        )
+
+        m.fs.unit.inlet.flow_mol[0].fix(1)  # mol/s
+        m.fs.unit.inlet.temperature[0].fix(368)  # K
+        m.fs.unit.inlet.pressure[0].fix(101325)  # Pa
+
+        m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        return m
+
+    @pytest.mark.integration
+    def test_separator_initializer(self, model):
+        initializer = SeparatorInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(0.396, abs=1e-3) == value(
+            model.fs.unit.outlet_1.flow_mol[0]
+        )
+        assert pytest.approx(368.0, abs=1e-1) == value(
+            model.fs.unit.outlet_1.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e3) == value(
+            model.fs.unit.outlet_1.pressure[0]
+        )
+        assert pytest.approx(0.634, abs=1e-3) == value(
+            model.fs.unit.outlet_1.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.366, abs=1e-3) == value(
+            model.fs.unit.outlet_1.mole_frac_comp[0, "toluene"]
+        )
+
+        assert pytest.approx(0.604, abs=1e-3) == value(
+            model.fs.unit.outlet_2.flow_mol[0]
+        )
+        assert pytest.approx(368.0, abs=1e-1) == value(
+            model.fs.unit.outlet_2.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e3) == value(
+            model.fs.unit.outlet_2.pressure[0]
+        )
+        assert pytest.approx(0.412, abs=1e-3) == value(
+            model.fs.unit.outlet_2.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.588, abs=1e-3) == value(
+            model.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(0.396, abs=1e-3) == value(
+            model.fs.unit.outlet_1.flow_mol[0]
+        )
+        assert pytest.approx(368.0, abs=1e-1) == value(
+            model.fs.unit.outlet_1.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e3) == value(
+            model.fs.unit.outlet_1.pressure[0]
+        )
+        assert pytest.approx(0.634, abs=1e-3) == value(
+            model.fs.unit.outlet_1.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.366, abs=1e-3) == value(
+            model.fs.unit.outlet_1.mole_frac_comp[0, "toluene"]
+        )
+
+        assert pytest.approx(0.604, abs=1e-3) == value(
+            model.fs.unit.outlet_2.flow_mol[0]
+        )
+        assert pytest.approx(368.0, abs=1e-1) == value(
+            model.fs.unit.outlet_2.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e3) == value(
+            model.fs.unit.outlet_2.pressure[0]
+        )
+        assert pytest.approx(0.412, abs=1e-3) == value(
+            model.fs.unit.outlet_2.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.588, abs=1e-3) == value(
+            model.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]
+        )
+
+
+class TestInitializersSapon:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = SaponificationParameterBlock()
+
+        m.fs.unit = Separator(
+            property_package=m.fs.properties,
+            material_balance_type=MaterialBalanceType.componentPhase,
+            split_basis=SplittingType.totalFlow,
+            outlet_list=["a", "B", "c"],
+            ideal_separation=False,
+            has_phase_equilibrium=False,
+        )
+
+        m.fs.unit.inlet.flow_vol.fix(1)
+        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
+        m.fs.unit.inlet.temperature.fix(303.15)
+        m.fs.unit.inlet.pressure.fix(101325.0)
+
+        m.fs.unit.split_fraction[0, "a"].fix(0.3)
+        m.fs.unit.split_fraction[0, "B"].fix(0.5)
+
+        return m
+
+    @pytest.mark.integration
+    def test_separator_initializer(self, model):
+        initializer = SeparatorInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(0.3, abs=1e-5) == value(model.fs.unit.a.flow_vol[0])
+        assert pytest.approx(101325.0, abs=1e-2) == value(model.fs.unit.a.pressure[0])
+        assert pytest.approx(303.15, abs=1e-2) == value(model.fs.unit.a.temperature[0])
+        assert pytest.approx(55388, abs=1e0) == value(
+            model.fs.unit.a.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            model.fs.unit.a.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            model.fs.unit.a.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.a.conc_mol_comp[0, "SodiumAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.a.conc_mol_comp[0, "Ethanol"]
+        )
+
+        assert pytest.approx(0.5, abs=1e-5) == value(model.fs.unit.B.flow_vol[0])
+        assert pytest.approx(101325.0, abs=1e-2) == value(model.fs.unit.B.pressure[0])
+        assert pytest.approx(303.15, abs=1e-2) == value(model.fs.unit.B.temperature[0])
+        assert pytest.approx(55388, abs=1e0) == value(
+            model.fs.unit.B.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            model.fs.unit.B.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            model.fs.unit.B.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.B.conc_mol_comp[0, "SodiumAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.B.conc_mol_comp[0, "Ethanol"]
+        )
+
+        assert pytest.approx(0.2, abs=1e-5) == value(model.fs.unit.c.flow_vol[0])
+        assert pytest.approx(101325.0, abs=1e-2) == value(model.fs.unit.c.pressure[0])
+        assert pytest.approx(303.15, abs=1e-2) == value(model.fs.unit.c.temperature[0])
+        assert pytest.approx(55388, abs=1e0) == value(
+            model.fs.unit.c.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            model.fs.unit.c.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            model.fs.unit.c.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.c.conc_mol_comp[0, "SodiumAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.c.conc_mol_comp[0, "Ethanol"]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(0.3, abs=1e-5) == value(model.fs.unit.a.flow_vol[0])
+        assert pytest.approx(101325.0, abs=1e-2) == value(model.fs.unit.a.pressure[0])
+        assert pytest.approx(303.15, abs=1e-2) == value(model.fs.unit.a.temperature[0])
+        assert pytest.approx(55388, abs=1e0) == value(
+            model.fs.unit.a.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            model.fs.unit.a.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            model.fs.unit.a.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.a.conc_mol_comp[0, "SodiumAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.a.conc_mol_comp[0, "Ethanol"]
+        )
+
+        assert pytest.approx(0.5, abs=1e-5) == value(model.fs.unit.B.flow_vol[0])
+        assert pytest.approx(101325.0, abs=1e-2) == value(model.fs.unit.B.pressure[0])
+        assert pytest.approx(303.15, abs=1e-2) == value(model.fs.unit.B.temperature[0])
+        assert pytest.approx(55388, abs=1e0) == value(
+            model.fs.unit.B.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            model.fs.unit.B.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            model.fs.unit.B.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.B.conc_mol_comp[0, "SodiumAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.B.conc_mol_comp[0, "Ethanol"]
+        )
+
+        assert pytest.approx(0.2, abs=1e-5) == value(model.fs.unit.c.flow_vol[0])
+        assert pytest.approx(101325.0, abs=1e-2) == value(model.fs.unit.c.pressure[0])
+        assert pytest.approx(303.15, abs=1e-2) == value(model.fs.unit.c.temperature[0])
+        assert pytest.approx(55388, abs=1e0) == value(
+            model.fs.unit.c.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            model.fs.unit.c.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            model.fs.unit.c.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.c.conc_mol_comp[0, "SodiumAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.c.conc_mol_comp[0, "Ethanol"]
+        )
+
+
+class TestInitializersBTX:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = BTXParameterBlock(
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
+        )
+
+        m.fs.unit = Separator(
+            property_package=m.fs.properties,
+            material_balance_type=MaterialBalanceType.componentPhase,
+            split_basis=SplittingType.phaseFlow,
+            ideal_separation=False,
+            has_phase_equilibrium=True,
+        )
+
+        m.fs.unit.inlet.flow_mol[0].fix(1)  # mol/s
+        m.fs.unit.inlet.temperature[0].fix(368)  # K
+        m.fs.unit.inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.split_fraction[0, "outlet_1", "Vap"].fix(0.8)
+        m.fs.unit.split_fraction[0, "outlet_2", "Liq"].fix(0.8)
+
+        return m
+
+    @pytest.mark.integration
+    def test_separator_initializer(self, model):
+        initializer = SeparatorInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(0.438, abs=1e-3) == value(
+            model.fs.unit.outlet_1.flow_mol[0]
+        )
+        assert pytest.approx(368.0, abs=1e-1) == value(
+            model.fs.unit.outlet_1.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e3) == value(
+            model.fs.unit.outlet_1.pressure[0]
+        )
+        assert pytest.approx(0.573, abs=1e-3) == value(
+            model.fs.unit.outlet_1.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.427, abs=1e-3) == value(
+            model.fs.unit.outlet_1.mole_frac_comp[0, "toluene"]
+        )
+
+        assert pytest.approx(0.562, abs=1e-3) == value(
+            model.fs.unit.outlet_2.flow_mol[0]
+        )
+        assert pytest.approx(368.0, abs=1e-1) == value(
+            model.fs.unit.outlet_2.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e3) == value(
+            model.fs.unit.outlet_2.pressure[0]
+        )
+        assert pytest.approx(0.443, abs=1e-3) == value(
+            model.fs.unit.outlet_2.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.557, abs=1e-3) == value(
+            model.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]
+        )
+
+    # TODO: BT Initializer cannot solve this - note that even the
+    # hierarchical routine cannot solve with the BT solver.
+
+
+class TestInitializersIAPWS:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        m.fs.unit = Separator(
+            property_package=m.fs.properties,
+            material_balance_type=MaterialBalanceType.componentPhase,
+            split_basis=SplittingType.componentFlow,
+            num_outlets=3,
+            ideal_separation=False,
+            has_phase_equilibrium=False,
+        )
+
+        m.fs.unit.inlet.flow_mol[0].fix(100)
+        m.fs.unit.inlet.enth_mol[0].fix(5000)
+        m.fs.unit.inlet.pressure[0].fix(101325)
+
+        m.fs.unit.split_fraction[0, "outlet_1", "H2O"].fix(0.4)
+        m.fs.unit.split_fraction[0, "outlet_2", "H2O"].fix(0.5)
+
+        return m
+
+    @pytest.mark.integration
+    def test_separator_initializer(self, model):
+        initializer = SeparatorInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(40, abs=1e-3) == value(model.fs.unit.outlet_1.flow_mol[0])
+        assert pytest.approx(50, abs=1e-3) == value(model.fs.unit.outlet_2.flow_mol[0])
+        assert pytest.approx(10, abs=1e-3) == value(model.fs.unit.outlet_3.flow_mol[0])
+
+        assert pytest.approx(5000, abs=1e0) == value(model.fs.unit.outlet_1.enth_mol[0])
+        assert pytest.approx(5000, abs=1e0) == value(model.fs.unit.outlet_2.enth_mol[0])
+        assert pytest.approx(5000, abs=1e0) == value(model.fs.unit.outlet_3.enth_mol[0])
+
+        assert pytest.approx(101325, abs=1e2) == value(
+            model.fs.unit.outlet_1.pressure[0]
+        )
+        assert pytest.approx(101325, abs=1e2) == value(
+            model.fs.unit.outlet_2.pressure[0]
+        )
+        assert pytest.approx(101325, abs=1e2) == value(
+            model.fs.unit.outlet_3.pressure[0]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(
+            calculate_variable_options={
+                "diff_mode": differentiate.Modes.reverse_numeric
+            },
+            constraint_tolerance=2e-5,
+        )
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(40, abs=1e-3) == value(model.fs.unit.outlet_1.flow_mol[0])
+        assert pytest.approx(50, abs=1e-3) == value(model.fs.unit.outlet_2.flow_mol[0])
+        assert pytest.approx(10, abs=1e-3) == value(model.fs.unit.outlet_3.flow_mol[0])
+
+        assert pytest.approx(5000, abs=1e0) == value(model.fs.unit.outlet_1.enth_mol[0])
+        assert pytest.approx(5000, abs=1e0) == value(model.fs.unit.outlet_2.enth_mol[0])
+        assert pytest.approx(5000, abs=1e0) == value(model.fs.unit.outlet_3.enth_mol[0])
+
+        assert pytest.approx(101325, abs=1e2) == value(
+            model.fs.unit.outlet_1.pressure[0]
+        )
+        assert pytest.approx(101325, abs=1e2) == value(
+            model.fs.unit.outlet_2.pressure[0]
+        )
+        assert pytest.approx(101325, abs=1e2) == value(
+            model.fs.unit.outlet_3.pressure[0]
+        )

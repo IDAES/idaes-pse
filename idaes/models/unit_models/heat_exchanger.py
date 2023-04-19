@@ -20,6 +20,7 @@ from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (
+    Block,
     Var,
     Param,
     log,
@@ -49,6 +50,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.initialization import SingleControlVolumeUnitInitializer
 
 
 _log = idaeslog.getLogger(__name__)
@@ -62,6 +64,119 @@ class HeatExchangerFlowPattern(Enum):
     countercurrent = 1
     cocurrent = 2
     crossflow = 3
+
+
+class HX0DInitializer(SingleControlVolumeUnitInitializer):
+    """
+    Initializer for 0D Heat Exchanger units.
+
+    """
+
+    def initialization_routine(
+        self,
+        model: Block,
+        plugin_initializer_args: dict = None,
+        copy_inlet_state: bool = False,
+        duty=None,
+    ):
+        """
+        Common initialization routine for models with one control volume.
+
+        Args:
+            model: Pyomo Block to be initialized
+            plugin_initializer_args: dict-of-dicts containing arguments to be passed to plug-in Initializers.
+                Keys should be submodel components.
+            copy_inlet_state: bool (default=False). Whether to copy inlet state to other states or not
+                (0-D control volumes only). Copying will generally be faster, but inlet states may not contain
+                all properties required elsewhere.
+            duty: initial guess for heat duty to assist with initialization. Can be a Pyomo expression with units.
+
+        Returns:
+            Pyomo solver results object
+        """
+        return super().initialization_routine(
+            model=model,
+            plugin_initializer_args=plugin_initializer_args,
+            copy_inlet_state=copy_inlet_state,
+        )
+
+    def initialize_main_model(
+        self,
+        model: Block,
+        copy_inlet_state: bool = False,
+        duty=None,
+    ):
+        # Set solver options
+        init_log = idaeslog.getInitLogger(
+            model.name, self.config.output_level, tag="unit"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            model.name, self.config.output_level, tag="unit"
+        )
+
+        # Create solver
+        solver = get_solver(self.config.solver, self.config.solver_options)
+
+        self.initialize_control_volume(model.hot_side, copy_inlet_state)
+        init_log.info_high("Initialization Step 1a (hot side) Complete.")
+
+        self.initialize_control_volume(model.cold_side, copy_inlet_state)
+        init_log.info_high("Initialization Step 1b (cold side) Complete.")
+        # ---------------------------------------------------------------------
+        # Solve unit without heat transfer equation
+        model.heat_transfer_equation.deactivate()
+
+        # Get side 1 and side 2 heat units, and convert duty as needed
+        s1_units = model.hot_side.heat.get_units()
+        s2_units = model.cold_side.heat.get_units()
+
+        # Check to see if heat duty is fixed
+        # We will assume that if the first point is fixed, it is fixed at all points
+        if not model.cold_side.heat[model.flowsheet().time.first()].fixed:
+            cs_fixed = False
+            if duty is None:
+                # Assume 1000 J/s and check for unitless properties
+                if s1_units is None and s2_units is None:
+                    # Backwards compatibility for unitless properties
+                    s1_duty = -1000
+                    s2_duty = 1000
+                else:
+                    s1_duty = pyunits.convert_value(
+                        -1000, from_units=pyunits.W, to_units=s1_units
+                    )
+                    s2_duty = pyunits.convert_value(
+                        1000, from_units=pyunits.W, to_units=s2_units
+                    )
+            else:
+                # Duty provided with explicit units
+                s1_duty = -pyunits.convert_value(
+                    duty[0], from_units=duty[1], to_units=s1_units
+                )
+                s2_duty = pyunits.convert_value(
+                    duty[0], from_units=duty[1], to_units=s2_units
+                )
+
+            model.cold_side.heat.fix(s2_duty)
+            for i in model.hot_side.heat:
+                model.hot_side.heat[i].value = s1_duty
+        else:
+            cs_fixed = True
+            for i in model.hot_side.heat:
+                model.hot_side.heat[i].set_value(model.cold_side.heat[i])
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(model, tee=slc.tee)
+        init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
+        if not cs_fixed:
+            model.cold_side.heat.unfix()
+        model.heat_transfer_equation.activate()
+        # ---------------------------------------------------------------------
+        # Solve unit
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(model, tee=slc.tee)
+        init_log.info("Initialization Completed, {}".format(idaeslog.condition(res)))
+
+        return res
 
 
 def _make_heat_exchanger_config(config):
@@ -398,6 +513,8 @@ class HeatExchangerData(UnitModelBlockData):
     Simple 0D heat exchange unit.
     Unit model to transfer heat from one material to another.
     """
+
+    default_initializer = HX0DInitializer
 
     CONFIG = UnitModelBlockData.CONFIG(implicit=True)
     _make_heat_exchanger_config(CONFIG)

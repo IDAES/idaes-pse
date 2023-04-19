@@ -16,11 +16,18 @@ Tests for Block Triangularization initialization
 import pytest
 import types
 
-from pyomo.environ import ConcreteModel, Constraint, value, Var
+from pyomo.environ import ConcreteModel, Constraint, units, value, Var
+
+from idaes.core import FlowsheetBlock
 from idaes.core.initialization.block_triangularization import (
     BlockTriangularizationInitializer,
 )
 from idaes.core.initialization.initializer_base import InitializationStatus
+from idaes.models.unit_models.pressure_changer import (
+    Turbine,
+)
+
+from idaes.models.properties import iapws95
 
 __author__ = "Andrew Lee"
 

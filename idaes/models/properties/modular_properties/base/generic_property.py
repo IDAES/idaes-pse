@@ -1564,9 +1564,6 @@ class _GenericStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    # Set default initializer
-    default_initializer = ModularPropertiesInitializer
-
     def _return_component_list(self):
         # Overload the _return_component_list method to handle electrolyte
         # systems where we have two component lists to choose from

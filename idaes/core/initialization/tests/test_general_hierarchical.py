@@ -32,6 +32,7 @@ __author__ = "Andrew Lee"
 @pytest.mark.unit
 def test_nonstandard_model():
     m = ConcreteModel()
+    m.initialization_order = [m]
 
     initializer = SingleControlVolumeUnitInitializer()
 
@@ -116,7 +117,6 @@ def test_init_props_1D():
     m.control_volume.properties = Block()
 
     initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
 
     def estimate_states(block, *args, **kwargs):
         block._estimated = True
@@ -238,9 +238,6 @@ def test_initialize_control_volume_copy():
     assert m.control_volume.properties_in._initialized
     assert not hasattr(m.control_volume.properties_out, "_initialized")
     assert m.control_volume.reactions._initialized
-
-
-# TODO: init props 1D
 
 
 @pytest.mark.unit

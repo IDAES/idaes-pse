@@ -151,6 +151,7 @@ class InitializerBase:
         initial_guesses: dict = None,
         json_file: str = None,
         output_level=None,
+        exclude_unused_vars: bool = False,
     ):
         """
         Execute full initialization routine.
@@ -160,6 +161,7 @@ class InitializerBase:
             initial_guesses: dict of initial guesses to load.
             json_file: file name of json file to load initial guesses from as str.
             output_level: (optional) output level to use during initialization run (overrides global setting).
+            exclude_unused_vars: whether to ignore unused variables when doing post-initialization checks.
 
         Note - can only provide one of initial_guesses or json_file.
 
@@ -196,7 +198,9 @@ class InitializerBase:
             self._local_logger_level = None
 
         # 7. Check convergence
-        return self.postcheck(model, results_obj=results)
+        return self.postcheck(
+            model, results_obj=results, exclude_unused_vars=exclude_unused_vars
+        )
 
     def get_current_state(self, model: Block):
         """
@@ -638,7 +642,7 @@ class ModularInitializerBase(InitializerBase):
         self, model: Block, plugin_initializer_args: dict = None, **kwargs
     ):
         """
-        Common initialization routine for models with one control volume.
+        Common initialization routine for models with plugins.
 
         Args:
             model: Pyomo Block to be initialized
@@ -649,11 +653,6 @@ class ModularInitializerBase(InitializerBase):
         Returns:
             Pyomo solver results object
         """
-        if not hasattr(model, "control_volume"):
-            raise TypeError(
-                f"Model {model.name} does not appear to be a standard form unit model. "
-                f"Please use an Initializer specific to the model being initialized."
-            )
         if plugin_initializer_args is None:
             plugin_initializer_args = {}
 
