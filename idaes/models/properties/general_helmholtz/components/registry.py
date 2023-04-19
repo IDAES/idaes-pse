@@ -25,19 +25,52 @@ _components = {}
 
 
 class _ComponentStruct(object):
-    def __init__(self, transport_module=None):
+    def __init__(
+        self,
+        transport_module=None,
+        viscosity=False,
+        thermal_conductivity=False,
+        surface_tension=False,
+    ):
         self.transport_module = transport_module
+        # these are true if external functions to calculate are available
+        self.viscosity = viscosity
+        self.thermal_conductivity = thermal_conductivity
+        self.surface_tension = surface_tension
 
 
-def register_helmholtz_component(comp_str, transport_module=None):
-    _components[comp_str] = _ComponentStruct(transport_module=transport_module)
+def register_helmholtz_component(
+    comp_str,
+    viscosity=False,
+    thermal_conductivity=False,
+    surface_tension=False,
+):
+    _components[comp_str] = _ComponentStruct(
+        viscosity=viscosity,
+        thermal_conductivity=thermal_conductivity,
+        surface_tension=surface_tension,
+    )
 
 
-def get_transport_module(comp_str):
+def viscosity_available(comp_str):
     comp_str = comp_str.lower()
     if component_registered(comp_str):
-        return _components[comp_str].transport_module
-    return None
+        return _components[comp_str].viscosity
+    return False
+
+
+def thermal_conductivity_available(comp_str):
+    comp_str = comp_str.lower()
+    if component_registered(comp_str):
+        return _components[comp_str].thermal_conductivity
+    return False
+
+
+def surface_tension_available(comp_str):
+    comp_str = comp_str.lower()
+    if component_registered(comp_str):
+        return _components[comp_str].surface_tension
+    return False
 
 
 def component_registered(comp_str):
