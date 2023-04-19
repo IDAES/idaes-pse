@@ -23,6 +23,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
+from idaes.core.initialization import BlockTriangularizationInitializer
 
 __author__ = "Andrew Lee"
 
@@ -36,6 +37,10 @@ class TranslatorData(UnitModelBlockData):
     """
     Standard Translator Block Class
     """
+
+    # Set default initializer
+    # TODO: For now, use Block Triangularization as the default
+    default_initializer = BlockTriangularizationInitializer
 
     CONFIG = ConfigBlock()
     CONFIG.declare(
