@@ -68,7 +68,7 @@ class HX1DInitializer(SingleControlVolumeUnitInitializer):
         duty=None,
     ):
         """
-        Common initialization routine for 01D Heat Exchangers.
+        Common initialization routine for 1D Heat Exchangers.
 
         Args:
             model: Pyomo Block to be initialized
