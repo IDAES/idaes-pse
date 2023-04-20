@@ -421,7 +421,7 @@ class InitializerBase:
                 raise InitializationError(
                     f"{model.name} failed to initialize successfully: uninitialized variables or "
                     f"unconverged equality constraints detected. Please check postcheck summary "
-                    f"for more information (largest residual above tolerance ={max_res})."
+                    f"for more information (largest residual above tolerance = {max_res})."
                 )
 
         self._update_summary(model, "status", InitializationStatus.Ok)
