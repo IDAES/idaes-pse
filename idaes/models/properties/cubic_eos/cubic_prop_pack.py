@@ -34,6 +34,7 @@ import math
 
 # Import Pyomo libraries
 from pyomo.environ import (
+    Block,
     check_optimal_termination,
     Constraint,
     exp,
@@ -47,7 +48,8 @@ from pyomo.environ import (
     Var,
     units as pyunits,
 )
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import ConfigDict, ConfigValue, In
+from pyomo.contrib.incidence_analysis import solve_strongly_connected_components
 
 # Import IDAES cores
 from idaes.core import (
@@ -80,6 +82,7 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from idaes.core.initialization.initializer_base import InitializerBase
 
 # cubic_roots_available is used elsewhere
 # pylint: disable=W0611
@@ -219,11 +222,435 @@ conditions, and thus corresponding constraints  should be included,
         )
 
 
+class CubicEoSInitializer(InitializerBase):
+    """
+    Initializer for CubicEoS property packages.
+
+    This Initializer uses a hierarchical routine to initialize the
+    property package using the following steps:
+
+    1. Initialize bubble and dew point calculations (if present)
+    2. Estimate vapor-liquid equilibrium T_eq (if present)
+    3. Solve for phase-equilibrium conditions
+    4. Initialize all remaining properties
+
+    The Pyomo solve_strongly_connected_components method is used at each
+    step to converge the problem.
+
+    Note that for systems without vapor-liquid equilibrium the generic
+    BlockTriangularizationInitializer is probably sufficient for initializing
+    the property package.
+
+    """
+
+    CONFIG = InitializerBase.CONFIG()
+    CONFIG.declare(
+        "solver",
+        ConfigValue(
+            default=None,
+            description="Solver to use for initialization",
+        ),
+    )
+    CONFIG.declare(
+        "solver_options",
+        ConfigDict(
+            implicit=True,
+            description="Dict of options to pass to solver",
+        ),
+    )
+    CONFIG.declare(
+        "calculate_variable_options",
+        ConfigDict(
+            implicit=True,
+            description="Dict of options to pass to 1x1 block solver",
+            doc="Dict of options to pass to calc_var_kwds argument in "
+            "solve_strongly_connected_components method. NOTE: models "
+            "involving ExternalFunctions must set "
+            "'diff_mode=differentiate.Modes.reverse_numeric'",
+        ),
+    )
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self._solver = None
+
+    def initialization_routine(
+        self,
+        model: Block,
+    ):
+        """
+        Sequential initialization routine for cubic EoS properties.
+
+        Args:
+            model: model to be initialized
+
+        Returns:
+            None
+        """
+        # Setup loggers
+        init_log = idaeslog.getInitLogger(
+            model.name, self.config.output_level, tag="properties"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            model.name, self.config.output_level, tag="properties"
+        )
+
+        # Create solver object
+        solver_obj = get_solver(self.config.solver, self.config.solver_options)
+
+        init_log.info("Starting initialization routine")
+
+        # Deactivate the constraints specific for outlet block i.e.
+        # when defined state is False
+        for k in model.values():
+            if k.config.defined_state is False:
+                k.sum_mole_frac_out.deactivate()
+
+        # ---------------------------------------------------------------------
+        # If present, initialize bubble and dew point calculations
+        # Antoine equation
+        def antoine_P(b, j, T):
+            return pyunits.convert_value(
+                value(
+                    10
+                    ** (
+                        b.params.antoine_coeff_A[j]
+                        - b.params.antoine_coeff_B[j]
+                        / (T + b.params.antoine_coeff_C[j])
+                    )
+                ),
+                from_units=pyunits.bar,
+                to_units=pyunits.Pa,
+            )
+
+        for k in model.values():
+            # Bubble temperature initialization
+            if hasattr(k, "_mole_frac_tbub"):
+                Tbub0 = 0
+                for j in k.params.component_list:
+                    Tbub0 += value(
+                        k.mole_frac_comp[j]
+                        * (
+                            k.params.antoine_coeff_B[j]
+                            / (
+                                k.params.antoine_coeff_A[j]
+                                - math.log10(
+                                    value(
+                                        pyunits.convert(
+                                            k.pressure, to_units=pyunits.bar
+                                        )
+                                    )
+                                )
+                            )
+                            - k.params.antoine_coeff_C[j]
+                        )
+                    )
+
+                err = 1
+                counter = 0
+
+                while err > 1e-2 and counter < 100:
+                    f = value(
+                        sum(
+                            antoine_P(k, j, Tbub0) * k.mole_frac_comp[j]
+                            for j in k.params.component_list
+                        )
+                        - k.pressure
+                    )
+                    df = value(
+                        sum(
+                            k.mole_frac_comp[j]
+                            * k.params.antoine_coeff_B[j]
+                            * math.log(10)
+                            * antoine_P(k, j, Tbub0)
+                            / (Tbub0 + k.params.antoine_coeff_C[j]) ** 2
+                            for j in k.params.component_list
+                        )
+                    )
+
+                    if f / df > 20:
+                        Tbub1 = Tbub0 - 20
+                    elif f / df < -20:
+                        Tbub1 = Tbub0 + 20
+                    else:
+                        Tbub1 = Tbub0 - f / df
+
+                    err = abs(Tbub1 - Tbub0)
+                    Tbub0 = Tbub1
+                    counter += 1
+
+                k.temperature_bubble.value = Tbub0
+
+                for j in k.params.component_list:
+                    k._mole_frac_tbub[j].value = value(
+                        k.mole_frac_comp[j] * antoine_P(k, j, Tbub0) / k.pressure
+                    )
+
+            # Dew temperature initialization
+            if hasattr(k, "_mole_frac_tdew"):
+                Tdew0 = 0
+                for j in k.params.component_list:
+                    Tdew0 += value(
+                        k.mole_frac_comp[j]
+                        * (
+                            k.params.antoine_coeff_B[j]
+                            / (
+                                k.params.antoine_coeff_A[j]
+                                - math.log10(
+                                    value(
+                                        pyunits.convert(
+                                            k.pressure, to_units=pyunits.bar
+                                        )
+                                    )
+                                )
+                            )
+                            - k.params.antoine_coeff_C[j]
+                        )
+                    )
+
+                err = 1
+                counter = 0
+
+                while err > 1e-2 and counter < 100:
+                    f = value(
+                        k.pressure
+                        * sum(
+                            k.mole_frac_comp[j] / antoine_P(k, j, Tdew0)
+                            for j in k.params.component_list
+                        )
+                        - 1
+                    )
+                    df = -value(
+                        k.pressure
+                        * math.log(10)
+                        * sum(
+                            k.mole_frac_comp[j]
+                            * k.params.antoine_coeff_B[j]
+                            / (
+                                (Tdew0 + k.params.antoine_coeff_C[j]) ** 2
+                                * antoine_P(k, j, Tdew0)
+                            )
+                            for j in k.params.component_list
+                        )
+                    )
+
+                    if f / df > 20:
+                        Tdew1 = Tdew0 - 20
+                    elif f / df < -20:
+                        Tdew1 = Tdew0 + 20
+                    else:
+                        Tdew1 = Tdew0 - f / df
+
+                    err = abs(Tdew1 - Tdew0)
+                    Tdew0 = Tdew1
+                    counter += 1
+
+                k.temperature_dew.value = Tdew0
+
+                for j in k.params.component_list:
+                    k._mole_frac_tdew[j].value = value(
+                        k.mole_frac_comp[j] * k.pressure / antoine_P(k, j, Tdew0)
+                    )
+
+            # Bubble pressure initialization
+            if hasattr(k, "_mole_frac_pbub"):
+                k.pressure_bubble.value = value(
+                    sum(
+                        k.mole_frac_comp[j] * antoine_P(k, j, k.temperature)
+                        for j in k.params.component_list
+                    )
+                )
+
+                for j in k.params.component_list:
+                    k._mole_frac_pbub[j].value = value(
+                        k.mole_frac_comp[j]
+                        * antoine_P(k, j, k.temperature)
+                        / k.pressure_bubble
+                    )
+
+                k.pressure_bubble.display()
+                k._mole_frac_pbub.display()
+
+            # Dew pressure initialization
+            if hasattr(k, "_mole_frac_pdew"):
+                k.pressure_dew.value = value(
+                    sum(
+                        1 / (k.mole_frac_comp[j] / antoine_P(k, j, k.temperature))
+                        for j in k.params.component_list
+                    )
+                )
+
+                for j in k.params.component_list:
+                    k._mole_frac_pdew[j].value = value(
+                        k.mole_frac_comp[j]
+                        * k.pressure_bubble
+                        / antoine_P(k, j, k.temperature)
+                    )
+
+            # Solve bubble and dew point constraints
+            for c in k.component_objects(Constraint):
+                # Deactivate all property constraints
+                if c.local_name not in (
+                    "eq_pressure_dew",
+                    "eq_pressure_bubble",
+                    "eq_temperature_dew",
+                    "eq_temperature_bubble",
+                    "_sum_mole_frac_tbub",
+                    "_sum_mole_frac_tdew",
+                    "_sum_mole_frac_pbub",
+                    "_sum_mole_frac_pdew",
+                ):
+                    c.deactivate()
+
+            if number_activated_equalities(k) > 0:
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    solve_strongly_connected_components(
+                        k,
+                        solver=solver_obj,
+                        solve_kwds={"tee": slc.tee},
+                        calc_var_kwds=self.config.calculate_variable_options,
+                    )
+        init_log.info("Dew and bubble point initialization complete.")
+
+        # ---------------------------------------------------------------------
+        # If flash, initialize T1 and Teq
+        for k in model.values():
+            if (k.params.config.valid_phase == ("Liq", "Vap")) or (
+                k.params.config.valid_phase == ("Vap", "Liq")
+            ):
+                k._t1.value = max(k.temperature.value, k.temperature_bubble.value)
+                k._teq.value = min(k._t1.value, k.temperature_dew.value)
+        init_log.info("Equilibrium temperature initialization complete.")
+
+        # ---------------------------------------------------------------------
+        # Initialize flow rates and compositions
+        for k in model.values():
+            if k.params.config.valid_phase == "Liq":
+                k.flow_mol_phase["Liq"].value = k.flow_mol.value
+
+                for j in k.params.component_list:
+                    k.mole_frac_phase_comp["Liq", j].value = k.mole_frac_comp[j].value
+
+            elif k.params.config.valid_phase == "Vap":
+                k.flow_mol_phase["Vap"].value = k.flow_mol.value
+
+                for j in k.params.component_list:
+                    k.mole_frac_phase_comp["Vap", j].value = k.mole_frac_comp[j].value
+
+            else:
+                if k.temperature.value > k.temperature_dew.value:
+                    # Pure vapour
+                    k.flow_mol_phase["Vap"].value = k.flow_mol.value
+                    k.flow_mol_phase["Liq"].value = 1e-5 * k.flow_mol.value
+
+                    for j in k.params.component_list:
+                        k.mole_frac_phase_comp["Vap", j].value = k.mole_frac_comp[
+                            j
+                        ].value
+                        k.mole_frac_phase_comp["Liq", j].value = k._mole_frac_tdew[
+                            j
+                        ].value
+                elif k.temperature.value < k.temperature_bubble.value:
+                    # Pure liquid
+                    k.flow_mol_phase["Vap"].value = 1e-5 * k.flow_mol.value
+                    k.flow_mol_phase["Liq"].value = k.flow_mol.value
+
+                    for j in k.params.component_list:
+                        k.mole_frac_phase_comp["Vap", j].value = k._mole_frac_tbub[
+                            j
+                        ].value
+                        k.mole_frac_phase_comp["Liq", j].value = k.mole_frac_comp[
+                            j
+                        ].value
+                else:
+                    # Two-phase
+                    # Estimate vapor fraction from distance from Tbub and Tdew
+                    # Thanks to Rahul Gandhi for the method
+                    vapRatio = value(
+                        (k.temperature - k.temperature_bubble)
+                        / (k.temperature_dew - k.temperature_bubble)
+                    )
+
+                    k.flow_mol_phase["Vap"].value = value(vapRatio * k.flow_mol)
+                    k.flow_mol_phase["Liq"].value = value((1 - vapRatio) * k.flow_mol)
+
+                    # Initialize compositions using Rachford-Rice equation
+                    for j in k.params.component_list:
+                        kfact = value(antoine_P(k, j, k.temperature.value) / k.pressure)
+                        k.mole_frac_phase_comp["Liq", j].value = value(
+                            k.mole_frac_comp[j] / (1 + vapRatio * (kfact - 1))
+                        )
+                        k.mole_frac_phase_comp["Vap", j].value = value(
+                            k.mole_frac_phase_comp["Liq", j] * kfact
+                        )
+
+        # ---------------------------------------------------------------------
+        # Solve phase equilibrium constraints
+        for k in model.values():
+            for c in k.component_objects(Constraint):
+                # Activate equilibrium constraints
+                if c.local_name in (
+                    "total_flow_balance",
+                    "component_flow_balances",
+                    "equilibrium_constraint",
+                    "sum_mole_frac",
+                    "_t1_constraint",
+                    "_teq_constraint",
+                ):
+                    c.activate()
+
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                solve_strongly_connected_components(
+                    k,
+                    solver=solver_obj,
+                    solve_kwds={"tee": slc.tee},
+                    calc_var_kwds=self.config.calculate_variable_options,
+                )
+        init_log.info("Phase equilibrium initialization complete")
+
+        # ---------------------------------------------------------------------
+        # Initialize other properties
+        for k in model.values():
+            for c in k.component_objects(Constraint):
+                # Activate all constraints except sum_mole_frac_out
+                if c.local_name not in ("sum_mole_frac_out"):
+                    c.activate()
+
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                solve_strongly_connected_components(
+                    k,
+                    solver=solver_obj,
+                    solve_kwds={"tee": slc.tee},
+                    calc_var_kwds=self.config.calculate_variable_options,
+                )
+        init_log.info("Property initialization routine finished.")
+
+        return None
+
+
 class _CubicStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
+    # Set default initializer
+    default_initializer = CubicEoSInitializer
+
+    def fix_initialization_states(self):
+        """
+        Fixes state variables for state blocks.
+
+        Returns:
+            None
+        """
+        # Fix state variables
+        fix_state_vars(self)
+
+        # Also need to deactivate sum of mole fraction constraint
+        for k in self.values():
+            k.sum_mol_frac_out.deactivate()
 
     def initialize(
         blk,
@@ -262,13 +689,13 @@ class _CubicStateBlock(StateBlock):
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states varaibles are not unfixed, and
+                         - True - states variables are not unfixed, and
                                  a dict of returned containing flags for
                                  which states were fixed during
                                  initialization.
                         - False - state variables are unfixed after
                                  initialization by calling the
-                                 relase_state method
+                                 release_state method
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -634,7 +1061,7 @@ class _CubicStateBlock(StateBlock):
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
-        Method to relase state variables fixed during initialization.
+        Method to release state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be

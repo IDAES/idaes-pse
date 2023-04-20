@@ -16,7 +16,10 @@ Authors: Andrew Lee, Vibhav Dabadghao
 """
 
 import pytest
+
 from pyomo.environ import check_optimal_termination, ConcreteModel, units, value
+from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
@@ -42,8 +45,11 @@ from idaes.core.util.testing import (
     initialization_tester,
 )
 from idaes.core.solvers import get_solver
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
-
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    SingleControlVolumeUnitInitializer,
+    InitializationStatus,
+)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -74,6 +80,8 @@ def test_config():
     assert not m.fs.unit.config.has_heat_of_reaction
     assert m.fs.unit.config.property_package is m.fs.properties
     assert m.fs.unit.config.reaction_package is m.fs.reactions
+
+    assert m.fs.unit.default_initializer is SingleControlVolumeUnitInitializer
 
 
 # -----------------------------------------------------------------------------
@@ -252,3 +260,100 @@ class TestSaponification(object):
                 "Pressure Change": sapon.fs.unit.deltaP[0],
             }
         }
+
+
+class TestInitializers:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = SaponificationParameterBlock()
+        m.fs.reactions = SaponificationReactionParameterBlock(
+            property_package=m.fs.properties
+        )
+
+        m.fs.unit = CSTR(
+            property_package=m.fs.properties,
+            reaction_package=m.fs.reactions,
+            has_equilibrium_reactions=False,
+            has_heat_transfer=True,
+            has_heat_of_reaction=True,
+            has_pressure_change=True,
+        )
+
+        m.fs.unit.inlet.flow_vol.fix(1.0e-03)
+        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
+        m.fs.unit.inlet.temperature.fix(303.15)
+        m.fs.unit.inlet.pressure.fix(101325.0)
+
+        m.fs.unit.volume.fix(1.5e-03)
+        m.fs.unit.heat_duty.fix(0)
+        m.fs.unit.deltaP.fix(0)
+
+        return m
+
+    @pytest.mark.integration
+    def test_general_hierarchical(self, model):
+        initializer = SingleControlVolumeUnitInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert value(model.fs.unit.outlet.flow_vol[0]) == pytest.approx(1e-3, rel=1e-5)
+        assert value(model.fs.unit.outlet.conc_mol_comp[0, "H2O"]) == pytest.approx(
+            55388, rel=1e-5
+        )
+        assert value(model.fs.unit.outlet.conc_mol_comp[0, "NaOH"]) == pytest.approx(
+            20.31609, rel=1e-5
+        )
+        assert value(
+            model.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
+        ) == pytest.approx(20.31609, rel=1e-5)
+        assert value(
+            model.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]
+        ) == pytest.approx(79.683910, rel=1e-5)
+        assert value(model.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]) == pytest.approx(
+            79.683910, rel=1e-5
+        )
+        assert value(model.fs.unit.outlet.temperature[0]) == pytest.approx(
+            304.0856, rel=1e-5
+        )
+        assert value(model.fs.unit.outlet.pressure[0]) == pytest.approx(
+            101325, rel=1e-5
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert value(model.fs.unit.outlet.flow_vol[0]) == pytest.approx(1e-3, rel=1e-5)
+        assert value(model.fs.unit.outlet.conc_mol_comp[0, "H2O"]) == pytest.approx(
+            55388, rel=1e-5
+        )
+        assert value(model.fs.unit.outlet.conc_mol_comp[0, "NaOH"]) == pytest.approx(
+            20.31609, rel=1e-5
+        )
+        assert value(
+            model.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
+        ) == pytest.approx(20.31609, rel=1e-5)
+        assert value(
+            model.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]
+        ) == pytest.approx(79.683910, rel=1e-5)
+        assert value(model.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]) == pytest.approx(
+            79.683910, rel=1e-5
+        )
+        assert value(model.fs.unit.outlet.temperature[0]) == pytest.approx(
+            304.0856, rel=1e-5
+        )
+        assert value(model.fs.unit.outlet.pressure[0]) == pytest.approx(
+            101325, rel=1e-5
+        )

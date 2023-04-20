@@ -17,7 +17,11 @@
 from pyomo.core.base.transformation import TransformationFactory
 from pyomo.core.plugins.transform.hierarchy import NonIsomorphicTransformation
 from pyomo.core.expr import current as EXPR
-from pyomo.common.config import ConfigBlock, ConfigValue, add_docstring_list
+from pyomo.common.config import (
+    ConfigBlock,
+    ConfigValue,
+    document_kwargs_from_configdict,
+)
 from pyomo.core.base.var import _GeneralVarData, Var
 from pyomo.core.base.constraint import Constraint
 from pyomo.core.base.expression import Expression
@@ -34,6 +38,7 @@ def _is_var(v):
 @TransformationFactory.register(
     "replace_variables", doc="Replace variables with other variables."
 )
+@document_kwargs_from_configdict("CONFIG")
 class ReplaceVariables(NonIsomorphicTransformation):
     """Replace variables in a model or block with other variables.
 
@@ -53,8 +58,6 @@ class ReplaceVariables(NonIsomorphicTransformation):
             "transformation is not reversible.",
         ),
     )
-
-    __doc__ = add_docstring_list(__doc__, CONFIG)
 
     @staticmethod
     def replace(instance, substitute):
@@ -106,7 +109,7 @@ class ReplaceVariables(NonIsomorphicTransformation):
         Args:
             instance: A block or model to apply the transformation to
             substitute: A list-like of two-element list-likes.  Each two element
-                list-like specifies a replacment of the first variable by the
+                list-like specifies a replacement of the first variable by the
                 second.  SimpleVar, IndexedVar, _GeneralVarData, and Reference are
                 all accepted types.
 

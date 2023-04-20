@@ -205,7 +205,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         super().initialize_build(outlvl=outlvl, solver=solver, optarg=optarg)
         self.control_volume.properties_out[:].pressure.fix()
 
-        # Free eff_isen and activate special constarints
+        # Free eff_isen and activate special constraints
         self.efficiency_isentropic.unfix()
         self.outlet.pressure.fix()
         if calculate_cf:
@@ -239,7 +239,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
             cf = value(self.flow_coeff)
         from_json(self, sd=istate, wts=sp)
         if calculate_cf:
-            # cf was probably fixed, so will have to set the value agian here
+            # cf was probably fixed, so will have to set the value again here
             # if you ask for it to be calculated.
             self.flow_coeff = cf
 

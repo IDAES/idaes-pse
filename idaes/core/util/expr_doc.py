@@ -14,6 +14,7 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-function-docstring
 
+import logging
 import re
 
 from pyomo.core.expr.sympy_tools import (
@@ -30,12 +31,20 @@ from pyomo.core.expr.numeric_expr import ExternalFunctionExpression
 from pyomo.core.expr import current as EXPR, native_types
 from pyomo.common.collections import ComponentMap
 
+
+_log = logging.getLogger(__name__)
+
+
 try:
     import sympy
 
     _configure_sympy(sympy, True)
-except ImportError:
-    pass
+except ModuleNotFoundError:
+    _log.warning(
+        "Module 'sympy' (optional dependency) not found."
+        " It must be installed separately to enable this functionality."
+    )
+
 
 # TODO<jce> Look into things like sum operator and template expressions
 
@@ -120,7 +129,7 @@ class PyomoSympyBimap(object):
             i = self.i_func
             self.i_func += 1
         else:
-            raise Exception("Should be Var, Exression, or ExternalFunction")
+            raise Exception("Should be Var, Expression, or ExternalFunction")
 
         if parent_object.is_indexed() and parent_object in self.parent_symbol:
             x = self.parent_symbol[parent_object][0]
@@ -152,7 +161,7 @@ class PyomoSympyBimap(object):
 class Pyomo2SympyVisitor(StreamBasedExpressionVisitor):
     """
     This is based on the class of the same name in pyomo.core.base.symbolic, but
-    it catches ExternalFunctions and does not decend into named expressions.
+    it catches ExternalFunctions and does not descend into named expressions.
     """
 
     def __init__(self, object_map):
@@ -232,7 +241,7 @@ def _add_docs(object_map, docs, typ, head):
     Returns:
         A new string markdown table with added doc rows.
     """
-    docked = set()  # components already documented, mainly for indexed compoents
+    docked = set()  # components already documented, mainly for indexed components
     whead = True  # write heading before adding first item
 
     if not isinstance(object_map, (list, tuple)):

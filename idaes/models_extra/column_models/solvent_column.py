@@ -437,7 +437,7 @@ and used when constructing these
         @self.Constraint(
             self.flowsheet().time,
             self.liquid_phase.length_domain,
-            doc="Mechanical equilibruim constraint",
+            doc="Mechanical equilibrium constraint",
         )
         def mechanical_equilibrium(blk, t, x):
             if x == self.liquid_phase.length_domain.last():
@@ -463,7 +463,7 @@ and used when constructing these
             doc="Vapor phase mass transfer coefficient",
         )
 
-        # Equilibruim partial pressure of components at interface
+        # Equilibrium partial pressure of components at interface
         self.pressure_equil = Var(
             self.flowsheet().time,
             self.vapor_phase.length_domain,
@@ -471,7 +471,7 @@ and used when constructing these
             domain=NonNegativeReals,
             initialize=500,
             units=lunits("pressure"),
-            doc="Equilibruim pressure of components at interface",
+            doc="Equilibrium pressure of components at interface",
         )
 
         # Mass transfer constraints

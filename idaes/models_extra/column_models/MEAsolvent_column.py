@@ -113,7 +113,7 @@ class MEAColumnData(PackedColumnData):
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             equilibrium_comp,
-            doc="Equilibruim partial pressure at interface",
+            doc="Equilibrium partial pressure at interface",
         )
         def pressure_at_interface(blk, t, x, j):
             if x == self.vapor_phase.length_domain.first():
@@ -519,7 +519,7 @@ class MEAColumnData(PackedColumnData):
             self.flowsheet().time,
             self.liquid_phase.length_domain,
             rule=rule_rate_constant,
-            doc="Second order rate contant [m3/(mol.s)]",
+            doc="Second order rate constant [m3/(mol.s)]",
         )
 
         def rule_hatta_number(blk, t, x):
@@ -661,7 +661,7 @@ class MEAColumnData(PackedColumnData):
             self.flowsheet().time,
             self.liquid_phase.length_domain,
             doc="""Dimensionless concentration of CO2
-                                at equilibruim with the bulk """,
+                                at equilibrium with the bulk """,
         )
         def conc_CO2_equil_bulk(blk, t, x):
             if x == blk.liquid_phase.length_domain.last():
@@ -1887,7 +1887,7 @@ class MEAColumnData(PackedColumnData):
         # ---------------------------------------------------------------------
         init_log.info("Step 10: Liquid phase mass transfer coefficient constraint")
         init_log.info(
-            "Initializing mass transfer coefficent (liquid phase) - degrees_of_freedom = {}".format(
+            "Initializing mass transfer coefficient (liquid phase) - degrees_of_freedom = {}".format(
                 degrees_of_freedom(blk)
             )
         )
@@ -1962,7 +1962,7 @@ class MEAColumnData(PackedColumnData):
         # ---------------------------------------------------------------------
         init_log.info("Step 12: Heat transfer coefficient constraint")
         init_log.info(
-            "Initializing heat transfer coefficent - degrees_of_freedom = {}".format(
+            "Initializing heat transfer coefficient - degrees_of_freedom = {}".format(
                 degrees_of_freedom(blk)
             )
         )

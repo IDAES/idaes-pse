@@ -361,12 +361,12 @@ def generate_table(blocks, attributes, heading=None, exception=True):
             Block, can be a Var, Param, or Expression. If an attribute doesn't
             exist or doesn't have a valid value, it will be treated as missing
             data.
-        heading (list or tuple of srings): A list of strings that will be used
+        heading (list or tuple of strings): A list of strings that will be used
             as column headings. If None the attribute names will be used.
-        exception (bool): If True, raise exceptions releated to invalid or
+        exception (bool): If True, raise exceptions related to invalid or
             missing indexes. If false missing or bad indexes are ignored and
             None is used for the table value.  Setting this to False allows
-            tables where some state blocks have the same attributes with differnt
+            tables where some state blocks have the same attributes with different
             indexing. (default is True)
     Returns:
         (DataFrame): A Pandas dataframe containing a data table

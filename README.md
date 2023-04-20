@@ -25,7 +25,7 @@ While not required, we encourage the installation of [Anaconda](https://www.anac
 
 Use conda to create a new "idaes-pse" (could be any name you like) environment then activate that environment:
 ```bash
-conda create --name idaes-pse python=3
+conda create --name idaes-pse python=3.10
 conda activate idaes-pse
 ```
 
@@ -78,10 +78,10 @@ Most of the functionality is implemented in Python. In accordance with
 the end-of-life for many Python 2 libraries, the IDAES Toolkit is written
 for Python 3. The following sub-versions are supported:
 
-* Python 3.7
 * Python 3.8
 * Python 3.9
 * Python 3.10
+* Python 3.11
 
 Note that Python 3.6 is *not* supported.
 

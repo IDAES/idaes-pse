@@ -47,7 +47,7 @@ def _scatter2D(
     xdata, zdata, zfit, xlabels=None, zlabels=None, show=True, filename=None
 ):
     """
-    Plots training data as 2D scatter, with overlayed model output data.
+    Plots training data as 2D scatter, with overlaid model output data.
 
     Required: input variable data, output variable data, model fit data
 
@@ -118,7 +118,7 @@ def _scatter3D(
     xdata, zdata, zfit, xlabels=None, zlabels=None, show=True, filename=None
 ):
     """
-    Plots training data as 3D scatter, with overlayed model output data.
+    Plots training data as 3D scatter, with overlaid model output data.
 
     Required: input variable data, output variable data, model fit data
 

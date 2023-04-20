@@ -23,11 +23,10 @@ from idaes.core import (
 )
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
-
 from idaes.core.util.math import smooth_min
 from idaes.models.unit_models import MomentumMixingType
 from idaes.core.util import from_json, to_json, StoreSpec
-
+from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 
@@ -163,8 +162,6 @@ between flow and pressure driven simulations.}""",
         self._get_property_package()
 
         # Create list of inlet names
-        # PYLINT-TODO: assigning the result of self.create_inlet_list() to unused local variable inlet_list
-        # causes pylint error assignment-from-no-return; check if removing assignment is OK
         self.create_inlet_list()
 
         # Build StateBlocks
@@ -337,7 +334,7 @@ between flow and pressure driven simulations.}""",
         self.add_port(name="outlet", block=self.mixed_state, doc="Outlet Port")
 
     def use_minimum_inlet_pressure_constraint(self):
-        """Activate the mixer pressure = mimimum inlet pressure constraint and
+        """Activate the mixer pressure = minimum inlet pressure constraint and
         deactivate the mixer pressure and all inlet pressures are equal
         constraints. This should only be used when momentum_mixing_type ==
         MomentumMixingType.minimize_and_equality.
@@ -353,7 +350,7 @@ between flow and pressure driven simulations.}""",
         self.pressure_equality_constraints.deactivate()
 
     def use_equal_pressure_constraint(self):
-        """Deactivate the mixer pressure = mimimum inlet pressure constraint
+        """Deactivate the mixer pressure = minimum inlet pressure constraint
         and activate the mixer pressure and all inlet pressures are equal
         constraints. This should only be used when momentum_mixing_type ==
         MomentumMixingType.minimize_and_equality.
@@ -441,3 +438,9 @@ between flow and pressure driven simulations.}""",
             for (t, _), c in self.pressure_equality_constraints.items():
                 s = iscale.get_scaling_factor(self.mixed_state[t].pressure)
                 iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+    def _get_stream_table_contents(self, time_point=0):
+        io_dict = {"outlet": self.outlet}
+        for i in self.inlet_list:
+            io_dict[i] = getattr(self, i)
+        return create_stream_table_dataframe(io_dict, time_point=time_point)

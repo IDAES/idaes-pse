@@ -25,11 +25,11 @@ from pyomo.environ import (
 
 from idaes.core import FlowsheetBlock, Component
 from idaes.models.properties.cubic_eos.cubic_prop_pack import (
-    cubic_roots_available,
     CubicParameterBlock,
     CubicStateBlock,
     CubicEoS,
     EoS_param,
+    CubicEoSInitializer,
 )
 from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
 
@@ -189,6 +189,8 @@ class TestStateBlock_LV_PR(object):
     @pytest.mark.unit
     def test_build_default(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
+
+        assert model.fs.props.default_initializer is CubicEoSInitializer
 
         assert isinstance(model.fs.props[1].flow_mol, Var)
         assert len(model.fs.props[1].flow_mol) == 1

@@ -33,9 +33,10 @@ SI units.
 
 References:
 
-1. "The properties of gases and liquids by Robert C. Reid"
-2. "Perry's Chemical Engineers Handbook by Robert H. Perry".
-3. H. Renon and J.M. Prausnitz, "Local compositions in thermodynamic excess functions for liquid mixtures.", AIChE Journal Vol. 14, No.1, 1968.
+#. "The properties of gases and liquids by Robert C. Reid"
+#. "Perry's Chemical Engineers Handbook by Robert H. Perry".
+#. H. Renon and J.M. Prausnitz, "Local compositions in thermodynamic excess
+   functions for liquid mixtures.", AIChE Journal Vol. 14, No.1, 1968.
 
 """
 # TODO: Missing docstrings
@@ -46,6 +47,7 @@ References:
 
 # Import Pyomo libraries
 from pyomo.environ import (
+    Block,
     check_optimal_termination,
     Constraint,
     log,
@@ -58,7 +60,7 @@ from pyomo.environ import (
     sqrt,
     units as pyunits,
 )
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import ConfigDict, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
@@ -83,9 +85,10 @@ from idaes.core.util.constants import Constants as const
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+from idaes.core.initialization import InitializerBase
 
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Jaffer Ghouse"
 __version__ = "0.0.2"
 
@@ -301,11 +304,202 @@ conditions, and thus corresponding constraints  should be included,
         )
 
 
+class ActivityCoeffInitializer(InitializerBase):
+    """
+    Initializer for Activity Coefficient property packages.
+
+    This Initializer uses a hierarchical routine to initialize the
+    property package using the Pyomo solve_strongly_connected_components
+    method is used at each step to converge the problem.
+
+    Note that for systems without vapor-liquid equilibrium the generic
+    BlockTriangularizationInitializer is probably sufficient for initializing
+    the property package.
+
+    """
+
+    CONFIG = InitializerBase.CONFIG()
+    CONFIG.declare(
+        "solver",
+        ConfigValue(
+            default=None,
+            description="Solver to use for initialization",
+        ),
+    )
+    CONFIG.declare(
+        "solver_options",
+        ConfigDict(
+            implicit=True,
+            description="Dict of options to pass to solver",
+        ),
+    )
+    CONFIG.declare(
+        "calculate_variable_options",
+        ConfigDict(
+            implicit=True,
+            description="Dict of options to pass to 1x1 block solver",
+            doc="Dict of options to pass to calc_var_kwds argument in "
+            "solve_strongly_connected_components method. NOTE: models "
+            "involving ExternalFunctions must set "
+            "'diff_mode=differentiate.Modes.reverse_numeric'",
+        ),
+    )
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self._solver = None
+
+    def initialization_routine(
+        self,
+        model: Block,
+    ):
+        """
+        Sequential initialization routine for cubic EoS properties.
+
+        Args:
+            model: model to be initialized
+
+        Returns:
+            None
+        """
+        # Deactivate the constraints specific for outlet block i.e.
+        # when defined state is False
+        init_log = idaeslog.getInitLogger(
+            model.name, self.config.output_level, tag="properties"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            model.name, self.config.output_level, tag="properties"
+        )
+
+        for k in model.values():
+            if (k.config.defined_state is False) and (
+                k.params.config.state_vars == "FTPz"
+            ):
+                k.eq_mol_frac_out.deactivate()
+
+        # Create solver
+        solver = get_solver(self.config.solver, self.config.solver_options)
+
+        # ---------------------------------------------------------------------
+        # Initialization sequence: Deactivating certain constraints
+        # for 1st solve
+        for k in model.values():
+            for c in k.component_objects(Constraint):
+                if c.local_name in [
+                    "eq_total",
+                    "eq_comp",
+                    "eq_phase_equilibrium",
+                    "eq_enth_mol_phase",
+                    "eq_entr_mol_phase",
+                    "eq_Gij_coeff",
+                    "eq_A",
+                    "eq_B",
+                    "eq_activity_coeff",
+                ]:
+                    c.deactivate()
+
+        # First solve for the active constraints that remain (p_sat, T_bubble,
+        # T_dew). Valid only for a 2 phase block. If single phase,
+        # no constraints are active.
+        # NOTE: "k" is the last value from the previous for loop
+        # only for the purpose of having a valid index. The assumption
+        # here is that for all values of "blk[k]", the attribute exists.
+        # TODO: This step can result in a non-square problem. This needs to be
+        # investigated
+        # TODO: Block Triangularization solver does not like this routine for some
+        # reason, maybe related to the above issue
+        if (
+            (k.config.has_phase_equilibrium)
+            or (k.config.parameters.config.valid_phase == ("Liq", "Vap"))
+            or (k.config.parameters.config.valid_phase == ("Vap", "Liq"))
+        ):
+
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(solver, [model], tee=slc.tee)
+        else:
+            res = "skipped"
+        init_log.info(f"Initialization Step 1 {idaeslog.condition(res)}.")
+
+        # Continue initialization sequence and activate select constraints
+        for k in model.values():
+            for c in k.component_objects(Constraint):
+                if c.local_name in [
+                    "eq_total",
+                    "eq_comp",
+                    "eq_phase_equilibrium",
+                ]:
+                    c.activate()
+            if k.config.parameters.config.activity_coeff_model != "Ideal":
+                # assume ideal and solve
+                k.activity_coeff_comp.fix(1)
+
+        # Second solve for the active constraints
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(solver, [model], tee=slc.tee)
+        init_log.info(f"Initialization Step 2 {idaeslog.condition(res)}.")
+
+        # Activate activity coefficient specific constraints
+        for k in model.values():
+            if k.config.parameters.config.activity_coeff_model != "Ideal":
+                for c in k.component_objects(Constraint):
+                    if c.local_name in ["eq_Gij_coeff", "eq_A", "eq_B"]:
+                        c.activate()
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(solver, [model], tee=slc.tee)
+        init_log.info(f"Initialization Step 3 {idaeslog.condition(res)}.")
+
+        for k in model.values():
+            if k.config.parameters.config.activity_coeff_model != "Ideal":
+                k.eq_activity_coeff.activate()
+                k.activity_coeff_comp.unfix()
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(solver, [model], tee=slc.tee)
+        init_log.info(f"Initialization Step 4 {idaeslog.condition(res)}.")
+
+        for k in model.values():
+            for c in k.component_objects(Constraint):
+                if c.local_name in ["eq_enth_mol_phase", "eq_entr_mol_phase"]:
+                    c.activate()
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(solver, [model], tee=slc.tee)
+        init_log.info(f"Initialization Step 5 {idaeslog.condition(res)}.")
+
+        return res
+
+
 class _ActivityCoeffStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
+    # Set default initializer
+    default_initializer = ActivityCoeffInitializer
+
+    def fix_initialization_states(self):
+        """
+        Fixes state variables for state blocks.
+
+        Returns:
+            None
+        """
+        # Fix state variables
+        fix_state_vars(self)
+
+        # Also need to deactivate sum of mole fraction constraint
+        for k in self.values():
+            if (k.config.defined_state is False) and (
+                k.params.config.state_vars == "FTPz"
+            ):
+                k.eq_mol_frac_out.deactivate()
 
     def initialize(
         blk,
@@ -339,13 +533,13 @@ class _ActivityCoeffStateBlock(StateBlock):
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states varaibles are not unfixed, and
+                         - True - states variables are not unfixed, and
                                  a dict of returned containing flags for
                                  which states were fixed during
                                  initialization.
                         - False - state variables are unfixed after
                                  initialization by calling the
-                                 relase_state method
+                                 release_state method
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
                               - True - states have already been fixed and
@@ -484,7 +678,7 @@ class _ActivityCoeffStateBlock(StateBlock):
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
-        Method to relase state variables fixed during initialization.
+        Method to release state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be

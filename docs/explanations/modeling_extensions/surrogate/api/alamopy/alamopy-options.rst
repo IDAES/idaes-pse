@@ -93,7 +93,7 @@ ALAMO Regression Options
 
 * **modeler**:  fitness metric to beused for model building (1-8)
 
-  * 1. **BIC**: Bayesian infromation criterion
+  * 1. **BIC**: Bayesian information criterion
   * 2. **MallowsCp**: Mallow's Cp
   * 3. **AICc**: the corrected Akaike's information criterion
   * 4. **HQC**: the Hannan-Quinn information criterion

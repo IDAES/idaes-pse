@@ -153,7 +153,20 @@ class ComponentData(ProcessBlockData):
             "phase. Must be a dict with keys being phase names."
         ),
     )
-
+    CONFIG.declare(
+        "visc_d_phase_comp",
+        ConfigValue(
+            description="Method to calculate pure component viscosities in each "
+            "phase. Must be a dict with keys being phase names."
+        ),
+    )
+    CONFIG.declare(
+        "therm_cond_phase_comp",
+        ConfigValue(
+            description="Method to calculate pure component thermal conductivities in each "
+            "phase. Must be a dict with keys being phase names."
+        ),
+    )
     CONFIG.declare(
         "has_vapor_pressure",
         ConfigValue(
@@ -211,7 +224,7 @@ class ComponentData(ProcessBlockData):
         super().build()
 
         # If the component_list does not exist, add reference to new Component
-        # The IF is mostly for backwards compatability, to allow for old-style
+        # The IF is mostly for backwards compatibility, to allow for old-style
         # property packages where the component_list already exists but we
         # need to add new Component objects
 
@@ -534,7 +547,7 @@ class CationData(IonData):
 @declare_process_block_class("Apparent", block_class=Component)
 class ApparentData(SoluteData):
     """
-    Component type for apparent species. Apparent species are those compunds
+    Component type for apparent species. Apparent species are those compounds
     that are not stable in aqueous phases and immediately dissociate, however
     they may be stable in other phases (e.g. salts).
     """

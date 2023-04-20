@@ -49,7 +49,7 @@ extensions = [
 # Put type hints in the description, not signature
 autodoc_typehints = "description"
 
-# Avoid duplicating heading labels across parallely constructed documentation
+# Avoid duplicating heading labels across parallelly constructed documentation
 autosectionlabel_prefix_document = True
 
 # Add any paths that contain templates here, relative to this directory.
@@ -140,13 +140,29 @@ todo_include_todos = False
 rst_epilog = """
 .. |python-min| replace:: 3.7
 .. |python-max| replace:: 3.10
-
 .. |examples-site| replace:: `examples website`_
 .. _examples website: https://idaes-examples.readthedocs.io/en/latest/
-
 .. |github-issues| replace:: `Github issues page`_
 .. _Github issues page: https://github.com/IDAES/idaes-pse/issues
 """
+
+
+class RobustReplacements(dict):
+    def __call__(self, app, docname, source):
+        text = source[0]
+        for to_replace, replace_with in self.items():
+            text = text.replace(to_replace, replace_with)
+        source[0] = text
+
+
+_python_versions_replacements = RobustReplacements(
+    {
+        "|python-min|": "3.8",
+        "|python-max|": "3.11",
+        "|python-default|": "3.10",
+    }
+)
+
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -430,3 +446,7 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {"https://docs.python.org/": None}
+
+
+def setup(app):
+    app.connect("source-read", _python_versions_replacements)

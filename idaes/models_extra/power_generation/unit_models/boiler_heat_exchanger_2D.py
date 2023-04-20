@@ -428,7 +428,7 @@ tube side flows from 1 to 0""",
 
         if self.config.has_header and self.config.header_inner_diameter is None:
             raise ConfigurationError(
-                "If has_heder is True, user must " "provide header_inner_diameter"
+                "If has_header is True, user must " "provide header_inner_diameter"
             )
 
         if (
@@ -441,7 +441,7 @@ tube side flows from 1 to 0""",
 
         if self.config.has_header and self.config.header_wall_thickness is None:
             raise ConfigurationError(
-                "If has_heder is True, user must " "provide header_wall_thickness"
+                "If has_header is True, user must " "provide header_wall_thickness"
             )
 
         self._make_geometry()
@@ -1212,7 +1212,7 @@ tube side flows from 1 to 0""",
                     == b.gas_gray_fraction[t, x] * b.gas_emissivity[t, x]
                 )
 
-            # equivalent convective heat transfer coefficent due to radiation
+            # equivalent convective heat transfer coefficient due to radiation
             @self.Constraint(
                 self.flowsheet().time,
                 self.shell.length_domain,
@@ -2910,7 +2910,7 @@ tube side flows from 1 to 0""",
 
         # ---------------------------------------------------------------------
         # total heat released by shell side fluid assuming even discretization.
-        # shell side always in forward direction and the first point is skiped
+        # shell side always in forward direction and the first point is skipped
 
         @self.Expression(
             self.flowsheet().time, doc="Total Heat Released from Shell Side"
@@ -2957,7 +2957,7 @@ tube side flows from 1 to 0""",
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
                      * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
+                     * 3 = include solver output information (tee=True)
 
             optarg : solver options dictionary object (default=None, use
                      default solver options)

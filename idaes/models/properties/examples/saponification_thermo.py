@@ -45,7 +45,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Andrew Lee"
 
 
@@ -141,6 +141,21 @@ class _StateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
+    def fix_initialization_states(self):
+        """
+        Fixes state variables for state blocks.
+
+        Returns:
+            None
+        """
+        # Fix state variables
+        fix_state_vars(self)
+
+        # Constraint on water concentration at outlet - unfix in these cases
+        for b in self.values():
+            if b.config.defined_state is False:
+                b.conc_mol_comp["H2O"].unfix()
+
     def initialize(
         blk,
         state_args=None,
@@ -157,7 +172,7 @@ class _StateBlock(StateBlock):
         state_args : Dictionary with initial guesses for the state vars
                      chosen. Note that if this method is triggered
                      through the control volume, and if initial guesses
-                     were not provied at the unit model level, the
+                     were not provided at the unit model level, the
                      control volume passes the inlet values as initial
                      guess.The keys for the state_args dictionary are:
 
@@ -182,13 +197,13 @@ class _StateBlock(StateBlock):
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states varaibles are not unfixed, and
+                         - True - states variables are not unfixed, and
                                  a dict of returned containing flags for
                                  which states were fixed during
                                  initialization.
                         - False - state variables are unfixed after
                                  initialization by calling the
-                                 relase_state method
+                                 release_state method
 
         Returns:
             If hold_states is True, returns a dict containing flags for
@@ -227,7 +242,7 @@ class _StateBlock(StateBlock):
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
-        Method to relase state variables fixed during initialization.
+        Method to release state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables

@@ -426,7 +426,7 @@ class _GasPhaseStateBlock(StateBlock):
                                  initialization.
                         - False - state variables are unfixed after
                                  initialization by calling the
-                                 relase_state method
+                                 release_state method
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -534,7 +534,7 @@ class _GasPhaseStateBlock(StateBlock):
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
-        Method to relase state variables fixed during initialization.
+        Method to release state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be

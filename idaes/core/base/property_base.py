@@ -47,6 +47,10 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.base.util import build_on_demand
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+)
+
 
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
@@ -228,6 +232,9 @@ class StateBlock(ProcessBlock):
     multiple StateBlockData objects simultaneously.
     """
 
+    # Set default initializer
+    default_initializer = BlockTriangularizationInitializer
+
     @property
     def component_list(self):
         return self._return_component_list()
@@ -292,6 +299,15 @@ class StateBlock(ProcessBlock):
                     )
             self._block_data_config_default["parameters"] = param
         return param
+
+    def fix_initialization_states(self):
+        """
+        Fixes state variables for state blocks.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError
 
     def initialize(self, *args, **kwargs):
         """
@@ -438,7 +454,7 @@ class StateBlock(ProcessBlock):
             doc - doc string or Prot object
             slice_index - Slice index (e.g. (slice(None), 0.0) that will be
                 used to index self when constructing port references. Default = None.
-            index - time index to use when calling define_port_memebers. Default = None.
+            index - time index to use when calling define_port_members. Default = None.
 
         Returns:
             Port object and list of tuples with form (Reference, member name)
