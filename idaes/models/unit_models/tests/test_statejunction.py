@@ -21,7 +21,10 @@ from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.models.unit_models.statejunction import StateJunction
+from idaes.models.unit_models.statejunction import (
+    StateJunction,
+    StateJunctionInitializer,
+)
 
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
@@ -39,6 +42,10 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    InitializationStatus,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -62,6 +69,8 @@ def test_config():
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.property_package is m.fs.properties
+
+    assert m.fs.unit.default_initializer is StateJunctionInitializer
 
 
 # -----------------------------------------------------------------------------
@@ -276,3 +285,34 @@ class TestIAPWS(object):
         perf_dict = iapws.fs.unit._get_performance_contents()
 
         assert perf_dict is None
+
+
+class TestInitializers:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        m.fs.unit = StateJunction(property_package=m.fs.properties)
+
+        m.fs.unit.inlet.flow_mol[0].fix(100)
+        m.fs.unit.inlet.enth_mol[0].fix(4000)
+        m.fs.unit.inlet.pressure[0].fix(101325)
+
+        return m
+
+    @pytest.mark.integration
+    def test_default_initializer(self, model):
+        initializer = StateJunctionInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
