@@ -17,7 +17,7 @@ All methods and parameters from:
 
 https://webbook.nist.gov, retrieved 26 November 2019
 
-All parameter indicies based on conventions used by the source
+All parameter indices based on conventions used by the source
 
 Authors: Andrew Lee
 """

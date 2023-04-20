@@ -721,7 +721,7 @@ discretizing length domain (default=3)""",
 
         # Calculate inner side heat transfer coefficient
         # with minimum temperature difference set to sqrt(0.1)
-        # multipling wet area fraction to convert it
+        # multiplying wet area fraction to convert it
         # to the value based on total circumference
         @self.Constraint(
             self.flowsheet().time, doc="Inner Side Heat Transfer Coefficient"
@@ -1282,7 +1282,7 @@ discretizing length domain (default=3)""",
                  * 0 = no output (default)
                  * 1 = return solver state for each step in routine
                  * 2 = return solver state for each step in subroutines
-                 * 3 = include solver output infomation (tee=True)
+                 * 3 = include solver output information (tee=True)
 
         optarg : solver options dictionary object (default=None, use
                  default solver options)

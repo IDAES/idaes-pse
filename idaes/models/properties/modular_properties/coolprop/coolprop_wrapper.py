@@ -59,7 +59,7 @@ class CoolPropExpressionError(ValueError):
     def __init__(self, prop, comp):
         msg = (
             f"Found unsupported expression form for {prop} "
-            f"of component {comp}. This likely occured due to "
+            f"of component {comp}. This likely occurred due to "
             f"changes in CoolProp and the interface should be "
             f"updated."
         )
@@ -104,7 +104,7 @@ class CoolPropWrapper:
         component for the critical state section of the CoolProp json format.
 
         Args:
-            comp_name: name of componet for which to retirve parameters
+            comp_name: name of component for which to retirve parameters
             param: name of parameter to return value and units
 
         Returns:
@@ -384,7 +384,7 @@ class CoolPropWrapper:
         _cached_components to avoid need for repeated calls to CoolProp.
 
         Args:
-            comp_name: name of component ot retrieve parameters for.
+            comp_name: name of component to retrieve parameters for.
 
         Returns:
             dict constructed from json string retrieved from CoolProp database.
@@ -446,7 +446,7 @@ class CoolPropWrapper:
     ):
         """
         Method to get parameter sets for expression forms. Also includes check
-        to verify the expression form listed by CoolProp mathces the expected
+        to verify the expression form listed by CoolProp matches the expected
         for in IDAES.
 
         Args:

@@ -17,7 +17,7 @@ multiplies the flow by the split fractions for the outlets and has a constraint
 specify this unit is to have fix or have constraints that set the inlet, and
 have n_outlets - 1 specified split fractions or outlet flows.
 
-This model is psuedo-steady-state when used in dynamic mode.
+This model is pseudo-steady-state when used in dynamic mode.
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
@@ -31,7 +31,7 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.config import is_physical_parameter_block
-
+from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.solvers import get_solver
@@ -51,8 +51,8 @@ _log = idaeslog.getLogger(__name__)
 class HelmSplitterData(UnitModelBlockData):
     """
     This is a basic stream splitter which splits flow into outlet streams based
-    on split fractions. This does not do phase seperation, and assumes that you
-    are using a Helmholtz EOS propery package with P-H state variables. In
+    on split fractions. This does not do phase separation, and assumes that you
+    are using a Helmholtz EOS property package with P-H state variables. In
     dynamic mode this uses a pseudo-steady-state model.
 
     """
@@ -341,3 +341,9 @@ from 1 to num_outlets).}""",
             o_block = getattr(self, "{}_state".format(i))
             s = iscale.get_scaling_factor(o_block[t].flow_mol)
             iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+    def _get_stream_table_contents(self, time_point=0):
+        io_dict = {"inlet": self.inlet}
+        for i in self.outlet_list:
+            io_dict[i] = getattr(self, i)
+        return create_stream_table_dataframe(io_dict, time_point=time_point)

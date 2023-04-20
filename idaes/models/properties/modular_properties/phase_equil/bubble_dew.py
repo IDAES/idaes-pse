@@ -39,7 +39,7 @@ class IdealBubbleDew:
     # This approach can only be used when both liquid and vapor phases use
     # Ideal properties
     # Henry's Law components also cause issues due to the need to (potentially)
-    # calcualte concentrations at the bubble and dew points
+    # calculate concentrations at the bubble and dew points
     @staticmethod
     def temperature_bubble(b):
         try:

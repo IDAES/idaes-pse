@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-General tests for generic proeprties with Henry components present
+General tests for generic properties with Henry components present
 
 Author: Andrew Lee
 """

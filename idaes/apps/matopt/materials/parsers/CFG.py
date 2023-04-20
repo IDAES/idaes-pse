@@ -74,7 +74,7 @@ def readPointsAndAtomsFromCFG(filename):
                 s2 = float(splitLine[3])
                 s3 = float(splitLine[4])
             else:
-                # Other entry, not usefule
+                # Other entry, not useful
                 pass
             if blnAtomToAdd:
                 assert Elem is not None

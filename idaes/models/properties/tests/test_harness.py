@@ -33,6 +33,9 @@ from idaes.core.util.exceptions import InitializationError
 from pyomo.core.base.var import _VarData
 from pyomo.core.base.param import _ParamData
 from pyomo.core.base.expression import _ExpressionData
+from idaes.core.initialization.initializer_base import (
+    InitializationStatus,
+)
 
 _scalable = (_VarData, _ParamData, _ExpressionData)
 
@@ -266,7 +269,7 @@ class PropertyTestHarness(object):
         for v in sv.values():
             if not isinstance(v, Var):
                 raise TypeError(
-                    "Invlaid entry in define_state_Vars, {}. All members must "
+                    "Invalid entry in define_state_Vars, {}. All members must "
                     "be Pyomo Vars.".format(v)
                 )
 
@@ -332,13 +335,20 @@ class PropertyTestHarness(object):
 
     @pytest.mark.component
     def test_CV_integration(self, frame):
+        # Phase equilibrium does not make sense for single phase systems, so check
+        # and only set to True if more than one phase present.
+        if len(frame.fs.params.phase_list) > 1:
+            has_pe = True
+        else:
+            has_pe = False
+
         frame.fs.cv = ControlVolume0DBlock(property_package=frame.fs.params)
 
         frame.fs.cv.add_geometry()
 
-        frame.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+        frame.fs.cv.add_state_blocks(has_phase_equilibrium=has_pe)
 
-        frame.fs.cv.add_material_balances(has_phase_equilibrium=True)
+        frame.fs.cv.add_material_balances(has_phase_equilibrium=has_pe)
 
         frame.fs.cv.add_energy_balances()
 
@@ -363,3 +373,28 @@ class PropertyTestHarness(object):
                 frame.fs.props[1].config.parameters.get_default_scaling(name, index)
                 is None
             )
+
+    @pytest.mark.component
+    def test_default_initializer(self):
+        m = ConcreteModel()
+        self.configure_class(m)
+
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.params = self.prop_pack(**self.param_args)
+
+        m.fs.props = m.fs.params.build_state_block(
+            [1], defined_state=True, **m.prop_args
+        )
+
+        # Check that a default initializer is defined
+        initializer = m.fs.props.default_initializer
+        assert initializer is not None
+
+        # Most cases will probably have specified the class for the initializer, but
+        # in case an instance was provided check to see if it is callable.
+        if callable(initializer):
+            initializer = initializer()
+
+        # Check that we get a valid solution with the default initializer
+        assert initializer.initialize(m.fs.props) == InitializationStatus.Ok

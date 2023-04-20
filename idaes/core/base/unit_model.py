@@ -39,6 +39,7 @@ import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import DefaultBool
 from idaes.core.util.initialization import fix_state_vars
+from idaes.core.initialization import SingleControlVolumeUnitInitializer
 
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -56,6 +57,9 @@ class UnitModelBlockData(ProcessBlockData):
     This is the class for process unit operations models. These are models that
     would generally appear in a process flowsheet or superstructure.
     """
+
+    # Set default initializer
+    default_initializer = SingleControlVolumeUnitInitializer
 
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
@@ -490,7 +494,7 @@ Must be True if dynamic = True,
         except AttributeError:
             raise ConfigurationError(
                 f"Unit model {self.name} does not have the standard Port "
-                f"names (inet and outlet). Please contact the unit model "
+                f"names (inlet and outlet). Please contact the unit model "
                 f"developer to develop a unit specific stream table."
             )
 
@@ -516,7 +520,7 @@ Must be True if dynamic = True,
             costing_args - dict arguments to be passed to costing block
                            initialize method
 
-        For other arguments, see the initilize_unit method.
+        For other arguments, see the initialize_unit method.
         """
         # Get any arguments for costing if provided
         cost_args = kwargs.pop("costing_args", {})

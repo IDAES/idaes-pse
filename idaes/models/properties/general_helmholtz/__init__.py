@@ -21,4 +21,8 @@ from .helmholtz_functions import (
     helmholtz_available,
     helmholtz_data_dir,
 )
-from .helmholtz_state import HelmholtzStateBlock, HelmholtzStateBlockData
+from .helmholtz_state import (
+    HelmholtzStateBlock,
+    HelmholtzStateBlockData,
+    HelmholtzEoSInitializer,
+)

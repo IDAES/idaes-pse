@@ -1244,6 +1244,38 @@ def test_add_material_balances_rxn_mass():
     assert_units_equivalent(m.fs.cv.phase_equilibrium_generation, pp_units)
 
 
+@pytest.mark.unit
+def test_add_material_balances_single_phase_w_equilibrium():
+    from idaes.models.properties import iapws95
+
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=False)
+    m.fs.pp = iapws95.Iapws95ParameterBlock(
+        phase_presentation=iapws95.PhaseType.MIX, state_vars=iapws95.StateVars.PH
+    )
+
+    m.fs.cv = ControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+    with pytest.raises(
+        ConfigurationError,
+        match="Property package has only one phase; control volume cannot include phase "
+        "equilibrium terms. Some property packages support phase equilibrium "
+        "implicitly in which case additional terms are not necessary.",
+    ):
+        m.fs.cv.add_material_balances(
+            balance_type=MaterialBalanceType.useDefault,
+            has_phase_equilibrium=True,
+        )
+
+
 # -----------------------------------------------------------------------------
 # Test add_phase_component_balances
 @pytest.mark.unit
@@ -1311,7 +1343,7 @@ def test_add_phase_component_balances_default_FFD():
 
 
 @pytest.mark.unit
-def test_add_phase_component_balances_distrubuted_area():
+def test_add_phase_component_balances_distributed_area():
     m = ConcreteModel()
     m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
@@ -1989,7 +2021,7 @@ def test_add_total_component_balances_default_FFD():
 
 
 @pytest.mark.unit
-def test_add_total_component_balances_distrubuted_area():
+def test_add_total_component_balances_distributed_area():
     m = ConcreteModel()
     m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
@@ -2659,7 +2691,7 @@ def test_add_total_element_balances_default_FFD():
 
 
 @pytest.mark.unit
-def test_add_total_element_balances_distrubuted_area():
+def test_add_total_element_balances_distributed_area():
     m = ConcreteModel()
     m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()

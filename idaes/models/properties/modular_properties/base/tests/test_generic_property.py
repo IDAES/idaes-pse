@@ -41,6 +41,7 @@ from idaes.core import (
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
 from idaes.core.base.property_meta import UnitSet
+from idaes.core.initialization import BlockTriangularizationInitializer
 
 import idaes.logger as idaeslog
 
@@ -1200,6 +1201,7 @@ class TestGenericStateBlock(object):
     def test_build(self, frame):
         assert isinstance(frame.props, Block)
         assert len(frame.props) == 1
+        assert frame.props.default_initializer is BlockTriangularizationInitializer
 
         # Check for expected behaviour for dummy methods
         assert frame.props[1].state_defined

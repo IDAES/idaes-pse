@@ -119,7 +119,7 @@ class DoubleLoopCoordinator:
             "bidding_generator",
             ConfigValue(
                 domain=str,
-                description="Specifies the generator we derive bidding strategis for.",
+                description="Specifies the generator we derive bidding strategies for.",
                 default=None,
             ),
         ).declare_as_argument("--bidding-generator")

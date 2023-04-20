@@ -239,7 +239,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
     @staticmethod
     def initialize_build(*args, **kwargs):
         """
-        Here we can add intialization steps for the things we built in
+        Here we can add initialization steps for the things we built in
         build_process_costs.
 
         Note that the aggregate costs will be initialized by the framework.
@@ -512,7 +512,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         elif weight_limit not in [1, 2]:
             raise ConfigurationError(
                 f"{blk.unit_model.name} weight_limit argument must be 1 or 2;"
-                f" recieved {weight_limit}."
+                f" received {weight_limit}."
             )
 
         # Check references to diameter and length
@@ -637,7 +637,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                 number_of_trays=number_of_trays,
             )
 
-        # Total capital cost of vessel and ancilliary equipment
+        # Total capital cost of vessel and ancillary equipment
         @blk.Constraint()
         def capital_cost_constraint(blk):
             cost_expr = blk.material_factor * blk.base_cost_per_unit
@@ -692,7 +692,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                     )
                 else:
                     raise ConfigurationError(
-                        f"{blk.unit_model.name} recieved invalid value for "
+                        f"{blk.unit_model.name} received invalid value for "
                         f"aspect_ratio_range argument: {aspect_ratio_range}. "
                         "Value must be 1 or 2."
                     )
@@ -752,7 +752,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                 alpha[tray_material][1] + alpha[tray_material][2] * D / pyo.units.foot
             )
 
-        # Calcluate cost factor for number of trays
+        # Calculate cost factor for number of trays
         blk.number_trays_factor = pyo.Var(
             initialize=1,
             units=pyo.units.dimensionless,
@@ -765,7 +765,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                 1, 2.25 / (1.0414**number_of_trays)
             )
 
-        # Calcualte base cost of a single tray
+        # Calculate base cost of a single tray
         blk.base_cost_per_tray = pyo.Var(
             initialize=1e4,
             domain=pyo.NonNegativeReals,
@@ -860,7 +860,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         """
         Specific case of vessel costing method for horizontal vessels.
 
-        Arguments which do not apply ot horizontal vessels are excluded.
+        Arguments which do not apply to horizontal vessels are excluded.
 
         Args:
             material_type: VesselMaterial Enum indicating material of
@@ -950,7 +950,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             doc="Construction material correction factor",
         )
 
-        # Pressure deisgn factor calculation
+        # Pressure design factor calculation
         blk.pressure_factor = pyo.Var(
             initialize=1.1, domain=pyo.NonNegativeReals, doc="Pressure design factor"
         )

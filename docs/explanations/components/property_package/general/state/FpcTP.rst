@@ -14,7 +14,7 @@ Application
 
 This approach required knowledge of the phase-equilibrium of the material in order to define the state variables. Compared to using total flow rate and mole fractions, this approach contains full information on the phase equilibria within the state variables, and thus avoids the needs for flash calculations in many cases. This can greatly reduce the complexity of the problem, and results can significantly affect the tractablity of the problem. However, this approach has a number of limitations which the user should be aware of:
 
-* Users must have knowledge of , or calculate, the phase-component flows of all inlet streams. For sinlge phase flows this is often known, but for streasm with potetnial two-phase behaviour this can reqruire a set of flash calculations for the feed streasm (users can make use of Feed blocks to assist with this).
+* Users must have knowledge of , or calculate, the phase-component flows of all inlet streams. For single phase flows this is often known, but for streasm with potetnial two-phase behaviour this can reqruire a set of flash calculations for the feed streasm (users can make use of Feed blocks to assist with this).
 * State becomes ill-defined when only one component is present and multiphase behavior can occur, as temperature and pressure are insufficient to fully define the thermodynamic state under these conditions.
 
 Bounds

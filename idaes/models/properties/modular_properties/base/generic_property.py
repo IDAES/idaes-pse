@@ -31,8 +31,9 @@ from pyomo.environ import (
     units as pyunits,
     Reference,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import ConfigBlock, ConfigDict, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from pyomo.contrib.incidence_analysis import solve_strongly_connected_components
 
 # Import IDAES cores
 from idaes.core import (
@@ -71,6 +72,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from idaes.core.initialization.initializer_base import InitializerBase
 
 from idaes.models.properties.modular_properties.base.generic_reaction import (
     equil_rxn_config,
@@ -247,7 +249,7 @@ class GenericParameterData(PhysicalParameterBlock):
             default=True,
             domain=Bool,
             description="Include enthalpy of formation in property calculations",
-            doc="Flag indiciating whether enthalpy of formation should be included"
+            doc="Flag indicating whether enthalpy of formation should be included"
             " when calculating specific enthalpies.",
         ),
     )
@@ -602,7 +604,7 @@ class GenericParameterData(PhysicalParameterBlock):
             # Add elemental composition components
             self.element_list = Set(ordered=True)
 
-            # Iterate through all componets and collect composing elements
+            # Iterate through all components and collect composing elements
             # Add these to element_list
             for ec in element_comp.values():
                 for e in ec.keys():
@@ -1001,7 +1003,7 @@ class GenericParameterData(PhysicalParameterBlock):
         self.config.state_definition.set_metadata(self)
 
         # Set default scaling factors
-        # First, call set_default_scaling_factors method from state definiton
+        # First, call set_default_scaling_factors method from state definition
         try:
             self.config.state_definition.define_default_scaling_factors(self)
         except AttributeError:
@@ -1195,6 +1197,367 @@ class GenericParameterData(PhysicalParameterBlock):
         )
 
 
+class ModularPropertiesInitializer(InitializerBase):
+    """
+    General Initializer for modular property packages.
+
+    This Initializer uses a hierarchical routine to initialize the
+    property package using the following steps:
+
+    1. Initialize bubble and dew point calculations (if present)
+    2. Estimate vapor-liquid equilibrium T_eq (if present)
+    3. Solve for phase-equilibrium conditions
+    4. Initialize all remaining properties
+
+    The Pyomo solve_strongly_connected_components method is used at each
+    step to converge the problem.
+
+    Note that for systems without vapor-liquid equilibrium the generic
+    BlockTriangularizationInitializer is probably sufficient for initializing
+    the property package.
+
+    """
+
+    CONFIG = InitializerBase.CONFIG()
+    CONFIG.declare(
+        "solver",
+        ConfigValue(
+            default=None,
+            description="Solver to use for initialization",
+        ),
+    )
+    CONFIG.declare(
+        "solver_options",
+        ConfigDict(
+            implicit=True,
+            description="Dict of options to pass to solver",
+        ),
+    )
+    CONFIG.declare(
+        "calculate_variable_options",
+        ConfigDict(
+            implicit=True,
+            description="Dict of options to pass to 1x1 block solver",
+            doc="Dict of options to pass to calc_var_kwds argument in "
+            "solve_strongly_connected_components method. NOTE: models "
+            "involving ExternalFunctions must set "
+            "'diff_mode=differentiate.Modes.reverse_numeric'",
+        ),
+    )
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self._solver = None
+
+    def initialization_routine(
+        self,
+        model: Block,
+    ):
+        """
+        Sequential initialization routine for modular properties.
+
+        Args:
+            model: model to be initialized
+
+        Returns:
+            None
+        """
+        # Setup loggers
+        init_log = idaeslog.getInitLogger(
+            model.name, self.config.output_level, tag="properties"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            model.name, self.config.output_level, tag="properties"
+        )
+
+        # Create solver object
+        solver_obj = get_solver(self.config.solver, self.config.solver_options)
+
+        init_log.info("Starting initialization routine")
+
+        for k in model.values():
+            # Deactivate the constraints specific for outlet block i.e.
+            # when defined state is False
+            if k.config.defined_state is False:
+                try:
+                    k.sum_mole_frac_out.deactivate()
+                except AttributeError:
+                    pass
+
+                if hasattr(k, "inherent_equilibrium_constraint") and (
+                    not k.params._electrolyte
+                    or k.params.config.state_components == StateIndex.true
+                ):
+                    k.inherent_equilibrium_constraint.deactivate()
+
+        # ---------------------------------------------------------------------
+        # If present, initialize bubble and dew point calculations
+        for k in model.values():
+            T_units = k.params.get_metadata().default_units.TEMPERATURE
+            # Bubble temperature initialization
+            if hasattr(k, "_mole_frac_tbub"):
+                model._init_Tbub(k, T_units)
+
+            # Dew temperature initialization
+            if hasattr(k, "_mole_frac_tdew"):
+                model._init_Tdew(k, T_units)
+
+            # Bubble pressure initialization
+            if hasattr(k, "_mole_frac_pbub"):
+                model._init_Pbub(k, T_units)
+
+            # Dew pressure initialization
+            if hasattr(k, "_mole_frac_pdew"):
+                model._init_Pdew(k, T_units)
+
+            # Solve bubble and dew point constraints
+            for c in k.component_objects(Constraint):
+                # Deactivate all constraints not associated with bubble and dew
+                # points
+                if c.local_name not in (
+                    "eq_pressure_dew",
+                    "eq_pressure_bubble",
+                    "eq_temperature_dew",
+                    "eq_temperature_bubble",
+                    "eq_mole_frac_tbub",
+                    "eq_mole_frac_tdew",
+                    "eq_mole_frac_pbub",
+                    "eq_mole_frac_pdew",
+                    "log_mole_frac_tbub_eqn",
+                    "log_mole_frac_tdew_eqn",
+                    "log_mole_frac_pbub_eqn",
+                    "log_mole_frac_pdew_eqn",
+                    "mole_frac_comp_eq",
+                    "log_mole_frac_comp_eqn",
+                ):
+                    c.deactivate()
+
+        # If StateBlock has active constraints (i.e. has bubble and/or dew
+        # point calculations), solve the block to converge these
+        for b in model.values():
+            if number_activated_constraints(b) > 0:
+                if not degrees_of_freedom(b) == 0:
+                    raise InitializationError(
+                        f"{b.name} Unexpected degrees of freedom during "
+                        f"initialization at bubble and dew point step: {degrees_of_freedom(b)}."
+                    )
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    solve_strongly_connected_components(
+                        b,
+                        solver=solver_obj,
+                        solve_kwds={"tee": slc.tee},
+                        calc_var_kwds=self.config.calculate_variable_options,
+                    )
+        init_log.info("Dew and bubble point initialization completed.")
+
+        # ---------------------------------------------------------------------
+        # Calculate _teq if required
+        for k in model.values():
+            if k.params.config.phases_in_equilibrium is not None and (
+                not k.config.defined_state or k.always_flash
+            ):
+                for pp in k.params._pe_pairs:
+                    k.params.config.phase_equilibrium_state[pp].calculate_teq(k, pp)
+
+        init_log.info("Equilibrium temperature initialization completed.")
+
+        # ---------------------------------------------------------------------
+        # Initialize flow rates and compositions
+        for k in model.values():
+
+            k.params.config.state_definition.state_initialization(k)
+
+            if k.params._electrolyte:
+                if k.params.config.state_components == StateIndex.true:
+                    # First calculate initial values for apparent species flows
+                    for p, j in k.params.apparent_phase_component_set:
+                        calculate_variable_from_constraint(
+                            k.flow_mol_phase_comp_apparent[p, j],
+                            k.true_to_appr_species[p, j],
+                        )
+                    # Need to calculate all flows before doing mole fractions
+                    for p, j in k.params.apparent_phase_component_set:
+                        sum_flow = sum(
+                            k.flow_mol_phase_comp_apparent[p, jj]
+                            for jj in k.params.apparent_species_set
+                            if (p, jj) in k.params.apparent_phase_component_set
+                        )
+                        if value(sum_flow) == 0:
+                            x = 1
+                        else:
+                            x = value(k.flow_mol_phase_comp_apparent[p, j] / sum_flow)
+                        lb = k.mole_frac_phase_comp_apparent[p, j].lb
+                        if lb is not None and x <= lb:
+                            k.mole_frac_phase_comp_apparent[p, j].set_value(lb)
+                        else:
+                            k.mole_frac_phase_comp_apparent[p, j].set_value(x)
+                elif k.params.config.state_components == StateIndex.apparent:
+                    # First calculate initial values for true species flows
+                    for p, j in k.params.true_phase_component_set:
+                        calculate_variable_from_constraint(
+                            k.flow_mol_phase_comp_true[p, j],
+                            k.appr_to_true_species[p, j],
+                        )
+                    # Need to calculate all flows before doing mole fractions
+                    for p, j in k.params.true_phase_component_set:
+                        sum_flow = sum(
+                            k.flow_mol_phase_comp_true[p, jj]
+                            for jj in k.params.true_species_set
+                            if (p, jj) in k.params.true_phase_component_set
+                        )
+                        if value(sum_flow) == 0:
+                            x = 1
+                        else:
+                            x = value(k.flow_mol_phase_comp_true[p, j] / sum_flow)
+                        lb = k.mole_frac_phase_comp_true[p, j].lb
+                        if lb is not None and x <= lb:
+                            k.mole_frac_phase_comp_true[p, j].set_value(lb)
+                        else:
+                            k.mole_frac_phase_comp_true[p, j].set_value(x)
+
+            # If state block has phase equilibrium, use the average of all
+            # _teq's as an initial guess for T
+            if (
+                k.params.config.phases_in_equilibrium is not None
+                and isinstance(k.temperature, Var)
+                and not k.temperature.fixed
+            ):
+                k.temperature.value = value(
+                    sum(k._teq[i] for i in k.params._pe_pairs) / len(k.params._pe_pairs)
+                )
+
+        init_log.info("State variable initialization completed.")
+
+        # ---------------------------------------------------------------------
+        Tfix = {}  # In enth based state defs, need to also fix T until later
+        for k, b in model.items():
+            if b.params.config.phase_equilibrium_state is not None and (
+                not b.config.defined_state or b.always_flash
+            ):
+                if not b.temperature.fixed:
+                    b.temperature.fix()
+                    Tfix[k] = True
+                for c in b.component_objects(Constraint):
+                    # Activate common constraints
+                    if c.local_name in (
+                        "total_flow_balance",
+                        "component_flow_balances",
+                        "sum_mole_frac",
+                        "phase_fraction_constraint",
+                        "mole_frac_phase_comp_eq",
+                        "mole_frac_comp_eq",
+                    ):
+                        c.activate()
+                    if c.local_name == "log_mole_frac_phase_comp_eqn":
+                        c.activate()
+                        for p, j in b.params._phase_component_set:
+                            calculate_variable_from_constraint(
+                                b.log_mole_frac_phase_comp[p, j],
+                                b.log_mole_frac_phase_comp_eqn[p, j],
+                            )
+                    elif c.local_name == "equilibrium_constraint":
+                        # For systems where the state variables fully define the
+                        # phase equilibrium, we cannot activate the equilibrium
+                        # constraint at this stage.
+                        if "flow_mol_phase_comp" not in b.define_state_vars():
+                            c.activate()
+
+                for pp in b.params._pe_pairs:
+                    # Activate formulation specific constraints
+                    b.params.config.phase_equilibrium_state[
+                        pp
+                    ].phase_equil_initialization(b, pp)
+
+            if number_activated_constraints(b) > 0:
+                dof = degrees_of_freedom(b)
+                if degrees_of_freedom(b) == 0:
+                    with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                        solve_strongly_connected_components(
+                            b,
+                            solver=solver_obj,
+                            solve_kwds={"tee": slc.tee},
+                            calc_var_kwds=self.config.calculate_variable_options,
+                        )
+                elif dof > 0:
+                    raise InitializationError(
+                        f"{b.name} Unexpected degrees of freedom during "
+                        f"initialization at phase equilibrium step: {dof}."
+                    )
+                # Skip solve if DoF < 0 - this is probably due to a
+                # phase-component flow state with flash
+
+        init_log.info("Phase equilibrium initialization completed.")
+
+        # ---------------------------------------------------------------------
+        # Initialize other properties
+        for k, b in model.items():
+            for c in b.component_objects(Constraint):
+                # Activate all constraints except flagged do_not_initialize
+                if c.local_name not in (
+                    b.params.config.state_definition.do_not_initialize
+                ):
+                    c.activate()
+            if k in Tfix:
+                b.temperature.unfix()
+
+            # Initialize log-form variables
+            log_form_vars = [
+                "act_phase_comp",
+                "act_phase_comp_apparent",
+                "act_phase_comp_true",
+                "conc_mol_phase_comp",
+                "conc_mol_phase_comp_apparent",
+                "conc_mol_phase_comp_true",
+                "mass_frac_phase_comp",
+                "mass_frac_phase_comp_apparent",
+                "mass_frac_phase_comp_true",
+                "molality_phase_comp",
+                "molality_phase_comp_apparent",
+                "molality_phase_comp_true",
+                "mole_frac_comp",  # Might have already been initialized
+                "mole_frac_phase_comp",  # Might have already been initialized
+                "mole_frac_phase_comp_apparent",
+                "mole_frac_phase_comp_true",
+                "pressure_phase_comp",
+                "pressure_phase_comp_apparent",
+                "pressure_phase_comp_true",
+            ]
+
+            for prop in log_form_vars:
+                if b.is_property_constructed("log_" + prop):
+                    comp = getattr(b, prop)
+                    lcomp = getattr(b, "log_" + prop)
+                    for k2, v in lcomp.items():
+                        c = value(comp[k2])
+                        if c <= 0:
+                            c = 1e-8
+                        lc = log(c)
+                        v.set_value(value(lc))
+
+            if number_activated_constraints(b) > 0:
+                dof = degrees_of_freedom(b)
+                if degrees_of_freedom(b) == 0:
+                    with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                        solve_strongly_connected_components(
+                            b,
+                            solver=solver_obj,
+                            solve_kwds={"tee": slc.tee},
+                            calc_var_kwds=self.config.calculate_variable_options,
+                        )
+                elif dof > 0:
+                    raise InitializationError(
+                        f"{b.name} Unexpected degrees of freedom during "
+                        f"initialization at phase equilibrium step: {dof}."
+                    )
+                # Skip solve if DoF < 0 - this is probably due to a
+                # phase-component flow state with flash
+
+        init_log.info("Property initialization routine finished.")
+
+        return None
+
+
 class _GenericStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
@@ -1254,6 +1617,23 @@ class _GenericStateBlock(StateBlock):
                 "the IDAES developers with this bug.".format(self.name)
             )
 
+    def fix_initialization_states(self):
+        """
+        Fixes state variables for state blocks.
+
+        Returns:
+            None
+        """
+        # Fix state variables
+        fix_state_vars(self)
+
+        # Also need to deactivate sum of mole fraction constraint
+        for k in self.values():
+            try:
+                k.sum_mole_frac_out.deactivate()
+            except AttributeError:
+                pass
+
     def initialize(
         blk,
         state_args=None,
@@ -1291,7 +1671,7 @@ class _GenericStateBlock(StateBlock):
                                  initialization.
                         - False - state variables are unfixed after
                                  initialization by calling the
-                                 relase_state method
+                                 release_state method
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -1370,7 +1750,7 @@ class _GenericStateBlock(StateBlock):
 
             # Solve bubble and dew point constraints
             for c in k.component_objects(Constraint):
-                # Deactivate all constraints not associated wtih bubble and dew
+                # Deactivate all constraints not associated with bubble and dew
                 # points
                 if c.local_name not in (
                     "eq_pressure_dew",
@@ -1646,7 +2026,7 @@ class _GenericStateBlock(StateBlock):
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
-        Method to relase state variables fixed during initialization.
+        Method to release state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -2488,7 +2868,7 @@ class GenericStateBlockData(StateBlockData):
     def components_in_phase(self, phase):
         """
         Generator method which yields components present in a given phase.
-        As this methid is used only for property calcuations, it should use the
+        As this method is used only for property calculations, it should use the
         true species sset if one exists.
 
         Args:
@@ -2519,7 +2899,7 @@ class GenericStateBlockData(StateBlockData):
 
     def get_mole_frac(self, phase=None):
         """
-        Property calcuations generally depend on phase_component mole fractions
+        Property calculations generally depend on phase_component mole fractions
         for mixing rules, but in some cases there are multiple component lists
         to work from. This method is used to return the correct phase-component
         indexed mole fraction component for the given circumstances.
@@ -3281,7 +3661,7 @@ class GenericStateBlockData(StateBlockData):
             def rule_flow_mol_phase_comp(b, p, i):
                 if b.get_material_flow_basis() == MaterialFlowBasis.molar:
                     raise PropertyPackageError(
-                        "{} Generic proeprty Package set to use material flow "
+                        "{} Generic property Package set to use material flow "
                         "basis {}, but flow_mol_phase_comp was not created "
                         "by state definition."
                     )
@@ -3530,7 +3910,7 @@ class GenericStateBlockData(StateBlockData):
                     / sum(
                         b.mw_comp[k] * b.mole_frac_phase_comp_true[p, k]
                         for k in b.params.true_species_set
-                        if (p, k) in b.paramas.ture_phase_component_set
+                        if (p, k) in b.paramas.true_phase_component_set
                     )
                 )
 

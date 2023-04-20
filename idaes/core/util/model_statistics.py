@@ -27,6 +27,24 @@ from pyomo.common.collections import ComponentSet
 
 
 # -------------------------------------------------------------------------
+# Generator to handle cases where the input is an indexed Block
+# Indexed blocks do not have component_data_objects, so we need to iterate
+# over the indexed block first.
+def _iter_indexed_block_data_objects(block, ctype, active, descend_into):
+    if block.is_indexed():
+        for bd in block.values():
+            for c in bd.component_data_objects(
+                ctype=ctype, active=active, descend_into=descend_into
+            ):
+                yield c
+    else:
+        for c in block.component_data_objects(
+            ctype=ctype, active=active, descend_into=descend_into
+        ):
+            yield c
+
+
+# -------------------------------------------------------------------------
 # Block methods
 def total_blocks_set(block):
     """
@@ -40,7 +58,9 @@ def total_blocks_set(block):
         itself)
     """
     total_blocks_set = ComponentSet(
-        block.component_data_objects(ctype=Block, active=None, descend_into=True)
+        _iter_indexed_block_data_objects(
+            block, ctype=Block, active=None, descend_into=True
+        )
     )
     total_blocks_set.add(block)
     return total_blocks_set
@@ -60,8 +80,8 @@ def number_total_blocks(block):
     return (
         sum(
             1
-            for _ in block.component_data_objects(
-                ctype=Block, active=None, descend_into=True
+            for _ in _iter_indexed_block_data_objects(
+                block, ctype=Block, active=None, descend_into=True
             )
         )
         + 1
@@ -83,8 +103,8 @@ def activated_blocks_set(block):
     block_set = ComponentSet()
     if block.active:
         block_set.add(block)
-        for b in block.component_data_objects(
-            ctype=Block, active=True, descend_into=True
+        for b in _iter_indexed_block_data_objects(
+            block, ctype=Block, active=True, descend_into=True
         ):
             block_set.add(b)
     return block_set
@@ -105,8 +125,8 @@ def number_activated_blocks(block):
         b = 1
         b += sum(
             1
-            for _ in block.component_data_objects(
-                ctype=Block, active=True, descend_into=True
+            for _ in _iter_indexed_block_data_objects(
+                block, ctype=Block, active=True, descend_into=True
             )
         )
     return b
@@ -315,7 +335,9 @@ def activated_equalities_generator(block):
         A generator which returns all activated equality Constraint components
         block
     """
-    for c in block.component_data_objects(Constraint, active=True, descend_into=True):
+    for c in _iter_indexed_block_data_objects(
+        block, Constraint, active=True, descend_into=True
+    ):
         if (
             c.upper is not None
             and c.lower is not None
@@ -457,7 +479,9 @@ def activated_inequalities_generator(block):
         A generator which returns all activated inequality Constraint
         components block
     """
-    for c in block.component_data_objects(Constraint, active=True, descend_into=True):
+    for c in _iter_indexed_block_data_objects(
+        block, Constraint, active=True, descend_into=True
+    ):
         if c.upper is None or c.lower is None:
             yield c
 
@@ -552,7 +576,9 @@ def variables_set(block):
         A ComponentSet including all Var components in block
     """
     return ComponentSet(
-        block.component_data_objects(ctype=Var, active=True, descend_into=True)
+        _iter_indexed_block_data_objects(
+            block, ctype=Var, active=True, descend_into=True
+        )
     )
 
 
@@ -579,7 +605,9 @@ def fixed_variables_generator(block):
     Returns:
         A generator which returns all fixed Var components block
     """
-    for v in block.component_data_objects(ctype=Var, active=True, descend_into=True):
+    for v in _iter_indexed_block_data_objects(
+        block, ctype=Var, active=True, descend_into=True
+    ):
         if v.fixed:
             yield v
 
@@ -620,7 +648,9 @@ def unfixed_variables_generator(block):
     Returns:
         A generator which returns all unfixed Var components block
     """
-    for v in block.component_data_objects(ctype=Var, active=True, descend_into=True):
+    for v in _iter_indexed_block_data_objects(
+        block, ctype=Var, active=True, descend_into=True
+    ):
         if not v.fixed:
             yield v
 
@@ -669,7 +699,9 @@ def variables_near_bounds_generator(
         A generator which returns all Var components block that are close to a
         bound
     """
-    for v in block.component_data_objects(ctype=Var, active=True, descend_into=True):
+    for v in _iter_indexed_block_data_objects(
+        block, ctype=Var, active=True, descend_into=True
+    ):
         # To avoid errors, check that v has a value
         if v.value is None:
             continue
@@ -749,8 +781,8 @@ def variables_in_activated_constraints_set(block):
         activated Constraints in block
     """
     var_set = ComponentSet()
-    for c in block.component_data_objects(
-        ctype=Constraint, active=True, descend_into=True
+    for c in _iter_indexed_block_data_objects(
+        block, ctype=Constraint, active=True, descend_into=True
     ):
         for v in identify_variables(c.body):
             var_set.add(v)
@@ -788,7 +820,9 @@ def variables_not_in_activated_constraints_set(block):
 
     active_vars = variables_in_activated_constraints_set(block)
 
-    for v in block.component_data_objects(ctype=Var, active=True, descend_into=True):
+    for v in _iter_indexed_block_data_objects(
+        block, ctype=Var, active=True, descend_into=True
+    ):
         if v not in active_vars:
             var_set.add(v)
     return var_set
@@ -1094,8 +1128,8 @@ def derivative_variables_set(block):
         block
     """
     return ComponentSet(
-        block.component_data_objects(
-            ctype=DerivativeVar, active=True, descend_into=True
+        _iter_indexed_block_data_objects(
+            block, ctype=DerivativeVar, active=True, descend_into=True
         )
     )
 
@@ -1263,7 +1297,9 @@ def expressions_set(block):
         block
     """
     return ComponentSet(
-        block.component_data_objects(ctype=Expression, active=True, descend_into=True)
+        _iter_indexed_block_data_objects(
+            block, ctype=Expression, active=True, descend_into=True
+        )
     )
 
 
@@ -1319,8 +1355,8 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
     large_residuals_set = ComponentSet()
     if return_residual_values:
         residual_values = dict()
-    for c in block.component_data_objects(
-        ctype=Constraint, active=True, descend_into=True
+    for c in _iter_indexed_block_data_objects(
+        block, ctype=Constraint, active=True, descend_into=True
     ):
         try:
             r = 0.0  # residual
@@ -1376,8 +1412,8 @@ def number_large_residuals(block, tol=1e-5):
         appear in block
     """
     lr = 0
-    for c in block.component_data_objects(
-        ctype=Constraint, active=True, descend_into=True
+    for c in _iter_indexed_block_data_objects(
+        block, ctype=Constraint, active=True, descend_into=True
     ):
         if c.active and value(c.lower - c.body()) > tol:
             lr += 1
@@ -1389,14 +1425,14 @@ def number_large_residuals(block, tol=1e-5):
 def active_variables_in_deactivated_blocks_set(block):
     """
     Method to return a ComponentSet of any Var components which appear within
-    an active Constraint but belong to a deacitvated Block in a model.
+    an active Constraint but belong to a deactivated Block in a model.
 
     Args:
         block : model to be studied
 
     Returns:
         A ComponentSet including any Var components which belong to a
-        deacitvated Block but appear in an activate Constraint in block
+        deactivated Block but appear in an activate Constraint in block
     """
     var_set = ComponentSet()
     block_set = activated_blocks_set(block)
@@ -1409,13 +1445,13 @@ def active_variables_in_deactivated_blocks_set(block):
 def number_active_variables_in_deactivated_blocks(block):
     """
     Method to return the number of Var components which appear within an active
-    Constraint but belong to a deacitvated Block in a model.
+    Constraint but belong to a deactivated Block in a model.
 
     Args:
         block : model to be studied
 
     Returns:
-        Number of Var components which belong to a deacitvated Block but appear
+        Number of Var components which belong to a deactivated Block but appear
         in an activate Constraint in block
     """
     return len(active_variables_in_deactivated_blocks_set(block))
@@ -1519,10 +1555,14 @@ def activated_block_component_generator(block, ctype):
         activated Blocks in block
     """
     # Yield local components first
-    for c in block.component_data_objects(ctype=ctype, active=None, descend_into=False):
+    for c in _iter_indexed_block_data_objects(
+        block, ctype=ctype, active=None, descend_into=False
+    ):
         yield c
 
     # Then yield components in active sub-blocks
-    for b in block.component_data_objects(ctype=Block, active=True, descend_into=True):
+    for b in _iter_indexed_block_data_objects(
+        block, ctype=Block, active=True, descend_into=True
+    ):
         for c in b.component_data_objects(ctype=ctype, active=None, descend_into=False):
             yield c

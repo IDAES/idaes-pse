@@ -152,10 +152,10 @@ During transient operation, the component is subject to variations of pressure a
 The mechanical and thermal stresses are considered:
 
 * Mechanical stress is calculated using S. Bracco, 2012 reference, and it is a function of the pressure and radius at the inside and outside surfaces.
-* Thermmal stress is calculaed using Taler & Duda, 2006 refernce, and it is a function of the Young modus, a linear temperature expansion coefficient, and Poisson ratio of the steel material.
+* Thermmal stress is calculaed using Taler & Duda, 2006 reference, and it is a function of the Young modus, a linear temperature expansion coefficient, and Poisson ratio of the steel material.
 
 Fatigue calculation of allowable cycles:
-Using the calculated stresses above, the number of allowable cycles of the component can be evaluated based on fatigue assessment standard, such as EN 13445. The detail of the developed approach can be found in Bracco’s report (S. Bracco, 2012). This model can be applied for both drum and thick-walled components such as header. According to the EN 13445 standard, for a single cycle, the allowable number of fatigue cycles N can be computed as a funciton of the material tensile strength at room temperature and a reference stress range.
+Using the calculated stresses above, the number of allowable cycles of the component can be evaluated based on fatigue assessment standard, such as EN 13445. The detail of the developed approach can be found in Bracco’s report (S. Bracco, 2012). This model can be applied for both drum and thick-walled components such as header. According to the EN 13445 standard, for a single cycle, the allowable number of fatigue cycles N can be computed as a function of the material tensile strength at room temperature and a reference stress range.
 
 [1] Bracco, S. (2012). Dynamic simulation of combined cycles operating in transient conditions: An innovative approach to determine the steam drums life consumption. In Proceedings of the 25th International Conference on Efficiency, Cost, Optimization and Simulation of Energy Conversion Systems and Processes, ECOS 2012.
 

@@ -37,12 +37,12 @@ class OffsetScaler(object):
     def create_from_mean_std(dataframe):
         """
         Creates a scaling object using the mean as the offset and the
-        standard devation as the as the factor
+        standard deviation as the as the factor
 
         Args:
            dataframe: pandas DataFrame
               The dataframe containing the data (usually the training data) that will
-              be used to compute the mean and standard devation for the scaler
+              be used to compute the mean and standard deviation for the scaler
         """
         expected_columns = list(dataframe.columns)
         offset = dataframe.mean()

@@ -46,6 +46,11 @@ from idaes.core.util.testing import (
     initialization_tester,
 )
 from idaes.core.solvers import get_solver
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    SingleControlVolumeUnitInitializer,
+    InitializationStatus,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -268,3 +273,80 @@ class TestSaponification(object):
         perf_dict = sapon.fs.unit._get_performance_contents()
 
         assert perf_dict == {"vars": {"Area": sapon.fs.unit.area}}
+
+
+class TestInitializers:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = SaponificationParameterBlock()
+        m.fs.reactions = SaponificationReactionParameterBlock(
+            property_package=m.fs.properties
+        )
+
+        m.fs.unit = PFR(
+            property_package=m.fs.properties,
+            reaction_package=m.fs.reactions,
+            has_equilibrium_reactions=False,
+            has_heat_transfer=True,
+            has_heat_of_reaction=True,
+            has_pressure_change=True,
+        )
+
+        m.fs.unit.inlet.flow_vol.fix(1.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
+        m.fs.unit.inlet.temperature.fix(303.15)
+        m.fs.unit.inlet.pressure.fix(101325.0)
+
+        m.fs.unit.length.fix(0.5)
+        m.fs.unit.area.fix(0.1)
+
+        m.fs.unit.heat_duty.fix(0)
+        m.fs.unit.deltaP.fix(0)
+
+        return m
+
+    @pytest.mark.integration
+    def test_general_hierarchical(self, model):
+        initializer = SingleControlVolumeUnitInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert (
+            pytest.approx(101325.0, rel=1e-5) == model.fs.unit.outlet.pressure[0].value
+        )
+        assert (
+            pytest.approx(303.593, rel=1e-5)
+            == model.fs.unit.outlet.temperature[0].value
+        )
+        assert pytest.approx(62.29202, rel=1e-5) == value(
+            model.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=1e-5)
+
+        # Need to exclude unused variables for x=0 in post-check
+        initializer.initialize(model.fs.unit, exclude_unused_vars=True)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert (
+            pytest.approx(101325.0, rel=1e-5) == model.fs.unit.outlet.pressure[0].value
+        )
+        assert (
+            pytest.approx(303.593, rel=1e-5)
+            == model.fs.unit.outlet.temperature[0].value
+        )
+        assert pytest.approx(62.29202, rel=1e-5) == value(
+            model.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
+        )

@@ -125,7 +125,7 @@ def _set_port(p1, p2):
 
 def _set_prop_pack(hxcfg, fwhcfg):
     """
-    Set the property package and property pacakge args to the values given for
+    Set the property package and property package args to the values given for
     the overall feedwater heater model if not otherwise specified.
 
     Args:
@@ -194,7 +194,7 @@ class FWHCondensing0DData(HeatExchangerData):
         self.hot_side_outlet.unfix()
         self.cold_side_outlet.unfix()
 
-        # Do regular heat exchanger intialization
+        # Do regular heat exchanger initialization
         super().initialize_build(*args, **kwargs)
         self.extraction_rate_constraint.activate()
         self.hot_side_inlet.flow_mol.unfix()
@@ -316,7 +316,7 @@ class FWH0DData(UnitModelBlockData):
         # exchanger may have 3 stages and they are countercurrent.  For
         # simplicity each stage in initialized with the same cooling water
         # inlet conditions then the whole feedwater heater is solved together.
-        # There are more robust approaches which can be implimented if the
+        # There are more robust approaches which can be implemented if the
         # need arises.
 
         # initialize desuperheat if include

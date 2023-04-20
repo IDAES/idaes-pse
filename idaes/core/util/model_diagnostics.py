@@ -486,7 +486,7 @@ class DegeneracyHunter:
             tee: Boolean, print solver output (default = False)
 
         Returns:
-            candidate_eqns: either None or list of indicies
+            candidate_eqns: either None or list of indices
             degenerate_set: either None or dictionary containing the degenerate_set
 
         """
@@ -851,4 +851,6 @@ def ipopt_solve_halt_on_error(model, options=None):
     solver.options = options
     solver.options["halt_on_ampl_error"] = "yes"
 
-    return solver.solve(model, tee=True, symbolic_solver_labels=True)
+    return solver.solve(
+        model, tee=True, symbolic_solver_labels=True, export_defined_variables=False
+    )

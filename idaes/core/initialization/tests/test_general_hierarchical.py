@@ -21,84 +21,18 @@ from pyomo.environ import Block, ConcreteModel, Constraint, value, Var
 from idaes.core.initialization.general_hierarchical import (
     SingleControlVolumeUnitInitializer,
 )
-from idaes.core.initialization.initializer_base import InitializationStatus
-import idaes.logger as idaeslog
+
 from idaes.core.util.exceptions import InitializationError
 
-from idaes.core import FlowsheetBlock
-from idaes.models.unit_models.cstr import CSTR
-from idaes.models.properties.examples.saponification_thermo import (
-    SaponificationParameterBlock,
-)
-from idaes.models.properties.examples.saponification_reactions import (
-    SaponificationReactionParameterBlock,
-)
 
 __author__ = "Andrew Lee"
-
-
-@pytest.mark.integration
-def test_workflow():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
-
-    m.fs.properties = SaponificationParameterBlock()
-    m.fs.reactions = SaponificationReactionParameterBlock(
-        property_package=m.fs.properties
-    )
-
-    m.fs.unit = CSTR(
-        property_package=m.fs.properties,
-        reaction_package=m.fs.reactions,
-        has_equilibrium_reactions=False,
-        has_heat_transfer=True,
-        has_heat_of_reaction=True,
-        has_pressure_change=True,
-    )
-
-    m.fs.unit.inlet.flow_vol.fix(1.0e-03)
-    m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-    m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-    m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-    m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-    m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
-
-    m.fs.unit.inlet.temperature.fix(303.15)
-    m.fs.unit.inlet.pressure.fix(101325.0)
-
-    m.fs.unit.volume.fix(1.5e-03)
-    m.fs.unit.heat_duty.fix(0)
-    m.fs.unit.deltaP.fix(0)
-
-    initializer = SingleControlVolumeUnitInitializer()
-    initializer.initialize(m.fs.unit)
-
-    assert initializer.summary[m.fs.unit]["status"] == InitializationStatus.Ok
-
-    assert value(m.fs.unit.outlet.flow_vol[0]) == pytest.approx(1e-3, rel=1e-6)
-    assert value(m.fs.unit.outlet.conc_mol_comp[0, "H2O"]) == pytest.approx(
-        55388, rel=1e-6
-    )
-    assert value(m.fs.unit.outlet.conc_mol_comp[0, "NaOH"]) == pytest.approx(
-        20.316235, rel=1e-6
-    )
-    assert value(m.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]) == pytest.approx(
-        20.316235, rel=1e-6
-    )
-    assert value(m.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]) == pytest.approx(
-        79.684995, rel=1e-6
-    )
-    assert value(m.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]) == pytest.approx(
-        79.684995, rel=1e-6
-    )
-    assert value(m.fs.unit.outlet.temperature[0]) == pytest.approx(304.0856, rel=1e-6)
-    assert value(m.fs.unit.outlet.pressure[0]) == pytest.approx(101325, rel=1e-6)
 
 
 # TODO: Unit testing of methods
 @pytest.mark.unit
 def test_nonstandard_model():
     m = ConcreteModel()
+    m.initialization_order = [m]
 
     initializer = SingleControlVolumeUnitInitializer()
 
@@ -125,144 +59,6 @@ class DummyInit:
 
 
 @pytest.mark.unit
-def test_prepare_plugins_none():
-    m = ConcreteModel()
-    m.initialization_order = [m]
-
-    initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
-
-    args = {"foo": "bar"}
-    subinit, plugin_args = initializer._prepare_plugins(m, args, log)
-
-    assert subinit == {}
-    assert plugin_args == {"foo": "bar"}
-    # Make sure we didn't change the original args
-    assert args == {"foo": "bar"}
-
-
-@pytest.mark.unit
-def test_prepare_plugins_no_args():
-    m = ConcreteModel()
-    m.b = Block()
-    m.initialization_order = [m, m.b]
-
-    initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
-    initializer.add_submodel_initializer(m.b, DummyInit)
-
-    args = {"foo": "bar"}
-    subinit, plugin_args = initializer._prepare_plugins(m, args, log)
-
-    assert len(subinit) == 1
-    assert isinstance(subinit[m.b], DummyInit)
-    assert plugin_args == {"foo": "bar", m.b: {}}
-    assert m.b._test == "default"
-    # Make sure we didn't change the original args
-    assert args == {"foo": "bar"}
-
-
-@pytest.mark.unit
-def test_prepare_plugins_w_args():
-    m = ConcreteModel()
-    m.b = Block()
-    m.initialization_order = [m, m.b]
-
-    initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
-    initializer.add_submodel_initializer(m.b, DummyInit)
-
-    args = {"foo": "bar", m.b: {"output": "checkval"}}
-    subinit, plugin_args = initializer._prepare_plugins(m, args, log)
-
-    assert len(subinit) == 1
-    assert isinstance(subinit[m.b], DummyInit)
-    assert plugin_args == {"foo": "bar", m.b: {"output": "checkval"}}
-    assert m.b._test == "checkval"
-    # Make sure we didn't change the original args
-    assert args == {"foo": "bar", m.b: {"output": "checkval"}}
-
-
-@pytest.mark.unit
-def test_solve_full_model_no_plugins():
-    m = ConcreteModel()
-    m.initialization_order = [m]
-
-    initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
-
-    results = initializer._solve_full_model(m, log, "test_results")
-
-    assert results == "test_results"
-
-
-@pytest.mark.unit
-def test_solve_full_model_w_plugins():
-    m = ConcreteModel()
-    m.b = Block()
-    m.b.v = Var()
-    m.b.c = Constraint(expr=m.b.v == 12)
-
-    m.initialization_order = [m, m.b]
-
-    initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
-
-    results = initializer._solve_full_model(m, log, "test_results")
-
-    assert value(m.b.v) == pytest.approx(12, rel=1e-8)
-    assert isinstance(results, dict)
-    assert "Solution" in results
-
-
-@pytest.mark.unit
-def test_cleanup_none():
-    m = ConcreteModel()
-    m.initialization_order = [m]
-
-    initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
-
-    args = {"foo": "bar"}
-    subinit = {}
-    initializer._cleanup(m, args, subinit, log)
-
-    # No-op - what to assert?
-
-
-@pytest.mark.unit
-def test_cleanup_no_args():
-    m = ConcreteModel()
-    m.b = Block()
-    m.initialization_order = [m, m.b]
-
-    initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
-
-    args = {"foo": "bar", m.b: {}}
-    subinit = {m.b: DummyInit()}
-    initializer._cleanup(m, args, subinit, log)
-
-    assert m.b._test2 == "default"
-
-
-@pytest.mark.unit
-def test_cleanup_w_args():
-    m = ConcreteModel()
-    m.b = Block()
-    m.initialization_order = [m, m.b]
-
-    initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
-
-    args = {"foo": "bar", m.b: {"output": "forty-two"}}
-    subinit = {m.b: DummyInit()}
-    initializer._cleanup(m, args, subinit, log)
-
-    assert m.b._test2 == "forty-two"
-
-
-@pytest.mark.unit
 def test_init_props_0D_no_copy():
     m = ConcreteModel()
     m.control_volume = Block()
@@ -273,15 +69,22 @@ def test_init_props_0D_no_copy():
     m.control_volume.properties_out.v1 = Var()
     m.control_volume.properties_out.v2 = Var()
 
+    def estimate_outlet_state(block, *args, **kwargs):
+        block._estimated = True
+
+    m.control_volume.estimate_outlet_state = types.MethodType(
+        estimate_outlet_state, m.control_volume
+    )
+
     initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
 
     initializer.add_submodel_initializer(m.control_volume.properties_in, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
-    initializer._init_props_0D(m, False)
+    initializer._init_props_0D(m.control_volume, False)
 
     assert m.control_volume.properties_in._initialized
     assert m.control_volume.properties_out._initialized
+    assert m.control_volume._estimated
 
 
 @pytest.mark.unit
@@ -296,11 +99,10 @@ def test_init_props_0D_copy():
     m.control_volume.properties_out.v2 = Var(initialize=7)
 
     initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
 
     initializer.add_submodel_initializer(m.control_volume.properties_in, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
-    initializer._init_props_0D(m, True)
+    initializer._init_props_0D(m.control_volume, True)
 
     assert m.control_volume.properties_in._initialized
     assert not hasattr(m.control_volume.properties_out, "_initialized")
@@ -315,12 +117,19 @@ def test_init_props_1D():
     m.control_volume.properties = Block()
 
     initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
+
+    def estimate_states(block, *args, **kwargs):
+        block._estimated = True
+
+    m.control_volume.estimate_states = types.MethodType(
+        estimate_states, m.control_volume
+    )
 
     initializer.add_submodel_initializer(m.control_volume.properties, DummyInit())
-    initializer._init_props_1D(m)
+    initializer._init_props_1D(m.control_volume)
 
     assert m.control_volume.properties._initialized
+    assert m.control_volume._estimated
 
 
 @pytest.mark.unit
@@ -329,17 +138,22 @@ def test_init_rxns():
     m.control_volume = Block()
     m.control_volume.reactions = Block()
 
+    # Add a constraint that to the reactions that used a var from outside the block
+    m.control_volume.var = Var()
+    m.control_volume.reactions.cons = Constraint(expr=m.control_volume.var == 10)
+
     initializer = SingleControlVolumeUnitInitializer()
     log = initializer.get_logger(m)
 
     initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
-    initializer._init_rxns(m)
+    initializer._init_rxns(m.control_volume)
 
     assert m.control_volume.reactions._initialized
+    assert not m.control_volume.var.fixed
 
 
 @pytest.mark.unit
-def test_initialize_main_model_no_copy():
+def test_initialize_control_volume_no_copy():
     m = ConcreteModel()
     m.control_volume = Block()
     m.control_volume.properties_in = Block()
@@ -361,30 +175,33 @@ def test_initialize_main_model_no_copy():
 
     m.control_volume.properties_in.v1.fix()
 
+    def estimate_outlet_state(block, *args, **kwargs):
+        block._estimated = True
+
+    m.control_volume.estimate_outlet_state = types.MethodType(
+        estimate_outlet_state, m.control_volume
+    )
+
     initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
 
     initializer.add_submodel_initializer(m.control_volume.properties_in, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
 
-    results = initializer._initialize_main_model(m, False, log)
-
-    assert isinstance(results, dict)
-    assert "Solution" in results
+    initializer.initialize_control_volume(m.control_volume, False)
 
     assert value(m.control_volume.properties_in.v1) == pytest.approx(12, rel=1e-5)
-    assert value(m.control_volume.properties_out.v1) == pytest.approx(12, rel=1e-5)
+    assert value(m.control_volume.properties_out.v1) == pytest.approx(6, rel=1e-5)
     assert value(m.control_volume.properties_out.v2) == pytest.approx(7, rel=1e-5)
-    assert value(m.control_volume.reactions.v1) == pytest.approx(6, rel=1e-5)
 
     assert m.control_volume.properties_in._initialized
     assert m.control_volume.properties_out._initialized
     assert m.control_volume.reactions._initialized
+    assert m.control_volume._estimated
 
 
 @pytest.mark.unit
-def test_initialize_main_model_copy():
+def test_initialize_control_volume_copy():
     m = ConcreteModel()
     m.control_volume = Block()
     m.control_volume.properties_in = Block()
@@ -407,28 +224,20 @@ def test_initialize_main_model_copy():
     m.control_volume.properties_in.v1.fix()
 
     initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
 
     initializer.add_submodel_initializer(m.control_volume.properties_in, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
 
-    results = initializer._initialize_main_model(m, True, log)
-
-    assert isinstance(results, dict)
-    assert "Solution" in results
+    initializer.initialize_control_volume(m.control_volume, True)
 
     assert value(m.control_volume.properties_in.v1) == pytest.approx(12, rel=1e-5)
     assert value(m.control_volume.properties_out.v1) == pytest.approx(12, rel=1e-5)
     assert value(m.control_volume.properties_out.v2) == pytest.approx(7, rel=1e-5)
-    assert value(m.control_volume.reactions.v1) == pytest.approx(6, rel=1e-5)
 
     assert m.control_volume.properties_in._initialized
     assert not hasattr(m.control_volume.properties_out, "_initialized")
     assert m.control_volume.reactions._initialized
-
-
-# TODO: init props 1D
 
 
 @pytest.mark.unit
@@ -437,14 +246,13 @@ def test_initialize_submodels_no_order():
     m.initialization_order = []
 
     initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
 
     with pytest.raises(
         InitializationError,
         match="Main model \(unknown\) was not initialized \(no results returned\). "
         "This is likely due to an error in the model.initialization_order.",
     ):
-        initializer._initialize_submodels(m, {}, False, {}, log)
+        initializer.initialize_submodels(m, {}, {}, copy_inlet_state=False)
 
 
 @pytest.mark.unit
@@ -475,16 +283,22 @@ def test_initialize_submodels_no_plugins_no_copy():
 
     m.control_volume.properties_in.v1.fix()
 
+    def estimate_outlet_state(block, *args, **kwargs):
+        block._estimated = True
+
+    m.control_volume.estimate_outlet_state = types.MethodType(
+        estimate_outlet_state, m.control_volume
+    )
+
     initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
 
     initializer.add_submodel_initializer(m.control_volume.properties_in, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
     initializer.add_submodel_initializer(m.plugin, DummyInit())
 
-    initializer._initialize_submodels(
-        m, {m.plugin: {}}, False, {m.plugin: DummyInit()}, log
+    initializer.initialize_submodels(
+        m, {m.plugin: {}}, {m.plugin: DummyInit()}, copy_inlet_state=False
     )
 
     assert value(m.control_volume.properties_in.v1) == pytest.approx(12, rel=1e-5)
@@ -495,6 +309,7 @@ def test_initialize_submodels_no_plugins_no_copy():
     assert m.control_volume.properties_in._initialized
     assert m.control_volume.properties_out._initialized
     assert m.control_volume.reactions._initialized
+    assert m.control_volume._estimated
     assert not hasattr(m.plugin, "_initialized")
     assert not hasattr(m.plugin, "_plugin_initialized")
 
@@ -528,15 +343,14 @@ def test_initialize_submodels_no_plugins_copy():
     m.control_volume.properties_in.v1.fix()
 
     initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
 
     initializer.add_submodel_initializer(m.control_volume.properties_in, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
     initializer.add_submodel_initializer(m.plugin, DummyInit())
 
-    initializer._initialize_submodels(
-        m, {m.plugin: {}}, True, {m.plugin: DummyInit()}, log
+    initializer.initialize_submodels(
+        m, {m.plugin: {}}, {m.plugin: DummyInit()}, copy_inlet_state=True
     )
 
     assert value(m.control_volume.properties_in.v1) == pytest.approx(12, rel=1e-5)
@@ -580,14 +394,13 @@ def test_initialize_submodels_w_plugins_copy():
     m.control_volume.properties_in.v1.fix()
 
     initializer = SingleControlVolumeUnitInitializer()
-    log = initializer.get_logger(m)
 
     initializer.add_submodel_initializer(m.control_volume.properties_in, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.properties_out, DummyInit())
     initializer.add_submodel_initializer(m.control_volume.reactions, DummyInit())
 
-    initializer._initialize_submodels(
-        m, {m.plugin: {}}, True, {m.plugin: DummyInit()}, log
+    initializer.initialize_submodels(
+        m, {m.plugin: {}}, {m.plugin: DummyInit()}, copy_inlet_state=True
     )
 
     assert value(m.control_volume.properties_in.v1) == pytest.approx(12, rel=1e-5)

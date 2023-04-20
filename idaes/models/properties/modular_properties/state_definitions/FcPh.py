@@ -164,7 +164,7 @@ def define_state(b):
         units=pyunits.dimensionless,
     )
 
-    # Add electrolye state vars if required
+    # Add electrolyte state vars if required
     # This must occur before adding the enthalpy constraint, as it needs true
     # species mole fractions
     if b.params._electrolyte:

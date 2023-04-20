@@ -213,7 +213,7 @@ class TestWrapper:
             CoolPropExpressionError,
             match="Found unsupported expression form for "
             "pressure_sat of component TestComp. This likely "
-            "occured due to changes in CoolProp and the "
+            "occurred due to changes in CoolProp and the "
             "interface should be updated.",
         ):
             CoolPropWrapper.pressure_sat_comp.build_parameters(m.TestComp)
@@ -230,7 +230,7 @@ class TestWrapper:
             CoolPropExpressionError,
             match="Found unsupported expression form for "
             "pressure_sat of component TestComp. This likely "
-            "occured due to changes in CoolProp and the "
+            "occurred due to changes in CoolProp and the "
             "interface should be updated.",
         ):
             CoolPropWrapper.pressure_sat_comp.build_parameters(m.TestComp)

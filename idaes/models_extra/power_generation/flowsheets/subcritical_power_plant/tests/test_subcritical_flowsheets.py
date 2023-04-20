@@ -55,13 +55,13 @@ def test_subcritical_boiler():
         + m.fs_main.fs_blr.Attemp.Water_inlet.flow_mol[0]
     )
     # FEGT temperature
-    assert pytest.approx(1399.9583, rel=1e-5) == pyo.value(
+    assert pytest.approx(1399.96, rel=1e-5) == pyo.value(
         m.fs_main.fs_blr.aBoiler.flue_gas_outlet.temperature[0]
     )
-    assert pytest.approx(329148469.4485, rel=1e-5) == pyo.value(
+    assert pytest.approx(329144395, rel=1e-5) == pyo.value(
         m.fs_main.fs_blr.aBoiler.heat_total_ww[0]
     )
-    assert pytest.approx(418839867.42785, rel=1e-5) == pyo.value(
+    assert pytest.approx(418839867, rel=1e-5) == pyo.value(
         m.fs_main.fs_blr.aBoiler.heat_total[0]
     )
 
@@ -74,19 +74,19 @@ def test_subcritical_boiler_dynamic():
     assert pytest.approx(1399.9583, rel=1e-5) == pyo.value(
         m.fs_main.fs_blr.aBoiler.flue_gas_outlet.temperature[0]
     )
-    assert pytest.approx(329148469.4568, rel=1e-5) == pyo.value(
+    assert pytest.approx(329144395, rel=1e-5) == pyo.value(
         m.fs_main.fs_blr.aBoiler.heat_total_ww[0]
     )
-    assert pytest.approx(418839867.42785, rel=1e-5) == pyo.value(
+    assert pytest.approx(418839867, rel=1e-5) == pyo.value(
         m.fs_main.fs_blr.aBoiler.heat_total[0]
     )
     assert pytest.approx(1408.9636, rel=1e-5) == pyo.value(
         m.fs_main.fs_blr.aBoiler.flue_gas_outlet.temperature[60]
     )
-    assert pytest.approx(334512549.5052, rel=1e-5) == pyo.value(
+    assert pytest.approx(334508402, rel=1e-5) == pyo.value(
         m.fs_main.fs_blr.aBoiler.heat_total_ww[60]
     )
-    assert pytest.approx(426313190.1620, rel=1e-5) == pyo.value(
+    assert pytest.approx(426313190, rel=1e-5) == pyo.value(
         m.fs_main.fs_blr.aBoiler.heat_total[60]
     )
 

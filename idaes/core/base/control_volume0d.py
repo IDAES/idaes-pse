@@ -57,7 +57,7 @@ _log = idaeslog.getLogger(__name__)
 
     ControlVolume0DBlock should be used for any control volume with a defined
     volume and distinct inlets and outlets which does not require spatial
-    discretization. This encompases most basic unit models used in process
+    discretization. This encompasses most basic unit models used in process
     modeling.""",
 )
 class ControlVolume0DBlockData(ControlVolumeBlockData):
@@ -226,6 +226,13 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     )
 
         if has_phase_equilibrium:
+            # First, check that phase equilibrium makes sense
+            if len(self.config.property_package.phase_list) < 2:
+                raise ConfigurationError(
+                    "Property package has only one phase; control volume cannot include phase "
+                    "equilibrium terms. Some property packages support phase equilibrium "
+                    "implicitly in which case additional terms are not necessary."
+                )
             # Check that state blocks are set to calculate equilibrium
             for t in self.flowsheet().time:
                 if not self.properties_out[t].config.has_phase_equilibrium:

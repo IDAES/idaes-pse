@@ -166,7 +166,7 @@ def test_scale_arcs(caplog):
     m.y[3] = 13
     m.y[4] = 14
 
-    # for all the arc constraints the differnce is 1 the scale factor is the
+    # for all the arc constraints the difference is 1 the scale factor is the
     # smallest scale factor for variables in a constraint.  Make sure the
     # constraints are scaled as expected.
     assert abs(m.arcs_expanded[1].x_equality.body()) == 5
@@ -268,7 +268,7 @@ def test_calculate_scaling_factors():
            / \
           f   g
     """
-    o = []  # list of compoent names in the order their calculate_scaling_factors
+    o = []  # list of component names in the order their calculate_scaling_factors
 
     # method is called
     def rule(blk):
@@ -684,6 +684,15 @@ class TestSingleConstraintScalingTransform:
         sc.constraint_scaling_transform_undo(model.c3)
         assert model.c3.lower.value == pytest.approx(1e3)
         assert model.c3.body() == pytest.approx(model.x.value)
+
+    @pytest.mark.unit
+    def test_remove_units(self, model):
+        sc.constraint_scaling_transform(model.c2, 1e-3 * pyo.units.m)
+        assert model.c2.lower.value == pytest.approx(1)
+        assert model.c2.body() == pytest.approx(model.x.value / 1e3)
+        assert model.c2.upper.value == pytest.approx(1)
+        assert sc.get_constraint_transform_applied_scaling_factor(model.c2) == 1e-3
+        assert model.constraint_transformed_scaling_factor[model.c2] == 1e-3
 
 
 class TestScaleSingleConstraint:
