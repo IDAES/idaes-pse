@@ -404,7 +404,14 @@ class InitializerBase:
                 _append_uninit_vars(model)
 
             # Next check for unconverged equality constraints
-            uninit_const = large_residuals_set(model, self.config.constraint_tolerance)
+            uninit_const = large_residuals_set(
+                model, self.config.constraint_tolerance, return_residual_values=True
+            )
+
+            try:
+                max_res = max(i for i in uninit_const.values() if i is not None)
+            except ValueError:
+                max_res = "N/A"
 
             self._update_summary(model, "uninitialized_vars", uninit_vars)
             self._update_summary(model, "unconverged_constraints", uninit_const)
@@ -414,7 +421,7 @@ class InitializerBase:
                 raise InitializationError(
                     f"{model.name} failed to initialize successfully: uninitialized variables or "
                     f"unconverged equality constraints detected. Please check postcheck summary "
-                    f"for more information."
+                    f"for more information (largest residual above tolerance ={max_res})."
                 )
 
         self._update_summary(model, "status", InitializationStatus.Ok)
