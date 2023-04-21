@@ -46,6 +46,10 @@ from idaes.models.properties.general_helmholtz.components import (
     surface_tension_available,
     component_registered,
 )
+from idaes.models.properties.general_helmholtz.components.parameters import (
+    get_parameter_path,
+    auto_register,
+)
 import idaes.logger as idaeslog
 from idaes.models.properties.general_helmholtz.helmholtz_functions_map import (
     external_function_map as _external_function_map,
@@ -54,8 +58,9 @@ from idaes.models.properties.general_helmholtz.helmholtz_functions_map import (
 
 _log = idaeslog.getLogger(__name__)
 
-_data_dir = os.path.join(idaes.bin_directory, "helm_data")
+_data_dir = get_parameter_path()
 _data_dir = os.path.join(_data_dir, "")
+auto_register()
 
 # General Helmholtz functions return variables for all phases,
 # but single phase properties do not need all of these.

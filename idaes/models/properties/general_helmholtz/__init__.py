@@ -26,3 +26,7 @@ from .helmholtz_state import (
     HelmholtzStateBlockData,
     HelmholtzEoSInitializer,
 )
+from idaes.models.properties.general_helmholtz.components.parameters import (
+    get_parameter_path,
+    set_parameter_path,
+)

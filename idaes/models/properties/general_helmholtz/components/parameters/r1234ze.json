@@ -1,0 +1,212 @@
+{
+    "full_name": "R1234ze(e)",
+    "comp": "r1234ze",
+    "basic": {
+        "R": 0.07290727,
+        "MW": 114.0416,
+        "T_star": 382.513,
+        "rho_star": 489.238,
+        "Tc": 382.513,
+        "rhoc": 489.238,
+        "Pc": 3634.86,
+        "Tt": 169.0,
+        "Pt": 0.228564,
+        "rhot_l": 1510.76,
+        "rhot_v": 0.0185566,
+        "P_min": 1e-9,
+        "P_max": 5e5,
+        "rho_max" :2500.0,
+        "T_min": 150,
+        "T_max": 1300
+    },
+    "eos": {
+        "reference": [
+            "Monika Thol and Eric W. Lemmon. Equation of State for the Thermodynamic",
+            "    Properties of trans-1,3,3,3-Tetrafluoropropene [R-1234ze(E)]. Int. J.",
+            "    Thermophys, 37(3):1–16, 2016. doi:10.1007/s10765-016-2040-6."
+        ],
+        "c": {
+            "6": 2,
+            "7": 2,
+            "8": 1,
+            "9": 2,
+            "10": 1
+        },
+        "d": {
+            "1": 4,
+            "2": 1,
+            "3": 1,
+            "4": 2,
+            "5": 3,
+            "6": 1,
+            "7": 3,
+            "8": 2,
+            "9": 2,
+            "10": 7,
+            "11": 1,
+            "12": 1,
+            "13": 3,
+            "14": 3,
+            "15": 2,
+            "16": 1
+        },
+        "t": {
+            "1": 1.0,
+            "2": 0.223,
+            "3": 0.755,
+            "4": 1.24,
+            "5": 0.44,
+            "6": 2.0,
+            "7": 2.2,
+            "8": 1.2,
+            "9": 1.5,
+            "10": 0.9,
+            "11": 1.33,
+            "12": 1.75,
+            "13": 2.11,
+            "14": 1.0,
+            "15": 1.5,
+            "16": 1.0
+        },
+        "n": {
+            "1": 0.03982797,
+            "2": 1.812227,
+            "3": -2.537512,
+            "4": -0.5333254,
+            "5": 0.1677031,
+            "6": -1.323801,
+            "7": -0.6694654,
+            "8": 0.8072718,
+            "9": -0.7740229,
+            "10": -0.01843846,
+            "11": 1.407916,
+            "12": -0.4237082,
+            "13": -0.2270068,
+            "14": -0.805213,
+            "15": 0.00994318,
+            "16": -0.008798793
+        },
+        "a": {
+            "11": 1.0,
+            "12": 1.61,
+            "13": 1.24,
+            "14": 9.34,
+            "15": 5.78,
+            "16": 3.08
+        },
+        "b": {
+            "11": 1.21,
+            "12": 1.37,
+            "13": 0.98,
+            "14": 171.0,
+            "15": 47.4,
+            "16": 15.4
+        },
+        "g": {
+            "11": 0.943,
+            "12": 0.642,
+            "13": 0.59,
+            "14": 1.2,
+            "15": 1.33,
+            "16": 0.64
+        },
+        "e": {
+            "11": 0.728,
+            "12": 0.87,
+            "13": 0.855,
+            "14": 0.79,
+            "15": 1.3,
+            "16": 0.71
+        },
+        "n0": {
+            "1": -12.558347537,
+            "2": 8.7912297624,  
+            "3": 3.0, 
+            "4": 9.3575, 
+            "5": 10.717
+        },
+        "g0": {
+            "4": 1.3411308896691094,
+            "5": 5.155380340014588
+        },
+        "last_term_ideal": 5,
+        "last_term_residual": [5, 10, 16],
+        "phi_ideal_type": 1,
+        "phi_residual_type": 2
+    },
+    "aux": {
+        "reference": [
+            "Monika Thol and Eric W. Lemmon. Equation of State for the Thermodynamic",
+            "    Properties of trans-1,3,3,3-Tetrafluoropropene [R-1234ze(E)]. Int. J.",
+            "    Thermophys, 37(3):1–16, 2016. doi:10.1007/s10765-016-2040-6."
+        ],
+        "delta_l_sat_approx": {
+            "c": 1,
+            "n": {
+                "1": 1.1913,
+                "2": 2.2456,
+                "3": -1.7747,
+                "4": 1.3096
+            },
+            "t": {
+                "1": 0.27,
+                "2": 0.7,
+                "3": 1.25,
+                "4": 1.9
+            },
+            "type": 1
+        },
+        "delta_v_sat_approx": {
+            "c": 1,
+            "n": {
+                "1": -1.0308,
+                "2": -5.0422,
+                "3": -11.5,
+                "4": -37.499,
+                "5": -77.945
+            },
+            "t": {
+                "1": 0.24,
+                "2": 0.72,
+                "3": 2.1,
+                "4": 4.8,
+                "5": 9.5
+            },
+            "type": 2
+        }
+    },
+    "transport": {
+        "thermal_conductivity": {
+            "reference": [
+                "Richard A. Perkins and Marcia L. Huber. Measurement and Correlation of the Thermal",
+                "    Conductivity of 2,3,3,3-Tetrafluoroprop-1-ene (R1234yf) and",
+                "    trans-1,3,3,3-Tetrafluoropropene (R1234ze(E)). J. Chem. Eng. Data, 56:4868–4874,",
+                "   2011. doi:10.1021/je200811n."
+            ]
+        },
+        "viscosity": {
+            "reference": [
+                "Huber ML, Assael MJ. Correlations for the Viscosity of 2,3,3,3-Tetrafluoroprop-1-ene",
+                "    (R1234yf) and trans-1,3,3,3-Tetrafluoropropene (R1234ze(E)). Int J Refrig.",
+                "    2016; 71:39-45. doi:10.1016/j.ijrefrig.2016.08.007"
+            ]
+        },
+        "surface_tension": {
+            "reference": [
+                "Mulero, A., Cachadina, I., Recommended Correlations for the Surface Tension of Several",
+                "    Fluids Included in the REFPROP Program. Journal of Physical and Chemical Reference Data",
+                "    2014, doi:10.1063/1.4878755"
+            ],
+            "Tc": 382.51,
+            "s": {
+                "0": 61.58,
+                "1": 824.7
+            },
+            "n": {
+                "0": 1.281,
+                "1": 6.505
+            },
+            "type": 1
+        }
+    }
+}

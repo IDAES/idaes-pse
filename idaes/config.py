@@ -219,6 +219,33 @@ def _new_idaes_config_block():
         ),
     )
     cfg.declare(
+        "properties",
+        pyomo.common.config.ConfigBlock(
+            implicit=False,
+            description="Physical property method configuration block",
+            doc="Physical property method configuration block",
+        ),
+    )
+    cfg["properties"].declare(
+        "helmholtz",
+        pyomo.common.config.ConfigBlock(
+            implicit=False,
+            description="Helmholtz equation of state configuration block",
+            doc="Helmholtz equation of state configuration block",
+        ),
+    )
+    cfg["properties"]["helmholtz"].declare(
+        "parameter_file_path",
+        pyomo.common.config.ConfigValue(
+            domain=str,
+            default=None,
+            description="Helmholtz parameter file path",
+            doc="Helmholtz parameter file path, if None use default based on "
+            "IDAES install location",
+        ),
+    )
+
+    cfg.declare(
         "ipopt",
         pyomo.common.config.ConfigBlock(
             implicit=False,
@@ -226,7 +253,6 @@ def _new_idaes_config_block():
             doc="Default config for 'ipopt' solver",
         ),
     )
-
     cfg["ipopt"].declare(
         "options",
         pyomo.common.config.ConfigBlock(
