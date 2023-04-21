@@ -27,7 +27,7 @@ property packages is provided in the
 
 Since the effort to develop a custom property package is substantial, the IDAES modeling
 framework provides a
-:ref:`Generic Property Package Framework<explanations/components/property_package/general/index:Generic Property Package Framework>`
+:ref:`Modular Property Package Framework<explanations/components/property_package/general/index:Modular Property Package Framework>`
 and :ref:`Generic Reaction Package Framework<explanations/components/property_package/general_reactions/index:Generic Reaction Package Framework>`
 to make it easier to create a package for common property and reaction models.
 
@@ -117,14 +117,14 @@ The add_properties metadata can also indicate that a property should always be p
 (i.e. constructed in the BlockData's build method) by setting the method to `None`, or that it is
 not supported by setting the method to `False`.
 
-Generic Property Package Framework
+Modular Property Package Framework
 ----------------------------------
 
 Property packages represent the core of any process model, and having a suitable property
 package is key to successfully modeling any process system. However, developing property
 packages is a significant challenge even for experienced modelers as they involve large numbers
 of tightly coupled constraints and parameters. The
-:ref:`Generic Property Package Framework<explanations/components/property_package/general/index:Generic Property Package Framework>`
+:ref:`Modular Property Package Framework<explanations/components/property_package/general/index:Modular Property Package Framework>`
 was designed to help users build property packages with the least effort possible by levarging libraries
 of modular sub-models that include common types of property calculations.
 
