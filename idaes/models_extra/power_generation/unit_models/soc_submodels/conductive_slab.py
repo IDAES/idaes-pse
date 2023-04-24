@@ -40,7 +40,7 @@ Instances of ``Var`` that must be fixed:
 
 __author__ = "John Eslick, Douglas Allan"
 
-from pyomo.common.config import ConfigValue
+from pyomo.common.config import ConfigValue, Bool
 from pyomo.dae import DerivativeVar
 import pyomo.environ as pyo
 
@@ -61,6 +61,14 @@ class SocConductiveSlabData(UnitModelBlockData):
             description="List containing coordinates of control volume faces "
             "in x direction. Coordinates must start with zero, be strictly "
             "increasing, and end with one"
+        ),
+    )
+    CONFIG.declare(
+        "voltage_drop_custom",
+        ConfigValue(
+            domain=Bool,
+            default=False,
+            description="If True, add voltage_drop_custom Var to be connected to degradation models",
         ),
     )
 
@@ -113,6 +121,14 @@ class SocConductiveSlabData(UnitModelBlockData):
         self.resistivity_thermal_exponent_dividend = pyo.Var(
             doc="Parameter divided by temperature in exponential", units=pyo.units.K
         )
+        if self.config.voltage_drop_custom:
+            self.voltage_drop_custom = pyo.Var(
+                tset,
+                ixnodes,
+                iznodes,
+                units=pyo.units.volts,
+                doc="Custom voltage drop term for degradation modeling",
+            )
 
         # Parameters
         self.heat_capacity = pyo.Var(
@@ -263,7 +279,13 @@ class SocConductiveSlabData(UnitModelBlockData):
 
         @self.Expression(tset, ixnodes, iznodes)
         def voltage_drop(b, t, ix, iz):
-            return b.current[t, iz] * b.resistance[t, ix, iz]
+            if self.config.voltage_drop_custom:
+                return (
+                    b.current[t, iz] * b.resistance[t, ix, iz]
+                    + b.voltage_drop_custom[t, ix, iz]
+                )
+            else:
+                return b.current[t, iz] * b.resistance[t, ix, iz]
 
         @self.Expression(tset, iznodes)
         def resistance_total(b, t, iz):
