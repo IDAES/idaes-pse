@@ -214,10 +214,9 @@ class WriteParameters(object):
         except KeyError:  # No surface tension to add
             pass
 
-
     def calculate_pressure(self, rho, T):
         """From the expressions provided, calculate pressure from density and
-        temperature. This can be used for testing and calculating the critical 
+        temperature. This can be used for testing and calculating the critical
         pressure based on the critical temperature and density.
 
         Args:
@@ -268,7 +267,7 @@ class WriteParameters(object):
         to NL files to be used by external functions.
 
         Args:
-            expressions (dict): Dictionary where the key is an expression name and the 
+            expressions (dict): Dictionary where the key is an expression name and the
                 value is a Pyomo expression.
 
         Returns:
@@ -292,7 +291,7 @@ class WriteParameters(object):
             self.has_expression.append(name)
 
     def approx_sat_curves(self, trange):
-        """Prints a table to verify that the approximate saturated density curves 
+        """Prints a table to verify that the approximate saturated density curves
         are correct.  Since the approximate curves are used as an initial guess to
         the phase equilibrium problems, they are not directly testable.
 
@@ -300,7 +299,7 @@ class WriteParameters(object):
             trange (iterable): temperature points in K
 
         Returns:
-            None 
+            None
         """
         print("\n=====================================================================")
         print(" Check approx sat delta curves")
@@ -336,7 +335,7 @@ class WriteParameters(object):
             h0 (float): Enthalpy at new reference state [kJ/kg]
 
         Returns:
-            (tuple): Offset for given reference state 
+            (tuple): Offset for given reference state
         """
         self.model.tau = tau
         self.model.delta = delta
@@ -359,7 +358,7 @@ class WriteParameters(object):
         return (n1_off, n2_off)
 
     def write_model(self, model, model_name, expressions=None):
-        """Write an NL file and create an expression and variable map for the EoS model or just a 
+        """Write an NL file and create an expression and variable map for the EoS model or just a
         variable map for transport property expressions where there is only one expression per file.
 
         Args:
@@ -367,7 +366,7 @@ class WriteParameters(object):
             model_name (str): the model name used in the NL file
 
         Returns:
-            tuple: NL file, expression map, variable map for EOS or NL file, variable map for 
+            tuple: NL file, expression map, variable map for EOS or NL file, variable map for
                 models with one expression
         """
         nl_file, smap_id = model.write(f"{self.comp}_expressions_{model_name}.nl")
