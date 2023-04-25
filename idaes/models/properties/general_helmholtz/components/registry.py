@@ -15,10 +15,6 @@
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
-import os
-import idaes
-
-
 _components = {}
 
 

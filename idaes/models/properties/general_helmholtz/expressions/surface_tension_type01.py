@@ -13,8 +13,6 @@
 
 __author__ = "John Eslick"
 
-import pyomo.environ as pyo
-
 
 def surface_tension_type01(model, parameters):
     s = parameters["transport"]["surface_tension"]["s"]
