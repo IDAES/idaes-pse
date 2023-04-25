@@ -23,5 +23,14 @@ Unit Model Initializers
 
 The following unit models have custom ``Initializers`` available for use:
 
+* Feed
+* 0D Heat Exchanger
+* 1D Heat Exchanger
+    * Shell and Tube Heat Exchanger
 
+* NTU Heat Exchanger
+* Mixer
+* Isentropic Pressure Changer
+* Product
+* Separator
 
