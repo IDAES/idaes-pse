@@ -61,7 +61,7 @@ def auto_register():
             elif expr == "visc":
                 visc_set.add(rematch.groups()[0])
         else:
-            rematch = re.fullmatch(r"(...).json", fname)
+            rematch = re.fullmatch(r"(.*).json", fname)
             eos_ref = None
             thermal_conductivity_ref = None
             viscosity_ref = None

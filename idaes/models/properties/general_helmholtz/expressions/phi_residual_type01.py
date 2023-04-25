@@ -17,14 +17,14 @@ import pyomo.environ as pyo
 
 
 def phi_residual_expressions_type01(model, parameters):
-    last_term = parameters["eos"]["last_term_residual"]
+    last_terms = parameters["eos"]["last_term_residual"]
     n = parameters["eos"]["n"]
     t = parameters["eos"]["t"]
     d = parameters["eos"]["d"]
     c = parameters["eos"]["c"]
     first_term = 1
     rng = []
-    for last_term in last_term:
+    for last_term in last_terms:
         rng.append(range(first_term, last_term + 1))
         first_term = last_term + 1
     return {

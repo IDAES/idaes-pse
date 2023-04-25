@@ -191,10 +191,10 @@ def viscosity_rule(mvisc):
 
 
 def main():
-    # Viscosity Parameters
+    """Generate property and expression files.
+    """
 
     we = WriteParameters(parameters="h2o.json")
-    mvisc = we.model_visc
     we.add(
         {
             "viscosity": viscosity_rule,

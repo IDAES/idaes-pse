@@ -10,14 +10,14 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""This provides functions to create and check Helmholtz equation of state 
+"""This provides functions to create and check Helmholtz equation of state
 parameter and expression files.
 """
 
+import logging
 import json
 import numpy
 import pyomo.environ as pyo
-import logging
 
 from idaes.models.properties.general_helmholtz.expressions import (
     phi_residual_types,
@@ -34,7 +34,7 @@ def _parse_int_key(pairs):
     keys to integers or integer tuples if possible
     """
     d = {}
-    for i, x in enumerate(pairs):
+    for x in pairs:
         try:
             if x[0][0] == "(" and x[0][-1] == ")":
                 d[tuple(map(int, map(str.strip, x[0][1:-1].split(","))))] = x[1]
@@ -366,8 +366,7 @@ class WriteParameters(object):
             model_name (str): the model name used in the NL file
 
         Returns:
-            tuple: NL file, expression map, variable map for EOS or NL file, variable map for
-                models with one expression
+            tuple: NL file, expression map, variable map for EOS
         """
         nl_file, smap_id = model.write(f"{self.comp}_expressions_{model_name}.nl")
         for v in model.component_data_objects(pyo.Var):
@@ -386,7 +385,7 @@ class WriteParameters(object):
                     j = int(s[1:])
                     expr_map[i] = j
             return nl_file, expr_map, var_map
-        return nl_file, var_map
+        return nl_file, None, var_map
 
     def write(self):
         """Write the parameter and expression files, and print some diagnostics."""
@@ -435,7 +434,7 @@ class WriteParameters(object):
         for name, short_name in self.optional_expressions.items():
             if name in self.has_expression:
                 model = getattr(self, f"model_{short_name}")
-                nl_file, var_map = self.write_model(model, short_name)
+                nl_file, _, var_map = self.write_model(model, short_name)
                 param_dict[f"nl_file_{short_name}"] = nl_file
                 param_dict[f"var_map_{short_name}"] = var_map
                 param_dict[f"have_{short_name}"] = True

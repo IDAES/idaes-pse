@@ -10,12 +10,11 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""Generate parameter and expression files for r1234ze(e) 
+"""Generate parameter and expression files for r1234ze(e)
 """
 
 __author__ = "John Eslick"
 
-import pyomo.environ as pyo
 from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
     WriteParameters,
 )
@@ -46,8 +45,6 @@ def thermal_conductivity_rule(m):
         (5, 1): -0.00301838,
         (5, 2): 0.00210190,
     }
-    T = m.T_star / m.tau
-    rho = m.delta * m.rho_star
     Tred = 1.0 / m.tau
     l0 = sum(ai * Tred**i for i, ai in enumerate(a))
     lr = sum(m.delta**i * (b[i, 1] + b[i, 2] * Tred) for i in range(1, 6))
@@ -97,7 +94,6 @@ def viscosity_rule(m):
     rho = m.delta * m.rho_star / m.MW * 1000
     eok = 340
     sigma = 5.017e-1
-    M = 114.0415928
     NA = 6.0221408e23
     Ts = T / eok
     eta0 = (a[0] + a[1] * T + a[2] * T**2 + a[3] * T**3) / (
@@ -131,6 +127,8 @@ def viscosity_rule(m):
 
 
 def main():
+    """Generate parameter and expression files
+    """
     we = WriteParameters(parameters="r1234ze.json")
 
     we.add(

@@ -2,40 +2,17 @@ Pure Component Helmholtz EoS
 ============================
 
 .. index::
-  pair: idaes.models.properties.helmholtz.helmholtz; HelmholtzStateBlock
+  pair: idaes.models.properties.general_helmholtz.helmholtz_state; HelmholtzStateBlock
 
-.. module:: idaes.models.properties.helmholtz.helmholtz
+.. module:: idaes.models.properties.general_helmholtz
 
 The Helmholtz Equation of State (EoS) classes serve as a common core for pure
-component property packages where very accurate and thermodynamically consistent
-pure component properties are required. This contains general information.
-Thermodynamic properties for all Helmholtz EoS packages are calculated by the core
-class only the parameters differ between specific component implementation.
-Specific implementations may also contain additional properties such as viscosity
-and thermal conductivity. For specific property packages details see the pages below.
+component property packages where accurate and thermodynamically consistent
+pure component properties are required. New substances can be added by providing 
+parameter files.  These Helmholtz EoS functions use ExternalFunction, so the IDAES
+binary extensions are required.
 
-.. toctree::
-    :maxdepth: 1
 
-    iapws95
-    swco2
-
-The basic Helmholtz EoS is described :ref:`"Revised Release on the IAPWS Formulation
-1995 for the Thermodynamic Properties of Ordinary Water Substance for General and
-Scientific Use." <iapws-2016>`.  The Helmholtz EoS as used in the IAPWS-95 contains
-non-analytic terms to improve accuracy near the critical point.  These terms, however
-cause a singularity at the critical point and can causes computational difficulty,
-so the non-analytic where omitted in the IDAES implementation.
-
-The IDAES implementation is of the Helmholtz EoS makes use of external function
-for many of the properties.  Solving the VLE and changing state variables require
-solution of non-linear equations with multiple solutions, so solving then externally
-provides a method of decomposition where it can be guaranteed that the nonlinear
-equations associated with the Helmholtz EoS are solved correctly. The external
-functions provide first and second derivatives, and are compatible with
-advanced optimization solvers.  Phase change does cause problems to be non-smooth,
-but, as a practical matter, problem using the IDAES implementation of the Helmholtz
-EoS, still seem to solve well even with phase change.
 
 Units
 -----

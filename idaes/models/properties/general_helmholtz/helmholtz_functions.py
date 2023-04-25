@@ -30,7 +30,6 @@ import numpy as np
 import pyomo.environ as pyo
 from pyomo.common.fileutils import find_library
 from pyomo.common.config import ConfigValue, In
-import idaes
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core import declare_process_block_class
 from idaes.core import (
