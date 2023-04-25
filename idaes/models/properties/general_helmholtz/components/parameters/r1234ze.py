@@ -1,21 +1,19 @@
-########################################################################################
-#                                                                                      #
-# R1234ZE EOS Expressions and Parameters:                                              #
-#                                                                                      #
-# Monika Thol and Eric W. Lemmon. "Equation of State for the Thermodynamic             #
-#   Properties of trans-1,3,3,3-Tetrafluoropropene [R-1234ze(E)]." Int. J.             #
-#   Thermophys, 37(3):1–16, 2016. doi:10.1007/s10765-016-2040-6.                       #
-#                                                                                      #
-# Richard A. Perkins and Marcia L. Huber. Measurement and Correlation of the Thermal   #
-#   Conductivity of 2,3,3,3-Tetrafluoroprop-1-ene (R1234yf) and                        #
-#   trans-1,3,3,3-Tetrafluoropropene (R1234ze(E)). J. Chem. Eng. Data, 56:4868–4874,   #
-#   2011. doi:10.1021/je200811n.                                                       #
-#                                                                                      #
-# Huber ML, Assael MJ. Correlations for the Viscosity of 2,3,3,3-Tetrafluoroprop-1-ene #
-#   (R1234yf) and trans-1,3,3,3-Tetrafluoropropene (R1234ze(E)). Int J Refrig.         #
-#   2016; 71:39-45. doi:10.1016/j.ijrefrig.2016.08.007                                 #
-#                                                                                      #
-########################################################################################
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES).
+#
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
+#################################################################################
+"""Generate parameter and expression files for r1234ze(e) 
+"""
+
+__author__ = "John Eslick"
 
 import pyomo.environ as pyo
 from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
@@ -24,6 +22,13 @@ from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
 
 
 def thermal_conductivity_rule(m):
+    """Thermal Conductivity
+
+    Richard A. Perkins and Marcia L. Huber. Measurement and Correlation of the Thermal
+        Conductivity of 2,3,3,3-Tetrafluoroprop-1-ene (R1234yf) and
+        trans-1,3,3,3-Tetrafluoropropene (R1234ze(E)). J. Chem. Eng. Data, 56:4868–4874,
+        2011. doi:10.1021/je200811n.
+    """
     a = [
         -0.0103589,
         0.0308929,
@@ -51,6 +56,13 @@ def thermal_conductivity_rule(m):
 
 
 def viscosity_rule(m):
+    """Viscosity rule
+
+    Huber ML, Assael MJ. Correlations for the Viscosity of 2,3,3,3-Tetrafluoroprop-1-ene
+        (R1234yf) and trans-1,3,3,3-Tetrafluoropropene (R1234ze(E)). Int J Refrig.
+        2016; 71:39-45. doi:10.1016/j.ijrefrig.2016.08.007
+    """
+
     a = [
         -963382,
         9614.09,

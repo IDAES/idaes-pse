@@ -1,24 +1,19 @@
-##################################################################################
-#                                                                                #
-# CO2 EOS Expressions and Parameters:                                            #
-#                                                                                #
-# Span, R., and W. Wanger (1996). "A New Equation of State for Carbon Dioxide    #
-#     Covering the Fluid Region from the Triple-Point Temperature to 1100 K as   #
-#     Pressures up to 800 MPa." Journal of Physical and Chemical Reference Data, #
-#     25, 1509.                                                                  #
-#                                                                                #
-# Vesovic, V., W.A. Wakeham, G.A. Olchowy, J.V. Sengers, J.T.R. Watson, J.       #
-#     Millat, (1990). "The transport properties of carbon dioxide." J. Phys.     #
-#     Chem. Ref. Data, 19, 763-808.                                              #
-#                                                                                #
-# Fenghour, A., W.A. Wakeham, V. Vesovic, (1998). "The Viscosity of Carbon       #
-#     Dioxide." J. Phys. Chem. Ref. Data, 27, 31-44.                             #
-#                                                                                #
-# Mulero, A., I. Cachadina, Parra, M., "Recommended Correlations for the         #
-#     Surface Tension of Common Fluids," J. Phys. Chem. Ref. Data 41, 043105     #
-#     (2012).                                                                    #
-#                                                                                #
-##################################################################################
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES).
+#
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
+#################################################################################
+"""Generate parameter and expression files for CO2 
+"""
+
+__author__ = "John Eslick"
 
 import pyomo.environ as pyo
 from idaes.core.util.math import smooth_max
@@ -28,6 +23,11 @@ from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
 
 
 def thermal_conductivity_rule(m):
+    """Thermal conductivity rule
+
+    Fenghour, A., W.A. Wakeham, V. Vesovic, (1998). "The Viscosity of Carbon
+        Dioxide." J. Phys. Chem. Ref. Data, 27, 31-44.
+    """
     b = {
         0: 0.4226159,
         1: 0.6280115,
@@ -68,6 +68,11 @@ def thermal_conductivity_rule(m):
 
 
 def viscosity_rule(m):
+    """Viscosity rule
+
+    Fenghour, A., W.A. Wakeham, V. Vesovic, (1998). "The Viscosity of Carbon
+        Dioxide." J. Phys. Chem. Ref. Data, 27, 31-44.
+    """
     a = {
         0: 0.235156,
         1: -0.491266,
@@ -93,13 +98,6 @@ def viscosity_rule(m):
         + d[4] * rho**8
         + d[5] * rho**8 / Ts
     )
-
-
-def surface_tension_rule(m):
-    x = smooth_max(1 - 1 / m.tau * m.T_star / m.Tc, 0, 1e-8)
-    sigma = {0: 0.07863}
-    n = {0: 2.471}
-    return sum(sigma[i] * x ** n[i] for i in n) * 1000
 
 
 def main():

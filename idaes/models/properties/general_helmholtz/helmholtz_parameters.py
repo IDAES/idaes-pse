@@ -60,8 +60,7 @@ class WriteParameters(object):
     }
 
     # Dictionary used to track the location of expressions in NL files.
-    expressions = {  # these are expressions in the thermo model. Other models
-        # are separate
+    expressions = {
         # phi is dimensionless Helmholtz free energy
         "phii": 0,  # ideal part of phi(delta, tau)
         "phii_d": 1,  # ideal part of phi partial wrt delta
@@ -75,9 +74,7 @@ class WriteParameters(object):
         "phir_t": 9,  # residual part of phi partial wrt tau
         "phir_tt": 10,  # residual part of phi partial wrt tau and tau
         "phir_dt": 11,  # residual part of phi partial wrt delta and tau
-        # Functions for initial guess on saturated liquid and vapor reduced
-        #   density. These aid the phase equilibrium calculations, but their
-        #   results are not directly used.
+        # Initial guess on saturated liquid and vapor reduced density
         "delta_v_sat_approx": 12,  # approximate delta_sat_vapor(tau)
         "delta_l_sat_approx": 13,  # approximate delta_sat_liquid(tau)
     }
@@ -98,11 +95,11 @@ class WriteParameters(object):
         dictionary or read from a json file.
 
         Args:
-            parameters (str or dict):  Either a dictionary of parameters or a path to
+            parameters (str|dict):  Either a dictionary of parameters or a path to
                 a json file.
 
         Returns:
-            WriteParameters object
+            WriteParameters: Object used to write Helmholtz EoS parameter and expression files
         """
         # A list that will store the names of defined expressions
         self.has_expression = []
@@ -132,51 +129,48 @@ class WriteParameters(object):
         self.rho_max = parameters["basic"]["rho_max"]
         self.T_min = parameters["basic"]["T_min"]
         self.T_max = parameters["basic"]["T_max"]
+        # If provided, set the reference state offset, otherwise set to (0, 0).
         try:
             self.reference_state_offset = parameters["eos"]["reference_state_offset"]
         except KeyError:
             self.reference_state_offset = [0.0, 0.0]
 
-        # Create the main Pyomo model for the equation of state expressions
+        # Create the main Pyomo model to write equation of state expressions
         self.model = self.make_model("delta", "tau")
 
-        # Optional transport models (Thermal Conductivity, Viscosity, and Surface
-        # Tension)
+        # Optional models (Thermal Conductivity, Viscosity, and Surface Tension)
         self.model_tcx = self.make_model("delta", "tau")
         self.model_visc = self.make_model("delta", "tau")
 
-        # Since surface tension requires two phases, it is usually provided as a
-        # function of temperature only
+        # Since surface tension is only valid for the two phase region, surface tension
+        # is a function of temperature only
         self.model_st = self.make_model("tau")
 
-        # Check if a canned forms of the ideal part of Helmholtz free energy is used,
-        # and add it if it is.
+        # Check if a predefined form of the ideal part of Helmholtz free energy is used
         try:
-            phi_ideal_type = parameters["eos"].get("phi_ideal_type", 0)
-            if phi_ideal_type > 0:
+            phi_ideal_type = parameters["eos"]["phi_ideal_type"]
+            if phi_ideal_type:
                 self.add(
                     phi_ideal_types[phi_ideal_type](
                         model=self.model, parameters=parameters
                     )
                 )
         except KeyError:
-            pass
+            phi_ideal_type = 0
 
-        # Check if a canned forms of the residual part of Helmholtz free energy is used,
-        # and add it if it is.
+        # Check if a predefined form of the residual part of Helmholtz free energy is used
         try:
-            phi_residual_type = parameters["eos"].get("phi_residual_type", 0)
-            if phi_residual_type > 0:
+            phi_residual_type = parameters["eos"]["phi_residual_type"]
+            if phi_residual_type:
                 self.add(
                     phi_residual_types[phi_residual_type](
                         model=self.model, parameters=parameters
                     )
                 )
         except KeyError:
-            pass
+            phi_residual_type = 0
 
-        # Check if canned approximate liquid and vapor saturated density curves are used,
-        # and add them if they are
+        # Check if predefined approximate liquid and vapor saturated density curves are used
         aux_parameters = parameters.get("aux", None)
         if aux_parameters is not None:
             delta_l_sat_parameters = parameters["aux"].get("delta_l_sat_approx", None)
@@ -206,25 +200,25 @@ class WriteParameters(object):
                         }
                     )
 
-        # There is only one expression for surface tension currently available,
-        # but it probably covers everything.  Add it if parameters are provided.
+        # Check if using predefined surface tension expression
         try:
             etype = parameters["transport"]["surface_tension"]["type"]
+            if etype:
+                self.add(
+                    {
+                        "surface_tension": surface_tension_types[etype](
+                            model=self.model_st, parameters=parameters
+                        ),
+                    }
+                )
         except KeyError:  # No surface tension to add
-            etype = 0
-        if etype > 0:
-            self.add(
-                {
-                    "surface_tension": surface_tension_types[etype](
-                        model=self.model_st, parameters=parameters
-                    ),
-                }
-            )
+            pass
+
 
     def calculate_pressure(self, rho, T):
-        """From the expressions provided, calculate pressure from temperature and
-        density.  This can be used for testing and calculating the critical pressure
-        based on the critical temperature and density.
+        """From the expressions provided, calculate pressure from density and
+        temperature. This can be used for testing and calculating the critical 
+        pressure based on the critical temperature and density.
 
         Args:
             rho (float): density in kg/m3
@@ -233,16 +227,20 @@ class WriteParameters(object):
         Returns:
             float: pressure in kPa
         """
-        tau = self.T_star / T
-        delta = rho / self.rho_star
-        self.model.delta = delta
-        self.model.tau = tau
+        self.model.delta = rho / self.rho_star
+        self.model.tau = self.T_star / T
         return pyo.value(rho * self.R * T * (1 + self.model.delta * self.model.phir_d))
 
     def make_model(self, *args):
         """Make a Pyomo model used to define expression NL files.  The arguments are strings
         for variables to create.  The basic parameters are also added as parameters in the
         model.
+
+        Args:
+            (str): Variables to add to the model
+
+        Returns:
+            ConcreteModel: Pyomo model with variables from args
         """
         m = pyo.ConcreteModel()
         for a in args:
@@ -266,11 +264,12 @@ class WriteParameters(object):
         return m
 
     def add(self, expressions):
-        """This adds expressions to the class.
+        """This adds expressions to the to the object.  These expressions are written
+        to NL files to be used by external functions.
 
         Args:
-            expressions (dict): Dictionary where the key is an expression name and the value
-                is a Pyomo expression.
+            expressions (dict): Dictionary where the key is an expression name and the 
+                value is a Pyomo expression.
 
         Returns:
             None
@@ -292,10 +291,16 @@ class WriteParameters(object):
                 setattr(m, name, pyo.Objective(expr=expr))
             self.has_expression.append(name)
 
-    def approx_sat_curves(self, trange, off=0):
-        """This provides an easy way to verify that the approximate saturated density
-        curves are correct, since they are not directly returned by any EOS property
-        functions.
+    def approx_sat_curves(self, trange):
+        """Prints a table to verify that the approximate saturated density curves 
+        are correct.  Since the approximate curves are used as an initial guess to
+        the phase equilibrium problems, they are not directly testable.
+
+        Args:
+            trange (iterable): temperature points in K
+
+        Returns:
+            None 
         """
         print("\n=====================================================================")
         print(" Check approx sat delta curves")
@@ -305,14 +310,14 @@ class WriteParameters(object):
         )
         print("---------------------------------------------------------------------")
         for T in trange:
-            self.model.tau = self.model.T_star / (T + off)
+            self.model.tau = self.model.T_star / T
             delta_l = pyo.value(self.model.delta_l_sat_approx)
             delta_v = pyo.value(self.model.delta_v_sat_approx)
             rho_l = delta_l * self.model.rho_star
             rho_v = delta_v * self.model.rho_star
             self.model.delta = delta_v
             P_v = pyo.value(
-                rho_v * self.R * (T + off) * (1 + self.model.delta * self.model.phir_d)
+                rho_v * self.R * T * (1 + self.model.delta * self.model.phir_d)
             )
             print(
                 f"{T:7.3f}, {T - 273.15: 8.3f}, {rho_l:14.4f}, {rho_v:14.4f}, {P_v:9.4f}"
@@ -321,7 +326,17 @@ class WriteParameters(object):
 
     def calculate_reference_offset(self, delta, tau, s0, h0):
         """Given delta and tau for a reference state and the reference entropy and enthalpy, calculate
-        the reference state offset parameters.
+        the reference state offset parameters. Since temperature and density are independent of reference
+        state, they can be calculated at a new reference state.
+
+        Args:
+            delta (float): reduced density at new reference state
+            tau (float): 1/reduced temperature at new reference state
+            s0 (float): Entropy at new reference state [kJ/kg/K]
+            h0 (float): Enthalpy at new reference state [kJ/kg]
+
+        Returns:
+            (tuple): Offset for given reference state 
         """
         self.model.tau = tau
         self.model.delta = delta
@@ -344,15 +359,16 @@ class WriteParameters(object):
         return (n1_off, n2_off)
 
     def write_model(self, model, model_name, expressions=None):
-        """Write an NL file and create an expression and variable map for the EoS model or just a variable map
-        for transport property expressions where there is only one expression per file.
+        """Write an NL file and create an expression and variable map for the EoS model or just a 
+        variable map for transport property expressions where there is only one expression per file.
 
         Args:
-            model: a Pyomo model
-            model_name: the model name used in the NL file
+            model (ConcreteModel): a Pyomo model
+            model_name (str): the model name used in the NL file
 
-        Returns: tuple
-            NL file, expression map, variable map for EOS or NL file, variable map for models with one expression
+        Returns:
+            tuple: NL file, expression map, variable map for EOS or NL file, variable map for 
+                models with one expression
         """
         nl_file, smap_id = model.write(f"{self.comp}_expressions_{model_name}.nl")
         for v in model.component_data_objects(pyo.Var):

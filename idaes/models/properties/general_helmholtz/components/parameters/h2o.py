@@ -1,35 +1,19 @@
-##################################################################################
-#                                                                                #
-# H2O EOS Expressions and Parameters:                                            #
-#                                                                                #
-# International Association for the Properties of Water and Steam (2016).        #
-#     IAPWS R6-95 (2016), "Revised Release on the IAPWS Formulation 1995 for     #
-#     the Properties of Ordinary Water Substance for General Scientific Use,"    #
-#     URL: http://iapws.org/relguide/IAPWS95-2016.pdf                            #
-#                                                                                #
-# Wagner, W.,  A. Pruss (2002). "The IAPWS Formulation 1995 for the              #
-#     Thermodynamic Properties of Ordinary Water Substance for General and       #
-#     Scientific Use." J. Phys. Chem. Ref. Data, 31, 387-535.                    #
-#                                                                                #
-# Wagner, W. et al. (2000). "The IAPWS Industrial Formulation 1997 for the       #
-#     Thermodynamic Properties of Water and Steam," ASME J. Eng. Gas Turbines    #
-#     and Power, 122, 150-182.                                                   #
-#                                                                                #
-# International Association for the Properties of Water and Steam (2011).        #
-#   IAPWS R15-11, "Release on the IAPWS Formulation 2011 for the                 #
-#   Thermal Conductivity of Ordinary Water Substance,"                           #
-#   URL: http://iapws.org/relguide/ThCond.pdf                                    #
-#                                                                                #
-# International Association for the Properties of Water and Steam (2008).        #
-#   IAPWS R12-08, "Release on the IAPWS Formulation 2008 for the Viscosity       #
-#   of Ordinary Water Substance,"                                                #
-#   URL: http://iapws.org/relguide/visc.pdf                                      #
-#                                                                                #
-# Mulero, A., I. Cachadina, Parra, M., "Recommended Correlations for the         #
-#     Surface Tension of Common Fluids," J. Phys. Chem. Ref. Data 41, 043105     #
-#     (2012).                                                                    #
-#                                                                                #
-##################################################################################
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES).
+#
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
+#################################################################################
+"""Generate parameter and expression files for water
+"""
+
+__author__ = "John Eslick"
 
 import math
 import pyomo.environ as pyo
@@ -40,7 +24,14 @@ from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
 
 
 def thermal_conductivity_rule(m):
-    # Thermal Conductivity Parameters
+    """Thermal conductivity rule
+
+    International Association for the Properties of Water and Steam (2011).
+        IAPWS R15-11, "Release on the IAPWS Formulation 2011 for the
+        Thermal Conductivity of Ordinary Water Substance,"
+        URL: http://iapws.org/relguide/ThCond.pdf
+    """
+
     L0 = {
         0: 2.443221e-3,
         1: 1.323095e-2,
@@ -130,10 +121,15 @@ def thermal_conductivity_rule(m):
     )
 
 
-def main():
-    # Viscosity Parameters
-    H0 = {0: 1.67752, 1: 2.20462, 2: 0.6366564, 3: -0.241605}
+def viscosity_rule(mvisc):
+    """Viscosity calculation for water
 
+    International Association for the Properties of Water and Steam (2008).
+        IAPWS R12-08, "Release on the IAPWS Formulation 2008 for the Viscosity
+        of Ordinary Water Substance, URL: http://iapws.org/relguide/visc.pdf
+    """
+
+    H0 = {0: 1.67752, 1: 2.20462, 2: 0.6366564, 3: -0.241605}
     H1 = {
         (0, 0): 5.20094e-1,
         (1, 0): 8.50895e-2,
@@ -179,23 +175,29 @@ def main():
         (5, 6): -5.93264e-4,
     }
 
+    return (
+        1e2
+        * pyo.sqrt(1.0 / mvisc.tau)
+        / sum(H0[i] * mvisc.tau**i for i in H0)
+        * pyo.exp(
+            mvisc.delta
+            * sum(
+                (mvisc.tau - 1) ** i
+                * sum(H1[i, j] * (mvisc.delta - 1) ** j for j in range(0, 7))
+                for i in range(0, 6)
+            )
+        )
+    )
+
+
+def main():
+    # Viscosity Parameters
+
     we = WriteParameters(parameters="h2o.json")
     mvisc = we.model_visc
     we.add(
         {
-            "viscosity": (
-                1e2
-                * pyo.sqrt(1.0 / mvisc.tau)
-                / sum(H0[i] * mvisc.tau**i for i in H0)
-                * pyo.exp(
-                    mvisc.delta
-                    * sum(
-                        (mvisc.tau - 1) ** i
-                        * sum(H1[i, j] * (mvisc.delta - 1) ** j for j in range(0, 7))
-                        for i in range(0, 6)
-                    )
-                )
-            ),
+            "viscosity": viscosity_rule,
             "thermal_conductivity": thermal_conductivity_rule,
         }
     )

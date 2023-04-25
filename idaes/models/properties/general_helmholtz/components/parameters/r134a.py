@@ -1,30 +1,19 @@
-######################################################################################
-#                                                                                    #
-# R134A EOS Expressions and Parameters:                                              #
-#                                                                                    #
-# Tillner-Roth, R.; Baehr, H.D., An International Standard Formulation for the       #
-#    Thermodynamic Properties of 1,1,1,2-Tetrafluoroethane (HFC-134a) for            #
-#    Temperatures from 170 K to 455 K and Pressures up to 70 MPa, J. Phys. Chem.     #
-#    Ref. Data, 1994, 23, 5, 657-729, https://doi.org/10.1063/1.555958               #
-#                                                                                    #
-# Perkins, R.A.; Laesecke, A.; Howley, J.; Ramires, M.L.V.; Gurova, A.N.; Cusco, L., #
-#    Experimental thermal conductivity values for the IUPAC round-robin sample of    #
-#    1,1,1,2-tetrafluoroethane (R134a), NIST Interagency/Internal Report (NISTIR)    #
-#    - 6605, 2000, https://doi.org/10.6028/NIST.IR.6605.                             #
-#                                                                                    #
-# Huber, M.L.; Laesecke, A.; Perkins, R.A., Model for the Viscosity and Thermal      #
-#    Conductivity of Refrigerants, Including a New Correlation for the Viscosity     #
-#    of R134a, Ind. Eng. Chem. Res., 2003, 42, 13, 3163-3178,                        #
-#    https://doi.org/10.1021/ie0300880.                                              #
-#                                                                                    #
-# Thermal conductivity parameter errata correction from CoolProp parameter file.     #
-# lambda^d.g. a1: 8.00982 -> 8.00982e-5                                              #
-#                                                                                    #
-# Mulero, A., I. Cachadina, Parra, M., "Recommended Correlations for the             #
-#     Surface Tension of Common Fluids," J. Phys. Chem. Ref. Data 41, 043105         #
-#     (2012).                                                                        #
-#                                                                                    #
-######################################################################################
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES).
+#
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
+#################################################################################
+"""Generate parameter and expression files for r134a 
+"""
+
+__author__ = "John Eslick"
 
 import math
 import pyomo.environ as pyo
@@ -35,6 +24,14 @@ from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
 
 
 def thermal_conductivity_rule(m):
+    """Thermal Conductivity Rule
+
+    Perkins, R.A.; Laesecke, A.; Howley, J.; Ramires, M.L.V.; Gurova, A.N.; Cusco, L.,
+        Experimental thermal conductivity values for the IUPAC round-robin sample of
+        1,1,1,2-tetrafluoroethane (R134a), NIST Interagency/Internal Report (NISTIR)
+        - 6605, 2000, https://doi.org/10.6028/NIST.IR.6605.
+    """
+
     a = [
         -1.05248e-2,
         8.00982e-5,
@@ -98,6 +95,13 @@ def thermal_conductivity_rule(m):
 
 
 def viscosity_rule(m):
+    """Viscosity Rule
+
+    Perkins, R.A.; Laesecke, A.; Howley, J.; Ramires, M.L.V.; Gurova, A.N.; Cusco, L.,
+        Experimental thermal conductivity values for the IUPAC round-robin sample of
+        1,1,1,2-tetrafluoroethane (R134a), NIST Interagency/Internal Report (NISTIR)
+        - 6605, 2000, https://doi.org/10.6028/NIST.IR.6605.
+    """
     a = [
         0.355404,
         -0.464337,
