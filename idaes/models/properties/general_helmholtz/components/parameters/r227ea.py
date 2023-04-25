@@ -21,8 +21,7 @@ from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
 
 
 def main():
-    """Generate parameter and expression files.
-    """
+    """Generate parameter and expression files."""
     we = WriteParameters(parameters="r227ea.json")
     we.write()
 

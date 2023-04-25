@@ -167,8 +167,7 @@ def viscosity_rule(m):
 
 
 def main():
-    """Generate parameter and expression files.
-    """
+    """Generate parameter and expression files."""
     we = WriteParameters("r134a.json")
     we.add(
         {

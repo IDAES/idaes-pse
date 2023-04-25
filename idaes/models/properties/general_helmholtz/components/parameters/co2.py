@@ -90,7 +90,9 @@ def viscosity_rule(m):
     rho = m.delta * m.rho_star
     Ts = T / 251.196
     return (
-        1.00697 * pyo.sqrt(T) / pyo.exp(sum(aval * pyo.log(Ts) ** i for i, aval in a.items()))
+        1.00697
+        * pyo.sqrt(T)
+        / pyo.exp(sum(aval * pyo.log(Ts) ** i for i, aval in a.items()))
         + d[1] * rho
         + d[2] * rho**2
         + d[3] * rho**6 / Ts**3
