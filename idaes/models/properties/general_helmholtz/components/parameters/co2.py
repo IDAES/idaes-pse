@@ -101,8 +101,7 @@ def viscosity_rule(m):
 
 
 def main():
-    """Generate property and expression files.
-    """
+    """Generate property and expression files."""
 
     we = WriteParameters(parameters="co2.json")
     we.add(

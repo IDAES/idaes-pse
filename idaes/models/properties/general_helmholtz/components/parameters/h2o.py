@@ -191,8 +191,7 @@ def viscosity_rule(mvisc):
 
 
 def main():
-    """Generate property and expression files.
-    """
+    """Generate property and expression files."""
 
     we = WriteParameters(parameters="h2o.json")
     we.add(
