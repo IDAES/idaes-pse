@@ -10,7 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""Generate parameter and expression files for r134a 
+"""Generate parameter and expression files for r134a
 """
 
 __author__ = "John Eslick"
@@ -167,6 +167,8 @@ def viscosity_rule(m):
 
 
 def main():
+    """Generate parameter and expression files.
+    """
     we = WriteParameters("r134a.json")
     we.add(
         {

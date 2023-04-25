@@ -10,13 +10,12 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""Generate parameter and expression files for CO2 
+"""Generate parameter and expression files for CO2
 """
 
 __author__ = "John Eslick"
 
 import pyomo.environ as pyo
-from idaes.core.util.math import smooth_max
 from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
     WriteParameters,
 )
@@ -54,9 +53,9 @@ def thermal_conductivity_rule(m):
     T = m.T_star / m.tau
     Ts = T / 251.196
     rho = m.rho_star * m.delta
-    G = sum(b[i] / Ts**i for i in b)
+    G = sum(bval / Ts**i for i, bval in b.items())
     cint_over_k = 1.0 + pyo.exp(-183.5 / T) * sum(
-        c[i] * (T / 100) ** (2 - i) for i in c
+        cval * (T / 100) ** (2 - i) for i, cval in c.items()
     )
     return (
         475.598 * pyo.sqrt(T) * (1 + 2.0 / 5.0 * cint_over_k) / G
@@ -91,7 +90,7 @@ def viscosity_rule(m):
     rho = m.delta * m.rho_star
     Ts = T / 251.196
     return (
-        1.00697 * pyo.sqrt(T) / pyo.exp(sum(a[i] * pyo.log(Ts) ** i for i in a))
+        1.00697 * pyo.sqrt(T) / pyo.exp(sum(aval * pyo.log(Ts) ** i for i, aval in a.items()))
         + d[1] * rho
         + d[2] * rho**2
         + d[3] * rho**6 / Ts**3

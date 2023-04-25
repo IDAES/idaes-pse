@@ -112,7 +112,7 @@ def thermal_conductivity_rule(m):
     mub = m.mu("h2o", delta, tau)
 
     lam2 = big_lam * delta * Tb * cpb / mub * Z
-    return lam2 + pyo.sqrt(1.0 / m.tau) / sum(L0[i] * m.tau**i for i in L0) * pyo.exp(
+    return lam2 + pyo.sqrt(1.0 / m.tau) / sum(L0val * m.tau**i for i, L0val in L0.items()) * pyo.exp(
         m.delta
         * sum(
             (m.tau - 1) ** i * sum(L1[i, j] * (m.delta - 1) ** j for j in range(0, 6))
@@ -178,7 +178,7 @@ def viscosity_rule(mvisc):
     return (
         1e2
         * pyo.sqrt(1.0 / mvisc.tau)
-        / sum(H0[i] * mvisc.tau**i for i in H0)
+        / sum(H0val * mvisc.tau**i for i, H0val in H0.items())
         * pyo.exp(
             mvisc.delta
             * sum(

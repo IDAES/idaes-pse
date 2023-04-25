@@ -10,7 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""Generate parameter and expression files for r227ea 
+"""Generate parameter and expression files for r227ea
 """
 
 __author__ = "John Eslick"
@@ -21,6 +21,8 @@ from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
 
 
 def main():
+    """Generate parameter and expression files.
+    """
     we = WriteParameters(parameters="r227ea.json")
     we.write()
 
