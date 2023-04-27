@@ -23,14 +23,19 @@ Unit Model Initializers
 
 The following unit models have custom ``Initializers`` available for use:
 
-* Feed
-* 0D Heat Exchanger
-* 1D Heat Exchanger
-    * Shell and Tube Heat Exchanger
+* :ref:`Feed Block (no flash) <reference_guides/model_libraries/generic/unit_models/feed:Initialization>`
+* :ref:`0D Heat Exchanger <reference_guides/model_libraries/generic/unit_models/heat_exchanger:Initialization>`
 
-* NTU Heat Exchanger
-* Mixer
-* Isentropic Pressure Changer
-* Product
+    * :ref:`NTU Heat Exchanger <reference_guides/model_libraries/generic/unit_models/heat_exchanger_ntu:Initialization>`
+
+* :ref:`1D Heat Exchanger <reference_guides/model_libraries/generic/unit_models/heat_exchanger_1D:Initialization>`
+
+    * :ref:`Shell and Tube Heat Exchanger <reference_guides/model_libraries/generic/unit_models/shell_and_tube_1D:Initialization>`
+
+* :ref:`Mixer <reference_guides/model_libraries/generic/unit_models/mixer:Initialization>`
+* :ref:`Isentropic Pressure Changer <reference_guides/model_libraries/generic/unit_models/pressure_changer:Initialization>`
+* :ref:`Product Block <reference_guides/model_libraries/generic/unit_models/product:Initialization>`
 * Separator
-
+* Skeleton
+* State
+* Translator

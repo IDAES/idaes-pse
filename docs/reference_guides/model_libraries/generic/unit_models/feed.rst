@@ -25,6 +25,12 @@ Feed blocks add no additional Variables.
 
 .. module:: idaes.models.unit_models.feed
 
+Initialization
+--------------
+
+.. autoclass:: FeedInitializer
+   :members: initialization_routine
+
 Feed Class
 ----------
 
