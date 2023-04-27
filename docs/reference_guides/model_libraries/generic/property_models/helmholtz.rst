@@ -9,36 +9,173 @@ Pure Component Helmholtz EoS
 The Helmholtz Equation of State (EoS) classes serve as a common core for pure
 component property packages where accurate and thermodynamically consistent
 pure component properties are required. New substances can be added by providing 
-parameter files.  These Helmholtz EoS functions use ExternalFunction, so the IDAES
+parameter files. These Helmholtz EoS functions use ExternalFunction, so the IDAES
 binary extensions are required.
 
+This page describes the standard HelmholtzStateBlock, but for more information on accessing
+property expressions using a function-like interface, or adding and modifying substance 
+parameters see the following pages. There are also two modules available for backward 
+compatibility ``iapws95`` and ``swco2``, which are the same as the general module, just with
+the component set to ``"h2o"`` or ``"co2"`` respectively.
+
+.. toctree::
+  :maxdepth: 1
+
+  helmholtz_expressions
+  helmholtz_parameters
+  iapws95
+  swco2
+
+Defined Components
+------------------
+
+If parameter and expression files are available for a component in the parameter file
+directory, they will be registered automatically. IDAES comes with some defined components
+and more can be added by users. Each component must have an equation of state model, while
+transport models for viscosity, thermal conductivity and surface tension are optional.
+
+Functions listed in this section allow you to check what components and models are available
+and get references for the models.
+
+.. autofunction:: registered_components
+
+.. autofunction:: viscosity_available
+    
+.. autofunction:: thermal_conductivity_available
+    
+.. autofunction:: surface_tension_available
+
+.. autofunction:: component_registered
+
+.. autofunction:: clear_component_registry
+
+.. autofunction:: eos_reference
+
+.. autofunction:: viscosity_reference
+
+.. autofunction:: thermal_conductivity_reference
+
+.. autofunction:: surface_tension_reference
+
+Parameter File Location
+-----------------------
+
+You can get or set the parameter path with these functions described below.  When
+the parameter path is set components will automatically be registered based on the
+available parameter files.
+
+.. autofunction:: get_parameter_path
+
+.. autofunction:: set_parameter_path
+
+Classes
+-------
+
+The main class used to define a property method is the HelmholtzParameterBlock. Unit models
+usually create their own state blocks, but it may be useful to create state block objects
+apart from unit models.
+
+.. autoclass:: HelmholtzParameterBlock
+  :members:
+
+.. autoclass:: HelmholtzParameterBlockData
+  :members:
+
+.. autoclass:: HelmholtzStateBlock
+  :members:
+
+.. autoclass:: HelmholtzStateBlockData
+  :members:
+
+.. autoclass:: StateVars
+
+.. autoclass:: PhaseType
+
+.. autoclass:: AmountBasis
+
+Helper Function
+---------------
+
+Since conditions may be difficult to specify for some choices of state variables, for example, 
+fixing temperature and pressure of an inlet when the state variables are enthalpy and pressure,
+helper methods are provided by the Parameter block class.  See the ``htpx()``, ``stpx()``, or
+``uptx()`` documentation in the parameter block class above.  
+
+Example
+-------
+
+The Heater unit model
+:ref:`example <reference_guides/model_libraries/generic/unit_models/heater:Example>`,
+provides a simple example for using water properties.
+
+.. testcode::
+
+  import pyomo.environ as pe # Pyomo environment
+  from idaes.core import FlowsheetBlock, MaterialBalanceType
+  from idaes.models.unit_models import Heater
+  from idaes.models.properties.general_helmholtz import (
+      HelmholtzParameterBlock,
+      PhaseType,
+      StateVars,
+  )
+
+  # Create an empty flowsheet and steam property parameter block.
+  model = pe.ConcreteModel()
+  model.fs = FlowsheetBlock(dynamic=False)
+  model.fs.properties = HelmholtzParameterBlock(
+    pure_component="h2o",
+    phase_presentation=PhaseType.LG,
+    state_vars=StateVars.PH
+  )
+
+  # Add a Heater model to the flowsheet.
+  model.fs.heater = Heater(
+    property_package=model.fs.properties,
+    material_balance_type=MaterialBalanceType.componentTotal
+  )
+
+  # Setup the heater model by fixing the inputs and heat duty
+  model.fs.heater.inlet[:].enth_mol.fix(4000)
+  model.fs.heater.inlet[:].flow_mol.fix(100)
+  model.fs.heater.inlet[:].pressure.fix(101325)
+  model.fs.heater.heat_duty[:].fix(100*20000)
+
+  # Initialize the model.
+  model.fs.heater.initialize()
+
+Since all properties except the state variables are Pyomo Expressions in the
+water properties module, after solving the problem any property can be
+calculated in any state block. Continuing from the heater example, to get the
+viscosity of both phases, the lines below could be added.
+
+.. testcode::
+
+  mu_l = pe.value(model.fs.heater.control_volume.properties_out[0].visc_d_phase["Liq"])
+  mu_v = pe.value(model.fs.heater.control_volume.properties_out[0].visc_d_phase["Vap"])
+
+For more information about how StateBlocks and PropertyParameterBlocks work see
+the :ref:`StateBlock documentation <reference_guides/core/physical_property_class:Physical Property
+Package Classes>`.
 
 
 Units
 -----
 
-The iapws95 property module uses SI units (m, kg, s, J, mol) for all public
-variables and expressions. Temperature is in K. Note that this means molecular
-weight is in the unusual unit of kg/mol.
-
-A few expressions intended used internally and all external function calls
-use units of kg, kJ, kPa, and K. These generally are not needed by the end user.
+SI units are used for property variables and expressions (J, Pa, kg, mol, m, s, W).
 
 
 Phase Presentation
 ------------------
 
 The property package wrapper can present fluid phase information to the
-IDAES framework in different ways.  For specifics on how to set the options
-see a specific implementation page.
-
-The ``PhaseType.MIX`` option causes to modeling framework to view water and
-steam as a single mixed liquid and vapor phase. This generally reduces model
-complexity. Phase equilibrium is still calculated and ``vapor_frac`` and
-individual phase properties are available, just are they would be with the
-two-phase presentation.  The mixed-phase presentation can be used with most
-standard unit models that do not provide phase separation.  If phase separation
-is required, either use the two-phase presentation or create a custom model.
+IDAES framework in different ways. The ``PhaseType.MIX`` option causes 
+the modeling framework to view liquid adn vapor as a single mixed liquid
+and vapor phase. This generally reduces model complexity. Phase equilibrium
+is still calculated and ``vapor_frac`` and individual phase properties are 
+available, just as they would be with the two-phase presentation. The 
+mixed-phase presentation can be used with most standard unit models that do
+not provide phase separation.  If phase separation is required, either use 
+the two-phase presentation or create a custom model.
 
 .. warning::
     The "has_phase_equilibrium" argument is ignored when constructing Helmholtz
@@ -68,11 +205,12 @@ provide any real benefit.
 State Variables
 ---------------
 
-There is a choice of state variables, pressure-enthalpy and
-temperature-pressure-vapor fraction.  In general the enthalpy-pressure form is
-preferable. Both the pressure and enthalpy variables are smooth and sufficient
-to define the fluid state. For systems where two-phases may be present, it is
-expected that pressure-enthalpy is the best choice of state variables.
+There is a choice of state variables, pressure-enthalpy, pressure-entropy, 
+pressure-internal energy and temperature-pressure-vapor fraction.  In general
+ the enthalpy-pressure form is preferable. Both the pressure and enthalpy 
+variables are smooth and sufficient to define the fluid state. For systems 
+where two-phases may be present, it is expected that pressure-enthalpy is 
+the best choice of state variables.
 
 The temperature-pressure-vapor fraction form is more convenient, since temperature
 is directly measurable and more familiar than enthalpy. Complementarity
@@ -80,29 +218,33 @@ constraints are used to deal with the vapor fraction variable, but the additiona
 complimentary constraints may make the problem less robust.  Temperature-pressure
 is often a good choice of state variables where there is only a single known phase.
 
-Pressure-Enthalpy Formulation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Pressure-Enthalpy, Entropy, or Internal Energy Formulation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The advantage of this choice of state variables is that it is more robust when
 phase changes occur, and is especially useful when it is not known if a phase
 change will occur. The disadvantage of this choice of state variables is that
-for equations like heat transfer equations that are highly dependent on
-temperature, a model could be harder to solve near regions with phase change.
-Temperature is a non-smooth function with non-smoothness when transitioning
-from the single-phase to the two-phase region. Temperature also has a zero
-derivative with respect to enthalpy in the two-phase region, so near the
-two-phase region solving a constraint that specifies a specific temperature
-may be difficult.
+for equations like heat transfer that are highly dependent on temperature, a 
+model could be harder to solve near regions with phase change. Temperature 
+is a non-smooth function with non-smoothness when transitioning from the 
+single-phase to the two-phase region. Temperature also has a zero derivative
+with respect to enthalpy in the two-phase region, so near the two-phase region
+solving a constraint that specifies a specific temperature may be difficult.
 
-The variables for this form are ``flow_mol`` (mol/s), ``pressure`` (Pa), and
-``enth_mol`` (J/mol).
+When a mass basis is used the variables in these forms are flow_mass (kg/s),
+pressure (Pa), and one of ``enth_mass`` (J/kg), ``entr_mass`` (J/kg/K), or 
+``energy_ineternal_mass`` (J/kg).
+
+When a mass basis is used the variables in these forms are flow_mol (mol/s),
+pressure (Pa), and one of ``enth_mol`` (J/mol), ``entr_mol`` (J/mol/K), or 
+``energy_ineternal_mole`` (J/mol).
 
 Since temperature and vapor fraction are not state variables in this formulation,
 they are provided by expressions, and cannot be fixed.  For example, to set a
 temperature to a specific value, a constraint could be added which says the
 temperature expression equals a fixed value.
 
-These expressions are specific to the P-H formulation:
+These expressions are specific to the P-H, P-S, and P-U formulations:
 
 ``temperature``
   Expression that calculates temperature by calling an ExternalFunction of
@@ -119,8 +261,8 @@ Temperature-Pressure-Vapor Fraction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This formulation uses temperature (K), pressure (Pa), and vapor fraction as
-state variables.  When a single phase option is given, the vapor fraction is
-fixed to the appropriate value and the complementarity constraint is deactivated.
+state variables.  When a single phase option is given, the vapor fraction does
+not need to be specified and is instead an expression with the appropriate value.
 
 A complementarity constraint is required for the T-P-x formulation when two-phases
 may be present.  First, two expressions are defined below where :math:`P^-` is
@@ -213,102 +355,11 @@ Expression                           Description
 ``P_over_sat``                       Pressure over saturation pressure (kPa)
 ==================================== ===============================================================================================
 
-ExternalFunctions
-~~~~~~~~~~~~~~~~~
-
-This provides a list of ExternalFunctions available in the wrapper.  These
-functions do not use SI units and are not usually called directly.  If these
-functions are needed, they should be used with caution. Some of these are used
-in the property expressions, some are just provided to allow easier testing with
-a Python framework.
-
-All of these functions provide first and second derivative and are generally
-suited to optimization (including the ones that return derivatives of Helmholtz
-free energy). Some functions may have non-smoothness at phase transitions.  The
-``delta_vap`` and ``delta_liq`` functions return the same values in the critical
-region.  They will also return real values when a phase doesn't exist, but those
-values do not necessarily have physical meaning.
-
-There are a few variables that are common to a lot of these functions, so they
-are summarized here :math:`\tau` is the critical temperature divided by the
-temperature :math:`\frac{T_c}{T}`, :math:`\delta` is density divided by the
-critical density :math:`\frac{\rho}{\rho_c}`, and :math:`\phi` is Helmholtz free
-energy divided by the ideal gas constant and temperature :math:`\frac{f}{RT}`.
-
-==================== ============== ================================================================ ===========================
-Object               C Function     Returns                                                          Arguments
-==================== ============== ================================================================ ===========================
-func_p               p              pressure (kPa)                                                   :math:`\delta, \tau`
-func_p_stau          p_stau         pressure (kPa)                                                   s (kJ/kg/K), :math:`\tau`
-func_u               u              internal energy (kJ/kg)                                          :math:`\delta, \tau`
-func_s               s              entropy (kJ/K/kg)                                                :math:`\delta, \tau`
-func_h               h              enthalpy (kJ/kg)                                                 :math:`\delta, \tau`
-func_hvpt            hvpt           vapor enthalpy (kJ/kg)                                           P (kPa), :math:`\tau`
-func_hlpt            hlpt           liquid enthalpy (kJ/kg)                                          P (kPa), :math:`\tau`
-func_svpt            svpt           vapor entropy (kJ/kg/K)                                          P (kPa), :math:`\tau`
-func_slpt            slpt           liquid entropy (kJ/kg/K)                                         P (kPa), :math:`\tau`
-func_uvpt            uvpt           vapor internal energy (kJ/kg)                                    P (kPa), :math:`\tau`
-func_ulpt            ulpt           liquid internal energy (kJ/kg)                                   P (kPa), :math:`\tau`
-func_tau             tau            :math:`\tau` (unitless)                                          h (kJ/kg), P (kPa)
-func_tau_sp          tau_sp         :math:`\tau` (unitless)                                          s (kJ/kg/K), P (kPa)
-func_tau_up          tau_up         :math:`\tau` (unitless)                                          u (kJ/kg), P (kPa)
-func_vf              vf             vapor fraction (unitless)                                        h (kJ/kg), P (kPa)
-func_vfs             vfs            vapor fraction (unitless)                                        s (kJ/kg/K), P (kPa)
-func_vfu             vfu            vapor fraction (unitless)                                        u (kJ/kg), P (kPa)
-func_g               g              Gibbs free energy (kJ/kg)                                        :math:`\delta, \tau`
-func_f               f              Helmholtz free energy (kJ/kg)                                    :math:`\delta, \tau`
-func_cv              cv             const. volume heat capacity (kJ/K/kg)                            :math:`\delta, \tau`
-func_cp              cp             const. pressure heat capacity (kJ/K/kg)                          :math:`\delta, \tau`
-func_w               w              speed of sound (m/s)                                             :math:`\delta, \tau`
-func_delta_liq       delta_liq      liquid :math:`\delta` (unitless)                                 P (kPa), :math:`\tau`
-func_delta_vap       delta_vap      vapor :math:`\delta` (unitless)                                  P (kPa), :math:`\tau`
-func_delta_sat_l     delta_sat_l    sat. liquid :math:`\delta` (unitless)                            :math:`\tau`
-func_delta_sat_v     delta_sat_v    sat. vapor :math:`\delta` (unitless)                             :math:`\tau`
-func_p_sat           p_sat          sat. pressure (kPa)                                              :math:`\tau`
-func_tau_sat         tau_sat        sat. :math:`\tau` (unitless)                                     P (kPa)
-func_phi0            phi0           :math:`\phi` idaes gas part (unitless)                           :math:`\delta, \tau`
-func_phi0_delta      phi0_delta     :math:`\frac{\partial \phi_0}{\partial \delta}`                  :math:`\delta`
-func_phi0_delta2     phi0_delta2    :math:`\frac{\partial^2 \phi_0}{\partial \delta^2}`              :math:`\delta`
-func_phi0_tau        phi0_tau       :math:`\frac{\partial \phi_0}{\partial \tau}`                    :math:`\tau`
-func_phi0_tau2       phi0_tau2      :math:`\frac{\partial^2 \phi_0}{\partial \tau^2}`                :math:`\tau`
-func_phir            phir           :math:`\phi` real gas part (unitless)                            :math:`\delta, \tau`
-func_phir_delta      phir_delta     :math:`\frac{\partial \phi_r}{\partial \delta}`                  :math:`\delta, \tau`
-func_phir_delta2     phir_delta2    :math:`\frac{\partial^2 \phi_r}{\partial \delta^2}`              :math:`\delta, \tau`
-func_phir_tau        phir_tau       :math:`\frac{\partial \phi_r}{\partial \tau}`                    :math:`\delta, \tau`
-func_phir_tau2       phir_tau2      :math:`\frac{\partial^2 \phi_r}{\partial \tau^2}`                :math:`\delta, \tau`
-func_phir_delta_tau  phir_delta_tau :math:`\frac{\partial^2 \phi_r}{\partial \delta \partial \tau}`  :math:`\delta, \tau`
-==================== ============== ================================================================ ===========================
 
 Initialization
 --------------
 
-The IAPWS-95 property functions do provide initialization functions for general
+The Helmholtz EoS state blocks provide initialization functions for general
 compatibility with the IDAES framework, but as long as the state variables are
 specified to some reasonable value, initialization is not required. All required
 solves are handled by external functions.
-
-References
-----------
-
-Although a general Helmholtz EoS was developed, the equations where taken from
-the IAPWS-95 standard. For specific parameter sources see specific implementation
-documentation.
-
-.. _iapws-2016:
-
-International Association for the Properties of Water and Steam (2016).
-IAPWS R6-95 (2016), "Revised Release on the IAPWS Formulation 1995 for
-the Properties of Ordinary Water Substance for General Scientific Use,"
-URL: http://iapws.org/relguide/IAPWS95-2016.pdf
-
-.. _wagner-2002:
-
-Wagner, W.,  A. Pruss (2002). "The IAPWS Formulation 1995 for the
-Thermodynamic Properties of Ordinary Water Substance for General and
-Scientific Use." J. Phys. Chem. Ref. Data, 31, 387-535.
-
-.. _akasaka-2008:
-
-Akasaka, R. (2008). "A Reliable and Useful Method to Determine the Saturation
-State from Helmholtz Energy Equations of State." Journal of Thermal
-Science and Technology, 3(3), 442-451.

@@ -29,6 +29,14 @@ from idaes.models.properties.general_helmholtz.components import (
 
 
 def get_parameter_path():
+    """Get the parameter file path
+
+    Args: 
+        None
+
+    Returns:
+        str: path for parameter files
+    """ 
     pth = idaes.cfg.properties.helmholtz.parameter_file_path
     if pth is None:
         pth = this_file_dir()
@@ -36,10 +44,19 @@ def get_parameter_path():
 
 
 def set_parameter_path(path):
+    """Set the parameter file path, and register components found there.
+
+    Args:
+        path (str): Parameter file path
+
+    Returns:
+        None
+    """
     idaes.properties.helmholtz.parameter_file_path = path
 
 
 def auto_register():
+    """Search the parameter file path for available components and register them"""
     pth = get_parameter_path()
     clear_component_registry()
     lst = os.listdir(pth)

@@ -91,7 +91,12 @@ helmholtz_data_dir = _data_dir
 
 class StateVars(enum.Enum):
     """
-    State variable set options
+    Enum, state variable set options.
+
+    * PH: Pressure and enthalpy
+    * PS: Pressure and entropy
+    * PU: Pressure and internal energy
+    * TPX: Temperature, pressure, and quality
     """
 
     PH = 1  # Pressure, Enthalpy
@@ -102,7 +107,12 @@ class StateVars(enum.Enum):
 
 class PhaseType(enum.Enum):
     """
-    Ways to present phases to the framework
+    Enum, possible phases and presentation.
+
+    * MIX: Two phase presented and a single phase to framework
+    * LG: Two phases
+    * L: Liquid only
+    * G: Vapor only
     """
 
     MIX = 1  # Looks like a single phase called mixed with a vapor fraction
@@ -113,7 +123,10 @@ class PhaseType(enum.Enum):
 
 class AmountBasis(enum.Enum):
     """
-    Mass or mole basis
+    Enum, mass or mole basis
+
+    * MOLE: Amount is measured in moles
+    * MASS: Amount is measured in mass
     """
 
     MOLE = 1
@@ -1038,7 +1051,7 @@ class HelmholtzParameterBlockData(PhysicalParameterBlock):
             default=None,
             domain=str,
             description="Pure chemical component",
-            doc="Pure component to calculate properties for",
+            doc="(str) Pure component for which to calculate properties",
         ),
     )
     CONFIG.declare(
@@ -1076,6 +1089,8 @@ change.
 **default** - StateVars.PH
 **Valid values:** {
 **StateVars.PH** - Pressure-Enthalpy,
+**StateVars.PS** - Pressure-Entropy,
+**StateVars.PU** - Pressure-Internal Energy,
 **StateVars.TPX** - Temperature-Pressure-Quality}""",
         ),
     )
@@ -1085,15 +1100,12 @@ change.
         ConfigValue(
             default=AmountBasis.MOLE,
             domain=In(AmountBasis),
-            description="State variable set",
-            doc="""The set of state variables to use. Depending on the use, one
-state variable set or another may be better computationally. Usually pressure
-and enthalpy are the best choice because they are well behaved during a phase
-change.
-**default** - StateVars.PH
+            description="Quantities on a mass or mole basis",
+            doc="""The amount basis (mass or mole) for quantities 
+**default** - AmountBasis.mole
 **Valid values:** {
-**StateVars.PH** - Pressure-Enthalpy,
-**StateVars.TPX** - Temperature-Pressure-Quality}""",
+**AmountBasis.mole** - use mole units (mol),
+**AmountBasis.mass** - use mass units (kg)}""",
         ),
     )
 
@@ -1114,9 +1126,9 @@ change.
         prop="h",
     ):
         """
-        Convenience function to calculate enthalpy from temperature and either
+        Convenience function to calculate a state variable from temperature and either
         pressure or vapor fraction. This function can be used for inlet streams and
-        initialization where temperature is known instead of enthalpy.
+        initialization where temperature is known instead of a state variable.
         User must provide values for one of these sets of values: {T, P}, {T, x},
         or {P, x}.
         Args:
@@ -1128,8 +1140,9 @@ change.
                 units appropriate for the amount basis.
             amount_basis (AmountBasis): Whether to use a mass or mole basis
             with_units (bool): if True return an expression with units
+            prop (str): h, s, or u 
         Returns:
-            Total molar enthalpy.
+            Total selected state variable.
         """
         if amount_basis is None:
             amount_basis = self.config.amount_basis
@@ -1198,6 +1211,24 @@ change.
         amount_basis=None,
         with_units=False,
     ):
+        """
+        Convenience method to calculate enthalpy from temperature and either
+        pressure or vapor fraction. This function can be used for inlet streams and
+        initialization where temperature is known instead of enthalpy.
+        User must provide values for one of these sets of values: {T, P}, {T, x},
+        or {P, x}.
+        Args:
+            T (float): Temperature
+            P (float): Pressure, None if saturated
+            x (float): Vapor fraction [mol vapor/mol total] (between 0 and 1), 
+            None if superheated or sub-cooled
+            units (Units): The units to report the result in, if None use 
+            the default units appropriate for the amount basis.
+            amount_basis (AmountBasis): Whether to use a mass or mole basis
+            with_units (bool): if True return an expression with units
+        Returns:
+            float: Specific or molar enthalpy
+        """
         return self._suh_tpx(
             T=T,
             p=p,
@@ -1217,6 +1248,24 @@ change.
         amount_basis=None,
         with_units=False,
     ):
+        """
+        Convenience method to calculate entropy from temperature and either
+        pressure or vapor fraction. This function can be used for inlet streams and
+        initialization where temperature is known instead of entropy.
+        User must provide values for one of these sets of values: {T, P}, {T, x},
+        or {P, x}.
+        Args:
+            T (float): Temperature
+            P (float): Pressure, None if saturated
+            x (float): Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
+            superheated or sub-cooled
+            units (Units): The units to report the result in, if None use the default
+            units appropriate for the amount basis.
+            amount_basis (AmountBasis): Whether to use a mass or mole basis
+            with_units (bool): if True return an expression with units
+        Returns:
+            float: Specific or molar entropy
+        """
         return self._suh_tpx(
             T=T,
             p=p,
@@ -1236,6 +1285,24 @@ change.
         amount_basis=None,
         with_units=False,
     ):
+        """
+        Convenience method to calculate internal energy from temperature and either
+        pressure or vapor fraction. This function can be used for inlet streams and
+        initialization where temperature is known instead of internal energy.
+        User must provide values for one of these sets of values: {T, P}, {T, x},
+        or {P, x}.
+        Args:
+            T (float): Temperature
+            P (float): Pressure, None if saturated
+            x (float): Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
+            superheated or sub-cooled
+            units (Units): The units to report the result in, if None use the default
+            units appropriate for the amount basis.
+            amount_basis (AmountBasis): Whether to use a mass or mole basis
+            with_units (bool): if True return an expression with units
+        Returns:
+            float: Specific or molar internal energy
+        """
         return self._suh_tpx(
             T=T,
             p=p,
@@ -1337,6 +1404,7 @@ change.
             self.Vap = VaporPhase()
 
     def build(self):
+        """Populate the parameter block"""
         if not self.available():
             raise RuntimeError("Helmholtz EoS external functions not available")
         super().build()
