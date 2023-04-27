@@ -88,7 +88,7 @@ class IsentropicPressureChangerInitializer(SingleControlVolumeUnitInitializer):
         The isentropic state is then initialized at the same conditions as the outlet.
         Next, the pressure changer is solved with an isothermal assumption and fixed efficiency,
         followed by a second solve with the isentropic constraints. Finally, if user-provided
-        performance constraints are present, these are activated and the model solved again,
+        performance constraints are present, these are activated and the model solved again.
 
         Args:
             model: model to be initialized

@@ -84,7 +84,7 @@ class HX0DInitializer(SingleControlVolumeUnitInitializer):
 
         This routine starts by initializing the hot and cold side properties. Next, the heat
         transfer between the two sides is fixed to an initial guess for the heat duty (provided by the duty
-        argument), the associated constraint deactivated, and the model is then solved. Finally, the heat
+        argument), the associated constraint is deactivated, and the model is then solved. Finally, the heat
         duty is unfixed and the heat transfer constraint reactivated followed by a final solve of the model.
 
         Args:
