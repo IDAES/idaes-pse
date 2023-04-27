@@ -207,7 +207,7 @@ State Variables
 
 There is a choice of state variables, pressure-enthalpy, pressure-entropy, 
 pressure-internal energy and temperature-pressure-vapor fraction.  In general
- the enthalpy-pressure form is preferable. Both the pressure and enthalpy 
+the enthalpy-pressure form is preferable. Both the pressure and enthalpy 
 variables are smooth and sufficient to define the fluid state. For systems 
 where two-phases may be present, it is expected that pressure-enthalpy is 
 the best choice of state variables.
@@ -323,7 +323,7 @@ Expression                           Description
 ==================================== ===============================================================================================
 ``mw``                               Molecular weight (kg/mol)
 ``tau``                              Critical temperature divided by temperature (unitless)
-``temperature``                      Temperature (K) if PH form
+``temperature``                      Temperature (K) if PH, PS or PU form
 ``temperature_red``                  Reduced temperature, temperature divided by critical temperature (unitless)
 ``temperature_sat``                  Saturation temperature (K)
 ``tau_sat``                          Critical temperature divided by saturation temperature (unitless)
