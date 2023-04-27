@@ -41,7 +41,7 @@ and set the ``obj.config.initializer`` to the custom callback function they defi
    self.config.initializer(self, opt=opt, init_log=init_log, solve_log=solve_log, initial_guess=initial_guess)
 
 Note that the function signature in the above line expects an instance, ``opt`` which is the solver (default is set to ipopt), ``init_log`` and ``solve_log`` which are the idaes logger objects for initialization
-and solve, and ``initial_guess`` is a dict containing intial values for variables declared in the model. The user can define the custom function in one of the following ways:
+and solve, and ``initial_guess`` is a dict containing initial values for variables declared in the model. The user can define the custom function in one of the following ways:
 
 .. code-block:: Python
 

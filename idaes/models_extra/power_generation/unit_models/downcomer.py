@@ -196,7 +196,7 @@ see property package for documentation.}""",
         )
 
         self.control_volume.add_geometry()
-        # no phase transitions in the unit - handeled by Helmholtz EoS
+        # no phase transitions in the unit - handled by Helmholtz EoS
         self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
         self.control_volume.add_material_balances(

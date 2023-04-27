@@ -319,7 +319,7 @@ class PorousConductiveSlabData(UnitModelBlockData):
             units=pyo.units.W / pyo.units.m / pyo.units.K,
         )
 
-        # Add time derivative varaible if steady state use const 0.
+        # Add time derivative variable if steady state use const 0.
         if dynamic and self.config.has_gas_holdup:
             self.dconc_mol_comp_deviation_xdt = DerivativeVar(
                 self.conc_mol_comp_deviation_x,

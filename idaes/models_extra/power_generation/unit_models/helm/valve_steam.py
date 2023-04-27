@@ -109,11 +109,11 @@ class HelmValveData(BalanceBlockData):
     Basic adiabatic 0D valve model.  This inherits the balance block to get
     a lot of unit model boilerplate and the mass balance, enegy balance and
     pressure equations.  This model is intended to be used only with Helmholtz
-    EOS property pacakges in mixed or single phase mode with P-H state vars.
+    EOS property packages in mixed or single phase mode with P-H state vars.
 
     Since this inherits BalanceBlockData, and only operates in steady-state or
     pseudo-steady-state (for dynamic models) the following mass, energy and
-    pressure equations are implicitly writen.
+    pressure equations are implicitly written.
 
     1) Mass Balance:
         0 = flow_mol_in[t] - flow_mol_out[t]
@@ -194,7 +194,7 @@ ValveFunctionType.custom}""",
         )
         self.Cv = pyo.Var(
             initialize=0.1,
-            doc="Valve flow coefficent, for vapor " "[mol/s/Pa] for liquid [mol/s/Pa]",
+            doc="Valve flow coefficient, for vapor " "[mol/s/Pa] for liquid [mol/s/Pa]",
             units=pyo.units.mol / pyo.units.s / pyo.units.Pa,
         )
         # self.Cv.fix()
@@ -244,18 +244,18 @@ ValveFunctionType.custom}""",
     ):
         """
         For simplicity this initialization requires you to set values for the
-        efficency, inlet, and one of pressure ratio, pressure change or outlet
+        efficiency, inlet, and one of pressure ratio, pressure change or outlet
         pressure.
         """
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
-        init_log.info("Steam valve intialization started")
+        init_log.info("Steam valve initialization started")
 
         # Create solver
         opt = get_solver(solver, optarg)
 
         # Store original specification so initialization doesn't change the model
-        # This will only resore the values of varaibles that were originally fixed
+        # This will only restore the values of variables that were originally fixed
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
         # Check for alternate pressure specs
@@ -284,7 +284,7 @@ ValveFunctionType.custom}""",
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             opt.solve(self, tee=slc.tee)
 
-        init_log.info("Steam valve intialization complete")
+        init_log.info("Steam valve initialization complete")
 
         from_json(self, sd=istate, wts=sp)
 

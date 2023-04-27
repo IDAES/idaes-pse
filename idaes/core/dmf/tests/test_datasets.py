@@ -61,7 +61,7 @@ DS_CSV = "Column 1 [T],Column 2 [],Column3\n1,2,3\n"
 
 @pytest.fixture(scope="session")
 def dmf_publication_dataset(tmp_path_factory):
-    """Create and opulate a temporary directory with an example publication and
+    """Create and populate a temporary directory with an example publication and
        an associated table (CSV).
 
     Returns:
@@ -206,7 +206,7 @@ def test_base_load_conf(dmf_workspace_path, tmp_path):
     # missing conf in path
     with pytest.raises(datasets.FileMissingError):
         ds._load_conf(tmp_path)
-    # unparseable conf
+    # unparsable conf
     conf = tmp_path / datasets.Dataset.CONF_NAME
     conf.open("w").write("Not valid JSON\n")
     with pytest.raises(datasets.ConfigurationError):

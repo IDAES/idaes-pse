@@ -59,7 +59,7 @@ def Txy_diagram(
         temperature: Temperature at which to initialize state block
         num_points: Number of data point to be calculated
         properties: property package which contains parameters to calculate bubble
-        and dew temperatures for the mixture of the compnents specified.
+        and dew temperatures for the mixture of the components specified.
         figure_name: if a figure name is included the plot will save with the name
         figure_name.png
         print_legend (bool): = If True, include legend to distinguish between
@@ -73,7 +73,7 @@ def Txy_diagram(
     Returns:
         Plot
     """
-    # Run txy_ data funtion to obtain bubble and dew twmperatures
+    # Run txy_ data function to obtain bubble and dew twmperatures
     Txy_data_to_plot = Txy_data(
         model,
         component_1,
@@ -113,7 +113,7 @@ def Txy_data(
         pressure: Pressure at which the bubble and drew temperatures will be calculates
         temperature: Temperature at which to initialize state block
         num_points: Number of data point to be calculated
-        model: Model wit intialized Property package which contains data to calculate
+        model: Model wit initialized Property package which contains data to calculate
         bubble and dew temperatures for  component 1 and component 2
         print_level: printing level from initialization
         solver: solver to use (default=None, use IDAES default solver)
@@ -132,7 +132,7 @@ def Txy_data(
 
     model.props = model.params.build_state_block([1], defined_state=True)
 
-    # Set intial concentration of component 1 close to 1
+    # Set initial concentration of component 1 close to 1
     x = 0.99
 
     # Set conditions for flash unit model

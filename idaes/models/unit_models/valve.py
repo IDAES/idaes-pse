@@ -89,7 +89,7 @@ def pressure_flow_default_callback(valve):
 
     valve.Cv = pyo.Var(
         initialize=0.1,
-        doc="Valve flow coefficent",
+        doc="Valve flow coefficient",
         units=umeta("amount") / umeta("time") / umeta("pressure") ** 0.5,
     )
     valve.Cv.fix()

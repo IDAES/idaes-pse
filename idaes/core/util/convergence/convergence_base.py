@@ -119,7 +119,7 @@ class ConvergenceEvaluationSpecification(object):
         specific points that need to be run for the convergence evaluation
 
         The input will be sampled assuming a normal distribution
-        (with given mean and standard devation)
+        (with given mean and standard deviation)
         truncated to the values given by lower and upper bounds
 
         Parameters
@@ -228,7 +228,7 @@ class ConvergenceEvaluation:
 
         Args:
             filename - name of output file as a string.
-            n_points - number of sample points ot use for baseline
+            n_points - number of sample points to use for baseline
             seed - (optional) seed for random sample generator
 
         Returns:
@@ -598,7 +598,7 @@ def run_convergence_evaluation_from_sample_file(sample_file):
     Run convergence evaluation using specified sample file.
 
     Args:
-        sample_file - name of sample file ot use
+        sample_file - name of sample file to use
 
     Returns:
         results of convergence evaluation
@@ -630,11 +630,11 @@ def run_single_sample_from_sample_file(sample_file, name):
     Run single convergence evaluation from sample in provided file.
 
     Args:
-        sample_file - name of file ot use to look up sample
+        sample_file - name of file to use to look up sample
         name - name of sample to run from sample_file
 
     Returns:
-        results of convergence evaluation for specificed sample
+        results of convergence evaluation for specified sample
     """
     # load the sample file
     try:
@@ -762,7 +762,7 @@ def generate_baseline_statistics(
     Generate and run samples to generate baseline convergence statistics.
 
     Args:
-        conv_eval: convergence evaluation object ot use to generate baseline
+        conv_eval: convergence evaluation object to use to generate baseline
         n_points: number of points to generate for baseline
         seed: (optional) seed for random sample generator
         display: print a summary of the baseline

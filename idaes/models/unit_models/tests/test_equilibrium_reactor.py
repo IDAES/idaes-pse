@@ -18,7 +18,6 @@ Authors: Andrew Lee
 import pytest
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, value, units
-from pyomo.contrib.pynumero.asl import AmplInterface
 
 from idaes.core import (
     FlowsheetBlock,
@@ -328,9 +327,6 @@ class TestInitializers:
         )
 
     @pytest.mark.integration
-    @pytest.mark.skipif(
-        not AmplInterface.available(), reason="pynumero_ASL is not available"
-    )
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
         initializer.initialize(model.fs.unit)
@@ -342,16 +338,16 @@ class TestInitializers:
             55388, rel=1e-5
         )
         assert value(model.fs.unit.outlet.conc_mol_comp[0, "NaOH"]) == pytest.approx(
-            0, abs=2e-5
+            0.0026102, rel=2e-5
         )
         assert value(
             model.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
-        ) == pytest.approx(0, abs=2e-5)
+        ) == pytest.approx(0.0026102, rel=2e-5)
         assert value(
             model.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]
-        ) == pytest.approx(100, rel=2e-5)
+        ) == pytest.approx(99.997, rel=2e-5)
         assert value(model.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]) == pytest.approx(
-            100, rel=2e-5
+            99.997, rel=2e-5
         )
         assert value(model.fs.unit.outlet.temperature[0]) == pytest.approx(
             304.32, rel=1e-2

@@ -28,6 +28,7 @@ from idaes.models.unit_models import SkeletonUnitModel
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.initialization import BlockTriangularizationInitializer
 
 __author__ = "Jaffer Ghouse"
 
@@ -130,6 +131,11 @@ class TestSkeletonDefault(object):
         assert hasattr(skeleton_default.fs.skeleton, "temperature_out")
         assert hasattr(skeleton_default.fs.skeleton, "pressure_out")
 
+        assert (
+            skeleton_default.fs.skeleton.default_initializer
+            is BlockTriangularizationInitializer
+        )
+
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize_exception(self, skeleton_default):
@@ -180,6 +186,75 @@ class TestSkeletonDefault(object):
         assert value(skeleton_default.fs.skeleton.outlet.pressure[0]) == pytest.approx(
             190, abs=1e-3
         )
+
+
+@pytest.mark.integration
+def test_default_initializer():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.skeleton = SkeletonUnitModel(dynamic=False)
+    m.fs.skeleton.comp_list = Set(initialize=["c1", "c2"])
+
+    # input vars for skeleton
+    m.fs.skeleton.flow_comp_in = Var(m.fs.time, m.fs.skeleton.comp_list, initialize=1.0)
+    m.fs.skeleton.temperature_in = Var(m.fs.time, initialize=298.15)
+    m.fs.skeleton.pressure_in = Var(m.fs.time, initialize=101)
+
+    # output vars for skeleton
+    m.fs.skeleton.flow_comp_out = Var(
+        m.fs.time, m.fs.skeleton.comp_list, initialize=1.0
+    )
+    m.fs.skeleton.temperature_out = Var(m.fs.time, initialize=298.15)
+    m.fs.skeleton.pressure_out = Var(m.fs.time, initialize=101)
+
+    # Surrogate model equations
+    # Flow equation
+
+    def rule_flow(m, t, i):
+        return m.flow_comp_out[t, i] == m.flow_comp_in[t, i]
+
+    m.fs.skeleton.eq_flow = Constraint(
+        m.fs.time, m.fs.skeleton.comp_list, rule=rule_flow
+    )
+
+    m.fs.skeleton.eq_temperature = Constraint(
+        expr=m.fs.skeleton.temperature_out[0] == m.fs.skeleton.temperature_in[0] + 10
+    )
+    m.fs.skeleton.eq_pressure = Constraint(
+        expr=m.fs.skeleton.pressure_out[0] == m.fs.skeleton.pressure_in[0] - 10
+    )
+
+    inlet_dict = {
+        "flow_mol_comp": m.fs.skeleton.flow_comp_in,
+        "temperature": m.fs.skeleton.temperature_in,
+        "pressure": m.fs.skeleton.pressure_in,
+    }
+    outlet_dict = {
+        "flow_mol_comp": m.fs.skeleton.flow_comp_out,
+        "temperature": m.fs.skeleton.temperature_out,
+        "pressure": m.fs.skeleton.pressure_out,
+    }
+
+    m.fs.skeleton.add_ports(name="inlet", member_dict=inlet_dict)
+    m.fs.skeleton.add_ports(name="outlet", member_dict=outlet_dict)
+
+    m.fs.skeleton.inlet.flow_mol_comp[0, "c1"].fix(2)
+    m.fs.skeleton.inlet.flow_mol_comp[0, "c2"].fix(2)
+    m.fs.skeleton.inlet.temperature.fix(325)
+    m.fs.skeleton.inlet.pressure.fix(200)
+
+    initializer = m.fs.skeleton.default_initializer()
+    initializer.initialize(m.fs.skeleton)
+
+    assert value(m.fs.skeleton.outlet.flow_mol_comp[0, "c1"]) == pytest.approx(
+        2, abs=1e-3
+    )
+    assert value(m.fs.skeleton.outlet.flow_mol_comp[0, "c2"]) == pytest.approx(
+        2, abs=1e-3
+    )
+    assert value(m.fs.skeleton.outlet.temperature[0]) == pytest.approx(335, abs=1e-3)
+    assert value(m.fs.skeleton.outlet.pressure[0]) == pytest.approx(190, abs=1e-3)
 
 
 class TestSkeletonCustom(object):

@@ -131,14 +131,14 @@ def smooth_min(a, b, eps=1e-4):
 
 
 def smooth_bound(val, lb, ub, eps=1e-4, eps_lb=None, eps_ub=None):
-    """Returns a smooth expression that returns approximatly the value of val
+    """Returns a smooth expression that returns approximately the value of val
     between lb and ub, the value of ub if val > ub and the value of lb if
     val < lb. The expression returned is
 
     ..math:: smooth_min(smooth_max(val, lb, eps_lb), ub, eps_ub)
 
     **Example Usage** This function is useful when calculating the value of a
-    quantitiy with physical limitations that may not be otherwise captured. A
+    quantity with physical limitations that may not be otherwise captured. A
     good example of this is using a controller to manipulate a valve to maintain,
     for example, a set flow rate. Under some process conditions the controller
     may indicate the valve should be more than fully opened or closed. In this
@@ -175,7 +175,7 @@ def safe_sqrt(a, eps=1e-4):
         eps: epsilon parameter for smooth max
 
     Returns:
-        approximatly sqrt(max(a, 0))
+        approximately sqrt(max(a, 0))
     """
     return sqrt(smooth_max(a, 0, eps))
 
@@ -190,6 +190,6 @@ def safe_log(a, eps=1e-4):
         eps: epsilon parameter for smooth max
 
     Returns:
-        approximatly log(max(a, eps))
+        approximately log(max(a, eps))
     """
     return log(smooth_max(a, eps, eps=eps))

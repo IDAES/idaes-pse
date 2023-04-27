@@ -27,7 +27,7 @@ from idaes.core.util.env_info import EnvironmentInfo
     name="environment-info", help="Print information about idaes, OS, dependencies..."
 )
 @click.option("--solver", multiple=True, help="Add solvers to list of solvers to check")
-@click.option("--json", default=None, help="Write output ot a file")
+@click.option("--json", default=None, help="Write output to a file")
 def environment_info(solver, json):
     info = EnvironmentInfo(additional_solvers=solver)
     d = info.to_dict()

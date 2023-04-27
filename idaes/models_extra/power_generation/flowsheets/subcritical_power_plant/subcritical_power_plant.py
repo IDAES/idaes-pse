@@ -276,7 +276,7 @@ def add_overall_performance_expressions(m):
 
     # Calculate the overall efficiency of the plant.
     @m.fs_main.Expression(
-        m.fs_main.time, doc="Overall efficency based on gross power (%)"
+        m.fs_main.time, doc="Overall efficiency based on gross power (%)"
     )
     def plant_gross_efficiency(b, t):
         return -b.fs_stc.turb.power[t] / (
@@ -285,7 +285,7 @@ def add_overall_performance_expressions(m):
             * b.fs_blr.aBoiler.hhv_coal_dry
         )
 
-    # Calculate total auxillary power based on a surrogate expression
+    # Calculate total auxiliary power based on a surrogate expression
     @m.fs_main.Expression(m.fs_main.time)
     def aux_power(b, t):
         steam_f = m.fs_main.fs_stc.turb.inlet_split.mixed_state[t].flow_mass * 7.937
@@ -1873,7 +1873,7 @@ def run_dynamic(m, x0, t0, pd, solver):
 
 
 def plot_results(pd):
-    # ploting responses
+    # plotting responses
     plt.figure(1)
     plt.plot(pd["time"], pd["coal_flow"])
     plt.grid()

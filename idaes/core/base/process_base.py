@@ -198,7 +198,7 @@ class ProcessBlockData(_BlockData):
             return self._default_scaling_factors[(attribute, index)]
         except KeyError:
             try:
-                # indexed, but no specifc index?
+                # indexed, but no specific index?
                 return self._default_scaling_factors[(attribute, None)]
             except KeyError:
                 # Can't find a default scale factor for what you asked for
@@ -439,7 +439,7 @@ class ProcessBlockData(_BlockData):
         """
         Return the performance contents and stream table
 
-        NOTE: There is the possiblity of a ConfigurationError because
+        NOTE: There is the possibility of a ConfigurationError because
         the names of the inlets and outlets of the unit model may not be
         standard. If this occurs then return an empty dataframe
 

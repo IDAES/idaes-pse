@@ -24,7 +24,7 @@ The first function (`get_PP_costing`) can be called to include cost correlations
 
 Similarly, `get_sCO2_unit_cost` can be called to include cost correlations for equipment in supercritical CO2 power cycle plants and the method `get_ASU_cost` calls costing for equipment in air separation units. The method `costing_initialization` exists to initialize pp, sCO2 and ASU costing blocks.
 
-The methods `get_fixed_OM_costs` and `get_variable_OM_costs` calculate operating and maintenance costs for fixed (operating labor, maintenance labor, admin/support labor, property taxes and insurance, maintenance materials) and variable (fuel, consumable and waste disposal costs for electricity production indexed by time) costs, respectively. The methods `initialize_fixed_OM_costs` and `initialize_variable_OM_costs` exist to initialize fixed and variable O&M costing blocks. To build all operating and maintanence costs sequentially, users may call the `build_process_costs` method.
+The methods `get_fixed_OM_costs` and `get_variable_OM_costs` calculate operating and maintenance costs for fixed (operating labor, maintenance labor, admin/support labor, property taxes and insurance, maintenance materials) and variable (fuel, consumable and waste disposal costs for electricity production indexed by time) costs, respectively. The methods `initialize_fixed_OM_costs` and `initialize_variable_OM_costs` exist to initialize fixed and variable O&M costing blocks. To build all operating and maintenance costs sequentially, users may call the `build_process_costs` method.
 
 Several reporting methods exist (`report`, `display_total_plant_costs`, `display_bare_erected_costs`, `display_equipment_costs`, `get_total_TPC`, `display_flowsheet_cost`) as well as a check on supercritical CO2 bounds (`check_sCO2_costing_bounds`).
 
@@ -82,7 +82,7 @@ ASU                         2011
 
 When a `costing` block is created 
 on the flowsheet object (i.e. `flowsheet.costing`), the methods automatically build any global parameters relating to costing under this block. The most 
-common of these paramters is the CE index parameter. The CE index will be set to the base year of the method called, set by the argument `CE_index_year` which is allowed in most methods in this module.
+common of these parameters is the CE index parameter. The CE index will be set to the base year of the method called, set by the argument `CE_index_year` which is allowed in most methods in this module.
 
 Power Plant Costing Module
 --------------------------
@@ -122,7 +122,7 @@ The Power Plant costing method has the following arguments:
 * ccs : which reference parameter to use, as some accounts are costed using two different reference parameters; defaults to "B", and "A" is also a valid option
 * CE_index_year : Chemical Engineering Cost Index base year, defaults to 2018; calling the registered Pyomo currency units dictionary of plant cost index values will allow conversion between base years within the flowsheet
 * additional_costing_params : option to add a costing parameter dictionary to supplement existing account data
-* use_additional_costing_params : True/False flag whether IDAES should use new data when additonal account names match existing account names, or fail with a useful error message; defaults to False, meaning pre-installed accounts in BB_costing_params and generic_ccs_costing will never be bypassed or overwritten by duplicated additional accounts unless this flag is set to True on the unit costing block argument level
+* use_additional_costing_params : True/False flag whether IDAES should use new data when additional account names match existing account names, or fail with a useful error message; defaults to False, meaning pre-installed accounts in BB_costing_params and generic_ccs_costing will never be bypassed or overwritten by duplicated additional accounts unless this flag is set to True on the unit costing block argument level
 
  1. Supercritical PC,
  2. Subcritical PC, 
@@ -367,7 +367,7 @@ The Fixed O&M costing function adds constraints to estimate the labor, maintenan
 * labor_rate : hourly rate of plant operators in project dollar year, defaults to 38.50
 * labor_burden : a percentage multiplier used to estimate non-salary labor expenses, defaults to 30
 * operators_per_shift : average number of operators per shift, defaults to 6
-* tech : int 1-7 representing the catagories in get_PP_costing, used to determine maintenance costs, defaults to 1
+* tech : int 1-7 representing the categories in get_PP_costing, used to determine maintenance costs, defaults to 1
 * fixed_TPC : The TPC in $MM that will be used to determine fixed O&M costs. If the value is None, the function will try to use the TPC calculated from the individual units.
 * CE_index_year : Chemical Engineering Cost Index base year, defaults to 2018; calling the registered Pyomo currency units dictionary of plant cost index values will allow conversion between base years within the flowsheet
 
@@ -407,7 +407,7 @@ Variable Operating & Maintenance Costs
 The Variable O&M costing function adds constraints to calculate correlations associated with fuel, consumable and waste disposal costs. The function may be used to calculate variable costs of producing electricity in $/MWh. The method takes the following arguments: 
 
 * b: pyomo flowsheet block
-* resources : a list of strings for the resorces to be costed
+* resources : a list of strings for the resources to be costed
 * rates : a list of pyomo vars for resource consumption rates
 * prices : a dict of resource prices to be added to the premade dictionary
 * CE_index_year : Chemical Engineering Cost Index base year, defaults to 2018; calling the registered Pyomo currency units dictionary of plant cost index values will allow conversion between base years within the flowsheet
@@ -449,7 +449,7 @@ Users may quickly build all required process costs by calling the global method 
 * labor_rate: hourly rate of plant operators in project dollar year
 * labor_burden: a percentage multiplier used to estimate non-salary labor expenses
 * operators_per_shift: average number of operators per shift
-* tech: int 1-7 representing the catagories in get_PP_costing, used to determine maintenance costs
+* tech: int 1-7 representing the categories in get_PP_costing, used to determine maintenance costs
 * land_cost: Expression, Var or Param to calculate land costs
 * net_power: actual plant output in MW, only required if calculating variable costs
 * resources: list setting resources to cost

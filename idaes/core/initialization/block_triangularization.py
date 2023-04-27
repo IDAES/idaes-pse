@@ -42,11 +42,12 @@ class BlockTriangularizationInitializer(InitializerBase):
 
     """
 
+    # TODO: Block solver is IPOPT for now, as fsolve struggles with VLE
     CONFIG = InitializerBase.CONFIG()
     CONFIG.declare(
         "block_solver",
         ConfigValue(
-            default="scipy.fsolve",
+            default="ipopt",
             description="Solver to use for NxN blocks",
         ),
     )

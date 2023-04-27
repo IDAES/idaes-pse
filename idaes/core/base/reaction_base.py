@@ -104,7 +104,7 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         if not hasattr(self, "_reaction_block_class"):
             self._reaction_block_class = None
 
-        # TODO: Need way to tie reaction package to a specfic property package
+        # TODO: Need way to tie reaction package to a specific property package
         self._validate_property_parameter_units()
         self._validate_property_parameter_properties()
 
@@ -121,7 +121,7 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
 
     def build_reaction_block(self, *args, **kwargs):
         """
-        Methods to construct a ReactionBlock assoicated with this
+        Methods to construct a ReactionBlock associated with this
         ReactionParameterBlock. This will automatically set the parameters
         construction argument for the ReactionBlock.
 
@@ -310,7 +310,7 @@ should be constructed in this reaction block,
     def _validate_state_block(self):
         """
         Method to validate that the associated state block matches with the
-        PropertyParameterBlock assoicated with the ReactionParameterBlock.
+        PropertyParameterBlock associated with the ReactionParameterBlock.
         """
         # Add a reference to the corresponding state block data for later use
         add_object_reference(self, "state_ref", self.config.state_block[self.index()])
@@ -323,7 +323,7 @@ should be constructed in this reaction block,
             raise PropertyPackageError(
                 "{} the StateBlock associated with this "
                 "ReactionBlock does not match with the "
-                "PropertyParamterBlock associated with the "
+                "PropertyParameterBlock associated with the "
                 "ReactionParameterBlock. The modelling framework "
                 "does not support mixed associations of property "
                 "and reaction packages.".format(self.name)
@@ -340,14 +340,14 @@ should be constructed in this reaction block,
         """
         This method is used to avoid generating unnecessary property
         calculations in reaction blocks. __getattr__ is called whenever a
-        property is called for, and if a propery does not exist, it looks for
+        property is called for, and if a property does not exist, it looks for
         a method to create the required property, and any associated
         components.
 
-        Create a property calculation if needed. Return an attrbute error if
+        Create a property calculation if needed. Return an attribute error if
         attr == 'domain' or starts with a _ . The error for _ prevents a
         recursion error if trying to get a function to create a property and
-        that function doesn't exist.  Pyomo also ocasionally looks for things
+        that function doesn't exist.  Pyomo also occasionally looks for things
         that start with _ and may not exist.  Pyomo also looks for the domain
         attribute, and it may not exist.
         This works by creating a property calculation by calling the "_"+attr

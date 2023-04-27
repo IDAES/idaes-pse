@@ -339,7 +339,7 @@ class Viscosity:
         # Viscosity parameters are required for thermal conductivity, and
         # have likely already been built by the time this is triggered
         # for viscosity.
-        # To avoid implict replacement, check to see if parameters already
+        # To avoid implicit replacement, check to see if parameters already
         # exist
         if hasattr(pobj, "visc_d_h2o_coeff_1"):
             return None
