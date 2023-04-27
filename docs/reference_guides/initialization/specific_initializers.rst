@@ -35,7 +35,5 @@ The following unit models have custom ``Initializers`` available for use:
 * :ref:`Mixer <reference_guides/model_libraries/generic/unit_models/mixer:Initialization>`
 * :ref:`Isentropic Pressure Changer <reference_guides/model_libraries/generic/unit_models/pressure_changer:Initialization>`
 * :ref:`Product Block <reference_guides/model_libraries/generic/unit_models/product:Initialization>`
-* Separator
-* Skeleton
-* State
-* Translator
+* :ref:`Separator <reference_guides/model_libraries/generic/unit_models/separator:Initialization>`
+* :ref:`State Junction <reference_guides/model_libraries/generic/unit_models/product:Initialization>`
