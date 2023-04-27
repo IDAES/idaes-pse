@@ -30,6 +30,12 @@ def pytest_configure(config: pytest.Config):
             strict=False,
             reason="tensorflow ImportError on 3.11",
         ),
+        "*/surrogates/omlt/omlt/keras_flowsheet_optimization_test*": pytest.mark.xfail(
+            condition=sys.version_info > (3, 11),
+            run=True,
+            strict=False,
+            reason="tensorflow ImportError on 3.11",
+        ),
     }
     config.stash[marked] = []
 
