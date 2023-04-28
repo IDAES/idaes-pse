@@ -467,9 +467,9 @@ def test_initialization_fail():
     with pytest.raises(
         Exception,
         match=(
-            f"Flowsheet did not converge to optimality after fixing the degrees of freedom. "
-            f"To create the multi-period model without initialization, do not provide "
-            f"initialization_func argument."
+            f"Flowsheet did not converge after fixing the degrees of freedom. "
+            f"To create the multi-period model without initialization, do not provide"
+            f" initialization_func argument."
         ),
     ):
         m = MultiPeriodModel(

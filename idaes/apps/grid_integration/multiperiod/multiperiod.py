@@ -14,6 +14,7 @@ import pyomo.environ as pyo
 from pyomo.common.timing import TicTocTimer
 from idaes.core.solvers import get_solver
 from idaes.core.util import from_json, to_json
+from idaes.core.util.exceptions import InitializationError
 import matplotlib.pyplot as plt
 import logging
 import time
@@ -165,11 +166,11 @@ class MultiPeriodModel(pyo.ConcreteModel):
 
         # Challenge: If model_data_kwargs is provided, then we cannot use
         # the initialize_multi_period_model method because that will overwrite
-        # the parameter vaues. In that case, we may have to call initialization
+        # the parameter values. In that case, we may have to call initialization
         # function for each instance of the flowsheet. Not sure if this method
         # will be required or not in general, so this is what I'm going to do:
         # If the argument is not provided, then use clone and initialize. If it
-        # is provided, then return the multiperiod model without initialization. 
+        # is provided, then return the multiperiod model without initialization.
 
         m = self
         m.TIME = pyo.Set(initialize=range(self.n_time_points))
@@ -189,8 +190,10 @@ class MultiPeriodModel(pyo.ConcreteModel):
         else:
             if len(model_data_kwargs) != self.n_time_points:
                 _logger.error(
-                    f"len(model_data_kwargs) != n_time_points. Check "
-                    f"input data for model_data_kwargs argument."
+                    f"len(model_data_kwargs) != n_time_points.\n "
+                    f"len(model_data_kwargs) = {len(model_data_kwargs)}\n"
+                    f"len(n_time_points) = {self.n_time_points}\n"
+                    f"Check input data for model_data_kwargs argument."
                 )
 
             _logger.warning(
@@ -312,7 +315,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
             b1.periodic_constraints[i] = pair[0] == pair[1]
 
     def _construct_flowsheet_instance(
-        self, 
+        self,
         flowsheet_options,
         initialization_options,
         unfix_dof_options,
@@ -327,7 +330,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
                 "initialization_func argument is not provided. "
                 "Returning the multiperiod model without initialization."
             )
-        
+
         else:
             self.initialization_func(blk, **initialization_options)
             result = solver.solve(blk)
@@ -338,7 +341,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
                     "To create the multi-period model without initialization, do not provide "
                     "initialization_func argument."
                 )
-            
+
         if self.unfix_dof_func is None:
             _logger.warning(
                 "unfix_dof_func argument is not provided. "
@@ -346,7 +349,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
             )
 
         else:
-            self.unfix_dof_func(blk, **unfix_dof_options)  
+            self.unfix_dof_func(blk, **unfix_dof_options)
 
         return blk
 
@@ -387,11 +390,9 @@ class MultiPeriodModel(pyo.ConcreteModel):
         # Define a function to create a multiperiod model for one scenario
         def _build_scenario_model(m, fs_blk):
             m.period = pyo.Block(self.set_period)
-            
+
             for i in m.period:
-                _logger.info(
-                    f"Constructing the flowsheet model for index {i}"
-                )
+                _logger.info(f"Constructing the flowsheet model for index {i}")
 
                 m.period[i].transfer_attributes_from(fs_blk.clone())
 
@@ -517,7 +518,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
         result = solver.solve(blk)
 
         if not pyo.check_optimal_termination(result):
-            raise Exception(
+            raise InitializationError(
                 "Flowsheet did not converge to optimality after fixing the degrees of freedom. "
                 "To create the multi-period model without initialization, do not provide "
                 "initialization_func argument."
