@@ -64,9 +64,7 @@ class BlockTriangularizationInitializer(InitializerBase):
             implicit=True,
             description="Dict of options to pass to 1x1 block solver",
             doc="Dict of options to pass to calc_var_kwds argument in "
-            "solve_strongly_connected_components method. NOTE: models "
-            "involving ExternalFunctions must set "
-            "'diff_mode=differentiate.Modes.reverse_numeric'",
+            "solve_strongly_connected_components method.",
         ),
     )
 

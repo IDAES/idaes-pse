@@ -124,10 +124,18 @@ where :math:`L_{hot}` and :math:`L_{cold}` are the length of the hot and cold si
 where :math:`A_{shell}` and :math:`A_{tube}` are the cross-sectional areas of the shell and tube side control volumes
 respectively.
 
+Initialization
+--------------
+.. module:: idaes.models.unit_models.shell_and_tube_1d
+
+.. autoclass:: ShellAndTubeInitializer
+   :members: initialization_routine
+
+
 ShellAndTube1D Class
 --------------------
 
-.. module:: idaes.models.unit_models.shell_and_tube_1d
+
 
 .. autoclass:: ShellAndTube1D
   :members:

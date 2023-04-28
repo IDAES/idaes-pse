@@ -34,9 +34,9 @@ _log = idaeslog.getLogger(__name__)
 
 class FeedInitializer(InitializerBase):
     """
-    Initializer for Feed blocks.
+    Initializer for blocks with a single state (Feed, Product, StateJunction).
 
-    As a Feed block contains a single state block and nothing else,
+    As these contain a single state block and nothing else,
     this Initializer just gets the default initializer for the State Block and
     uses that to initialize the State Block.
 
