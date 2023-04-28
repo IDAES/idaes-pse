@@ -43,7 +43,7 @@ class GibbsReactorData(UnitModelBlockData):
     the natural log of the species molar flow rate is used.
     Instead of specifying the system Gibbs free energy as an objective
     function, the equations for zero partial derivatives of the grand function
-    with Lagrangian multiple terms with repect to product species mole flow
+    with Lagrangian multiple terms with respect to product species mole flow
     rates and the multiples are specified as constraints.
     """
 

@@ -42,7 +42,7 @@ def min_utility(blk, heating, cooling, DTmin, eps=1e-6, DG_units=pyunits.Mwatt):
     Args:
         blk: flowsheet
         heating: Equipment that requires Heat
-        cooling: Equipment from wich heat is being removed
+        cooling: Equipment from which heat is being removed
         DTmin: HRAT (Heat Recovery Approximation Temperature)
         eps: Epsilon for smoothing operation
 
@@ -148,7 +148,7 @@ def min_utility(blk, heating, cooling, DTmin, eps=1e-6, DG_units=pyunits.Mwatt):
         units=pyunits.get_units(Q[str(pinch_streams[0])]),
     )
 
-    # Define a cpnstraint to calculate the varaible QAh
+    # Define a constraint to calculate the variable QAh
     def rule_heat_above_pinch(blk, p):
         return blk.QAh[p] == sum(
             blk.Theta[i]
@@ -177,7 +177,7 @@ def min_utility(blk, heating, cooling, DTmin, eps=1e-6, DG_units=pyunits.Mwatt):
         units=pyunits.get_units(Q[str(pinch_streams[0])]),
     )
 
-    # Define a constraint to calculate the varaible QAc
+    # Define a constraint to calculate the variable QAc
     def rule_heat_below_pinch(blk, p):
         return blk.QAc[p] == sum(
             blk.Theta[i]
@@ -235,12 +235,12 @@ def min_utility(blk, heating, cooling, DTmin, eps=1e-6, DG_units=pyunits.Mwatt):
 
 def heat_data(blk, heating, cooling, DG_units=pyunits.Mwatt):
     """
-    Function for generating necesary data for Duran-Grossmann initialization
+    Function for generating necessary data for Duran-Grossmann initialization
     Allows the calculation of reactors
     Args:
         blk: flowsheet
         heating: Equipment that requires Heat
-        cooling: Equipment from wich heat is being removed
+        cooling: Equipment from which heat is being removed
     Returns:
         Dictionary for the equipment exchanging heat containing:
             Tin
@@ -321,13 +321,13 @@ def pinch_calc(heating, cooling, exchangeData, DTmin, eps):
 
     Args:
         heating: Equipment that requires Heat
-        cooling: Equipment from wich heat is being removed
+        cooling: Equipment from which heat is being removed
         exchangeData: Dictionary containing Tin, Tout, FCp and Q
         for each equipment in lists
         DTmin: HRAT (Heat Recovery Approximation Temperature)
         eps: Epsilon for smoothing operation
     Returns:
-        PD (Dictionary containint initialized values for QAh, QAc, Qs and Qw)
+        PD (Dictionary containing initialized values for QAh, QAc, Qs and Qw)
     """
     # Generate lists out of strings from Args
     exchanger_list = heating + cooling
@@ -576,7 +576,7 @@ def gen_curves(Tin, Tout, Q):
     nTstar = len(Tstar)
     Qmat = np.zeros((nTin, nTstar))
 
-    # Generate cumulative arays for temperature and heat
+    # Generate cumulative arrays for temperature and heat
     for i in range(nTin):
         for j in range(nTstar):
             Qmat[i, j] = linear_interpolation([Tin[i], Tout[i]], [0, Q[i]], Tstar[j])

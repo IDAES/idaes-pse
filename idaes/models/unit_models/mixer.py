@@ -16,6 +16,7 @@ General purpose mixer block for IDAES models
 from enum import Enum
 
 from pyomo.environ import (
+    Block,
     check_optimal_termination,
     Param,
     PositiveReals,
@@ -46,6 +47,7 @@ from idaes.core.util.math import smooth_min
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
+from idaes.core.initialization import ModularInitializerBase
 
 import idaes.logger as idaeslog
 
@@ -77,6 +79,130 @@ class MomentumMixingType(Enum):
     minimize_and_equality = 3
 
 
+class MixerInitializer(ModularInitializerBase):
+    """
+    Hierarchical Initializer for Mixer blocks.
+
+    """
+
+    def initialization_routine(
+        self,
+        model: Block,
+    ):
+        """
+        Initialization routine for Mixer Blocks.
+
+        This routine starts by initializing each of the inlet streams, then uses those
+        results to estimate the outlet state before solving the full model.
+
+        Args:
+            model: model to be initialized
+
+        Returns:
+            Pyomo solver status object
+        """
+        init_log = idaeslog.getInitLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+
+        # Create solver
+        solver = get_solver(self.config.solver, self.config.solver_options)
+
+        # Initialize inlet state blocks
+        inlet_list = model.create_inlet_list()
+        i_block_list = []
+        for i in inlet_list:
+            i_block = getattr(model, i + "_state")
+            i_block_list.append(i_block)
+
+            # Get initializer for inlet
+            iinit = self.get_submodel_initializer(i_block)
+
+            iinit.initialize(i_block)
+
+        # Initialize mixed state block
+        if model.config.mixed_state_block is None:
+            mblock = model.mixed_state
+        else:
+            mblock = model.config.mixed_state_block
+
+        # Calculate initial guesses for mixed stream state
+        for t in model.flowsheet().time:
+            # Iterate over state vars as defined by property package
+            s_vars = mblock[t].define_state_vars()
+            for s in s_vars:
+                i_vars = []
+                for k in s_vars[s]:
+                    # If fixed, use current value
+                    # otherwise calculate guess from mixed state
+                    if not s_vars[s][k].fixed:
+                        for ib in i_block_list:
+                            i_vars.append(getattr(ib[t], s_vars[s].local_name))
+
+                        if s == "pressure":
+                            # If pressure, use minimum as initial guess
+                            mblock[t].pressure.set_value(
+                                min(
+                                    i_block_list[i][t].pressure.value
+                                    for i in range(len(i_block_list))
+                                )
+                            )
+                        elif "flow" in s:
+                            # If a "flow" variable (i.e. extensive), sum inlets
+                            for k in s_vars[s]:
+                                s_vars[s][k].set_value(
+                                    sum(
+                                        i_vars[i][k].value
+                                        for i in range(len(i_block_list))
+                                    )
+                                )
+                        else:
+                            # Otherwise use average of inlets
+                            for k in s_vars[s]:
+                                s_vars[s][k].set_value(
+                                    sum(
+                                        i_vars[i][k].value
+                                        for i in range(len(i_block_list))
+                                    )
+                                    / len(i_block_list)
+                                )
+
+        # Get initializer for mixed block
+        minit = self.get_submodel_initializer(mblock)
+        minit.initialize(mblock)
+
+        res = None
+
+        if model.config.mixed_state_block is None:
+            if (
+                hasattr(model, "pressure_equality_constraints")
+                and model.pressure_equality_constraints.active is True
+            ):
+                model.pressure_equality_constraints.deactivate()
+                for t in model.flowsheet().time:
+                    sys_press = getattr(model, model.create_inlet_list()[0] + "_state")[
+                        t
+                    ].pressure
+                    model.mixed_state[t].pressure.fix(sys_press.value)
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    res = solver.solve(model, tee=slc.tee)
+                model.pressure_equality_constraints.activate()
+                for t in model.flowsheet().time:
+                    model.mixed_state[t].pressure.unfix()
+            else:
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    res = solver.solve(model, tee=slc.tee)
+
+            init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+        else:
+            init_log.info("Initialization Complete.")
+
+        return res
+
+
 @declare_process_block_class("Mixer")
 class MixerData(UnitModelBlockData):
     """
@@ -92,10 +218,12 @@ class MixerData(UnitModelBlockData):
 
     When being used as a sub-model, Mixer should only be used when a set
     of new StateBlocks are required for the streams to be mixed. It should not
-    be used to mix streams from mutiple ControlVolumes in a single unit model -
+    be used to mix streams from multiple ControlVolumes in a single unit model -
     in these cases the unit model developer should write their own mixing
     equations.
     """
+
+    default_initializer = MixerInitializer
 
     CONFIG = ConfigBlock()
     CONFIG.declare(
@@ -357,7 +485,7 @@ objects linked to all inlet states and the mixed state,
                 pass
             else:
                 raise ConfigurationError(
-                    "{} recieved unrecognised value for "
+                    "{} received unrecognised value for "
                     "momentum_mixing_type argument. This "
                     "should not occur, so please contact "
                     "the IDAES developers with this bug.".format(self.name)
@@ -637,7 +765,7 @@ objects linked to all inlet states and the mixed state,
         """
         Add pressure minimization equations. This is done by sequential
         comparisons of each inlet to the minimum pressure so far, using
-        the IDAES smooth minimum fuction.
+        the IDAES smooth minimum function.
         """
         if not hasattr(self, "inlet_idx"):
             self.inlet_idx = RangeSet(len(inlet_blocks))
@@ -761,7 +889,7 @@ objects linked to all inlet states and the mixed state,
                 )
 
     def use_minimum_inlet_pressure_constraint(self):
-        """Activate the mixer pressure = mimimum inlet pressure constraint and
+        """Activate the mixer pressure = minimum inlet pressure constraint and
         deactivate the mixer pressure and all inlet pressures are equal
         constraints. This should only be used when momentum_mixing_type ==
         MomentumMixingType.minimize_and_equality.
@@ -777,7 +905,7 @@ objects linked to all inlet states and the mixed state,
         self.pressure_equality_constraints.deactivate()
 
     def use_equal_pressure_constraint(self):
-        """Deactivate the mixer pressure = mimimum inlet pressure constraint
+        """Deactivate the mixer pressure = minimum inlet pressure constraint
         and activate the mixer pressure and all inlet pressures are equal
         constraints. This should only be used when momentum_mixing_type ==
         MomentumMixingType.minimize_and_equality.

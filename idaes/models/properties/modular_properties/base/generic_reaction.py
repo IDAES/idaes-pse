@@ -202,7 +202,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
         # Set base units of measurement
         self.get_metadata().add_default_units(self.config.base_units)
 
-        # TODO: Need way to tie reaction package to a specfic property package
+        # TODO: Need way to tie reaction package to a specific property package
         self._validate_property_parameter_units()
         self._validate_property_parameter_properties()
 
@@ -537,7 +537,7 @@ class GenericReactionBlockData(ReactionBlockDataBase):
         self._lock_attribute_creation = True
 
         # Due to the exponential relationship between most reaction properties
-        # and temeprature, it is very hard to calculate good scaling factors
+        # and temperature, it is very hard to calculate good scaling factors
         # from order-of-magnitude guesses. Thus ,reaction scaling will always
         # require a lot of user input. Here we will calculate scaling factors
         # for those properties that have non-exponential relationships to T.

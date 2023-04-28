@@ -298,9 +298,9 @@ class Design(object):
                 (see CFG file format). (Default value = None)
             BBox(Parallelepiped, optional): Optional, Bounding box to write to file
                 (see CFG file format). If not provided, calculates a
-                rectangular prism 2x the necesary size to encompass points.
+                rectangular prism 2x the necessary size to encompass points.
                 (Default value = None)
-            AuxPropMap(dict<tuple<str, optional): Optional, Auxilliary
+            AuxPropMap(dict<tuple<str, optional): Optional, Auxiliary
                 property map. Example: {('Energy','eV'):[0.0, 1.0, ... ]}
                 (Default value = None)
             blnGroupByType(bool, optional): Optional, flag to group atoms by element.
@@ -340,7 +340,7 @@ class Design(object):
                 (see POSCAR file format). (Default value = None)
             BBox(Parallelepiped, optional): Optional, Bounding box to write to file
                 (see POSCAR file format). If not provided, calculates a
-                rectangular prism 2x the necesary size to encompass points.
+                rectangular prism 2x the necessary size to encompass points.
                 (Default value = None)
             Elems(list<Atom>, optional): Optional, order of elements to write to file.
                 Only important because they are sometimes implicitly defined

@@ -20,6 +20,7 @@
 
 __author__ = "John Eslick"
 
+import copy
 
 import pyomo.environ as pyo
 from pyomo.common.collections import ComponentSet
@@ -36,13 +37,16 @@ from idaes.core import (
 )
 from idaes.models.properties.general_helmholtz.helmholtz_functions import (
     add_helmholtz_external_functions,
+    HelmholtzThermoExpressions,
     AmountBasis,
     PhaseType,
     StateVars,
     _data_dir,
 )
 from idaes.models.properties.general_helmholtz.components import (
-    get_transport_module,
+    viscosity_available,
+    thermal_conductivity_available,
+    surface_tension_available,
 )
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -70,12 +74,14 @@ class HelmholtzEoSInitializer(InitializerBase):
     def initialize(
         self,
         model: pyo.Block,
-        initial_guesses: dict = None,
-        json_file: str = None,
         output_level=None,
     ):
         """
         Initialize method for Helmholtz EoS state blocks. This is a no-op.
+
+        Args:
+            model: model to be initialized
+            output_level: (optional) output level to use during initialization run (overrides global setting).
 
         Returns:
             InitializationStatus.Ok
@@ -331,7 +337,7 @@ class HelmholtzStateBlockData(StateBlockData):
             bounds=params.default_pressure_bounds,
             units=pyunits.Pa,
         )
-        P = self.pressure * params.uc["Pa to kPa"]
+        self.p_kPa = pyo.Expression(expr=self.pressure * params.uc["Pa to kPa"])
         # If it's single phase use provide fixed expressions for vapor frac
         if phase_set == PhaseType.L:
             self.vapor_frac = pyo.Expression(
@@ -350,14 +356,16 @@ class HelmholtzStateBlockData(StateBlockData):
                 bounds=params.default_enthalpy_mol_bounds,
                 units=pyunits.J / pyunits.mol,
             )
-            h_mass = self.enth_mol * params.uc["J/mol to kJ/kg"]
+            self.h_kJ_per_kg = pyo.Expression(
+                expr=self.enth_mol * params.uc["J/mol to kJ/kg"]
+            )
             self.temperature = pyo.Expression(
-                expr=self.temperature_star / self.tau_func(cmp, h_mass, P, _data_dir),
+                expr=self.t_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _data_dir),
                 doc="Temperature",
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vf_func(cmp, h_mass, P, _data_dir),
+                    expr=self.vf_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _data_dir),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -374,14 +382,16 @@ class HelmholtzStateBlockData(StateBlockData):
                 bounds=params.default_enthalpy_mass_bounds,
                 units=pyunits.J / pyunits.kg,
             )
-            h_mass = self.enth_mass * params.uc["J/kg to kJ/kg"]
+            self.h_kJ_per_kg = pyo.Expression(
+                expr=self.enth_mass * params.uc["J/kg to kJ/kg"]
+            )
             self.temperature = pyo.Expression(
-                expr=self.temperature_star / self.tau_func(cmp, h_mass, P, _data_dir),
+                expr=self.t_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _data_dir),
                 doc="Temperature",
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vf_func(cmp, h_mass, P, _data_dir),
+                    expr=self.vf_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _data_dir),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -398,14 +408,16 @@ class HelmholtzStateBlockData(StateBlockData):
                 bounds=params.default_entropy_mol_bounds,
                 units=pyunits.J / pyunits.mol / pyunits.K,
             )
-            s_mass = self.entr_mol * params.uc["J/mol/K to kJ/kg/K"]
+            self.s_kJ_per_kgK = pyo.Expression(
+                expr=self.entr_mol * params.uc["J/mol/K to kJ/kg/K"]
+            )
             self.temperature = pyo.Expression(
-                expr=self.temperature_star / self.taus_func(cmp, s_mass, P, _data_dir),
+                expr=self.t_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _data_dir),
                 doc="Temperature",
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vfs_func(cmp, s_mass, P, _data_dir),
+                    expr=self.vf_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _data_dir),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -422,14 +434,16 @@ class HelmholtzStateBlockData(StateBlockData):
                 bounds=params.default_entropy_mass_bounds,
                 units=pyunits.J / pyunits.kg / pyunits.K,
             )
-            s_mass = self.entr_mass * params.uc["J/kg/K to kJ/kg/K"]
+            self.s_kJ_per_kgK = pyo.Expression(
+                expr=self.entr_mass * params.uc["J/kg/K to kJ/kg/K"]
+            )
             self.temperature = pyo.Expression(
-                expr=self.temperature_star / self.taus_func(cmp, s_mass, P, _data_dir),
+                expr=self.t_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _data_dir),
                 doc="Temperature",
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vfs_func(cmp, s_mass, P, _data_dir),
+                    expr=self.vf_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _data_dir),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -446,14 +460,16 @@ class HelmholtzStateBlockData(StateBlockData):
                 bounds=params.default_energy_internal_mol_bounds,
                 units=pyunits.J / pyunits.mol,
             )
-            u_mass = self.energy_internal_mol * params.uc["J/mol to kJ/kg"]
+            self.u_kJ_per_kg = pyo.Expression(
+                expr=self.energy_internal_mol * params.uc["J/mol to kJ/kg"]
+            )
             self.temperature = pyo.Expression(
-                expr=self.temperature_star / self.tauu_func(cmp, u_mass, P, _data_dir),
+                expr=self.t_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _data_dir),
                 doc="Temperature",
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vfu_func(cmp, u_mass, P, _data_dir),
+                    expr=self.vf_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _data_dir),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -470,14 +486,16 @@ class HelmholtzStateBlockData(StateBlockData):
                 bounds=params.default_energy_internal_mass_bounds,
                 units=pyunits.J / pyunits.kg,
             )
-            u_mass = self.energy_internal_mass * params.uc["J/kg to kJ/kg"]
+            self.u_kJ_per_kg = pyo.Expression(
+                expr=self.energy_internal_mass * params.uc["J/kg to kJ/kg"]
+            )
             self.temperature = pyo.Expression(
-                expr=self.temperature_star / self.tauu_func(cmp, u_mass, P, _data_dir),
+                expr=self.t_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _data_dir),
                 doc="Temperature",
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vfu_func(cmp, u_mass, P, _data_dir),
+                    expr=self.vf_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _data_dir),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -527,57 +545,46 @@ class HelmholtzStateBlockData(StateBlockData):
                 self._state_vars_dict["flow_mass"] = self.flow_mass
 
     def _tpx_phase_eq(self):
-        # Saturation pressure
         params = self.config.parameters
-        cmp = params.pure_component
         eps_pu = params.smoothing_pressure_under
         eps_po = params.smoothing_pressure_over
         priv_plist = params.private_phase_list
-        rho_star = params.dens_mass_crit
         # Convert pressures to kPa for external functions and nicer scaling in
         # the complementarity-type constraints.
-        P = self.pressure * params.uc["Pa to kPa"]
-        Psat = self.pressure_sat * params.uc["Pa to kPa"]
         vf = self.vapor_frac
-        tau = self.tau
         # Terms for determining if you are above, below, or at the Psat
-        self._P_under_sat = pyo.Expression(
-            expr=smooth_max(0, Psat - P, eps_pu),
-            doc="pressure above Psat, 0 if liqid exists [kPa]",
+        self.pressure_under_sat = pyo.Expression(
+            expr=smooth_max(0, self.pressure_sat - self.pressure, eps_pu),
+            doc="pressure above Psat, 0 if liquid exists",
         )
-        self._P_over_sat = pyo.Expression(
-            expr=smooth_max(0, P - Psat, eps_po),
-            doc="pressure below Psat, 0 if vapor exists [kPa]",
+        self.pressure_over_sat = pyo.Expression(
+            expr=smooth_max(0, self.pressure - self.pressure_sat, eps_po),
+            doc="pressure below Psat, 0 if vapor exists",
         )
+
+        if not self.config.defined_state:
+            self.eq_complementarity = pyo.Constraint(
+                expr=0
+                == (
+                    vf * self.pressure_over_sat / 1000.0
+                    - (1 - vf) * self.pressure_under_sat / 1000.0
+                )
+            )
 
         # Calculate liquid and vapor density.  If the phase doesn't exist,
         # density will be calculated at the saturation or critical pressure
-        def rule_dens_mass(b, p):
+        def rule_pressure_phase(b, p):
             if p == "Liq":
-                return rho_star * self.delta_liq_func(
-                    cmp, P + self._P_under_sat, tau, _data_dir
-                )
+                return self.pressure + self.pressure_under_sat
             else:
-                return rho_star * self.delta_vap_func(
-                    cmp, P - self._P_over_sat, tau, _data_dir
-                )
+                return self.pressure - self.pressure_over_sat
 
-        self.dens_mass_phase = pyo.Expression(priv_plist, rule=rule_dens_mass)
+        self.pressure_phase = pyo.Expression(priv_plist, rule=rule_pressure_phase)
 
-        # Reduced Density (no _mass_ identifier because mass or mol is same)
-        def rule_dens_red(b, p):
-            return self.dens_mass_phase[p] / rho_star
-
-        self.dens_phase_red = pyo.Expression(
-            priv_plist, rule=rule_dens_red, doc="reduced density"
+        # Constraint that can be activated to enforce that you are in the two-phase region
+        self.eq_sat = pyo.Constraint(
+            expr=self.pressure * 1e-6 == self.pressure_sat * 1e-6
         )
-        if not self.config.defined_state:
-            self.eq_complementarity = pyo.Constraint(
-                expr=0 == (vf * self._P_over_sat - (1 - vf) * self._P_under_sat)
-            )
-        # eq_sat can activated to force the pressure to be the saturation
-        # pressure, if you use this constraint deactivate eq_complementarity
-        self.eq_sat = pyo.Constraint(expr=P / 1000.0 == Psat / 1000.0)
         self.eq_sat.deactivate()
 
     def build(self, *args):
@@ -595,7 +602,7 @@ class HelmholtzStateBlockData(StateBlockData):
         self.state_vars = params.state_vars
         # Mass or Mole basis
         self.amount_basis = params.config.amount_basis
-        # private phase list
+        # Private phase list
         phlist = params.private_phase_list
         # Public phase list
         pub_phlist = params.phase_list
@@ -639,72 +646,59 @@ class HelmholtzStateBlockData(StateBlockData):
         # constraints. Beyond this everything else is common.
         self._state_vars()
 
-        # Some parameters/variables show up in several expressions, so to
-        # enhance readability and compactness, give them short aliases
-        T_star = params.temperature_star
-        rho_star = params.dens_mass_star
-        mw = self.mw
         # P is pressure in kPa for external function calls
-        P = self.pressure * params.uc["Pa to kPa"]
         T = self.temperature
         vf = self.vapor_frac
         # Saturation temperature expression
         self.temperature_sat = pyo.Expression(
-            expr=T_star / self.tau_sat_func(cmp, P, _data_dir),
+            expr=self.t_sat_func(cmp, self.p_kPa, _data_dir),
             doc="Saturation temperature",
         )
-        # Saturation tau (tau = T_star/T)
-        self.tau_sat = pyo.Expression(expr=self.tau_sat_func(cmp, P, _data_dir))
-        # Reduced temperature
-        self.temperature_red = pyo.Expression(
-            expr=T / T_star, doc="reduced temperature T/T_star"
-        )
-        self.tau = pyo.Expression(expr=T_star / T, doc="T_star/T")
-        tau = self.tau
         # Saturation pressure
         self.pressure_sat = pyo.Expression(
-            expr=self.p_sat_func(cmp, tau, _data_dir) * params.uc["kPa to Pa"],
+            expr=self.p_sat_t_func(cmp, T, _data_dir) * params.uc["kPa to Pa"],
             doc="Saturation pressure",
         )
-
-        if self.state_vars != StateVars.TPX or len(phlist) == 1:
-            # If we aren't using the TPX with complementarity, just directly
-            # calculate the density and reduced density, this includes single
-            # phase TPX
-            def rule_dens_mass(b, p):
-                if p == "Liq":
-                    return rho_star * self.delta_liq_func(cmp, P, tau, _data_dir)
-                else:
-                    return rho_star * self.delta_vap_func(cmp, P, tau, _data_dir)
-
-            self.dens_mass_phase = pyo.Expression(
-                phlist, rule=rule_dens_mass, doc="Mass density by phase"
-            )
-
-            # Reduced Density (no _mass_ identifier as mass or mol is same)
-            def rule_dens_red(b, p):
-                return self.dens_mass_phase[p] / rho_star
-
-            self.dens_phase_red = pyo.Expression(
-                phlist, rule=rule_dens_red, doc="Reduced density"
-            )
-        else:
+        # Add the complementarity constraint for phase equilibrium with TPx.
+        if self.state_vars == StateVars.TPX and len(phlist) > 1:
             self._tpx_phase_eq()
 
-        # the reduced density (delta) and T_star/T (tau) we can get rest of props
-        delta = self.dens_phase_red
+        # to make writing the remaining expressions simpler create a state var dict
+        if self.state_vars == StateVars.PH:
+            sv_dict = {"h": self.h_kJ_per_kg, "p": self.p_kPa}
+        elif self.state_vars == StateVars.PS:
+            sv_dict = {"s": self.s_kJ_per_kgK, "p": self.p_kPa}
+        elif self.state_vars == StateVars.PU:
+            sv_dict = {"u": self.u_kJ_per_kg, "p": self.p_kPa}
+        elif self.state_vars == StateVars.TPX:
+            sv_dict = {
+                "T": self.temperature,
+                "p": self.p_kPa,
+                "x": self.vapor_frac,
+            }
+        sv_dict_liq = copy.copy(sv_dict)
+        sv_dict_vap = copy.copy(sv_dict)
+        if self.state_vars == StateVars.TPX and len(phlist) > 1:
+            self.p_kPa_liq = pyo.Expression(
+                expr=self.pressure_phase["Liq"] * params.uc["Pa to kPa"]
+            )
+            self.p_kPa_vap = pyo.Expression(
+                expr=self.pressure_phase["Vap"] * params.uc["Pa to kPa"]
+            )
+            sv_dict_liq["p"] = self.p_kPa_liq
+            sv_dict_vap["p"] = self.p_kPa_vap
+
+        self.expression_writer = HelmholtzThermoExpressions(self, params)
 
         # Saturated Enthalpy molar
         def rule_enth_mol_sat_phase(b, p):
             if p == "Liq":
-                return (
-                    self.hlpt_func(cmp, P, self.tau_sat, _data_dir)
-                    * params.uc["kJ/kg to J/mol"]
+                return self.expression_writer.h_liq_sat(
+                    p=b.p_kPa, result_basis=AmountBasis.MOLE, convert_args=False
                 )
             else:
-                return (
-                    self.hvpt_func(cmp, P, self.tau_sat, _data_dir)
-                    * params.uc["kJ/kg to J/mol"]
+                return self.expression_writer.h_vap_sat(
+                    p=b.p_kPa, result_basis=AmountBasis.MOLE, convert_args=False
                 )
 
         self.enth_mol_sat_phase = pyo.Expression(
@@ -716,14 +710,12 @@ class HelmholtzStateBlockData(StateBlockData):
         # Saturated Enthalpy mass
         def rule_enth_mass_sat_phase(b, p):
             if p == "Liq":
-                return (
-                    self.hlpt_func(cmp, P, self.tau_sat, _data_dir)
-                    * params.uc["kJ/kg to J/kg"]
+                return self.expression_writer.h_liq_sat(
+                    p=b.p_kPa, result_basis=AmountBasis.MASS, convert_args=False
                 )
             else:
-                return (
-                    self.hvpt_func(cmp, P, self.tau_sat, _data_dir)
-                    * params.uc["kJ/kg to J/kg"]
+                return self.expression_writer.h_vap_sat(
+                    p=b.p_kPa, result_basis=AmountBasis.MASS, convert_args=False
                 )
 
         self.enth_mass_sat_phase = pyo.Expression(
@@ -731,19 +723,16 @@ class HelmholtzStateBlockData(StateBlockData):
             rule=rule_enth_mass_sat_phase,
             doc="Saturated enthalpy of the phases at pressure",
         )
-        self.enth_mass_sat_phase.latex_symbol = "h_{\\textrm{sat}}"
 
         # Saturated Entropy molar
         def rule_entr_mol_sat_phase(b, p):
             if p == "Liq":
-                return (
-                    self.slpt_func(cmp, P, self.tau_sat, _data_dir)
-                    * params.uc["kJ/kg/K to J/mol/K"]
+                return self.expression_writer.s_liq_sat(
+                    p=b.p_kPa, result_basis=AmountBasis.MOLE, convert_args=False
                 )
             else:
-                return (
-                    self.svpt_func(cmp, P, self.tau_sat, _data_dir)
-                    * params.uc["kJ/kg/K to J/mol/K"]
+                return self.expression_writer.s_vap_sat(
+                    p=b.p_kPa, result_basis=AmountBasis.MOLE, convert_args=False
                 )
 
         self.entr_mol_sat_phase = pyo.Expression(
@@ -755,14 +744,12 @@ class HelmholtzStateBlockData(StateBlockData):
         # Saturated Entropy mass
         def rule_entr_mass_sat_phase(b, p):
             if p == "Liq":
-                return (
-                    self.slpt_func(cmp, P, self.tau_sat, _data_dir)
-                    * params.uc["kJ/kg/K to J/kg/K"]
+                return self.expression_writer.s_liq_sat(
+                    p=b.p_kPa, result_basis=AmountBasis.MASS, convert_args=False
                 )
             else:
-                return (
-                    self.svpt_func(cmp, P, self.tau_sat, _data_dir)
-                    * params.uc["kJ/kg/K to J/kg/K"]
+                return self.expression_writer.s_vap_sat(
+                    p=b.p_kPa, result_basis=AmountBasis.MASS, convert_args=False
                 )
 
         self.entr_mass_sat_phase = pyo.Expression(
@@ -771,31 +758,151 @@ class HelmholtzStateBlockData(StateBlockData):
             doc="Saturated entropy of the phases at pressure",
         )
 
-        if len(phlist) == 2:
-            # delta h vap at P
-            self.dh_vap_mol = pyo.Expression(
-                expr=(self.enth_mol_sat_phase["Vap"] - self.enth_mol_sat_phase["Liq"]),
-                doc="Enthalpy of vaporization at pressure and saturation temperature",
-            )
-            # delta s vap at P
-            self.ds_vap_mol = pyo.Expression(
-                expr=(self.entr_mol_sat_phase["Vap"] - self.entr_mol_sat_phase["Liq"]),
-                doc="Entropy of vaporization at pressure and saturation temperature",
-            )
-            # delta h vap at P
-            self.dh_vap_mass = pyo.Expression(
-                expr=(
-                    self.enth_mass_sat_phase["Vap"] - self.enth_mass_sat_phase["Liq"]
-                ),
-                doc="Enthalpy of vaporization at pressure and saturation temperature",
-            )
-            # delta s vap at P
-            self.ds_vap_mass = pyo.Expression(
-                expr=(
-                    self.entr_mass_sat_phase["Vap"] - self.entr_mass_sat_phase["Liq"]
-                ),
-                doc="Entropy of vaporization at pressure and saturation temperature",
-            )
+        # Saturated internal energy molar
+        def rule_energy_internal_mol_sat_phase(b, p):
+            if p == "Liq":
+                return self.expression_writer.u_liq_sat(
+                    p=b.p_kPa, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+            else:
+                return self.expression_writer.u_vap_sat(
+                    p=b.p_kPa, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+
+        self.energy_internal_mol_sat_phase = pyo.Expression(
+            phlist,
+            rule=rule_energy_internal_mol_sat_phase,
+            doc="Saturated internal energy of the phases at pressure",
+        )
+
+        # Saturated internal energy mass
+        def rule_energy_internal_mass_sat_phase(b, p):
+            if p == "Liq":
+                return self.expression_writer.u_liq_sat(
+                    p=b.p_kPa, result_basis=AmountBasis.MASS, convert_args=False
+                )
+            else:
+                return self.expression_writer.u_vap_sat(
+                    p=b.p_kPa, result_basis=AmountBasis.MASS, convert_args=False
+                )
+
+        self.energy_internal_mass_sat_phase = pyo.Expression(
+            phlist,
+            rule=rule_energy_internal_mass_sat_phase,
+            doc="Saturated internal energy of the phases at pressure",
+        )
+
+        # Saturated molar volume
+        def rule_volume_mol_sat_phase(b, p):
+            if p == "Liq":
+                return self.expression_writer.v_liq_sat(
+                    p=self.p_kPa, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+            else:
+                return self.expression_writer.v_vap_sat(
+                    p=self.p_kPa, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+
+        self.volume_mol_sat_phase = pyo.Expression(
+            phlist,
+            rule=rule_volume_mol_sat_phase,
+            doc="Saturated molar volume of the phases at pressure",
+        )
+
+        # Saturated specific volume
+        def rule_volume_mass_sat_phase(b, p):
+            if p == "Liq":
+                return self.expression_writer.v_liq_sat(
+                    p=self.p_kPa, result_basis=AmountBasis.MASS, convert_args=False
+                )
+            else:
+                return self.expression_writer.v_vap_sat(
+                    p=self.p_kPa, result_basis=AmountBasis.MASS, convert_args=False
+                )
+
+        self.volume_mass_sat_phase = pyo.Expression(
+            phlist,
+            rule=rule_volume_mass_sat_phase,
+            doc="Saturated specific volume of the phases at pressure",
+        )
+
+        # delta h vap at P
+        self.dh_vap_mol = pyo.Expression(
+            expr=(
+                self.expression_writer.h_vap_sat(
+                    p=self.p_kPa, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+                - self.expression_writer.h_liq_sat(
+                    p=self.p_kPa, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+            ),
+            doc="Enthalpy of vaporization at pressure and saturation temperature",
+        )
+
+        # delta s vap at P
+        self.ds_vap_mol = pyo.Expression(
+            expr=(
+                self.expression_writer.s_vap_sat(
+                    p=self.p_kPa, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+                - self.expression_writer.s_liq_sat(
+                    p=self.p_kPa, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+            ),
+            doc="Entropy of vaporization at pressure and saturation temperature",
+        )
+
+        # delta u vap at P
+        self.du_vap_mol = pyo.Expression(
+            expr=(
+                self.expression_writer.u_vap_sat(
+                    p=self.p_kPa, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+                - self.expression_writer.u_liq_sat(
+                    p=self.p_kPa, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+            ),
+            doc="Internal energy of vaporization at pressure and saturation temperature",
+        )
+
+        # delta h vap at P
+        self.dh_vap_mass = pyo.Expression(
+            expr=(
+                self.expression_writer.h_vap_sat(
+                    p=self.p_kPa, result_basis=AmountBasis.MASS, convert_args=False
+                )
+                - self.expression_writer.h_liq_sat(
+                    p=self.p_kPa, result_basis=AmountBasis.MASS, convert_args=False
+                )
+            ),
+            doc="Enthalpy of vaporization at pressure and saturation temperature",
+        )
+
+        # delta s vap at P
+        self.ds_vap_mass = pyo.Expression(
+            expr=(
+                self.expression_writer.s_vap_sat(
+                    p=self.p_kPa, result_basis=AmountBasis.MASS, convert_args=False
+                )
+                - self.expression_writer.s_liq_sat(
+                    p=self.p_kPa, result_basis=AmountBasis.MASS, convert_args=False
+                )
+            ),
+            doc="Entropy of vaporization at pressure and saturation temperature",
+        )
+
+        # delta u vap at P
+        self.du_vap_mass = pyo.Expression(
+            expr=(
+                self.expression_writer.u_vap_sat(
+                    p=self.p_kPa, result_basis=AmountBasis.MASS, convert_args=False
+                )
+                - self.expression_writer.u_liq_sat(
+                    p=self.p_kPa, result_basis=AmountBasis.MASS, convert_args=False
+                )
+            ),
+            doc="Internal energy of vaporization at pressure and saturation temperature",
+        )
 
         # Phase fraction
         def rule_phase_frac(b, p):
@@ -808,11 +915,15 @@ class HelmholtzStateBlockData(StateBlockData):
             phlist, rule=rule_phase_frac, doc="Phase fraction"
         )
 
-        # Phase Internal Energy
         def rule_energy_internal_mol_phase(b, p):
-            return (
-                self.u_func(cmp, delta[p], tau, _data_dir) * params.uc["kJ/kg to J/mol"]
-            )
+            if p == "Liq":
+                return self.expression_writer.u_liq(
+                    **sv_dict_liq, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+            else:
+                return self.expression_writer.u_vap(
+                    **sv_dict_vap, result_basis=AmountBasis.MOLE, convert_args=False
+                )
 
         self.energy_internal_mol_phase = pyo.Expression(
             phlist,
@@ -821,9 +932,14 @@ class HelmholtzStateBlockData(StateBlockData):
         )
 
         def rule_energy_internal_mass_phase(b, p):
-            return (
-                self.u_func(cmp, delta[p], tau, _data_dir) * params.uc["kJ/kg to J/kg"]
-            )
+            if p == "Liq":
+                return self.expression_writer.u_liq(
+                    **sv_dict_liq, result_basis=AmountBasis.MASS, convert_args=False
+                )
+            else:
+                return self.expression_writer.u_vap(
+                    **sv_dict_vap, result_basis=AmountBasis.MASS, convert_args=False
+                )
 
         self.energy_internal_mass_phase = pyo.Expression(
             phlist,
@@ -833,9 +949,14 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase Enthalpy
         def rule_enth_mol_phase(b, p):
-            return (
-                self.h_func(cmp, delta[p], tau, _data_dir) * params.uc["kJ/kg to J/mol"]
-            )
+            if p == "Liq":
+                return self.expression_writer.h_liq(
+                    **sv_dict_liq, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+            else:
+                return self.expression_writer.h_vap(
+                    **sv_dict_vap, result_basis=AmountBasis.MOLE, convert_args=False
+                )
 
         self.enth_mol_phase = pyo.Expression(
             phlist,
@@ -844,9 +965,14 @@ class HelmholtzStateBlockData(StateBlockData):
         )
 
         def rule_enth_mass_phase(b, p):
-            return (
-                self.h_func(cmp, delta[p], tau, _data_dir) * params.uc["kJ/kg to J/kg"]
-            )
+            if p == "Liq":
+                return self.expression_writer.h_liq(
+                    **sv_dict_liq, result_basis=AmountBasis.MASS, convert_args=False
+                )
+            else:
+                return self.expression_writer.h_vap(
+                    **sv_dict_vap, result_basis=AmountBasis.MASS, convert_args=False
+                )
 
         self.enth_mass_phase = pyo.Expression(
             phlist,
@@ -856,10 +982,14 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase Entropy
         def rule_entr_mol_phase(b, p):
-            return (
-                self.s_func(cmp, delta[p], tau, _data_dir)
-                * params.uc["kJ/kg/K to J/mol/K"]
-            )
+            if p == "Liq":
+                return self.expression_writer.s_liq(
+                    **sv_dict_liq, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+            else:
+                return self.expression_writer.s_vap(
+                    **sv_dict_vap, result_basis=AmountBasis.MOLE, convert_args=False
+                )
 
         self.entr_mol_phase = pyo.Expression(
             phlist,
@@ -868,10 +998,14 @@ class HelmholtzStateBlockData(StateBlockData):
         )
 
         def rule_entr_mass_phase(b, p):
-            return (
-                self.s_func(cmp, delta[p], tau, _data_dir)
-                * params.uc["kJ/kg/K to J/kg/K"]
-            )
+            if p == "Liq":
+                return self.expression_writer.s_liq(
+                    **sv_dict_liq, result_basis=AmountBasis.MASS, convert_args=False
+                )
+            else:
+                return self.expression_writer.s_vap(
+                    **sv_dict_vap, result_basis=AmountBasis.MASS, convert_args=False
+                )
 
         self.entr_mass_phase = pyo.Expression(
             phlist,
@@ -881,10 +1015,14 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase constant pressure heat capacity, cp
         def rule_cp_mol_phase(b, p):
-            return (
-                self.cp_func(cmp, delta[p], tau, _data_dir)
-                * params.uc["kJ/kg/K to J/mol/K"]
-            )
+            if p == "Liq":
+                return self.expression_writer.cp_liq(
+                    **sv_dict_liq, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+            else:
+                return self.expression_writer.cp_vap(
+                    **sv_dict_vap, result_basis=AmountBasis.MOLE, convert_args=False
+                )
 
         self.cp_mol_phase = pyo.Expression(
             phlist,
@@ -893,10 +1031,14 @@ class HelmholtzStateBlockData(StateBlockData):
         )
 
         def rule_cp_mass_phase(b, p):
-            return (
-                self.cp_func(cmp, delta[p], tau, _data_dir)
-                * params.uc["kJ/kg/K to J/kg/K"]
-            )
+            if p == "Liq":
+                return self.expression_writer.cp_liq(
+                    **sv_dict_liq, result_basis=AmountBasis.MASS, convert_args=False
+                )
+            else:
+                return self.expression_writer.cp_vap(
+                    **sv_dict_vap, result_basis=AmountBasis.MASS, convert_args=False
+                )
 
         self.cp_mass_phase = pyo.Expression(
             phlist,
@@ -906,10 +1048,14 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase constant volume heat capacity, cv
         def rule_cv_mol_phase(b, p):
-            return (
-                self.cv_func(cmp, delta[p], tau, _data_dir)
-                * params.uc["kJ/kg/K to J/mol/K"]
-            )
+            if p == "Liq":
+                return self.expression_writer.cv_liq(
+                    **sv_dict_liq, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+            else:
+                return self.expression_writer.cv_vap(
+                    **sv_dict_vap, result_basis=AmountBasis.MOLE, convert_args=False
+                )
 
         self.cv_mol_phase = pyo.Expression(
             phlist,
@@ -918,10 +1064,14 @@ class HelmholtzStateBlockData(StateBlockData):
         )
 
         def rule_cv_mass_phase(b, p):
-            return (
-                self.cv_func(cmp, delta[p], tau, _data_dir)
-                * params.uc["kJ/kg/K to J/kg/K"]
-            )
+            if p == "Liq":
+                return self.expression_writer.cv_liq(
+                    **sv_dict_liq, result_basis=AmountBasis.MASS, convert_args=False
+                )
+            else:
+                return self.expression_writer.cv_vap(
+                    **sv_dict_vap, result_basis=AmountBasis.MASS, convert_args=False
+                )
 
         self.cv_mass_phase = pyo.Expression(
             phlist,
@@ -931,7 +1081,10 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase speed of sound
         def rule_speed_sound_phase(b, p):
-            return self.w_func(cmp, delta[p], tau, _data_dir)
+            if p == "Liq":
+                return self.expression_writer.w_liq(**sv_dict_liq, convert_args=False)
+            else:
+                return self.expression_writer.w_vap(**sv_dict_liq, convert_args=False)
 
         self.speed_sound_phase = pyo.Expression(
             phlist,
@@ -939,14 +1092,72 @@ class HelmholtzStateBlockData(StateBlockData):
             doc="Phase speed of sound or saturated if phase doesn't exist",
         )
 
-        # Phase Mole density
+        # molar volume
+        def rule_vol_mol_phase(b, p):
+            if p == "Liq":
+                return self.expression_writer.v_liq(
+                    **sv_dict_liq, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+            else:
+                return self.expression_writer.v_vap(
+                    **sv_dict_vap, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+
+        self.vol_mol_phase = pyo.Expression(
+            phlist,
+            rule=rule_vol_mol_phase,
+            doc="Molar volume of phase",
+        )
+
+        # specific volume
+        def rule_vol_mass_phase(b, p):
+            if p == "Liq":
+                return self.expression_writer.v_liq(
+                    **sv_dict_liq, result_basis=AmountBasis.MASS, convert_args=False
+                )
+            else:
+                return self.expression_writer.v_vap(
+                    **sv_dict_vap, result_basis=AmountBasis.MASS, convert_args=False
+                )
+
+        self.vol_mass_phase = pyo.Expression(
+            phlist,
+            rule=rule_vol_mass_phase,
+            doc="Specific volume of phase",
+        )
+
+        # molar density
         def rule_dens_mol_phase(b, p):
-            return self.dens_mass_phase[p] / mw
+            if p == "Liq":
+                return 1.0 / self.expression_writer.v_liq(
+                    **sv_dict_liq, result_basis=AmountBasis.MOLE, convert_args=False
+                )
+            else:
+                return 1.0 / self.expression_writer.v_vap(
+                    **sv_dict_vap, result_basis=AmountBasis.MOLE, convert_args=False
+                )
 
         self.dens_mol_phase = pyo.Expression(
             phlist,
             rule=rule_dens_mol_phase,
-            doc="Phase mole density",
+            doc="Mole density of phase",
+        )
+
+        # specific density
+        def rule_dens_mass_phase(b, p):
+            if p == "Liq":
+                return 1.0 / self.expression_writer.v_liq(
+                    **sv_dict_liq, result_basis=AmountBasis.MASS, convert_args=False
+                )
+            else:
+                return 1.0 / self.expression_writer.v_vap(
+                    **sv_dict_vap, result_basis=AmountBasis.MASS, convert_args=False
+                )
+
+        self.dens_mass_phase = pyo.Expression(
+            phlist,
+            rule=rule_dens_mass_phase,
+            doc="Mass density of phase",
         )
 
         # Component flow (for units that need it)
@@ -956,7 +1167,7 @@ class HelmholtzStateBlockData(StateBlockData):
         self.flow_mol_comp = pyo.Expression(
             component_list,
             rule=component_flow_mol,
-            doc="Total flow (both phases) of component",
+            doc="Total mole flow (both phases) of component",
         )
 
         def component_flow_mass(b, i):
@@ -965,7 +1176,7 @@ class HelmholtzStateBlockData(StateBlockData):
         self.flow_mass_comp = pyo.Expression(
             component_list,
             rule=component_flow_mass,
-            doc="Total flow (both phases) of component",
+            doc="Total mass flow (both phases) of component",
         )
 
         #
@@ -975,144 +1186,149 @@ class HelmholtzStateBlockData(StateBlockData):
         # Enthalpy and pressure state variables two-phase properties
         if self.state_vars == StateVars.PH:
             if self.amount_basis == AmountBasis.MOLE:
-                h = self.enth_mol * params.uc["J/mol to kJ/kg"]
                 self.enth_mass = pyo.Expression(
                     expr=self.enth_mol * params.uc["J/mol to J/kg"]
                 )
             else:
-                h = self.enth_mass * params.uc["J/kg to kJ/kg"]
                 self.enth_mol = pyo.Expression(
                     expr=self.enth_mass * params.uc["J/kg to J/mol"]
                 )
             self.entr_mass = pyo.Expression(
-                expr=self.s_hp_func(cmp, h, P, _data_dir)
+                expr=self.s_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _data_dir)
                 * params.uc["kJ/kg/K to J/kg/K"]
             )
             self.entr_mol = pyo.Expression(
-                expr=self.s_hp_func(cmp, h, P, _data_dir)
+                expr=self.s_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _data_dir)
                 * params.uc["kJ/kg/K to J/mol/K"]
             )
             self.energy_internal_mass = pyo.Expression(
-                expr=self.u_hp_func(cmp, h, P, _data_dir) * params.uc["kJ/kg to J/kg"]
+                expr=self.u_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _data_dir)
+                * params.uc["kJ/kg to J/kg"]
             )
             self.energy_internal_mol = pyo.Expression(
-                expr=self.u_hp_func(cmp, h, P, _data_dir) * params.uc["kJ/kg to J/mol"]
+                expr=self.u_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _data_dir)
+                * params.uc["kJ/kg to J/mol"]
             )
             self.cp_mass = pyo.Expression(
-                expr=self.cp_hp_func(cmp, h, P, _data_dir)
+                expr=self.cp_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _data_dir)
                 * params.uc["kJ/kg/K to J/kg/K"]
             )
             self.cp_mol = pyo.Expression(
-                expr=self.cp_hp_func(cmp, h, P, _data_dir)
+                expr=self.cp_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _data_dir)
                 * params.uc["kJ/kg/K to J/mol/K"]
             )
             self.cv_mass = pyo.Expression(
-                expr=self.cv_hp_func(cmp, h, P, _data_dir)
+                expr=self.cv_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _data_dir)
                 * params.uc["kJ/kg/K to J/kg/K"]
             )
             self.cv_mol = pyo.Expression(
-                expr=self.cv_hp_func(cmp, h, P, _data_dir)
+                expr=self.cv_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _data_dir)
                 * params.uc["kJ/kg/K to J/mol/K"]
             )
             self.dens_mass = pyo.Expression(
-                expr=1.0 / self.v_hp_func(cmp, h, P, _data_dir)
+                expr=1.0 / self.v_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _data_dir)
             )
             self.dens_mol = pyo.Expression(
-                expr=params.uc["kg/m3 to mol/m3"] / self.v_hp_func(cmp, h, P, _data_dir)
+                expr=params.uc["kg/m3 to mol/m3"]
+                / self.v_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _data_dir)
             )
         # Entropy is a state variable
         elif self.state_vars == StateVars.PS:
             if self.amount_basis == AmountBasis.MOLE:
-                s = self.entr_mol * params.uc["J/mol/K to kJ/kg/K"]
                 self.entr_mass = pyo.Expression(
                     expr=self.entr_mol * params.uc["J/mol/K to J/kg/K"]
                 )
             else:
-                s = self.entr_mass * params.uc["J/kg/K to kJ/kg/K"]
                 self.enth_mol = pyo.Expression(
                     expr=self.entr_mass * params.uc["J/kg/K to J/mol/K"]
                 )
             self.enth_mass = pyo.Expression(
-                expr=self.h_sp_func(cmp, s, P, _data_dir) * params.uc["kJ/kg to J/kg"]
+                expr=self.h_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _data_dir)
+                * params.uc["kJ/kg to J/kg"]
             )
             self.enth_mol = pyo.Expression(
-                expr=self.h_sp_func(cmp, s, P, _data_dir) * params.uc["kJ/kg to J/mol"]
+                expr=self.h_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _data_dir)
+                * params.uc["kJ/kg to J/mol"]
             )
             self.energy_internal_mass = pyo.Expression(
-                expr=self.u_sp_func(cmp, s, P, _data_dir) * params.uc["kJ/kg to J/kg"]
+                expr=self.u_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _data_dir)
+                * params.uc["kJ/kg to J/kg"]
             )
             self.energy_internal_mol = pyo.Expression(
-                expr=self.u_sp_func(cmp, s, P, _data_dir) * params.uc["kJ/kg to J/mol"]
+                expr=self.u_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _data_dir)
+                * params.uc["kJ/kg to J/mol"]
             )
             self.cp_mass = pyo.Expression(
-                expr=self.cp_sp_func(cmp, s, P, _data_dir)
+                expr=self.cp_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _data_dir)
                 * params.uc["kJ/kg/K to J/kg/K"]
             )
             self.cp_mol = pyo.Expression(
-                expr=self.cp_sp_func(cmp, s, P, _data_dir)
+                expr=self.cp_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _data_dir)
                 * params.uc["kJ/kg/K to J/mol/K"]
             )
             self.cv_mass = pyo.Expression(
-                expr=self.cv_sp_func(cmp, s, P, _data_dir)
+                expr=self.cv_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _data_dir)
                 * params.uc["kJ/kg/K to J/kg/K"]
             )
             self.cv_mol = pyo.Expression(
-                expr=self.cv_sp_func(cmp, s, P, _data_dir)
+                expr=self.cv_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _data_dir)
                 * params.uc["kJ/kg/K to J/mol/K"]
             )
             self.dens_mass = pyo.Expression(
-                expr=1.0 / self.v_sp_func(cmp, s, P, _data_dir)
+                expr=1.0 / self.v_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _data_dir)
             )
             self.dens_mol = pyo.Expression(
-                expr=params.uc["kg/m3 to mol/m3"] / self.v_sp_func(cmp, s, P, _data_dir)
+                expr=params.uc["kg/m3 to mol/m3"]
+                / self.v_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _data_dir)
             )
         # Internal energy is a state variable
         elif self.state_vars == StateVars.PU:
             if self.amount_basis == AmountBasis.MOLE:
-                u = self.energy_internal_mol * params.uc["J/mol to kJ/kg"]
                 self.energy_internal_mass = pyo.Expression(
                     expr=self.energy_internal_mol * params.uc["J/mol to J/kg"]
                 )
             else:
-                u = self.energy_internal_mass * params.uc["J/kg to kJ/kg"]
                 self.energy_internal_mol = pyo.Expression(
                     expr=self.energy_internal_mass * params.uc["J/kg to J/mol"]
                 )
             self.enth_mass = pyo.Expression(
-                expr=self.h_up_func(cmp, u, P, _data_dir) * params.uc["kJ/kg to J/kg"]
+                expr=self.h_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _data_dir)
+                * params.uc["kJ/kg to J/kg"]
             )
             self.enth_mol = pyo.Expression(
-                expr=self.h_up_func(cmp, u, P, _data_dir) * params.uc["kJ/kg to J/mol"]
+                expr=self.h_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _data_dir)
+                * params.uc["kJ/kg to J/mol"]
             )
             self.entr_mass = pyo.Expression(
-                expr=self.s_up_func(cmp, u, P, _data_dir)
+                expr=self.s_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _data_dir)
                 * params.uc["kJ/kg/K to J/kg/K"]
             )
             self.entr_mol = pyo.Expression(
-                expr=self.s_up_func(cmp, u, P, _data_dir)
+                expr=self.s_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _data_dir)
                 * params.uc["kJ/kg/K to J/mol/K"]
             )
             self.cp_mass = pyo.Expression(
-                expr=self.cp_up_func(cmp, u, P, _data_dir)
+                expr=self.cp_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _data_dir)
                 * params.uc["kJ/kg/K to J/kg/K"]
             )
             self.cp_mol = pyo.Expression(
-                expr=self.cp_up_func(cmp, u, P, _data_dir)
+                expr=self.cp_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _data_dir)
                 * params.uc["kJ/kg/K to J/mol/K"]
             )
             self.cv_mass = pyo.Expression(
-                expr=self.cv_up_func(cmp, u, P, _data_dir)
+                expr=self.cv_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _data_dir)
                 * params.uc["kJ/kg/K to J/kg/K"]
             )
             self.cv_mol = pyo.Expression(
-                expr=self.cv_up_func(cmp, u, P, _data_dir)
+                expr=self.cv_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _data_dir)
                 * params.uc["kJ/kg/K to J/mol/K"]
             )
             self.dens_mass = pyo.Expression(
-                expr=1.0 / self.v_up_func(cmp, u, P, _data_dir)
+                expr=1.0 / self.v_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _data_dir)
             )
             self.dens_mol = pyo.Expression(
-                expr=params.uc["kg/m3 to mol/m3"] / self.v_up_func(cmp, u, P, _data_dir)
+                expr=params.uc["kg/m3 to mol/m3"]
+                / self.v_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _data_dir)
             )
         else:  # T, P, x
             # enthalpy
@@ -1192,30 +1408,72 @@ class HelmholtzStateBlockData(StateBlockData):
             pub_phlist, component_list, rule=rule_mole_frac_phase_comp
         )
 
-        tmod = get_transport_module(cmp)
-        if tmod is not None:
-            # Phase Thermal conductivity
-            def rule_tc(b, p):
-                return tmod._thermal_conductivity(self, delta[p], tau, on_blk=self)
+        if viscosity_available(cmp):
 
-            self.therm_cond_phase = pyo.Expression(
-                phlist, rule=rule_tc, doc="Thermal conductivity"
-            )
-
-            # Phase dynamic viscosity
-            def rule_mu(b, p):
-                return tmod._viscosity(self, delta[p], tau, on_blk=self)
+            def rule_visc_d_phase(b, p):
+                if p == "Liq":
+                    return self.expression_writer.viscosity_liq(
+                        **sv_dict_liq, convert_args=False
+                    )
+                else:
+                    return self.expression_writer.viscosity_vap(
+                        **sv_dict_vap, convert_args=False
+                    )
 
             self.visc_d_phase = pyo.Expression(
-                phlist, rule=rule_mu, doc="Dynamic viscosity"
+                phlist,
+                rule=rule_visc_d_phase,
+                doc="(Dynamic) viscosity of phase",
             )
 
-            # Phase kinematic viscosity
-            def rule_nu(b, p):
-                return self.visc_d_phase[p] / self.dens_mass_phase[p]
+            def rule_visc_k_phase(b, p):
+                if p == "Liq":
+                    return (
+                        self.expression_writer.viscosity_liq(
+                            **sv_dict_liq, convert_args=False
+                        )
+                        / self.dens_mass_phase[p]
+                    )
+                else:
+                    return (
+                        self.expression_writer.viscosity_vap(
+                            **sv_dict_vap, convert_args=False
+                        )
+                        / self.dens_mass_phase[p]
+                    )
 
             self.visc_k_phase = pyo.Expression(
-                phlist, rule=rule_nu, doc="Kinematic viscosity"
+                phlist,
+                rule=rule_visc_k_phase,
+                doc="Kinematic viscosity of phase",
+            )
+
+        if thermal_conductivity_available(cmp):
+
+            def rule_therm_cond_phase(b, p):
+                if p == "Liq":
+                    return self.expression_writer.thermal_conductivity_liq(
+                        **sv_dict_liq, convert_args=False
+                    )
+                else:
+                    return self.expression_writer.thermal_conductivity_vap(
+                        **sv_dict_vap, convert_args=False
+                    )
+
+            self.therm_cond_phase = pyo.Expression(
+                phlist,
+                rule=rule_therm_cond_phase,
+                doc="Thermal conductivity of phase",
+            )
+
+        if surface_tension_available(cmp):
+
+            self.surf_tens = pyo.Expression(
+                phlist,
+                expr=self.expression_writer.surface_tension(
+                    **sv_dict_liq, convert_args=False
+                ),
+                doc="Thermal conductivity of phase",
             )
 
         # Define some expressions for the balance terms returned by functions

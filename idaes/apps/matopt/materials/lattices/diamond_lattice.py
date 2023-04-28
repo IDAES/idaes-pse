@@ -104,7 +104,7 @@ class DiamondLattice(UnitCellLattice):
 
     # === CONSTRUCTOR - Aligned with {110}
     @classmethod
-    def aligndWith110(cls, IAD):
+    def alignedWith110(cls, IAD):
         result = cls(IAD)
         thetaX = 0
         thetaY = np.pi * 0.25
@@ -129,7 +129,7 @@ class DiamondLattice(UnitCellLattice):
             if MI in ["100", "010", "001"]:
                 return cls(IAD)
             elif MI in ["110", "101", "011"]:
-                return cls.aligndWith110(IAD)
+                return cls.alignedWith110(IAD)
             elif MI == "111":
                 return cls.alignedWith111(IAD)
             else:

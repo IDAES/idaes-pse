@@ -115,7 +115,7 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
             self._original = {}
 
             # The named expressions could be changed as a side effect of the
-            # constraint expression replacements, so for maximum saftey, just
+            # constraint expression replacements, so for maximum safety, just
             # store all the expressions for Expressions
             for c in instance.component_data_objects(
                 pyo.Expression,
@@ -174,7 +174,7 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
 
     def revert(self):
         """Revert model to pretransformation state, using substitutions to
-        calcualte values of varaibles that were removed from the problem. This
+        calculate values of variables that were removed from the problem. This
         applies to the last reversible transformation performed with this object.
         """
         try:

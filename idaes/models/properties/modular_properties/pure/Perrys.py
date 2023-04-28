@@ -16,7 +16,7 @@ Methods for calculating pure component properties from:
 Perry's Chemical Engineers' Handbook, 7th Edition
 Perry, Green, Maloney, 1997, McGraw-Hill
 
-All parameter indicies and units based on conventions used by the source
+All parameter indices and units based on conventions used by the source
 """
 # TODO: Missing doc strings
 # pylint: disable=missing-class-docstring

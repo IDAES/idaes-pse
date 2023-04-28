@@ -129,7 +129,7 @@ class GenericValve(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, valve_model):
-        # calculated Cv to yeild this solution
+        # calculated Cv to yield this solution
         assert pytest.approx(1000, rel=1e-3) == value(
             valve_model.fs.valve.outlet.flow_mol[0]
         )

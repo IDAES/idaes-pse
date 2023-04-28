@@ -454,7 +454,7 @@ class StateBlock(ProcessBlock):
             doc - doc string or Prot object
             slice_index - Slice index (e.g. (slice(None), 0.0) that will be
                 used to index self when constructing port references. Default = None.
-            index - time index to use when calling define_port_memebers. Default = None.
+            index - time index to use when calling define_port_members. Default = None.
 
         Returns:
             Port object and list of tuples with form (Reference, member name)

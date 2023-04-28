@@ -279,7 +279,7 @@ class ThermalGeneratorModelData(GeneratorModelData):
         Assemble the default production cost bids.
 
         Args:
-            production_cost_bid_pairs: a list of pairs, which consit of power output
+            production_cost_bid_pairs: a list of pairs, which consist of power output
             and corresponding marginal costs
 
         Returns:
@@ -316,7 +316,7 @@ class ThermalGeneratorModelData(GeneratorModelData):
         Assemble the default startup cost bids.
 
         Args:
-            startup_cost_pairs: a list of pairs, which consit of startup time lag
+            startup_cost_pairs: a list of pairs, which consist of startup time lag
             and corresponding startup costs
 
         Returns:

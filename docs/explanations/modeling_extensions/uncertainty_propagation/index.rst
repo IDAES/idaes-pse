@@ -39,7 +39,7 @@ Note that :math:`\text{Var}[c_k(x^*,p^*)] \approx 0` because the constraints rem
 
 All gradients are calculated with `k_aug <https://github.com/dthierry/k_aug>`_  [1]. More specifically, :math:`\frac{\partial f}{\partial p}, \frac{\partial f}{\partial x}, \frac{\partial c_1}{\partial p}, \frac{\partial c_1}{\partial x}, \ldots, \frac{\partial c_k}{\partial p}, \frac{\partial c_k}{\partial x}` evaluated at :math:`(x^*, p)` are computed via automatic differentiation whereas :math:`\frac{\partial x}{\partial p}` are computed via nonlinear programming sensitivity theory.
 
-The covariance matrix :math:`\Sigma_p` is either user supplied or obtained via regression (with ``Pyomo.ParmEst``). 
+The covariance matrix :math:`\Sigma_p` is either user supplied or obtained via regression (with ``Pyomo.Parmest``). 
 
 **Dependencies**
 

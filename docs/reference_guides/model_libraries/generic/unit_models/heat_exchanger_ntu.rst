@@ -7,7 +7,7 @@ Heat Exchanger using the NTU Method
 .. currentmodule:: idaes.models.unit_models.heat_exchanger_ntu
 
 The HeatExchangerNTU model can be imported from :code:`idaes.models.unit_models`, and models a heat exchanger using the effectiveness-NTU method.
-This model dervied from the
+This model derived from the
 
 Degrees of Freedom
 ------------------
@@ -92,6 +92,12 @@ Additionally, and overall energy balance constraint is written:
 
 .. math::
   Q_{hot} = -Q_{cold}
+  
+Initialization
+--------------
+
+.. autoclass:: HXNTUInitializer
+   :members: initialization_routine
 
 Class Documentation
 -------------------

@@ -8,7 +8,7 @@ The most commonly used methods are ``degrees_of_freedom`` and ``report_statistic
 Degrees of Freedom Method
 -------------------------
 
-The ``degrees_of_freedom`` method calculates the number of degrees of freedom available in a given model. The calcuation is based on the number of unfixed variables which appear in active constraints, minus the number of active equality constraints in the model. Users should note that this method does not consider inequality or deactived constraints, or variables which do not appear in active equality constraints.
+The ``degrees_of_freedom`` method calculates the number of degrees of freedom available in a given model. The calcuation is based on the number of unfixed variables which appear in active constraints, minus the number of active equality constraints in the model. Users should note that this method does not consider inequality or deactivated constraints, or variables which do not appear in active equality constraints.
 
 .. autofunction:: idaes.core.util.model_statistics.degrees_of_freedom
 
@@ -54,7 +54,7 @@ Other Statistics Methods
 
 In addition to the methods discussed above, the ``model_statistics`` module also contains a number of methods for quantifying model statistics which may be of use to the user in debugging models. These methods come in three types:
 
-* Number methods (start with ``number_``) return the number of components which meet a given criteria, and are useful for quickly quantifying differnt types of components within a model for determining where problems may exist.
+* Number methods (start with ``number_``) return the number of components which meet a given criteria, and are useful for quickly quantifying different types of components within a model for determining where problems may exist.
 * Set methods (end with ``_set``) return a Pyomo ``ComponentSet`` containing all components which meet a given criteria. These methods are useful for determining where a problem may exist, as the ``ComponentSet`` indicates which components may be causing a problem.
 * Generator methods (end with ``_generator``) contain Python ``generators`` which return all components which meet a given criteria.
 

@@ -17,7 +17,7 @@ import pytest
 import types
 import os
 
-from pyomo.environ import ConcreteModel, Constraint, Var
+from pyomo.environ import Block, ConcreteModel, Constraint, value, Var
 
 from idaes.core.base.process_base import ProcessBaseBlock
 from idaes.core.initialization.initializer_base import (
@@ -676,8 +676,18 @@ class TestSubMethods:
         assert expected in caplog.text
 
 
-class dummy_initializer:
-    pass
+class DummyInit:
+    def plugin_prepare(self, plugin, output="default"):
+        plugin._test = output
+
+    def plugin_initialize(self, model, **kwargs):
+        model._plugin_initialized = True
+
+    def plugin_finalize(self, plugin, output="default"):
+        plugin._test2 = output
+
+    def initialize(self, model, **kwargs):
+        model._initialized = True
 
 
 class TestModularInitializerBase:
@@ -688,43 +698,45 @@ class TestModularInitializerBase:
         assert initializer.submodel_initializers == {}
         assert initializer.config.default_submodel_initializer is None
 
+        assert initializer._solver is None
+        assert initializer.config.solver is None
+        assert initializer.config.solver_options == {}
+
     @pytest.mark.unit
     def test_get_submodel_initializer_specific_model(self):
         m = ConcreteModel()
 
         initializer = ModularInitializerBase()
-        initializer.submodel_initializers[m] = dummy_initializer
+        initializer.submodel_initializers[m] = DummyInit
 
-        assert isinstance(initializer.get_submodel_initializer(m), dummy_initializer)
+        assert isinstance(initializer.get_submodel_initializer(m), DummyInit)
 
     @pytest.mark.unit
     def test_get_submodel_initializer_model_type(self):
         m = ConcreteModel()
 
         initializer = ModularInitializerBase()
-        initializer.submodel_initializers[ConcreteModel] = dummy_initializer
+        initializer.submodel_initializers[ConcreteModel] = DummyInit
 
-        assert isinstance(initializer.get_submodel_initializer(m), dummy_initializer)
+        assert isinstance(initializer.get_submodel_initializer(m), DummyInit)
 
     @pytest.mark.unit
     def test_get_submodel_initializer_model_default(self):
         m = ConcreteModel()
-        m.default_initializer = dummy_initializer
+        m.default_initializer = DummyInit
 
         initializer = ModularInitializerBase()
 
-        assert isinstance(initializer.get_submodel_initializer(m), dummy_initializer)
+        assert isinstance(initializer.get_submodel_initializer(m), DummyInit)
 
     @pytest.mark.unit
     def test_get_submodel_initializer_global_default(self):
         m = ConcreteModel()
 
-        initializer = ModularInitializerBase(
-            default_submodel_initializer=dummy_initializer
-        )
-        assert initializer.config.default_submodel_initializer == dummy_initializer
+        initializer = ModularInitializerBase(default_submodel_initializer=DummyInit)
+        assert initializer.config.default_submodel_initializer == DummyInit
 
-        assert isinstance(initializer.get_submodel_initializer(m), dummy_initializer)
+        assert isinstance(initializer.get_submodel_initializer(m), DummyInit)
 
     @pytest.mark.unit
     def test_get_submodel_initializer_model_w_params(self):
@@ -737,9 +749,9 @@ class TestModularInitializerBase:
         m.params = dummy_param
 
         initializer = ModularInitializerBase()
-        initializer.submodel_initializers[dummy_param] = dummy_initializer
+        initializer.submodel_initializers[dummy_param] = DummyInit
 
-        assert isinstance(initializer.get_submodel_initializer(m), dummy_initializer)
+        assert isinstance(initializer.get_submodel_initializer(m), DummyInit)
 
     @pytest.mark.unit
     def test_get_submodel_initializer_none(self, caplog):
@@ -805,3 +817,125 @@ class TestModularInitializerBase:
 
         initializer.add_submodel_initializer("foo", "bar")
         assert initializer.submodel_initializers == {"foo": "bar"}
+
+    @pytest.mark.unit
+    def test_prepare_plugins_none(self):
+        m = ConcreteModel()
+        m.initialization_order = [m]
+
+        initializer = ModularInitializerBase()
+
+        args = {"foo": "bar"}
+        subinit, plugin_args = initializer.prepare_plugins(m, args)
+
+        assert subinit == {}
+        assert plugin_args == {"foo": "bar"}
+        # Make sure we didn't change the original args
+        assert args == {"foo": "bar"}
+
+    @pytest.mark.unit
+    def test_prepare_plugins_no_args(self):
+        m = ConcreteModel()
+        m.b = Block()
+        m.initialization_order = [m, m.b]
+
+        initializer = ModularInitializerBase()
+        initializer.add_submodel_initializer(m.b, DummyInit)
+
+        args = {"foo": "bar"}
+        subinit, plugin_args = initializer.prepare_plugins(m, args)
+
+        assert len(subinit) == 1
+        assert isinstance(subinit[m.b], DummyInit)
+        assert plugin_args == {"foo": "bar", m.b: {}}
+        assert m.b._test == "default"
+        # Make sure we didn't change the original args
+        assert args == {"foo": "bar"}
+
+    @pytest.mark.unit
+    def test_prepare_plugins_w_args(self):
+        m = ConcreteModel()
+        m.b = Block()
+        m.initialization_order = [m, m.b]
+
+        initializer = ModularInitializerBase()
+        initializer.add_submodel_initializer(m.b, DummyInit)
+
+        args = {"foo": "bar", m.b: {"output": "checkval"}}
+        subinit, plugin_args = initializer.prepare_plugins(m, args)
+
+        assert len(subinit) == 1
+        assert isinstance(subinit[m.b], DummyInit)
+        assert plugin_args == {"foo": "bar", m.b: {"output": "checkval"}}
+        assert m.b._test == "checkval"
+        # Make sure we didn't change the original args
+        assert args == {"foo": "bar", m.b: {"output": "checkval"}}
+
+    @pytest.mark.unit
+    def test_solve_full_model_no_plugins(self):
+        m = ConcreteModel()
+        m.initialization_order = [m]
+
+        initializer = ModularInitializerBase()
+
+        results = initializer.solve_full_model(m, "test_results")
+
+        assert results == "test_results"
+
+    @pytest.mark.unit
+    def test_solve_full_model_w_plugins(self):
+        m = ConcreteModel()
+        m.b = Block()
+        m.b.v = Var()
+        m.b.c = Constraint(expr=m.b.v == 12)
+
+        m.initialization_order = [m, m.b]
+
+        initializer = ModularInitializerBase()
+
+        results = initializer.solve_full_model(m, "test_results")
+
+        assert value(m.b.v) == pytest.approx(12, rel=1e-8)
+        assert isinstance(results, dict)
+        assert "Solution" in results
+
+    @pytest.mark.unit
+    def test_cleanup_none(self):
+        m = ConcreteModel()
+        m.initialization_order = [m]
+
+        initializer = ModularInitializerBase()
+
+        args = {"foo": "bar"}
+        subinit = {}
+        initializer.cleanup(m, args, subinit)
+
+        # No-op - what to assert?
+
+    @pytest.mark.unit
+    def test_cleanup_no_args(self):
+        m = ConcreteModel()
+        m.b = Block()
+        m.initialization_order = [m, m.b]
+
+        initializer = ModularInitializerBase()
+
+        args = {"foo": "bar", m.b: {}}
+        subinit = {m.b: DummyInit()}
+        initializer.cleanup(m, args, subinit)
+
+        assert m.b._test2 == "default"
+
+    @pytest.mark.unit
+    def test_cleanup_w_args(self):
+        m = ConcreteModel()
+        m.b = Block()
+        m.initialization_order = [m, m.b]
+
+        initializer = ModularInitializerBase()
+
+        args = {"foo": "bar", m.b: {"output": "forty-two"}}
+        subinit = {m.b: DummyInit()}
+        initializer.cleanup(m, args, subinit)
+
+        assert m.b._test2 == "forty-two"

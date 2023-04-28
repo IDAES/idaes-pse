@@ -346,6 +346,10 @@ class UnitSet(object):
     def POWER(self):
         return self._mass * self._length**2 * self._time**-3
 
+    @property
+    def VOLTAGE(self):
+        return self._mass * self._length**2 * self._time**-3 * self._current**-1
+
     # Heat Related
     @property
     def HEAT_CAPACITY_MASS(self):
