@@ -1,7 +1,7 @@
 Single Control Volume Initializer
 =================================
 
-The Single Control Volume Initializer is a hierarchical ``Initializer`` suitable for any unit model that involves a single control volume (either 0- or 1-dimensional control volume).
+The Single Control Volume Initializer is a hierarchical ``Initializer`` suitable for any unit model that involves a single control volume (either 0- or 1-dimensional control volume). This ``Initializer`` is the default for all unit models in IDAES unless the unit model overloads this with a different option.
 
 This routine applies a hierarchical approach to initialize the `StateBlock(s)` within the model followed by calling a solver to converge the full model. The following steps are used to initialize the model:
 

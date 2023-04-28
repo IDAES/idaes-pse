@@ -61,6 +61,10 @@ class ShellAndTubeInitializer(SingleControlVolumeUnitInitializer):
         """
         Common initialization routine for 1D Shell and Tube Heat Exchangers.
 
+        This routine starts by initializing the hot and cold side properties. Next, the hot side is solved with
+        the wall temperature fixed to the average of the hot and cold side temperatures and the heat
+        transfer constraints deactivated. Finally, full model is solved with the wall temperature unfixed.
+
         Args:
             model: Pyomo Block to be initialized
             plugin_initializer_args: dict-of-dicts containing arguments to be passed to plug-in Initializers.

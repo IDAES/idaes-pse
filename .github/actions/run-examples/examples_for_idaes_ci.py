@@ -24,7 +24,14 @@ def pytest_configure(config: pytest.Config):
     config.stash[matchmarker] = {
         "*/held/*": pytest.mark.xfail(run=False, reason="notebook has 'held' status"),
         "*/archive/*": pytest.mark.skip(reason="notebook is archived"),
+        # TODO: Need to fix this once the Python 3.11 issue is resolved in tensorflow
         "*/surrogates/best_practices_optimization*": pytest.mark.xfail(
+            condition=sys.version_info > (3, 11),
+            run=True,
+            strict=False,
+            reason="tensorflow ImportError on 3.11",
+        ),
+        "*/surrogates/omlt/keras_flowsheet_optimization*": pytest.mark.xfail(
             condition=sys.version_info > (3, 11),
             run=True,
             strict=False,

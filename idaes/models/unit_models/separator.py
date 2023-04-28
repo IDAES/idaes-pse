@@ -98,13 +98,25 @@ class SeparatorInitializer(ModularInitializerBase):
         model: Block,
     ):
         """
-        Initialization routine for Feed Blocks.
+        Initialization routine for Separator Blocks.
+
+        This routine starts by initializing the feed stream followed by solving
+        for all split fractions. Next, states for each outlet are estimated using the
+        following rules:
+
+        1. Intensive states remain unchanged
+        2. Extensive states are multiplied by split fractions if index matches, or
+            average of split fractions for outlet otherwise
+
+        Each outlet state block is then initialized, and finally the full model is
+        solved.
 
         Args:
             model: model to be initialized
 
         Returns:
             None
+
         """
         init_log = idaeslog.getInitLogger(
             model.name, self.get_output_level(), tag="unit"
@@ -155,7 +167,7 @@ class SeparatorInitializer(ModularInitializerBase):
         # 1. Intensive states remain unchanged - this is either a valid premise
         # or the actual state is impossible to calculate without solving the
         # full separator model.
-        # 2. Extensive states are use split fractions if index matches, or
+        # 2. Extensive states use split fractions if index matches, or
         # average of split fractions for outlet otherwise
         for o in outlet_list:
             # Get corresponding outlet StateBlock
