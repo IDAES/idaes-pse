@@ -45,6 +45,11 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    SingleControlVolumeUnitInitializer,
+    InitializationStatus,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -468,4 +473,198 @@ class TestIAPWS(object):
                 )
             )
             <= 1e-6
+        )
+
+
+class TestInitializersIAPWS:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock(
+            phase_presentation=iapws95.PhaseType.LG
+        )
+
+        m.fs.unit = Flash(
+            property_package=m.fs.properties,
+            ideal_separation=False,
+            energy_split_basis=EnergySplittingType.enthalpy_split,
+        )
+
+        m.fs.unit.inlet.flow_mol.fix(100)
+        m.fs.unit.inlet.enth_mol.fix(24000)
+        m.fs.unit.inlet.pressure.fix(101325)
+
+        m.fs.unit.heat_duty.fix(0)
+        m.fs.unit.deltaP.fix(0)
+
+        return m
+
+    @pytest.mark.integration
+    def test_general_hierarchical(self, model):
+        initializer = SingleControlVolumeUnitInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        t_in = value(model.fs.unit.control_volume.properties_in[0].temperature)
+        assert pytest.approx(373.12, abs=1e-2) == t_in
+        assert pytest.approx(t_in, abs=1e-2) == value(
+            model.fs.unit.control_volume.properties_out[0].temperature
+        )
+        assert pytest.approx(t_in, abs=1e-2) == value(
+            model.fs.unit.split.Vap_state[0].temperature
+        )
+        assert pytest.approx(t_in, abs=1e-2) == value(
+            model.fs.unit.split.Liq_state[0].temperature
+        )
+
+        assert pytest.approx(101325.0, abs=1e3) == value(
+            model.fs.unit.vap_outlet.pressure[0]
+        )
+        assert pytest.approx(48200, abs=1e3) == value(
+            model.fs.unit.vap_outlet.enth_mol[0]
+        )
+        assert pytest.approx(40.467, abs=1e-3) == value(
+            model.fs.unit.vap_outlet.flow_mol[0]
+        )
+
+        assert pytest.approx(101325.0, abs=1e3) == value(
+            model.fs.unit.liq_outlet.pressure[0]
+        )
+        assert pytest.approx(7549.4, abs=1) == value(
+            model.fs.unit.liq_outlet.enth_mol[0]
+        )
+        assert pytest.approx(59.532, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.flow_mol[0]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        t_in = value(model.fs.unit.control_volume.properties_in[0].temperature)
+        assert pytest.approx(373.12, abs=1e-2) == t_in
+        assert pytest.approx(t_in, abs=1e-2) == value(
+            model.fs.unit.control_volume.properties_out[0].temperature
+        )
+        assert pytest.approx(t_in, abs=1e-2) == value(
+            model.fs.unit.split.Vap_state[0].temperature
+        )
+        assert pytest.approx(t_in, abs=1e-2) == value(
+            model.fs.unit.split.Liq_state[0].temperature
+        )
+
+        assert pytest.approx(101325.0, abs=1e3) == value(
+            model.fs.unit.vap_outlet.pressure[0]
+        )
+        assert pytest.approx(48200, abs=1e3) == value(
+            model.fs.unit.vap_outlet.enth_mol[0]
+        )
+        assert pytest.approx(40.467, abs=1e-3) == value(
+            model.fs.unit.vap_outlet.flow_mol[0]
+        )
+
+        assert pytest.approx(101325.0, abs=1e3) == value(
+            model.fs.unit.liq_outlet.pressure[0]
+        )
+        assert pytest.approx(7549.4, abs=1) == value(
+            model.fs.unit.liq_outlet.enth_mol[0]
+        )
+        assert pytest.approx(59.532, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.flow_mol[0]
+        )
+
+
+class TestInitializersCubicBTX:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = BTXParameterBlock(
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
+        )
+
+        m.fs.unit = Flash(property_package=m.fs.properties)
+
+        m.fs.unit.inlet.flow_mol.fix(1)
+        m.fs.unit.inlet.temperature.fix(368)
+        m.fs.unit.inlet.pressure.fix(101325)
+        m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.heat_duty.fix(0)
+        m.fs.unit.deltaP.fix(0)
+
+        return m
+
+    @pytest.mark.integration
+    def test_general_hierarchical(self, model):
+        initializer = SingleControlVolumeUnitInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(0.603, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.flow_mol[0]
+        )
+        assert pytest.approx(0.396, abs=1e-3) == value(
+            model.fs.unit.vap_outlet.flow_mol[0]
+        )
+        assert pytest.approx(368, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.pressure[0]
+        )
+
+        assert pytest.approx(0.412, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.588, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.mole_frac_comp[0, "toluene"]
+        )
+        assert pytest.approx(0.634, abs=1e-3) == value(
+            model.fs.unit.vap_outlet.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.366, abs=1e-3) == value(
+            model.fs.unit.vap_outlet.mole_frac_comp[0, "toluene"]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(0.603, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.flow_mol[0]
+        )
+        assert pytest.approx(0.396, abs=1e-3) == value(
+            model.fs.unit.vap_outlet.flow_mol[0]
+        )
+        assert pytest.approx(368, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.pressure[0]
+        )
+
+        assert pytest.approx(0.412, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.588, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.mole_frac_comp[0, "toluene"]
+        )
+        assert pytest.approx(0.634, abs=1e-3) == value(
+            model.fs.unit.vap_outlet.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.366, abs=1e-3) == value(
+            model.fs.unit.vap_outlet.mole_frac_comp[0, "toluene"]
         )

@@ -780,7 +780,7 @@ class RadialBasisFunctions:
         # TODO: This is too many iterations
         opt.options["max_iter"] = 1000
         opt.options["acceptable_tol"] = 1e-30
-        # TODO: Should htis be checking for a feasible solution?
+        # TODO: Should this be checking for a feasible solution?
         opt.solve(instance)
 
         # Convert theta variable into numpy array

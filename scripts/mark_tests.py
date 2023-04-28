@@ -62,8 +62,8 @@ def process_testfile(filename):
             _log.debug("")
 
         if not pytest_imported:  # we're at/near the top of the file still
-            # look for import statments; when we hit something that isn't
-            # an import, whitepsace, comment, or docstring
+            # look for import statements; when we hit something that isn't
+            # an import, whitespace, comment, or docstring
             if re.match(r"import pytest", lines[line_ind]):
                 pytest_imported = True
             elif re.match(r"(import|from).*,\n$", lines[line_ind]):

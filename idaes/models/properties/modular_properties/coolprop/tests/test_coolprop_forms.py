@@ -234,7 +234,7 @@ class TestBaseForms:
 
     @pytest.mark.unit
     def test_expression_nonexponential(self, model):
-        # Manufacture results using O2 paramters for Psat
+        # Manufacture results using O2 parameters for Psat
         data = {
             100: -4706232.585007142,
             110: -2952092.3626429834,

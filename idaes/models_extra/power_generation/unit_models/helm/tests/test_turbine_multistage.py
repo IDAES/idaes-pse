@@ -229,8 +229,8 @@ def test_initialize_calc_cf():
         outlvl=idaeslog.DEBUG,
         calculate_inlet_cf=True,
         calculate_outlet_cf=True,
-        copy_disconneted_flow=True,
-        copy_disconneted_pressure=True,
+        copy_disconnected_flow=True,
+        copy_disconnected_pressure=True,
         optarg={"max_iter": 20},
     )
     turb.ip_stages[1].inlet.unfix()

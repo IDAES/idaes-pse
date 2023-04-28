@@ -45,6 +45,7 @@ from idaes.models.unit_models.heat_exchanger import (
     delta_temperature_lmtd_smooth_callback,
     HeatExchanger,
     HeatExchangerFlowPattern,
+    HX0DInitializer,
 )
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
@@ -66,6 +67,10 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    InitializationStatus,
+)
 
 
 # Imports to assemble BT-PR with different units
@@ -264,6 +269,8 @@ def test_config():
     assert not m.fs.unit.config.cold_side.has_phase_equilibrium
     assert not m.fs.unit.config.cold_side.has_pressure_change
     assert m.fs.unit.config.cold_side.property_package is m.fs.properties
+
+    assert m.fs.unit.default_initializer is HX0DInitializer
 
 
 def basic_model(cb=delta_temperature_lmtd_callback):
@@ -1237,7 +1244,6 @@ class TestIAPWS_countercurrent(object):
 
 
 # -----------------------------------------------------------------------------
-# @pytest.mark.skip(reason="Solutions vary with differnt versions of solver.")
 class TestSaponification_crossflow(object):
     @pytest.fixture(scope="class")
     def sapon(self):
@@ -1895,3 +1901,292 @@ class TestBT_Generic_cocurrent(object):
 
         with pytest.raises(InitializationError):
             btx.fs.unit.initialize()
+
+
+class TestInitializersModular:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        # As we lack other example prop packs with units, take the generic
+        # BT-PR package and change the base units
+        configuration2 = {
+            # Specifying components
+            "components": {
+                "benzene": {
+                    "type": Component,
+                    "enth_mol_ig_comp": RPP,
+                    "entr_mol_ig_comp": RPP,
+                    "pressure_sat_comp": RPP,
+                    "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
+                    "parameter_data": {
+                        "mw": (78.1136e-3, pyunits.kg / pyunits.mol),  # [1]
+                        "pressure_crit": (48.9e5, pyunits.Pa),  # [1]
+                        "temperature_crit": (562.2, pyunits.K),  # [1]
+                        "omega": 0.212,  # [1]
+                        "cp_mol_ig_comp_coeff": {
+                            "A": (-3.392e1, pyunits.J / pyunits.mol / pyunits.K),  # [1]
+                            "B": (4.739e-1, pyunits.J / pyunits.mol / pyunits.K**2),
+                            "C": (-3.017e-4, pyunits.J / pyunits.mol / pyunits.K**3),
+                            "D": (7.130e-8, pyunits.J / pyunits.mol / pyunits.K**4),
+                        },
+                        "enth_mol_form_vap_comp_ref": (
+                            82.9e3,
+                            pyunits.J / pyunits.mol,
+                        ),  # [3]
+                        "entr_mol_form_vap_comp_ref": (
+                            -269,
+                            pyunits.J / pyunits.mol / pyunits.K,
+                        ),  # [3]
+                        "pressure_sat_comp_coeff": {
+                            "A": (-6.98273, None),  # [1]
+                            "B": (1.33213, None),
+                            "C": (-2.62863, None),
+                            "D": (-3.33399, None),
+                        },
+                    },
+                },
+                "toluene": {
+                    "type": Component,
+                    "enth_mol_ig_comp": RPP,
+                    "entr_mol_ig_comp": RPP,
+                    "pressure_sat_comp": RPP,
+                    "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
+                    "parameter_data": {
+                        "mw": (92.1405e-3, pyunits.kg / pyunits.mol),  # [1]
+                        "pressure_crit": (41e5, pyunits.Pa),  # [1]
+                        "temperature_crit": (591.8, pyunits.K),  # [1]
+                        "omega": 0.263,  # [1]
+                        "cp_mol_ig_comp_coeff": {
+                            "A": (-2.435e1, pyunits.J / pyunits.mol / pyunits.K),  # [1]
+                            "B": (5.125e-1, pyunits.J / pyunits.mol / pyunits.K**2),
+                            "C": (-2.765e-4, pyunits.J / pyunits.mol / pyunits.K**3),
+                            "D": (4.911e-8, pyunits.J / pyunits.mol / pyunits.K**4),
+                        },
+                        "enth_mol_form_vap_comp_ref": (
+                            50.1e3,
+                            pyunits.J / pyunits.mol,
+                        ),  # [3]
+                        "entr_mol_form_vap_comp_ref": (
+                            -321,
+                            pyunits.J / pyunits.mol / pyunits.K,
+                        ),  # [3]
+                        "pressure_sat_comp_coeff": {
+                            "A": (-7.28607, None),  # [1]
+                            "B": (1.38091, None),
+                            "C": (-2.83433, None),
+                            "D": (-2.79168, None),
+                        },
+                    },
+                },
+            },
+            # Specifying phases
+            "phases": {
+                "Liq": {
+                    "type": LiquidPhase,
+                    "equation_of_state": Cubic,
+                    "equation_of_state_options": {"type": CubicType.PR},
+                },
+                "Vap": {
+                    "type": VaporPhase,
+                    "equation_of_state": Cubic,
+                    "equation_of_state_options": {"type": CubicType.PR},
+                },
+            },
+            # Set base units of measurement
+            "base_units": {
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.t,
+                "amount": pyunits.mol,
+                "temperature": pyunits.degR,
+            },
+            # Specifying state definition
+            "state_definition": FTPx,
+            "state_bounds": {
+                "flow_mol": (0, 100, 1000, pyunits.mol / pyunits.s),
+                "temperature": (273.15, 300, 500, pyunits.K),
+                "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
+            },
+            "pressure_ref": (101325, pyunits.Pa),
+            "temperature_ref": (298.15, pyunits.K),
+            # Defining phase equilibria
+            "phases_in_equilibrium": [("Vap", "Liq")],
+            "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
+            "bubble_dew_method": LogBubbleDew,
+            "parameter_data": {
+                "PR_kappa": {
+                    ("benzene", "benzene"): 0.000,
+                    ("benzene", "toluene"): 0.000,
+                    ("toluene", "benzene"): 0.000,
+                    ("toluene", "toluene"): 0.000,
+                }
+            },
+        }
+
+        m.fs.properties = GenericParameterBlock(**configuration)
+        m.fs.properties2 = GenericParameterBlock(**configuration2)
+
+        m.fs.unit = HeatExchanger(
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties2},
+            flow_pattern=HeatExchangerFlowPattern.cocurrent,
+        )
+
+        m.fs.unit.hot_side_inlet.flow_mol[0].fix(5)  # mol/s
+        m.fs.unit.hot_side_inlet.temperature[0].fix(365)  # K
+        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.cold_side_inlet.flow_mol[0].fix(1)  # mol/s
+        m.fs.unit.cold_side_inlet.temperature[0].fix(540)  # degR
+        m.fs.unit.cold_side_inlet.pressure[0].fix(101.325)  # kPa
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.area.fix(1)
+        m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+        m.fs.unit.cold_side.scaling_factor_pressure = 1
+
+        return m
+
+    @pytest.mark.integration
+    def test_hx0d_initializer(self, model):
+        initializer = HX0DInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, abs=1e-3) == value(
+            model.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(359.4, abs=1e-1) == value(
+            model.fs.unit.hot_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+
+        assert pytest.approx(1, abs=1e-3) == value(
+            model.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(596.9, abs=1e-1) == value(
+            model.fs.unit.cold_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101.325, abs=1e-3) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, abs=1e-3) == value(
+            model.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(359.4, abs=1e-1) == value(
+            model.fs.unit.hot_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+
+        assert pytest.approx(1, abs=1e-3) == value(
+            model.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(596.9, abs=1e-1) == value(
+            model.fs.unit.cold_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101.325, abs=1e-3) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+
+class TestInitializersIAPWS:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        m.fs.unit = HeatExchanger(
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        )
+
+        m.fs.unit.hot_side_inlet.flow_mol[0].fix(100)
+        m.fs.unit.hot_side_inlet.enth_mol[0].fix(6000)
+        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)
+
+        m.fs.unit.cold_side_inlet.flow_mol[0].fix(100)
+        m.fs.unit.cold_side_inlet.enth_mol[0].fix(5000)
+        m.fs.unit.cold_side_inlet.pressure[0].fix(101325)
+
+        m.fs.unit.area.fix(1000)
+        m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+        return m
+
+    @pytest.mark.integration
+    def test_hx0d_initializer(self, model):
+        initializer = HX0DInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(100, abs=1e-5) == value(
+            model.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(100, abs=1e-5) == value(
+            model.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+
+        assert pytest.approx(5070.219, abs=1e0) == value(
+            model.fs.unit.hot_side_outlet.enth_mol[0]
+        )
+        assert pytest.approx(5929.781, abs=1e0) == value(
+            model.fs.unit.cold_side_outlet.enth_mol[0]
+        )
+
+        assert pytest.approx(101325, abs=1e2) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+        assert pytest.approx(101325, abs=1e2) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(100, abs=1e-5) == value(
+            model.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(100, abs=1e-5) == value(
+            model.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+
+        assert pytest.approx(5070.219, abs=1e0) == value(
+            model.fs.unit.hot_side_outlet.enth_mol[0]
+        )
+        assert pytest.approx(5929.781, abs=1e0) == value(
+            model.fs.unit.cold_side_outlet.enth_mol[0]
+        )
+
+        assert pytest.approx(101325, abs=1e2) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+        assert pytest.approx(101325, abs=1e2) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )

@@ -42,11 +42,12 @@ class BlockTriangularizationInitializer(InitializerBase):
 
     """
 
+    # TODO: Block solver is IPOPT for now, as fsolve struggles with VLE
     CONFIG = InitializerBase.CONFIG()
     CONFIG.declare(
         "block_solver",
         ConfigValue(
-            default="scipy.fsolve",
+            default="ipopt",
             description="Solver to use for NxN blocks",
         ),
     )
@@ -63,9 +64,7 @@ class BlockTriangularizationInitializer(InitializerBase):
             implicit=True,
             description="Dict of options to pass to 1x1 block solver",
             doc="Dict of options to pass to calc_var_kwds argument in "
-            "solve_strongly_connected_components method. NOTE: models "
-            "involving ExternalFunctions must set "
-            "'diff_mode=differentiate.Modes.reverse_numeric'",
+            "solve_strongly_connected_components method.",
         ),
     )
 

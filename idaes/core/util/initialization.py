@@ -236,7 +236,7 @@ def solve_indexed_blocks(solver, blocks, **kwds):
     Args:
         solver : a Pyomo solver object to use when solving the Indexed Block
         blocks : an object which inherits from Block, or a list of Blocks
-        kwds : a dict of argumnets to be passed to the solver
+        kwds : a dict of arguments to be passed to the solver
 
     Returns:
         A Pyomo solver results object
@@ -367,7 +367,7 @@ def initialize_by_time_element(fs, time, **kwargs):
         if degrees_of_freedom(fs) != 0:
             msg = (
                 "Original model has nonzero degrees of freedom. This was "
-                "unexpected. Use keyword arg igore_dof=True to skip this "
+                "unexpected. Use keyword arg ignore_dof=True to skip this "
                 "check."
             )
             init_log.error(msg)
@@ -387,7 +387,7 @@ def initialize_by_time_element(fs, time, **kwargs):
         if degrees_of_freedom(fs) != 0:
             msg = (
                 "Model has nonzero degrees of freedom at initial conditions."
-                " This was unexpected. Use keyword arg igore_dof=True to skip"
+                " This was unexpected. Use keyword arg ignore_dof=True to skip"
                 " this check."
             )
             init_log.error(msg)

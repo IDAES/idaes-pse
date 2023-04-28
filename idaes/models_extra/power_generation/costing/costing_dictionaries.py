@@ -42,7 +42,7 @@ def load_BB_costing_dictionary():
     (DOE/NETL-2019/1784). Specifically it includes scaling exponents,
     valid ranges for the scaled parameter, and units for those ranges.
     It is important to note the units only apply to the ranges and are
-    not neccessarily the units that the reference parameter value will
+    not necessarily the units that the reference parameter value will
     be given in.. It includes the total plant cost (TPC), reference
     parameter value, and units for that value.
 

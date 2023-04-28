@@ -1276,7 +1276,7 @@ class CVTSampling(SamplingMethods):
         Keyword Args:
             xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
             ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
-            tolerance(float): Maximum allowable Euclidean distance between centres from consectutive iterations of the algorithm. Termination condition for algorithm.
+            tolerance(float): Maximum allowable Euclidean distance between centres from consecutive iterations of the algorithm. Termination condition for algorithm.
 
                 - The smaller the value of tolerance, the better the solution but the longer the algorithm requires to converge. Default value is :math:`10^{-7}`.
 

@@ -405,7 +405,7 @@ class PropertySetBase:
                        only if indices is None or False, default=True)
             required: bool indicating if package requires this property from another package (optional,
                       only if indices is None or False, default=False)
-            initialize: dict constaining values for method, required and supported by sub-property indices
+            initialize: dict containing values for method, required and supported by sub-property indices
                         (optional). Cannot combine with method, required or supported arguments.
 
         Returns:

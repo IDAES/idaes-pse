@@ -27,7 +27,7 @@ The main config arguments:
     - has radiation: True if model is used as a reheater or superheater unit
         Gas emissivity calculated (Gas temperature above 700 K)
 
-General assumtpions:
+General assumptions:
     - SI units (consistent with prop pack)
     - heat transfer calc U = f(Nu, Re, Pr)
     - Pressure drop tube and shell side (friction factor calc.)
@@ -656,11 +656,11 @@ class BoilerHeatExchangerData(HeatExchangerData):
                     == b.gas_gray_fraction[t] * b.gas_emissivity[t]
                 )
 
-            # equivalent convective heat transfer coefficent due to radiation
+            # equivalent convective heat transfer coefficient due to radiation
             @self.Constraint(
                 self.flowsheet().time,
                 doc="Equivalent convective heat transfer "
-                "coefficent due to radiation",
+                "coefficient due to radiation",
             )
             def hconv_shell_rad_eqn(b, t):
                 return b.hconv_shell_rad[t] == c.stefan_constant * b.frad_gas_shell[

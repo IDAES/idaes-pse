@@ -53,7 +53,7 @@ Supporting Constraints
 
 Depending upon the choice of state and auxiliary variables, developers may need to include a number of supporting constraints in their State Definitions. Common examples include constraints for the sum of mole fractions in the system, and relationships between different types of flow rates. Any number of constraints can be included by the developer to suit their needs, subject to the limitations of degrees of freedom.
 
-However, developers need ot be aware of the difference between inlet and outlet states and how this affects which constraints can be written. In the case of inlet states, all state variables are defined by the upstream process and thus no constraint can be written that involves only state variables (e.g. sum of mole fractions). For outlet (and intermediate) states however, it is often necessary to include these types of constraints to fully define the system. The IDAES Process Modeling Framework uses the `config.defined_state` configuration argument to indicate situations where the state variables should be considered fully defined (e.g. inlets) which can be used in `if` statements to determine whether a constraint should be included.
+However, developers need to be aware of the difference between inlet and outlet states and how this affects which constraints can be written. In the case of inlet states, all state variables are defined by the upstream process and thus no constraint can be written that involves only state variables (e.g. sum of mole fractions). For outlet (and intermediate) states however, it is often necessary to include these types of constraints to fully define the system. The IDAES Process Modeling Framework uses the `config.defined_state` configuration argument to indicate situations where the state variables should be considered fully defined (e.g. inlets) which can be used in `if` statements to determine whether a constraint should be included.
 
 `always_flash`
 ^^^^^^^^^^^^^^
@@ -86,7 +86,7 @@ There are many forms for the enthalpy flow terms as well, and developers may cho
 
     def get_enthalpy_flow_terms_definition(phase):
         return self.flow_mol_phase[phase] * self.enth_mol_phase[phase]
-    self.get_enthalpy_flow_terms = get_enthalpy_flow_terms_definiton
+    self.get_enthalpy_flow_terms = get_enthalpy_flow_terms_definition
 
 `get_material_density_terms(phase, component)`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

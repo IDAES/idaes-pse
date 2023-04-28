@@ -24,6 +24,7 @@ from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (
+    Block,
     value,
     Var,
     Expression,
@@ -50,6 +51,8 @@ from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
+from idaes.core.initialization import SingleControlVolumeUnitInitializer
+from idaes.core.util import to_json, from_json, StoreSpec
 
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
@@ -65,6 +68,184 @@ class ThermodynamicAssumption(Enum):
     isentropic = 2
     pump = 3
     adiabatic = 4
+
+
+class IsentropicPressureChangerInitializer(SingleControlVolumeUnitInitializer):
+    """
+    Initializer for isentropic pressure changer models (and derived types).
+
+    """
+
+    def initialization_routine(
+        self,
+        model: Block,
+    ):
+        """
+        Initialization routine for isentropic pressure changers.
+
+        This routine starts by initializing the inlet and outlet states as usual,
+        using the user provided operating conditions to estimate the outlet state.
+        The isentropic state is then initialized at the same conditions as the outlet.
+        Next, the pressure changer is solved with an isothermal assumption and fixed efficiency,
+        followed by a second solve with the isentropic constraints. Finally, if user-provided
+        performance constraints are present, these are activated and the model solved again.
+
+        Args:
+            model: model to be initialized
+
+        Returns:
+            Pyomo solver status object
+
+        """
+        init_log = idaeslog.getInitLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+
+        # Create solver
+        solver = get_solver(self.config.solver, self.config.solver_options)
+
+        cv = model.control_volume
+
+        # check if performance curves exist and are active
+        activate_performance_curves = (
+            hasattr(model, "performance_curve")
+            and model.performance_curve.has_constraints()
+            and model.performance_curve.active
+        )
+        if activate_performance_curves:
+            model.performance_curve.deactivate()
+            # The performance curves will provide (maybe indirectly) efficiency
+            # and/or pressure ratio. To get through the standard isentropic
+            # pressure changer init, we'll see if the user provided a guess for
+            # pressure ratio or isentropic efficiency and fix them if needed. If
+            # not fixed and no guess provided, fill in something reasonable
+            # until the performance curves are turned on.
+            unfix_eff = {}
+            unfix_ratioP = {}
+            for t in model.flowsheet().time:
+                if not (
+                    model.ratioP[t].fixed
+                    or model.deltaP[t].fixed
+                    or cv.properties_out[t].pressure.fixed
+                ):
+                    if model.config.compressor:
+                        if not (
+                            value(model.ratioP[t]) >= 1.01
+                            and value(model.ratioP[t]) <= 50
+                        ):
+                            model.ratioP[t] = 1.8
+                    else:
+                        if not (
+                            value(model.ratioP[t]) >= 0.01
+                            and value(model.ratioP[t]) <= 0.999
+                        ):
+                            model.ratioP[t] = 0.7
+                    model.ratioP[t].fix()
+                    unfix_ratioP[t] = True
+                if not model.efficiency_isentropic[t].fixed:
+                    if not (
+                        value(model.efficiency_isentropic[t]) >= 0.05
+                        and value(model.efficiency_isentropic[t]) <= 1.0
+                    ):
+                        model.efficiency_isentropic[t] = 0.8
+                    model.efficiency_isentropic[t].fix()
+                    unfix_eff[t] = True
+
+        # Initialize state blocks
+        self.initialize_control_volume(cv, copy_inlet_state=False)
+
+        init_log.info_high("Initialization Step 1 Complete.")
+        # ---------------------------------------------------------------------
+        # Copy outlet state to isentropic state
+
+        # Map solution from inlet properties to outlet properties
+        state = to_json(
+            cv.properties_out,
+            wts=StoreSpec().value(),
+            return_dict=True,
+        )
+        from_json(
+            model.properties_isentropic,
+            sd=state,
+            wts=StoreSpec().value(only_not_fixed=True),
+        )
+
+        init_log.info_high("Initialization Step 2 Complete.")
+
+        # ---------------------------------------------------------------------
+        # Solve for isothermal conditions
+        if isinstance(
+            model.properties_isentropic[model.flowsheet().time.first()].temperature,
+            Var,
+        ):
+            model.properties_isentropic[:].temperature.fix()
+        elif isinstance(
+            model.properties_isentropic[model.flowsheet().time.first()].enth_mol,
+            Var,
+        ):
+            model.properties_isentropic[:].enth_mol.fix()
+        elif isinstance(
+            model.properties_isentropic[model.flowsheet().time.first()].temperature,
+            Expression,
+        ):
+
+            def tmp_rule(blk, t):
+                return (
+                    blk.properties_isentropic[t].temperature
+                    == blk.control_volume.properties_in[t].temperature
+                )
+
+            model.tmp_init_constraint = Constraint(
+                model.flowsheet().time, rule=tmp_rule
+            )
+
+        model.isentropic.deactivate()
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(model, tee=slc.tee)
+        init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
+
+        # Revert changes for isothermal assumption
+        if isinstance(
+            model.properties_isentropic[model.flowsheet().time.first()].temperature,
+            Var,
+        ):
+            model.properties_isentropic[:].temperature.unfix()
+        elif isinstance(
+            model.properties_isentropic[model.flowsheet().time.first()].enth_mol,
+            Var,
+        ):
+            model.properties_isentropic[:].enth_mol.unfix()
+        elif isinstance(
+            model.properties_isentropic[model.flowsheet().time.first()].temperature,
+            Expression,
+        ):
+            model.del_component(model.tmp_init_constraint)
+
+        model.isentropic.activate()
+
+        # ---------------------------------------------------------------------
+        # Solve unit
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(model, tee=slc.tee)
+        init_log.info_high("Initialization Step 4 {}.".format(idaeslog.condition(res)))
+
+        if activate_performance_curves:
+            model.performance_curve.activate()
+            for t, v in unfix_eff.items():
+                if v:
+                    model.efficiency_isentropic[t].unfix()
+            for t, v in unfix_ratioP.items():
+                if v:
+                    model.ratioP[t].unfix()
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solver.solve(model, tee=slc.tee)
+            init_log.info_high(f"Initialization Step 5 {idaeslog.condition(res)}.")
+
+        return res
 
 
 @declare_process_block_class("IsentropicPerformanceCurve")
@@ -1157,6 +1338,8 @@ class TurbineData(PressureChangerData):
     Pressure changer with isentropic turbine options
     """
 
+    default_initializer = IsentropicPressureChangerInitializer
+
     CONFIG = PressureChangerData.CONFIG()
     CONFIG.compressor = False
     CONFIG.get("compressor")._default = False
@@ -1168,6 +1351,8 @@ class TurbineData(PressureChangerData):
 @declare_process_block_class("Compressor", doc="Isentropic compressor model")
 class CompressorData(PressureChangerData):
     """Pressure changer with isentropic compressor options"""
+
+    default_initializer = IsentropicPressureChangerInitializer
 
     CONFIG = PressureChangerData.CONFIG()
     CONFIG.compressor = True

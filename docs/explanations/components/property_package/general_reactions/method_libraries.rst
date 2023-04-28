@@ -1,7 +1,7 @@
 Reaction Module Libraries
 =========================
 
-The following libaries are available for defining reaction parameters as part of the Generic Reaction Package Framework.
+The following libraries are available for defining reaction parameters as part of the Generic Reaction Package Framework.
 
 .. toctree::
     :maxdepth: 1

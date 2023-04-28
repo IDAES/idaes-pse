@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Gas viscosity at low pressures from Chapman Enskog theory using Lennard Jones paramters.
+Gas viscosity at low pressures from Chapman Enskog theory using Lennard Jones parameters.
 Note that LJ parameters are underdetermined when estimated from viscosity data (see
 The Indeterminacy of the Values of Potential Parameters as Derived from Transport and
 Virial Coefficient by Reichenberg D., 1973 for more information) so it's important to

@@ -229,7 +229,7 @@ class TestStateBlock(object):
         assert "Temperature set above upper bound" in caplog.text
         assert "Pressure set below lower bound" not in caplog.text
         assert "Pressure set above upper bound" not in caplog.text
-        # Reset temeprature
+        # Reset temperature
         model.props[1].temperature.value = 298.15
 
     @pytest.mark.unit

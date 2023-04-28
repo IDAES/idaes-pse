@@ -38,6 +38,10 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    InitializationStatus,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -66,6 +70,8 @@ def test_config():
     assert m.fs.unit.config.outlet_property_package is m.fs.properties
     assert m.fs.unit.config.outlet_state_defined
     assert not m.fs.unit.config.has_phase_equilibrium
+
+    assert m.fs.unit.default_initializer is BlockTriangularizationInitializer
 
 
 # -----------------------------------------------------------------------------

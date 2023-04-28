@@ -23,6 +23,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
+from idaes.core.initialization import BlockTriangularizationInitializer
 
 __author__ = "Andrew Lee"
 
@@ -36,6 +37,10 @@ class TranslatorData(UnitModelBlockData):
     """
     Standard Translator Block Class
     """
+
+    # Set default initializer
+    # TODO: For now, use Block Triangularization as the default
+    default_initializer = BlockTriangularizationInitializer
 
     CONFIG = ConfigBlock()
     CONFIG.declare(
@@ -153,10 +158,10 @@ see property package for documentation.}""",
         # Call UnitModel.build to setup dynamics
         super(TranslatorData, self).build()
 
-        # Check construction argumnet consistency
+        # Check construction argument consistency
         if self.config.outlet_state_defined and self.config.has_phase_equilibrium:
             raise ConfigurationError(
-                "{} cannot calcuate phase equilibrium (has_phase_equilibrium "
+                "{} cannot calculate phase equilibrium (has_phase_equilibrium "
                 "= True) when outlet state is set to be fully defined ("
                 "outlet_state_defined = True).".format(self.name)
             )
