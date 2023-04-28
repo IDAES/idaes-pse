@@ -173,15 +173,28 @@ class HelmholtzThermoExpressions(object):
     and vapor fraction expressions then using those to write an expression for
     requested property. This writes expressions in a way that looks like a
     thermodynamic property function.
+
+    Args:
+        blk (Block): block to attach the external functions to
+        parameters (HelmholtzParameterBlock): property parameter block
+        amount_basis (AmountBasis|None): If none get the amount basis
+            from the parameter block, otherwise use this amount basis for 
+            inputs. 
+
+    Returns:
+        HelmholtzThermoExpressions
     """
 
     def __init__(self, blk, parameters, amount_basis=None):
         """Create a new thermodynamic property expression writer class.
 
         Args:
-            blk: the block to attach the external functions to
-            parameters: property parameter block
-
+            blk (Block): block to attach the external functions to
+            parameters (HelmholtzParameterBlock): property parameter block
+            amount_basis (AmountBasis|None): If none get the amount basis
+                from the parameter block, otherwise use this amount basis for 
+                inputs. 
+                
         Returns:
             HelmholtzThermoExpressions
         """
@@ -394,7 +407,7 @@ class HelmholtzThermoExpressions(object):
         return tau
 
     def x(self, **kwargs):
-        """Vapor faction"""
+        """Vapor fraction"""
         sv, result_basis, blk, c, state1, p, x = self._state_vars(**kwargs)
         if sv == StateVars.PH:
             self.add_funcs(names=["vf_hp_func"])
@@ -629,7 +642,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def v(self, **kwargs):
-        """Mixed phase Helmholtz free energy"""
+        """Mixed phase volume"""
         return self._generic_prop(
             hp_func="v_hp_func",
             up_func="v_up_func",
@@ -642,7 +655,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def v_liq(self, **kwargs):
-        """Liquid phase Helmholtz free energy"""
+        """Liquid phase volume"""
         return self._generic_prop_phase(
             hp_func="v_liq_hp_func",
             up_func="v_liq_up_func",
@@ -654,7 +667,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def v_vap(self, **kwargs):
-        """Vapor phase Helmholtz free energy"""
+        """Vapor phase volume"""
         return self._generic_prop_phase(
             hp_func="v_vap_hp_func",
             up_func="v_vap_up_func",
@@ -666,16 +679,19 @@ class HelmholtzThermoExpressions(object):
         )
 
     def rho(self, **kwargs):
+        """Mixed phase density"""
         return 1 / self.v(**kwargs)
 
     def rho_liq(self, **kwargs):
+        """Liquid density"""
         return 1 / self.v_liq(**kwargs)
 
     def rho_vap(self, **kwargs):
+        """Vapor Density"""
         return 1 / self.v_vap(**kwargs)
 
     def cp(self, **kwargs):
-        """Mixed phase Helmholtz free energy"""
+        """Mixed phase isobaric heat capacity"""
         return self._generic_prop(
             hp_func="cp_hp_func",
             up_func="cp_up_func",
@@ -688,7 +704,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def cp_liq(self, **kwargs):
-        """Liquid phase Helmholtz free energy"""
+        """Liquid phase isobaric heat capacity"""
         return self._generic_prop_phase(
             hp_func="cp_liq_hp_func",
             up_func="cp_liq_up_func",
@@ -700,7 +716,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def cp_vap(self, **kwargs):
-        """Vapor phase Helmholtz free energy"""
+        """Vapor phase isobaric heat capacity"""
         return self._generic_prop_phase(
             hp_func="cp_vap_hp_func",
             up_func="cp_vap_up_func",
@@ -712,7 +728,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def cv(self, **kwargs):
-        """Mixed phase Helmholtz free energy"""
+        """Mixed phase isocoric heat capacity"""
         return self._generic_prop(
             hp_func="cv_hp_func",
             up_func="cv_up_func",
@@ -725,7 +741,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def cv_liq(self, **kwargs):
-        """Liquid phase Helmholtz free energy"""
+        """Liquid phase isocoric heat capacity"""
         return self._generic_prop_phase(
             hp_func="cv_liq_hp_func",
             up_func="cv_liq_up_func",
@@ -737,7 +753,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def cv_vap(self, **kwargs):
-        """Vapor phase Helmholtz free energy"""
+        """Vapor phase isocoric heat capacity"""
         return self._generic_prop_phase(
             hp_func="cv_vap_hp_func",
             up_func="cv_vap_up_func",
@@ -749,7 +765,9 @@ class HelmholtzThermoExpressions(object):
         )
 
     def w(self, **kwargs):
-        """Mixed phase Helmholtz free energy"""
+        """Mixed phase speed of sound (value for two-phase is not meaningful)
+        use the liquid or vapor version if two phases are expected.
+        """
         return self._generic_prop(
             hp_func="w_hp_func",
             up_func="w_up_func",
@@ -762,7 +780,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def w_liq(self, **kwargs):
-        """Liquid phase Helmholtz free energy"""
+        """Liquid phase speed of sound"""
         return self._generic_prop_phase(
             hp_func="w_liq_hp_func",
             up_func="w_liq_up_func",
@@ -774,7 +792,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def w_vap(self, **kwargs):
-        """Vapor phase Helmholtz free energy"""
+        """Vapor phase speed of sound"""
         return self._generic_prop_phase(
             hp_func="w_vap_hp_func",
             up_func="w_vap_up_func",
@@ -786,7 +804,9 @@ class HelmholtzThermoExpressions(object):
         )
 
     def viscosity(self, **kwargs):
-        """Mixed phase Helmholtz free energy"""
+        """Mixed phase viscosity (value for two-phase is not meaningful)
+        use the liquid or vapor version if two phases are expected.
+        """
         if not viscosity_available(self.param.pure_component):
             raise RuntimeError(
                 f"Viscosity not available for {self.param.pure_component}"
@@ -803,7 +823,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def viscosity_liq(self, **kwargs):
-        """Liquid phase Helmholtz free energy"""
+        """Liquid phase viscosity"""
         if not viscosity_available(self.param.pure_component):
             raise RuntimeError(
                 f"Viscosity not available for {self.param.pure_component}"
@@ -819,7 +839,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def viscosity_vap(self, **kwargs):
-        """Vapor phase Helmholtz free energy"""
+        """Vapor phase viscosity"""
         if not viscosity_available(self.param.pure_component):
             raise RuntimeError(
                 f"Viscosity not available for {self.param.pure_component}"
@@ -835,7 +855,9 @@ class HelmholtzThermoExpressions(object):
         )
 
     def thermal_conductivity(self, **kwargs):
-        """Mixed phase Helmholtz free energy"""
+        """Mixed phase thermal conductivity (value for two-phase is not meaningful)
+        use the liquid or vapor version if two phases are expected.
+        """
         if not thermal_conductivity_available(self.param.pure_component):
             raise RuntimeError(
                 f"Thermal conductivity not available for {self.param.pure_component}"
@@ -852,7 +874,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def thermal_conductivity_liq(self, **kwargs):
-        """Liquid phase Helmholtz free energy"""
+        """Liquid phase thermal conductivity"""
         if not thermal_conductivity_available(self.param.pure_component):
             raise RuntimeError(
                 f"Thermal conductivity not available for {self.param.pure_component}"
@@ -868,7 +890,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def thermal_conductivity_vap(self, **kwargs):
-        """Vapor phase Helmholtz free energy"""
+        """Vapor phase thermal conductivity"""
         if not thermal_conductivity_available(self.param.pure_component):
             raise RuntimeError(
                 f"Thermal conductivity not available for {self.param.pure_component}"
@@ -884,7 +906,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def surface_tension(self, **kwargs):
-        """Mixed phase Helmholtz free energy"""
+        """Surface tension, this is only meaningful for two-phase region"""
         if not surface_tension_available(self.param.pure_component):
             raise RuntimeError(
                 f"Surface tension not available for {self.param.pure_component}"
@@ -916,6 +938,7 @@ class HelmholtzThermoExpressions(object):
         return self.blk.t_sat_func(self.param.pure_component, p, _data_dir)
 
     def h_vap_sat(self, T=None, p=None, result_basis=None, convert_args=True):
+        """Return saturation vapor enthalpy as a function of T or p"""
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -931,6 +954,7 @@ class HelmholtzThermoExpressions(object):
         return h * self.param.uc["kJ/kg to J/kg"]
 
     def h_liq_sat(self, T=None, p=None, result_basis=None, convert_args=True):
+        """Return saturation liquid enthalpy as a function of T or p"""
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -946,6 +970,7 @@ class HelmholtzThermoExpressions(object):
         return h * self.param.uc["kJ/kg to J/kg"]
 
     def s_vap_sat(self, T=None, p=None, result_basis=None, convert_args=True):
+        """Return saturation vapor entropy as a function of T or p"""
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -961,6 +986,7 @@ class HelmholtzThermoExpressions(object):
         return s * self.param.uc["kJ/kg/K to J/kg/K"]
 
     def s_liq_sat(self, T=None, p=None, result_basis=None, convert_args=True):
+        """Return saturation liquid entropy as a function of T or p"""
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -976,6 +1002,7 @@ class HelmholtzThermoExpressions(object):
         return s * self.param.uc["kJ/kg/K to J/kg/K"]
 
     def u_vap_sat(self, T=None, p=None, result_basis=None, convert_args=True):
+        """Return saturation vapor internal energy as a function of T or p"""
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -991,6 +1018,7 @@ class HelmholtzThermoExpressions(object):
         return u * self.param.uc["kJ/kg to J/kg"]
 
     def u_liq_sat(self, T=None, p=None, result_basis=None, convert_args=True):
+        """Return saturation liquid internal energy as a function of T or p"""
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -1006,6 +1034,7 @@ class HelmholtzThermoExpressions(object):
         return u * self.param.uc["kJ/kg to J/kg"]
 
     def v_vap_sat(self, T=None, p=None, result_basis=None, convert_args=True):
+        """Return saturation vapor volume as a function of T or p"""
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -1021,6 +1050,7 @@ class HelmholtzThermoExpressions(object):
         return v
 
     def v_liq_sat(self, T=None, p=None, result_basis=None, convert_args=True):
+        """Return saturation liquid volume as a function of T or p"""
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
