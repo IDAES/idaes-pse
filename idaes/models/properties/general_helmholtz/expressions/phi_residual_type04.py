@@ -17,6 +17,15 @@ import pyomo.environ as pyo
 
 
 def phi_residual_expressions_type04(model, parameters):
+    """Type04 expression for the residual part of dimensionless Helmholtz free energy
+
+    Args:
+        model (Block): Pyomo model
+        parameters (dict): Main parameters dictionary
+
+    Returns:
+        dict: Expressions for residual part of Helmholtz free energy
+    """
     last_terms = parameters["eos"]["last_term_residual"]
     n = parameters["eos"]["n"]
     t = parameters["eos"]["t"]

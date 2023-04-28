@@ -15,6 +15,15 @@ __author__ = "John Eslick"
 
 
 def surface_tension_type01(model, parameters):
+    """Type01 expression for the surface tension
+
+    Args:
+        model (Block): Pyomo model
+        parameters (dict): Main parameters dictionary
+
+    Returns:
+        dict: Expressions for the surface tension
+    """
     s = parameters["transport"]["surface_tension"]["s"]
     n = parameters["transport"]["surface_tension"]["n"]
     tc = parameters["transport"]["surface_tension"]["Tc"]

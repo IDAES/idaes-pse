@@ -17,6 +17,15 @@ import pyomo.environ as pyo
 
 
 def phi_ideal_expressions_type03(model, parameters):
+    """Type03 expression for the ideal part of dimensionless Helmholtz free energy
+
+    Args:
+        model (Block): Pyomo model
+        parameters (dict): Main parameters dictionary
+
+    Returns:
+        dict: Expressions for ideal part of Helmholtz free energy
+    """
     last_term = parameters["eos"]["last_term_ideal"]
     n0 = parameters["eos"]["n0"]
     g0 = parameters["eos"]["g0"]

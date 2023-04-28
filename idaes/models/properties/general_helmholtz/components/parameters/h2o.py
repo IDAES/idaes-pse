@@ -17,6 +17,7 @@ __author__ = "John Eslick"
 
 import math
 import pyomo.environ as pyo
+from pyomo.common.fileutils import find_library
 from idaes.core.util.math import smooth_max
 from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
     WriteParameters,
@@ -82,11 +83,12 @@ def thermal_conductivity_rule(m):
     big_gam0 = 0.06
     Tbr = 1.5
     Tb = 1 / tau
-    m.cp = pyo.ExternalFunction(library="", function="cp")
-    m.cv = pyo.ExternalFunction(library="", function="cv")
-    m.mu = pyo.ExternalFunction(library="", function="mu")
+    lib_path = find_library("general_helmholtz_external")
+    m.cp = pyo.ExternalFunction(library=lib_path, function="cp")
+    m.cv = pyo.ExternalFunction(library=lib_path, function="cv")
+    m.mu = pyo.ExternalFunction(library=lib_path, function="mu")
     m.itc = pyo.ExternalFunction(
-        library="", function="itc"
+        library=lib_path, function="itc"
     )  # isothermal compressibility [1/MPa]
     deltchi = smooth_max(
         delta**2

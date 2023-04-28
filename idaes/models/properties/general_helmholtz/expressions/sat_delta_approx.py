@@ -17,6 +17,15 @@ import pyomo.environ as pyo
 
 
 def sat_delta_type01(model, name, parameters):
+    """Type01 expression for the approximate saturated reduced density
+
+    Args:
+        model (Block): Pyomo model
+        parameters (dict): Main parameters dictionary
+
+    Returns:
+        dict: Expressions for approximate saturated reduced density
+    """
     c = parameters["aux"][name]["c"]
     n = parameters["aux"][name]["n"]
     t = parameters["aux"][name]["t"]
@@ -24,6 +33,15 @@ def sat_delta_type01(model, name, parameters):
 
 
 def sat_delta_type02(model, name, parameters):
+    """Type01 expression for the approximate saturated reduced density
+
+    Args:
+        model (Block): Pyomo model
+        parameters (dict): Main parameters dictionary
+
+    Returns:
+        dict: Expressions for approximate saturated reduced density
+    """
     c = parameters["aux"][name]["c"]
     n = parameters["aux"][name]["n"]
     t = parameters["aux"][name]["t"]
