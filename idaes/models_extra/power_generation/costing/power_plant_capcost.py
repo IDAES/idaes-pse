@@ -35,7 +35,9 @@ Other methods:
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-__author__ = "Costing Team (A. Noring, A. Deshpande, B. Paul, D. Caballero, and M. Zamarripa)"
+__author__ = (
+    "Costing Team (A. Noring, A. Deshpande, B. Paul, D. Caballero, and M. Zamarripa)"
+)
 __version__ = "1.0.0"
 
 from sys import stdout
@@ -260,19 +262,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             non_fuel_resources = resources  # duplicate resources list
             if fuel is not None:
                 self.fuel_cost_OC = Expression(
-                    expr=self.variable_operating_costs[0, fuel]
-                    / 12
-                    * 2.25,
+                    expr=self.variable_operating_costs[0, fuel] / 12 * 2.25,
                     doc="Owner's costs - 2.25 months of fuel costs",
                 )
                 non_fuel_resources.remove(fuel)  # remove fuel from the list
 
             if waste is not None:
                 self.waste_costs_OC = Expression(
-                    expr=(
-                        sum(self.variable_operating_costs[0, i] for i in waste)
-                        / 12
-                    )
+                    expr=(sum(self.variable_operating_costs[0, i] for i in waste) / 12)
                 )
             if chemicals is not None:
                 self.chemical_costs_OC = Expression(
@@ -289,8 +286,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     inventory_plant_basis = self.total_TPC
                 self.chemical_inventory_costs_OC = Expression(
                     expr=(
-                        (sum(self.variable_operating_costs[0, i] for i in chemicals_inventory)
-                        / 6) * pyunits.year  # two months of chemicals inventory
+                        (
+                            sum(
+                                self.variable_operating_costs[0, i]
+                                for i in chemicals_inventory
+                            )
+                            / 6
+                        )
+                        * pyunits.year  # two months of chemicals inventory
                         + 0.005 * inventory_plant_basis
                     )
                 )
@@ -298,7 +301,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             self.non_fuel_and_waste_OC = Expression(
                 expr=(
                     sum(self.variable_operating_costs[0, i] for i in non_fuel_resources)
-                / 12
+                    / 12
                 )
             )
 
@@ -325,15 +328,11 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     self.maintenance_material_cost / 12  # 1 month materials
                     + self.non_fuel_and_waste_OC  # 1 month nonfuel consumables
                     + (
-                        self.waste_costs_OC
-                        if waste is not None
-                        else 0 * CE_index_units
+                        self.waste_costs_OC if waste is not None else 0 * CE_index_units
                     )  # 1 month waste
                     # inventory capital costs
                     + (
-                        self.fuel_cost_OC
-                        if fuel is not None
-                        else 0 * CE_index_units
+                        self.fuel_cost_OC if fuel is not None else 0 * CE_index_units
                     )  # 60 day fuel supply
                     # Other costs
                     + (
@@ -344,11 +343,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 )
                 * 1
                 * pyunits.year  # variable costs for 1 year
-                + (
-                    self.land_cost
-                    if land_cost is not None
-                    else 0 * CE_index_units
-                )
+                + (self.land_cost if land_cost is not None else 0 * CE_index_units)
                 + self.total_TPC
                 * self.pct_TPC  # other owners costs (other + spare parts
                 # + financing + other pre-production)
@@ -422,17 +417,27 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 if transport_cost is not None:
                     if (
                         (type(transport_cost) in [Expression, ScalarExpression])
-                        or (type(transport_cost) is Param and land_cost.get_units is None)
+                        or (
+                            type(transport_cost) is Param
+                            and land_cost.get_units is None
+                        )
                         or (type(transport_cost) is Var and land_cost.get_units is None)
                     ):
-                        self.transport_cost = transport_cost * CE_index_units / pyunits.ton * self.tonne_CO2_capture
+                        self.transport_cost = (
+                            transport_cost
+                            * CE_index_units
+                            / pyunits.ton
+                            * self.tonne_CO2_capture
+                        )
                     else:
                         self.transport_cost = transport_cost * self.tonne_CO2_capture
 
             else:  # except the case where transport_cost is passed but tonne_CO2_capture is not passed
                 if transport_cost is not None:
-                    raise Exception("If a transport_cost is not None, "
-                                    "tonne_CO2_capture cannot be None.")
+                    raise Exception(
+                        "If a transport_cost is not None, "
+                        "tonne_CO2_capture cannot be None."
+                    )
 
     @staticmethod
     def initialize_build(self):
@@ -446,7 +451,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         pass
 
     def report(self, export=False):
-
         var_dict = {}
 
         if hasattr(self, "total_TPC"):
@@ -1336,7 +1340,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             "Natural gas-fired heater",
             "Recuperator",
         ]:
-
             if temp_C is None:
                 raise ValueError(
                     "Temperature argument is "
@@ -1909,7 +1912,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         @b.Constraint(b.parent_block().time, resources)
         def variable_cost_rule_power(c, t, r):
-
             return c.variable_operating_costs[t, r] == (
                 pyunits.convert(
                     resource_prices[r] * resource_rates[r][t],
@@ -1941,7 +1943,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
     def initialize_fixed_OM_costs(b):
         # b is the flowsheet-level costing block
         if hasattr(b, "total_fixed_OM_cost"):
-
             calculate_variable_from_constraint(
                 b.annual_operating_labor_cost, b.annual_labor_cost_rule
             )
@@ -1973,7 +1974,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # b is the flowsheet-level costing block
         # initialization for power generation costs
         if hasattr(b, "variable_operating_costs"):
-
             for i in b.variable_operating_costs.keys():
                 if hasattr(b, "variable_cost_rule_power"):
                     calculate_variable_from_constraint(
@@ -1997,7 +1997,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             # look for costing blocks
             if o.name in b._registered_unit_costing and hasattr(o, "library"):
                 if o.library == "sCO2":
-
                     if o.equipment in [
                         "Axial turbine",
                         "Radial turbine",
