@@ -19,7 +19,7 @@ Class
 All the property expression methods that take indeterminate ``**kwarg`` take basically
 the same set of arguments. The state variables should be provided as arguments and include
 units. The state variables are passed to external functions to calculate properties.  If
-``convert_units=False`` is passed the state varaible expressions are assumed to include 
+``convert_units=False`` is passed the state variable expressions are assumed to include 
 units native to the external functions and no unit conversion is expression is needed;
 otherwise, units are assumed to be in SI.  The state variables are on a mass or mole basis
 as determined by the ``amount_basis`` argument given when creating the the HelmholtzThermoExpressions

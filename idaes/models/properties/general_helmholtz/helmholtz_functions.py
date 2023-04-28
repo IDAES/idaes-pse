@@ -1247,15 +1247,15 @@ change.
         initialization where temperature is known instead of enthalpy.
         User must provide values for one of these sets of values: {T, P}, {T, x},
         or {P, x}.
+
         Args:
             T (float): Temperature
             P (float): Pressure, None if saturated
-            x (float): Vapor fraction [mol vapor/mol total] (between 0 and 1), 
-            None if superheated or sub-cooled
-            units (Units): The units to report the result in, if None use 
-            the default units appropriate for the amount basis.
+            x (float): Vapor fraction [mol vapor/mol total] (between 0 and 1), None if superheated or sub-cooled
+            units (Units): The units to report the result in, if None use the default units appropriate for the amount basis. 
             amount_basis (AmountBasis): Whether to use a mass or mole basis
             with_units (bool): if True return an expression with units
+
         Returns:
             float: Specific or molar enthalpy
         """
@@ -1284,13 +1284,12 @@ change.
         initialization where temperature is known instead of entropy.
         User must provide values for one of these sets of values: {T, P}, {T, x},
         or {P, x}.
+
         Args:
             T (float): Temperature
             P (float): Pressure, None if saturated
-            x (float): Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
-            superheated or sub-cooled
-            units (Units): The units to report the result in, if None use the default
-            units appropriate for the amount basis.
+            x (float): Vapor fraction [mol vapor/mol total] (between 0 and 1), None if superheated or sub-cooled
+            units (Units): The units to report the result in, if None use the default units appropriate for the amount basis.
             amount_basis (AmountBasis): Whether to use a mass or mole basis
             with_units (bool): if True return an expression with units
         Returns:
@@ -1320,16 +1319,16 @@ change.
         pressure or vapor fraction. This function can be used for inlet streams and
         initialization where temperature is known instead of internal energy.
         User must provide values for one of these sets of values: {T, P}, {T, x},
+
         or {P, x}.
         Args:
             T (float): Temperature
             P (float): Pressure, None if saturated
-            x (float): Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
-            superheated or sub-cooled
-            units (Units): The units to report the result in, if None use the default
-            units appropriate for the amount basis.
+            x (float): Vapor fraction [mol vapor/mol total] (between 0 and 1), None if superheated or sub-cooled
+            units (Units): The units to report the result in, if None use the default units appropriate for the amount basis.
             amount_basis (AmountBasis): Whether to use a mass or mole basis
             with_units (bool): if True return an expression with units
+        
         Returns:
             float: Specific or molar internal energy
         """
