@@ -471,6 +471,9 @@ def test_ui_warnings():
     ui = flowsheet_model.UI()
     ui.visualize = ui._visualize_null
     ui.installed = False
-    # Call the function, which should raise a warning
-    with pytest.raises(RuntimeWarning):
-        flowsheet_model.ui.visualize(1, 2)
+    # Call the function, which should print a warning
+    try:
+        ui.visualize(1, 2)
+        assert False  # should not get here
+    except RuntimeWarning:
+        pass  # cool
