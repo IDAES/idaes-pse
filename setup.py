@@ -103,7 +103,7 @@ class ExtraDependencies:
         "tensorflow",
     ]
     grid = [
-        "gridx-prescient>=2.2.2",  # idaes.tests.prescient
+        "gridx-prescient>=2.2.1",  # idaes.tests.prescient
     ]
     optional = [
         "sympy",  # idaes.core.util.expr_doc
