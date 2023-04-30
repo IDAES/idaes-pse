@@ -65,7 +65,7 @@ class UI:
 
     def __init__(self):
         try:
-            import idaes_ui
+            import idaes_ui  # noqa
         except ImportError:
             idaes_ui = None
 
