@@ -65,7 +65,7 @@ class UI:
 
     def __init__(self):
         try:
-            import idaes_ui  # noqa
+            import idaes_ui  # pylint: disable=C0415
         except ImportError:
             idaes_ui = None
 
