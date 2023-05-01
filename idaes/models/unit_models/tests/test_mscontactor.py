@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-Tests for Extractor unit model.
+Tests for multi-state contactor unit model.
 Authors: Andrew Lee
 """
 
@@ -46,11 +46,11 @@ from idaes.core import (
     MaterialBalanceType,
 )
 from idaes.models.unit_models import Mixer, MixingType, MomentumMixingType
-from idaes.models.unit_models.extractor import (
-    Extractor,
-    ExtractorData,
+from idaes.models.unit_models.mscontactor import (
+    MSContactor,
+    MSContactorData,
     _get_state_blocks,
-    ExtractorSMInitializer,
+    MSContactorInitializer,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
@@ -250,9 +250,9 @@ class StateBlock3Data(StateBlockData):
 # -----------------------------------------------------------------------------
 # Frame class for unit testing
 @declare_process_block_class("ECFrame")
-class ECFrameData(ExtractorData):
+class ECFrameData(MSContactorData):
     def build(self):
-        super(ExtractorData, self).build()
+        super(MSContactorData, self).build()
 
 
 # -----------------------------------------------------------------------------
@@ -341,7 +341,7 @@ class TestBuild:
 
         with pytest.raises(
             ConfigurationError,
-            match="Extractor models must define at least two streams; received "
+            match="MSContactor models must define at least two streams; received "
             "\['stream1'\]",
         ):
             m.fs.unit._verify_inputs()
@@ -363,7 +363,7 @@ class TestBuild:
 
         with pytest.raises(
             NotImplementedError,
-            match="Extractor model does not support dynamics yet.",
+            match="MSContactor model does not support dynamics yet.",
         ):
             m.fs.unit._verify_inputs()
 
@@ -385,7 +385,7 @@ class TestBuild:
 
         with pytest.raises(
             ConfigurationError,
-            match="No common components found in property packages. Extractor "
+            match="No common components found in property packages. MSContactor "
             "model assumes mass transfer occurs between components with the "
             "same name in different streams.",
         ):
@@ -2118,7 +2118,7 @@ class TestToyProblem:
         m.fs.properties1 = Parameters1()
         m.fs.properties2 = Parameters2()
 
-        m.fs.unit = Extractor(
+        m.fs.unit = MSContactor(
             number_of_finite_elements=2,
             streams={
                 "stream1": {"property_package": m.fs.properties1},
@@ -2297,7 +2297,7 @@ class LiCoStateBlock1Data(StateBlockData):
         }
 
 
-class TestExtractorSMInitializer:
+class TestMSContactorInitializer:
     @pytest.fixture
     def model(self):
         m = ConcreteModel()
@@ -2306,7 +2306,7 @@ class TestExtractorSMInitializer:
         m.fs.properties = LiCoParameters()
 
         # Add separation stages
-        m.fs.stage1 = Extractor(
+        m.fs.stage1 = MSContactor(
             number_of_finite_elements=10,
             streams={
                 "retentate": {
@@ -2327,8 +2327,8 @@ class TestExtractorSMInitializer:
 
     @pytest.mark.unit
     def test_default_initializer(self, model):
-        assert ExtractorData.default_initializer is ExtractorSMInitializer
-        assert model.fs.stage1.default_initializer is ExtractorSMInitializer
+        assert MSContactorData.default_initializer is MSContactorInitializer
+        assert model.fs.stage1.default_initializer is MSContactorInitializer
 
 
 class TestLiCODiafiltration:
@@ -2351,7 +2351,7 @@ class TestLiCODiafiltration:
         m.fs.properties = LiCoParameters()
 
         # Add separation stages
-        m.fs.stage1 = Extractor(
+        m.fs.stage1 = MSContactor(
             number_of_finite_elements=10,
             streams={
                 "retentate": {
@@ -2368,7 +2368,7 @@ class TestLiCODiafiltration:
             },
         )
 
-        m.fs.stage2 = Extractor(
+        m.fs.stage2 = MSContactor(
             number_of_finite_elements=10,
             streams={
                 "retentate": {
@@ -2385,7 +2385,7 @@ class TestLiCODiafiltration:
             },
         )
 
-        m.fs.stage3 = Extractor(
+        m.fs.stage3 = MSContactor(
             number_of_finite_elements=10,
             streams={
                 "retentate": {

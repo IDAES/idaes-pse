@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-IDAES model for a generic multiple-stream extractor unit.
+IDAES model for a generic multiple-stream contactor unit.
 """
 # Import Pyomo libraries
 from pyomo.environ import Constraint, RangeSet, Reals, Set, units, Var
@@ -43,24 +43,22 @@ __author__ = "Andrew Lee"
 # it harder to do side feeds.
 
 
-class ExtractorSMInitializer(SingleControlVolumeUnitInitializer):
+class MSContactorInitializer(SingleControlVolumeUnitInitializer):
     """
     This is a general purpose sequential-modular Initializer object for
-    Extractor unit models.
-
-    For details of the initialization routine, please see the documentation.
+    multi-stream contactor unit models.
 
     """
 
 
-@declare_process_block_class("Extractor")
-class ExtractorData(UnitModelBlockData):
+@declare_process_block_class("MSContactor")
+class MSContactorData(UnitModelBlockData):
     """
-    Standard Extractor Unit Model Class
+    Multi-Stream Contactor Unit Model Class
     """
 
     # Set default initializer
-    default_initializer = ExtractorSMInitializer
+    default_initializer = MSContactorInitializer
 
     CONFIG = UnitModelBlockData.CONFIG()
 
@@ -250,12 +248,14 @@ class ExtractorData(UnitModelBlockData):
         # Check that at least two streams were declared
         if len(self.config.streams) < 2:
             raise ConfigurationError(
-                f"Extractor models must define at least two streams; received "
+                f"MSContactor models must define at least two streams; received "
                 f"{list(self.config.streams.keys())}"
             )
 
         if self.config.dynamic:
-            raise NotImplementedError("Extractor model does not support dynamics yet.")
+            raise NotImplementedError(
+                "MSContactor model does not support dynamics yet."
+            )
 
         # Build indexing sets
         self.elements = RangeSet(
@@ -289,7 +289,7 @@ class ExtractorData(UnitModelBlockData):
                     self.stream_component_interactions.add((stream1, stream2, j))
         if len(self.stream_component_interactions) == 0:
             raise ConfigurationError(
-                "No common components found in property packages. Extractor model assumes "
+                "No common components found in property packages. MSContactor model assumes "
                 "mass transfer occurs between components with the same name in different streams."
             )
 
@@ -868,7 +868,7 @@ class ExtractorData(UnitModelBlockData):
     # TODO: Initialization - use the new framework
     def initialize(self, **kwargs):
         raise NotImplementedError(
-            "The ExtractorCascade unit model does not support the old initialization API. "
+            "The MSContactor unit model does not support the old initialization API. "
             "Please use the new API (InitializerObjects) instead."
         )
 
