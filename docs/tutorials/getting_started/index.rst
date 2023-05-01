@@ -79,13 +79,7 @@ assuming that the installation was done using one of the methods described earli
 
     idaes get-extensions --extra petsc
 
-4. Finally, use the ``idaes get-examples`` command to install the most recent version of the IDAES examples compatible with the upgraded IDAES version.
+4. Install the IDAES example Jupyter notebooks.
 
-    .. warning:: If the examples target installation directory is not empty, its contents, including examples installed with a previous IDAES version and other files, **will be overwritten without warning**.
-        To avoid losing data, **it is strongly recommended that you make a backup copy of any existing examples directory** before proceeding.
+.. include:: install_templates/examples.txt
 
-..
-
-    After creating a backup copy of the existing examples directory, run::
-
-        idaes get-examples
