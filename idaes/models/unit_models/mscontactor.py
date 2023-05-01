@@ -55,13 +55,32 @@ class MSContactorInitializer(ModularInitializerBase):
 
     This routine starts by deactivating any constraints that are not
     part of the base model and fixing all inter-stream transfer variables.
-    The model is then solved using the Pyomo block-triangularization solver
+    The model is then solved using the Pyomo ssc_solver function
     to initialize each stream separately.
 
     The inter-stream transfer variables then unfixed and additional constraints
     reactivated, and the full model solved using the user-specified solver.
 
     """
+
+    CONFIG = ModularInitializerBase.CONFIG()
+
+    CONFIG.declare(
+        "ssc_solver_options",
+        ConfigDict(
+            implicit=True,
+            description="Dict of arguments for solver calls by ssc_solver",
+        ),
+    )
+    CONFIG.declare(
+        "calculate_variable_options",
+        ConfigDict(
+            implicit=True,
+            description="Dict of options to pass to 1x1 block solver",
+            doc="Dict of options to pass to calc_var_kwds argument in "
+            "scc_solver method.",
+        ),
+    )
 
     def initialization_routine(
         self,
@@ -114,8 +133,8 @@ class MSContactorInitializer(ModularInitializerBase):
             model,
             solver=solver,
             # TODO: Add support for these
-            # solve_kwds=self.config.block_solver_options,
-            # calc_var_kwds=self.config.calculate_variable_options,
+            solve_kwds=self.config.css_solver_options,
+            calc_var_kwds=self.config.calculate_variable_options,
         )
         init_log.info("Stream Initialization Completed.")
 
