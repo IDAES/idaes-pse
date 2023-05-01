@@ -336,7 +336,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
             result = solver.solve(blk)
 
             if not pyo.check_optimal_termination(result):
-                raise Exception(
+                raise InitializationError(
                     "Flowsheet did not converge after fixing the degrees of freedom. "
                     "To create the multi-period model without initialization, do not provide "
                     "initialization_func argument."
