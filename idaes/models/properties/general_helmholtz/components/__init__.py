@@ -18,6 +18,7 @@ __author__ = "John Eslick"
 
 from idaes.models.properties.general_helmholtz.components.registry import (
     register_helmholtz_component,
+    remove_component,
     registered_components,
     viscosity_available,
     thermal_conductivity_available,

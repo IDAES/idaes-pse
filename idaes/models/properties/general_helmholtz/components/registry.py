@@ -93,6 +93,7 @@ def register_helmholtz_component(
     Returns:
         None
     """
+    comp_str = comp_str.lower()
     _components[comp_str] = _ComponentStruct(
         viscosity=viscosity,
         thermal_conductivity=thermal_conductivity,
@@ -102,6 +103,22 @@ def register_helmholtz_component(
         thermal_conductivity_ref=thermal_conductivity_ref,
         surface_tension_ref=surface_tension_ref,
     )
+
+def remove_component(comp_str):
+    """Remove a component from the registry. If the component isn't
+    registered, raise KeyError.
+
+    Args:
+        comp_str (str): Component to remove
+
+    Returns:
+        None
+
+    Raises:
+        KeyError: if the component isn't registered raise a KeyError
+    """
+    comp_str = comp_str.lower()
+    del(_components[comp_str])
 
 
 def clear_component_registry():

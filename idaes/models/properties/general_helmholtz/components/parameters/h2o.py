@@ -15,8 +15,10 @@
 
 __author__ = "John Eslick"
 
+import os
 import math
 import pyomo.environ as pyo
+from pyomo.common.fileutils import this_file_dir
 from pyomo.common.fileutils import find_library
 from idaes.core.util.math import smooth_max
 from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
@@ -194,17 +196,25 @@ def viscosity_rule(mvisc):
     )
 
 
-def main():
-    """Generate property and expression files."""
+def main(dry_run=False):
+    """Generate parameter and expression files.
 
-    we = WriteParameters(parameters="h2o.json")
+    Args:
+        dry_run (bool): If dry run don't generate files
+
+    Returns:
+        WriteParameters
+    """
+    main_param_file = os.path.join(this_file_dir(), "h2o.json")
+    we = WriteParameters(parameters=main_param_file)
     we.add(
         {
             "viscosity": viscosity_rule,
             "thermal_conductivity": thermal_conductivity_rule,
         }
     )
-    we.write()
+    we.write(dry_run=dry_run)
+    return we
 
 
 if __name__ == "__main__":

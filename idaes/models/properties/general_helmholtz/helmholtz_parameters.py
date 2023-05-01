@@ -230,6 +230,36 @@ class WriteParameters(object):
         self.model.tau = self.T_star / T
         return pyo.value(rho * self.R * T * (1 + self.model.delta * self.model.phir_d))
 
+    def calculate_enthalpy(self, rho, T):
+        """From the expressions provided, calculate enthalpy from density and
+        temperature. This can be used for testing.
+
+        Args:
+            rho (float): density in kg/m3
+            T (float): temperature in K
+
+        Returns:
+            float: enthalpy in kJ/kg
+        """
+        self.model.delta = rho / self.rho_star
+        self.model.tau = self.T_star / T
+        return pyo.value(self.R * T * (1 + self.model.tau * (self.model.phii_t + self.model.phir_t) + self.model.delta * self.model.phir_d))
+
+    def calculate_entropy(self, rho, T):
+        """From the expressions provided, calculate entropy from density and
+        temperature. This can be used for testing.
+
+        Args:
+            rho (float): density in kg/m3
+            T (float): temperature in K
+
+        Returns:
+            float: entropy in kJ/kg/K
+        """
+        self.model.delta = rho / self.rho_star
+        self.model.tau = self.T_star / T
+        return pyo.value(self.R * (self.model.tau * (self.model.phii_t + self.model.phir_t) - self.model.phii - self.model.phir))
+
     def make_model(self, *args):
         """Make a Pyomo model used to define expression NL files.  The arguments are strings
         for variables to create.  The basic parameters are also added as parameters in the
@@ -291,7 +321,7 @@ class WriteParameters(object):
             self.has_expression.append(name)
 
     def approx_sat_curves(self, trange):
-        """Prints a table to verify that the approximate saturated density curves
+        """_log.infos a table to verify that the approximate saturated density curves
         are correct.  Since the approximate curves are used as an initial guess to
         the phase equilibrium problems, they are not directly testable.
 
@@ -299,29 +329,34 @@ class WriteParameters(object):
             trange (iterable): temperature points in K
 
         Returns:
-            None
+            tuple: list of liquid densities and list of vapor densities
         """
-        print("\n=====================================================================")
-        print(" Check approx sat delta curves")
-        print("=====================================================================")
-        print(
+        _log.info("\n=====================================================================")
+        _log.info(" Check approx sat delta curves")
+        _log.info("=====================================================================")
+        _log.info(
             f"{'T [K]':7s}  {'T [C]':8s}  {'~rho_l [kg/m3]':14s}  {'~rho_v [kg/m3]':14s}  {'~P [kPa]':9s}"
         )
-        print("---------------------------------------------------------------------")
+        _log.info("---------------------------------------------------------------------")
+        rhol_list = [] 
+        rhov_list = []
         for T in trange:
             self.model.tau = self.model.T_star / T
             delta_l = pyo.value(self.model.delta_l_sat_approx)
             delta_v = pyo.value(self.model.delta_v_sat_approx)
             rho_l = delta_l * self.model.rho_star
             rho_v = delta_v * self.model.rho_star
+            rhol_list.append(rho_l)
+            rhov_list.append(rho_v)
             self.model.delta = delta_v
             P_v = pyo.value(
                 rho_v * self.R * T * (1 + self.model.delta * self.model.phir_d)
             )
-            print(
+            _log.info(
                 f"{T:7.3f}, {T - 273.15: 8.3f}, {rho_l:14.4f}, {rho_v:14.4f}, {P_v:9.4f}"
             )
-        print("=====================================================================\n")
+        _log.info("=====================================================================\n")
+        return (rhol_list, rhov_list)
 
     def calculate_reference_offset(self, delta, tau, s0, h0):
         """Given delta and tau for a reference state and the reference entropy and enthalpy, calculate
@@ -387,17 +422,22 @@ class WriteParameters(object):
             return nl_file, expr_map, var_map
         return nl_file, None, var_map
 
-    def write(self):
-        """Write the parameter and expression files, and print some diagnostics."""
-        print(
+    def write(self, dry_run=False):
+        """Write the parameter and expression files, and _log.info some diagnostics."""
+        if dry_run:
+            #TODO<jce> this isn't important to IDAES function, so I need to come back later
+            #    and figure out how to test this.
+            return
+
+        _log.info(
             "\n======================================================================="
         )
-        print(f" Writing expressions for {self.comp}")
-        print("=======================================================================")
+        _log.info(f" Writing expressions for {self.comp}")
+        _log.info("=======================================================================")
         pc = self.calculate_pressure(self.rhoc, self.Tc)
-        print(f"Calculated Pc = {pc}, Pc given {self.Pc}")
-        print(f"Tc = {self.Tc}, T^* = {self.T_star}")
-        print(f"rhoc = {self.rhoc}, rho^* = {self.rho_star}")
+        _log.info(f"Calculated Pc = {pc}, Pc given {self.Pc}")
+        _log.info(f"Tc = {self.Tc}, T^* = {self.T_star}")
+        _log.info(f"rhoc = {self.rhoc}, rho^* = {self.rho_star}")
         self.Pc = pc
         for name in self.expressions:
             if name not in self.has_expression:
@@ -442,8 +482,8 @@ class WriteParameters(object):
                 _log.warning(f"Missing optional expression {name}")
                 param_dict[f"have_{short_name}"] = False
 
-        with open(f"{self.comp}_parameters.json", "w") as f:
-            json.dump(param_dict, f, indent=4)
+            with open(f"{self.comp}_parameters.json", "w") as f:
+                json.dump(param_dict, f, indent=4)
 
         trng = []
         linspc = numpy.linspace(self.Tt, self.T_star, 15)

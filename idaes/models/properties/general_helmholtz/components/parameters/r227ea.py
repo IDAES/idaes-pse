@@ -20,10 +20,18 @@ from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
 )
 
 
-def main():
+def main(dry_run=False):
+    """Generate parameter and expression files.
+
+    Args:
+        dry_run (bool): If dry run don't generate files
+
+    Returns:
+        None
+    """
     """Generate parameter and expression files."""
     we = WriteParameters(parameters="r227ea.json")
-    we.write()
+    we.write(dry_run)
 
 
 if __name__ == "__main__":

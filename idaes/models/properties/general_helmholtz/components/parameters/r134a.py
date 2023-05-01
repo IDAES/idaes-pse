@@ -166,8 +166,15 @@ def viscosity_rule(m):
     return etas * (1 + B * rho) + eta
 
 
-def main():
-    """Generate parameter and expression files."""
+def main(dry_run=False):
+    """Generate parameter and expression files.
+
+    Args:
+        dry_run (bool): If dry run don't generate files
+
+    Returns:
+        None
+    """
     we = WriteParameters("r134a.json")
     we.add(
         {
@@ -175,7 +182,7 @@ def main():
             "thermal_conductivity": thermal_conductivity_rule,
         }
     )
-    we.write()
+    we.write(dry_run=dry_run)
 
     print("ASHRAE Offset")
     print(we.calculate_reference_offset(2.79075439914, 1.60488955608, 0, 0))

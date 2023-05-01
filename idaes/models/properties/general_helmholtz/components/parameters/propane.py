@@ -20,10 +20,17 @@ from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
 )
 
 
-def main():
-    """Generate parameter and expression files."""
+def main(dry_run=False):
+    """Generate parameter and expression files.
+
+    Args:
+        dry_run (bool): If dry run don't generate files
+
+    Returns:
+        None
+    """
     we = WriteParameters(parameters="propane.json")
-    we.write()
+    we.write(dry_run=dry_run)
 
 
 if __name__ == "__main__":
