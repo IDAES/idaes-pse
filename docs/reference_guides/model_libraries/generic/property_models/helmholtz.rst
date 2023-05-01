@@ -169,7 +169,7 @@ Phase Presentation
 
 The property package wrapper can present fluid phase information to the
 IDAES framework in different ways. The ``PhaseType.MIX`` option causes 
-the modeling framework to view liquid adn vapor as a single mixed liquid
+the modeling framework to view liquid and vapor as a single mixed liquid
 and vapor phase. This generally reduces model complexity. Phase equilibrium
 is still calculated and ``vapor_frac`` and individual phase properties are 
 available, just as they would be with the two-phase presentation. The 

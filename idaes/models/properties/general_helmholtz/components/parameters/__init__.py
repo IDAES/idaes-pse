@@ -31,12 +31,12 @@ from idaes.models.properties.general_helmholtz.components import (
 def get_parameter_path():
     """Get the parameter file path
 
-    Args: 
+    Args:
         None
 
     Returns:
         str: path for parameter files
-    """ 
+    """
     pth = idaes.cfg.properties.helmholtz.parameter_file_path
     if pth is None:
         pth = this_file_dir()

@@ -176,8 +176,8 @@ class HelmholtzThermoExpressions(object):
         blk (Block): block to attach the external functions to
         parameters (HelmholtzParameterBlock): property parameter block
         amount_basis (AmountBasis|None): If none get the amount basis
-            from the parameter block, otherwise use this amount basis for 
-            inputs. 
+            from the parameter block, otherwise use this amount basis for
+            inputs.
 
     Returns:
         HelmholtzThermoExpressions
@@ -190,9 +190,9 @@ class HelmholtzThermoExpressions(object):
             blk (Block): block to attach the external functions to
             parameters (HelmholtzParameterBlock): property parameter block
             amount_basis (AmountBasis|None): If none get the amount basis
-                from the parameter block, otherwise use this amount basis for 
-                inputs. 
-                
+                from the parameter block, otherwise use this amount basis for
+                inputs.
+
         Returns:
             HelmholtzThermoExpressions
         """
@@ -1168,7 +1168,7 @@ change.
                 units appropriate for the amount basis.
             amount_basis (AmountBasis): Whether to use a mass or mole basis
             with_units (bool): if True return an expression with units
-            prop (str): h, s, or u 
+            prop (str): h, s, or u
         Returns:
             Total selected state variable.
         """
@@ -1250,7 +1250,7 @@ change.
             T (float): Temperature
             P (float): Pressure, None if saturated
             x (float): Vapor fraction [mol vapor/mol total] (between 0 and 1), None if superheated or sub-cooled
-            units (Units): The units to report the result in, if None use the default units appropriate for the amount basis. 
+            units (Units): The units to report the result in, if None use the default units appropriate for the amount basis.
             amount_basis (AmountBasis): Whether to use a mass or mole basis
             with_units (bool): if True return an expression with units
 
@@ -1326,7 +1326,7 @@ change.
             units (Units): The units to report the result in, if None use the default units appropriate for the amount basis.
             amount_basis (AmountBasis): Whether to use a mass or mole basis
             with_units (bool): if True return an expression with units
-        
+
         Returns:
             float: Specific or molar internal energy
         """

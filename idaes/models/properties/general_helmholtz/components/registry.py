@@ -20,6 +20,7 @@ _components = {}
 
 class _ComponentStruct(object):
     """Component registry entry structure"""
+
     def __init__(
         self,
         viscosity=False,
@@ -40,7 +41,7 @@ class _ComponentStruct(object):
             viscosity_ref (str|list|None): Reference for viscosity model
             thermal_conductivity_ref (str|list|None): Reference for thermal conductivity model
             surface_tension_ref (str|list|None): Reference for surface tension model
-        
+
         Returns:
             _ComponentStruct"""
         # these are true if external functions to calculate are available
@@ -55,7 +56,10 @@ class _ComponentStruct(object):
             self.viscosity_ref = viscosity_ref
         else:
             self.viscosity_ref = "\n".join(viscosity_ref)
-        if isinstance(thermal_conductivity_ref, str) or thermal_conductivity_ref is None:
+        if (
+            isinstance(thermal_conductivity_ref, str)
+            or thermal_conductivity_ref is None
+        ):
             self.thermal_conductivity_ref = thermal_conductivity_ref
         else:
             self.thermal_conductivity_ref = "\n".join(thermal_conductivity_ref)
@@ -63,6 +67,7 @@ class _ComponentStruct(object):
             self.surface_tension_ref = surface_tension_ref
         else:
             self.surface_tension_ref = "\n".join(surface_tension_ref)
+
 
 def register_helmholtz_component(
     comp_str,
@@ -84,7 +89,7 @@ def register_helmholtz_component(
         viscosity_ref (str|list|None): Reference for viscosity model
         thermal_conductivity_ref (str|list|None): Reference for thermal conductivity model
         surface_tension_ref (str|list|None): Reference for surface tension model
-    
+
     Returns:
         None
     """
@@ -100,7 +105,7 @@ def register_helmholtz_component(
 
 
 def clear_component_registry():
-    """Remove all components from registry""" 
+    """Remove all components from registry"""
     _components.clear()
 
 
