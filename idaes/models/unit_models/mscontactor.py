@@ -14,8 +14,9 @@
 IDAES model for a generic multiple-stream contactor unit.
 """
 # Import Pyomo libraries
-from pyomo.environ import Constraint, RangeSet, Reals, Set, units, Var
+from pyomo.environ import Block, Constraint, RangeSet, Reals, Set, units, Var
 from pyomo.common.config import ConfigDict, ConfigValue, Bool, In
+from pyomo.contrib.incidence_analysis import solve_strongly_connected_components
 
 # Import IDAES cores
 from idaes.core import (
@@ -34,7 +35,11 @@ from idaes.core.util.exceptions import (
     BurntToast,
     PropertyNotSupportedError,
 )
-from idaes.core.initialization import SingleControlVolumeUnitInitializer
+from idaes.core.initialization import ModularInitializerBase
+from idaes.core.initialization.initializer_base import StoreState
+from idaes.core.solvers import get_solver
+from idaes.core.util.model_serializer import to_json, from_json
+import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee"
 
@@ -43,12 +48,86 @@ __author__ = "Andrew Lee"
 # it harder to do side feeds.
 
 
-class MSContactorInitializer(SingleControlVolumeUnitInitializer):
+class MSContactorInitializer(ModularInitializerBase):
     """
     This is a general purpose sequential-modular Initializer object for
     multi-stream contactor unit models.
 
+    This routine starts by deactivating any constraints that are not
+    part of the base model and fixing all inter-stream transfer variables.
+    The model is then solved using the Pyomo block-triangularization solver
+    to initialize each stream separately.
+
+    The inter-stream transfer variables then unfixed and additional constraints
+    reactivated, and the full model solved using the user-specified solver.
+
     """
+
+    def initialization_routine(
+        self,
+        model: Block,
+    ):
+        """
+        Initialization routine for MSContactor Blocks.
+
+        Args:
+            model: model to be initialized
+
+        Returns:
+            None
+        """
+        # Get loggers
+        init_log = idaeslog.getInitLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+
+        # Get current model state
+        initial_state = to_json(model, wts=StoreState, return_dict=True)
+
+        # Isolate streams by fixing inter-stream variables
+        model.material_transfer_term.fix()
+
+        # Deactivate any constraints that are not part of the base model
+        # First, build list of names for known constraints
+        const_names = []
+        for s in model.config.streams.keys():
+            const_names.append(s + "_rate_reaction_constraint")
+            const_names.append(s + "_equilibrium_reaction_constraint")
+            const_names.append(s + "_inherent_reaction_constraint")
+            const_names.append(s + "_material_balance")
+            const_names.append(s + "_energy_balance")
+            const_names.append(s + "_pressure_balance")
+            const_names.append(s + "_side_stream_pressure_balance")
+
+        # Iterate through all constraints attached to model - do not search sub-blocks
+        for c in model.component_objects(Constraint, descend_into=False):
+            # Deactivate constraint if its name is not in list of known names
+            if c.name not in const_names:
+                c.deactivate()
+
+        # Call css_solver
+        solver = get_solver(self.config.solver, options=self.config.solver_options)
+        solve_strongly_connected_components(
+            model,
+            solver=solver,
+            # TODO: Add support for these
+            # solve_kwds=self.config.block_solver_options,
+            # calc_var_kwds=self.config.calculate_variable_options,
+        )
+        init_log.info("Stream Initialization Completed.")
+
+        # Revert state
+        from_json(model, sd=initial_state, wts=StoreState)
+
+        # Solve full model
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(model, tee=slc.tee)
+        init_log.info(f"Initialization Completed, {idaeslog.condition(res)}")
+
+        return res
 
 
 @declare_process_block_class("MSContactor")

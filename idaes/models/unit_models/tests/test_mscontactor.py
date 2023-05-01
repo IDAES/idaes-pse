@@ -65,6 +65,10 @@ from idaes.core.util.testing import (
     ReactionParameterTestBlock,
     ReactionBlock,
 )
+from idaes.core.initialization import InitializationStatus
+from idaes.models.properties.examples.saponification_thermo import (
+    SaponificationParameterBlock,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -2303,32 +2307,108 @@ class TestMSContactorInitializer:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = LiCoParameters()
+        m.fs.properties = SaponificationParameterBlock()
 
         # Add separation stages
-        m.fs.stage1 = MSContactor(
+        m.fs.contactor = MSContactor(
             number_of_finite_elements=10,
             streams={
-                "retentate": {
+                "s1": {
                     "property_package": m.fs.properties,
-                    "has_energy_balance": False,
-                    "has_pressure_balance": False,
                 },
-                "permeate": {
+                "s2": {
                     "property_package": m.fs.properties,
-                    "has_feed": False,
-                    "has_energy_balance": False,
-                    "has_pressure_balance": False,
                 },
             },
         )
+
+        m.fs.contactor.s1_inlet.flow_vol.fix(1.0e-03)
+        m.fs.contactor.s1_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.contactor.s1_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.contactor.s1_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.contactor.s1_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.contactor.s1_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.contactor.s1_inlet.temperature.fix(303.15)
+        m.fs.contactor.s1_inlet.pressure.fix(101325.0)
+
+        m.fs.contactor.s2_inlet.flow_vol.fix(2.0e-03)
+        m.fs.contactor.s2_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.contactor.s2_inlet.conc_mol_comp[0, "NaOH"].fix(50.0)
+        m.fs.contactor.s2_inlet.conc_mol_comp[0, "EthylAcetate"].fix(50.0)
+        m.fs.contactor.s2_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(50.0)
+        m.fs.contactor.s2_inlet.conc_mol_comp[0, "Ethanol"].fix(50.0)
+        m.fs.contactor.s2_inlet.temperature.fix(323.15)
+        m.fs.contactor.s2_inlet.pressure.fix(2e5)
+
+        m.fs.contactor.material_transfer_term.fix(0)
+        m.fs.contactor.energy_transfer_term.fix(0)
 
         return m
 
     @pytest.mark.unit
     def test_default_initializer(self, model):
         assert MSContactorData.default_initializer is MSContactorInitializer
-        assert model.fs.stage1.default_initializer is MSContactorInitializer
+        assert model.fs.contactor.default_initializer is MSContactorInitializer
+
+    @pytest.mark.component
+    def test_MSInitializer(self, model):
+        initializer = MSContactorInitializer()
+        initializer.initialize(model.fs.contactor)
+
+        assert (
+            initializer.summary[model.fs.contactor]["status"] == InitializationStatus.Ok
+        )
+
+        for x in model.fs.contactor.elements:
+            assert value(model.fs.contactor.s1[0, x].flow_vol) == pytest.approx(
+                1.0e-03, rel=1e-6
+            )
+            assert value(
+                model.fs.contactor.s1[0, x].conc_mol_comp["H2O"]
+            ) == pytest.approx(55388, rel=1e-6)
+            assert value(
+                model.fs.contactor.s1[0, x].conc_mol_comp["NaOH"]
+            ) == pytest.approx(1e2, rel=1e-6)
+            assert value(
+                model.fs.contactor.s1[0, x].conc_mol_comp["EthylAcetate"]
+            ) == pytest.approx(1e2, rel=1e-6)
+            assert value(
+                model.fs.contactor.s1[0, x].conc_mol_comp["SodiumAcetate"]
+            ) == pytest.approx(0, abs=1e-4)
+            assert value(
+                model.fs.contactor.s1[0, x].conc_mol_comp["Ethanol"]
+            ) == pytest.approx(0, abs=1e-4)
+            assert value(model.fs.contactor.s1[0, x].temperature) == pytest.approx(
+                303.15, rel=1e-6
+            )
+            assert value(model.fs.contactor.s1[0, x].pressure) == pytest.approx(
+                101325, rel=1e-6
+            )
+
+            assert value(model.fs.contactor.s2[0, x].flow_vol) == pytest.approx(
+                2.0e-03, rel=1e-6
+            )
+            assert value(
+                model.fs.contactor.s2[0, x].conc_mol_comp["H2O"]
+            ) == pytest.approx(55388, rel=1e-6)
+            assert value(
+                model.fs.contactor.s2[0, x].conc_mol_comp["NaOH"]
+            ) == pytest.approx(50, rel=1e-6)
+            assert value(
+                model.fs.contactor.s2[0, x].conc_mol_comp["EthylAcetate"]
+            ) == pytest.approx(50, rel=1e-6)
+            assert value(
+                model.fs.contactor.s2[0, x].conc_mol_comp["SodiumAcetate"]
+            ) == pytest.approx(50, rel=1e-6)
+            assert value(
+                model.fs.contactor.s2[0, x].conc_mol_comp["Ethanol"]
+            ) == pytest.approx(50, rel=1e-6)
+            assert value(model.fs.contactor.s2[0, x].temperature) == pytest.approx(
+                323.15, rel=1e-6
+            )
+            assert value(model.fs.contactor.s2[0, x].pressure) == pytest.approx(
+                2e5, rel=1e-6
+            )
 
 
 class TestLiCODiafiltration:
@@ -2585,9 +2665,8 @@ class TestLiCODiafiltration:
 
         assert degrees_of_freedom(model.fs.stage3) == 0
 
-        solver = get_solver(options={"halt_on_ampl_error": "yes"})
-        res = solver.solve(model.fs.stage3, tee=True)
-        assert_optimal_termination(res)
+        initializer = MSContactorInitializer()
+        initializer.initialize(model.fs.stage3)
 
         # Unfix feed guesses
         model.fs.stage3.retentate_inlet.flow_vol[0].unfix()
@@ -2611,8 +2690,7 @@ class TestLiCODiafiltration:
 
         assert degrees_of_freedom(model.fs.stage2) == 0
 
-        res = solver.solve(model.fs.stage2, tee=True)
-        assert_optimal_termination(res)
+        initializer.initialize(model.fs.stage2)
 
         # Unfix feed guesses
         model.fs.stage2.retentate_inlet.flow_vol[0].unfix()
@@ -2649,8 +2727,7 @@ class TestLiCODiafiltration:
 
         assert degrees_of_freedom(model.fs.stage1) == 0
 
-        res = solver.solve(model.fs.stage1, tee=True)
-        assert_optimal_termination(res)
+        initializer.initialize(model.fs.stage1)
 
         # Unfix feed guesses
         model.fs.stage1.retentate_inlet.flow_vol[0].unfix()
@@ -2673,6 +2750,7 @@ class TestLiCODiafiltration:
         # Solve the full model
         assert degrees_of_freedom(model) == 0
 
+        solver = get_solver()
         res = solver.solve(model, tee=True)
         assert_optimal_termination(res)
 
