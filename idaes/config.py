@@ -195,9 +195,7 @@ def _new_idaes_config_block():
     )
     cfg["logging"]["formatters"]["blank_format"].declare(
         "format",
-        pyomo.common.config.ConfigValue(
-            domain=str, default="%(message)s"
-        ),
+        pyomo.common.config.ConfigValue(domain=str, default="%(message)s"),
     )
     cfg["logging"].declare("handlers", pyomo.common.config.ConfigBlock(implicit=True))
     cfg["logging"]["handlers"].declare(
@@ -239,7 +237,10 @@ def _new_idaes_config_block():
                 "idaes.solve": {"propagate": False, "handlers": ["console"]},
                 "idaes.init": {"propagate": False, "handlers": ["console"]},
                 "idaes.model": {"propagate": False, "handlers": ["console"]},
-                "idaes.helmholtz_parameters": {"propagate": False, "handlers": ["console_blank"]},
+                "idaes.helmholtz_parameters": {
+                    "propagate": False,
+                    "handlers": ["console_blank"],
+                },
             },
         ),
     )
