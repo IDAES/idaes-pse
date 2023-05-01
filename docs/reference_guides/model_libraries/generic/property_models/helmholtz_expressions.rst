@@ -48,6 +48,7 @@ The sample code below gives am example of how to use the expression writer in co
 
 .. testcode::
 
+    import pyomo.environ as pyo
     from idaes.models.properties.general_helmholtz import (
         HelmholtzParameterBlock,
         HelmholtzThermoExpressions,

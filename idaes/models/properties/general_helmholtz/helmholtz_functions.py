@@ -12,11 +12,6 @@
 #################################################################################
 """Generic Helmholtz EOS Functions and Parameters
 """
-# TODO: Missing docstrings
-# pylint: disable=missing-function-docstring
-
-# TODO: Look into protected access issues
-# pylint: disable=protected-access
 
 __author__ = "John Eslick"
 
