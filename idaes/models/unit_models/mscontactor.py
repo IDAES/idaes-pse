@@ -133,7 +133,7 @@ class MSContactorInitializer(ModularInitializerBase):
             model,
             solver=solver,
             # TODO: Add support for these
-            solve_kwds=self.config.css_solver_options,
+            solve_kwds=self.config.ssc_solver_options,
             calc_var_kwds=self.config.calculate_variable_options,
         )
         init_log.info("Stream Initialization Completed.")
