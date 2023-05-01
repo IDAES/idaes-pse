@@ -37,10 +37,12 @@ def test_not_registered():
     assert not surface_tension_available("not real")
     assert not component_registered("not real")
 
+
 @pytest.mark.unit
 def test_remove_not_registered():
     with pytest.raises(KeyError):
         remove_component("not real")
+
 
 @pytest.mark.unit
 def test_remove_registered():
@@ -49,12 +51,14 @@ def test_remove_registered():
     remove_component("fooponent")
     assert not component_registered("fooponent")
 
+
 @pytest.mark.unit
 def test_registered_components():
     """Use some standard components to test list"""
     assert "h2o" in registered_components()
     assert "co2" in registered_components()
     assert "r134a" in registered_components()
+
 
 @pytest.mark.unit
 def test_register_and_get():
@@ -75,9 +79,10 @@ def test_register_and_get():
     assert eos_reference("fooponent") == "cite eos"
     assert viscosity_reference("fooponent") == "cite viscosity"
     assert thermal_conductivity_reference("fooponent") == "cite thermal conductivity"
-    assert surface_tension_reference("fooponent") == "cite surface tension" 
+    assert surface_tension_reference("fooponent") == "cite surface tension"
     remove_component("fooponent")
     assert not component_registered("fooponent")
+
 
 @pytest.mark.unit
 def test_register_and_get_list_refs():
@@ -98,7 +103,7 @@ def test_register_and_get_list_refs():
     assert eos_reference("fooponent") == "cite\neos"
     assert viscosity_reference("fooponent") == "cite\nviscosity"
     assert thermal_conductivity_reference("fooponent") == "cite\nthermal conductivity"
-    assert surface_tension_reference("fooponent") == "cite\nsurface tension" 
+    assert surface_tension_reference("fooponent") == "cite\nsurface tension"
     remove_component("fooponent")
     assert not component_registered("fooponent")
 

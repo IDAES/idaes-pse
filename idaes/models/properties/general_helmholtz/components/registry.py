@@ -104,6 +104,7 @@ def register_helmholtz_component(
         surface_tension_ref=surface_tension_ref,
     )
 
+
 def remove_component(comp_str):
     """Remove a component from the registry. If the component isn't
     registered, raise KeyError.
@@ -118,7 +119,7 @@ def remove_component(comp_str):
         KeyError: if the component isn't registered raise a KeyError
     """
     comp_str = comp_str.lower()
-    del(_components[comp_str])
+    del _components[comp_str]
 
 
 def clear_component_registry():

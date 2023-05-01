@@ -243,7 +243,15 @@ class WriteParameters(object):
         """
         self.model.delta = rho / self.rho_star
         self.model.tau = self.T_star / T
-        return pyo.value(self.R * T * (1 + self.model.tau * (self.model.phii_t + self.model.phir_t) + self.model.delta * self.model.phir_d))
+        return pyo.value(
+            self.R
+            * T
+            * (
+                1
+                + self.model.tau * (self.model.phii_t + self.model.phir_t)
+                + self.model.delta * self.model.phir_d
+            )
+        )
 
     def calculate_entropy(self, rho, T):
         """From the expressions provided, calculate entropy from density and
@@ -258,7 +266,14 @@ class WriteParameters(object):
         """
         self.model.delta = rho / self.rho_star
         self.model.tau = self.T_star / T
-        return pyo.value(self.R * (self.model.tau * (self.model.phii_t + self.model.phir_t) - self.model.phii - self.model.phir))
+        return pyo.value(
+            self.R
+            * (
+                self.model.tau * (self.model.phii_t + self.model.phir_t)
+                - self.model.phii
+                - self.model.phir
+            )
+        )
 
     def make_model(self, *args):
         """Make a Pyomo model used to define expression NL files.  The arguments are strings
@@ -331,14 +346,20 @@ class WriteParameters(object):
         Returns:
             tuple: list of liquid densities and list of vapor densities
         """
-        _log.info("\n=====================================================================")
+        _log.info(
+            "\n====================================================================="
+        )
         _log.info(" Check approx sat delta curves")
-        _log.info("=====================================================================")
+        _log.info(
+            "====================================================================="
+        )
         _log.info(
             f"{'T [K]':7s}  {'T [C]':8s}  {'~rho_l [kg/m3]':14s}  {'~rho_v [kg/m3]':14s}  {'~P [kPa]':9s}"
         )
-        _log.info("---------------------------------------------------------------------")
-        rhol_list = [] 
+        _log.info(
+            "---------------------------------------------------------------------"
+        )
+        rhol_list = []
         rhov_list = []
         for T in trange:
             self.model.tau = self.model.T_star / T
@@ -355,7 +376,9 @@ class WriteParameters(object):
             _log.info(
                 f"{T:7.3f}, {T - 273.15: 8.3f}, {rho_l:14.4f}, {rho_v:14.4f}, {P_v:9.4f}"
             )
-        _log.info("=====================================================================\n")
+        _log.info(
+            "=====================================================================\n"
+        )
         return (rhol_list, rhov_list)
 
     def calculate_reference_offset(self, delta, tau, s0, h0):
@@ -425,7 +448,7 @@ class WriteParameters(object):
     def write(self, dry_run=False):
         """Write the parameter and expression files, and _log.info some diagnostics."""
         if dry_run:
-            #TODO<jce> this isn't important to IDAES function, so I need to come back later
+            # TODO<jce> this isn't important to IDAES function, so I need to come back later
             #    and figure out how to test this.
             return
 
@@ -433,7 +456,9 @@ class WriteParameters(object):
             "\n======================================================================="
         )
         _log.info(f" Writing expressions for {self.comp}")
-        _log.info("=======================================================================")
+        _log.info(
+            "======================================================================="
+        )
         pc = self.calculate_pressure(self.rhoc, self.Tc)
         _log.info(f"Calculated Pc = {pc}, Pc given {self.Pc}")
         _log.info(f"Tc = {self.Tc}, T^* = {self.T_star}")
