@@ -430,3 +430,13 @@ The Helmholtz EoS state blocks provide initialization functions for general
 compatibility with the IDAES framework, but as long as the state variables are
 specified to some reasonable value, initialization is not required. All required
 solves are handled by external functions.
+
+However, in order to support a general hierarchical initialization for unit models
+which use Helmholtz equation of state properties, a custom ``Initializer`` for these
+property packages is available.
+
+.. module:: idaes.models.properties.general_helmholtz.helmholtz_state
+
+.. autoclass:: HelmholtzEoSInitializer
+   :members: initialize
+

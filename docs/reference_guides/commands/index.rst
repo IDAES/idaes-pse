@@ -24,7 +24,6 @@ each of which is described on a separate page below.
     copyright
     data_directory
     env_info
-    get_examples
     get_extensions
     lib_directory
     version
