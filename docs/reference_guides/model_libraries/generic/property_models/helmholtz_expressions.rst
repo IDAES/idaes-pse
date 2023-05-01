@@ -61,7 +61,7 @@ The sample code below gives am example of how to use the expression writer in co
     m.density = pyo.Expression(expr=te.rho_liq(T=170 * pyo.units.K, x=0))
 
     assert pytest.approx(1.5907, rel=1e-3) == pyo.value(
-        pyo.units.convert(m.density
+        pyo.units.convert(m.density,
             pyo.units.g / pyo.units.cm**3,
         )
     )

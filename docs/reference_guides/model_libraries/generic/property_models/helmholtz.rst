@@ -12,11 +12,11 @@ pure component properties are required. New substances can be added by providing
 parameter files. These Helmholtz EoS functions use ExternalFunction, so the IDAES
 binary extensions are required.
 
-This page describes the standard HelmholtzStateBlock, but for more information on accessing
+This page describes the standard HelmholtzStateBlock. For more information on accessing
 property expressions using a function-like interface, or adding and modifying substance 
 parameters see the following pages. There are also two modules available for backward 
 compatibility ``iapws95`` and ``swco2``, which are the same as the general module, just with
-the component set to ``"h2o"`` or ``"co2"`` respectively.
+the component automatically set to ``"h2o"`` or ``"co2"`` respectively.
 
 .. toctree::
   :maxdepth: 1
