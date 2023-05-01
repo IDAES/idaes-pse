@@ -1129,7 +1129,7 @@ change.
             default=AmountBasis.MOLE,
             domain=In(AmountBasis),
             description="Quantities on a mass or mole basis",
-            doc="""The amount basis (mass or mole) for quantities 
+            doc="""The amount basis (mass or mole) for quantities
 **default** - AmountBasis.mole
 **Valid values:** {
 **AmountBasis.mole** - use mole units (mol),
