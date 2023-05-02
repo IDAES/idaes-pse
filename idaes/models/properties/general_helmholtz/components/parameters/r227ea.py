@@ -31,7 +31,6 @@ def main(dry_run=False):
     Returns:
         None
     """
-    """Generate parameter and expression files."""
     main_param_file = os.path.join(this_file_dir(), "r227ea.json")
     we = WriteParameters(parameters=main_param_file)
     we.write(dry_run=dry_run)

@@ -1791,7 +1791,6 @@ change.
         """No initialization required here. This method is included for
         compatibility.
         """
-        pass
 
     def dome_data(
         self,

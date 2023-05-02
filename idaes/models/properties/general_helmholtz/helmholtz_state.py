@@ -1640,8 +1640,7 @@ class HelmholtzStateBlockData(StateBlockData):
         return self.intensive_set
 
     def model_check(self):
-        """Currently doesn't do anything.  Here for compatibility"""
-        pass
+        """Currently doesn't do anything, here for compatibility"""
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
