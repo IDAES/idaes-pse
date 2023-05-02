@@ -200,6 +200,12 @@ class HelmholtzThermoExpressions(object):
         self.amount_basis = amount_basis
 
     def add_funcs(self, names=None):
+        """Add external functions for the block expressions will be written
+        from.
+
+        Args:
+            name (str): function name
+        """
         add_helmholtz_external_functions(self.blk, names=names)
 
     @staticmethod
@@ -1766,6 +1772,12 @@ change.
             )
 
     def add_param(self, name, expr):
+        """Add a parameter to the block.
+
+        Args:
+            name (str): parameter name
+            expr (expression): Pyomo expression for parameter value
+        """
         self.add_component(
             name,
             pyo.Param(
@@ -1776,6 +1788,9 @@ change.
         )
 
     def initialize(self, *args, **kwargs):
+        """No initialization required here. This method is included for 
+        compatibility.
+        """
         pass
 
     def dome_data(
@@ -2051,6 +2066,21 @@ change.
         isotherms_line_format=None,
         isotherms_label=True,
     ):
+        """Create a enthalpy-pressure diagram using Matplotlib
+
+        Args:
+            ylim (tuple): lower and upper limits for pressure axis
+            xlim (tuple): lower and upper limits for enthalpy axis
+            points (dict): dict of tuples points to label on the plot
+            figsize (tuple): figure size
+            dpi (int): figure dots per inch
+            isotherms (list|None): list of temperatures for plotting isotherms
+            isotherms_line_format (str|None): line format for isotherms
+            isotherms_label (bool): if true label isotherms
+
+        Returns:
+            (figure, axis)
+        """
         if points is None:
             points = {}
 
@@ -2142,7 +2172,18 @@ change.
         return fig, ax
 
     def ts_diagram(self, ylim=None, xlim=None, points=None, figsize=None, dpi=None):
-        # Add external functions needed to plot PH-diagram
+        """Create a entropy-temperautre diagram using Matplotlib
+
+        Args:
+            ylim (tuple): lower and upper limits for temperature axis
+            xlim (tuple): lower and upper limits for entropy axis
+            points (dict): dict of tuples points to label on the plot
+            figsize (tuple): figure size
+            dpi (int): figure dots per inch
+
+        Returns:
+            (figure, axis)
+        """
         if points is None:
             points = {}
 
@@ -2199,8 +2240,18 @@ change.
         ax.set_ylabel("Temperature (K)")
         return fig, ax
 
-    # TODO: points argument is unused
-    def pt_diagram(self, ylim=None, xlim=None, points=None, figsize=None, dpi=None):
+    def pt_diagram(self, ylim=None, xlim=None, figsize=None, dpi=None):
+        """Create a pressure-teperature diagram using Matplotlib
+
+        Args:
+            ylim (tuple): lower and upper limits for pressure axis
+            xlim (tuple): lower and upper limits for temperature axis
+            figsize (tuple): figure size
+            dpi (int): figure dots per inch
+
+        Returns:
+            (figure, axis)
+        """
         # Add external functions needed to plot PH-diagram
         add_helmholtz_external_functions(
             self,
