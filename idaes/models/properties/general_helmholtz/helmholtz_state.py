@@ -1546,7 +1546,7 @@ class HelmholtzStateBlockData(StateBlockData):
 
     def get_material_flow_terms(self, p, j):
         """Get material flow terms for phase
-        
+
         Args:
             p (str): phase
 
@@ -1557,7 +1557,7 @@ class HelmholtzStateBlockData(StateBlockData):
 
     def get_enthalpy_flow_terms(self, p):
         """Get enthalpy flow terms for phase
-        
+
         Args:
             p (str): phase
 
@@ -1568,7 +1568,7 @@ class HelmholtzStateBlockData(StateBlockData):
 
     def get_material_density_terms(self, p, j):
         """Get material density terms for phase
-        
+
         Args:
             p (str): phase
 
@@ -1588,7 +1588,7 @@ class HelmholtzStateBlockData(StateBlockData):
 
     def get_energy_density_terms(self, p):
         """Get energy density terms for phase
-        
+
         Args:
             p (str): phase
 
@@ -1598,7 +1598,7 @@ class HelmholtzStateBlockData(StateBlockData):
         return self.energy_density_terms[p]
 
     def default_material_balance_type(self):
-         """Get default material balance type suggestion"""
+        """Get default material balance type suggestion"""
         return MaterialBalanceType.componentTotal
 
     def default_energy_balance_type(self):

@@ -1788,7 +1788,7 @@ change.
         )
 
     def initialize(self, *args, **kwargs):
-        """No initialization required here. This method is included for 
+        """No initialization required here. This method is included for
         compatibility.
         """
         pass

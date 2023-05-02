@@ -248,8 +248,8 @@ def _new_idaes_config_block():
         "properties",
         pyomo.common.config.ConfigBlock(
             implicit=False,
-            description="Physical property method configuration block",
-            doc="Physical property method configuration block",
+            description="Physical-property-related options",
+            doc="Physical-property-related options",
         ),
     )
     cfg["properties"].declare(
