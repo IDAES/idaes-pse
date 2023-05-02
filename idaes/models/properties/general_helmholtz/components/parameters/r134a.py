@@ -15,7 +15,9 @@
 
 __author__ = "John Eslick"
 
+import os
 import math
+from pyomo.common.fileutils import this_file_dir
 import pyomo.environ as pyo
 from idaes.core.util.math import smooth_max
 from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
@@ -175,7 +177,8 @@ def main(dry_run=False):
     Returns:
         None
     """
-    we = WriteParameters("r134a.json")
+    main_param_file = os.path.join(this_file_dir(), "r134a.json")
+    we = WriteParameters(parameters=main_param_file)
     we.add(
         {
             "viscosity": viscosity_rule,
@@ -186,6 +189,7 @@ def main(dry_run=False):
 
     print("ASHRAE Offset")
     print(we.calculate_reference_offset(2.79075439914, 1.60488955608, 0, 0))
+    return we
 
 
 if __name__ == "__main__":

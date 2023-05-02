@@ -15,6 +15,8 @@
 
 __author__ = "John Eslick"
 
+import os
+from pyomo.common.fileutils import this_file_dir
 from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
     WriteParameters,
 )
@@ -30,8 +32,10 @@ def main(dry_run=False):
         None
     """
     """Generate parameter and expression files."""
-    we = WriteParameters(parameters="r227ea.json")
-    we.write(dry_run)
+    main_param_file = os.path.join(this_file_dir(), "r227ea.json")
+    we = WriteParameters(parameters=main_param_file)
+    we.write(dry_run=dry_run)
+    return we
 
 
 if __name__ == "__main__":

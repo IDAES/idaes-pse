@@ -15,6 +15,8 @@
 
 __author__ = "John Eslick"
 
+import os
+from pyomo.common.fileutils import this_file_dir
 from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
     WriteParameters,
 )
@@ -135,7 +137,8 @@ def main(dry_run=False):
     Returns:
         None
     """
-    we = WriteParameters(parameters="r1234ze.json")
+    main_param_file = os.path.join(this_file_dir(), "r1234ze.json")
+    we = WriteParameters(parameters=main_param_file)
 
     we.add(
         {
@@ -147,6 +150,7 @@ def main(dry_run=False):
 
     print("ASHRAE Offset")
     print(we.calculate_reference_offset(2.7584034882, 1.64063049539, 0, 0))
+    return we
 
 
 if __name__ == "__main__":
