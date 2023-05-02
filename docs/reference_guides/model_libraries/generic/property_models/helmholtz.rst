@@ -9,14 +9,15 @@ Pure Component Helmholtz EoS
 The Helmholtz Equation of State (EoS) classes serve as a common core for pure
 component property packages where accurate and thermodynamically consistent
 pure component properties are required. New substances can be added by providing 
-parameter files. These Helmholtz EoS functions use ExternalFunction, so the IDAES
-binary extensions are required.
+parameter and expression files. The Helmholtz EoS functions use ExternalFunction, 
+so the IDAES binary extensions are required.
 
-This page describes the standard HelmholtzStateBlock. For more information on accessing
-property expressions using a function-like interface, or adding and modifying substance 
-parameters see the following pages. There are also two modules available for backward 
-compatibility ``iapws95`` and ``swco2``, which are the same as the general module, just with
-the component automatically set to ``"h2o"`` or ``"co2"`` respectively.
+This page describes the standard HelmholtzParameterBlock and HelmholtzStateBlock. For 
+more information on accessing property expressions using a function-like interface,
+or adding and modifying substance parameters see the following pages. There are also
+two modules available for backward compatibility ``iapws95`` and ``swco2``, which are
+the same as the general module, just with the pure component automatically set 
+to ``"h2o"`` or ``"co2"`` respectively.
 
 .. toctree::
   :maxdepth: 1
@@ -34,8 +35,8 @@ directory, they will be registered automatically. IDAES comes with some defined 
 and more can be added by users. Each component must have an equation of state model, while
 transport models for viscosity, thermal conductivity and surface tension are optional.
 
-Functions listed in this section allow you to check what components and models are available
-and get references for the models.
+Functions listed in this section allow you to discover what components and models are 
+available and get references for the models.
 
 .. autofunction:: registered_components
 
@@ -60,7 +61,7 @@ and get references for the models.
 Parameter File Location
 -----------------------
 
-You can get or set the parameter path with these functions described below.  When
+You can get or set the parameter path with the functions described below.  When
 the parameter path is set components will automatically be registered based on the
 available parameter files.
 
@@ -196,11 +197,11 @@ variables, and phase equilibrium is always calculated by the property package.
 There are two single phase options ``PhaseType.L`` and ``PhaseType.G``; these
 present a single phase "Liq" or "Vap" to the framework. The vapor fraction will
 also always return 0 or 1 as appropriate. These options can be used when the phase
-of a fluid is know for certain to only be liquid or only be vapor. For the
+of a fluid is known for certain to only be liquid or only be vapor. For the
 temperature-pressure-vapor fraction formulation, this eliminates the
 complementarity constraint, but for the enthalpy-pressure formulation, where the
 vapor fraction is always calculated, the single phase options probably do not
-provide any real benefit.
+provide any real benefit over mixed phase.
 
 State Variables
 ---------------
@@ -295,7 +296,7 @@ can be added.
 
 Using the T-P-x formulation requires better initial guesses than the P-H form.
 It is not strictly necessary but it is best to try to get an initial guess that
-is in the correct phase region for the expected result model.
+is in the correct phase region for the expected result.
 
 Non-Existent Phases
 ~~~~~~~~~~~~~~~~~~~
@@ -321,8 +322,8 @@ region.
 Variables
 ~~~~~~~~~
 
-Variables are listed in the table below.  What is a variable and what is an expression depends on the
-selected state variables and amount basis.  Pressure is always a variable.  
+Variables are listed in the table below.  What is a variable and what is an expression 
+depends on the selected state variables and amount basis.  Pressure is always a variable.  
 
 ========================================= ===============================================================================================
 Expression                                Description

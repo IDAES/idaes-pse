@@ -4,18 +4,18 @@ Helmholtz EoS Parameter and Expression files
 .. module:: idaes.models.properties.general_helmholtz.helmholtz_parameters
 
 Helmholtz equations of state are difficult to implement in an equation oriented framework.
-Switching from the native pressure and density state variables to more useful set and solving
-the phase equilibrium problem is difficult and may have multiple solutions, only one of which
+Switching from the native temperature and density state variables to a more useful set and solving
+the phase equilibrium problem are difficult and may have multiple solutions, only one of which
 is physically meaningful.  External functions allow for exact first and second derivatives to
-be calculated and used by the solver, while still allowing procedural code to be used in the
-solution procedure. The external function also serve as decomposition making the models
-more robust by splitting off difficult to solve sub-problems to be solved separately.
+be calculated and used by the solver, while still allowing procedural code to be used for the
+solution. The external function also serve as decomposition making the models
+more robust by splitting off difficult-to-solve sub-problems to be solved separately.
 
 To accommodate addition of substances using various forms of Helmholtz free energy models,
 Helmholtz free energy and transport properties are read into the external function library as
-AMPL nl-files.  Basic parameters are read as a json file.
+AMPL NL-files.  Basic parameters are read as a json file.
 
-Generating these expression and parameter files need is done via utilities provided by IDAES.
+Generating the expression and parameter files need is done via utilities provided by IDAES.
 The parameter and expression files originate from a Python script and an optional json master
 parameter file.
 
@@ -26,8 +26,8 @@ Class
 -----
 
 The WriteParameters class creates the the expression and parameter files needed by the
-external functions to define a substance.  Parameters and expression are defined in
-script and an option master parameter file.  Either custom or predefined expressions
+external functions to define a substance.  Parameters and expression are defined in a
+script and an optional main parameter file.  Either custom or predefined expressions
 can be used. 
 
 .. autoclass:: WriteParameters
@@ -37,7 +37,7 @@ Master Parameter File
 ---------------------
 
 While it is possible to define equation of state and transport property expressions and
-parameters entirely in a Python script well focus here on the use of a main parameter
+parameters entirely in a Python script we will focus here on the use of a main parameter
 json file, which is read and converted into expression and parameters that can be used
 by the external functions.  The overall structure of the main json parameter file is
 given below. The details of each section will be filled as we progress through this 
@@ -93,7 +93,7 @@ documentation::
     }
 
 By convention the main parameter file is named {comp}.json, where {comp} is the component name
-(e.g. co2.json); although the main parameter file name can be anything.
+(e.g. co2.json); although, the main parameter file name can be anything.
 
 Script
 ------
@@ -143,7 +143,8 @@ Parameter       Description                                                     
 ``T_max``       maximum temperature                                                     K
 =============== ======================================================================= ==========
 
-A truncated example of the main json parameter file is give below to show the form for basic parameters::
+A truncated example of the main json parameter file is give below to show the form for 
+basic parameters::
 
     {
         "comp": "co2",
@@ -168,15 +169,12 @@ A truncated example of the main json parameter file is give below to show the fo
         ...
     }
 
-
-
-
 Reference State
 ---------------
 
 Some properties such as enthalpy, entropy, and internal energy don't have a well defined
 absolute value, and can only really be measured relative to a reference state. For the
-purpose of the parameter files, equation of state are initially implemented using whatever
+purpose of the parameter files, equations of state are initially implemented using whatever
 reference state is used in the original papers.  An offset can be set in the parameter files
 to adjust the reference state if desired.
 
@@ -208,14 +206,17 @@ The following example shows how to set the reference state in the main parameter
 Predefined Expressions
 ----------------------
 
+Commonly used expressions are predefined and can be used by specifying expression types 
+in the main parameter file.
+
 Ideal Part of Dimensionless Helmholtz Free Energy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Type 1**
 
-The predefined type 1 form of the ideal portion of the dimensionless Helmholtz free energy is shown 
-below. Parameters are provided in the ``"eos"`` section of the main parameter file. This 
-form of the expression requires a dictionary of the :math: `n^\circ_i$`` 
+The predefined type 1 form of the ideal portion of the dimensionless Helmholtz free energy 
+is shown below. Parameters are provided in the ``"eos"`` section of the main parameter file. 
+This form of the expression requires a dictionary of the :math: `n^\circ_i$`` 
 parameters as ``n0`` and the math `\gamma^\circ$` parameters as ``g0``.  The last term
 index in the sum (:math: `h`) is provided as ``last\_term\_ideal``.  
 
@@ -282,11 +283,14 @@ Parameters for the type 3 version are similar to type 1.
 Residual Part of Dimensionless Helmholtz Free Energy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Predefined residual term expressions are discussed here.  The ``last_term_residual`` parameter is a list [h1, h2, ...].
-Equation parameters are given by dictionaries in the ``"eos"`` section.  Greek letter parameters are given by the 
-parameters :math:`\alpha` = ``a``, :math:`\beta` = ``b``, :math:`\varepsilon` = ``e``, and :math:`\gamma` = ``g``.   
+Predefined residual term expressions are discussed here.  The ``last_term_residual`` 
+parameter is a list [h1, h2, ...].  Equation parameters are given by dictionaries 
+in the ``"eos"`` section.  Greek letter parameters are given by the parameters 
+:math:`\alpha` = ``a``, :math:`\beta` = ``b``, :math:`\varepsilon` = ``e``, and 
+:math:`\gamma` = ``g``.   
 
-The example below shows how to use a predefined residual dimensionless Helmholtz free energy expression::
+The example below shows how to use a predefined residual dimensionless Helmholtz 
+free energy expression::
 
     {
         "comp": "co2",
@@ -376,11 +380,13 @@ The example below shows how to use a predefined residual dimensionless Helmholtz
 Approximate Saturated Reduced Density
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To assist in the equilibrium calculation, curves for approximate saturated liquid and vapor density are 
-required. These curves are typically provided in the papers where the equations of state are defined. There
-are two common forms for these curves, which we call type 1 and type 2 for convenience.
+To assist in the equilibrium calculation, curves for approximate saturated liquid 
+and vapor density are required. These curves are typically provided in the papers 
+where the equations of state are defined. There are two common forms for these 
+curves, which we call type 1 and type 2 for convenience.
 
-An example main parameter file entry for the approximate density curves is given below::
+An example main parameter file entry for the approximate density curves is given 
+below::
 
     {
         "comp": "co2",
@@ -445,12 +451,13 @@ An example main parameter file entry for the approximate density curves is given
 Surface Tension
 ~~~~~~~~~~~~~~~
 
-The surface tension external functions provide surface tension in units of mN/m.  There is only
-one form for surface tension and it is only a function of temperature.  The parameters required 
-are ``Tc`` [K], ``s`` [mN/m] and ``n`` [dimensionless]. ``Tc`` is provided again in case the critical 
-temperature differs slightly from the equation of state parameter. The number of terms is inferred 
-from the ``s`` dictionary. This version of the surface tension expression maxes out at the critical
-surface tension, so as not to cause numerical issues at temperatures above critical. 
+The surface tension external functions provide surface tension in units of mN/m.  
+There is only one form for surface tension and it is only a function of temperature.
+The parameters required are ``Tc`` [K], ``s`` [mN/m] and ``n`` [dimensionless]. ``Tc`` 
+is provided again in case the critical temperature differs slightly from the equation 
+of state parameter. The number of terms is inferred from the ``s`` dictionary. This 
+version of the surface tension expression maxes out at the critical surface tension, 
+so as not to cause numerical issues at temperatures above critical. 
 
 .. math::
     
@@ -493,15 +500,14 @@ Custom Expressions
 ------------------
 
 Although any custom expressions can be defined rather than using the predefined ones,
-we'll focus here on viscosity and thermal conductivity since predefined expressions
-are not available from them yet.  We'll use water as an example to demonstrate all the
-concepts.
+we will focus here on viscosity and thermal conductivity since predefined expressions
+are not available from them yet.  The water example demonstrates all the concepts.
 
 Variables
 ~~~~~~~~~
 
 Custom expressions are written on Pyomo models. With the ``delta`` (reduced  density)
-and ``tau`` (reduced temperature).  The easiest way to add an expression is to write a
+and ``tau`` (1/reduced temperature).  The easiest way to add an expression is to write a
 rule for it then use the ``add()`` method to add the expression to the WriteParameters
 class.
 
@@ -522,7 +528,7 @@ Example
 
 The example for water below shows how custom expressions can be defined. Note that heat
 capacity, viscosity, and isothermal compressibility are used in the thermal conductivity 
-expression::
+expression by calling property functions::
 
     import math
     import pyomo.environ as pyo
