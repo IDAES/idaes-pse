@@ -103,8 +103,7 @@ class ExtraDependencies:
     grid = [
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
     ]
-    optional = [
-        "sympy",  # idaes.core.util.expr_doc
+    coolprop = [
         # A Lee 11-Jan-22: no precompiled version of CoolProp available for Pyhton 3.9
         "coolprop; python_version < '3.9'",  # idaes.generic_models.properties.general.coolprop
     ]
@@ -123,7 +122,7 @@ class ExtraDependencies:
     ]
     all = [
         *complete,
-        *optional,
+        *coolprop,
         *mlai,
     ]
 
@@ -152,6 +151,7 @@ kwargs = dict(
         "numpy",
         "pandas",
         "scipy",
+        "sympy",  # idaes.core.util.expr_doc
         "matplotlib",
         "click>=8",
     ],
