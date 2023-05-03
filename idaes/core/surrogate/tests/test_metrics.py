@@ -19,9 +19,9 @@ import pandas as pd
 from idaes.core.surrogate.metrics import compute_fit_metrics
 from idaes.core.surrogate import AlamoSurrogate
 
-# For this test we will use a simple z = x function and calcuate metrics
+# For this test we will use a simple z = x function and calculate metrics
 # Measured (test) data will include a fixed offset (i.e. z = x + Err)
-# Data will be collected symetrically around 0, so that mean z1 == 0
+# Data will be collected symmetrically around 0, so that mean z1 == 0
 ERR = 0.1  # offset to apply to check metrics
 Np = 50  # number of points above 0 to use in check
 N = 2 * Np + 1  # total number of points to use in check

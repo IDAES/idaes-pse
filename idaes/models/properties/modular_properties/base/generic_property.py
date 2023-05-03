@@ -72,7 +72,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-from idaes.core.initialization.initializer_base import ModularInitializerBase
+from idaes.core.initialization.initializer_base import InitializerBase
 
 from idaes.models.properties.modular_properties.base.generic_reaction import (
     equil_rxn_config,
@@ -249,7 +249,7 @@ class GenericParameterData(PhysicalParameterBlock):
             default=True,
             domain=Bool,
             description="Include enthalpy of formation in property calculations",
-            doc="Flag indiciating whether enthalpy of formation should be included"
+            doc="Flag indicating whether enthalpy of formation should be included"
             " when calculating specific enthalpies.",
         ),
     )
@@ -604,7 +604,7 @@ class GenericParameterData(PhysicalParameterBlock):
             # Add elemental composition components
             self.element_list = Set(ordered=True)
 
-            # Iterate through all componets and collect composing elements
+            # Iterate through all components and collect composing elements
             # Add these to element_list
             for ec in element_comp.values():
                 for e in ec.keys():
@@ -1003,7 +1003,7 @@ class GenericParameterData(PhysicalParameterBlock):
         self.config.state_definition.set_metadata(self)
 
         # Set default scaling factors
-        # First, call set_default_scaling_factors method from state definiton
+        # First, call set_default_scaling_factors method from state definition
         try:
             self.config.state_definition.define_default_scaling_factors(self)
         except AttributeError:
@@ -1197,7 +1197,7 @@ class GenericParameterData(PhysicalParameterBlock):
         )
 
 
-class ModularPropertiesInitializer(ModularInitializerBase):
+class ModularPropertiesInitializer(InitializerBase):
     """
     General Initializer for modular property packages.
 
@@ -1218,7 +1218,7 @@ class ModularPropertiesInitializer(ModularInitializerBase):
 
     """
 
-    CONFIG = ModularInitializerBase.CONFIG()
+    CONFIG = InitializerBase.CONFIG()
     CONFIG.declare(
         "solver",
         ConfigValue(
@@ -1564,9 +1564,6 @@ class _GenericStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    # Set default initializer
-    default_initializer = ModularPropertiesInitializer
-
     def _return_component_list(self):
         # Overload the _return_component_list method to handle electrolyte
         # systems where we have two component lists to choose from
@@ -1633,7 +1630,7 @@ class _GenericStateBlock(StateBlock):
         # Also need to deactivate sum of mole fraction constraint
         for k in self.values():
             try:
-                k.sum_mol_frac_out.deactivate()
+                k.sum_mole_frac_out.deactivate()
             except AttributeError:
                 pass
 
@@ -1674,7 +1671,7 @@ class _GenericStateBlock(StateBlock):
                                  initialization.
                         - False - state variables are unfixed after
                                  initialization by calling the
-                                 relase_state method
+                                 release_state method
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -1753,7 +1750,7 @@ class _GenericStateBlock(StateBlock):
 
             # Solve bubble and dew point constraints
             for c in k.component_objects(Constraint):
-                # Deactivate all constraints not associated wtih bubble and dew
+                # Deactivate all constraints not associated with bubble and dew
                 # points
                 if c.local_name not in (
                     "eq_pressure_dew",
@@ -2029,7 +2026,7 @@ class _GenericStateBlock(StateBlock):
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
-        Method to relase state variables fixed during initialization.
+        Method to release state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -2871,7 +2868,7 @@ class GenericStateBlockData(StateBlockData):
     def components_in_phase(self, phase):
         """
         Generator method which yields components present in a given phase.
-        As this methid is used only for property calcuations, it should use the
+        As this method is used only for property calculations, it should use the
         true species sset if one exists.
 
         Args:
@@ -2902,7 +2899,7 @@ class GenericStateBlockData(StateBlockData):
 
     def get_mole_frac(self, phase=None):
         """
-        Property calcuations generally depend on phase_component mole fractions
+        Property calculations generally depend on phase_component mole fractions
         for mixing rules, but in some cases there are multiple component lists
         to work from. This method is used to return the correct phase-component
         indexed mole fraction component for the given circumstances.
@@ -3664,7 +3661,7 @@ class GenericStateBlockData(StateBlockData):
             def rule_flow_mol_phase_comp(b, p, i):
                 if b.get_material_flow_basis() == MaterialFlowBasis.molar:
                     raise PropertyPackageError(
-                        "{} Generic proeprty Package set to use material flow "
+                        "{} Generic property Package set to use material flow "
                         "basis {}, but flow_mol_phase_comp was not created "
                         "by state definition."
                     )
@@ -3913,7 +3910,7 @@ class GenericStateBlockData(StateBlockData):
                     / sum(
                         b.mw_comp[k] * b.mole_frac_phase_comp_true[p, k]
                         for k in b.params.true_species_set
-                        if (p, k) in b.paramas.ture_phase_component_set
+                        if (p, k) in b.paramas.true_phase_component_set
                     )
                 )
 

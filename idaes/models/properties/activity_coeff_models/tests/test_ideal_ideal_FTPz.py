@@ -22,6 +22,9 @@ from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
+from idaes.models.properties.activity_coeff_models.activity_coeff_prop_pack import (
+    ActivityCoeffInitializer,
+)
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
 )
@@ -31,6 +34,7 @@ from idaes.core.util.model_statistics import (
     activated_constraints_set,
 )
 from idaes.core.solvers import get_solver
+from idaes.core.initialization import InitializationStatus
 
 solver = get_solver()
 
@@ -529,3 +533,222 @@ class TestFTPz_V_outlet:
         assert value(
             model.fs.state_block_ideal_v[0].mole_frac_phase_comp["Vap", "benzene"]
         ) == pytest.approx(0.5, abs=1e-3)
+
+
+@pytest.mark.component
+def test_FTPz_LV_inlet():
+    # Create a flowsheet for test
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties_ideal_vl = BTXParameterBlock(
+        valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal", state_vars="FTPz"
+    )
+    m.fs.state_block_ideal_vl = m.fs.properties_ideal_vl.build_state_block(
+        [0], defined_state=True
+    )
+
+    m.fs.state_block_ideal_vl[0].flow_mol.fix(1)
+    m.fs.state_block_ideal_vl[0].temperature.fix(368)
+    m.fs.state_block_ideal_vl[0].pressure.fix(101325)
+    m.fs.state_block_ideal_vl[0].mole_frac_comp["benzene"].fix(0.5)
+    m.fs.state_block_ideal_vl[0].mole_frac_comp["toluene"].fix(0.5)
+
+    assert m.fs.state_block_ideal_vl.default_initializer is ActivityCoeffInitializer
+
+    initializer = ActivityCoeffInitializer()
+    initializer.initialize(m.fs.state_block_ideal_vl)
+
+    assert (
+        initializer.summary[m.fs.state_block_ideal_vl]["status"]
+        == InitializationStatus.Ok
+    )
+
+    assert value(
+        m.fs.state_block_ideal_vl[0].mole_frac_phase_comp["Liq", "benzene"]
+    ) == pytest.approx(0.4121, abs=1e-3)
+    assert value(
+        m.fs.state_block_ideal_vl[0].mole_frac_phase_comp["Vap", "benzene"]
+    ) == pytest.approx(0.6339, abs=1e-3)
+
+
+@pytest.mark.component
+def test_FTPz_L_inlet():
+    # Create a flowsheet for test
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties_ideal_l = BTXParameterBlock(
+        valid_phase="Liq", activity_coeff_model="Ideal", state_vars="FTPz"
+    )
+    m.fs.state_block_ideal_l = m.fs.properties_ideal_l.build_state_block(
+        [0], has_phase_equilibrium=False, defined_state=True
+    )
+
+    m.fs.state_block_ideal_l[0].flow_mol.fix(1)
+    m.fs.state_block_ideal_l[0].temperature.fix(368)
+    m.fs.state_block_ideal_l[0].pressure.fix(101325)
+    m.fs.state_block_ideal_l[0].mole_frac_comp["benzene"].fix(0.5)
+    m.fs.state_block_ideal_l[0].mole_frac_comp["toluene"].fix(0.5)
+
+    assert m.fs.state_block_ideal_l.default_initializer is ActivityCoeffInitializer
+
+    initializer = ActivityCoeffInitializer()
+    initializer.initialize(m.fs.state_block_ideal_l)
+
+    assert (
+        initializer.summary[m.fs.state_block_ideal_l]["status"]
+        == InitializationStatus.Ok
+    )
+
+    assert value(
+        m.fs.state_block_ideal_l[0].mole_frac_phase_comp["Liq", "benzene"]
+    ) == pytest.approx(0.5, abs=1e-3)
+    assert value(
+        m.fs.state_block_ideal_l[0].mole_frac_phase_comp["Liq", "benzene"]
+    ) == pytest.approx(0.5, abs=1e-3)
+
+
+@pytest.mark.component
+def test_FTPz_V_inlet():
+    # Create a flowsheet for test
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties_ideal_v = BTXParameterBlock(
+        valid_phase="Vap", activity_coeff_model="Ideal", state_vars="FTPz"
+    )
+    m.fs.state_block_ideal_v = m.fs.properties_ideal_v.build_state_block(
+        [0], has_phase_equilibrium=False, defined_state=True
+    )
+
+    m.fs.state_block_ideal_v[0].flow_mol.fix(1)
+    m.fs.state_block_ideal_v[0].temperature.fix(368)
+    m.fs.state_block_ideal_v[0].pressure.fix(101325)
+    m.fs.state_block_ideal_v[0].mole_frac_comp["benzene"].fix(0.5)
+    m.fs.state_block_ideal_v[0].mole_frac_comp["toluene"].fix(0.5)
+
+    assert m.fs.state_block_ideal_v.default_initializer is ActivityCoeffInitializer
+
+    initializer = ActivityCoeffInitializer()
+    initializer.initialize(m.fs.state_block_ideal_v)
+
+    assert (
+        initializer.summary[m.fs.state_block_ideal_v]["status"]
+        == InitializationStatus.Ok
+    )
+
+    assert value(
+        m.fs.state_block_ideal_v[0].mole_frac_phase_comp["Vap", "benzene"]
+    ) == pytest.approx(0.5, abs=1e-3)
+    assert value(
+        m.fs.state_block_ideal_v[0].mole_frac_phase_comp["Vap", "benzene"]
+    ) == pytest.approx(0.5, abs=1e-3)
+
+
+@pytest.mark.component
+def test_FTPz_LV_outlet():
+    # Create a flowsheet for test
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties_ideal_vl = BTXParameterBlock(
+        valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal", state_vars="FTPz"
+    )
+    m.fs.state_block_ideal_vl = m.fs.properties_ideal_vl.build_state_block(
+        [0], defined_state=False
+    )
+
+    m.fs.state_block_ideal_vl[0].flow_mol.fix(1)
+    m.fs.state_block_ideal_vl[0].temperature.fix(368)
+    m.fs.state_block_ideal_vl[0].pressure.fix(101325)
+    m.fs.state_block_ideal_vl[0].mole_frac_comp["benzene"].fix(0.5)
+
+    assert m.fs.state_block_ideal_vl.default_initializer is ActivityCoeffInitializer
+
+    initializer = ActivityCoeffInitializer()
+    initializer.initialize(m.fs.state_block_ideal_vl)
+
+    assert (
+        initializer.summary[m.fs.state_block_ideal_vl]["status"]
+        == InitializationStatus.Ok
+    )
+
+    assert value(
+        m.fs.state_block_ideal_vl[0].mole_frac_phase_comp["Liq", "benzene"]
+    ) == pytest.approx(0.4121, abs=1e-3)
+    assert value(
+        m.fs.state_block_ideal_vl[0].mole_frac_phase_comp["Vap", "benzene"]
+    ) == pytest.approx(0.6339, abs=1e-3)
+
+
+@pytest.mark.component
+def test_FTPz_L_outlet():
+    # Create a flowsheet for test
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties_ideal_l = BTXParameterBlock(
+        valid_phase="Liq", activity_coeff_model="Ideal", state_vars="FTPz"
+    )
+    m.fs.state_block_ideal_l = m.fs.properties_ideal_l.build_state_block(
+        [0], has_phase_equilibrium=False, defined_state=False
+    )
+
+    m.fs.state_block_ideal_l[0].flow_mol.fix(1)
+    m.fs.state_block_ideal_l[0].temperature.fix(368)
+    m.fs.state_block_ideal_l[0].pressure.fix(101325)
+    m.fs.state_block_ideal_l[0].mole_frac_comp["benzene"].fix(0.5)
+
+    assert m.fs.state_block_ideal_l.default_initializer is ActivityCoeffInitializer
+
+    initializer = ActivityCoeffInitializer()
+    initializer.initialize(m.fs.state_block_ideal_l)
+
+    assert (
+        initializer.summary[m.fs.state_block_ideal_l]["status"]
+        == InitializationStatus.Ok
+    )
+
+    assert value(
+        m.fs.state_block_ideal_l[0].mole_frac_phase_comp["Liq", "benzene"]
+    ) == pytest.approx(0.5, abs=1e-3)
+    assert value(
+        m.fs.state_block_ideal_l[0].mole_frac_phase_comp["Liq", "benzene"]
+    ) == pytest.approx(0.5, abs=1e-3)
+
+
+@pytest.mark.component
+def test_FTPz_V_outlet():
+    # Create a flowsheet for test
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties_ideal_v = BTXParameterBlock(
+        valid_phase="Vap", activity_coeff_model="Ideal", state_vars="FTPz"
+    )
+    m.fs.state_block_ideal_v = m.fs.properties_ideal_v.build_state_block(
+        [0], has_phase_equilibrium=False, defined_state=False
+    )
+
+    m.fs.state_block_ideal_v[0].flow_mol.fix(1)
+    m.fs.state_block_ideal_v[0].temperature.fix(368)
+    m.fs.state_block_ideal_v[0].pressure.fix(101325)
+    m.fs.state_block_ideal_v[0].mole_frac_comp["benzene"].fix(0.5)
+
+    assert m.fs.state_block_ideal_v.default_initializer is ActivityCoeffInitializer
+
+    initializer = ActivityCoeffInitializer()
+    initializer.initialize(m.fs.state_block_ideal_v)
+
+    assert (
+        initializer.summary[m.fs.state_block_ideal_v]["status"]
+        == InitializationStatus.Ok
+    )
+
+    assert value(
+        m.fs.state_block_ideal_v[0].mole_frac_phase_comp["Vap", "benzene"]
+    ) == pytest.approx(0.5, abs=1e-3)
+    assert value(
+        m.fs.state_block_ideal_v[0].mole_frac_phase_comp["Vap", "benzene"]
+    ) == pytest.approx(0.5, abs=1e-3)

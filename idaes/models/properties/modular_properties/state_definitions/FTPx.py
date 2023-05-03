@@ -160,7 +160,7 @@ def define_state(b):
         units=pyunits.dimensionless,
     )
 
-    # Add electrolye state vars if required
+    # Add electrolyte state vars if required
     if b.params._electrolyte:
         define_electrolyte_state(b)
 
@@ -775,7 +775,7 @@ def _modified_rachford_rice(b, K, vl_comps, l_only_comps, v_only_comps, eps=1e-5
             2. All mole_frac_comp[j] > 0 in block b
             3. sum(mole_frac_comp[j] for j in b.component_list) == 1
         If the harmonic mean of K[j] is greater than one, the stream is pure
-        vapor. If the arithmatic mean of K[j] is less than one, the stream is
+        vapor. If the arithmetic mean of K[j] is less than one, the stream is
         pure liquid. If neither of those conditions hold, a root exists between
         zero and one and the root-finding method will converge to it.
 
@@ -797,7 +797,7 @@ def _modified_rachford_rice(b, K, vl_comps, l_only_comps, v_only_comps, eps=1e-5
             )
             return None
 
-    # Calculate harmonic and arithmatic means of the split ratios KS
+    # Calculate harmonic and arithmetic means of the split ratios KS
     if len(l_only_comps) == 0:
         tmp = sum([value(b.mole_frac_comp[j]) / K[j] for j in vl_comps])
         if tmp < 1e-14:
@@ -819,14 +819,14 @@ def _modified_rachford_rice(b, K, vl_comps, l_only_comps, v_only_comps, eps=1e-5
         # Vapor fraction is nearly zero
         return eps
 
-    # I discovered this method is a varient on solving the
+    # I discovered this method is a variant on solving the
     # Rachford-Rice equation, which has been known to ChemEs
     # since the 50s. I'm not sure if the link between Newton's
     # method and convexity was explicitly stated, though. For good
     # reason, the classic RR equation does not appear to necessarily
     # be convex
 
-    # There are varients where the flash calculation is robust
+    # There are variants where the flash calculation is robust
     # to the calculated vapor fraction being greater than 1 or
     # less than zero. Future reader, check out
     # https://doi.org/10.1016/j.fluid.2011.12.005 and

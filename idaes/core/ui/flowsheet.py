@@ -633,7 +633,7 @@ class FlowsheetSerializer:
 
         self._out_json["cells"] = []
 
-        # Start out in the top left corner until we get a better inital layout
+        # Start out in the top left corner until we get a better initial layout
         x_pos = 10
         y_pos = 10
 
@@ -741,7 +741,7 @@ class FlowsheetSerializer:
         # Create the jointjs for a given image
 
         # The icon width and height default to 50x50 making all icons a square. This will need to be changed
-        # when we have more unit models that should not be square. Probaly add it to the icon mapping
+        # when we have more unit models that should not be square. Probably add it to the icon mapping
         icon_width = 50
         icon_height = 50
         # We want the icons to not be at an angle initially

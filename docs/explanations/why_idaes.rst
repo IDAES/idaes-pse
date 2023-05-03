@@ -31,7 +31,7 @@ Key Features
 Open Source
 ^^^^^^^^^^^
 
-All IDAES Code is completely free and redistributable, the license is avaliable
+All IDAES Code is completely free and redistributable, the license is available
 :ref:`here<explanations/license:License>`. Users are free to modify and redistribute code, and community 
 development is encouraged.
 

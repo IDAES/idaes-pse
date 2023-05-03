@@ -12,7 +12,7 @@
 #################################################################################
 """
 This module contains functions to read and manage data for use in parameter
-esitmation, data reconciliation, and validation.
+estimation, data reconciliation, and validation.
 """
 
 __author__ = "John Eslick"
@@ -104,7 +104,7 @@ _unit_strings = {
     "DEG": "deg",
     # Angular Speed
     "RPM": "rpm",
-    # Fequency
+    # Frequency
     "HZ": "hz",
     # Temperature
     "DEG F": "degF",
@@ -283,7 +283,7 @@ def unit_convert(
 
 def update_metadata_model_references(model, metadata):
     """
-    Create model references from refernce strings in the metadata. This updates
+    Create model references from reference strings in the metadata. This updates
     the 'reference' field in the metadata.
 
     Args:
@@ -344,7 +344,7 @@ def read_data(
         csv_file_metadata (str): Path of csv file to read column metadata from
         model (pyomo.environ.ConcreteModel): Optional model to map tags to
         rename_mapper (Callable): Optional function to rename tags
-        unit_system (str): Optional system of units to atempt convert to
+        unit_system (str): Optional system of units to attempt convert to
         ambient_pressure (float, numpy.array, pandas.series, str): Optional
             pressure to use to convert gauge pressure to absolute. If a string is
             supplied, the corresponding data tag is assumed to be ambient pressure.
@@ -492,7 +492,7 @@ def data_rec_plot_book(
     Make box and whisker plots from process data compared to data rec results
     based on bins from the bin_data() function.  The df_data and df_rec data
     frames should have the same index set and the df_data data frame contains
-    the bin data.  This will plot the intersection of columns containg numerical
+    the bin data.  This will plot the intersection of columns containing numerical
     data.
 
     Args:

@@ -913,7 +913,7 @@ class TestAlamoTrainer:
 
         with pytest.raises(
             FileNotFoundError,
-            match="Error occured when trying to read the ALAMO trace file - "
+            match="Error occurred when trying to read the ALAMO trace file - "
             "this probably indicates that a trace file was not created by "
             "the ALAMO executable. Please check the ALAMO output logs.",
         ):

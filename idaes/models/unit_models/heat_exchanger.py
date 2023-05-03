@@ -20,6 +20,7 @@ from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (
+    Block,
     Var,
     Param,
     log,
@@ -49,6 +50,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.initialization import SingleControlVolumeUnitInitializer
 
 
 _log = idaeslog.getLogger(__name__)
@@ -62,6 +64,115 @@ class HeatExchangerFlowPattern(Enum):
     countercurrent = 1
     cocurrent = 2
     crossflow = 3
+
+
+class HX0DInitializer(SingleControlVolumeUnitInitializer):
+    """
+    Initializer for 0D Heat Exchanger units.
+
+    """
+
+    def initialization_routine(
+        self,
+        model: Block,
+        plugin_initializer_args: dict = None,
+        copy_inlet_state: bool = False,
+        duty=1000 * pyunits.W,
+    ):
+        """
+        Common initialization routine for 0D Heat Exchangers.
+
+        This routine starts by initializing the hot and cold side properties. Next, the heat
+        transfer between the two sides is fixed to an initial guess for the heat duty (provided by the duty
+        argument), the associated constraint is deactivated, and the model is then solved. Finally, the heat
+        duty is unfixed and the heat transfer constraint reactivated followed by a final solve of the model.
+
+        Args:
+            model: Pyomo Block to be initialized
+            plugin_initializer_args: dict-of-dicts containing arguments to be passed to plug-in Initializers.
+                Keys should be submodel components.
+            copy_inlet_state: bool (default=False). Whether to copy inlet state to other states or not
+                (0-D control volumes only). Copying will generally be faster, but inlet states may not contain
+                all properties required elsewhere.
+            duty: initial guess for heat duty to assist with initialization. Can be a Pyomo expression with units.
+
+        Returns:
+            Pyomo solver results object
+        """
+        return super(SingleControlVolumeUnitInitializer, self).initialization_routine(
+            model=model,
+            plugin_initializer_args=plugin_initializer_args,
+            copy_inlet_state=copy_inlet_state,
+            duty=duty,
+        )
+
+    def initialize_main_model(
+        self,
+        model: Block,
+        copy_inlet_state: bool = False,
+        duty=1000 * pyunits.W,
+    ):
+        """
+        Initialization routine for main 0D HX models.
+
+        Args:
+            model: Pyomo Block to be initialized.
+            copy_inlet_state: bool (default=False). Whether to copy inlet state to other states or not
+                (0-D control volumes only). Copying will generally be faster, but inlet states may not contain
+                all properties required elsewhere.
+            duty: initial guess for heat duty to assist with initialization, default = 1000 W. Can
+                be a Pyomo expression with units.
+
+        Returns:
+            Pyomo solver results object.
+
+        """
+        # Set solver options
+        init_log = idaeslog.getInitLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+
+        # Create solver
+        solver = get_solver(self.config.solver, self.config.solver_options)
+
+        self.initialize_control_volume(model.hot_side, copy_inlet_state)
+        init_log.info_high("Initialization Step 1a (hot side) Complete.")
+
+        self.initialize_control_volume(model.cold_side, copy_inlet_state)
+        init_log.info_high("Initialization Step 1b (cold side) Complete.")
+        # ---------------------------------------------------------------------
+        # Solve unit without heat transfer equation
+        model.heat_transfer_equation.deactivate()
+
+        # Check to see if heat duty is fixed
+        # We will assume that if the first point is fixed, it is fixed at all points
+        if not model.cold_side.heat[model.flowsheet().time.first()].fixed:
+            cs_fixed = False
+
+            model.cold_side.heat.fix(duty)
+            for i in model.hot_side.heat:
+                model.hot_side.heat[i].set_value(-duty)
+        else:
+            cs_fixed = True
+            for i in model.hot_side.heat:
+                model.hot_side.heat[i].set_value(model.cold_side.heat[i])
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(model, tee=slc.tee)
+        init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
+        if not cs_fixed:
+            model.cold_side.heat.unfix()
+        model.heat_transfer_equation.activate()
+        # ---------------------------------------------------------------------
+        # Solve unit
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(model, tee=slc.tee)
+        init_log.info("Initialization Completed, {}".format(idaeslog.condition(res)))
+
+        return res
 
 
 def _make_heat_exchanger_config(config):
@@ -278,8 +389,8 @@ def delta_temperature_underwood_callback(b):
     dT2 = b.delta_temperature_out
     temp_units = pyunits.get_units(dT1[dT1.index_set().first()])
 
-    # external function that ruturns the real root, for the cuberoot of negitive
-    # numbers, so it will return without error for positive and negitive dT.
+    # external function that returns the real root, for the cube root of negative
+    # numbers, so it will return without error for positive and negative dT.
     b.cbrt = ExternalFunction(
         library=functions_lib(), function="cbrt", arg_units=[temp_units]
     )
@@ -398,6 +509,8 @@ class HeatExchangerData(UnitModelBlockData):
     Simple 0D heat exchange unit.
     Unit model to transfer heat from one material to another.
     """
+
+    default_initializer = HX0DInitializer
 
     CONFIG = UnitModelBlockData.CONFIG(implicit=True)
     _make_heat_exchanger_config(CONFIG)
@@ -548,7 +661,7 @@ class HeatExchangerData(UnitModelBlockData):
             )
 
         ########################################################################
-        # Add delta T calculations using callack function, lots of options,    #
+        # Add delta T calculations using callback function, lots of options,    #
         #   and users can provide their own if needed                          #
         ########################################################################
         config.delta_temperature_callback(self)
@@ -601,7 +714,7 @@ class HeatExchangerData(UnitModelBlockData):
                      default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
-            duty : an initial guess for the amount of heat transfered. This
+            duty : an initial guess for the amount of heat transferred. This
                 should be a tuple in the form (value, units), (default
                 = (1000 J/s))
 

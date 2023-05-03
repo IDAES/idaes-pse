@@ -14,7 +14,7 @@
 Standard IDAES Feed block.
 """
 # Import Pyomo libraries
-from pyomo.environ import Reference
+from pyomo.environ import Block, Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -22,6 +22,7 @@ from idaes.core import declare_process_block_class, UnitModelBlockData, useDefau
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
+from idaes.core.initialization import InitializerBase
 
 
 __author__ = "Andrew Lee"
@@ -31,11 +32,43 @@ __author__ = "Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 
+class FeedInitializer(InitializerBase):
+    """
+    Initializer for blocks with a single state (Feed, Product, StateJunction).
+
+    As these contain a single state block and nothing else,
+    this Initializer just gets the default initializer for the State Block and
+    uses that to initialize the State Block.
+
+    """
+
+    def initialization_routine(
+        self,
+        model: Block,
+    ):
+        """
+        Initialization routine for Feed Blocks.
+
+        Args:
+            model: model to be initialized
+
+        Returns:
+            None
+        """
+        # Get initializer for State Block
+        sinit = model.properties.default_initializer()
+
+        sinit.initialize(model.properties)
+
+
 @declare_process_block_class("Feed")
 class FeedData(UnitModelBlockData):
     """
     Standard Feed Block Class
     """
+
+    # Set default initializer
+    default_initializer = FeedInitializer
 
     CONFIG = ConfigBlock()
     CONFIG.declare(

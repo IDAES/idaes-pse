@@ -82,7 +82,7 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-from idaes.core.initialization.initializer_base import ModularInitializerBase
+from idaes.core.initialization.initializer_base import InitializerBase
 
 # cubic_roots_available is used elsewhere
 # pylint: disable=W0611
@@ -222,11 +222,11 @@ conditions, and thus corresponding constraints  should be included,
         )
 
 
-class CubicEoSInitializer(ModularInitializerBase):
+class CubicEoSInitializer(InitializerBase):
     """
-    Initializer for CubicEoS property packages..
+    Initializer for CubicEoS property packages.
 
-    This Initializer uses a hierarchical routine to initialize the
+    This Initializer uses a sequential routine to initialize the
     property package using the following steps:
 
     1. Initialize bubble and dew point calculations (if present)
@@ -243,7 +243,7 @@ class CubicEoSInitializer(ModularInitializerBase):
 
     """
 
-    CONFIG = ModularInitializerBase.CONFIG()
+    CONFIG = InitializerBase.CONFIG()
     CONFIG.declare(
         "solver",
         ConfigValue(
@@ -689,13 +689,13 @@ class _CubicStateBlock(StateBlock):
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states varaibles are not unfixed, and
+                         - True - states variables are not unfixed, and
                                  a dict of returned containing flags for
                                  which states were fixed during
                                  initialization.
                         - False - state variables are unfixed after
                                  initialization by calling the
-                                 relase_state method
+                                 release_state method
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -1061,7 +1061,7 @@ class _CubicStateBlock(StateBlock):
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
-        Method to relase state variables fixed during initialization.
+        Method to release state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be

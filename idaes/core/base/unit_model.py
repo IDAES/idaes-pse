@@ -520,7 +520,7 @@ Must be True if dynamic = True,
             costing_args - dict arguments to be passed to costing block
                            initialize method
 
-        For other arguments, see the initilize_unit method.
+        For other arguments, see the initialize_unit method.
         """
         # Get any arguments for costing if provided
         cost_args = kwargs.pop("costing_args", {})

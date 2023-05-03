@@ -21,6 +21,10 @@ from idaes.core import declare_process_block_class, UnitModelBlockData, useDefau
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 
+# Product blocks can reuse the Feed initializer
+# For consistency and future proofing, import with new name
+from idaes.models.unit_models.feed import FeedInitializer as StateJunctionInitializer
+
 __author__ = "Andrew Lee"
 
 # Set up logger
@@ -32,6 +36,8 @@ class StateJunctionData(UnitModelBlockData):
     """
     Standard StateJunction Unit Model Class
     """
+
+    default_initializer = StateJunctionInitializer
 
     CONFIG = ConfigBlock()
     CONFIG.declare(

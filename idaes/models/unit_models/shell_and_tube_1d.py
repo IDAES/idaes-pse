@@ -17,6 +17,7 @@ This model derives from the HeatExchanger1D unit model.
 """
 # Import Pyomo libraries
 from pyomo.environ import (
+    Block,
     Var,
     check_optimal_termination,
     Constraint,
@@ -36,7 +37,7 @@ from idaes.core.util.constants import Constants as c
 from idaes.core.util import scaling as iscale
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.solvers import get_solver
-
+from idaes.core.initialization import SingleControlVolumeUnitInitializer
 import idaes.logger as idaeslog
 
 
@@ -46,9 +47,113 @@ __author__ = "Jaffer Ghouse"
 _log = idaeslog.getLogger(__name__)
 
 
+class ShellAndTubeInitializer(SingleControlVolumeUnitInitializer):
+    """
+    Initializer for 1D Shell and Tube Heat Exchanger units.
+
+    """
+
+    def initialization_routine(
+        self,
+        model: Block,
+        plugin_initializer_args: dict = None,
+    ):
+        """
+        Common initialization routine for 1D Shell and Tube Heat Exchangers.
+
+        This routine starts by initializing the hot and cold side properties. Next, the hot side is solved with
+        the wall temperature fixed to the average of the hot and cold side temperatures and the heat
+        transfer constraints deactivated. Finally, full model is solved with the wall temperature unfixed.
+
+        Args:
+            model: Pyomo Block to be initialized
+            plugin_initializer_args: dict-of-dicts containing arguments to be passed to plug-in Initializers.
+                Keys should be submodel components.
+
+        Returns:
+            Pyomo solver results object
+        """
+        return super(SingleControlVolumeUnitInitializer, self).initialization_routine(
+            model=model,
+            plugin_initializer_args=plugin_initializer_args,
+        )
+
+    def initialize_main_model(
+        self,
+        model: Block,
+    ):
+        """
+        Initialization routine for main 1D Shell and Tube HX models.
+
+        Args:
+            model: Pyomo Block to be initialized.
+
+        Returns:
+            Pyomo solver results object.
+
+        """
+        init_log = idaeslog.getInitLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+
+        # Create solver
+        solver = get_solver(self.config.solver, self.config.solver_options)
+
+        # ---------------------------------------------------------------------
+        # Initialize control volumes
+        self.initialize_control_volume(model.hot_side)
+        self.initialize_control_volume(model.cold_side)
+
+        init_log.info_high("Initialization Step 1 Complete.")
+
+        # ---------------------------------------------------------------------
+        # Solve hot side
+        hot_side_units = (
+            model.config.hot_side.property_package.get_metadata().get_derived_units
+        )
+        for t in model.flowsheet().time:
+            for z in model.hot_side.length_domain:
+                model.temperature_wall[t, z].fix(
+                    0.5
+                    * (
+                        model.hot_side.properties[t, 0].temperature
+                        + pyunits.convert(
+                            model.cold_side.properties[t, 0].temperature,
+                            to_units=hot_side_units("temperature"),
+                        )
+                    )
+                )
+
+        model.cold_side.deactivate()
+        model.cold_side_heat_transfer_eq.deactivate()
+        model.heat_conservation.deactivate()
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(model, tee=slc.tee)
+        init_log.info_high(f"Initialization Step 2 {idaeslog.condition(res)}.")
+
+        # ---------------------------------------------------------------------
+        # Solve full unit
+        model.cold_side.activate()
+        model.cold_side_heat_transfer_eq.activate()
+        model.heat_conservation.activate()
+        model.temperature_wall.unfix()
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(model, tee=slc.tee)
+        init_log.info_high(f"Initialization Step 3 {idaeslog.condition(res)}.")
+
+        return res
+
+
 @declare_process_block_class("ShellAndTube1D")
 class ShellAndTube1DData(HeatExchanger1DData):
     """1D Shell and Tube HX Unit Model Class."""
+
+    default_initializer = ShellAndTubeInitializer
 
     CONFIG = HeatExchanger1DData.CONFIG(implicit=True)
     CONFIG.declare(

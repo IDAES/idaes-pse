@@ -668,7 +668,7 @@ class Backcaster(AbstractPrescientPriceForecaster):
                 self._historical_rt_prices[b] += self._current_day_rt_prices[b]
                 self._current_day_rt_prices[b] = []
 
-            # drop oldes historical prices if total stored data exceeded the upper bound
+            # drop oldest historical prices if total stored data exceeded the upper bound
             while len(self._historical_rt_prices[b]) // 24 > self.max_historical_days:
                 self._historical_rt_prices[b] = self._historical_rt_prices[b][24:]
 
@@ -700,7 +700,7 @@ class Backcaster(AbstractPrescientPriceForecaster):
                 for t in range(24)
             ]
 
-            # drop oldes historical prices if total stored data exceeded the upper bound
+            # drop oldest historical prices if total stored data exceeded the upper bound
             while len(self._historical_da_prices[b]) // 24 > self.max_historical_days:
                 self._historical_da_prices[b] = self._historical_da_prices[b][24:]
 

@@ -106,10 +106,16 @@ Often the minimum inlet pressure constraint is useful for sequential modular typ
 
 The `mixture_pressure(t)` and `pressure_equality_constraints(t, i)` can be directly activated and deactivated, but only one set of constraints should be active at a time. The ``use_minimum_inlet_pressure_constraint()`` and ``use_equal_pressure_constraint()`` methods are also provided to switch between constant sets. 
 
-Mixer Class
------------
+Initialization
+--------------
 
 .. module:: idaes.models.unit_models.mixer
+
+.. autoclass:: MixerInitializer
+   :members: initialization_routine
+
+Mixer Class
+-----------
 
 .. autoclass:: Mixer
   :members:

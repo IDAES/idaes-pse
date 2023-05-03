@@ -153,7 +153,7 @@ def expression_nonexponential(cobj, prop, T, yc):
         yc: value of property at critical point
 
     Returns:
-        Pyomo expression mathcing CoolProp non-exponential sum form
+        Pyomo expression matching CoolProp non-exponential sum form
     """
     # y = yc * (1 + sum(ni*theta^ti))
     Tc = cobj.temperature_crit
@@ -210,7 +210,7 @@ def expression_polynomial(cobj, prop, T):
         T: temperature to use in expression
 
     Returns:
-        Pyomo expression mathcing CoolProp rational polynomial form
+        Pyomo expression matching CoolProp rational polynomial form
     """
     i = 0
     asum = 0

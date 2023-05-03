@@ -461,7 +461,7 @@ class TestSovent:
 
 class TestIon:
     @pytest.mark.unit
-    def test_electrolye(self):
+    def test_electrolyte(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
@@ -480,7 +480,7 @@ class TestIon:
             m.comp = Ion(_electrolyte=True)
 
     @pytest.mark.unit
-    def test_not_electrolye(self):
+    def test_not_electrolyte(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
@@ -506,7 +506,7 @@ class TestIon:
 
 class TestAnion:
     @pytest.mark.unit
-    def test_not_electrolye(self):
+    def test_not_electrolyte(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
@@ -616,7 +616,7 @@ class TestAnion:
 
 class TestCation:
     @pytest.mark.unit
-    def test_not_electrolye(self):
+    def test_not_electrolyte(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
@@ -743,7 +743,7 @@ class TestApparent:
         return m
 
     @pytest.mark.unit
-    def test_not_electrolye(self):
+    def test_not_electrolyte(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()

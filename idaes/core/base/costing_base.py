@@ -187,10 +187,10 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         """
         This is where any global parameters, such as Lang factors or
         coefficients for costing methods that should be shared across the
-        process, should be declared. Sub-Blocks may be used ot help organize
-        parameters if requried.
+        process, should be declared. Sub-Blocks may be used to help organize
+        parameters if required.
 
-        Dervied class must overload this method.
+        Derived class must overload this method.
         """
         raise NotImplementedError(
             "Derived class has not defined a build_global_params method."
@@ -207,7 +207,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         3. self.aggregate_variable_operating_cost
         4. self.aggregate_flow_costs (indexed by flow type)
 
-        Dervied class must overload this method.
+        Derived class must overload this method.
         """
         raise NotImplementedError(
             "Derived class has not defined a build_process_costs method."
@@ -218,7 +218,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         This is where custom initialization procedures can be implemented for
         flowsheet level costing components.
 
-        Dervied class must overload this method.
+        Derived class must overload this method.
         """
         raise NotImplementedError(
             "Derived class has not defined an initialize_build method."
@@ -537,7 +537,7 @@ class UnitModelCostingBlockData(ProcessBlockData):
         "flowsheet_costing_block",
         ConfigValue(
             domain=assert_flowsheet_costing_block,
-            doc="Reference to assoicated FlowsheetCostingBlock to use.",
+            doc="Reference to associated FlowsheetCostingBlock to use.",
         ),
     )
     CONFIG.declare(
@@ -593,7 +593,7 @@ class UnitModelCostingBlockData(ProcessBlockData):
         if method is None:
             method = fcb._get_costing_method_for(unit_model)
 
-        # Assign obejct references for costing package and unit model
+        # Assign object references for costing package and unit model
         add_object_reference(self, "costing_package", fcb)
         add_object_reference(self, "unit_model", unit_model)
 

@@ -106,7 +106,7 @@ def main():
     import idaes.models_extra.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build as blr
 
     # import the models (ECON, WW, PrSH, PlSH, FSH, Spliter, Mixer, Reheater)
-    # see boiler_subflowhseet_build.py for a beter description
+    # see boiler_subflowhseet_build.py for a better description
     blr.build_boiler(m.fs)
     # initialize boiler network models (one by one)
     blr.initialize(m)
@@ -138,7 +138,7 @@ def main():
     m.fs.turb.constraint_reheat_temp.deactivate()
     m.fs.turb.inlet_split.inlet.enth_mol.unfix()
     m.fs.turb.inlet_split.inlet.pressure.unfix()
-    # user can fix the boiler feed water pump pressure (uncomenting next line)
+    # user can fix the boiler feed water pump pressure (uncommenting next line)
     #    m.fs.bfp.outlet.pressure[:].fix(26922222.222))
 
     m.fs.FHWtoECON = Arc(

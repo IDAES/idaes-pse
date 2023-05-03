@@ -766,7 +766,7 @@ should be constructed,
                     blk.sum_component_eqn.deactivate()
 
         # ---------------------------------------------------------------------
-        # Geometry contraints
+        # Geometry constraints
 
         # Bed area
         @self.Constraint(doc="Bed area")
@@ -791,7 +791,7 @@ should be constructed,
             )
 
         # ---------------------------------------------------------------------
-        # Hydrodynamic contraints
+        # Hydrodynamic constraints
 
         # Gas superficial velocity
         @self.Constraint(
@@ -883,7 +883,7 @@ should be constructed,
                 " developers with this bug.".format(self.name)
             )
         # ---------------------------------------------------------------------
-        # Reaction contraints
+        # Reaction constraints
 
         # Build homogeneous reaction constraints
         if gas_phase.reaction_package is not None:
