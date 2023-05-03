@@ -21,6 +21,8 @@ import time
 
 _logger = logging.getLogger(__name__)
 
+no_init_func_message = "initialization_func argument was not provided. Returning the multiperiod model without initialization."
+
 
 class MultiPeriodModel(pyo.ConcreteModel):
     """
@@ -77,7 +79,6 @@ class MultiPeriodModel(pyo.ConcreteModel):
             initialization_options = {}
         if unfix_dof_options is None:
             unfix_dof_options = {}
-
         self.n_time_points = n_time_points
 
         # user provided functions
@@ -326,10 +327,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
         self.create_process_model(blk, **flowsheet_options)
 
         if self.initialization_func is None:
-            _logger.warning(
-                "initialization_func argument is not provided. "
-                "Returning the multiperiod model without initialization."
-            )
+            _logger.warning(no_init_func_message)
 
         else:
             self.initialization_func(blk, **initialization_options)
@@ -345,7 +343,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
         if self.unfix_dof_func is None:
             _logger.warning(
                 "unfix_dof_func argument is not provided. "
-                "Returning the model without unfixing degrees of freedom"
+                "Returning the model without unfixing degrees of freedom."
             )
 
         else:
@@ -506,10 +504,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
             time: Timer object
         """
         if self.initialization_func is None:
-            _logger.warning(
-                "Initialization function is not provided. "
-                "Returning the multiperiod model without initialization."
-            )
+            _logger.warning(no_init_func_message)
             return
 
         blk = pyo.ConcreteModel()
