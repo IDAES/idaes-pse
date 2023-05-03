@@ -79,6 +79,9 @@ class ExtraDependencies:
         "nbconvert",
         "nbformat",
     ]
+    _ipython = [
+        'ipython <= 8.12; python_version == "3.8"',
+    ]
     dmf = [
         # all modules relative to idaes.core.dmf
         "jsonschema",  # commands, resource, workspace
@@ -88,7 +91,7 @@ class ExtraDependencies:
         "seaborn",  # model_data (optional^2)
         "PyPDF2",  # model_data (optional^2)
         "colorama",  # util
-        "ipython",  # magics
+        *_ipython,  # magics
         "pyyaml",  # workspace
         "tinydb",  # resourcedb
         "xlrd",  # tables (implicitly by pandas.read_excel())
