@@ -204,13 +204,13 @@ class Importorskipper:
         self._registry = dict(registry)
         self._finder = ImportorskipFinder(self._registry)
 
-    def pytest_sessionstart(self):
+    def pytest_configure(self):
         sys.meta_path.insert(0, self._finder)
 
     def pytest_sessionfinish(self):
         sys.meta_path.remove(self._finder)
 
-    def pytest_report_header(self) -> List[str]:
+    def pytest_report_collectionfinish(self) -> List[str]:
         preamble = [
             "The following modules are registered in the importorskipper plugin",
             " and will cause tests to be skipped if any of the registered modules is not found: ",
