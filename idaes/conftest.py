@@ -20,6 +20,7 @@ import importlib.abc
 import importlib.machinery
 import sys
 from typing import Dict
+from typing import Iterable
 from typing import List
 
 import pytest
@@ -140,11 +141,16 @@ def pytest_configure(config):
         setattr(config.option, "markexpr", "performance")
 
 
-class SkipLoader(importlib.abc.Loader):
-    def __init__(self, wrapped: importlib.abc.Loader, skip_if_not_found = any):
+ModuleName = str
+
+
+class ImportorskipLoader(importlib.abc.Loader):
+    def __init__(self, wrapped: importlib.abc.Loader, skip_if_not_found: Iterable[ModuleName]):
         self._wrapped = wrapped
-        # self.skip_if_not_found = lambda name: True if skip_if_not_found == any else skip_if_not_found.__contains__
         self.skip_if_not_found = list(skip_if_not_found)
+
+    def module_repr(self, module) -> str:
+        return self._wrapped.module_repr(module)
 
     def create_module(self, spec):
         return self._wrapped.create_module(spec)
@@ -153,55 +159,71 @@ class SkipLoader(importlib.abc.Loader):
         try:
             return self._wrapped.exec_module(module)
         except ModuleNotFoundError as e:
-            print(e)
             if e.name in self.skip_if_not_found:
-            # if self.skip_if_not_found(e.name):
                 pytest.skip(allow_module_level=True)
             raise e
 
 
-class SkipFinder(importlib.abc.MetaPathFinder):
-    def __init__(self, registry: dict):
+class ImportorskipFinder(importlib.abc.MetaPathFinder):
+    def __init__(self, registry: Dict[ModuleName, List[ModuleName]]):
         self._registry = registry
 
     def find_spec(self, *args, **kwargs):
         spec = importlib.machinery.PathFinder.find_spec(*args, **kwargs)
         if spec is None:
             return
-        skip_if_missing = self._registry.get(spec.name, None)
-        if skip_if_missing:
-            spec.loader = SkipLoader(spec.loader, skip_if_missing)
+        registered_for_skipping = self._registry.get(spec.name, None)
+        if registered_for_skipping:
+            spec.loader = ImportorskipLoader(spec.loader, registered_for_skipping)
         return spec
 
 
-class SkipIfImports:
-    def __init__(self, registry: Dict[str, List[str]]):
-        self._finder = SkipFinder(registry)
+class Importorskipper:
+    """
+    A pytest plugin that allows automatically skipping test modules if they attempt to import
+    modules distributed in optional dependencies.
 
-    def pytest_configure(self):
+    The functionality is similar to pytest.importorskip(), but using a centralized registry
+    instead of having to call importorskip() in each test module for each possibly missing module.
+    """
+    def __init__(self, registry: Dict[ModuleName, List[ModuleName]]):
+        self._registry = dict(registry)
+        self._finder = ImportorskipFinder(self._registry)
+
+    def pytest_sessionstart(self):
         sys.meta_path.insert(0, self._finder)
 
-    def pytest_unconfigure(self):
+    def pytest_sessionfinish(self):
         sys.meta_path.remove(self._finder)
+
+    def pytest_report_header(self) -> List[str]:
+        preamble = [
+            "The following modules are registered in the importorskipper plugin",
+            " and will cause tests to be skipped if any of the registered modules is not found: "
+        ]
+        lines = []
+        for importing_mod, mods in self._registry.items():
+            lines.append(f"- {importing_mod}:\t{mods}")
+        if lines:
+            lines = preamble + lines
+        return lines
 
 
 def pytest_addhooks(pluginmanager: pytest.PytestPluginManager):
-    skip_imports = SkipIfImports({
-        "idaes.core.dmf": ["traitlets", "tinydb"],
-        "idaes.core.surrogate.keras_surrogate": ["omlt"],
-        # "idaes.models.properties.general_helmholtz.helmholtz_functions": ["matplotlib"],
-        # "idaes.models_extra.gas_solid_contactors.unit_models.bubbling_fluidized_bed": ["matplotlib"],
-        # "idaes.core.surrogate.pysmo": ["matplotlib"],
-        # "idaes.apps.grid_integration.multiperiod.multiperiod": ["matplotlib"],
-        # "idaes.models_extra.power_generation.flowsheets.subcritical_power_plant": ["matplotlib"],
-        # "idaes.models.control.tests.test_antiwindup": ["matplotlib"],
-        # "idaes.core.util.utility_minimization": ["matplotlib"],
-        # "idaes.core.util.phase_equilibria": ["matplotlib"],
-        # "idaes.core.surrogate.plotting.sm_plotter": ["matplotlib"],
-    })
+    skipper_plugin = Importorskipper(
+        {
+            "idaes.core.dmf": ["traitlets", "tinydb"],
+            # idaes.tests.test_import must be specified instead of idaes.core.dmf.util
+            # since colorama is not imported at the module level in idaes.core.dmf.util,
+            # but it is imported at the module level in idaes.tests.test_import
+            # when instantiating ColorTerm()
+            "idaes.tests.test_import": ["colorama"],
+            "idaes.core.surrogate.keras_surrogate": ["omlt"],
+            "idaes.core.ui.fsvis.tests.test_fsvis": ["requests"],
+        }
+    )
 
-    pluginmanager.register(skip_imports)
-
+    pluginmanager.register(skipper_plugin, name="importorskipper")
 
 
 ####
