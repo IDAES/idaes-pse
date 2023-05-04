@@ -23,6 +23,7 @@ exchanger.
   import pyomo.environ as pe # Pyomo environment
   from idaes.core import FlowsheetBlock, StateBlock
   from idaes.models.unit_models import HeatExchanger
+  from idaes.models.unit_models.heat_exchanger import HX0DInitializer
   from idaes.models.unit_models.heat_exchanger import delta_temperature_amtd_callback
   from idaes.models.properties import iapws95
 
@@ -50,7 +51,8 @@ exchanger.
   model.fs.heat_exchanger.tube_inlet.enth_mol.fix(3000)
 
   # Initialize the model
-  model.fs.heat_exchanger.initialize()
+  initializer = HX0DInitializer()
+  initializer.initialize(model.fs.heat_exchanger)
 
 Degrees of Freedom
 ------------------
@@ -125,6 +127,12 @@ Temperature difference is an expression:
   \Delta T = \frac{\Delta T_1 - \Delta T_2}{\log_e\left(\frac{\Delta T_1}{\Delta T_2}\right)}
 
 The heat transfer coefficient is a variable with no associated constraints by default.
+
+Initialization
+--------------
+
+.. autoclass:: HX0DInitializer
+   :members: initialization_routine
 
 Class Documentation
 -------------------
