@@ -145,7 +145,9 @@ ModuleName = str
 
 
 class ImportorskipLoader(importlib.abc.Loader):
-    def __init__(self, wrapped: importlib.abc.Loader, skip_if_not_found: Iterable[ModuleName]):
+    def __init__(
+        self, wrapped: importlib.abc.Loader, skip_if_not_found: Iterable[ModuleName]
+    ):
         self._wrapped = wrapped
         self.skip_if_not_found = list(skip_if_not_found)
 
@@ -186,6 +188,7 @@ class Importorskipper:
     The functionality is similar to pytest.importorskip(), but using a centralized registry
     instead of having to call importorskip() in each test module for each possibly missing module.
     """
+
     def __init__(self, registry: Dict[ModuleName, List[ModuleName]]):
         self._registry = dict(registry)
         self._finder = ImportorskipFinder(self._registry)
@@ -199,7 +202,7 @@ class Importorskipper:
     def pytest_report_header(self) -> List[str]:
         preamble = [
             "The following modules are registered in the importorskipper plugin",
-            " and will cause tests to be skipped if any of the registered modules is not found: "
+            " and will cause tests to be skipped if any of the registered modules is not found: ",
         ]
         lines = []
         for importing_mod, mods in self._registry.items():
