@@ -14,8 +14,6 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-function-docstring
 
-from collections import defaultdict
-import contextlib
 import importlib.abc
 import importlib.machinery
 import sys
@@ -145,6 +143,11 @@ ModuleName = str
 
 
 class ImportorskipLoader(importlib.abc.Loader):
+    """
+    A wrapper class around a concrete Loader instance. If a ModuleNotFoundError is raised
+    during module execution and the module name matches one of the registered modules,
+    it is replaced with a module-level call to :func:`pyest.skip()`.
+    """
     def __init__(
         self, wrapped: importlib.abc.Loader, skip_if_not_found: Iterable[ModuleName]
     ):
@@ -167,6 +170,12 @@ class ImportorskipLoader(importlib.abc.Loader):
 
 
 class ImportorskipFinder(importlib.abc.MetaPathFinder):
+    """
+    Custom Finder class to modify import behavior for registered modules.
+
+    If inserted in sys.meta_path before the default finders, it will cause
+    a custom Loader to be used for registered modules.
+    """
     def __init__(self, registry: Dict[ModuleName, List[ModuleName]]):
         self._registry = registry
 
