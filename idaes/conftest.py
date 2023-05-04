@@ -148,6 +148,7 @@ class ImportorskipLoader(importlib.abc.Loader):
     during module execution and the module name matches one of the registered modules,
     it is replaced with a module-level call to :func:`pyest.skip()`.
     """
+
     def __init__(
         self, wrapped: importlib.abc.Loader, skip_if_not_found: Iterable[ModuleName]
     ):
@@ -176,6 +177,7 @@ class ImportorskipFinder(importlib.abc.MetaPathFinder):
     If inserted in sys.meta_path before the default finders, it will cause
     a custom Loader to be used for registered modules.
     """
+
     def __init__(self, registry: Dict[ModuleName, List[ModuleName]]):
         self._registry = registry
 
