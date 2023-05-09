@@ -744,6 +744,22 @@ def get_rxn(property_package, reactions=None, scaled=False):
                     "energy_activation": 0,
                 },
             },
+            "water_gas_shift_rxn":{
+                "stoichiometry": {
+                    ("Vap", "H2O"): -1,
+                    ("Vap", "CO"): -1,
+                    ("Vap", "H2"): 1,
+                    ("Vap", "CO2"): 1},
+                "heat_of_reaction": constant_dh_rxn,
+                "rate_constant": arrhenius,
+                "rate_form": power_law_rate,
+                "concentration_form": ConcentrationForm.moleFraction,
+                "parameter_data": {
+                    "dh_rxn_ref": 0,
+                    "arrhenius_const": 0,
+                    "energy_activation": 0,
+                },
+            },
         },
     }
     # Change to scaled units if specified
