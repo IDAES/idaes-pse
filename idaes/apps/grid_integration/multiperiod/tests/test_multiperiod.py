@@ -25,7 +25,7 @@ from idaes.core.util.exceptions import InitializationError
 import idaes.logger as idaeslog
 
 
-def build_flowsheet(m=None):
+def build_flowsheet(m=None, a=100, b=200):
     """This function builds a dummy flowsheet"""
     if m is None:
         m = pyo.ConcreteModel()
@@ -490,6 +490,79 @@ def test_no_initialization(caplog):
         "build_stochastic_multi_period method does not support periodic "
         "constraints, so the user needs to add them manually." in caplog.text
     )
+
+
+@pytest.mark.unit
+def test_data_kwargs(caplog, n_time_points=3):
+    # Cover message associated with using model_data_kwargs
+    with caplog.at_level(idaeslog.WARNING):
+        m = MultiPeriodModel(
+            n_time_points=n_time_points,
+            process_model_func=build_flowsheet,
+            linking_variable_func=get_linking_variable_pairs,
+            initialization_func=fix_dof_and_initialize,
+            unfix_dof_func=unfix_dof,
+        )
+
+        data = {
+            0: {
+                "a": 10,
+                "b": 20,
+            },
+            1: {
+                "a": 12,
+                "b": 18,
+            },
+            2: {
+                "a": 15,
+                "b": 22,
+            },
+        }
+
+        m.build_multi_period_model(model_data_kwargs=data)
+
+        assert (
+            f"model_data_kwargs argument is provided, so the flowsheet "
+            f"options are different for different time instances. In this case, "
+            f"the multiperiod model is returned without initialization." in caplog.text
+        )
+
+
+@pytest.mark.unit
+def test_data_kwargs_fail(caplog, n_time_points=2):
+    # Cover warning associated with len(model_data_kwargs) != n_time_points
+    with caplog.at_level(idaeslog.WARNING):
+        m = MultiPeriodModel(
+            n_time_points=n_time_points,
+            process_model_func=build_flowsheet,
+            linking_variable_func=get_linking_variable_pairs,
+            initialization_func=fix_dof_and_initialize,
+            unfix_dof_func=unfix_dof,
+        )
+
+        data = {
+            0: {
+                "a": 10,
+                "b": 20,
+            },
+            1: {
+                "a": 12,
+                "b": 18,
+            },
+            2: {
+                "a": 15,
+                "b": 22,
+            },
+        }
+
+        m.build_multi_period_model(model_data_kwargs=data)
+
+        assert (
+            f"len(model_data_kwargs) != n_time_points.\n "
+            f"len(model_data_kwargs) = {len(data)}\n"
+            f"len(n_time_points) = {n_time_points}\n"
+            f"Check input data for model_data_kwargs argument." in caplog.text
+        )
 
 
 @pytest.mark.unit
