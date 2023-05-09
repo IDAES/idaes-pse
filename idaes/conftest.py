@@ -234,6 +234,7 @@ def pytest_addhooks(pluginmanager: pytest.PytestPluginManager):
             "idaes.tests.test_import": ["colorama"],
             "idaes.core.surrogate.keras_surrogate": ["omlt"],
             "idaes.core.ui.fsvis.tests.test_fsvis": ["requests"],
+            "idaes.core.ui.fsvis.tests.test_model_server": ["requests"],
         }
     )
 
