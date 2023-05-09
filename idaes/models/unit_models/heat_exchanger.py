@@ -77,10 +77,15 @@ class HX0DInitializer(SingleControlVolumeUnitInitializer):
         model: Block,
         plugin_initializer_args: dict = None,
         copy_inlet_state: bool = False,
-        duty=None,
+        duty=1000 * pyunits.W,
     ):
         """
         Common initialization routine for 0D Heat Exchangers.
+
+        This routine starts by initializing the hot and cold side properties. Next, the heat
+        transfer between the two sides is fixed to an initial guess for the heat duty (provided by the duty
+        argument), the associated constraint is deactivated, and the model is then solved. Finally, the heat
+        duty is unfixed and the heat transfer constraint reactivated followed by a final solve of the model.
 
         Args:
             model: Pyomo Block to be initialized
@@ -105,7 +110,7 @@ class HX0DInitializer(SingleControlVolumeUnitInitializer):
         self,
         model: Block,
         copy_inlet_state: bool = False,
-        duty=None,
+        duty=1000 * pyunits.W,
     ):
         """
         Initialization routine for main 0D HX models.
@@ -115,7 +120,8 @@ class HX0DInitializer(SingleControlVolumeUnitInitializer):
             copy_inlet_state: bool (default=False). Whether to copy inlet state to other states or not
                 (0-D control volumes only). Copying will generally be faster, but inlet states may not contain
                 all properties required elsewhere.
-            duty: initial guess for heat duty to assist with initialization. Can be a Pyomo expression with units.
+            duty: initial guess for heat duty to assist with initialization, default = 1000 W. Can
+                be a Pyomo expression with units.
 
         Returns:
             Pyomo solver results object.
@@ -145,9 +151,6 @@ class HX0DInitializer(SingleControlVolumeUnitInitializer):
         # We will assume that if the first point is fixed, it is fixed at all points
         if not model.cold_side.heat[model.flowsheet().time.first()].fixed:
             cs_fixed = False
-            if duty is None:
-                # Assume 1000 J/s
-                duty = 1000 * pyunits.W
 
             model.cold_side.heat.fix(duty)
             for i in model.hot_side.heat:
@@ -386,7 +389,7 @@ def delta_temperature_underwood_callback(b):
     dT2 = b.delta_temperature_out
     temp_units = pyunits.get_units(dT1[dT1.index_set().first()])
 
-    # external function that ruturns the real root, for the cuberoot of negative
+    # external function that returns the real root, for the cube root of negative
     # numbers, so it will return without error for positive and negative dT.
     b.cbrt = ExternalFunction(
         library=functions_lib(), function="cbrt", arg_units=[temp_units]

@@ -94,6 +94,18 @@ If compressor is True, :math:`W_{fluid,t} = W_{mechanical,t} \times \eta_t`
 
 If compressor is False, :math:`W_{fluid,t} \times \eta_t = W_{mechanical,t}`
 
+Initialization
+--------------
+
+For simpler pressure changer models (isothermal, adiabatic and pump assumptions), the default :ref:`SingleControlVolumeInitializer <reference_guides/initialization/single_cv_initializer:Single Control Volume Initializer>` is applicable.
+
+For isentropic pressure changers, an alternate IsentropicPressureChangerInitializer is available.
+
+.. module:: idaes.models.unit_models.pressure_changer
+
+.. autoclass:: IsentropicPressureChangerInitializer
+   :members: initialization_routine
+
 Performance Curves
 ------------------
 Isentropic pressure changers support optional performance curve constraints.
@@ -178,7 +190,7 @@ The next example shows how to use a callback to add performance curves.
 
   from pyomo.environ import ConcreteModel, SolverFactory, units, value
   from idaes.core import FlowsheetBlock
-  from idaes.models.unit_models.pressure_changer import Turbine
+  from idaes.models.unit_models.pressure_changer import Turbine, IsentropicPressureChangerInitializer
   from idaes.models.properties import iapws95
   import pytest
 
@@ -215,7 +227,8 @@ The next example shows how to use a callback to add performance curves.
   m.fs.unit.inlet.enth_mol[0].fix(hin)
   m.fs.unit.inlet.pressure[0].fix(Pin)
 
-  m.fs.unit.initialize()
+  initializer = IsentropicPressureChangerInitializer()
+  initializer.initialize(m.fs.unit)
   solver.solve(m, tee=False)
 
   assert value(m.fs.unit.efficiency_isentropic[0]) == pytest.approx(0.9, rel=1e-3)
@@ -224,8 +237,6 @@ The next example shows how to use a callback to add performance curves.
 
 PressureChanger Class
 ----------------------
-
-.. module:: idaes.models.unit_models.pressure_changer
 
 .. autoclass:: PressureChanger
   :members:
