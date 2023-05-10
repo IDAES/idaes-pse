@@ -937,7 +937,9 @@ class Stats(object):
         try:
             from idaes.core.dmf import resource
         except ImportError as err:
-            _log.error("Stats.to_dmf() failed because DMF is not available: %s", str(err))
+            _log.error(
+                "Stats.to_dmf() failed because DMF is not available: %s", str(err)
+            )
             return None
         # PYLINT-TODO-FIX fix error due to undefined variable "stats"
         rsrc = resource.Resource(
