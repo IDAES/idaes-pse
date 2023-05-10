@@ -72,11 +72,6 @@ class ExtraDependencies:
         "requests",
         "pint",
     ]
-    examples = [
-        "jupyter",
-        "nbconvert",
-        "nbformat",
-    ]
     _ipython = [
         'ipython <= 8.12; python_version == "3.8"',
     ]
@@ -115,7 +110,6 @@ class ExtraDependencies:
     ]
     complete = [
         *ui,
-        *examples,
         *dmf,
         *surrogate,
         *grid,
