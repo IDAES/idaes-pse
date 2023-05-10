@@ -109,12 +109,12 @@ class ExtraDependencies:
     complete = [
         *ui,
         *dmf,
-        *omlt,
-        *grid,
         *testing,
     ]
     all = [
         *complete,
+        *omlt,
+        *grid,
         *coolprop,
     ]
 
