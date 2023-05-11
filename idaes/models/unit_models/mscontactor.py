@@ -58,8 +58,9 @@ class MSContactorInitializer(ModularInitializerBase):
     The model is then solved using the Pyomo ssc_solver function
     to initialize each stream separately.
 
-    The inter-stream transfer variables then unfixed and additional constraints
-    reactivated, and the full model solved using the user-specified solver.
+    The inter-stream transfer variables are then unfixed and the additional
+    constraints reactivated, and the full model solved using the user-specified
+    solver.
 
     """
 
