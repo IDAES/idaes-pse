@@ -935,6 +935,7 @@ class Stats(object):
 
     def to_dmf(self, dmf) -> None:
         try:
+            # pylint: disable-next=import-outside-toplevel
             from idaes.core.dmf import resource
         except ImportError as err:
             _log.error(
