@@ -132,7 +132,6 @@ class MSContactorInitializer(ModularInitializerBase):
         solve_strongly_connected_components(
             model,
             solver=solver,
-            # TODO: Add support for these
             solve_kwds=self.config.ssc_solver_options,
             calc_var_kwds=self.config.calculate_variable_options,
         )
@@ -149,6 +148,147 @@ class MSContactorInitializer(ModularInitializerBase):
         return res
 
 
+# Config dict to contain information on each stream
+STREAM_CONFIG = ConfigDict()
+STREAM_CONFIG.declare(
+    "property_package",
+    ConfigValue(
+        default=useDefault,
+        domain=is_physical_parameter_block,
+        description="Property package to use for given stream",
+        doc="""Property parameter object used to define property calculations for given stream,
+**default** - useDefault.
+**Valid values:** {
+**useDefault** - use default package from parent model or flowsheet,
+**PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
+    ),
+)
+STREAM_CONFIG.declare(
+    "property_package_args",
+    ConfigDict(
+        implicit=True,
+        description="Dict of arguments to use for constructing property package",
+        doc="""A ConfigDict with arguments to be passed to property block(s)
+and used when constructing these,
+**default** - None.
+**Valid values:** {
+see property package for documentation.}""",
+    ),
+)
+STREAM_CONFIG.declare(
+    "reaction_package",
+    ConfigValue(
+        default=None,
+        domain=is_reaction_parameter_block,
+        description="Reaction package to use for stream",
+        doc="""Reaction parameter object used to define reaction calculations
+for stream. **default** - None.
+**Valid values:** {
+**None** - no reaction package,
+**ReactionParameterBlock** - a ReactionParameterBlock object.}""",
+    ),
+)
+STREAM_CONFIG.declare(
+    "reaction_package_args",
+    ConfigDict(
+        implicit=True,
+        description="Arguments to use for constructing reaction packages",
+        doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
+and used when constructing these,
+**default** - None.
+**Valid values:** {
+see reaction package for documentation.}""",
+    ),
+)
+STREAM_CONFIG.declare(
+    "flow_direction",
+    ConfigValue(
+        default=FlowDirection.forward,
+        domain=In(FlowDirection),
+        doc="Direction of flow for stream",
+        description="FlowDirection Enum indicating direction of "
+        "flow for given stream. Default=FlowDirection.forward.",
+    ),
+)
+STREAM_CONFIG.declare(
+    "has_feed",
+    ConfigValue(
+        default=True,
+        domain=Bool,
+        doc="Bool indicating whether stream has a feed.",
+        description="Bool indicating whether stream has a feed Port and inlet "
+        "state, or if all flow is provided via mass transfer. Default=True.",
+    ),
+)
+STREAM_CONFIG.declare(
+    "has_rate_reactions",
+    ConfigValue(
+        default=False,
+        domain=Bool,
+        doc="Bool indicating whether rate-based reactions occur in stream.",
+    ),
+)
+STREAM_CONFIG.declare(
+    "has_equilibrium_reactions",
+    ConfigValue(
+        default=False,
+        domain=Bool,
+        doc="Bool indicating whether equilibrium-based reactions occur in stream.",
+    ),
+)
+STREAM_CONFIG.declare(
+    "has_energy_balance",
+    ConfigValue(
+        default=True,
+        domain=Bool,
+        doc="Bool indicating whether to include energy balance for stream. Default=True.",
+    ),
+)
+STREAM_CONFIG.declare(
+    "has_heat_transfer",
+    ConfigValue(
+        default=False,
+        domain=Bool,
+        doc="Bool indicating whether to include external heat transfer terms in energy "
+        "balance for stream. Default=False.",
+    ),
+)
+STREAM_CONFIG.declare(
+    "has_heat_of_reaction",
+    ConfigValue(
+        default=False,
+        domain=Bool,
+        doc="Bool indicating whether heat of reaction terms should be included in energy "
+        "balance for stream (required reactions). Default=False.",
+    ),
+)
+STREAM_CONFIG.declare(
+    "has_pressure_balance",
+    ConfigValue(
+        default=True,
+        domain=Bool,
+        doc="Bool indicating whether to include pressure balance for stream. Default=True.",
+    ),
+)
+STREAM_CONFIG.declare(
+    "has_pressure_change",
+    ConfigValue(
+        default=False,
+        domain=Bool,
+        doc="Bool indicating whether to include deltaP terms in pressure balance for "
+        "stream. Default=False.",
+    ),
+)
+STREAM_CONFIG.declare(
+    "side_streams",
+    ConfigValue(
+        default=None,
+        domain=list,
+        doc="List of finite elements at which a side stream should be included.",
+    ),
+)
+
+
 @declare_process_block_class("MSContactor")
 class MSContactorData(UnitModelBlockData):
     """
@@ -160,151 +300,11 @@ class MSContactorData(UnitModelBlockData):
 
     CONFIG = UnitModelBlockData.CONFIG()
 
-    # Config dict to contain information on each stream
-    _stream_config = ConfigDict()
-    _stream_config.declare(
-        "property_package",
-        ConfigValue(
-            default=useDefault,
-            domain=is_physical_parameter_block,
-            description="Property package to use for given stream",
-            doc="""Property parameter object used to define property calculations for given stream,
-    **default** - useDefault.
-    **Valid values:** {
-    **useDefault** - use default package from parent model or flowsheet,
-    **PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
-        ),
-    )
-    _stream_config.declare(
-        "property_package_args",
-        ConfigDict(
-            implicit=True,
-            description="Dict of arguments to use for constructing property package",
-            doc="""A ConfigDict with arguments to be passed to property block(s)
-    and used when constructing these,
-    **default** - None.
-    **Valid values:** {
-    see property package for documentation.}""",
-        ),
-    )
-    _stream_config.declare(
-        "reaction_package",
-        ConfigValue(
-            default=None,
-            domain=is_reaction_parameter_block,
-            description="Reaction package to use for stream",
-            doc="""Reaction parameter object used to define reaction calculations
-    for stream. **default** - None.
-    **Valid values:** {
-    **None** - no reaction package,
-    **ReactionParameterBlock** - a ReactionParameterBlock object.}""",
-        ),
-    )
-    _stream_config.declare(
-        "reaction_package_args",
-        ConfigDict(
-            implicit=True,
-            description="Arguments to use for constructing reaction packages",
-            doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
-    and used when constructing these,
-    **default** - None.
-    **Valid values:** {
-    see reaction package for documentation.}""",
-        ),
-    )
-    _stream_config.declare(
-        "flow_direction",
-        ConfigValue(
-            default=FlowDirection.forward,
-            domain=In(FlowDirection),
-            doc="Direction of flow for stream",
-            description="FlowDirection Enum indicating direction of "
-            "flow for given stream. Default=FlowDirection.forward.",
-        ),
-    )
-    _stream_config.declare(
-        "has_feed",
-        ConfigValue(
-            default=True,
-            domain=Bool,
-            doc="Bool indicating whether stream has a feed.",
-            description="Bool indicating whether stream has a feed Port and inlet "
-            "state, or if all flow is provided via mass transfer. Default=True.",
-        ),
-    )
-    _stream_config.declare(
-        "has_rate_reactions",
-        ConfigValue(
-            default=False,
-            domain=Bool,
-            doc="Bool indicating whether rate-based reactions occur in stream.",
-        ),
-    )
-    _stream_config.declare(
-        "has_equilibrium_reactions",
-        ConfigValue(
-            default=False,
-            domain=Bool,
-            doc="Bool indicating whether equilibrium-based reactions occur in stream.",
-        ),
-    )
-    _stream_config.declare(
-        "has_energy_balance",
-        ConfigValue(
-            default=True,
-            domain=Bool,
-            doc="Bool indicating whether to include energy balance for stream. Default=True.",
-        ),
-    )
-    _stream_config.declare(
-        "has_heat_transfer",
-        ConfigValue(
-            default=False,
-            domain=Bool,
-            doc="Bool indicating whether to include external heat transfer terms in energy "
-            "balance for stream. Default=False.",
-        ),
-    )
-    _stream_config.declare(
-        "has_heat_of_reaction",
-        ConfigValue(
-            default=False,
-            domain=Bool,
-            doc="Bool indicating whether heat of reaction terms should be included in energy "
-            "balance for stream (required reactions). Default=False.",
-        ),
-    )
-    _stream_config.declare(
-        "has_pressure_balance",
-        ConfigValue(
-            default=True,
-            domain=Bool,
-            doc="Bool indicating whether to include pressure balance for stream. Default=True.",
-        ),
-    )
-    _stream_config.declare(
-        "has_pressure_change",
-        ConfigValue(
-            default=False,
-            domain=Bool,
-            doc="Bool indicating whether to include deltaP terms in pressure balance for "
-            "stream. Default=False.",
-        ),
-    )
-    _stream_config.declare(
-        "side_streams",
-        ConfigValue(
-            default=None,
-            domain=list,
-            doc="List of finite elements at which a side stream should be included.",
-        ),
-    )
-
     CONFIG.declare(
         "streams",
         ConfigDict(
             implicit=True,
-            implicit_domain=_stream_config,
+            implicit_domain=STREAM_CONFIG,
             description="Dict of streams and associated property packages",
             doc="ConfigDict with keys indicating names for each stream in system and "
             "values indicating property package and associated arguments.",
@@ -783,7 +783,7 @@ class MSContactorData(UnitModelBlockData):
             self.stream_interactions,
             initialize=0,
             units=uom.POWER,
-            doc="Inter-stream mass transfer term",
+            doc="Inter-stream energy transfer term",
         )
 
         for stream, pconfig in self.config.streams.items():
