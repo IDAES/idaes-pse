@@ -11,13 +11,10 @@
 # for full copyright and license information.
 #################################################################################
 import pyomo.environ as pyo
-from pyomo.common.timing import TicTocTimer
 from idaes.core.solvers import get_solver
-from idaes.core.util import from_json, to_json
 from idaes.core.util.exceptions import InitializationError
 import matplotlib.pyplot as plt
 import logging
-import time
 
 _logger = logging.getLogger(__name__)
 

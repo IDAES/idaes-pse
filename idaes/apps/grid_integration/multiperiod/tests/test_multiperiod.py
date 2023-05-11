@@ -25,7 +25,7 @@ from idaes.core.util.exceptions import InitializationError
 import idaes.logger as idaeslog
 
 
-def build_flowsheet(m=None, a=100, b=200):
+def build_flowsheet(m=None, a=None, b=None):
     """This function builds a dummy flowsheet"""
     if m is None:
         m = pyo.ConcreteModel()
