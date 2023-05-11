@@ -10,7 +10,7 @@ When adding a multi-stream contactor to a flowsheet, users can define the option
 .. testcode::
 
   import pyomo.environ as pyo  # Pyomo environment
-  from idaes.core import FlowsheetBlock
+  from idaes.core import FlowsheetBlock, FlowDirection
   from idaes.models.unit_models import MSContactor
   from idaes.models.properties import iapws95
 
