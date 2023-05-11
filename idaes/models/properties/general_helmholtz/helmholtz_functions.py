@@ -1319,7 +1319,7 @@ change.
         initialization where temperature is known instead of internal energy.
         User must provide values for one of these sets of values: {T, P}, {T, x},
         or {P, x}.
-        
+
         Args:
             T (float): Temperature
             P (float): Pressure, None if saturated
