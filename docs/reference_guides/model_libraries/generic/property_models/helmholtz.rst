@@ -326,7 +326,7 @@ Variables are listed in the table below.  What is a variable and what is an expr
 depends on the selected state variables and amount basis.  Pressure is always a variable.  
 
 ========================================= ===============================================================================================
-Expression                                Description
+Variable                                  Description
 ========================================= ===============================================================================================
 ``pressure``                              Pressure (Pa)
 ``flow_mass``                             Mass flow (kg/s), if ``amount_basis=AmountBasis.MASS``; otherwise, expression
@@ -367,12 +367,12 @@ Expression                                Description
 ``mole_frac_comp[comp]``                  Mole fraction of component (dimensionless), since pure component, returns 1
 ``mole_frac_phase_comp[phase][comp]``     Mole fraction of component in phase (dimensionless), since pure component, returns 1
 ``temperature_crit``                      Critical temperature (K)
-``temperature_star``                      Reducing temperature :math: `\tau=\frac{T^*}{T}` (K)
+``temperature_star``                      Reducing temperature :math:`\tau=\frac{T^*}{T}` (K)
 ``pressure_crit``                         Critical pressure (Pa)
 ``dens_mass_crit``                        Critical mass density (kg/m\ :superscript:`3`)
-``dens_mass_star``                        Reducing mass density :math: `\delta=\frac{\rho}{\rho^*}` (kg/m\ :superscript:`3`)
+``dens_mass_star``                        Reducing mass density :math:`\delta=\frac{\rho}{\rho^*}` (kg/m\ :superscript:`3`)
 ``dens_mol_crit``                         Critical mole density (mol/m\ :superscript:`3`)
-``dens_mol_star``                         Reducing mole density :math: `\delta=\frac{\rho}{\rho^*}` (kg/m\ :superscript:`3`)
+``dens_mol_star``                         Reducing mole density :math:`\delta=\frac{\rho}{\rho^*}` (kg/m\ :superscript:`3`)
 ``temperature_sat``                       Saturation temperature (K), if supercritical, Tsat=Tcrit
 ``pressure_sat``                          Saturation pressure (Pa), if supercritical, Psat=Pcrit
 ``enth_mass_sat_phase[phase]``            Saturation specific enthalpy of phase (J/kg)
@@ -398,8 +398,8 @@ Expression                                Description
 ``energy_internal_mol_phase[phase]``      Molar internal energy of phase (J/mol) 
 ``cp_mass_phase[phase]``                  Specific isobaric heat capacity for phase (J/kg)       
 ``cp_mol_phase[phase]``                   Molar isobaric heat capacity for phase (J/mol)      
-``cv_mass_phase[phase]``                  Specific isocoric heat capacity for phase (J/kg)
-``cv_mol_phase[phase]``                   Molar isocoric heat capacity for phase (J/mol)     
+``cv_mass_phase[phase]``                  Specific isochoric heat capacity for phase (J/kg)
+``cv_mol_phase[phase]``                   Molar isochoric heat capacity for phase (J/mol)     
 ``speed_sound_phase[phase]``              Speed of sound in phase (m/s)
 ``vol_mass_phase[phase]``                 Specific volume of phase (m\ :superscript:`3`/kg)
 ``vol_mol_phase[phase]``                  Molar volume of phase (m\ :superscript:`3`/mol)
@@ -409,14 +409,14 @@ Expression                                Description
 ``flow_mol_comp[comp]``                   Same as total mole flow since pure (mol/s)
 ``cp_mass``                               Specific isobaric heat capacity for mixed phase (J/kg)       
 ``cp_mol``                                Molar isobaric heat capacity for mixed phase (J/mol)      
-``cv_mass``                               Specific isocoric heat capacity for mixed phase (J/kg)
-``cv_mol``                                Molar isocoric heat capacity for mixed phase (J/mol)
+``cv_mass``                               Specific isochoric heat capacity for mixed phase (J/kg)
+``cv_mol``                                Molar isochoric heat capacity for mixed phase (J/mol)
 ``dens_mass``                             Mass density of mixed phase (kg/m\ :superscript:`3`)
 ``dens_mol``                              Mole density of mixed phase (mol/m\ :superscript:`3`)
 ``flow_vol``                              Total mixed phase volumetric flow (m\ :superscript:`3`/s)
 ``heat_capacity_ratio``                   Mixed phase cp/cv (dimensionless)
 ``visc_d_phase[phase]``                   Dynamic viscosity (Pa*s), depending on substance, may not be available
-``visc_k_phase[phase]``                   Kinematic viscosity (\ :superscript:`2`/s), depending on substance, may not be available
+``visc_k_phase[phase]``                   Kinematic viscosity (m\ :superscript:`2`/s), depending on substance, may not be available
 ``therm_cond_phase[phase]``               Thermal conductivity of phase (W/m/s), depending on substance, may not be available
 ``surface_tension``                       Surface tension (N/m), depending on substance, may not be available
 ``P_under_sat``                           Pressure under saturation pressure (Pa)

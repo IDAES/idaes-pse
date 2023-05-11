@@ -15,7 +15,7 @@ tested here do not use IDAES properties or the external functions. This directly
 tests the expressions created by the WriteParameters class that will be written 
 to parameter and expression files to verify they are generated correctly.
 
-The tests her use three points from the saturation curve neat critical, near triple,
+The tests here use three points from the saturation curve near critical, near triple,
 and in between.  This data comes from the original equation of state papers.  Comments
 include citations.
 

@@ -15,7 +15,7 @@ To accommodate addition of substances using various forms of Helmholtz free ener
 Helmholtz free energy and transport properties are read into the external function library as
 AMPL NL-files.  Basic parameters are read as a json file.
 
-Generating the expression and parameter files need is done via utilities provided by IDAES.
+Generating the expression and parameter files needed is done via utilities provided by IDAES.
 The parameter and expression files originate from a Python script and an optional json master
 parameter file.
 
@@ -25,7 +25,7 @@ library.
 Class
 -----
 
-The WriteParameters class creates the the expression and parameter files needed by the
+The WriteParameters class creates the expression and parameter files needed by the
 external functions to define a substance.  Parameters and expression are defined in a
 script and an optional main parameter file.  Either custom or predefined expressions
 can be used. 
@@ -36,9 +36,9 @@ can be used.
 Master Parameter File
 ---------------------
 
-While it is possible to define equation of state and transport property expressions and
+While it is possible to the define equation of state and transport property expressions and
 parameters entirely in a Python script we will focus here on the use of a main parameter
-json file, which is read and converted into expression and parameters that can be used
+json file, which is read and converted into expressions and parameters that can be used
 by the external functions.  The overall structure of the main json parameter file is
 given below. The details of each section will be filled as we progress through this 
 documentation::
@@ -143,7 +143,7 @@ Parameter       Description                                                     
 ``T_max``       maximum temperature                                                     K
 =============== ======================================================================= ==========
 
-A truncated example of the main json parameter file is give below to show the form for 
+A truncated example of the main json parameter file is given below to show the form for 
 basic parameters::
 
     {
@@ -175,14 +175,16 @@ Reference State
 Some properties such as enthalpy, entropy, and internal energy don't have a well defined
 absolute value, and can only really be measured relative to a reference state. For the
 purpose of the parameter files, equations of state are initially implemented using whatever
-reference state is used in the original papers.  An offset can be set in the parameter files
+reference state is used in the original paper.  An offset can be set in the parameter files
 to adjust the reference state if desired.
 
 The ``calculate_reference_offset(delta, tau, s0, h0)`` method in the WriteParameters class 
 can be used to calculate a new reference state.  The temperature, density, reference enthalpy,
 and reference entropy are required.  The temperature and density can be calculated using the 
 IDAES property functions possibly using the expression writer class. The reference enthalpy and
-entropy are chosen arbitrarily.
+entropy are chosen arbitrarily. The reference state offset is dimensionless and is added to the
+:math:`n^\circ_1` and :math:`n^\circ_2` parameters in the ideal part for the dimensionless Helmholtz free
+energy corelation.  
 
 The following example shows how to set the reference state in the main parameter file::
 
@@ -216,9 +218,9 @@ Ideal Part of Dimensionless Helmholtz Free Energy
 
 The predefined type 1 form of the ideal portion of the dimensionless Helmholtz free energy 
 is shown below. Parameters are provided in the ``"eos"`` section of the main parameter file. 
-This form of the expression requires a dictionary of the :math: `n^\circ_i$`` 
+This form of the expression requires a dictionary of the :math:`n^\circ_i$`` 
 parameters as ``n0`` and the math `\gamma^\circ$` parameters as ``g0``.  The last term
-index in the sum (:math: `h`) is provided as ``last\_term\_ideal``.  
+index in the sum (:math:`h`) is provided as ``last_term_ideal``.  
 
 .. math::
 

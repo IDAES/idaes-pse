@@ -16,16 +16,18 @@ Class
     :members:
 
 
-All the property expression methods that take indeterminate ``**kwarg`` take basically
+All the property expression methods that take indeterminate ``**kwarg`` take
 the same set of arguments. The state variables should be provided as arguments and include
 units. The state variables are passed to external functions to calculate properties.  If
 ``convert_units=False`` is passed the state variable expressions are assumed to include 
 units native to the external functions and no unit conversion expression is needed;
-otherwise, units are assumed to be in SI.  The state variables are on a mass or mole basis
-as determined by the ``amount_basis`` argument given when creating the the HelmholtzThermoExpressions
-object. An optional ``result_basis`` argument can be provided as an ``AmountBasis`` Enum to
-set whether the resulting property expression is given on a mass or mole basis. If not provided,
-the `amount_basis` argument is used for the result. 
+otherwise, units are assumed to be in SI. While you do need to provide units to check for 
+consistency, arbitrary unit conversion is not currently supported, due to potentially slow
+model building.  The state variables are on a mass or mole basis as determined by the 
+``amount_basis`` argument given when creating the HelmholtzThermoExpressions object. An 
+optional ``result_basis`` argument can be provided as an ``AmountBasis`` Enum to set whether 
+the resulting property expression is given on a mass or mole basis. If not provided, the 
+`amount_basis` argument is used for the result. 
 
 State variables should be in one of the sets below.
 
@@ -44,7 +46,7 @@ taken by the saturated property methods.
 Example
 -------
 
-The sample code below gives am example of how to use the expression writer in constructing a Pyomo model.
+The sample code below gives an example of how to use the expression writer in constructing a Pyomo model.
 
 .. testcode::
 

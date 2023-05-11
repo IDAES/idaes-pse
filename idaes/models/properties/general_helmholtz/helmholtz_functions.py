@@ -727,7 +727,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def cv(self, **kwargs):
-        """Mixed phase isocoric heat capacity"""
+        """Mixed phase isochoric heat capacity"""
         return self._generic_prop(
             hp_func="cv_hp_func",
             up_func="cv_up_func",
@@ -740,7 +740,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def cv_liq(self, **kwargs):
-        """Liquid phase isocoric heat capacity"""
+        """Liquid phase isochoric heat capacity"""
         return self._generic_prop_phase(
             hp_func="cv_liq_hp_func",
             up_func="cv_liq_up_func",
@@ -752,7 +752,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def cv_vap(self, **kwargs):
-        """Vapor phase isocoric heat capacity"""
+        """Vapor phase isochoric heat capacity"""
         return self._generic_prop_phase(
             hp_func="cv_vap_hp_func",
             up_func="cv_vap_up_func",
@@ -1318,8 +1318,8 @@ change.
         pressure or vapor fraction. This function can be used for inlet streams and
         initialization where temperature is known instead of internal energy.
         User must provide values for one of these sets of values: {T, P}, {T, x},
-
         or {P, x}.
+        
         Args:
             T (float): Temperature
             P (float): Pressure, None if saturated
