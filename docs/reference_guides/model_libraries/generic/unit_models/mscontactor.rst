@@ -24,10 +24,10 @@ When adding a multi-stream contactor to a flowsheet, users can define the option
       number_of_finite_elements=2,
       streams={
           "stream1": {
-              "property_package": m.fs.properties
+              "property_package": model.fs.properties
           },
           "stream2": {
-              "property_package": m.fs.properties,
+              "property_package": model.fs.properties,
               "flow_direction": FlowDirection.backward,
           },
       },
