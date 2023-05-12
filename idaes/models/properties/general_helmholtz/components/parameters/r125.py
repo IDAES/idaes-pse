@@ -10,23 +10,32 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""This module provides a list of supported component and Pyomo expressions for
-some properties not implemented as external functions.
+"""Generate parameter and expression files for r125
 """
 
 __author__ = "John Eslick"
 
-from idaes.models.properties.general_helmholtz.components.registry import (
-    register_helmholtz_component,
-    remove_component,
-    registered_components,
-    viscosity_available,
-    thermal_conductivity_available,
-    surface_tension_available,
-    component_registered,
-    clear_component_registry,
-    eos_reference,
-    viscosity_reference,
-    thermal_conductivity_reference,
-    surface_tension_reference,
+import os
+from pyomo.common.fileutils import this_file_dir
+from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
+    WriteParameters,
 )
+
+
+def main(dry_run=False):
+    """Generate parameter and expression files.
+
+    Args:
+        dry_run (bool): If dry run don't generate files
+
+    Returns:
+        None
+    """
+    main_param_file = os.path.join(this_file_dir(), "r125.json")
+    we = WriteParameters(parameters=main_param_file)
+    we.write(dry_run=dry_run)
+    return we
+
+
+if __name__ == "__main__":
+    main()

@@ -10,23 +10,23 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""This module provides a list of supported component and Pyomo expressions for
-some properties not implemented as external functions.
+"""Predefined expression for Helmholtz EoS functions
 """
 
 __author__ = "John Eslick"
 
-from idaes.models.properties.general_helmholtz.components.registry import (
-    register_helmholtz_component,
-    remove_component,
-    registered_components,
-    viscosity_available,
-    thermal_conductivity_available,
-    surface_tension_available,
-    component_registered,
-    clear_component_registry,
-    eos_reference,
-    viscosity_reference,
-    thermal_conductivity_reference,
-    surface_tension_reference,
-)
+
+def surface_tension_type01(model, parameters):
+    """Type01 expression for the surface tension
+
+    Args:
+        model (Block): Pyomo model
+        parameters (dict): Main parameters dictionary
+
+    Returns:
+        dict: Expressions for the surface tension
+    """
+    s = parameters["transport"]["surface_tension"]["s"]
+    n = parameters["transport"]["surface_tension"]["n"]
+    tc = parameters["transport"]["surface_tension"]["Tc"]
+    return sum(s[i] * (1 - model.T_star / model.tau / tc) ** n[i] for i in s)

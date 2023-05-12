@@ -26,3 +26,20 @@ from .helmholtz_state import (
     HelmholtzStateBlockData,
     HelmholtzEoSInitializer,
 )
+from idaes.models.properties.general_helmholtz.components.parameters import (
+    get_parameter_path,
+    set_parameter_path,
+)
+from idaes.models.properties.general_helmholtz.components.registry import (
+    register_helmholtz_component,
+    registered_components,
+    viscosity_available,
+    thermal_conductivity_available,
+    surface_tension_available,
+    component_registered,
+    clear_component_registry,
+    eos_reference,
+    viscosity_reference,
+    thermal_conductivity_reference,
+    surface_tension_reference,
+)

@@ -1,0 +1,71 @@
+{
+    "nl_file": "co2_expressions_eos.nl",
+    "expr_map": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        13,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        11
+    ],
+    "var_map": [
+        0,
+        1,
+        1000,
+        1000
+    ],
+    "param": {
+        "R": 0.1889241,
+        "MW": 44.0098,
+        "T_star": 304.1282,
+        "rho_star": 467.6,
+        "Tc": 304.1282,
+        "rhoc": 467.6,
+        "Pc": 7377.3000000001,
+        "Tt": 216.592,
+        "Pt": 517.95,
+        "rhot_l": 1178.46,
+        "rhot_v": 13.761,
+        "P_min": 1e-09,
+        "P_max": 500000.0,
+        "rho_max": 1600.0,
+        "T_min": 216,
+        "T_max": 1400,
+        "reference_state_offset": [
+            -14.4979156224319,
+            8.82013935801453
+        ]
+    },
+    "nl_file_tcx": "co2_expressions_tcx.nl",
+    "var_map_tcx": [
+        1,
+        0,
+        1000,
+        1000
+    ],
+    "have_tcx": true,
+    "nl_file_st": "co2_expressions_st.nl",
+    "var_map_st": [
+        1,
+        1000,
+        1000,
+        1000
+    ],
+    "have_st": true,
+    "nl_file_visc": "co2_expressions_visc.nl",
+    "var_map_visc": [
+        1,
+        0,
+        1000,
+        1000
+    ],
+    "have_visc": true
+}
