@@ -98,8 +98,7 @@ class ExtraDependencies:
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
     ]
     coolprop = [
-        # A Lee 11-Jan-22: no precompiled version of CoolProp available for Python 3.9
-        "coolprop; python_version < '3.9'",  # idaes.generic_models.properties.general.coolprop
+        "coolprop",  # idaes.generic_models.properties.general.coolprop
     ]
     testing = [
         "pytest",
