@@ -2877,4 +2877,4 @@ class TestInitializersModularCoCurrent:
             model.fs.unit.cold_side_outlet.pressure[0]
         )
 
-    # TODO: BT INitializer struggles with this case for some reason
+    # TODO: BT Initializer struggles with this case for some reason

@@ -127,7 +127,7 @@ class HX0DInitializer(SingleControlVolumeUnitInitializer):
             Pyomo solver results object.
 
         """
-        # Set solver options
+        # Get loggers
         init_log = idaeslog.getInitLogger(
             model.name, self.get_output_level(), tag="unit"
         )
