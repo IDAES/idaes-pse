@@ -37,7 +37,6 @@ from idaes.core.solvers import get_solver
 
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
-    SingleControlVolumeUnitInitializer,
     InitializationStatus,
 )
 
