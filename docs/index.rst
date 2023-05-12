@@ -43,7 +43,6 @@ See also :doc:`IDAES concepts <explanations/concepts>` in this documentation.
          | :doc:`IDAES Core <reference_guides/core/index>`
          | :doc:`Model Scaling Toolbox <reference_guides/scaling>`
          | :doc:`Initializing Models <reference_guides/initialization/index>`
-         |
          | :doc:`Command-line tools <reference_guides/commands/index>`
          | :doc:`Configuration <reference_guides/configuration>`
          | :doc:`Logging Processing & Outputs <reference_guides/logging>`
