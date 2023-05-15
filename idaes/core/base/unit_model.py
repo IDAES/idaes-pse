@@ -14,7 +14,7 @@
 Base class for unit models
 """
 
-from pyomo.environ import check_optimal_termination, Var
+from pyomo.environ import check_optimal_termination
 from pyomo.common.config import ConfigValue
 from pyomo.network import Port
 
