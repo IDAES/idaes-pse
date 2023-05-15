@@ -282,15 +282,15 @@ class TestInitializersSapon:
             has_pressure_change=True,
         )
 
-        m.fs.unit.inlet.flow_vol.set_value(1)
+        m.fs.unit.inlet.flow_vol[0].set_value(1)
         m.fs.unit.inlet.conc_mol_comp[0, "H2O"].set_value(55388.0)
         m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].set_value(100.0)
         m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].set_value(100.0)
         m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].set_value(0.0)
         m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].set_value(0.0)
 
-        m.fs.unit.inlet.temperature.set_value(303.15)
-        m.fs.unit.inlet.pressure.set_value(101325.0)
+        m.fs.unit.inlet.temperature[0].set_value(303.15)
+        m.fs.unit.inlet.pressure[0].set_value(101325.0)
 
         m.fs.unit.rate_reaction_extent[0, "R1"].fix(90)
         m.fs.unit.heat_duty.fix(0)
@@ -315,15 +315,15 @@ class TestInitializersSapon:
             model.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]
         )
 
-        assert not model.fs.unit.inlet.flow_vol.fixed
+        assert not model.fs.unit.inlet.flow_vol[0].fixed
         assert not model.fs.unit.inlet.conc_mol_comp[0, "H2O"].fixed
         assert not model.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fixed
         assert not model.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fixed
         assert not model.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
         assert not model.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fixed
 
-        assert not model.fs.unit.inlet.temperature.fixed
-        assert not model.fs.unit.inlet.pressure.fixed
+        assert not model.fs.unit.inlet.temperature[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
 
     @pytest.mark.component
     def test_block_triangularization(self, model):
@@ -345,12 +345,12 @@ class TestInitializersSapon:
             model.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]
         )
 
-        assert not model.fs.unit.inlet.flow_vol.fixed
+        assert not model.fs.unit.inlet.flow_vol[0].fixed
         assert not model.fs.unit.inlet.conc_mol_comp[0, "H2O"].fixed
         assert not model.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fixed
         assert not model.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fixed
         assert not model.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
         assert not model.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fixed
 
-        assert not model.fs.unit.inlet.temperature.fixed
-        assert not model.fs.unit.inlet.pressure.fixed
+        assert not model.fs.unit.inlet.temperature[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
