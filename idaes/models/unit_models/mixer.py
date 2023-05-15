@@ -931,18 +931,16 @@ objects linked to all inlet states and the mixed state,
             None
         """
         inlet_list = self.create_inlet_list()
-        print(inlet_list)
         for p in inlet_list:
             p_obj = getattr(self, p)
             # Iterate over vars
             for v in p_obj.iter_vars():
-                print(v.name)
                 if (
                     self.config.momentum_mixing_type == MomentumMixingType.equality
                     or self.config.momentum_mixing_type
                     == MomentumMixingType.minimize_and_equality
                 ) and v.local_name == "pressure":
-                    # Don';'t fix pressure in cases where pressure equality is specified
+                    # Don't fix pressure in cases where pressure equality is specified
                     continue
                 else:
                     v.fix()
