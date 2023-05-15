@@ -190,6 +190,13 @@ def _new_idaes_config_block():
         "datefmt",
         pyomo.common.config.ConfigValue(domain=str, default="%Y-%m-%d %H:%M:%S"),
     )
+    cfg["logging"]["formatters"].declare(
+        "blank_format", pyomo.common.config.ConfigBlock(implicit=True)
+    )
+    cfg["logging"]["formatters"]["blank_format"].declare(
+        "format",
+        pyomo.common.config.ConfigValue(domain=str, default="%(message)s"),
+    )
     cfg["logging"].declare("handlers", pyomo.common.config.ConfigBlock(implicit=True))
     cfg["logging"]["handlers"].declare(
         "console", pyomo.common.config.ConfigBlock(implicit=True)
@@ -206,6 +213,21 @@ def _new_idaes_config_block():
         "stream",
         pyomo.common.config.ConfigValue(domain=str, default="ext://sys.stdout"),
     )
+    cfg["logging"]["handlers"].declare(
+        "console_blank", pyomo.common.config.ConfigBlock(implicit=True)
+    )
+    cfg["logging"]["handlers"]["console_blank"].declare(
+        "class",
+        pyomo.common.config.ConfigValue(domain=str, default="logging.StreamHandler"),
+    )
+    cfg["logging"]["handlers"]["console_blank"].declare(
+        "formatter",
+        pyomo.common.config.ConfigValue(domain=str, default="blank_format"),
+    )
+    cfg["logging"]["handlers"]["console_blank"].declare(
+        "stream",
+        pyomo.common.config.ConfigValue(domain=str, default="ext://sys.stdout"),
+    )
     cfg["logging"].declare(
         "loggers",
         pyomo.common.config.ConfigValue(
@@ -215,9 +237,40 @@ def _new_idaes_config_block():
                 "idaes.solve": {"propagate": False, "handlers": ["console"]},
                 "idaes.init": {"propagate": False, "handlers": ["console"]},
                 "idaes.model": {"propagate": False, "handlers": ["console"]},
+                "idaes.helmholtz_parameters": {
+                    "propagate": False,
+                    "handlers": ["console_blank"],
+                },
             },
         ),
     )
+    cfg.declare(
+        "properties",
+        pyomo.common.config.ConfigBlock(
+            implicit=False,
+            description="Physical-property-related options",
+            doc="Physical-property-related options",
+        ),
+    )
+    cfg["properties"].declare(
+        "helmholtz",
+        pyomo.common.config.ConfigBlock(
+            implicit=False,
+            description="Helmholtz equation of state configuration block",
+            doc="Helmholtz equation of state configuration block",
+        ),
+    )
+    cfg["properties"]["helmholtz"].declare(
+        "parameter_file_path",
+        pyomo.common.config.ConfigValue(
+            domain=str,
+            default=None,
+            description="Helmholtz parameter file path",
+            doc="Helmholtz parameter file path, if None use default based on "
+            "IDAES install location",
+        ),
+    )
+
     cfg.declare(
         "ipopt",
         pyomo.common.config.ConfigBlock(
@@ -226,7 +279,6 @@ def _new_idaes_config_block():
             doc="Default config for 'ipopt' solver",
         ),
     )
-
     cfg["ipopt"].declare(
         "options",
         pyomo.common.config.ConfigBlock(

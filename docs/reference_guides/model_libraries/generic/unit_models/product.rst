@@ -25,6 +25,13 @@ Product blocks add no additional Variables.
 
 .. module:: idaes.models.unit_models.product
 
+
+Initialization
+--------------
+
+.. autoclass:: ProductInitializer
+   :members: initialization_routine
+
 Product Class
 -------------
 

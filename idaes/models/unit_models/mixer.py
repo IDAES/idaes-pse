@@ -92,6 +92,9 @@ class MixerInitializer(ModularInitializerBase):
         """
         Initialization routine for Mixer Blocks.
 
+        This routine starts by initializing each of the inlet streams, then uses those
+        results to estimate the outlet state before solving the full model.
+
         Args:
             model: model to be initialized
 
