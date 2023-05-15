@@ -9,7 +9,7 @@ This page lists in more detail the kerras OMLT options.
 Installing OMLT
 ----------------
 
-OMLT (Optimization and Machine Learning Toolkit) is an optional dependency developed and licensed by The Optimization Firm: and specific examples through a user manual and installation guide. Alternatively, users may directly access the user guide here: https://minlp.com/downloads/docs/alamo%20manual.pdf.
+OMLT (Optimization and Machine Learning Toolkit) is an optional dependency: and specific examples through a user manual and installation guide. Alternatively, users may directly access the user guide here: https://omlt.readthedocs.io/en/latest/index.html.
 
 More details on OMLT options may be found in the user guide documentation linked above. If users encounter specific error codes while running the OMLT tool in IDAES, the user guide contains detailed descriptions of each termination condition and error message.
 
