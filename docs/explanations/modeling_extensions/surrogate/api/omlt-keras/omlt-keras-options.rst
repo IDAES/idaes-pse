@@ -48,8 +48,7 @@ OMLT can formulate what we call full-space and reduced-space neural network repr
     keras_surrogate,
     formulation=KerasSurrogate.Formulation.FULL_SPACE,
     input_vars=inputs,
-    output_vars=outputs,
-)
+    output_vars=outputs)
 
 
 OMLT Layers

@@ -47,7 +47,8 @@ Data can be read in or simulated using available Python packages. The main argum
   )
 
 Saving and Loading OMLT-keras models
---------------------------------
+------------------------------------
+
 The user may save their neural network objects by serializing to JSON, and load into a different script, notebook or environment. For example,
 
 .. code-block:: python
@@ -59,12 +60,12 @@ The user may save their neural network objects by serializing to JSON, and load 
   keras_surrogate = KerasSurrogate.load_from_folder("keras_surrogate")
 
 Visualizing Surrogate Model Results
-------------------------------------
+-----------------------------------
 
 For visualizing TensorFlow Keras neural networks via parity and residual plots, see :ref:`Visualizing Surrogate Model Results<explanations/modeling_extensions/surrogate/plotting/index:Visualizing Surrogate Model Results>`.
 
 
 OMLT Example
-----------------
+------------
 
 For an example of optimizing a flowsheet containing TensorFlow Keras neural networks utilizing the OMLT package, see the `Autothermal Reformer Flowsheet Optimization with OMLT (TensorFlow Keras) Surrogate Object <https://github.com/IDAES/examples/blob/main/idaes_examples/notebooks/docs/surrogates/omlt/keras_flowsheet_optimization_src.ipynb>`_.
