@@ -637,7 +637,7 @@ Must be True if dynamic = True,
     def fix_initialization_states(self):
         """
         Attempts to fix inlet states by iterating over all Ports and looking for "inlet"
-        in the name
+        in the name.
 
         More complex models may need to overload this with a model-specific method.
 

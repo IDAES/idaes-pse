@@ -592,18 +592,18 @@ class TestInitializersCubicBTX:
 
         m.fs.unit = Flash(property_package=m.fs.properties)
 
-        m.fs.unit.inlet.flow_mol.fix(1)
-        m.fs.unit.inlet.temperature.fix(368)
-        m.fs.unit.inlet.pressure.fix(101325)
-        m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-        m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+        m.fs.unit.inlet.flow_mol[0].set_value(1)
+        m.fs.unit.inlet.temperature[0].set_value(368)
+        m.fs.unit.inlet.pressure[0].set_value(101325)
+        m.fs.unit.inlet.mole_frac_comp[0, "benzene"].set_value(0.5)
+        m.fs.unit.inlet.mole_frac_comp[0, "toluene"].set_value(0.5)
 
         m.fs.unit.heat_duty.fix(0)
         m.fs.unit.deltaP.fix(0)
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_general_hierarchical(self, model):
         initializer = SingleControlVolumeUnitInitializer()
         initializer.initialize(model.fs.unit)
@@ -636,7 +636,13 @@ class TestInitializersCubicBTX:
             model.fs.unit.vap_outlet.mole_frac_comp[0, "toluene"]
         )
 
-    @pytest.mark.integration
+        assert not model.fs.unit.inlet.flow_mol[0].fixed
+        assert not model.fs.unit.inlet.temperature[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "benzene"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "toluene"].fixed
+
+    @pytest.mark.component
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
         initializer.initialize(model.fs.unit)
@@ -668,3 +674,9 @@ class TestInitializersCubicBTX:
         assert pytest.approx(0.366, abs=1e-3) == value(
             model.fs.unit.vap_outlet.mole_frac_comp[0, "toluene"]
         )
+
+        assert not model.fs.unit.inlet.flow_mol[0].fixed
+        assert not model.fs.unit.inlet.temperature[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "benzene"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "toluene"].fixed
