@@ -537,20 +537,20 @@ class TestInitializers(object):
         )
 
         # Hot fluid
-        m.fs.unit.hot_side_inlet.flow_mol[0].fix(60.54879)
-        m.fs.unit.hot_side_inlet.temperature[0].fix(392.23)
-        m.fs.unit.hot_side_inlet.pressure[0].fix(202650)
-        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "CO2"].fix(0.0158)
-        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "H2O"].fix(0.8747)
-        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "MEA"].fix(0.1095)
+        m.fs.unit.hot_side_inlet.flow_mol[0].set_value(60.54879)
+        m.fs.unit.hot_side_inlet.temperature[0].set_value(392.23)
+        m.fs.unit.hot_side_inlet.pressure[0].set_value(202650)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "CO2"].set_value(0.0158)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "H2O"].set_value(0.8747)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "MEA"].set_value(0.1095)
 
         # Cold fluid
-        m.fs.unit.cold_side_inlet.flow_mol[0].fix(63.01910)
-        m.fs.unit.cold_side_inlet.temperature[0].fix(326.36)
-        m.fs.unit.cold_side_inlet.pressure[0].fix(202650)
-        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "CO2"].fix(0.0414)
-        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "H2O"].fix(0.8509)
-        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "MEA"].fix(0.1077)
+        m.fs.unit.cold_side_inlet.flow_mol[0].set_value(63.01910)
+        m.fs.unit.cold_side_inlet.temperature[0].set_value(326.36)
+        m.fs.unit.cold_side_inlet.pressure[0].set_value(202650)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "CO2"].set_value(0.0414)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "H2O"].set_value(0.8509)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "MEA"].set_value(0.1077)
 
         # Unit design variables
         m.fs.unit.area.fix(100)
@@ -562,7 +562,7 @@ class TestInitializers(object):
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_hx_ntu_initializer(self, model):
         # Need to estimate outlet state values based on heat duty
         initializer = HXNTUInitializer(always_estimate_states=True)
@@ -627,7 +627,21 @@ class TestInitializers(object):
             model.fs.unit.heat_duty[0]
         )
 
-    @pytest.mark.integration
+        assert not model.fs.unit.hot_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.temperature[0].fixed
+        assert not model.fs.unit.hot_side_inlet.pressure[0].fixed
+        assert not model.fs.unit.hot_side_inlet.mole_frac_comp[0, "CO2"].fixed
+        assert not model.fs.unit.hot_side_inlet.mole_frac_comp[0, "H2O"].fixed
+        assert not model.fs.unit.hot_side_inlet.mole_frac_comp[0, "MEA"].fixed
+
+        assert not model.fs.unit.cold_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.temperature[0].fixed
+        assert not model.fs.unit.cold_side_inlet.pressure[0].fixed
+        assert not model.fs.unit.cold_side_inlet.mole_frac_comp[0, "CO2"].fixed
+        assert not model.fs.unit.cold_side_inlet.mole_frac_comp[0, "H2O"].fixed
+        assert not model.fs.unit.cold_side_inlet.mole_frac_comp[0, "MEA"].fixed
+
+    @pytest.mark.component
     def test_block_triangularization_initializer(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
         initializer.initialize(model.fs.unit)
@@ -690,3 +704,17 @@ class TestInitializers(object):
         assert pytest.approx(0.7 * Cmin * (392.23 - 326.36), rel=1e-5) == value(
             model.fs.unit.heat_duty[0]
         )
+
+        assert not model.fs.unit.hot_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.temperature[0].fixed
+        assert not model.fs.unit.hot_side_inlet.pressure[0].fixed
+        assert not model.fs.unit.hot_side_inlet.mole_frac_comp[0, "CO2"].fixed
+        assert not model.fs.unit.hot_side_inlet.mole_frac_comp[0, "H2O"].fixed
+        assert not model.fs.unit.hot_side_inlet.mole_frac_comp[0, "MEA"].fixed
+
+        assert not model.fs.unit.cold_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.temperature[0].fixed
+        assert not model.fs.unit.cold_side_inlet.pressure[0].fixed
+        assert not model.fs.unit.cold_side_inlet.mole_frac_comp[0, "CO2"].fixed
+        assert not model.fs.unit.cold_side_inlet.mole_frac_comp[0, "H2O"].fixed
+        assert not model.fs.unit.cold_side_inlet.mole_frac_comp[0, "MEA"].fixed
