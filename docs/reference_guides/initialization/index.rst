@@ -16,7 +16,7 @@ Usage
 Available Initializers
 ----------------------
 
-The following ``Initializers`` are available in the core libraries. Common use ``Initializers`` are generally applicable to any model type, which model specific ``Initializers`` are suitable for specific types of models or applications.
+The following ``Initializers`` are available in the core libraries. Common use ``Initializers`` are generally applicable to any model type, while model specific ``Initializers`` are suitable for specific types of models or applications.
 
 .. toctree::
     :maxdepth: 2

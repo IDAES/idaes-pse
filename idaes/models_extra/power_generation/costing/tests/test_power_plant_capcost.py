@@ -11,7 +11,9 @@
 # for full copyright and license information.
 #################################################################################
 
-__author__ = "Costing Team (A. Noring, B. Paul, D. Caballero, and M. Zamarripa)"
+__author__ = (
+    "Costing Team (A. Noring, A. Deshpande, B. Paul, D. Caballero, and M. Zamarripa)"
+)
 __version__ = "1.0.0"
 
 import pytest
@@ -19,6 +21,7 @@ import pytest
 import pyomo.environ as pyo
 from pyomo.core.base.constraint import ScalarConstraint, IndexedConstraint
 from pyomo.core.base.expression import ScalarExpression
+from pyomo.core.expr.numeric_expr import MonomialTermExpression, NPV_ProductExpression
 from pyomo.core.base.var import IndexedVar
 from pyomo.environ import units as pyunits
 from pyomo.core.base.units_container import UnitsError
@@ -1297,6 +1300,7 @@ def test_build_process_costs_allOM():
         expr=156000 * (30 / 120) ** (0.78)
     )  # 30 is a fixed value, 30 must be replaced by a model variable
     m.fs.tonne_CO2_capture = pyo.Var(initialize=1, units=pyunits.ton)
+    m.fs.transport_cost = pyo.Var(initialize=10e-6)  # $MM/ton
 
     m.fs.costing.build_process_costs(
         net_power=m.fs.net_power,
@@ -1308,7 +1312,9 @@ def test_build_process_costs_allOM():
         fuel="natural_gas",
         waste=["waste_sorbent"],
         chemicals=["sorbent"],
+        chemicals_inventory=["solvent"],
         land_cost=m.fs.costing.land_cost,
+        transport_cost=m.fs.transport_cost,
         tonne_CO2_capture=m.fs.tonne_CO2_capture,
     )
 
@@ -1353,9 +1359,17 @@ def test_build_process_costs_allOM():
     assert hasattr(m.fs.costing, "waste_costs_OC")
     assert type(m.fs.costing.waste_costs_OC) is ScalarExpression
     assert hasattr(m.fs.costing, "chemical_costs_OC")
-    assert type(m.fs.costing.waste_costs_OC) is ScalarExpression
+    assert type(m.fs.costing.chemical_costs_OC) is ScalarExpression
+    assert hasattr(m.fs.costing, "chemical_inventory_costs_OC")
+    assert type(m.fs.costing.chemical_inventory_costs_OC) is ScalarExpression
+    assert hasattr(m.fs.costing, "land_cost")
+    assert type(m.fs.costing.land_cost) is ScalarExpression
+    assert hasattr(m.fs.costing, "transport_cost")
+    assert type(m.fs.costing.transport_cost) is MonomialTermExpression
     assert hasattr(m.fs.costing, "cost_of_capture")
     assert type(m.fs.costing.cost_of_capture) is ScalarExpression
+    assert hasattr(m.fs.costing, "total_TPC")
+    assert type(m.fs.costing.total_TPC) is pyo.ScalarVar
 
 
 @pytest.mark.component
@@ -1434,6 +1448,215 @@ def test_build_process_costs_allOM_nonearguments():
         prices=prices,
         fuel=None,
     )
+
+
+@pytest.mark.component
+def test_build_process_costs_inventory_with_tpc():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    # check that the model solved properly and has 0 degrees of freedom
+    assert degrees_of_freedom(m) == 0
+
+    # Fixed and Variable Costs:
+    # build variable costs components
+    m.fs.net_power = pyo.Var(m.fs.time, initialize=650, units=pyunits.MW)
+    m.fs.net_power.fix()
+
+    m.fs.NG_rate = pyo.Var(m.fs.time, initialize=1.2, units=pyunits.MBtu / pyunits.s)
+    m.fs.NG_rate.fix()
+
+    m.fs.solvent_rate = pyo.Var(
+        m.fs.time, initialize=40, units=pyunits.ton / pyunits.day
+    )
+    m.fs.solvent_rate.fix()
+
+    m.fs.costing.sorbent = pyo.Var(
+        m.fs.time, initialize=1.0, units=pyunits.ft**3 / pyunits.d
+    )  # ft**3/day (EPAT: 6971.75)
+
+    resources = ["natural_gas", "solvent", "waste_sorbent", "sorbent"]
+    rates = [
+        m.fs.NG_rate,
+        m.fs.solvent_rate,
+        m.fs.costing.sorbent,
+        m.fs.costing.sorbent,
+    ]
+    prices = {
+        "solvent": 500 * pyunits.USD_2018 / pyunits.ton,
+        "sorbent": 4 * pyunits.USD_2018 / pyunits.ft**3,
+        "waste_sorbent": 0.86 * pyunits.USD_2018 / pyunits.ft**3,
+    }
+
+    m.fs.costing.land_cost = pyo.Expression(
+        expr=156000 * (30 / 120) ** (0.78)
+    )  # 30 is a fixed value, 30 must be replaced by a model variable
+    m.fs.tonne_CO2_capture = pyo.Var(initialize=1, units=pyunits.ton)
+    m.fs.transport_cost = pyo.Var(initialize=10e-6)  # $MM/ton
+
+    m.fs.costing.build_process_costs(
+        total_plant_cost=100,
+        net_power=m.fs.net_power,
+        fixed_OM=True,
+        variable_OM=True,
+        resources=resources,
+        rates=rates,
+        prices=prices,
+        fuel="natural_gas",
+        waste=["waste_sorbent"],
+        chemicals=["sorbent"],
+        chemicals_inventory=["solvent"],
+        land_cost=m.fs.costing.land_cost,
+        transport_cost=m.fs.transport_cost,
+        tonne_CO2_capture=m.fs.tonne_CO2_capture,
+    )
+
+    assert hasattr(m.fs.costing, "chemical_inventory_costs_OC")
+    assert type(m.fs.costing.chemical_inventory_costs_OC) is ScalarExpression
+    assert hasattr(m.fs.costing, "total_TPC")
+    assert type(m.fs.costing.total_TPC) is pyo.ScalarVar
+
+
+@pytest.mark.component
+def test_build_process_costs_scalar_transportcost():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    # check that the model solved properly and has 0 degrees of freedom
+    assert degrees_of_freedom(m) == 0
+
+    # Fixed and Variable Costs:
+    # build variable costs components
+    m.fs.net_power = pyo.Var(m.fs.time, initialize=650, units=pyunits.MW)
+    m.fs.net_power.fix()
+
+    m.fs.NG_rate = pyo.Var(m.fs.time, initialize=1.2, units=pyunits.MBtu / pyunits.s)
+    m.fs.NG_rate.fix()
+
+    m.fs.solvent_rate = pyo.Var(
+        m.fs.time, initialize=40, units=pyunits.ton / pyunits.day
+    )
+    m.fs.solvent_rate.fix()
+
+    m.fs.costing.sorbent = pyo.Var(
+        m.fs.time, initialize=1.0, units=pyunits.ft**3 / pyunits.d
+    )  # ft**3/day (EPAT: 6971.75)
+
+    resources = ["natural_gas", "solvent", "waste_sorbent", "sorbent"]
+    rates = [
+        m.fs.NG_rate,
+        m.fs.solvent_rate,
+        m.fs.costing.sorbent,
+        m.fs.costing.sorbent,
+    ]
+    prices = {
+        "solvent": 500 * pyunits.USD_2018 / pyunits.ton,
+        "sorbent": 4 * pyunits.USD_2018 / pyunits.ft**3,
+        "waste_sorbent": 0.86 * pyunits.USD_2018 / pyunits.ft**3,
+    }
+
+    m.fs.costing.land_cost = pyo.Expression(
+        expr=156000 * (30 / 120) ** (0.78)
+    )  # 30 is a fixed value, 30 must be replaced by a model variable
+    m.fs.tonne_CO2_capture = pyo.Var(initialize=1, units=pyunits.ton)
+    m.fs.costing.transport_cost = 10e-6  # $MM/ton
+
+    m.fs.costing.build_process_costs(
+        net_power=m.fs.net_power,
+        fixed_OM=True,
+        variable_OM=True,
+        resources=resources,
+        rates=rates,
+        prices=prices,
+        fuel="natural_gas",
+        waste=["waste_sorbent"],
+        chemicals=["sorbent"],
+        chemicals_inventory=["solvent"],
+        land_cost=m.fs.costing.land_cost,
+        transport_cost=m.fs.costing.transport_cost,
+        tonne_CO2_capture=m.fs.tonne_CO2_capture,
+    )
+
+    assert hasattr(m.fs.costing, "transport_cost")
+    assert type(m.fs.costing.transport_cost) is NPV_ProductExpression
+    assert hasattr(m.fs.costing, "total_TPC")
+    assert type(m.fs.costing.total_TPC) is pyo.ScalarVar
+
+
+@pytest.mark.component
+def test_build_process_costs_transportcost_notonnesofcapture():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    # check that the model solved properly and has 0 degrees of freedom
+    assert degrees_of_freedom(m) == 0
+
+    # Fixed and Variable Costs:
+    # build variable costs components
+    m.fs.net_power = pyo.Var(m.fs.time, initialize=650, units=pyunits.MW)
+    m.fs.net_power.fix()
+
+    m.fs.NG_rate = pyo.Var(m.fs.time, initialize=1.2, units=pyunits.MBtu / pyunits.s)
+    m.fs.NG_rate.fix()
+
+    m.fs.solvent_rate = pyo.Var(
+        m.fs.time, initialize=40, units=pyunits.ton / pyunits.day
+    )
+    m.fs.solvent_rate.fix()
+
+    m.fs.costing.sorbent = pyo.Var(
+        m.fs.time, initialize=1.0, units=pyunits.ft**3 / pyunits.d
+    )  # ft**3/day (EPAT: 6971.75)
+
+    resources = ["natural_gas", "solvent", "waste_sorbent", "sorbent"]
+    rates = [
+        m.fs.NG_rate,
+        m.fs.solvent_rate,
+        m.fs.costing.sorbent,
+        m.fs.costing.sorbent,
+    ]
+    prices = {
+        "solvent": 500 * pyunits.USD_2018 / pyunits.ton,
+        "sorbent": 4 * pyunits.USD_2018 / pyunits.ft**3,
+        "waste_sorbent": 0.86 * pyunits.USD_2018 / pyunits.ft**3,
+    }
+
+    m.fs.costing.land_cost = pyo.Expression(
+        expr=156000 * (30 / 120) ** (0.78)
+    )  # 30 is a fixed value, 30 must be replaced by a model variable
+    m.fs.costing.transport_cost = 10e-6  # $MM/ton
+
+    with pytest.raises(
+        Exception,
+        match="If a transport_cost is not None, tonne_CO2_capture cannot be None.",
+    ):
+        m.fs.costing.build_process_costs(
+            net_power=m.fs.net_power,
+            fixed_OM=True,
+            variable_OM=True,
+            resources=resources,
+            rates=rates,
+            prices=prices,
+            fuel="natural_gas",
+            waste=["waste_sorbent"],
+            chemicals=["sorbent"],
+            chemicals_inventory=["solvent"],
+            land_cost=m.fs.costing.land_cost,
+            transport_cost=m.fs.costing.transport_cost,
+            tonne_CO2_capture=None,
+        )
 
 
 @pytest.mark.component
@@ -2088,6 +2311,7 @@ def test_OM_costing():
     QGESSCostingData.get_fixed_OM_costs(
         m.fs.costing,
         nameplate_capacity=nameplate_capacity,
+        capacity_factor=0.85,
         labor_rate=labor_rate,
         labor_burden=labor_burden,
         operators_per_shift=operators_per_shift,

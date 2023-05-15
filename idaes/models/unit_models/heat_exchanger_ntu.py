@@ -69,10 +69,15 @@ class HXNTUInitializer(SingleControlVolumeUnitInitializer):
         model: Block,
         plugin_initializer_args: dict = None,
         copy_inlet_state: bool = False,
-        duty=None,
+        duty=1000 * pyunits.W,
     ):
         """
         Common initialization routine for NTU Heat Exchangers.
+
+        This routine starts by initializing the hot and cold side properties. Next, the heat
+        transfer between the two sides is fixed to an initial guess for the heat duty (provided by the duty
+        argument), the associated constraint deactivated, and the model is then solved. Finally, the heat
+        duty is unfixed and the heat transfer constraint reactivated followed by a final solve of the model.
 
         Args:
             model: Pyomo Block to be initialized
@@ -97,7 +102,7 @@ class HXNTUInitializer(SingleControlVolumeUnitInitializer):
         self,
         model: Block,
         copy_inlet_state: bool = False,
-        duty=None,
+        duty=1000 * pyunits.W,
     ):
         """
         Initialization routine for main NTU HX models.
@@ -135,9 +140,6 @@ class HXNTUInitializer(SingleControlVolumeUnitInitializer):
         # ---------------------------------------------------------------------
         # Solve unit without heat transfer equation
         model.energy_balance_constraint.deactivate()
-
-        if duty is None:
-            duty = 1000 * pyunits.W
 
         model.cold_side.heat.fix(duty)
         for i in model.hot_side.heat:

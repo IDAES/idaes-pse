@@ -15,7 +15,7 @@ Example
 .. testcode::
 
   import pyomo.environ as pe # Pyomo environment
-  from idaes.core import FlowsheetBlock, StateBlock
+  from idaes.core import FlowsheetBlock
   from idaes.models.unit_models import Heater
   from idaes.models.properties import iapws95
 

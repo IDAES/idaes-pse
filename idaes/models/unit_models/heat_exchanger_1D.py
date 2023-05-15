@@ -70,11 +70,17 @@ class HX1DInitializer(SingleControlVolumeUnitInitializer):
         """
         Common initialization routine for 1D Heat Exchangers.
 
+        This routine starts by initializing the hot and cold side properties. Next, the heat
+        transfer between the two sides is fixed to an initial guess for the heat duty (provided by the duty
+        argument), the associated constraints is deactivated, and the model is then solved. Finally, the heat
+        duty is unfixed and the heat transfer constraints reactivated followed by a final solve of the model.
+
         Args:
             model: Pyomo Block to be initialized
             plugin_initializer_args: dict-of-dicts containing arguments to be passed to plug-in Initializers.
                 Keys should be submodel components.
             duty: initial guess for heat duty to assist with initialization. Can be a Pyomo expression with units.
+                Default is 1/4*U*A*(Thot - Tcold)
 
         Returns:
             Pyomo solver results object

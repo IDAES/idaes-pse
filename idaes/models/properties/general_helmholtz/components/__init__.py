@@ -18,24 +18,15 @@ __author__ = "John Eslick"
 
 from idaes.models.properties.general_helmholtz.components.registry import (
     register_helmholtz_component,
+    remove_component,
+    registered_components,
     viscosity_available,
     thermal_conductivity_available,
     surface_tension_available,
     component_registered,
-)
-
-register_helmholtz_component(
-    "h2o", viscosity=True, thermal_conductivity=True, surface_tension=True
-)
-register_helmholtz_component(
-    "co2", viscosity=True, thermal_conductivity=True, surface_tension=True
-)
-register_helmholtz_component(
-    "r134a", viscosity=True, thermal_conductivity=True, surface_tension=True
-)
-register_helmholtz_component(
-    "r1234ze", viscosity=True, thermal_conductivity=True, surface_tension=False
-)
-register_helmholtz_component(
-    "r227ea", viscosity=False, thermal_conductivity=False, surface_tension=False
+    clear_component_registry,
+    eos_reference,
+    viscosity_reference,
+    thermal_conductivity_reference,
+    surface_tension_reference,
 )

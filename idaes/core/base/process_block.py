@@ -198,7 +198,7 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
         try:
             cb_doc = cls.CONFIG.generate_documentation(
                 format=String_ConfigFormatter(
-                    block_start="",
+                    block_start="%s\n",
                     block_end="",
                     item_start="%s\n",
                     item_body="%s",

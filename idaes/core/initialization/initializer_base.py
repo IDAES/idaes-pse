@@ -114,7 +114,7 @@ class InitializerBase:
         super().__init_subclass__(**kwargs)
         cls.__doc__ = cls.__doc__ + cls.CONFIG.generate_documentation(
             format=String_ConfigFormatter(
-                block_start="",
+                block_start="%s\n",
                 block_end="",
                 item_start="%s\n",
                 item_body="%s",
