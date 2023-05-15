@@ -397,13 +397,13 @@ class TestInitializers:
 
         m.fs.unit = Product(property_package=m.fs.properties)
 
-        m.fs.unit.flow_mol[0].fix(100)
-        m.fs.unit.enth_mol[0].fix(5000)
-        m.fs.unit.pressure[0].fix(101325)
+        m.fs.unit.flow_mol[0].set_value(100)
+        m.fs.unit.enth_mol[0].set_value(5000)
+        m.fs.unit.pressure[0].set_value(101325)
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_product_initializer(self, model):
         initializer = ProductInitializer()
         initializer.initialize(model.fs.unit)
@@ -412,7 +412,11 @@ class TestInitializers:
 
         # No results to check
 
-    @pytest.mark.integration
+        assert not model.fs.unit.flow_mol[0].fixed
+        assert not model.fs.unit.enth_mol[0].fixed
+        assert not model.fs.unit.pressure[0].fixed
+
+    @pytest.mark.component
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
         initializer.initialize(model.fs.unit)
@@ -420,3 +424,7 @@ class TestInitializers:
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 
         # No results to check
+
+        assert not model.fs.unit.flow_mol[0].fixed
+        assert not model.fs.unit.enth_mol[0].fixed
+        assert not model.fs.unit.pressure[0].fixed

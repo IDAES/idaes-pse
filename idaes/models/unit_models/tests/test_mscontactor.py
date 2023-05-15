@@ -2322,23 +2322,23 @@ class TestMSContactorInitializer:
             },
         )
 
-        m.fs.contactor.s1_inlet.flow_vol.fix(1.0e-03)
-        m.fs.contactor.s1_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        m.fs.contactor.s1_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        m.fs.contactor.s1_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.contactor.s1_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.contactor.s1_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
-        m.fs.contactor.s1_inlet.temperature.fix(303.15)
-        m.fs.contactor.s1_inlet.pressure.fix(101325.0)
+        m.fs.contactor.s1_inlet.flow_vol.set_value(1.0e-03)
+        m.fs.contactor.s1_inlet.conc_mol_comp[0, "H2O"].set_value(55388.0)
+        m.fs.contactor.s1_inlet.conc_mol_comp[0, "NaOH"].set_value(100.0)
+        m.fs.contactor.s1_inlet.conc_mol_comp[0, "EthylAcetate"].set_value(100.0)
+        m.fs.contactor.s1_inlet.conc_mol_comp[0, "SodiumAcetate"].set_value(0.0)
+        m.fs.contactor.s1_inlet.conc_mol_comp[0, "Ethanol"].set_value(0.0)
+        m.fs.contactor.s1_inlet.temperature.set_value(303.15)
+        m.fs.contactor.s1_inlet.pressure.set_value(101325.0)
 
-        m.fs.contactor.s2_inlet.flow_vol.fix(2.0e-03)
-        m.fs.contactor.s2_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        m.fs.contactor.s2_inlet.conc_mol_comp[0, "NaOH"].fix(50.0)
-        m.fs.contactor.s2_inlet.conc_mol_comp[0, "EthylAcetate"].fix(50.0)
-        m.fs.contactor.s2_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(50.0)
-        m.fs.contactor.s2_inlet.conc_mol_comp[0, "Ethanol"].fix(50.0)
-        m.fs.contactor.s2_inlet.temperature.fix(323.15)
-        m.fs.contactor.s2_inlet.pressure.fix(2e5)
+        m.fs.contactor.s2_inlet.flow_vol.set_value(2.0e-03)
+        m.fs.contactor.s2_inlet.conc_mol_comp[0, "H2O"].set_value(55388.0)
+        m.fs.contactor.s2_inlet.conc_mol_comp[0, "NaOH"].set_value(50.0)
+        m.fs.contactor.s2_inlet.conc_mol_comp[0, "EthylAcetate"].set_value(50.0)
+        m.fs.contactor.s2_inlet.conc_mol_comp[0, "SodiumAcetate"].set_value(50.0)
+        m.fs.contactor.s2_inlet.conc_mol_comp[0, "Ethanol"].set_value(50.0)
+        m.fs.contactor.s2_inlet.temperature.set_value(323.15)
+        m.fs.contactor.s2_inlet.pressure.set_value(2e5)
 
         m.fs.contactor.material_transfer_term.fix(0)
         m.fs.contactor.energy_transfer_term.fix(0)
@@ -2409,6 +2409,24 @@ class TestMSContactorInitializer:
             assert value(model.fs.contactor.s2[0, x].pressure) == pytest.approx(
                 2e5, rel=1e-6
             )
+
+        assert not model.fs.contactor.s1_inlet.flow_vol.fixed
+        assert not model.fs.contactor.s1_inlet.conc_mol_comp[0, "H2O"].fixed
+        assert not model.fs.contactor.s1_inlet.conc_mol_comp[0, "NaOH"].fixed
+        assert not model.fs.contactor.s1_inlet.conc_mol_comp[0, "EthylAcetate"].fixed
+        assert not model.fs.contactor.s1_inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
+        assert not model.fs.contactor.s1_inlet.conc_mol_comp[0, "Ethanol"].fixed
+        assert not model.fs.contactor.s1_inlet.temperature.fixed
+        assert not model.fs.contactor.s1_inlet.pressure.fixed
+
+        assert not model.fs.contactor.s2_inlet.flow_vol.fixed
+        assert not model.fs.contactor.s2_inlet.conc_mol_comp[0, "H2O"].fixed
+        assert not model.fs.contactor.s2_inlet.conc_mol_comp[0, "NaOH"].fixed
+        assert not model.fs.contactor.s2_inlet.conc_mol_comp[0, "EthylAcetate"].fixed
+        assert not model.fs.contactor.s2_inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
+        assert not model.fs.contactor.s2_inlet.conc_mol_comp[0, "Ethanol"].fixed
+        assert not model.fs.contactor.s2_inlet.temperature.fixed
+        assert not model.fs.contactor.s2_inlet.pressure.fixed
 
 
 class TestLiCODiafiltration:
