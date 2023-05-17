@@ -12,11 +12,6 @@
 #################################################################################
 """Generic Helmholtz EOS Functions and Parameters
 """
-# TODO: Missing docstrings
-# pylint: disable=missing-function-docstring
-
-# TODO: Look into protected access issues
-# pylint: disable=protected-access
 
 __author__ = "John Eslick"
 
@@ -30,7 +25,6 @@ import numpy as np
 import pyomo.environ as pyo
 from pyomo.common.fileutils import find_library
 from pyomo.common.config import ConfigValue, In
-import idaes
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core import declare_process_block_class
 from idaes.core import (
@@ -46,6 +40,10 @@ from idaes.models.properties.general_helmholtz.components import (
     surface_tension_available,
     component_registered,
 )
+from idaes.models.properties.general_helmholtz.components.parameters import (
+    get_parameter_path,
+    auto_register,
+)
 import idaes.logger as idaeslog
 from idaes.models.properties.general_helmholtz.helmholtz_functions_map import (
     external_function_map as _external_function_map,
@@ -54,16 +52,15 @@ from idaes.models.properties.general_helmholtz.helmholtz_functions_map import (
 
 _log = idaeslog.getLogger(__name__)
 
-_data_dir = os.path.join(idaes.bin_directory, "helm_data")
+_data_dir = get_parameter_path()
 _data_dir = os.path.join(_data_dir, "")
+auto_register()
 
 # General Helmholtz functions return variables for all phases,
 # but single phase properties do not need all of these.
 # pylint: disable=W0612
 
 try:
-    # When compiling these, I don't bother changing the extension based on OS,
-    # so the file name is always ends in .so. It's fine.
     _flib = find_library("general_helmholtz_external")
     ctypes.cdll.LoadLibrary(_flib)
 except Exception:  # pylint: disable=W0703
@@ -87,7 +84,12 @@ helmholtz_data_dir = _data_dir
 
 class StateVars(enum.Enum):
     """
-    State variable set options
+    Enum, state variable set options.
+
+    * PH: Pressure and enthalpy
+    * PS: Pressure and entropy
+    * PU: Pressure and internal energy
+    * TPX: Temperature, pressure, and quality
     """
 
     PH = 1  # Pressure, Enthalpy
@@ -98,7 +100,12 @@ class StateVars(enum.Enum):
 
 class PhaseType(enum.Enum):
     """
-    Ways to present phases to the framework
+    Enum, possible phases and presentation.
+
+    * MIX: Two phase presented and a single phase to framework
+    * LG: Two phases
+    * L: Liquid only
+    * G: Vapor only
     """
 
     MIX = 1  # Looks like a single phase called mixed with a vapor fraction
@@ -109,7 +116,10 @@ class PhaseType(enum.Enum):
 
 class AmountBasis(enum.Enum):
     """
-    Mass or mole basis
+    Enum, mass or mole basis
+
+    * MOLE: Amount is measured in moles
+    * MASS: Amount is measured in mass
     """
 
     MOLE = 1
@@ -156,14 +166,27 @@ class HelmholtzThermoExpressions(object):
     and vapor fraction expressions then using those to write an expression for
     requested property. This writes expressions in a way that looks like a
     thermodynamic property function.
+
+    Args:
+        blk (Block): block to attach the external functions to
+        parameters (HelmholtzParameterBlock): property parameter block
+        amount_basis (AmountBasis|None): If none get the amount basis
+            from the parameter block, otherwise use this amount basis for
+            inputs.
+
+    Returns:
+        HelmholtzThermoExpressions
     """
 
     def __init__(self, blk, parameters, amount_basis=None):
         """Create a new thermodynamic property expression writer class.
 
         Args:
-            blk: the block to attach the external functions to
-            parameters: property parameter block
+            blk (Block): block to attach the external functions to
+            parameters (HelmholtzParameterBlock): property parameter block
+            amount_basis (AmountBasis|None): If none get the amount basis
+                from the parameter block, otherwise use this amount basis for
+                inputs.
 
         Returns:
             HelmholtzThermoExpressions
@@ -177,6 +200,12 @@ class HelmholtzThermoExpressions(object):
         self.amount_basis = amount_basis
 
     def add_funcs(self, names=None):
+        """Add external functions for the block expressions will be written
+        from.
+
+        Args:
+            name (str): function name
+        """
         add_helmholtz_external_functions(self.blk, names=names)
 
     @staticmethod
@@ -377,7 +406,7 @@ class HelmholtzThermoExpressions(object):
         return tau
 
     def x(self, **kwargs):
-        """Vapor faction"""
+        """Vapor fraction"""
         sv, result_basis, blk, c, state1, p, x = self._state_vars(**kwargs)
         if sv == StateVars.PH:
             self.add_funcs(names=["vf_hp_func"])
@@ -612,7 +641,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def v(self, **kwargs):
-        """Mixed phase Helmholtz free energy"""
+        """Mixed phase volume"""
         return self._generic_prop(
             hp_func="v_hp_func",
             up_func="v_up_func",
@@ -625,7 +654,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def v_liq(self, **kwargs):
-        """Liquid phase Helmholtz free energy"""
+        """Liquid phase volume"""
         return self._generic_prop_phase(
             hp_func="v_liq_hp_func",
             up_func="v_liq_up_func",
@@ -637,7 +666,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def v_vap(self, **kwargs):
-        """Vapor phase Helmholtz free energy"""
+        """Vapor phase volume"""
         return self._generic_prop_phase(
             hp_func="v_vap_hp_func",
             up_func="v_vap_up_func",
@@ -649,16 +678,19 @@ class HelmholtzThermoExpressions(object):
         )
 
     def rho(self, **kwargs):
+        """Mixed phase density"""
         return 1 / self.v(**kwargs)
 
     def rho_liq(self, **kwargs):
+        """Liquid density"""
         return 1 / self.v_liq(**kwargs)
 
     def rho_vap(self, **kwargs):
+        """Vapor Density"""
         return 1 / self.v_vap(**kwargs)
 
     def cp(self, **kwargs):
-        """Mixed phase Helmholtz free energy"""
+        """Mixed phase isobaric heat capacity"""
         return self._generic_prop(
             hp_func="cp_hp_func",
             up_func="cp_up_func",
@@ -671,7 +703,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def cp_liq(self, **kwargs):
-        """Liquid phase Helmholtz free energy"""
+        """Liquid phase isobaric heat capacity"""
         return self._generic_prop_phase(
             hp_func="cp_liq_hp_func",
             up_func="cp_liq_up_func",
@@ -683,7 +715,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def cp_vap(self, **kwargs):
-        """Vapor phase Helmholtz free energy"""
+        """Vapor phase isobaric heat capacity"""
         return self._generic_prop_phase(
             hp_func="cp_vap_hp_func",
             up_func="cp_vap_up_func",
@@ -695,7 +727,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def cv(self, **kwargs):
-        """Mixed phase Helmholtz free energy"""
+        """Mixed phase isochoric heat capacity"""
         return self._generic_prop(
             hp_func="cv_hp_func",
             up_func="cv_up_func",
@@ -708,7 +740,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def cv_liq(self, **kwargs):
-        """Liquid phase Helmholtz free energy"""
+        """Liquid phase isochoric heat capacity"""
         return self._generic_prop_phase(
             hp_func="cv_liq_hp_func",
             up_func="cv_liq_up_func",
@@ -720,7 +752,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def cv_vap(self, **kwargs):
-        """Vapor phase Helmholtz free energy"""
+        """Vapor phase isochoric heat capacity"""
         return self._generic_prop_phase(
             hp_func="cv_vap_hp_func",
             up_func="cv_vap_up_func",
@@ -732,7 +764,9 @@ class HelmholtzThermoExpressions(object):
         )
 
     def w(self, **kwargs):
-        """Mixed phase Helmholtz free energy"""
+        """Mixed phase speed of sound (value for two-phase is not meaningful)
+        use the liquid or vapor version if two phases are expected.
+        """
         return self._generic_prop(
             hp_func="w_hp_func",
             up_func="w_up_func",
@@ -745,7 +779,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def w_liq(self, **kwargs):
-        """Liquid phase Helmholtz free energy"""
+        """Liquid phase speed of sound"""
         return self._generic_prop_phase(
             hp_func="w_liq_hp_func",
             up_func="w_liq_up_func",
@@ -757,7 +791,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def w_vap(self, **kwargs):
-        """Vapor phase Helmholtz free energy"""
+        """Vapor phase speed of sound"""
         return self._generic_prop_phase(
             hp_func="w_vap_hp_func",
             up_func="w_vap_up_func",
@@ -769,7 +803,9 @@ class HelmholtzThermoExpressions(object):
         )
 
     def viscosity(self, **kwargs):
-        """Mixed phase Helmholtz free energy"""
+        """Mixed phase viscosity (value for two-phase is not meaningful)
+        use the liquid or vapor version if two phases are expected.
+        """
         if not viscosity_available(self.param.pure_component):
             raise RuntimeError(
                 f"Viscosity not available for {self.param.pure_component}"
@@ -786,7 +822,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def viscosity_liq(self, **kwargs):
-        """Liquid phase Helmholtz free energy"""
+        """Liquid phase viscosity"""
         if not viscosity_available(self.param.pure_component):
             raise RuntimeError(
                 f"Viscosity not available for {self.param.pure_component}"
@@ -802,7 +838,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def viscosity_vap(self, **kwargs):
-        """Vapor phase Helmholtz free energy"""
+        """Vapor phase viscosity"""
         if not viscosity_available(self.param.pure_component):
             raise RuntimeError(
                 f"Viscosity not available for {self.param.pure_component}"
@@ -818,7 +854,9 @@ class HelmholtzThermoExpressions(object):
         )
 
     def thermal_conductivity(self, **kwargs):
-        """Mixed phase Helmholtz free energy"""
+        """Mixed phase thermal conductivity (value for two-phase is not meaningful)
+        use the liquid or vapor version if two phases are expected.
+        """
         if not thermal_conductivity_available(self.param.pure_component):
             raise RuntimeError(
                 f"Thermal conductivity not available for {self.param.pure_component}"
@@ -835,7 +873,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def thermal_conductivity_liq(self, **kwargs):
-        """Liquid phase Helmholtz free energy"""
+        """Liquid phase thermal conductivity"""
         if not thermal_conductivity_available(self.param.pure_component):
             raise RuntimeError(
                 f"Thermal conductivity not available for {self.param.pure_component}"
@@ -851,7 +889,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def thermal_conductivity_vap(self, **kwargs):
-        """Vapor phase Helmholtz free energy"""
+        """Vapor phase thermal conductivity"""
         if not thermal_conductivity_available(self.param.pure_component):
             raise RuntimeError(
                 f"Thermal conductivity not available for {self.param.pure_component}"
@@ -867,7 +905,7 @@ class HelmholtzThermoExpressions(object):
         )
 
     def surface_tension(self, **kwargs):
-        """Mixed phase Helmholtz free energy"""
+        """Surface tension, this is only meaningful for two-phase region"""
         if not surface_tension_available(self.param.pure_component):
             raise RuntimeError(
                 f"Surface tension not available for {self.param.pure_component}"
@@ -899,6 +937,7 @@ class HelmholtzThermoExpressions(object):
         return self.blk.t_sat_func(self.param.pure_component, p, _data_dir)
 
     def h_vap_sat(self, T=None, p=None, result_basis=None, convert_args=True):
+        """Return saturation vapor enthalpy as a function of T or p"""
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -914,6 +953,7 @@ class HelmholtzThermoExpressions(object):
         return h * self.param.uc["kJ/kg to J/kg"]
 
     def h_liq_sat(self, T=None, p=None, result_basis=None, convert_args=True):
+        """Return saturation liquid enthalpy as a function of T or p"""
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -929,6 +969,7 @@ class HelmholtzThermoExpressions(object):
         return h * self.param.uc["kJ/kg to J/kg"]
 
     def s_vap_sat(self, T=None, p=None, result_basis=None, convert_args=True):
+        """Return saturation vapor entropy as a function of T or p"""
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -944,6 +985,7 @@ class HelmholtzThermoExpressions(object):
         return s * self.param.uc["kJ/kg/K to J/kg/K"]
 
     def s_liq_sat(self, T=None, p=None, result_basis=None, convert_args=True):
+        """Return saturation liquid entropy as a function of T or p"""
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -959,6 +1001,7 @@ class HelmholtzThermoExpressions(object):
         return s * self.param.uc["kJ/kg/K to J/kg/K"]
 
     def u_vap_sat(self, T=None, p=None, result_basis=None, convert_args=True):
+        """Return saturation vapor internal energy as a function of T or p"""
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -974,6 +1017,7 @@ class HelmholtzThermoExpressions(object):
         return u * self.param.uc["kJ/kg to J/kg"]
 
     def u_liq_sat(self, T=None, p=None, result_basis=None, convert_args=True):
+        """Return saturation liquid internal energy as a function of T or p"""
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -989,6 +1033,7 @@ class HelmholtzThermoExpressions(object):
         return u * self.param.uc["kJ/kg to J/kg"]
 
     def v_vap_sat(self, T=None, p=None, result_basis=None, convert_args=True):
+        """Return saturation vapor volume as a function of T or p"""
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -1004,6 +1049,7 @@ class HelmholtzThermoExpressions(object):
         return v
 
     def v_liq_sat(self, T=None, p=None, result_basis=None, convert_args=True):
+        """Return saturation liquid volume as a function of T or p"""
         if result_basis is None:
             result_basis = self.amount_basis
         if T is not None:
@@ -1034,7 +1080,7 @@ class HelmholtzParameterBlockData(PhysicalParameterBlock):
             default=None,
             domain=str,
             description="Pure chemical component",
-            doc="Pure component to calculate properties for",
+            doc="(str) Pure component for which to calculate properties",
         ),
     )
     CONFIG.declare(
@@ -1072,6 +1118,8 @@ change.
 **default** - StateVars.PH
 **Valid values:** {
 **StateVars.PH** - Pressure-Enthalpy,
+**StateVars.PS** - Pressure-Entropy,
+**StateVars.PU** - Pressure-Internal Energy,
 **StateVars.TPX** - Temperature-Pressure-Quality}""",
         ),
     )
@@ -1081,15 +1129,12 @@ change.
         ConfigValue(
             default=AmountBasis.MOLE,
             domain=In(AmountBasis),
-            description="State variable set",
-            doc="""The set of state variables to use. Depending on the use, one
-state variable set or another may be better computationally. Usually pressure
-and enthalpy are the best choice because they are well behaved during a phase
-change.
-**default** - StateVars.PH
+            description="Quantities on a mass or mole basis",
+            doc="""The amount basis (mass or mole) for quantities
+**default** - AmountBasis.mole
 **Valid values:** {
-**StateVars.PH** - Pressure-Enthalpy,
-**StateVars.TPX** - Temperature-Pressure-Quality}""",
+**AmountBasis.mole** - use mole units (mol),
+**AmountBasis.mass** - use mass units (kg)}""",
         ),
     )
 
@@ -1110,9 +1155,9 @@ change.
         prop="h",
     ):
         """
-        Convenience function to calculate enthalpy from temperature and either
+        Convenience function to calculate a state variable from temperature and either
         pressure or vapor fraction. This function can be used for inlet streams and
-        initialization where temperature is known instead of enthalpy.
+        initialization where temperature is known instead of a state variable.
         User must provide values for one of these sets of values: {T, P}, {T, x},
         or {P, x}.
         Args:
@@ -1124,8 +1169,9 @@ change.
                 units appropriate for the amount basis.
             amount_basis (AmountBasis): Whether to use a mass or mole basis
             with_units (bool): if True return an expression with units
+            prop (str): h, s, or u
         Returns:
-            Total molar enthalpy.
+            Total selected state variable.
         """
         if amount_basis is None:
             amount_basis = self.config.amount_basis
@@ -1194,6 +1240,24 @@ change.
         amount_basis=None,
         with_units=False,
     ):
+        """
+        Convenience method to calculate enthalpy from temperature and either
+        pressure or vapor fraction. This function can be used for inlet streams and
+        initialization where temperature is known instead of enthalpy.
+        User must provide values for one of these sets of values: {T, P}, {T, x},
+        or {P, x}.
+
+        Args:
+            T (float): Temperature
+            P (float): Pressure, None if saturated
+            x (float): Vapor fraction [mol vapor/mol total] (between 0 and 1), None if superheated or sub-cooled
+            units (Units): The units to report the result in, if None use the default units appropriate for the amount basis.
+            amount_basis (AmountBasis): Whether to use a mass or mole basis
+            with_units (bool): if True return an expression with units
+
+        Returns:
+            float: Specific or molar enthalpy
+        """
         return self._suh_tpx(
             T=T,
             p=p,
@@ -1213,6 +1277,23 @@ change.
         amount_basis=None,
         with_units=False,
     ):
+        """
+        Convenience method to calculate entropy from temperature and either
+        pressure or vapor fraction. This function can be used for inlet streams and
+        initialization where temperature is known instead of entropy.
+        User must provide values for one of these sets of values: {T, P}, {T, x},
+        or {P, x}.
+
+        Args:
+            T (float): Temperature
+            P (float): Pressure, None if saturated
+            x (float): Vapor fraction [mol vapor/mol total] (between 0 and 1), None if superheated or sub-cooled
+            units (Units): The units to report the result in, if None use the default units appropriate for the amount basis.
+            amount_basis (AmountBasis): Whether to use a mass or mole basis
+            with_units (bool): if True return an expression with units
+        Returns:
+            float: Specific or molar entropy
+        """
         return self._suh_tpx(
             T=T,
             p=p,
@@ -1232,6 +1313,24 @@ change.
         amount_basis=None,
         with_units=False,
     ):
+        """
+        Convenience method to calculate internal energy from temperature and either
+        pressure or vapor fraction. This function can be used for inlet streams and
+        initialization where temperature is known instead of internal energy.
+        User must provide values for one of these sets of values: {T, P}, {T, x},
+        or {P, x}.
+
+        Args:
+            T (float): Temperature
+            P (float): Pressure, None if saturated
+            x (float): Vapor fraction [mol vapor/mol total] (between 0 and 1), None if superheated or sub-cooled
+            units (Units): The units to report the result in, if None use the default units appropriate for the amount basis.
+            amount_basis (AmountBasis): Whether to use a mass or mole basis
+            with_units (bool): if True return an expression with units
+
+        Returns:
+            float: Specific or molar internal energy
+        """
         return self._suh_tpx(
             T=T,
             p=p,
@@ -1333,6 +1432,7 @@ change.
             self.Vap = VaporPhase()
 
     def build(self):
+        """Populate the parameter block"""
         if not self.available():
             raise RuntimeError("Helmholtz EoS external functions not available")
         super().build()
@@ -1672,6 +1772,12 @@ change.
             )
 
     def add_param(self, name, expr):
+        """Add a parameter to the block.
+
+        Args:
+            name (str): parameter name
+            expr (expression): Pyomo expression for parameter value
+        """
         self.add_component(
             name,
             pyo.Param(
@@ -1682,7 +1788,9 @@ change.
         )
 
     def initialize(self, *args, **kwargs):
-        pass
+        """No initialization required here. This method is included for
+        compatibility.
+        """
 
     def dome_data(
         self,
@@ -1957,6 +2065,21 @@ change.
         isotherms_line_format=None,
         isotherms_label=True,
     ):
+        """Create a enthalpy-pressure diagram using Matplotlib
+
+        Args:
+            ylim (tuple): lower and upper limits for pressure axis
+            xlim (tuple): lower and upper limits for enthalpy axis
+            points (dict): dict of tuples points to label on the plot
+            figsize (tuple): figure size
+            dpi (int): figure dots per inch
+            isotherms (list|None): list of temperatures for plotting isotherms
+            isotherms_line_format (str|None): line format for isotherms
+            isotherms_label (bool): if true label isotherms
+
+        Returns:
+            (figure, axis)
+        """
         if points is None:
             points = {}
 
@@ -2048,7 +2171,18 @@ change.
         return fig, ax
 
     def ts_diagram(self, ylim=None, xlim=None, points=None, figsize=None, dpi=None):
-        # Add external functions needed to plot PH-diagram
+        """Create a entropy-temperautre diagram using Matplotlib
+
+        Args:
+            ylim (tuple): lower and upper limits for temperature axis
+            xlim (tuple): lower and upper limits for entropy axis
+            points (dict): dict of tuples points to label on the plot
+            figsize (tuple): figure size
+            dpi (int): figure dots per inch
+
+        Returns:
+            (figure, axis)
+        """
         if points is None:
             points = {}
 
@@ -2105,8 +2239,18 @@ change.
         ax.set_ylabel("Temperature (K)")
         return fig, ax
 
-    # TODO: points argument is unused
-    def pt_diagram(self, ylim=None, xlim=None, points=None, figsize=None, dpi=None):
+    def pt_diagram(self, ylim=None, xlim=None, figsize=None, dpi=None):
+        """Create a pressure-teperature diagram using Matplotlib
+
+        Args:
+            ylim (tuple): lower and upper limits for pressure axis
+            xlim (tuple): lower and upper limits for temperature axis
+            figsize (tuple): figure size
+            dpi (int): figure dots per inch
+
+        Returns:
+            (figure, axis)
+        """
         # Add external functions needed to plot PH-diagram
         add_helmholtz_external_functions(
             self,

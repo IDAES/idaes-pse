@@ -297,22 +297,30 @@ class TestInitializers:
 
         m.fs.unit = StateJunction(property_package=m.fs.properties)
 
-        m.fs.unit.inlet.flow_mol[0].fix(100)
-        m.fs.unit.inlet.enth_mol[0].fix(4000)
-        m.fs.unit.inlet.pressure[0].fix(101325)
+        m.fs.unit.inlet.flow_mol[0].set_value(100)
+        m.fs.unit.inlet.enth_mol[0].set_value(4000)
+        m.fs.unit.inlet.pressure[0].set_value(101325)
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_default_initializer(self, model):
         initializer = StateJunctionInitializer()
         initializer.initialize(model.fs.unit)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 
-    @pytest.mark.integration
+        assert not model.fs.unit.inlet.flow_mol[0].fixed
+        assert not model.fs.unit.inlet.enth_mol[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
+
+    @pytest.mark.component
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
         initializer.initialize(model.fs.unit)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert not model.fs.unit.inlet.flow_mol[0].fixed
+        assert not model.fs.unit.inlet.enth_mol[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed

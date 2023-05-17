@@ -33,6 +33,7 @@ The following unit models have custom ``Initializers`` available for use:
     * :ref:`Shell and Tube Heat Exchanger <reference_guides/model_libraries/generic/unit_models/shell_and_tube_1D:Initialization>`
 
 * :ref:`Mixer <reference_guides/model_libraries/generic/unit_models/mixer:Initialization>`
+* :ref:`Multi-Stream Contactor <reference_guides/model_libraries/generic/unit_models/mscontactor:Initialization>`
 * :ref:`Isentropic Pressure Changer <reference_guides/model_libraries/generic/unit_models/pressure_changer:Initialization>`
 * :ref:`Product Block <reference_guides/model_libraries/generic/unit_models/product:Initialization>`
 * :ref:`Separator <reference_guides/model_libraries/generic/unit_models/separator:Initialization>`

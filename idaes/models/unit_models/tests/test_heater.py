@@ -750,20 +750,20 @@ class TestInitializersSapon:
 
         m.fs.unit = Heater(property_package=m.fs.properties)
 
-        m.fs.unit.inlet.flow_vol[0].fix(1e-3)
-        m.fs.unit.inlet.temperature[0].fix(320)
-        m.fs.unit.inlet.pressure[0].fix(101325)
-        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.inlet.flow_vol[0].set_value(1e-3)
+        m.fs.unit.inlet.temperature[0].set_value(320)
+        m.fs.unit.inlet.pressure[0].set_value(101325)
+        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].set_value(55388.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].set_value(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].set_value(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].set_value(0.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].set_value(0.0)
 
         m.fs.unit.heat_duty.fix(1000)
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_general_hierarchical(self, model):
         initializer = SingleControlVolumeUnitInitializer()
         initializer.initialize(model.fs.unit)
@@ -780,7 +780,16 @@ class TestInitializersSapon:
         )
         assert pytest.approx(101325, abs=1e2) == value(model.fs.unit.outlet.pressure[0])
 
-    @pytest.mark.integration
+        assert not model.fs.unit.inlet.flow_vol[0].fixed
+        assert not model.fs.unit.inlet.temperature[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "H2O"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fixed
+
+    @pytest.mark.component
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
         initializer.initialize(model.fs.unit)
@@ -796,3 +805,12 @@ class TestInitializersSapon:
             model.fs.unit.outlet.temperature[0]
         )
         assert pytest.approx(101325, abs=1e2) == value(model.fs.unit.outlet.pressure[0])
+
+        assert not model.fs.unit.inlet.flow_vol[0].fixed
+        assert not model.fs.unit.inlet.temperature[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "H2O"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fixed
