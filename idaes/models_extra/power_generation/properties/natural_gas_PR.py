@@ -532,6 +532,7 @@ _component_params = {
 _water_visc_d = {"Vap": ChapmanEnskogLennardJones, "Liq": None}
 _water_therm_cond = {"Vap": Eucken, "Liq": None}
 
+
 # returns a configuration dictionary for the list of specified components
 def get_prop(components=None, phases="Vap", eos=EosType.PR, scaled=False):
     if components is None:
@@ -744,12 +745,13 @@ def get_rxn(property_package, reactions=None, scaled=False):
                     "energy_activation": 0,
                 },
             },
-            "water_gas_shift_rxn":{
+            "water_gas_shift_rxn": {
                 "stoichiometry": {
                     ("Vap", "H2O"): -1,
                     ("Vap", "CO"): -1,
                     ("Vap", "H2"): 1,
-                    ("Vap", "CO2"): 1},
+                    ("Vap", "CO2"): 1,
+                },
                 "heat_of_reaction": constant_dh_rxn,
                 "rate_constant": arrhenius,
                 "rate_form": power_law_rate,
