@@ -567,6 +567,7 @@ def test_data_kwargs_fail(caplog, n_time_points=2):
 
 @pytest.mark.unit
 def test_initialization_fail():
+    # Cover warning associated with the flowsheet failing to converge after initialization
     with pytest.raises(
         InitializationError,
         match=(

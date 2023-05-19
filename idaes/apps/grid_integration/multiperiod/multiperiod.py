@@ -382,8 +382,11 @@ class MultiPeriodModel(pyo.ConcreteModel):
 
         self.set_period = pyo.Set(initialize=set_period)
 
-        # Define a function to create a multiperiod model for one scenario
         def _build_scenario_model(m, fs_blk):
+            """
+            This function constructs a multiperiod model for one scenario, where fs_blk is the flowsheet
+            block that will be cloned to each time index.
+            """
             m.period = pyo.Block(self.set_period)
 
             for i in m.period:
