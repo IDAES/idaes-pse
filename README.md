@@ -33,11 +33,17 @@ Now, in that "idaes-pse" environment, install the IDAES Toolkit using either `pi
 
 ```bash
 # install latest stable release
-pip install idaes_pse
+pip install idaes-pse
+# install latest stable release with one set of optional dependencies, e.g. `ui` for the user interface
+pip install "idaes-pse[ui]"
+# install latest stable release with multiple sets of optional dependencies
+pip install "idaes-pse[ui,dmf,omlt,grid,coolprop]"
 # install latest version from the main branch of this repository
-pip install 'idaes-pse[prerelease] @ https://github.com/IDAES/idaes-pse/archive/main.zip'
+pip install "idaes-pse @ git+https://github.com/IDAES/idaes-pse@main"
+# install from the `mybranch` branch of the fork belonging to `myuser`
+pip install "idaes-pse @ git+https://github.com/myuser/idaes-pse@mybranch"
 ```
-.
+
 You can check the version installed with the command:
 
 ```bash

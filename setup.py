@@ -63,9 +63,9 @@ class ExtraDependencies:
     >>> extras["ui"]
     ['requests', 'pint']
     >>> list(extras)
-    ['ui', 'examples', 'dmf', 'surrogate', 'mlai', 'grid', 'optional']
+    ['ui', 'dmf', 'omlt', 'grid', 'coolprop', 'testing']
     >>> dict(extras)
-    {'ui': ['requests', 'pint'], 'examples': ['jupyter', 'nbconvert', 'nbformat'], ...}
+    {'ui': ['requests', 'pint'], 'dmf': ['jsonschema', 'setuptools', 'traitlets', ...], ...}
     """
 
     ui = [
@@ -104,17 +104,6 @@ class ExtraDependencies:
         "pytest",
         "addheader",
         "pyyaml",
-    ]
-    complete = [
-        *ui,
-        *dmf,
-        *testing,
-    ]
-    all = [
-        *complete,
-        *omlt,
-        *grid,
-        *coolprop,
     ]
 
     def __init__(self):
