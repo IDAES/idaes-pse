@@ -12,12 +12,36 @@ of Water and Steam's :ref:`"Revised Release on the IAPWS Formulation 1995 for
 the Thermodynamic Properties of Ordinary Water Substance for General and
 Scientific Use." <iapws-2016>` Non-analytic terms designed to improve accuracy
 very near the critical point were omitted, because they cause a singularity at
-the critical point, a feature which is undesirable in optimization problems. The
-IDAES implementation provides features which make the water and steam property
-calculations amenable to rigorous mathematical optimization.
+the critical point, a feature which is undesirable in equation oriented models.
 
-Please see the :ref:`general Helmholtz documentation <reference_guides/model_libraries/generic/property_models/helmholtz:Pure Component Helmholtz EoS>`
+The IAPWS-95 property package is the same as the generic Helmholtz EoS model with
+the ``pure_component`` option set to ``"h2o"`` Please see the 
+:ref:`general Helmholtz documentation <reference_guides/model_libraries/generic/property_models/helmholtz:Pure Component Helmholtz EoS>`
 for more information.
+
+Iapws95StateBlock Class
+------------------------
+
+.. autoclass:: Iapws95StateBlock
+  :members:
+
+Iapws95StateBlockData Class
+---------------------------
+
+.. autoclass:: Iapws95StateBlockData
+  :members:
+
+Iapws95ParameterBlock Class
+---------------------------
+
+.. autoclass:: Iapws95ParameterBlock
+  :members:
+
+Iapws95ParameterBlockData Class
+-------------------------------
+
+.. autoclass:: Iapws95ParameterBlockData
+  :members:
 
 Example
 -------
@@ -69,50 +93,6 @@ viscosity of both phases, the lines below could be added.
 For more information about how StateBlocks and PropertyParameterBlocks work see
 the :ref:`StateBlock documentation <reference_guides/core/physical_property_class:Physical Property
 Package Classes>`.
-
-Expressions
------------
-
-The IAPWS-95 property package contains the standard expressions described in
-the :ref:`general Helmholtz documentation <reference_guides/model_libraries/generic/property_models/helmholtz:Pure Component Helmholtz EoS>`,
-but it also defines expressions for transport properties.
-
-==================================== =====================================================
-Expression                           Description
-==================================== =====================================================
-``therm_cond_phase[phase]``          Thermal conductivity of phase (W/K/m)
-``visc_d_phase[phase]``              Viscosity of phase (Pa/s)
-``visc_k_phase[phase]``              Kinimatic viscosity of phase (m\ :superscript:`2`/s)
-==================================== =====================================================
-
-Convenience Functions
----------------------
-
-.. autofunction:: htpx
-
-Iapws95StateBlock Class
-------------------------
-
-.. autoclass:: Iapws95StateBlock
-  :members:
-
-Iapws95StateBlockData Class
----------------------------
-
-.. autoclass:: Iapws95StateBlockData
-  :members:
-
-Iapws95ParameterBlock Class
----------------------------
-
-.. autoclass:: Iapws95ParameterBlock
-  :members:
-
-Iapws95ParameterBlockData Class
--------------------------------
-
-.. autoclass:: Iapws95ParameterBlockData
-  :members:
 
 References
 ----------

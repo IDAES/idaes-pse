@@ -2018,17 +2018,17 @@ class TestInitializersIAPWSCounterCurrent:
         m.fs.unit.hot_side_heat_transfer_coefficient.fix(2000)
         m.fs.unit.cold_side_heat_transfer_coefficient.fix(51000)
 
-        m.fs.unit.hot_side_inlet.flow_mol[0].fix(5)
-        m.fs.unit.hot_side_inlet.enth_mol[0].fix(50000)
-        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)
+        m.fs.unit.hot_side_inlet.flow_mol[0].set_value(5)
+        m.fs.unit.hot_side_inlet.enth_mol[0].set_value(50000)
+        m.fs.unit.hot_side_inlet.pressure[0].set_value(101325)
 
-        m.fs.unit.cold_side_inlet.flow_mol[0].fix(5)
-        m.fs.unit.cold_side_inlet.enth_mol[0].fix(7000)
-        m.fs.unit.cold_side_inlet.pressure[0].fix(101325)
+        m.fs.unit.cold_side_inlet.flow_mol[0].set_value(5)
+        m.fs.unit.cold_side_inlet.enth_mol[0].set_value(7000)
+        m.fs.unit.cold_side_inlet.pressure[0].set_value(101325)
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_general_hierarchical(self, model):
         initializer = ShellAndTubeInitializer(always_estimate_states=True)
         initializer.initialize(model.fs.unit)
@@ -2056,7 +2056,15 @@ class TestInitializersIAPWSCounterCurrent:
             model.fs.unit.cold_side_outlet.pressure[0]
         )
 
-    @pytest.mark.integration
+        assert not model.fs.unit.hot_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.enth_mol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.pressure[0].fixed
+
+        assert not model.fs.unit.cold_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.enth_mol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.pressure[0].fixed
+
+    @pytest.mark.component
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
         initializer.initialize(model.fs.unit, exclude_unused_vars=True)
@@ -2083,3 +2091,11 @@ class TestInitializersIAPWSCounterCurrent:
         assert pytest.approx(101325, rel=1e-5) == value(
             model.fs.unit.cold_side_outlet.pressure[0]
         )
+
+        assert not model.fs.unit.hot_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.enth_mol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.pressure[0].fixed
+
+        assert not model.fs.unit.cold_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.enth_mol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.pressure[0].fixed

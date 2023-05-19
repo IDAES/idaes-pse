@@ -943,7 +943,7 @@ have a config block which derives from CONFIG_Base,
                 return 1 / prop.mw_comp[j]
             else:
                 raise BurntToast(
-                    "{} encountered unrecognsied combination of bases "
+                    "{} encountered unrecognized combination of bases "
                     "for reaction rate terms. Please contact the IDAES"
                     " developers with this bug.".format(b.name)
                 )
