@@ -1230,7 +1230,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self.flowsheet().time,
                 domain=Reals,
                 initialize=0.0,
-                doc="Enthalpy transferred into control volume due to " "mass transfer",
+                doc="Enthalpy transferred into control volume due to mass transfer",
                 units=units("power"),
             )
 

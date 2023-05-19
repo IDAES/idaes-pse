@@ -56,6 +56,16 @@ class BlockTriangularizationInitializer(InitializerBase):
         ConfigDict(
             implicit=True,
             description="Dict of options to pass to block solver",
+            doc="Dict of options to use to set solver.options.",
+        ),
+    )
+    CONFIG.declare(
+        "block_solver_call_options",
+        ConfigDict(
+            implicit=True,
+            description="Dict of arguments to pass to solver.solve call",
+            doc="Dict of arguments to be passed as part of the solver.solve "
+            "call, such as tee=True/",
         ),
     )
     CONFIG.declare(
@@ -103,8 +113,9 @@ class BlockTriangularizationInitializer(InitializerBase):
         """
         if self.config.block_solver is not None:
             solver = SolverFactory(self.config.block_solver)
+            solver.options.update(self.config.block_solver_options)
         else:
-            solver = get_solver()
+            solver = get_solver(options=self.config.block_solver_options)
 
         if model.is_indexed():
             for d in model.values():
@@ -120,6 +131,6 @@ class BlockTriangularizationInitializer(InitializerBase):
         solve_strongly_connected_components(
             block_data,
             solver=solver,
-            solve_kwds=self.config.block_solver_options,
+            solve_kwds=self.config.block_solver_call_options,
             calc_var_kwds=self.config.calculate_variable_options,
         )

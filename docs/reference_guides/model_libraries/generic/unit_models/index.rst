@@ -18,6 +18,7 @@ Unit Models
     heat_exchanger_1D
     shell_and_tube_1d
     mixer
+    mscontactor
     pfr
     pressure_changer
     product

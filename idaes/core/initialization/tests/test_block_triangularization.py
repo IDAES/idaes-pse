@@ -43,6 +43,7 @@ class TestBTSubMethods:
 
         assert "block_solver" in initializer.config
         assert "block_solver_options" in initializer.config
+        assert "block_solver_call_options" in initializer.config
         assert "calculate_variable_options" in initializer.config
 
     # TODO: Tests for prechecks and initialization_routine stand alone

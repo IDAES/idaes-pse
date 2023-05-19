@@ -16,6 +16,7 @@ Base class for unit models
 
 from pyomo.environ import check_optimal_termination
 from pyomo.common.config import ConfigValue
+from pyomo.network import Port
 
 from idaes.core.base.process_base import (
     declare_process_block_class,
@@ -38,7 +39,6 @@ from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import DefaultBool
-from idaes.core.util.initialization import fix_state_vars
 from idaes.core.initialization import SingleControlVolumeUnitInitializer
 
 
@@ -162,7 +162,7 @@ Must be True if dynamic = True,
                 f"instance of a StateBlock object (does not have a build_port method)."
             )
 
-        # Add Port and References to unit moodel
+        # Add Port and References to unit model
         self.add_component(name, port)
         for ref, cname in ref_name_list:
             ref_name = block.get_port_reference_name(cname, name)
@@ -222,7 +222,7 @@ Must be True if dynamic = True,
         if doc is None:
             doc = "Inlet Port"
 
-        # Determine type of sourcce block
+        # Determine type of source block
         if isinstance(block, ControlVolumeBlockData):
             # Work out if this is a 0D or 1D block
             try:
@@ -258,7 +258,7 @@ Must be True if dynamic = True,
             sblock = block
             port, ref_name_list = sblock.build_port(doc)
 
-        # Add Port and References to unit moodel
+        # Add Port and References to unit model
         self.add_component(name, port)
         for ref, cname in ref_name_list:
             ref_name = sblock.get_port_reference_name(cname, name)
@@ -320,7 +320,7 @@ Must be True if dynamic = True,
         if doc is None:
             doc = "Outlet Port"
 
-        # Determine type of sourcce block
+        # Determine type of source block
         if isinstance(block, ControlVolumeBlockData):
             # Work out if this is a 0D or 1D block
             try:
@@ -636,16 +636,15 @@ Must be True if dynamic = True,
 
     def fix_initialization_states(self):
         """
-        Fixes inlet states for models with one control volume and inlet with standard names.
+        Attempts to fix inlet states by iterating over all Ports and looking for "inlet"
+        in the name.
 
         More complex models may need to overload this with a model-specific method.
 
         Returns:
             None
         """
-        try:
-            # Guess a 0-D control volume
-            fix_state_vars(self.control_volume.properties_in)
-        except AttributeError:
-            # If AttributeError, assume must be a 1-D control volume
-            fix_state_vars(self.control_volume.properties[:, 0])
+        for p in self.component_objects(Port, descend_into=False):
+            if "inlet" in p.name:
+                # Assume name is correct and fix all variables inside
+                p.fix()

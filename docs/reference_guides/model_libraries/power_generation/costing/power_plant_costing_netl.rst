@@ -446,6 +446,7 @@ Users may quickly build all required process costs by calling the global method 
 
 * total_plant_cost: The TPC in $MM that will be used to determine fixed O&M, costs. If the value is None, the function will try to use the TPC calculated from the individual units. This quantity should be a Pyomo Var or Param that will contain the TPC value.
 * nameplate_capacity: rated plant output in MW
+* capacity_factor: multiplicative factor for normal operating capacity
 * labor_rate: hourly rate of plant operators in project dollar year
 * labor_burden: a percentage multiplier used to estimate non-salary labor expenses
 * operators_per_shift: average number of operators per shift
@@ -459,7 +460,9 @@ Users may quickly build all required process costs by calling the global method 
 * variable_OM: True/False flag for calculating variable O&M costs
 * fuel: string setting fuel type for fuel costs
 * chemicals: string setting chemicals type for chemicals costs
+* chemicals_inventory: string setting chemicals type for inventory costs
 * waste: string setting waste type for waste costs
+* transport_cost: Expression, Var or Param to use for transport costs per ton of CO2 captured (note, this is not part of the TOC)
 * tonne_CO2_capture: Var or value to use for tonnes of CO2 capture in one year
 * CE_index_year: year for cost basis, e.g. "2018" to use 2018 dollars
 

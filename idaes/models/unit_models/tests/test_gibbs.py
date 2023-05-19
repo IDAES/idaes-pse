@@ -461,24 +461,24 @@ class TestInitializers:
             has_pressure_change=True,
         )
 
-        m.fs.unit.inlet.flow_mol[0].fix(230.0)
-        m.fs.unit.inlet.mole_frac_comp[0, "H2"].fix(0.0435)
-        m.fs.unit.inlet.mole_frac_comp[0, "N2"].fix(0.6522)
-        m.fs.unit.inlet.mole_frac_comp[0, "O2"].fix(0.1739)
-        m.fs.unit.inlet.mole_frac_comp[0, "CO2"].fix(1e-5)
-        m.fs.unit.inlet.mole_frac_comp[0, "CH4"].fix(0.1304)
-        m.fs.unit.inlet.mole_frac_comp[0, "CO"].fix(1e-5)
-        m.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix(1e-5)
-        m.fs.unit.inlet.mole_frac_comp[0, "NH3"].fix(1e-5)
-        m.fs.unit.inlet.temperature[0].fix(1500.0)
-        m.fs.unit.inlet.pressure[0].fix(101325.0)
+        m.fs.unit.inlet.flow_mol[0].set_value(230.0)
+        m.fs.unit.inlet.mole_frac_comp[0, "H2"].set_value(0.0435)
+        m.fs.unit.inlet.mole_frac_comp[0, "N2"].set_value(0.6522)
+        m.fs.unit.inlet.mole_frac_comp[0, "O2"].set_value(0.1739)
+        m.fs.unit.inlet.mole_frac_comp[0, "CO2"].set_value(1e-5)
+        m.fs.unit.inlet.mole_frac_comp[0, "CH4"].set_value(0.1304)
+        m.fs.unit.inlet.mole_frac_comp[0, "CO"].set_value(1e-5)
+        m.fs.unit.inlet.mole_frac_comp[0, "H2O"].set_value(1e-5)
+        m.fs.unit.inlet.mole_frac_comp[0, "NH3"].set_value(1e-5)
+        m.fs.unit.inlet.temperature[0].set_value(1500.0)
+        m.fs.unit.inlet.pressure[0].set_value(101325.0)
 
         m.fs.unit.outlet.temperature[0].fix(2844.38)
         m.fs.unit.deltaP.fix(0)
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_general_hierarchical(self, model):
         initializer = SingleControlVolumeUnitInitializer()
         initializer.initialize(
@@ -531,7 +531,19 @@ class TestInitializers:
             model.fs.unit.outlet.pressure[0]
         )
 
-    @pytest.mark.integration
+        assert not model.fs.unit.inlet.flow_mol[0].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "H2"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "N2"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "O2"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "CO2"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "CH4"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "CO"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "NH3"].fixed
+        assert not model.fs.unit.inlet.temperature[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
+
+    @pytest.mark.component
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
         initializer.initialize(
@@ -583,3 +595,15 @@ class TestInitializers:
         assert pytest.approx(101325.0, abs=1e-2) == value(
             model.fs.unit.outlet.pressure[0]
         )
+
+        assert not model.fs.unit.inlet.flow_mol[0].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "H2"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "N2"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "O2"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "CO2"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "CH4"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "CO"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "NH3"].fixed
+        assert not model.fs.unit.inlet.temperature[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
