@@ -69,10 +69,14 @@ from idaes.core.solvers.petsc import (
 )
 from idaes.core.initialization import BlockTriangularizationInitializer
 from idaes.core.util.initialization import _fix_vars, _restore_fixedness
-from idaes.models_extra.column_models.enhancement_factor_model import (
+from idaes.models_extra.column_models.enhancement_factor_model_pseudo_second_order import (
     make_enhancement_factor_model,
     initialize_enhancement_factor_model
 )
+# from idaes.models_extra.column_models.enhancement_factor_model_third_order import (
+#     make_enhancement_factor_model,
+#     initialize_enhancement_factor_model
+# )
 from idaes.core.surrogate.surrogate_block import SurrogateBlock
 __author__ = "Paul Akula, John Eslick, Anuja Deshpande, Andrew Lee, Douglas Allan"
 
@@ -1142,7 +1146,11 @@ class MEAColumnData(PackedColumnData):
 
 
         if self.config.surrogate_enhancement_factor_model is None:
-            self.enhancement_factor_vars, self.enhancement_factor_constraints = make_enhancement_factor_model(self, lunits)
+            self.enhancement_factor_vars, self.enhancement_factor_constraints = make_enhancement_factor_model(
+                self,
+                lunits,
+                kinetics="Luo"
+            )
         else:
             self.CO2_loading = Var(
                 self.flowsheet().time,
