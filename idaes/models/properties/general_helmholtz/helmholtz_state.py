@@ -12,11 +12,6 @@
 #################################################################################
 """Generic Helmholtz EOS StateBlock Class
 """
-# TODO: Missing docstrings
-# pylint: disable=missing-function-docstring
-
-# TODO: Look into protected access issues
-# pylint: disable=protected-access
 
 __author__ = "John Eslick"
 
@@ -249,6 +244,12 @@ class _StateBlock(StateBlock):
         return flags
 
     def release_state(self, flags, **kwargs):
+        """Set the variables back to there original fixed/free state
+        after initialization.
+
+        Args:
+            flags (dict): Original variable states
+        """
         for i, f in flags.items():
             pp = self[i].config.parameters.config.phase_presentation
             sv = self[i].state_vars
@@ -1544,12 +1545,36 @@ class HelmholtzStateBlockData(StateBlockData):
         )
 
     def get_material_flow_terms(self, p, j):
+        """Get material flow terms for phase
+
+        Args:
+            p (str): phase
+
+        Returns:
+            Expression
+        """
         return self.material_flow_terms[p]
 
     def get_enthalpy_flow_terms(self, p):
+        """Get enthalpy flow terms for phase
+
+        Args:
+            p (str): phase
+
+        Returns:
+            Expression
+        """
         return self.enthalpy_flow_terms[p]
 
     def get_material_density_terms(self, p, j):
+        """Get material density terms for phase
+
+        Args:
+            p (str): phase
+
+        Returns:
+            Expression
+        """
         if self.amount_basis == AmountBasis.MOLE:
             if p == "Mix":
                 return self.dens_mol
@@ -1562,12 +1587,22 @@ class HelmholtzStateBlockData(StateBlockData):
                 return self.dens_mass_phase[p]
 
     def get_energy_density_terms(self, p):
+        """Get energy density terms for phase
+
+        Args:
+            p (str): phase
+
+        Returns:
+            Expression
+        """
         return self.energy_density_terms[p]
 
     def default_material_balance_type(self):
+        """Get default material balance type suggestion"""
         return MaterialBalanceType.componentTotal
 
     def default_energy_balance_type(self):
+        """Get default energy balance type suggestion"""
         return EnergyBalanceType.enthalpyTotal
 
     def get_material_flow_basis(b):
@@ -1597,13 +1632,15 @@ class HelmholtzStateBlockData(StateBlockData):
             }
 
     def extensive_state_vars(self):
+        """Return the set of extensive variables"""
         return self.extensive_set
 
     def intensive_state_vars(self):
+        """Return the set of intensive variables"""
         return self.intensive_set
 
     def model_check(self):
-        pass
+        """Currently doesn't do anything, here for compatibility"""
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

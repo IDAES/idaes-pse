@@ -167,6 +167,7 @@ kwargs = dict(
             "*.index",  # for Keras Surrogate folder
             "*.trc",
             "*.xlsx",  # idaes/dmf/tests/data_files - tabular import test files
+            "*.nl",
         ]
     },
     include_package_data=True,
