@@ -13,12 +13,14 @@ Basic Usage
 
 Keras-OMLT main function is **keras_surrogate.KerasSurrogate**, which populates an IDAES `SurrogateObject` with the OMLT model. This object may then be passed directly to other IDAES methods for visualization or flowsheet integration (see the sections for Visualization and Examples below).
 
-Data can be read in or simulated using available Python packages. The main arguments of the `keras_surrogate.KerasSurrogate`` Python function are inputs and outputs. For example,
+Data can be read in or simulated using available Python packages. The main arguments of the `keras_surrogate.KerasSurrogate` Python function are inputs and outputs. For example,
 
 .. code-block:: python
-
-  # selected settings for regression
   
+  # import tensorflow
+  import tensorflow as tf
+  
+  # selected settings for regression
   activation, optimizer, n_hidden_layers, n_nodes_per_layer = "tanh", "Adam", 2, 40
   loss, metrics = "mse", ["mae", "mse"]  
 
@@ -26,12 +28,14 @@ Data can be read in or simulated using available Python packages. The main argum
   model = tf.keras.Sequential()
   model.add(
       tf.keras.layers.Dense(units=n_nodes_per_layer, input_dim=len(input_labels), activation=activation))
+  # Create n hidden layers
   for i in range(1, n_hidden_layers):
       model.add(tf.keras.layers.Dense(units=n_nodes_per_layer, activation=activation))
   model.add(tf.keras.layers.Dense(units=len(output_labels)))
 
   # Train surrogate (calls optimizer on neural network and solves for weights)
   model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
+  # Loading the weights file
   mcp_save = tf.keras.callbacks.ModelCheckpoint(
       ".mdl_wts.hdf5", save_best_only=True, monitor="val_loss", mode="min")
   history = model.fit(
@@ -45,6 +49,8 @@ Data can be read in or simulated using available Python packages. The main argum
       input_scaler=input_scaler,
       output_scaler=output_scaler,
   )
+
+For an example on inputs, outputs, bounds and scalers see the `Autothermal Reformer Flowsheet Optimization with OMLT (TensorFlow Keras) Surrogate Object <https://github.com/IDAES/examples/blob/main/idaes_examples/notebooks/docs/surrogates/omlt/keras_flowsheet_optimization_src.ipynb>`_.
 
 Saving and Loading OMLT-keras models
 ------------------------------------
@@ -62,7 +68,7 @@ The user may save their neural network objects by serializing to JSON, and load 
 Visualizing Surrogate Model Results
 -----------------------------------
 
-For visualizing TensorFlow Keras neural networks via parity and residual plots, see :ref:`Visualizing Surrogate Model Results<explanations/modeling_extensions/surrogate/plotting/index:Visualizing Surrogate Model Results>`.
+For visualizing TensorFlow Keras neural networks via parity and residual plots, see :ref:`Visualizing Surrogate Model Results<explanations/modeling_extensions/surrogate/plotting/index>`.
 
 
 OMLT Example
