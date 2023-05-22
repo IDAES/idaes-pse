@@ -92,6 +92,12 @@ Additionally, and overall energy balance constraint is written:
 
 .. math::
   Q_{hot} = -Q_{cold}
+  
+Initialization
+--------------
+
+.. autoclass:: HXNTUInitializer
+   :members: initialization_routine
 
 Class Documentation
 -------------------

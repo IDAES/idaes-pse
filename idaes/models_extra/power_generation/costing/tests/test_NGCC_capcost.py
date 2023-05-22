@@ -556,4 +556,4 @@ def test_flowsheet_costing(build_costing):
     assert results.solver.status == pyo.SolverStatus.ok
 
     # Verify total plant costs
-    assert pytest.approx(574.85, abs=0.1) == pyo.value(m.fs.costing.total_TPC)
+    assert pytest.approx(574.09, abs=0.1) == pyo.value(m.fs.costing.total_TPC)

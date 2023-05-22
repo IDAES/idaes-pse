@@ -133,6 +133,21 @@ class SkeletonUnitModelData(ProcessBlockData):
         for k in member_dict.keys():
             p.add(member_dict[k], name=k)
 
+    def fix_initialization_states(self):
+        """
+        Attempts to fix inlet states by iterating over all Ports and looking for "inlet"
+        in the name.
+
+        Users may need to fix inlets manually if they use names which do not include "inlet".
+
+        Returns:
+            None
+        """
+        for p in self.component_objects(Port, descend_into=False):
+            if "inlet" in p.name:
+                # Assume name is correct and fix all variables inside
+                p.fix()
+
     # TODO : Work out how to make this work with new UnitModel initialization
     def initialize(
         self, outlvl=idaeslog.NOTSET, solver=None, optarg=None, initial_guess=None

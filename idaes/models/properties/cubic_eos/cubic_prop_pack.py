@@ -226,7 +226,7 @@ class CubicEoSInitializer(InitializerBase):
     """
     Initializer for CubicEoS property packages.
 
-    This Initializer uses a hierarchical routine to initialize the
+    This Initializer uses a sequential routine to initialize the
     property package using the following steps:
 
     1. Initialize bubble and dew point calculations (if present)

@@ -83,11 +83,19 @@ class IsentropicPressureChangerInitializer(SingleControlVolumeUnitInitializer):
         """
         Initialization routine for isentropic pressure changers.
 
+        This routine starts by initializing the inlet and outlet states as usual,
+        using the user provided operating conditions to estimate the outlet state.
+        The isentropic state is then initialized at the same conditions as the outlet.
+        Next, the pressure changer is solved with an isothermal assumption and fixed efficiency,
+        followed by a second solve with the isentropic constraints. Finally, if user-provided
+        performance constraints are present, these are activated and the model solved again.
+
         Args:
             model: model to be initialized
 
         Returns:
             Pyomo solver status object
+
         """
         init_log = idaeslog.getInitLogger(
             model.name, self.get_output_level(), tag="unit"
@@ -200,7 +208,7 @@ class IsentropicPressureChangerInitializer(SingleControlVolumeUnitInitializer):
             res = solver.solve(model, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
-        # REvert changes for isothermal assumption
+        # Revert changes for isothermal assumption
         if isinstance(
             model.properties_isentropic[model.flowsheet().time.first()].temperature,
             Var,
