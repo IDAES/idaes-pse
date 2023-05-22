@@ -68,7 +68,7 @@ The user may save their neural network objects by serializing to JSON, and load 
 Visualizing Surrogate Model Results
 -----------------------------------
 
-For visualizing TensorFlow Keras neural networks via parity and residual plots, see :ref:`Visualizing Surrogate Model Results<explanations/modeling_extensions/surrogate/plotting/index>`.
+For visualizing TensorFlow Keras neural networks via parity and residual plots, see :ref:`Visualizing Surrogate Model Results<explanations/modeling_extensions/surrogate/plotting/index:Visualizing Surrogate Model Results>`.
 
 
 OMLT Example
