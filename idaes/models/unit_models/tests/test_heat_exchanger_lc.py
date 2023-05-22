@@ -437,23 +437,23 @@ class TestInitializers:
             dynamic_heat_balance=False,
         )
 
-        m.fs.unit.hot_side_inlet.flow_vol[0].fix(1e-3)
-        m.fs.unit.hot_side_inlet.temperature[0].fix(320)
-        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.hot_side_inlet.flow_vol[0].set_value(1e-3)
+        m.fs.unit.hot_side_inlet.temperature[0].set_value(320)
+        m.fs.unit.hot_side_inlet.pressure[0].set_value(101325)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"].set_value(55388.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"].set_value(100.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"].set_value(100.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].set_value(0.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].set_value(0.0)
 
-        m.fs.unit.cold_side_inlet.flow_vol[0].fix(1e-3)
-        m.fs.unit.cold_side_inlet.temperature[0].fix(300)
-        m.fs.unit.cold_side_inlet.pressure[0].fix(101325)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.cold_side_inlet.flow_vol[0].set_value(1e-3)
+        m.fs.unit.cold_side_inlet.temperature[0].set_value(300)
+        m.fs.unit.cold_side_inlet.pressure[0].set_value(101325)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"].set_value(55388.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"].set_value(100.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"].set_value(100.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].set_value(0.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].set_value(0.0)
 
         m.fs.unit.area.fix(1000)
 
@@ -466,7 +466,7 @@ class TestInitializers:
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_hx_initializer(self, model):
         initializer = HX0DInitializer()
         initializer.initialize(model.fs.unit)
@@ -525,5 +525,23 @@ class TestInitializers:
         assert pytest.approx(101325, abs=1e2) == value(
             model.fs.unit.cold_side_outlet.pressure[0]
         )
+
+        assert not model.fs.unit.hot_side_inlet.flow_vol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.temperature[0].fixed
+        assert not model.fs.unit.hot_side_inlet.pressure[0].fixed
+        assert not model.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"].fixed
+        assert not model.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"].fixed
+        assert not model.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"].fixed
+        assert not model.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
+        assert not model.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].fixed
+
+        assert not model.fs.unit.cold_side_inlet.flow_vol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.temperature[0].fixed
+        assert not model.fs.unit.cold_side_inlet.pressure[0].fixed
+        assert not model.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"].fixed
+        assert not model.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"].fixed
+        assert not model.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"].fixed
+        assert not model.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
+        assert not model.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].fixed
 
     # TODO: BT initializer runs into a Max Iter failure on Windows

@@ -3555,16 +3555,16 @@ class TestInitializersIAPWS:
             has_phase_equilibrium=False,
         )
 
-        m.fs.unit.inlet.flow_mol[0].fix(100)
-        m.fs.unit.inlet.enth_mol[0].fix(5000)
-        m.fs.unit.inlet.pressure[0].fix(101325)
+        m.fs.unit.inlet.flow_mol[0].set_value(100)
+        m.fs.unit.inlet.enth_mol[0].set_value(5000)
+        m.fs.unit.inlet.pressure[0].set_value(101325)
 
         m.fs.unit.split_fraction[0, "outlet_1", "H2O"].fix(0.4)
         m.fs.unit.split_fraction[0, "outlet_2", "H2O"].fix(0.5)
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_separator_initializer(self, model):
         initializer = SeparatorInitializer()
         initializer.initialize(model.fs.unit)
@@ -3589,7 +3589,11 @@ class TestInitializersIAPWS:
             model.fs.unit.outlet_3.pressure[0]
         )
 
-    @pytest.mark.integration
+        assert not model.fs.unit.inlet.flow_mol[0].fixed
+        assert not model.fs.unit.inlet.enth_mol[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
+
+    @pytest.mark.component
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(
             calculate_variable_options={
@@ -3620,3 +3624,7 @@ class TestInitializersIAPWS:
         assert pytest.approx(101325, abs=1e2) == value(
             model.fs.unit.outlet_3.pressure[0]
         )
+
+        assert not model.fs.unit.inlet.flow_mol[0].fixed
+        assert not model.fs.unit.inlet.enth_mol[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
