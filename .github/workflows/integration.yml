@@ -225,9 +225,9 @@ jobs:
           - install-mode: pip-default
             pip-install-target: '.'
           - install-mode: pip-complete
-            pip-install-target: .[complete]
+            pip-install-target: .[ui,dmf,grid]
           - install-mode: pip-all
-            pip-install-target: .[all]
+            pip-install-target: .[ui,dmf,grid,omlt,coolprop]
           - install-mode: conda-like
             pip-install-target: '.'
             dependencies-to-uninstall: omlt
