@@ -1,3 +1,5 @@
+.. _omlt:
+
 OMLT: Optimization and Machine Learning Toolkit
 ===============================================
 
