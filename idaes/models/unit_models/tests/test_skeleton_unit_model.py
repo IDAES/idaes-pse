@@ -188,7 +188,7 @@ class TestSkeletonDefault(object):
         )
 
 
-@pytest.mark.integration
+@pytest.mark.component
 def test_default_initializer():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
@@ -239,10 +239,10 @@ def test_default_initializer():
     m.fs.skeleton.add_ports(name="inlet", member_dict=inlet_dict)
     m.fs.skeleton.add_ports(name="outlet", member_dict=outlet_dict)
 
-    m.fs.skeleton.inlet.flow_mol_comp[0, "c1"].fix(2)
-    m.fs.skeleton.inlet.flow_mol_comp[0, "c2"].fix(2)
-    m.fs.skeleton.inlet.temperature.fix(325)
-    m.fs.skeleton.inlet.pressure.fix(200)
+    m.fs.skeleton.inlet.flow_mol_comp[0, "c1"].set_value(2)
+    m.fs.skeleton.inlet.flow_mol_comp[0, "c2"].set_value(2)
+    m.fs.skeleton.inlet.temperature[0].set_value(325)
+    m.fs.skeleton.inlet.pressure[0].set_value(200)
 
     initializer = m.fs.skeleton.default_initializer()
     initializer.initialize(m.fs.skeleton)
@@ -255,6 +255,11 @@ def test_default_initializer():
     )
     assert value(m.fs.skeleton.outlet.temperature[0]) == pytest.approx(335, abs=1e-3)
     assert value(m.fs.skeleton.outlet.pressure[0]) == pytest.approx(190, abs=1e-3)
+
+    assert not m.fs.skeleton.inlet.flow_mol_comp[0, "c1"].fixed
+    assert not m.fs.skeleton.inlet.flow_mol_comp[0, "c2"].fixed
+    assert not m.fs.skeleton.inlet.temperature[0].fixed
+    assert not m.fs.skeleton.inlet.pressure[0].fixed
 
 
 class TestSkeletonCustom(object):

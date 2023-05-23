@@ -92,6 +92,9 @@ class MixerInitializer(ModularInitializerBase):
         """
         Initialization routine for Mixer Blocks.
 
+        This routine starts by initializing each of the inlet streams, then uses those
+        results to estimate the outlet state before solving the full model.
+
         Args:
             model: model to be initialized
 
@@ -916,6 +919,31 @@ objects linked to all inlet states and the mixed state,
             return
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
+
+    def fix_initialization_states(self):
+        """
+        Iterate over inlet ports and fix all variables.
+
+        For Mixers with pressure equality, we will assume that pressure has been
+        correctly specified and not fix pressures.
+
+        Returns:
+            None
+        """
+        inlet_list = self.create_inlet_list()
+        for p in inlet_list:
+            p_obj = getattr(self, p)
+            # Iterate over vars
+            for v in p_obj.iter_vars():
+                if (
+                    self.config.momentum_mixing_type == MomentumMixingType.equality
+                    or self.config.momentum_mixing_type
+                    == MomentumMixingType.minimize_and_equality
+                ) and v.local_name == "pressure":
+                    # Don't fix pressure in cases where pressure equality is specified
+                    continue
+                else:
+                    v.fix()
 
     def initialize_build(
         blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None, hold_state=False

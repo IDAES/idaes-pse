@@ -37,7 +37,6 @@ from idaes.core.solvers import get_solver
 
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
-    SingleControlVolumeUnitInitializer,
     InitializationStatus,
 )
 
@@ -316,13 +315,13 @@ class TestInitializers:
 
         m.fs.unit = Feed(property_package=m.fs.properties)
 
-        m.fs.unit.flow_mol.fix(100)
-        m.fs.unit.enth_mol.fix(24000)
-        m.fs.unit.pressure.fix(101325)
+        m.fs.unit.flow_mol[0].set_value(100)
+        m.fs.unit.enth_mol[0].set_value(24000)
+        m.fs.unit.pressure[0].set_value(101325)
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_default_initializer(self, model):
         initializer = FeedInitializer()
         initializer.initialize(model.fs.unit)
@@ -342,7 +341,11 @@ class TestInitializers:
             model.fs.unit.properties[0].phase_frac["Liq"]
         )
 
-    @pytest.mark.integration
+        assert not model.fs.unit.flow_mol[0].fixed
+        assert not model.fs.unit.enth_mol[0].fixed
+        assert not model.fs.unit.pressure[0].fixed
+
+    @pytest.mark.component
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
         initializer.initialize(model.fs.unit)
@@ -361,3 +364,7 @@ class TestInitializers:
         assert pytest.approx(0.5953, abs=1e-4) == value(
             model.fs.unit.properties[0].phase_frac["Liq"]
         )
+
+        assert not model.fs.unit.flow_mol[0].fixed
+        assert not model.fs.unit.enth_mol[0].fixed
+        assert not model.fs.unit.pressure[0].fixed

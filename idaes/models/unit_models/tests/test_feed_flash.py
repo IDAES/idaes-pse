@@ -376,15 +376,15 @@ class TestInitializersBT:
 
         m.fs.unit = FeedFlash(property_package=m.fs.properties)
 
-        m.fs.unit.flow_mol.fix(1)
-        m.fs.unit.temperature.fix(368)
-        m.fs.unit.pressure.fix(101325)
-        m.fs.unit.mole_frac_comp[0, "benzene"].fix(0.5)
-        m.fs.unit.mole_frac_comp[0, "toluene"].fix(0.5)
+        m.fs.unit.flow_mol[0].set_value(1)
+        m.fs.unit.temperature[0].set_value(368)
+        m.fs.unit.pressure[0].set_value(101325)
+        m.fs.unit.mole_frac_comp[0, "benzene"].set_value(0.5)
+        m.fs.unit.mole_frac_comp[0, "toluene"].set_value(0.5)
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_general_hierarchical(self, model):
         initializer = SingleControlVolumeUnitInitializer()
         initializer.initialize(model.fs.unit)
@@ -402,7 +402,13 @@ class TestInitializersBT:
             model.fs.unit.control_volume.properties_out[0].flow_mol_phase["Vap"]
         )
 
-    @pytest.mark.integration
+        assert not model.fs.unit.flow_mol[0].fixed
+        assert not model.fs.unit.temperature[0].fixed
+        assert not model.fs.unit.pressure[0].fixed
+        assert not model.fs.unit.mole_frac_comp[0, "benzene"].fixed
+        assert not model.fs.unit.mole_frac_comp[0, "toluene"].fixed
+
+    @pytest.mark.component
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
         initializer.initialize(model.fs.unit)
@@ -419,3 +425,9 @@ class TestInitializersBT:
         assert pytest.approx(0.396, abs=1e-3) == value(
             model.fs.unit.control_volume.properties_out[0].flow_mol_phase["Vap"]
         )
+
+        assert not model.fs.unit.flow_mol[0].fixed
+        assert not model.fs.unit.temperature[0].fixed
+        assert not model.fs.unit.pressure[0].fixed
+        assert not model.fs.unit.mole_frac_comp[0, "benzene"].fixed
+        assert not model.fs.unit.mole_frac_comp[0, "toluene"].fixed

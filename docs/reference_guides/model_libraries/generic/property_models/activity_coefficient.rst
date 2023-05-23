@@ -228,10 +228,13 @@ List of Variables
 
 Initialization
 --------------
+.. module:: idaes.models.properties.activity_coeff_models.activity_coeff_prop_pack
+
+.. autoclass:: ActivityCoeffInitializer
+   :members: initialization_routine
 
 Config Block Documentation
 --------------------------
-.. module:: idaes.models.properties.activity_coeff_models.activity_coeff_prop_pack
 
 .. autoclass:: ActivityCoeffParameterBlock
    :members:

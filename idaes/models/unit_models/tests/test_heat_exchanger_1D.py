@@ -2835,21 +2835,21 @@ class TestInitializersModularCoCurrent:
         m.fs.unit.area.fix(0.5)
         m.fs.unit.heat_transfer_coefficient.fix(500)
 
-        m.fs.unit.hot_side_inlet.flow_mol[0].fix(5)  # mol/s
-        m.fs.unit.hot_side_inlet.temperature[0].fix(365)  # K
-        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)  # Pa
-        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+        m.fs.unit.hot_side_inlet.flow_mol[0].set_value(5)  # mol/s
+        m.fs.unit.hot_side_inlet.temperature[0].set_value(365)  # K
+        m.fs.unit.hot_side_inlet.pressure[0].set_value(101325)  # Pa
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "benzene"].set_value(0.5)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "toluene"].set_value(0.5)
 
-        m.fs.unit.cold_side_inlet.flow_mol[0].fix(1)  # mol/s
-        m.fs.unit.cold_side_inlet.temperature[0].fix(540)  # degR
-        m.fs.unit.cold_side_inlet.pressure[0].fix(101.325)  # kPa
-        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+        m.fs.unit.cold_side_inlet.flow_mol[0].set_value(1)  # mol/s
+        m.fs.unit.cold_side_inlet.temperature[0].set_value(540)  # degR
+        m.fs.unit.cold_side_inlet.pressure[0].set_value(101.325)  # kPa
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].set_value(0.5)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].set_value(0.5)
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_general_hx1d_initializer(self, model):
         initializer = HX1DInitializer()
         initializer.initialize(model.fs.unit)
@@ -2877,4 +2877,16 @@ class TestInitializersModularCoCurrent:
             model.fs.unit.cold_side_outlet.pressure[0]
         )
 
-    # TODO: BT INitializer struggles with this case for some reason
+        assert not model.fs.unit.hot_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.temperature[0].fixed
+        assert not model.fs.unit.hot_side_inlet.pressure[0].fixed
+        assert not model.fs.unit.hot_side_inlet.mole_frac_comp[0, "benzene"].fixed
+        assert not model.fs.unit.hot_side_inlet.mole_frac_comp[0, "toluene"].fixed
+
+        assert not model.fs.unit.cold_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.temperature[0].fixed
+        assert not model.fs.unit.cold_side_inlet.pressure[0].fixed
+        assert not model.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fixed
+        assert not model.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fixed
+
+    # TODO: BT Initializer struggles with this case for some reason

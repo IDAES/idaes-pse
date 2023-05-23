@@ -999,16 +999,16 @@ class TestInitializersTurbine1:
         )
 
         # set inputs
-        m.fs.unit.inlet.flow_mol[0].fix(1000)  # mol/s
+        m.fs.unit.inlet.flow_mol[0].set_value(1000)  # mol/s
         Tin = 500  # K
         Pin = 1000000  # Pa
         hin = value(iapws95.htpx(Tin * units.K, Pin * units.Pa))
-        m.fs.unit.inlet.enth_mol[0].fix(hin)
-        m.fs.unit.inlet.pressure[0].fix(Pin)
+        m.fs.unit.inlet.enth_mol[0].set_value(hin)
+        m.fs.unit.inlet.pressure[0].set_value(Pin)
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_isentropic(self, model):
         initializer = IsentropicPressureChangerInitializer()
         initializer.initialize(model.fs.unit)
@@ -1020,7 +1020,11 @@ class TestInitializersTurbine1:
         )
         assert value(model.fs.unit.deltaP[0]) == pytest.approx(-3e5, rel=1e-3)
 
-    @pytest.mark.integration
+        assert not model.fs.unit.inlet.flow_mol[0].fixed
+        assert not model.fs.unit.inlet.enth_mol[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
+
+    @pytest.mark.component
     def test_block_triangularization(self, model):
         # Need to use reverse_numeric differentiation due to ExternalFunctions
         initializer = BlockTriangularizationInitializer(
@@ -1037,3 +1041,7 @@ class TestInitializersTurbine1:
             0.9, rel=1e-3
         )
         assert value(model.fs.unit.deltaP[0]) == pytest.approx(-3e5, rel=1e-3)
+
+        assert not model.fs.unit.inlet.flow_mol[0].fixed
+        assert not model.fs.unit.inlet.enth_mol[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed

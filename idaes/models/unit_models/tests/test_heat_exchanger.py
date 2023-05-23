@@ -2122,20 +2122,20 @@ class TestInitializersIAPWS:
             flow_pattern=HeatExchangerFlowPattern.countercurrent,
         )
 
-        m.fs.unit.hot_side_inlet.flow_mol[0].fix(100)
-        m.fs.unit.hot_side_inlet.enth_mol[0].fix(6000)
-        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)
+        m.fs.unit.hot_side_inlet.flow_mol[0].set_value(100)
+        m.fs.unit.hot_side_inlet.enth_mol[0].set_value(6000)
+        m.fs.unit.hot_side_inlet.pressure[0].set_value(101325)
 
-        m.fs.unit.cold_side_inlet.flow_mol[0].fix(100)
-        m.fs.unit.cold_side_inlet.enth_mol[0].fix(5000)
-        m.fs.unit.cold_side_inlet.pressure[0].fix(101325)
+        m.fs.unit.cold_side_inlet.flow_mol[0].set_value(100)
+        m.fs.unit.cold_side_inlet.enth_mol[0].set_value(5000)
+        m.fs.unit.cold_side_inlet.pressure[0].set_value(101325)
 
         m.fs.unit.area.fix(1000)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_hx0d_initializer(self, model):
         initializer = HX0DInitializer()
         initializer.initialize(model.fs.unit)
@@ -2163,7 +2163,15 @@ class TestInitializersIAPWS:
             model.fs.unit.cold_side_outlet.pressure[0]
         )
 
-    @pytest.mark.integration
+        assert not model.fs.unit.hot_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.enth_mol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.pressure[0].fixed
+
+        assert not model.fs.unit.cold_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.enth_mol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.pressure[0].fixed
+
+    @pytest.mark.component
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
         initializer.initialize(model.fs.unit)
@@ -2190,3 +2198,11 @@ class TestInitializersIAPWS:
         assert pytest.approx(101325, abs=1e2) == value(
             model.fs.unit.cold_side_outlet.pressure[0]
         )
+
+        assert not model.fs.unit.hot_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.enth_mol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.pressure[0].fixed
+
+        assert not model.fs.unit.cold_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.enth_mol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.pressure[0].fixed
