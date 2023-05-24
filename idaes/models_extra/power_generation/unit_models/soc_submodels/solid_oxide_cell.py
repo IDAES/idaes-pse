@@ -851,12 +851,24 @@ class SolidOxideCellData(UnitModelBlockData):
                 for iz in b.electrolyte.iznodes
             )
 
+        self.total_current = pyo.Var(
+            tset,
+            units=pyo.units.ampere,
+            doc="Total current through fuel cell",
+            initialize=0,
+        )
+
+        @self.Constraint(tset)
+        def total_current_eqn(b, t):
+            return b.total_current[t] == sum(
+                b.current_density[t, iz]
+                * b.fuel_electrode.xface_area[iz]
+                for iz in b.iznodes
+            )
+
         @self.Expression(tset)
         def average_current_density(b, t):
-            # z is dimensionless and goes from 0 to 1 so sum(dz) = 1 and the
-            # cell is a rectangle hence I don't need to worry about width or
-            # length or dividing by the sum of dz and the units are right.
-            return sum(b.current_density[t, iz] * b.dz[iz] for iz in b.iznodes)
+            return b.total_current[t] / (b.length_y * b.length_z)
 
     def initialize_build(
         self,
@@ -1260,6 +1272,7 @@ class SolidOxideCellData(UnitModelBlockData):
         sdf(self.oxygen_inlet.mole_frac_comp, sy_def)
         sdf(self.length_z, 1 / self.length_z.value)
         sdf(self.length_y, 1 / self.length_y.value)
+        sdf(self.total_current, 1 / self.length_z.value * 1 / self.length_y.value * 1 / 4000)
 
         iscale.propagate_indexed_component_scaling_factors(self)
 
@@ -1268,6 +1281,8 @@ class SolidOxideCellData(UnitModelBlockData):
         # TODO Revisit when reforming equations are added
 
         for t in self.flowsheet().time:
+            sf_tot_current = gsf(self.total_current[t])
+            cst(self.total_current_eqn[t], sf_tot_current)
             sy_in_fuel = {}
             for j in self.fuel_component_list:
                 sy_in_fuel[j] = gsf(self.fuel_inlet.mole_frac_comp[t, j], sy_def)
