@@ -252,7 +252,7 @@ class TestSolvePipelineSquare(unittest.TestCase):
             param_sweeper = ParamSweeper(
                 n_scen,
                 input_values,
-                to_fix=input_values,
+                to_fix=list(input_values.keys()),
                 output_values=target_values,
             )
             ipopt = get_solver("ipopt")
