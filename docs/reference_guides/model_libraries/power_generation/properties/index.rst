@@ -5,4 +5,5 @@ Property Models
     :maxdepth: 1
 
     flue_gas
+    natural_gas
     
