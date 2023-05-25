@@ -1,0 +1,57 @@
+name: Test IDAES/examples for IDAES/idaes-pse CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  # NOTE: the value of `group` should be chosen carefully,
+  # otherwise we might end up over- or under-canceling workflow runs
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
+  PYTEST_ADDOPTS: "--color=yes"
+
+defaults:
+  run:
+    # -l: login shell, needed when using Conda run:
+    shell: bash -l {0}
+
+  examples:
+    name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
+    runs-on: ${{ matrix.runner-image }}
+    needs: [precheck]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.8','3.11']
+        os:
+          - linux
+          - win64
+        include:
+          - os: linux
+            runner-image: ubuntu-20.04
+          - os: win64
+            runner-image: windows-2022
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/display-debug-info
+      - name: Set up Conda environment
+        uses: conda-incubator/setup-miniconda@v2.1.1
+        with:
+          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
+          python-version: ${{ matrix.python-version }}
+      - name: Set up idaes
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
+      - name: Fetch and run examples
+        uses: ./.github/actions/run-examples
+        with:
+          examples-repository: IDAES/examples
+          examples-ref: refs/pull/44/merge
+          reinstall-target: -r requirements-dev.txt
+          notebook-cell-exec-timeout: '600'
+          working-dir: ${{ runner.temp }}
