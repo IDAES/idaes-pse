@@ -23,7 +23,6 @@ jobs:
   examples:
     name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.runner-image }}
-    needs: [precheck]
     strategy:
       fail-fast: false
       matrix:
