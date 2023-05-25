@@ -19,6 +19,7 @@ defaults:
     # -l: login shell, needed when using Conda run:
     shell: bash -l {0}
 
+jobs:
   examples:
     name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.runner-image }}
