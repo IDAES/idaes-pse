@@ -189,8 +189,9 @@ class solubility_product:
         if Qunits is not None:
             Q = Q / Qunits
 
-        return s - smooth_max(0, s - Q, rblock.eps) == 0
-
+        #return s - smooth_max(0, s - Q, rblock.eps) == 0
+        return Q - smooth_max(0, Q - s / (s+b.k_eq[r_idx]), rblock.eps) == 0
+    
     @staticmethod
     def calculate_scaling_factors(b, sf_keq):
         return sf_keq
@@ -287,7 +288,11 @@ class log_solubility_product:
         Q = b.log_k_eq[r_idx] - e
         # Q should be unitless due to log form
 
-        return s - smooth_max(0, s - Q, rblock.eps) == 0
+        #return s - smooth_max(0, s - Q, rblock.eps) == 0
+        # Flip s and Q and use s/(s+tol) so that it stays within 0-1, 
+        # then it's safe to use single scale to this constraint.
+        s = s *10/ (s+b.k_eq[r_idx])
+        return Q - smooth_max(0, Q - s, rblock.eps) == 0
 
     @staticmethod
     def calculate_scaling_factors(b, sf_keq):
