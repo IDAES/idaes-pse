@@ -51,7 +51,7 @@ jobs:
         uses: ./.github/actions/run-examples
         with:
           examples-repository: IDAES/examples
-          examples-ref: refs/pull/49/merge
+          examples-ref: refs/pull/42/merge
           reinstall-target: -r requirements-dev.txt
           notebook-cell-exec-timeout: '600'
           working-dir: ${{ runner.temp }}
