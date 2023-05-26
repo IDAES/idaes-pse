@@ -82,7 +82,6 @@ from pyomo.environ import check_optimal_termination
 
 # idaes
 import idaes.core.util.convergence.mpi_utils as mpiu
-from idaes.core.dmf import resource
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 
@@ -934,7 +933,15 @@ class Stats(object):
     def to_json(self, fp):
         json.dump(self.to_dict(), fp, indent=4)
 
-    def to_dmf(self, dmf):
+    def to_dmf(self, dmf) -> None:
+        try:
+            # pylint: disable-next=import-outside-toplevel
+            from idaes.core.dmf import resource
+        except ImportError as err:
+            _log.error(
+                "Stats.to_dmf() failed because DMF is not available: %s", str(err)
+            )
+            return None
         # PYLINT-TODO-FIX fix error due to undefined variable "stats"
         rsrc = resource.Resource(
             value={

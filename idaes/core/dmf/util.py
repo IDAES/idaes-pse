@@ -32,8 +32,6 @@ import time
 from typing import Union
 import yaml
 
-# third-party
-import colorama
 
 __author__ = "Dan Gunter"
 
@@ -268,6 +266,8 @@ class ColorTerm:
     def __init__(self, enabled=True):
         self._width = None
         if enabled:
+            import colorama  # pylint: disable=import-outside-toplevel
+
             colorama.init(autoreset=True)
             # Colorama colors and styles
             F = self.Fore = colorama.Fore
