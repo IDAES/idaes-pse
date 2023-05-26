@@ -32,7 +32,6 @@ def surface_tension_type01(model, parameters):
     n = parameters["transport"]["surface_tension"]["n"]
     tc = parameters["transport"]["surface_tension"]["Tc"]
     eps = 1e-4
-    Tr = model.T_star / model.tau / tc
     # Use smooth max to avoid evaluation errors on negative numbers
     # this means the surface tension will go to zero at and above the
     # critical temperature, rather than cause error over critical.
