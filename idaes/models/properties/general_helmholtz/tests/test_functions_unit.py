@@ -1691,19 +1691,6 @@ def test_propane_transport():
         )
     )
 
-    print(
-        pyo.value(
-            pyo.units.convert(
-                te.viscosity(
-                    T=320.0 * pyo.units.K,
-                    p=4.0e6 * pyo.units.Pa,
-                    x=0,
-                ),
-                pyo.units.uPa * pyo.units.s,
-            )
-        )
-    )
-
     assert pytest.approx(82.16, rel=1e-2) == pyo.value(
         pyo.units.convert(
             te.viscosity(
