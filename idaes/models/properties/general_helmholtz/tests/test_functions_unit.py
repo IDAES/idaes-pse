@@ -1664,6 +1664,22 @@ def test_propane_transport():
     )
     te = HelmholtzThermoExpressions(m, m.hparam)
 
+    # Test viscosity with data from
+    #
+    # Vogel E, C Küchenmeister, E Bich, A Laesecke, Reference Correlation of the
+    #     Viscosity of Propane. Journal of Physical and Chemical Reference Data
+    #     27, 947–970 (1998)
+    assert pytest.approx(8.731, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.viscosity(
+                T=320.0 * pyo.units.K,
+                p=1e5 * pyo.units.Pa,
+                x=1,
+            ),
+            pyo.units.uPa * pyo.units.s,
+        )
+    )
+
     assert pytest.approx(78.97826, rel=1e-3) == pyo.value(
         pyo.units.convert(
             te.viscosity(
@@ -1672,6 +1688,42 @@ def test_propane_transport():
                 x=0,
             ),
             pyo.units.uPa * pyo.units.s,
+        )
+    )
+
+    print(pyo.value(
+        pyo.units.convert(
+            te.viscosity(
+                T=320.0 * pyo.units.K,
+                p=4.0e6 * pyo.units.Pa,
+                x=0,
+            ),
+            pyo.units.uPa * pyo.units.s,
+        )
+    ))
+
+    assert pytest.approx(82.16, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity(
+                T=320.0 * pyo.units.K,
+                p=4.0e6 * pyo.units.Pa,
+                x=0,
+            ),
+            pyo.units.uPa * pyo.units.s,
+        )
+    )
+
+    # Test thermal conductivity with data from
+    #
+    # NIST Chemistry WebBook
+    assert pytest.approx(20.78, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity(
+                T=320.0 * pyo.units.K,
+                p=1e5 * pyo.units.Pa,
+                x=1,
+            ),
+            pyo.units.mW / pyo.units.m / pyo.units.K,
         )
     )
 
@@ -1685,6 +1737,18 @@ def test_propane_transport():
             pyo.units.mW / pyo.units.m / pyo.units.K,
         )
     )
+
+    assert pytest.approx(87.159, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity(
+                T=320.0 * pyo.units.K,
+                p=4.0e6 * pyo.units.Pa,
+                x=0,
+            ),
+            pyo.units.mW / pyo.units.m / pyo.units.K,
+        )
+    )
+
 
 
 @pytest.mark.unit

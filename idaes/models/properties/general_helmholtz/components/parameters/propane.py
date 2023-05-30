@@ -23,6 +23,7 @@ from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
     WriteParameters,
 )
 from idaes.core.util.math import smooth_max
+from idaes.core.util.constants import Constants
 
 
 def thermal_conductivity_rule(m):
@@ -60,7 +61,7 @@ def thermal_conductivity_rule(m):
     rho_crit = 5000  # mol/m^3
     # lamb_red = 1  # reducing tc W/m/K
     Tref = 554.73  # reference T K
-    k = 1.380649e-23
+    k = Constants.boltzmann_constant
     Pc = 4.2512  # MPa
     big_gam = 0.0496
     R0 = 1.03
@@ -163,10 +164,10 @@ def viscosity_rule(m):
     eok = 263.88  # K
     NA = 6.0221408e23  # number/mol
     Ts = T / eok  # dimensionless
-    vs = pyo.exp(sum(a[i] * pyo.log(Ts) ** i for i in a))
+    vs = pyo.exp(sum(ai * pyo.log(Ts) ** i for i, ai in a.items()))
     etas = 0.021357 * pyo.sqrt(M * T) / (sigma**2 * vs)
 
-    Bs = sum(b[i] * Ts ** t[i] for i in b)
+    Bs = sum(bi * Ts ** t[i] for i, bi in b.items())
     B = NA * sigma**3 * Bs * 1e-24  # l/mol
     delta0 = g[1] * (1 + g[2] * pyo.sqrt(tau))
     delta = rho / 5.0
