@@ -23,10 +23,13 @@ import pkgutil
 from idaes.commands.base import command_base as cb
 
 # import all the commands
-for loader, module_name, is_pkg in pkgutil.walk_packages(__path__):
-    if module_name == "base":
+for loader, dotted_module_name, is_pkg in pkgutil.walk_packages(__path__):
+    module_name_parts = dotted_module_name.split(".")
+    module_name = module_name_parts[-1]
+    is_test_module = module_name.startswith("test_")
+    if dotted_module_name == "base":
         pass
-    elif module_name.startswith("test"):
+    elif is_test_module:
         pass
     else:
         loader.find_module(module_name).load_module(module_name)

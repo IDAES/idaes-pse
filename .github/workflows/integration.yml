@@ -214,7 +214,8 @@ jobs:
       matrix:
         install-mode:
           - pip-default
-          - pip-optional
+          - pip-complete
+          - pip-all
           - conda-like
         os:
           - linux
@@ -223,8 +224,10 @@ jobs:
             runner-image: ubuntu-20.04
           - install-mode: pip-default
             pip-install-target: '.'
-          - install-mode: pip-optional
-            pip-install-target: .[optional]
+          - install-mode: pip-complete
+            pip-install-target: .[ui,dmf,grid]
+          - install-mode: pip-all
+            pip-install-target: .[ui,dmf,grid,omlt,coolprop]
           - install-mode: conda-like
             pip-install-target: '.'
             dependencies-to-uninstall: omlt
