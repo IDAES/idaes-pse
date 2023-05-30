@@ -196,6 +196,20 @@
         }
     },
     "transport": {
+        "thermal_conductivity": {
+            "reference": [
+                "Younglove, B.A. and Ely, J.F., Thermophysical properties of fluids. II. Methane,",
+                "    ethane, propane, isobutane and normal butane, J. Phys. Chem. Ref. Data, ",
+                "    16:577-798, 1987."
+            ]
+        },
+        "viscosity": {
+            "reference": [
+                "Vogel E, C Küchenmeister, E Bich, A Laesecke, Reference Correlation of the",
+                "    Viscosity of Propane. Journal of Physical and Chemical Reference Data ",
+                "    27, 947–970 (1998) "
+            ]
+        },
         "surface_tension": {
             "reference": [
                 "Mulero, A., I. Cachadina, Parra, M., Recommended Correlations for the Surface ",
