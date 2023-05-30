@@ -198,9 +198,9 @@
     "transport": {
         "thermal_conductivity": {
             "reference": [
-                "Younglove, B.A. and Ely, J.F., Thermophysical properties of fluids. II. Methane,",
-                "    ethane, propane, isobutane and normal butane, J. Phys. Chem. Ref. Data, ",
-                "    16:577-798, 1987."
+                "Marsh, K., Perkins, R., and Ramires, M.L.V., Measurement and Correlation",
+                "    of the Thermal Conductivity of Propane from 86 to 600 K at Pressures",
+                "    to 70 MPa, J. Chem. Eng. Data, 47(4):932-940, 2002."
             ]
         },
         "viscosity": {

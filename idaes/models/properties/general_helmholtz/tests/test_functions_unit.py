@@ -1657,6 +1657,38 @@ def test_r1234ze_transport():
 
 @pytest.mark.unit
 @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_propane_transport():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="propane", amount_basis=AmountBasis.MASS
+    )
+    te = HelmholtzThermoExpressions(m, m.hparam)
+
+    assert pytest.approx(78.97826, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.viscosity(
+                T=320.0 * pyo.units.K,
+                p=2.5e6 * pyo.units.Pa,
+                x=0,
+            ),
+            pyo.units.uPa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(85.215, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity(
+                T=320.0 * pyo.units.K,
+                p=2.5e6 * pyo.units.Pa,
+                x=0,
+            ),
+            pyo.units.mW / pyo.units.m / pyo.units.K,
+        )
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
 def test_initialize_param_block():
     # this should do absolutely nothing, so just make sure there is no exception
     m = pyo.ConcreteModel()

@@ -29,9 +29,9 @@ def thermal_conductivity_rule(m):
     """
     Thermal conductivity expression rule.  See:
 
-    Younglove, B.A. and Ely, J.F., Thermophysical properties of fluids. II. Methane,
-        ethane, propane, isobutane and normal butane, J. Phys. Chem. Ref. Data,
-        16:577-798, 1987.
+    Marsh, K., Perkins, R., and Ramires, M.L.V., "Measurement and Correlation
+        of the Thermal Conductivity of Propane from 86 to 600 K at Pressures
+        to 70 MPa, J. Chem. Eng. Data, 47(4):932-940, 2002.
     """
     a = [
         -0.00124778,
@@ -77,17 +77,17 @@ def thermal_conductivity_rule(m):
     m.mu = pyo.ExternalFunction(library="", function="mu")
     m.itc = pyo.ExternalFunction(library="", function="itc")
 
-    drho_dp = m.itc("r290", delta, m.T_star / T) * rho_star * m.delta
-    drho_dp_ref = m.itc("r290", delta, m.T_star / Tref) * rho_star * m.delta
+    drho_dp = m.itc("propane", delta, m.T_star / T) * rho_star * m.delta
+    drho_dp_ref = m.itc("propane", delta, m.T_star / Tref) * rho_star * m.delta
 
     deltchi = smooth_max(
         Pc * rho / rho_crit**2 * (drho_dp - drho_dp_ref * Tref / T), 0, eps=1e-8
     )
     xi = xi0 * (deltchi / big_gam) ** (nu / gamma)
 
-    cp = m.cp("r290", delta, tau)
-    cv = m.cv("r290", delta, tau)
-    mu = m.mu("r290", delta, tau) / 1e6
+    cp = m.cp("propane", delta, tau)
+    cv = m.cv("propane", delta, tau)
+    mu = m.mu("propane", delta, tau) / 1e6
     y = qd * xi
     kappa_inv = cv / cp
     pi = math.pi
