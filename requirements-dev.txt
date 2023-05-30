@@ -31,6 +31,6 @@ jupyter_contrib_nbextensions
 snowballstemmer==1.2.1
 addheader>=0.2.2
 
-# this will install IDAES in editable mode using the dependencies defined under the `prerelease` tag of `extras_require` in `setup.py`
-# to customize this (e.g. to install a local clone of the Pyomo git repository), install IDAES without the `prerelease` tag and then install the dependencies separately
---editable .[prerelease,optional]
+# this will install IDAES in editable mode using the dependencies defined under the `extras_require` tags defined in `setup.py`
+--editable .[ui,dmf,grid,omlt,coolprop]
+# to customize this (e.g. to install a local clone of the Pyomo git repository), add the desired alternate requirements below

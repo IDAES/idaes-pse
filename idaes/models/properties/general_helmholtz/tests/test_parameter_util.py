@@ -241,8 +241,8 @@ def test_r1234ze():
         },
         2: {
             "T": 200,
-            "p": 0.0,
-            "rho": 0.0,
+            "p": 0,
+            "rho": 1e-12,  # Need a small number here to avoid 0/0
         },
         3: {
             "T": 350,
