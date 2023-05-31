@@ -196,6 +196,20 @@
         }
     },
     "transport": {
+        "thermal_conductivity": {
+            "reference": [
+                "Marsh, K., Perkins, R., and Ramires, M.L.V., Measurement and Correlation",
+                "    of the Thermal Conductivity of Propane from 86 to 600 K at Pressures",
+                "    to 70 MPa, J. Chem. Eng. Data, 47(4):932-940, 2002."
+            ]
+        },
+        "viscosity": {
+            "reference": [
+                "Vogel E, C Küchenmeister, E Bich, A Laesecke, Reference Correlation of the",
+                "    Viscosity of Propane. Journal of Physical and Chemical Reference Data ",
+                "    27, 947–970 (1998) "
+            ]
+        },
         "surface_tension": {
             "reference": [
                 "Mulero, A., I. Cachadina, Parra, M., Recommended Correlations for the Surface ",
