@@ -232,7 +232,7 @@ where:
 * :math:`\mu` : viscocity (kg/m/s)
 * tube_r_fouling : tube side fouling resistance (K m^2 / W)
 * shell_r_fouling : shell side fouling resistance (K m^2 / W)
-* fcorrection_htc: correction factor for overall heat trasnfer
+* fcorrection_htc: correction factor for overall heat transfer
 * f_arrangement: tube arrangement factor
 
 Note:
@@ -270,7 +270,7 @@ Tube side:
 
 where:
 
-* :math:`k_{loss uturn}` : pressure loss coeficient of a tube u-turn
+* :math:`k_{loss uturn}` : pressure loss coefficient of a tube u-turn
 * g : is the acceleration of gravity 9.807 (m/s^2)
 
 Shell side:

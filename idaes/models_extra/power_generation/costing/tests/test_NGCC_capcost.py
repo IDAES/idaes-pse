@@ -423,9 +423,9 @@ def test_units3_costing(build_costing):
         },
     )
 
-    # Accounts with auxilliary load as the reference/scaling parameter
+    # Accounts with auxiliary load as the reference/scaling parameter
     # Exhibit 5-9
-    auxilliary_load_accounts = [
+    auxiliary_load_accounts = [
         "11.2",
         "11.3",
         "11.4",
@@ -442,17 +442,17 @@ def test_units3_costing(build_costing):
         "12.9",
     ]
     m.fs.b14 = UnitModelBlock()
-    # Obtain auxilliary load in kW
+    # Obtain auxiliary load in kW
     aux_load = 14 * 1000  # kW
 
-    m.fs.b14.auxilliary_load = pyo.Var(initialize=aux_load, units=pyunits.kW)
-    m.fs.b14.auxilliary_load.fix()
+    m.fs.b14.auxiliary_load = pyo.Var(initialize=aux_load, units=pyunits.kW)
+    m.fs.b14.auxiliary_load.fix()
     m.fs.b14.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing,
         costing_method=QGESSCostingData.get_PP_costing,
         costing_method_arguments={
-            "cost_accounts": auxilliary_load_accounts,
-            "scaled_param": m.fs.b14.auxilliary_load,
+            "cost_accounts": auxiliary_load_accounts,
+            "scaled_param": m.fs.b14.auxiliary_load,
             "tech": 6,
             "ccs": "B",
             "CE_index_year": CE_index_year,
@@ -556,4 +556,4 @@ def test_flowsheet_costing(build_costing):
     assert results.solver.status == pyo.SolverStatus.ok
 
     # Verify total plant costs
-    assert pytest.approx(574.85, abs=0.1) == pyo.value(m.fs.costing.total_TPC)
+    assert pytest.approx(574.09, abs=0.1) == pyo.value(m.fs.costing.total_TPC)

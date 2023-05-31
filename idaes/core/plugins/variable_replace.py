@@ -109,7 +109,7 @@ class ReplaceVariables(NonIsomorphicTransformation):
         Args:
             instance: A block or model to apply the transformation to
             substitute: A list-like of two-element list-likes.  Each two element
-                list-like specifies a replacment of the first variable by the
+                list-like specifies a replacement of the first variable by the
                 second.  SimpleVar, IndexedVar, _GeneralVarData, and Reference are
                 all accepted types.
 

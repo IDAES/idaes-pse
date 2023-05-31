@@ -14,7 +14,7 @@
 Condenser model for solvent columns.
 
 This is a simple model for a condenser in the case where liquid and vapor
-phases have separate proeprty packages, such as the case of solvent columns.
+phases have separate property packages, such as the case of solvent columns.
 
 Assumptions:
      * Steady-state only
@@ -67,7 +67,7 @@ class SolventCondenserData(UnitModelBlockData):
     """
 
     CONFIG = ConfigBlock()
-    # TOOO: Add dynamics in future
+    # TODO: Add dynamics in future
     CONFIG.declare(
         "dynamic",
         ConfigValue(
@@ -281,7 +281,7 @@ see property package for documentation.}""",
         )
 
         # ---------------------------------------------------------------------
-        # Check flow basis is compatable
+        # Check flow basis is compatible
         # TODO : Could add code to convert flow bases, but not now
         t_init = self.flowsheet().time.first()
         if (
@@ -355,7 +355,7 @@ see property package for documentation.}""",
                     == blk.zero_flow_param
                 )
             else:
-                # Non-condensable comonent
+                # Non-condensable component
                 # Mass transfer term is zero, no vapor flowrate
                 return blk.vapor_phase.mass_transfer_term[t, "Vap", j] == 0 * vunits(fb)
 
@@ -565,7 +565,7 @@ see property package for documentation.}""",
             # Check for unindexed state variables
             for sv in liq_state_vars:
                 if "flow" in sv:
-                    # Flow varaible, assume 10% condensation
+                    # Flow variable, assume 10% condensation
                     if "phase_comp" in sv:
                         # Flow is indexed by phase and component
                         liquid_state_args[sv] = {}

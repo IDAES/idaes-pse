@@ -399,7 +399,7 @@ def test_categorize_3():
 @pytest.mark.unit
 def test_categorize_4():
     """
-    This tests categorization when a psuedo-steady state
+    This tests categorization when a pseudo-steady state
     approximation is used. Energy accumulation and accumulation of E
     are fixed, the corresponding initial conditions unfixed, and
     the corresponding discretization equations deactivated.

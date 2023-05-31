@@ -1,7 +1,7 @@
 Feed Block
 ==========
 
-Feed Blocks are used to represent sources of material in Flowsheets. Feed blocks do not require calculation of the phase equilibrium of the feed stream (some property packages, like the :ref:`Generic Property Package <explanations/components/property_package/general/index:Generic Property Package Framework>` with a :ref:`FTPx <explanations/components/property_package/general/state/FTPx:State Definition>` state definition, always flash regardless), and the composition of the material in the outlet stream will be exactly as specified in the input. For applications where the users wishes the outlet stream to be in phase equilibrium, see the Feed_Flash unit model.
+Feed Blocks are used to represent sources of material in Flowsheets. Feed blocks do not require calculation of the phase equilibrium of the feed stream (some property packages, like the :ref:`Modular Property Package <explanations/components/property_package/general/index:Modular Property Package Framework>` with a :ref:`FTPx <explanations/components/property_package/general/state/FTPx:State Definition>` state definition, always flash regardless), and the composition of the material in the outlet stream will be exactly as specified in the input. For applications where the users wishes the outlet stream to be in phase equilibrium, see the Feed_Flash unit model.
 
 Degrees of Freedom
 ------------------
@@ -24,6 +24,12 @@ Variables
 Feed blocks add no additional Variables.
 
 .. module:: idaes.models.unit_models.feed
+
+Initialization
+--------------
+
+.. autoclass:: FeedInitializer
+   :members: initialization_routine
 
 Feed Class
 ----------

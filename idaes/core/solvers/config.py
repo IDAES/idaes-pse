@@ -79,7 +79,7 @@ def use_idaes_solver_configuration_defaults(b=True):
         # front you are saying I know this stuff exists and I must insist you
         # don't use it, of course you can still implicitly not use it.  You can
         # also turn it off and on, if that makes sense for you, but once you turn
-        # it on, you've still registerd the wrapper classes, and if you turn
+        # it on, you've still registered the wrapper classes, and if you turn
         # it off they just pass-through.
         for c in list(SolverFactory):
             if isinstance(SolverFactory.get_class(c), SolverWrapper):

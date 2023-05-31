@@ -24,8 +24,11 @@ from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
     SaponificationStateBlock,
 )
-
 from idaes.core.solvers import get_solver
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    InitializationStatus,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -229,7 +232,7 @@ class TestStateBlock(object):
         assert "Temperature set above upper bound" in caplog.text
         assert "Pressure set below lower bound" not in caplog.text
         assert "Pressure set above upper bound" not in caplog.text
-        # Reset temeprature
+        # Reset temperature
         model.props[1].temperature.value = 298.15
 
     @pytest.mark.unit
@@ -295,3 +298,18 @@ class TestStateBlock(object):
     @pytest.mark.component
     def check_units(self, model):
         assert_units_consistent(model)
+
+
+@pytest.mark.component
+def test_initializer():
+    model = ConcreteModel()
+    model.params = SaponificationParameterBlock()
+
+    model.props = model.params.build_state_block([1])
+
+    assert model.props.default_initializer is BlockTriangularizationInitializer
+
+    initializer = model.props.default_initializer()
+    initializer.initialize(model.props)
+
+    assert initializer.summary[model.props]["status"] == InitializationStatus.Ok

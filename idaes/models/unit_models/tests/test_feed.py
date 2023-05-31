@@ -19,10 +19,9 @@ import pytest
 
 from pyomo.environ import ConcreteModel, value, units as pyunits
 from pyomo.util.check_units import assert_units_consistent
-from pyomo.contrib.pynumero.asl import AmplInterface
 
 from idaes.core import FlowsheetBlock
-from idaes.models.unit_models.feed import Feed
+from idaes.models.unit_models.feed import Feed, FeedInitializer
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
 )
@@ -38,7 +37,6 @@ from idaes.core.solvers import get_solver
 
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
-    SingleControlVolumeUnitInitializer,
     InitializationStatus,
 )
 
@@ -64,6 +62,8 @@ def test_config():
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.property_package is m.fs.properties
+
+    assert m.fs.unit.default_initializer is FeedInitializer
 
 
 # -----------------------------------------------------------------------------
@@ -315,16 +315,37 @@ class TestInitializers:
 
         m.fs.unit = Feed(property_package=m.fs.properties)
 
-        m.fs.unit.flow_mol.fix(100)
-        m.fs.unit.enth_mol.fix(24000)
-        m.fs.unit.pressure.fix(101325)
+        m.fs.unit.flow_mol[0].set_value(100)
+        m.fs.unit.enth_mol[0].set_value(24000)
+        m.fs.unit.pressure[0].set_value(101325)
 
         return m
 
-    @pytest.mark.integration
-    @pytest.mark.skipif(
-        not AmplInterface.available(), reason="pynumero_ASL is not available"
-    )
+    @pytest.mark.component
+    def test_default_initializer(self, model):
+        initializer = FeedInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(101325.0, abs=1e3) == value(
+            model.fs.unit.outlet.pressure[0]
+        )
+        assert pytest.approx(24000, abs=1e3) == value(model.fs.unit.outlet.enth_mol[0])
+        assert pytest.approx(100.0, abs=1e-2) == value(model.fs.unit.outlet.flow_mol[0])
+
+        assert pytest.approx(373.12, abs=1e-2) == value(
+            model.fs.unit.properties[0].temperature
+        )
+        assert pytest.approx(0.5953, abs=1e-4) == value(
+            model.fs.unit.properties[0].phase_frac["Liq"]
+        )
+
+        assert not model.fs.unit.flow_mol[0].fixed
+        assert not model.fs.unit.enth_mol[0].fixed
+        assert not model.fs.unit.pressure[0].fixed
+
+    @pytest.mark.component
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
         initializer.initialize(model.fs.unit)
@@ -343,3 +364,7 @@ class TestInitializers:
         assert pytest.approx(0.5953, abs=1e-4) == value(
             model.fs.unit.properties[0].phase_frac["Liq"]
         )
+
+        assert not model.fs.unit.flow_mol[0].fixed
+        assert not model.fs.unit.enth_mol[0].fixed
+        assert not model.fs.unit.pressure[0].fixed

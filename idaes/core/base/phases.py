@@ -130,7 +130,7 @@ class PhaseData(ProcessBlockData):
 
     # For the base Phase class, determine phase type based on component name
     # Derived classes will overload these and return the correct type
-    # This will handle backwards compatability for old-style property packages
+    # This will handle backwards compatibility for old-style property packages
     def is_liquid_phase(self):
         if "Liq" in self.name:
             return True

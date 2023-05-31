@@ -18,7 +18,6 @@ Authors: Andrew Lee
 import pytest
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, value, units
-from pyomo.contrib.pynumero.asl import AmplInterface
 
 from idaes.core import (
     FlowsheetBlock,
@@ -282,22 +281,22 @@ class TestInitializers:
             has_pressure_change=True,
         )
 
-        m.fs.unit.inlet.flow_vol.fix(1.0e-03)
-        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.inlet.flow_vol[0].set_value(1.0e-03)
+        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].set_value(55388.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].set_value(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].set_value(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].set_value(0.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].set_value(0.0)
 
-        m.fs.unit.inlet.temperature.fix(303.15)
-        m.fs.unit.inlet.pressure.fix(101325.0)
+        m.fs.unit.inlet.temperature[0].set_value(303.15)
+        m.fs.unit.inlet.pressure[0].set_value(101325.0)
 
         m.fs.unit.heat_duty.fix(0)
         m.fs.unit.deltaP.fix(0)
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_general_hierarchical(self, model):
         initializer = SingleControlVolumeUnitInitializer()
         initializer.initialize(model.fs.unit)
@@ -327,10 +326,17 @@ class TestInitializers:
             101325, rel=1e-6
         )
 
-    @pytest.mark.integration
-    @pytest.mark.skipif(
-        not AmplInterface.available(), reason="pynumero_ASL is not available"
-    )
+        assert not model.fs.unit.inlet.flow_vol[0].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "H2O"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fixed
+
+        assert not model.fs.unit.inlet.temperature[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
+
+    @pytest.mark.component
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
         initializer.initialize(model.fs.unit)
@@ -342,16 +348,16 @@ class TestInitializers:
             55388, rel=1e-5
         )
         assert value(model.fs.unit.outlet.conc_mol_comp[0, "NaOH"]) == pytest.approx(
-            0, abs=2e-5
+            0.0026102, rel=2e-5
         )
         assert value(
             model.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
-        ) == pytest.approx(0, abs=2e-5)
+        ) == pytest.approx(0.0026102, rel=2e-5)
         assert value(
             model.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]
-        ) == pytest.approx(100, rel=2e-5)
+        ) == pytest.approx(99.997, rel=2e-5)
         assert value(model.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]) == pytest.approx(
-            100, rel=2e-5
+            99.997, rel=2e-5
         )
         assert value(model.fs.unit.outlet.temperature[0]) == pytest.approx(
             304.32, rel=1e-2
@@ -359,3 +365,13 @@ class TestInitializers:
         assert value(model.fs.unit.outlet.pressure[0]) == pytest.approx(
             101325, rel=1e-6
         )
+
+        assert not model.fs.unit.inlet.flow_vol[0].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "H2O"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fixed
+
+        assert not model.fs.unit.inlet.temperature[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed

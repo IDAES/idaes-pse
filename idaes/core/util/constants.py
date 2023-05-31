@@ -14,8 +14,8 @@
 """
 This module contains common constants of use in process systems engineering.
 
-All units are SI, and generally expressed to 9 signficant figures where
-avaialble
+All units are SI, and generally expressed to 9 significant figures where
+available
 """
 
 __author__ = "Andrew Lee"
@@ -61,7 +61,7 @@ class Constants:
     stefan_constant = 5.67037442e-8 * units.watt / units.metre**2 / units.degK**4
 
     # -------------------------------------------------------------------------
-    # Other constants - all values sourced from NIST to avaialble uncertainty
+    # Other constants - all values sourced from NIST to available uncertainty
     # All values retrieved 8th Jan 2020 unless otherwise noted
 
     # https://physics.nist.gov/cgi-bin/cuu/Value?gn

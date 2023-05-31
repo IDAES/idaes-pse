@@ -56,6 +56,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.units_of_measurement import report_quantity
+from idaes.core.initialization import ModularInitializerBase
 
 __author__ = "Andrew Lee"
 
@@ -86,6 +87,318 @@ class EnergySplittingType(Enum):
     enthalpy_split = 3
 
 
+class SeparatorInitializer(ModularInitializerBase):
+    """
+    Initializer for Separator blocks.
+
+    """
+
+    def initialization_routine(
+        self,
+        model: Block,
+    ):
+        """
+        Initialization routine for Separator Blocks.
+
+        This routine starts by initializing the feed stream followed by solving
+        for all split fractions. Next, states for each outlet are estimated using the
+        following rules:
+
+        1. Intensive states remain unchanged
+        2. Extensive states are multiplied by split fractions if index matches, or
+            average of split fractions for outlet otherwise
+
+        Each outlet state block is then initialized, and finally the full model is
+        solved.
+
+        Args:
+            model: model to be initialized
+
+        Returns:
+            None
+
+        """
+        init_log = idaeslog.getInitLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+
+        # Create solver
+        solver = get_solver(self.config.solver, self.config.solver_options)
+
+        # Initialize mixed state block
+        if model.config.mixed_state_block is not None:
+            mblock = model.config.mixed_state_block
+        else:
+            mblock = model.mixed_state
+        self.get_submodel_initializer(mblock).initialize(mblock)
+
+        # Solve for split fractions only
+        component_status = {}
+        for c in model.component_objects((Block, Constraint)):
+            for i in c:
+                if not c[i].local_name == "sum_split_frac":
+                    # Record current status of components to restore later
+                    component_status[c[i]] = c[i].active
+                    c[i].deactivate()
+
+        res = None
+        if degrees_of_freedom(model) != 0:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solver.solve(model, tee=slc.tee)
+                init_log.info(
+                    "Initialization Step 1 Complete: {}".format(idaeslog.condition(res))
+                )
+
+        for c, s in component_status.items():
+            if s:
+                c.activate()
+
+        if model.config.ideal_separation:
+            # If using ideal splitting, initialization should be complete
+            return res
+
+        # Initialize outlet StateBlocks
+        outlet_list = model.create_outlet_list()
+
+        # Premises for initializing outlet states:
+        # 1. Intensive states remain unchanged - this is either a valid premise
+        # or the actual state is impossible to calculate without solving the
+        # full separator model.
+        # 2. Extensive states use split fractions if index matches, or
+        # average of split fractions for outlet otherwise
+        for o in outlet_list:
+            # Get corresponding outlet StateBlock
+            o_block = getattr(model, o + "_state")
+
+            # Create dict to store fixed status of state variables
+            for t in model.flowsheet().time:
+                # Calculate values for state variables
+                s_vars = o_block[t].define_state_vars()
+                for v in s_vars:
+                    for k in s_vars[v]:
+                        # If fixed, use current value
+                        # otherwise calculate guess from mixed state and fix
+                        if not s_vars[v][k].fixed:
+                            m_var = getattr(mblock[t], s_vars[v].local_name)
+                            if "flow" in v:
+                                # If a "flow" variable, is extensive
+                                # Apply split fraction
+                                if model.config.split_basis == SplittingType.totalFlow:
+                                    # All flows split by outlet
+                                    s_vars[v][k].set_value(
+                                        value(m_var[k] * model.split_fraction[(t, o)])
+                                    )
+                                elif "_phase_comp" in v:
+                                    # Need to match indices, but use split frac
+                                    if (
+                                        model.config.split_basis
+                                        == SplittingType.phaseComponentFlow
+                                    ):
+                                        s_vars[v][k].set_value(
+                                            value(
+                                                m_var[k]
+                                                * model.split_fraction[(t, o) + (k,)]
+                                            )
+                                        )
+                                    elif (
+                                        model.config.split_basis
+                                        == SplittingType.phaseFlow
+                                    ):
+                                        s_vars[v][k].set_value(
+                                            value(
+                                                m_var[k]
+                                                * model.split_fraction[(t, o) + (k[0],)]
+                                            )
+                                        )
+                                    elif (
+                                        model.config.split_basis
+                                        == SplittingType.componentFlow
+                                    ):
+                                        s_vars[v][k].set_value(
+                                            value(
+                                                m_var[k]
+                                                * model.split_fraction[(t, o) + (k[1],)]
+                                            )
+                                        )
+                                    else:
+                                        raise BurntToast(
+                                            "{} encountered unrecognised "
+                                            "SplittingType. This should not "
+                                            "occur - please send this bug to "
+                                            "the IDAES developers.".format(model.name)
+                                        )
+                                elif "_phase" in v:
+                                    if (
+                                        model.config.split_basis
+                                        == SplittingType.phaseComponentFlow
+                                    ):
+                                        # Need average split fraction
+                                        avg_split = value(
+                                            sum(
+                                                model.split_fraction[t, o, k, j]
+                                                for j in mblock.component_list
+                                            )
+                                            / len(mblock.component_list)
+                                        )
+                                        s_vars[v][k].set_value(
+                                            value(m_var[k] * avg_split)
+                                        )
+                                    elif (
+                                        model.config.split_basis
+                                        == SplittingType.phaseFlow
+                                    ):
+                                        s_vars[v][k].set_value(
+                                            value(
+                                                m_var[k]
+                                                * model.split_fraction[(t, o) + (k,)]
+                                            )
+                                        )
+                                    elif (
+                                        model.config.split_basis
+                                        == SplittingType.componentFlow
+                                    ):
+                                        # Need average split fraction
+                                        avg_split = value(
+                                            sum(
+                                                model.split_fraction[t, o, j]
+                                                for j in mblock.component_list
+                                            )
+                                            / len(mblock.component_list)
+                                        )
+                                        s_vars[v][k].set_value(
+                                            value(m_var[k] * avg_split)
+                                        )
+                                    else:
+                                        raise BurntToast(
+                                            "{} encountered unrecognised "
+                                            "SplittingType. This should not "
+                                            "occur - please send this bug to "
+                                            "the IDAES developers.".format(model.name)
+                                        )
+                                elif "_comp" in v:
+                                    if (
+                                        model.config.split_basis
+                                        == SplittingType.phaseComponentFlow
+                                    ):
+                                        # Need average split fraction
+                                        avg_split = value(
+                                            sum(
+                                                model.split_fraction[t, o, p, k]
+                                                for p in mblock.phase_list
+                                            )
+                                            / len(mblock.phase_list)
+                                        )
+                                        s_vars[v][k].set_value(
+                                            value(m_var[k] * avg_split)
+                                        )
+                                    elif (
+                                        model.config.split_basis
+                                        == SplittingType.phaseFlow
+                                    ):
+                                        # Need average split fraction
+                                        avg_split = value(
+                                            sum(
+                                                model.split_fraction[t, o, p]
+                                                for p in mblock.phase_list
+                                            )
+                                            / len(mblock.phase_list)
+                                        )
+                                        s_vars[v][k].set_value(
+                                            value(m_var[k] * avg_split)
+                                        )
+                                    elif (
+                                        model.config.split_basis
+                                        == SplittingType.componentFlow
+                                    ):
+                                        s_vars[v][k].set_value(
+                                            value(
+                                                m_var[k]
+                                                * model.split_fraction[(t, o) + (k,)]
+                                            )
+                                        )
+                                    else:
+                                        raise BurntToast(
+                                            "{} encountered unrecognised "
+                                            "SplittingType. This should not "
+                                            "occur - please send this bug to "
+                                            "the IDAES developers.".format(model.name)
+                                        )
+                                else:
+                                    # Assume unindexed extensive state
+                                    # Need average split
+                                    if (
+                                        model.config.split_basis
+                                        == SplittingType.phaseComponentFlow
+                                    ):
+                                        # Need average split fraction
+                                        avg_split = value(
+                                            sum(
+                                                model.split_fraction[t, o, p, j]
+                                                for (p, j) in mblock.phase_component_set
+                                            )
+                                            / len(mblock.phase_component_set)
+                                        )
+                                    elif (
+                                        model.config.split_basis
+                                        == SplittingType.phaseFlow
+                                    ):
+                                        # Need average split fraction
+                                        avg_split = value(
+                                            sum(
+                                                model.split_fraction[t, o, p]
+                                                for p in mblock.phase_list
+                                            )
+                                            / len(mblock.phase_list)
+                                        )
+                                    elif (
+                                        model.config.split_basis
+                                        == SplittingType.componentFlow
+                                    ):
+                                        # Need average split fraction
+                                        avg_split = value(
+                                            sum(
+                                                model.split_fraction[t, o, j]
+                                                for j in mblock.component_list
+                                            )
+                                            / len(mblock.component_list)
+                                        )
+                                    else:
+                                        raise BurntToast(
+                                            "{} encountered unrecognised "
+                                            "SplittingType. This should not "
+                                            "occur - please send this bug to "
+                                            "the IDAES developers.".format(model.name)
+                                        )
+                                    s_vars[v][k].set_value(value(m_var[k] * avg_split))
+                            else:
+                                # Otherwise intensive, equate to mixed stream
+                                s_vars[v][k].set_value(m_var[k].value)
+
+            # Call initialization routine for outlet StateBlock
+            self.get_submodel_initializer(o_block).initialize(o_block)
+
+        if model.config.mixed_state_block is None:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solver.solve(model, tee=slc.tee)
+
+            if not check_optimal_termination(res):
+                raise InitializationError(
+                    f"{model.name} failed to initialize successfully. Please "
+                    f"check the output logs for more information."
+                )
+
+            init_log.info(
+                "Initialization Step 2 Complete: {}".format(idaeslog.condition(res))
+            )
+        else:
+            init_log.info("Initialization Complete.")
+
+        return res
+
+
 @declare_process_block_class("Separator")
 class SeparatorData(UnitModelBlockData):
     """
@@ -102,10 +415,12 @@ class SeparatorData(UnitModelBlockData):
 
     When being used as a sub-model, Separator should only be used when a
     set of new StateBlocks are required for the streams to be separated. It
-    should not be used to separate streams to go to mutiple ControlVolumes in a
+    should not be used to separate streams to go to multiple ControlVolumes in a
     single unit model - in these cases the unit model developer should write
     their own splitting equations.
     """
+
+    default_initializer = SeparatorInitializer
 
     CONFIG = ConfigBlock()
     CONFIG.declare(
@@ -380,7 +695,7 @@ objects linked the mixed state and all outlet states,
     def _validate_config_arguments(self):
         if self.config.has_phase_equilibrium and self.config.ideal_separation:
             raise ConfigurationError(
-                """{} recieved arguments has_phase_equilibrium = True and
+                """{} received arguments has_phase_equilibrium = True and
                     ideal_separation = True. These arguments are incompatible
                     with each other, and you should choose one or the other.""".format(
                     self.name
@@ -482,7 +797,7 @@ objects linked the mixed state and all outlet states,
                 raise BurntToast(
                     f"{self.name} get_mixed_state_block method called when the "
                     "mixed_state_block argument is None, and no mixed_state "
-                    "block is contained in seperator. This should not happen."
+                    "block is contained in separator. This should not happen."
                 )
         # Check that the user-provided StateBlock uses the same prop pack
         if (
@@ -532,7 +847,7 @@ objects linked the mixed state and all outlet states,
 
     def add_split_fractions(self, outlet_list, mixed_block):
         """
-        Creates outlet Port objects and tries to partiton mixed stream flows
+        Creates outlet Port objects and tries to partition mixed stream flows
         between these
 
         Args:
@@ -835,7 +1150,7 @@ objects linked the mixed state and all outlet states,
 
     def partition_outlet_flows(self, mb, outlet_list):
         """
-        Creates outlet Port objects and tries to partiton mixed stream flows
+        Creates outlet Port objects and tries to partition mixed stream flows
         between these
 
         Args:

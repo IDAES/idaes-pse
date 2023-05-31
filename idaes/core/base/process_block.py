@@ -74,7 +74,7 @@ _config_block_keys_docstring = """
 def _get_pyomo_block_kwargs():
     """This function gets the keyword argument names used by Pyomo Block.__init__
     This list is generated when importing the module rather than a static list
-    to accomadate future Pyomo interface changes.
+    to accommodate future Pyomo interface changes.
     """
     funcs = get_overloads_for(Block.__init__)
     keywords = set()
@@ -152,7 +152,7 @@ class ProcessBlock(Block):
         if hasattr(cls, "__process_block__"):
             # __process_block__ is a class attribute created when making an
             # indexed or scalar subclass of ProcessBlock (or subclass thereof).
-            # If cls dosen't have it, the indexed or scalar class has not been
+            # If cls doesn't have it, the indexed or scalar class has not been
             # created yet.
             #
             # You get here after creating a new indexed or scalar class in the
@@ -176,7 +176,7 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
 
     This is a decorator function for a class definition, where the class is
     derived from Pyomo's _BlockData. It creates a ProcessBlock subclass to
-    contain the decorated class. The only requirment is that the subclass of
+    contain the decorated class. The only requirement is that the subclass of
     _BlockData contain a build() method. The purpose of this decorator is to
     simplify subclassing Pyomo's block class.
 
@@ -198,7 +198,7 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
         try:
             cb_doc = cls.CONFIG.generate_documentation(
                 format=String_ConfigFormatter(
-                    block_start="",
+                    block_start="%s\n",
                     block_end="",
                     item_start="%s\n",
                     item_body="%s",

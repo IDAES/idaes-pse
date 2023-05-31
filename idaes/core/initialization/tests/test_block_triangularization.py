@@ -16,12 +16,18 @@ Tests for Block Triangularization initialization
 import pytest
 import types
 
-from pyomo.environ import ConcreteModel, Constraint, value, Var
-from pyomo.contrib.pynumero.asl import AmplInterface
+from pyomo.environ import ConcreteModel, Constraint, units, value, Var
+
+from idaes.core import FlowsheetBlock
 from idaes.core.initialization.block_triangularization import (
     BlockTriangularizationInitializer,
 )
 from idaes.core.initialization.initializer_base import InitializationStatus
+from idaes.models.unit_models.pressure_changer import (
+    Turbine,
+)
+
+from idaes.models.properties import iapws95
 
 __author__ = "Andrew Lee"
 
@@ -37,6 +43,7 @@ class TestBTSubMethods:
 
         assert "block_solver" in initializer.config
         assert "block_solver_options" in initializer.config
+        assert "block_solver_call_options" in initializer.config
         assert "calculate_variable_options" in initializer.config
 
     # TODO: Tests for prechecks and initialization_routine stand alone
@@ -62,9 +69,6 @@ class TestBTSubMethods:
 
         return m
 
-    @pytest.mark.skipif(
-        not AmplInterface.available(), reason="pynumero_ASL is not available"
-    )
     @pytest.mark.component
     def test_workflow(self, model):
         initializer = BlockTriangularizationInitializer()

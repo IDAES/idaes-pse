@@ -333,7 +333,7 @@ class VolMolSolvent:
 
 
 class VolMolCO2:
-    # Weiland Method for calculating molar volume of disolved CO2 [2]
+    # Weiland Method for calculating molar volume of dissolved CO2 [2]
 
     @staticmethod
     def build_parameters(cobj):

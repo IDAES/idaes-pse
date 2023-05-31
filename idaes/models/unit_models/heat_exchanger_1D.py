@@ -15,6 +15,7 @@ Generic IDAES 1D Heat Exchanger Model with overall area and heat transfer coeffi
 """
 # Import Pyomo libraries
 from pyomo.environ import (
+    Block,
     Var,
     check_optimal_termination,
     value,
@@ -44,7 +45,7 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
-
+from idaes.core.initialization import SingleControlVolumeUnitInitializer
 import idaes.logger as idaeslog
 
 
@@ -54,9 +55,151 @@ __author__ = "Jaffer Ghouse, Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 
+class HX1DInitializer(SingleControlVolumeUnitInitializer):
+    """
+    Initializer for 1D Heat Exchanger units.
+
+    """
+
+    def initialization_routine(
+        self,
+        model: Block,
+        plugin_initializer_args: dict = None,
+        duty=None,
+    ):
+        """
+        Common initialization routine for 1D Heat Exchangers.
+
+        This routine starts by initializing the hot and cold side properties. Next, the heat
+        transfer between the two sides is fixed to an initial guess for the heat duty (provided by the duty
+        argument), the associated constraints is deactivated, and the model is then solved. Finally, the heat
+        duty is unfixed and the heat transfer constraints reactivated followed by a final solve of the model.
+
+        Args:
+            model: Pyomo Block to be initialized
+            plugin_initializer_args: dict-of-dicts containing arguments to be passed to plug-in Initializers.
+                Keys should be submodel components.
+            duty: initial guess for heat duty to assist with initialization. Can be a Pyomo expression with units.
+                Default is 1/4*U*A*(Thot - Tcold)
+
+        Returns:
+            Pyomo solver results object
+        """
+        return super(SingleControlVolumeUnitInitializer, self).initialization_routine(
+            model=model,
+            plugin_initializer_args=plugin_initializer_args,
+            duty=duty,
+        )
+
+    def initialize_main_model(
+        self,
+        model: Block,
+        duty=None,
+    ):
+        """
+        Initialization routine for main 1D HX models.
+
+        Args:
+            model: Pyomo Block to be initialized.
+            duty: initial guess for heat duty to assist with initialization. Can be a Pyomo expression with units.
+
+        Returns:
+            Pyomo solver results object.
+
+        """
+        init_log = idaeslog.getInitLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+
+        # Create solver
+        solver = get_solver(self.config.solver, self.config.solver_options)
+
+        # ---------------------------------------------------------------------
+        # Get length values
+        if model.length.fixed:
+            # Most likely case
+            model.cold_side.length.set_value(model.length)
+        elif model.cold_side.length.fixed:
+            # This would be unusual, but check
+            model.length.set_value(model.cold_side.length)
+        else:
+            # No fixed value for length - we will assume the user knows what they are doing
+            pass
+
+        # Initialize control volumes blocks
+        Lfix = model.hot_side.length.fixed
+        model.hot_side.length.fix()
+        self.initialize_control_volume(model.hot_side)
+
+        if not Lfix:
+            model.hot_side.length.unfix()
+
+        Lfix = model.cold_side.length.fixed
+        model.cold_side.length.fix()
+        self.initialize_control_volume(model.cold_side)
+
+        if not Lfix:
+            model.cold_side.length.unfix()
+
+        init_log.info_high("Initialization Step 1 Complete.")
+
+        # ---------------------------------------------------------------------
+        # Solve unit with fixed heat duty
+        # Guess heat duty based on 1/4 of maximum driving force
+        hot_side_units = (
+            model.config.hot_side.property_package.get_metadata().get_derived_units
+        )
+        if duty is None:
+            duty = (
+                0.25
+                * model.heat_transfer_coefficient[0, 0]
+                * model.area
+                * (
+                    model.hot_side.properties[0, 0].temperature
+                    - pyunits.convert(
+                        model.cold_side.properties[0, 0].temperature,
+                        to_units=hot_side_units("temperature"),
+                    )
+                )
+            )
+
+        duty_per_length = duty / model.length
+        # Fix heat duties
+        for v in model.hot_side.heat.values():
+            v.fix(-duty_per_length)
+        for v in model.cold_side.heat.values():
+            v.fix(duty_per_length)
+
+        # Deactivate heat duty constraints
+        model.heat_transfer_eq.deactivate()
+        model.heat_conservation.deactivate()
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(model, tee=slc.tee)
+        init_log.info_high(f"Initialization Step 2 {idaeslog.condition(res)}.")
+
+        # Unfix heat duty and reactivate constraints
+        for v in model.hot_side.heat.values():
+            v.unfix()
+        for v in model.cold_side.heat.values():
+            v.unfix()
+        model.heat_transfer_eq.activate()
+        model.heat_conservation.activate()
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(model, tee=slc.tee)
+        init_log.info_high(f"Initialization Step 3 {idaeslog.condition(res)}.")
+
+        return res
+
+
 @declare_process_block_class("HeatExchanger1D")
 class HeatExchanger1DData(UnitModelBlockData):
     """Standard Heat Exchanger 1D Unit Model Class."""
+
+    default_initializer = HX1DInitializer
 
     CONFIG = UnitModelBlockData.CONFIG(implicit=True)
     # Template for config arguments for hot and cold side
@@ -286,7 +429,7 @@ cold side flows from 1 to 0""",
         self._process_config()
 
         # Set flow directions for the control volume blocks and specify
-        # dicretisation if not specified.
+        # discretization if not specified.
         if self.config.flow_type == HeatExchangerFlowPattern.cocurrent:
             set_direction_hot = FlowDirection.forward
             set_direction_cold = FlowDirection.forward

@@ -105,7 +105,7 @@ if __name__ == "__main__":
     perturbations in p1 and p2.
 
 
-    The matrix dx_dp constains the sensitivities of x to perturbations in p
+    The matrix dx_dp constrains the sensitivities of x to perturbations in p
     """
 
     # Initialize sensitivity matrix Nx x Np

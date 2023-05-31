@@ -24,6 +24,10 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 
+# Product blocks can reuse the Feed initializer
+# For consistency and future proofing, import with new name
+from idaes.models.unit_models.feed import FeedInitializer as ProductInitializer
+
 __author__ = "Andrew Lee"
 
 
@@ -36,6 +40,9 @@ class ProductData(UnitModelBlockData):
     """
     Standard Product Block Class
     """
+
+    # Set default initializer
+    default_initializer = ProductInitializer
 
     CONFIG = ConfigBlock()
     CONFIG.declare(

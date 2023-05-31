@@ -274,7 +274,7 @@ CONFIG_Template.declare(
         default=False,
         domain=Bool,
         description="Enthalpy transfer term construction flag",
-        doc="""Indicates whether terms for enthalpy transfer due to mass trasnfer
+        doc="""Indicates whether terms for enthalpy transfer due to mass transfer
 should be constructed, **default** - False.
 **Valid values** {
 **True** - include enthalpy transfer terms,
@@ -457,7 +457,7 @@ have a config block which derives from CONFIG_Base,
 **default** - False.
 **Valid values:** {
 **True** - use automatic construction,
-**False** - do not use automatic construciton.}""",
+**False** - do not use automatic construction.}""",
         ),
     )
 
@@ -943,7 +943,7 @@ have a config block which derives from CONFIG_Base,
                 return 1 / prop.mw_comp[j]
             else:
                 raise BurntToast(
-                    "{} encountered unrecognsied combination of bases "
+                    "{} encountered unrecognized combination of bases "
                     "for reaction rate terms. Please contact the IDAES"
                     " developers with this bug.".format(b.name)
                 )

@@ -30,7 +30,7 @@ from idaes.models.properties.activity_coeff_models.activity_coeff_prop_pack impo
 )
 from idaes.logger import getIdaesLogger
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Jaffer Ghouse"
 __version__ = "0.0.1"
 

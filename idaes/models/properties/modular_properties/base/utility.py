@@ -175,7 +175,7 @@ def get_phase_method(self, config_arg, phase):
 def get_component_object(self, comp):
     """
     Utility method to get a component object from the property parameter block.
-    This code is used frequently throughout the generic property pacakge
+    This code is used frequently throughout the generic property package
     libraries.
 
     Args:

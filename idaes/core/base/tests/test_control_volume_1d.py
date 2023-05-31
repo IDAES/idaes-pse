@@ -1343,7 +1343,7 @@ def test_add_phase_component_balances_default_FFD():
 
 
 @pytest.mark.unit
-def test_add_phase_component_balances_distrubuted_area():
+def test_add_phase_component_balances_distributed_area():
     m = ConcreteModel()
     m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
@@ -2021,7 +2021,7 @@ def test_add_total_component_balances_default_FFD():
 
 
 @pytest.mark.unit
-def test_add_total_component_balances_distrubuted_area():
+def test_add_total_component_balances_distributed_area():
     m = ConcreteModel()
     m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
@@ -2691,7 +2691,7 @@ def test_add_total_element_balances_default_FFD():
 
 
 @pytest.mark.unit
-def test_add_total_element_balances_distrubuted_area():
+def test_add_total_element_balances_distributed_area():
     m = ConcreteModel()
     m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()

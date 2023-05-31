@@ -57,7 +57,7 @@ _log = idaeslog.getLogger(__name__)
 
     ControlVolume0DBlock should be used for any control volume with a defined
     volume and distinct inlets and outlets which does not require spatial
-    discretization. This encompases most basic unit models used in process
+    discretization. This encompasses most basic unit models used in process
     modeling.""",
 )
 class ControlVolume0DBlockData(ControlVolumeBlockData):
@@ -1230,7 +1230,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self.flowsheet().time,
                 domain=Reals,
                 initialize=0.0,
-                doc="Enthalpy transferred into control volume due to " "mass transfer",
+                doc="Enthalpy transferred into control volume due to mass transfer",
                 units=units("power"),
             )
 

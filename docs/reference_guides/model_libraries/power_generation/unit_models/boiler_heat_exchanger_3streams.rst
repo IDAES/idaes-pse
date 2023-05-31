@@ -9,7 +9,7 @@ Heat Exchanger With Three Streams
 The HeatExchangerWith3Streams model consists of a heat exchanger with three inlets, `side_1` represents the hot stream, while `side_2` and `side_3` are cold streams.
 This model is a simplified generic heat exchanger model with lumped UA (the product of the overall heat transfer coefficient and the heat transfer area).
 
-In a power plant flowsheet this model is used to represent an air preheater unit. This is because modeling the Ljungström type preheater is quite challenging since it involves not only the hot and cold gas streams but also the energy stored in and relased from the metal parts.
+In a power plant flowsheet this model is used to represent an air preheater unit. This is because modeling the Ljungström type preheater is quite challenging since it involves not only the hot and cold gas streams but also the energy stored in and released from the metal parts.
 
 
 Degrees of Freedom

@@ -1,7 +1,7 @@
 Product Block
 =============
 
-Product Blocks are used to represent sinks of material in Flowsheets. These can be used as a conventient way to mark the final destination of a material stream and to view the state of that material.
+Product Blocks are used to represent sinks of material in Flowsheets. These can be used as a convenient way to mark the final destination of a material stream and to view the state of that material.
 
 Degrees of Freedom
 ------------------
@@ -24,6 +24,13 @@ Variables
 Product blocks add no additional Variables.
 
 .. module:: idaes.models.unit_models.product
+
+
+Initialization
+--------------
+
+.. autoclass:: ProductInitializer
+   :members: initialization_routine
 
 Product Class
 -------------

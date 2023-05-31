@@ -252,7 +252,7 @@ class TestUnit(object):
     @pytest.mark.integration
     def test_subsaturated(self, model):
         for i in range(0, 6):
-            # Values of zero cause probelms, use a small number instead
+            # Values of zero cause problems, use a small number instead
             if i == 0:
                 i == 1e-8
 

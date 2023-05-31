@@ -28,7 +28,7 @@ function.
 Getting a Solver
 ----------------
 
-Typically users can use the standard Pyomo SoverFactory to get a solver.  If a
+Typically users can use the standard Pyomo SolverFactory to get a solver.  If a
 solver is needed in a general model or utility, a utility function (``idaes.core.solvers.get_solver``)
 provides a default or user configured solver at runtime. This is used by IDAES
 core models and tests.

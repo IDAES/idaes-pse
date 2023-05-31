@@ -10,24 +10,23 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""This module provides a list of suppored component and Pyomo expressions for
-some properties not implimented as external functions.
+"""This module provides a list of supported component and Pyomo expressions for
+some properties not implemented as external functions.
 """
 
 __author__ = "John Eslick"
 
 from idaes.models.properties.general_helmholtz.components.registry import (
     register_helmholtz_component,
-    get_transport_module,
+    remove_component,
+    registered_components,
+    viscosity_available,
+    thermal_conductivity_available,
+    surface_tension_available,
     component_registered,
+    clear_component_registry,
+    eos_reference,
+    viscosity_reference,
+    thermal_conductivity_reference,
+    surface_tension_reference,
 )
-
-import idaes.models.properties.general_helmholtz.components.h2o as h2o
-import idaes.models.properties.general_helmholtz.components.co2 as co2
-import idaes.models.properties.general_helmholtz.components.r134a as r134a
-import idaes.models.properties.general_helmholtz.components.r1234ze as r1234ze
-
-register_helmholtz_component("h2o", h2o)
-register_helmholtz_component("co2", co2)
-register_helmholtz_component("r134a", r134a)
-register_helmholtz_component("r1234ze", r1234ze)

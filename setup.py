@@ -87,7 +87,7 @@ kwargs = dict(
         "tinydb",
         "xlrd",  # for DMF read of old .xls Excel files
         "openpyxl",  # for DMF read of new .xls Excel files
-        # lbianchi-lbl: see https://github.com/IDAES/idaes-pse/issues/661
+        'ipython <= 8.12; python_version == "3.8"',
     ],
     entry_points={
         "console_scripts": [
@@ -102,7 +102,7 @@ kwargs = dict(
             "sympy",  # idaes.core.util.expr_doc
             "tensorflow",  # idaes.core.surrogate.keras_surrogate
             "gridx-prescient>=2.2.2",  # idaes.tests.prescient
-            # A Lee 11-Jan-22: no precompiled version of CoolProp available for Pyhton 3.9
+            # A Lee 11-Jan-22: no precompiled version of CoolProp available for Python 3.9
             "coolprop; python_version < '3.9'",  # idaes.generic_models.properties.general.coolprop
         ],
     },
@@ -129,6 +129,7 @@ kwargs = dict(
             "*.index",  # for Keras Surrogate folder
             "*.trc",
             "*.xlsx",  # idaes/dmf/tests/data_files - tabular import test files
+            "*.nl",
         ]
     },
     include_package_data=True,
