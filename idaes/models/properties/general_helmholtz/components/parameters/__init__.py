@@ -84,7 +84,7 @@ def auto_register():
             viscosity_ref = None
             surface_tension_ref = None
             if rematch:
-                with open(os.path.join(pth, fname), "r") as fptr:
+                with open(os.path.join(pth, fname), "r", encoding="utf-8") as fptr:
                     dct = json.load(fptr)
                 try:
                     eos_ref = dct["eos"]["reference"]
