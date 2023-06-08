@@ -34,6 +34,27 @@ from idaes.apps.grid_integration.multiperiod.design_and_operation_models import 
 
 class PriceTakerModel(ConcreteModel):
     @staticmethod
+    def get_optimal_n_clusters(data, kmin=None, kmax=None):
+        """
+        Determines the appropriate number of clusters needed for a
+        given price signal.
+
+        Args:
+
+        Returns:
+        """
+        if kmin is None:
+            kmin = 1
+        if kmax is None:
+            # setting an arbitrary kmax. Maybe log warning that no kmax was set and default of 14 used?
+            kmax = 14
+        k_values = range(kmin, kmax)
+
+        # Leaving for Marcus
+
+        pass
+
+    @staticmethod
     def get_elbow_plot():
         """
         Generates metrics for determining the appropriate number of clusters needed for a
@@ -43,6 +64,7 @@ class PriceTakerModel(ConcreteModel):
 
         Returns:
         """
+        # can use get_optimal_n_clusters here then plot
         pass
 
     @staticmethod
