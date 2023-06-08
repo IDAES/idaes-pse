@@ -26,12 +26,13 @@ from pyomo.environ import (
 )
 
 from idaes.apps.grid_integration import MultiPeriodModel
-from idaes.apps.grid_integration.multiperiod.design_and_operation_models \
-    import DesignModelData, OperationModelData
+from idaes.apps.grid_integration.multiperiod.design_and_operation_models import (
+    DesignModelData,
+    OperationModelData,
+)
 
 
 class PriceTakerModel(ConcreteModel):
-
     @staticmethod
     def get_elbow_plot():
         """
@@ -40,7 +41,7 @@ class PriceTakerModel(ConcreteModel):
 
         Args:
 
-        Returns: 
+        Returns:
         """
         pass
 
@@ -56,13 +57,13 @@ class PriceTakerModel(ConcreteModel):
         """
         lmp_data = {1: {1: 2, 2: 3, 3: 5}, 2: {1: 2, 2: 3, 3: 5}}
         weights = {1: 45, 2: 56}
-        
+
         return lmp_data, weights
 
     def append_lmp_data(
-        self, 
-        filename, 
-        column_name="price",  
+        self,
+        filename,
+        column_name="price",
         n_clusters=None,
         horizon_length=None,
     ):
@@ -80,7 +81,9 @@ class PriceTakerModel(ConcreteModel):
 
             for year in column_name:
                 price_data = full_data[year].to_list()
-                lmp_data, weights = self.cluster_lmp_data(price_data, n_clusters, horizon_length)
+                lmp_data, weights = self.cluster_lmp_data(
+                    price_data, n_clusters, horizon_length
+                )
                 y = int(year)
 
                 for d in self.set_days:
@@ -104,7 +107,7 @@ class PriceTakerModel(ConcreteModel):
                 y = int(year)
 
                 for t in self.set_time:
-                    self.LMP[t, y] = price_data[t-1]
+                    self.LMP[t, y] = price_data[t - 1]
 
             return
 
@@ -119,7 +122,9 @@ class PriceTakerModel(ConcreteModel):
             self.WEIGHTS = {}
 
             price_data = full_data[year].to_list()
-            lmp_data, weights = self.cluster_lmp_data(price_data, n_clusters, horizon_length)
+            lmp_data, weights = self.cluster_lmp_data(
+                price_data, n_clusters, horizon_length
+            )
 
             for d in self.set_days:
                 for t in self.set_time:
@@ -136,7 +141,7 @@ class PriceTakerModel(ConcreteModel):
             self.set_time = RangeSet(self._n_time_points)
 
             price_data = full_data[column_name].to_list()
-            self.LMP = {t: price_data[t-1] for t in self.set_time}
+            self.LMP = {t: price_data[t - 1] for t in self.set_time}
 
             return
 
@@ -164,7 +169,7 @@ class PriceTakerModel(ConcreteModel):
 
     def add_startup_shutdown(self):
         """
-        Adds startup/shutdown and minimum uptime/downtime constraints on 
+        Adds startup/shutdown and minimum uptime/downtime constraints on
         a given unit/process
         """
         pass
@@ -189,20 +194,22 @@ class PriceTakerModel(ConcreteModel):
             period[p].fuel_cost = Expression(expr=fuel_cost)
             period[p].elec_revenue = Expression(expr=elec_revenue)
             period[p].carbon_price = Expression(expr=carbon_price)
-            
+
             period[p].net_cash_inflow = Expression(
-                expr=period[p].elec_revenue - period[p].non_fuel_vom
-                - period[p].fuel_cost - period[p].carbon_price
+                expr=period[p].elec_revenue
+                - period[p].non_fuel_vom
+                - period[p].fuel_cost
+                - period[p].carbon_price
             )
 
     def build_cashflows(
-        self, 
+        self,
         lifetime=30,
         discount_rate=0.08,
         corp_tax=0.2,
         other_costs=0,
         other_revenue=0,
-        objective="NPV"
+        objective="NPV",
     ):
         """
         Builds overall cashflow expressions and appends objective function
@@ -223,32 +230,44 @@ class PriceTakerModel(ConcreteModel):
         self.fom_calculation = Constraint(expr=self.FOM == fom_expr)
 
         self.DEPRECIATION = Var(within=NonNegativeReals, doc="Yearly depreciation")
-        self.dep_calculation = Constraint(expr=self.DEPRECIATION == self.CAPEX / lifetime)
+        self.dep_calculation = Constraint(
+            expr=self.DEPRECIATION == self.CAPEX / lifetime
+        )
 
         self.NET_CASH_INFLOW = Var(doc="Net cash inflow")
         self.net_cash_inflow_calculation = Constraint(
-            expr=self.NET_CASH_INFLOW == 
-            sum(self.mp_model[p].net_cash_inflow for p in self.mp_model)
+            expr=self.NET_CASH_INFLOW
+            == sum(self.mp_model[p].net_cash_inflow for p in self.mp_model)
         )
-        
+
         self.CORP_TAX = Var(within=NonNegativeReals, doc="Corporate tax")
         self.corp_tax_calculation = Constraint(
-            expr=self.CORP_TAX >= corp_tax * 
-            (self.NET_CASH_INFLOW + other_revenue - other_costs - self.FOM - self.DEPRECIATION)
+            expr=self.CORP_TAX
+            >= corp_tax
+            * (
+                self.NET_CASH_INFLOW
+                + other_revenue
+                - other_costs
+                - self.FOM
+                - self.DEPRECIATION
+            )
         )
 
         self.NET_PROFIT = Var(doc="Net profit after taxes")
         self.net_profit_calculation = Constraint(
-            expr=self.NET_PROFIT == self.NET_CASH_INFLOW + other_revenue 
-            - other_costs - self.FOM - self.CORP_TAX
+            expr=self.NET_PROFIT
+            == self.NET_CASH_INFLOW
+            + other_revenue
+            - other_costs
+            - self.FOM
+            - self.CORP_TAX
         )
 
-        constant_cf_factor = (1 - (1 + discount_rate) ** (- lifetime)) / discount_rate
+        constant_cf_factor = (1 - (1 + discount_rate) ** (-lifetime)) / discount_rate
         self.NPV = Expression(expr=constant_cf_factor * self.NET_PROFIT - self.CAPEX)
         self.Annualized_NPV = Expression(
             expr=self.NET_PROFIT - (1 / constant_cf_factor) * self.CAPEX,
         )
-
 
         if objective == "NPV":
             self.obj = Objective(expr=self.NPV, sense=maximize)
