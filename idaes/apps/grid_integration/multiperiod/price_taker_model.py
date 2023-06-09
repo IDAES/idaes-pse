@@ -31,41 +31,147 @@ from idaes.apps.grid_integration.multiperiod.design_and_operation_models import 
     OperationModelData,
 )
 
+from sklearn.cluster import KMeans
+from kneed import KneeLocator
+
+import matplotlib.pyplot as plt
+
+import logging
+
+_logger = logging.getLogger(__name__)
+
 
 class PriceTakerModel(ConcreteModel):
     @staticmethod
-    def get_optimal_n_clusters(data, kmin=None, kmax=None):
+    def generate_daily_data(raw_data, day_list):
+
+        daily_data = pd.DataFrame(columns=day_list)
+
+        # Extracting data to populate empty dataframe
+        i = 0
+        j = 24
+        day = 1
+        while j <= len(raw_data):
+            daily_data[day] = raw_data[i:j].reset_index(drop=True)
+            i = j
+            j = j + 24
+            day = day + 1
+
+        return daily_data
+
+    @staticmethod
+    def reconfigure_raw_data(self, raw_data):
+        """
+        Reconfigures the raw price series data into a usable form
+
+        Args:
+            raw_data: imported price series data
+
+        Returns:
+            daily_data: reconfigured price series data
+        """
+        # Get column headings
+        column_head = raw_data.columns.tolist()
+        # Remove the date/time column
+        scenarios = column_head[1:]
+
+        # Creating an empty dataframe to store daily data for clustering
+        day_list = list(range(1, (len(raw_data) // 24) + 1))
+
+        # Generate daily data
+        for i in scenarios[0:1]:
+            daily_data = self.generate_daily_data(
+                raw_data=raw_data[i], day_list=day_list
+            )
+
+        return daily_data
+
+    @staticmethod
+    def get_optimal_n_clusters(daily_data, kmin=None, kmax=None, sample_weight=None):
         """
         Determines the appropriate number of clusters needed for a
         given price signal.
 
         Args:
+            daily_data: reconfigured price series data
+            kmin: minimum number of clusters
+            kmax: maximum number of clusters
+            sample_weight: applies a weight to each entry in daily_data
 
         Returns:
+            n_clusters: the optimal number of clusters for the given data
         """
         if kmin is None:
             kmin = 1
         if kmax is None:
             # setting an arbitrary kmax. Maybe log warning that no kmax was set and default of 14 used?
             kmax = 14
+
+        if sample_weight is not None:
+            if len(daily_data) != len(sample_weight):
+                _logger.error(
+                    f"len(daily_data) != len(sample_weight).\n "
+                    f"Ensure that the dimensions of the datasets match or set sample_weight to None."
+                )
+
         k_values = range(kmin, kmax)
+        inertia_values = []
 
-        # Leaving for Marcus
+        # Compute the inertia (SSE) for k clusters
+        for k in k_values:
+            kmeans = KMeans(n_clusters=k).fit(
+                daily_data.transpose(), sample_weight=sample_weight
+            )
+            inertia_values.append(kmeans.inertia_)
 
-        pass
+        # Identify the "elbow point"
+        elbow_point = KneeLocator(
+            k_values, inertia_values, curve="convex", direction="decreasing"
+        )
+        n_clusters = elbow_point.knee
+
+        print(f"Optimal # of clusters is: {n_clusters}")
+
+        return n_clusters, inertia_values
 
     @staticmethod
-    def get_elbow_plot():
+    def get_elbow_plot(self, daily_data, kmin=None, kmax=None, sample_weight=None):
         """
-        Generates metrics for determining the appropriate number of clusters needed for a
-        given price signal. Available metrics include elbow_plot, ...
+        Determines the appropriate number of clusters needed for a
+        given price signal.
 
         Args:
+            daily_data: reconfigured price series data
+            kmin: minimum number of clusters
+            kmax: maximum number of clusters
+            sample_weight: applies a weight to each entry in daily_data
 
         Returns:
+            k_values: range of clusters from kmin to kmax (x-axis of elbow plot)
+            inertia_values: within-cluster sum-of-squares (y-axis of elbow plot)
         """
-        # can use get_optimal_n_clusters here then plot
-        pass
+        if kmin is None:
+            kmin = 1
+        if kmax is None:
+            # setting an arbitrary kmax. Maybe log warning that no kmax was set and default of 14 used?
+            kmax = 14
+
+        k_values = range(kmin, kmax)
+        n_clusters, inertia_values = self.get_optimal_n_clusters(
+            daily_data, kmin, kmax, sample_weight
+        )
+
+        plt.show()
+        plt.plot(k_values, inertia_values)
+        plt.axvline(x=n_clusters, color="red", linestyle="--", label="Elbow")
+        plt.xlabel("Number of clusters")
+        plt.ylabel("Inertia")
+        plt.title("Elbow Method")
+        plt.xlim(kmin, kmax)
+        plt.grid()
+        plt.show()
+
+        return k_values, inertia_values
 
     @staticmethod
     def cluster_lmp_data(data, n_clusters, horizon_length):
