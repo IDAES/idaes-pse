@@ -68,7 +68,7 @@ Constraints
 
 As mentioned above, the drum model imports a `HelmPhaseSeparator` and mixer models, specific documentation for these models can be obtained in: 
 Once the water enters the tank model the main equations calculate water velocity and pressure drop calculation due to gravity based on water level and contraction to downcomer. 
-Water level (drum_leve) is either fixed for steady state simulation or calculated for dynamic model (Dynamic = True)
+Water level (drum_level) is either fixed for steady state simulation or calculated for dynamic model (Dynamic = True)
 
 Main assumptions:
 

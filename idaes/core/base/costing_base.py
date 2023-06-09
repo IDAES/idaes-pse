@@ -626,7 +626,7 @@ class UnitModelCostingBlockData(ProcessBlockData):
         Placeholder method for initialization
         """
         # TODO: Implement an initialization method
-        # TODO: Need to have a general pupose method (block triangularisation?)
+        # TODO: Need to have a general purpose method (block triangularisation?)
         # TODO: Should also allow registering custom methods
 
         # Vars and Constraints

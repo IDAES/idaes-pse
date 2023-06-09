@@ -8,7 +8,7 @@ The most commonly used methods are ``degrees_of_freedom`` and ``report_statistic
 Degrees of Freedom Method
 -------------------------
 
-The ``degrees_of_freedom`` method calculates the number of degrees of freedom available in a given model. The calcuation is based on the number of unfixed variables which appear in active constraints, minus the number of active equality constraints in the model. Users should note that this method does not consider inequality or deactivated constraints, or variables which do not appear in active equality constraints.
+The ``degrees_of_freedom`` method calculates the number of degrees of freedom available in a given model. The calculation is based on the number of unfixed variables which appear in active constraints, minus the number of active equality constraints in the model. Users should note that this method does not consider inequality or deactivated constraints, or variables which do not appear in active equality constraints.
 
 .. autofunction:: idaes.core.util.model_statistics.degrees_of_freedom
 
