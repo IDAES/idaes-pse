@@ -18,6 +18,8 @@ Tests for model_server module
 import pytest
 from pyomo.environ import ConcreteModel
 
+import requests
+
 # pkg
 from idaes.core.ui.fsvis import model_server, errors, persist
 from idaes.core import FlowsheetBlock
@@ -86,7 +88,6 @@ def flash_model():
 
 @pytest.mark.component
 def test_flowsheet_server_run(flash_model):
-    import requests
 
     srv = model_server.FlowsheetServer()
     srv.start()
