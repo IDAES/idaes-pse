@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Drum model
@@ -51,24 +51,12 @@ by 1D heat conduction
 
 Created: October 27 2020
 """
-# Import IDAES cores
-from idaes.core import (
-    ControlVolume0DBlock,
-    declare_process_block_class,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-    UnitModelBlockData,
-    useDefault,
-)
-import idaes.logger as idaeslog
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # Import Pyomo libraries
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-from idaes.core.util.config import is_physical_parameter_block
-
-# Additional import for the unit operation
 from pyomo.environ import (
     value,
     Var,
@@ -83,13 +71,25 @@ from pyomo.environ import (
     Constraint,
     TransformationFactory,
 )
+from pyomo.network import Port, Arc
+
+# Import IDAES cores
+from idaes.core import (
+    ControlVolume0DBlock,
+    declare_process_block_class,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
+    UnitModelBlockData,
+    useDefault,
+)
+import idaes.logger as idaeslog
+from idaes.core.util.config import is_physical_parameter_block
 
 # from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
-from pyomo.network import Port
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
-from pyomo.network import Arc
 
 from idaes.models_extra.power_generation.unit_models.helm.phase_separator import (
     HelmPhaseSeparator,
@@ -721,7 +721,7 @@ discretizing length domain (default=3)""",
 
         # Calculate inner side heat transfer coefficient
         # with minimum temperature difference set to sqrt(0.1)
-        # multipling wet area fraction to convert it
+        # multiplying wet area fraction to convert it
         # to the value based on total circumference
         @self.Constraint(
             self.flowsheet().time, doc="Inner Side Heat Transfer Coefficient"
@@ -1282,7 +1282,7 @@ discretizing length domain (default=3)""",
                  * 0 = no output (default)
                  * 1 = return solver state for each step in routine
                  * 2 = return solver state for each step in subroutines
-                 * 3 = include solver output infomation (tee=True)
+                 * 3 = include solver output information (tee=True)
 
         optarg : solver options dictionary object (default=None, use
                  default solver options)

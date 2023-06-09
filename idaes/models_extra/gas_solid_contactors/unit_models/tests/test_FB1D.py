@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for the 1D fixed bed module
@@ -420,8 +420,14 @@ class TestIronOC(object):
                 1e-07, rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for (t, x, j), c in FB1D.solid_material_balances.items():
+            print(j)
+            sf = {
+                "Fe2O3": 9.84345e-05,
+                "Fe3O4": 6.78910e-05,
+                "Al2O3": 0.000154168,
+            }
             assert pytest.approx(
-                0.00015719, rel=1e-5
+                sf[j], rel=1e-5
             ) == iscale.get_constraint_transform_applied_scaling_factor(c)
         for (t, x), c in FB1D.solid_sum_component_eqn.items():
             assert pytest.approx(

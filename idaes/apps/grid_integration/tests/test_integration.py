@@ -1,22 +1,17 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 
-try:
-    # Pyton 3.8+
-    from importlib import resources
-except ImportError:
-    # Python 3.7
-    import importlib_resources as resources
+from importlib import resources
 from numbers import Number
 from pathlib import Path
 from typing import Dict, Union
@@ -27,6 +22,24 @@ import pytest
 
 # define custom type for type hinting
 PrescientOptions = Dict[str, Union[str, bool, Number, dict]]
+
+from idaes.apps.grid_integration import DoubleLoopCoordinator
+from idaes.apps.grid_integration.tests.util import (
+    make_testing_tracker,
+    make_testing_bidder,
+)
+
+## create trackers
+thermal_tracker = make_testing_tracker()
+thermal_projection_tracker = make_testing_tracker()
+thermal_bidder = make_testing_bidder()
+
+# create coordinator
+coordinator = DoubleLoopCoordinator(
+    bidder=thermal_bidder,
+    tracker=thermal_tracker,
+    projection_tracker=thermal_projection_tracker,
+)
 
 
 class TestDoubleLoopIntegration:
@@ -56,17 +69,6 @@ class TestDoubleLoopIntegration:
         path = tmp_path / "self_scheduler_integration_test_output"
         path.mkdir()
         return path
-
-    @pytest.fixture
-    def bidder_plugin_path(self) -> Path:
-        with resources.path(
-            "idaes.apps.grid_integration.tests", "bidder_integration_test_plugin.py"
-        ) as p:
-            return Path(p)
-
-    @pytest.mark.unit
-    def test_bidder_plugin_path_is_existing_file(self, bidder_plugin_path):
-        assert bidder_plugin_path.is_file()
 
     @pytest.fixture
     def self_scheduler_plugin_path(self) -> Path:
@@ -114,11 +116,13 @@ class TestDoubleLoopIntegration:
 
     @pytest.fixture
     def bidder_sim_options(
-        self, prescient_options, output_dir: Path, bidder_plugin_path: Path
+        self,
+        prescient_options,
+        output_dir: Path,
     ) -> PrescientOptions:
         prescient_options["plugin"] = {
             "doubleloop": {
-                "module": str(bidder_plugin_path),
+                "module": coordinator.prescient_plugin_module,
                 "bidding_generator": "10_STEAM",
             }
         }
@@ -172,16 +176,11 @@ class TestDoubleLoopIntegration:
         return self_scheduler_output_dir
 
     @pytest.mark.unit
-    def test_output_dir_exist(
+    def test_prescient_outputs_exist(
         self, simulation_results_dir, self_scheduler_simulation_results_dir
     ):
         assert os.path.isdir(simulation_results_dir)
         assert os.path.isdir(self_scheduler_simulation_results_dir)
-
-    @pytest.mark.component
-    def test_csv_files_saved(
-        self, simulation_results_dir, self_scheduler_simulation_results_dir
-    ):
 
         file_names = [
             "hourly_gen_summary.csv",

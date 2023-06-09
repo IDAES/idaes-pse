@@ -144,7 +144,7 @@ The initialization method for this model will save the current state of the mode
 commencing initialization and reloads it afterwards. The state of the model will be the same after
 initialization, only the initial guesses for unfixed variables will be changed. For the FixedBed0D
 model, the initialization method is a general purpose routine for simple unit models where a single
-control volume is initalized followed by attempting to solve the entire unit.
+control volume is initialized followed by attempting to solve the entire unit.
 
 The model allows for the passing of a dictionary of values of the state variables of the gas and
 solid phases that can be used as initial guesses for the state variables throughout the time domain

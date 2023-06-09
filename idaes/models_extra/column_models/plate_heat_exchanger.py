@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 IDAES plate heat exchanger model (PHE) using effectiveness-NTU method, derived
@@ -100,9 +100,11 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
     # Update config block setting for pressure change to always be true
     CONFIG.hot_side.has_pressure_change = True
     CONFIG.hot_side.get("has_pressure_change").set_domain(In([True]))
+    # pylint: disable-next=protected-access
     CONFIG.hot_side.get(
         "has_pressure_change"
     )._description = "Pressure change term construction flag - must be True"
+    # pylint: disable-next=protected-access
     CONFIG.hot_side.get("has_pressure_change")._doc = (
         "Plate Heat Exchanger model includes correlations for pressure drop "
         "thus has_pressure_change must be True"
@@ -110,9 +112,11 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
 
     CONFIG.cold_side.has_pressure_change = True
     CONFIG.cold_side.get("has_pressure_change").set_domain(In([True]))
+    # pylint: disable-next=protected-access
     CONFIG.cold_side.get(
         "has_pressure_change"
     )._description = "Pressure change term construction flag - must be True"
+    # pylint: disable-next=protected-access
     CONFIG.cold_side.get("has_pressure_change")._doc = (
         "Plate Heat Exchanger model includes correlations for pressure drop "
         "thus has_pressure_change must be True"
@@ -572,7 +576,7 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
                      default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
-            duty : an initial guess for the amount of heat transfered. This
+            duty : an initial guess for the amount of heat transferred. This
                 should be a tuple in the form (value, units), (default
                 = (1000 J/s))
 
@@ -615,7 +619,7 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
         if duty is None:
             # Assume 1000 J/s and check for unitless properties
             if s1_units is None and s2_units is None:
-                # Backwards compatability for unitless properties
+                # Backwards compatibility for unitless properties
                 s1_duty = -1000
                 s2_duty = 1000
             else:

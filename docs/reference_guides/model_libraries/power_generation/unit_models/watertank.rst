@@ -112,7 +112,7 @@ The following expressions were used to calculate the tank cross sectional area, 
 Degrees of Freedom
 ------------------
 
-The degrees of freedom depend on the tank type as the dimension variables are differents for each type, 
+The degrees of freedom depend on the tank type as the dimension variables are different for each type, 
 but once the dimensions for a specific tank type have been fixed, the model generally has 3-5 degrees of freedom: 
 the inlet state (flow_mol, enth_mol, and pressure), the heat duty whether the config argument has_pressure_change is set to True, 
 and the tank level whether for steady state simulations

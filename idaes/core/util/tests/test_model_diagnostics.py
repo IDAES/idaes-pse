@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains model diagnostic utility functions for use in IDAES (Pyomo) models.
@@ -18,8 +18,13 @@ import pytest
 
 # Need to update
 import pyomo.environ as pyo
+from pyomo.contrib.pynumero.asl import AmplInterface
 import numpy as np
 import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
+
+from idaes.core import FlowsheetBlock
+from idaes.core.util.testing import PhysicalParameterTestBlock
 
 # TODO: Add pyomo.dae test case
 """
@@ -28,7 +33,13 @@ from pyomo.dae import ContinuousSet, DerivativeVar
 """
 
 # Need to update
-from idaes.core.util.model_diagnostics import DegeneracyHunter
+from idaes.core.util.model_diagnostics import (
+    DegeneracyHunter,
+    get_valid_range_of_component,
+    set_bounds_from_valid_range,
+    list_components_with_values_outside_valid_range,
+    ipopt_solve_halt_on_error,
+)
 
 __author__ = "Alex Dowling, Douglas Allan"
 
@@ -71,6 +82,9 @@ def v_exp():
     ).T
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.unit
 def test_dense_svd(dummy_problem, u_exp, s_exp, v_exp):
     m = dummy_problem
@@ -81,6 +95,9 @@ def test_dense_svd(dummy_problem, u_exp, s_exp, v_exp):
     assert v_exp == pytest.approx(np.abs(dh.v), 1e-6, abs=1e-10)
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.unit
 def test_sparse_svd(dummy_problem, u_exp, s_exp, v_exp):
     m = dummy_problem
@@ -91,6 +108,9 @@ def test_sparse_svd(dummy_problem, u_exp, s_exp, v_exp):
     assert v_exp == pytest.approx(np.abs(dh.v), 1e-6, abs=1e-10)
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.unit
 def test_scaling(dummy_problem, u_exp, s_exp, v_exp):
     ssf = iscale.set_scaling_factor
@@ -111,6 +131,9 @@ def test_scaling(dummy_problem, u_exp, s_exp, v_exp):
     assert dh.s == pytest.approx(np.ones((4,)), 1e-6)
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.unit
 def test_underdetermined_variables_and_constraints(dummy_problem, capsys):
     m = dummy_problem
@@ -146,6 +169,9 @@ def test_underdetermined_variables_and_constraints(dummy_problem, capsys):
     assert captured.out == ("Column:    Variable\n\nRow:    Constraint\n")
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.unit
 def test_underdetermined_calls_svd_analysis(dummy_problem, capsys):
     m = dummy_problem
@@ -160,6 +186,9 @@ def test_underdetermined_calls_svd_analysis(dummy_problem, capsys):
     )
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.unit
 def test_sv_value_error(dummy_problem):
     m = dummy_problem
@@ -174,6 +203,9 @@ def test_sv_value_error(dummy_problem):
         dh.svd_analysis(n_sv=-1)
 
 
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.unit
 def test_single_eq_error(capsys):
     m = pyo.ConcreteModel()
@@ -262,6 +294,9 @@ def extract_constraint_names(cs):
 
 
 # Problem 1
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
 @pytest.mark.unit
 def test_problem1():
@@ -314,10 +349,12 @@ def test_problem1():
 
 
 # Problem 2 without degenerate constraint
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
 @pytest.mark.unit
 def test_problem2_without_degenerate_constraint():
-
     # Create test problem instance
     m2 = example2(with_degenerate_constraint=False)
 
@@ -361,10 +398,12 @@ def test_problem2_without_degenerate_constraint():
 
 
 # Problem 2 with degenerate constraint
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
 @pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
 @pytest.mark.unit
 def test_problem2_with_degenerate_constraint():
-
     # Create test problem instance
     m2 = example2(with_degenerate_constraint=True)
 
@@ -417,3 +456,243 @@ def test_problem2_with_degenerate_constraint():
     assert n_rank_deficient == 1
 
     # TODO: Add MILP solver to idaes get-extensions and add more tests
+
+
+@pytest.mark.unit
+def test_get_valid_range_of_component():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock()
+
+    m.fs.params = PhysicalParameterTestBlock()
+    m.fs.state = m.fs.params.build_state_block(m.fs.time)
+
+    # No valid range set yet, should return None
+    assert get_valid_range_of_component(m.fs.state[0].flow_vol) is None
+
+    # Set valid_range for flow_vol
+    meta = m.fs.params.get_metadata().properties
+    meta.flow_vol[None]._set_valid_range((0, 1))
+
+    assert get_valid_range_of_component(m.fs.state[0].flow_vol) == (0, 1)
+
+
+@pytest.mark.unit
+def test_get_valid_range_of_component_no_metadata():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock()
+
+    with pytest.raises(
+        AttributeError, match="Could not find metadata for component fs"
+    ):
+        get_valid_range_of_component(m.fs)
+
+
+@pytest.mark.unit
+def test_get_valid_range_of_component_no_metadata_entry(caplog):
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock()
+
+    m.fs.params = PhysicalParameterTestBlock()
+    m.fs.state = m.fs.params.build_state_block(m.fs.time)
+
+    caplog.set_level(idaeslog.DEBUG, logger="idaes.core.util")
+    assert get_valid_range_of_component(m.fs.state[0].test_var) is None
+
+    assert (
+        "No metadata entry for component fs.state[0.0].test_var; returning None"
+        in caplog.text
+    )
+
+
+@pytest.mark.unit
+def test_set_bounds_from_valid_range_scalar():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock()
+
+    m.fs.params = PhysicalParameterTestBlock()
+    m.fs.state = m.fs.params.build_state_block(m.fs.time)
+
+    # Set valid_range for flow_vol
+    meta = m.fs.params.get_metadata().properties
+    meta.flow_vol[None]._set_valid_range((0, 1))
+
+    assert m.fs.state[0].flow_vol.bounds == (None, None)
+
+    set_bounds_from_valid_range(m.fs.state[0].flow_vol)
+    assert m.fs.state[0].flow_vol.bounds == (0, 1)
+
+    meta.flow_vol[None]._set_valid_range(None)
+    set_bounds_from_valid_range(m.fs.state[0].flow_vol)
+    assert m.fs.state[0].flow_vol.bounds == (None, None)
+
+
+@pytest.mark.unit
+def test_set_bounds_from_valid_range_indexed():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock()
+
+    m.fs.params = PhysicalParameterTestBlock()
+    m.fs.state = m.fs.params.build_state_block(m.fs.time)
+
+    # Set valid_range for flow_mol_phase_comp
+    meta = m.fs.params.get_metadata().properties
+    meta.flow_mol["phase_comp"]._set_valid_range((0, 1))
+
+    for k in m.fs.state[0].flow_mol_phase_comp:
+        assert m.fs.state[0].flow_mol_phase_comp[k].bounds == (None, None)
+
+    set_bounds_from_valid_range(m.fs.state[0].flow_mol_phase_comp)
+    for k in m.fs.state[0].flow_mol_phase_comp:
+        assert m.fs.state[0].flow_mol_phase_comp[k].bounds == (0, 1)
+
+    meta.flow_mol["phase_comp"]._set_valid_range(None)
+    set_bounds_from_valid_range(m.fs.state[0].flow_mol_phase_comp)
+    for k in m.fs.state[0].flow_mol_phase_comp:
+        assert m.fs.state[0].flow_mol_phase_comp[k].bounds == (None, None)
+
+
+@pytest.mark.unit
+def test_set_bounds_from_valid_range_block():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock()
+
+    m.fs.params = PhysicalParameterTestBlock()
+    m.fs.state = m.fs.params.build_state_block(m.fs.time)
+
+    # Set valid_range
+    meta = m.fs.params.get_metadata().properties
+    meta.flow_vol[None]._set_valid_range((2, 8))
+    meta.flow_mol["phase_comp"]._set_valid_range((0, 1))
+
+    set_bounds_from_valid_range(m.fs.state)
+    assert m.fs.state[0].flow_vol.bounds == (2, 8)
+    for k in m.fs.state[0].flow_mol_phase_comp:
+        assert m.fs.state[0].flow_mol_phase_comp[k].bounds == (0, 1)
+
+
+@pytest.mark.unit
+def test_set_bounds_from_valid_range_invalid_type():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock()
+
+    m.fs.foo = pyo.Expression(expr=1)
+
+    with pytest.raises(
+        TypeError,
+        match="Component fs.foo does not have bounds. Only Vars and Params have bounds.",
+    ):
+        set_bounds_from_valid_range(m.fs.foo)
+
+
+@pytest.mark.unit
+def test_list_components_with_values_outside_valid_range_scalar():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock()
+
+    m.fs.params = PhysicalParameterTestBlock()
+    m.fs.state = m.fs.params.build_state_block(m.fs.time)
+
+    # Check return if no valid range
+    m.fs.state[0].flow_vol.set_value(5)
+    clist = list_components_with_values_outside_valid_range(m.fs.state[0].flow_vol)
+    assert clist == []
+
+    # Set valid_range for flow_vol
+    meta = m.fs.params.get_metadata().properties
+    meta.flow_vol[None]._set_valid_range((0, 1))
+
+    # Set value outside range (low)
+    m.fs.state[0].flow_vol.set_value(-1)
+    clist = list_components_with_values_outside_valid_range(m.fs.state[0].flow_vol)
+    assert clist == [m.fs.state[0].flow_vol]
+
+    # Set value outside range (high)
+    m.fs.state[0].flow_vol.set_value(10)
+    clist = list_components_with_values_outside_valid_range(m.fs.state[0].flow_vol)
+    assert clist == [m.fs.state[0].flow_vol]
+
+    # Set value at min range
+    m.fs.state[0].flow_vol.set_value(0)
+    clist = list_components_with_values_outside_valid_range(m.fs.state[0].flow_vol)
+    assert clist == []
+
+    # Set value at max range
+    m.fs.state[0].flow_vol.set_value(1)
+    clist = list_components_with_values_outside_valid_range(m.fs.state[0].flow_vol)
+    assert clist == []
+
+
+@pytest.mark.unit
+def test_list_components_with_values_outside_valid_range_indexed():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock()
+
+    m.fs.params = PhysicalParameterTestBlock()
+    m.fs.state = m.fs.params.build_state_block(m.fs.time)
+
+    # Set valid_range for flow_mol_phase_comp
+    meta = m.fs.params.get_metadata().properties
+    meta.flow_mol["phase_comp"]._set_valid_range((0, 1))
+
+    # Set values for each index
+    m.fs.state[0].flow_mol_phase_comp["p1", "c1"].set_value(-1)  # low
+    m.fs.state[0].flow_mol_phase_comp["p1", "c2"].set_value(0)  # min range
+    m.fs.state[0].flow_mol_phase_comp["p2", "c1"].set_value(1)  # max range
+    m.fs.state[0].flow_mol_phase_comp["p2", "c2"].set_value(10)  # high
+
+    clist = list_components_with_values_outside_valid_range(
+        m.fs.state[0].flow_mol_phase_comp
+    )
+    assert len(clist) == 2
+    for i in clist:
+        assert i.name in [
+            "fs.state[0.0].flow_mol_phase_comp[p1,c1]",
+            "fs.state[0.0].flow_mol_phase_comp[p2,c2]",
+        ]
+
+
+@pytest.mark.unit
+def test_list_components_with_values_outside_valid_range_block():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock()
+
+    m.fs.params = PhysicalParameterTestBlock()
+    m.fs.state = m.fs.params.build_state_block(m.fs.time)
+
+    # Set valid_range for some vars
+    meta = m.fs.params.get_metadata().properties
+    meta.flow_vol[None]._set_valid_range((0, 1))
+    meta.flow_mol["phase_comp"]._set_valid_range((0, 1))
+
+    # Set values for same vars
+    m.fs.state[0].flow_vol.set_value(100)  # high
+    m.fs.state[0].flow_mol_phase_comp["p1", "c1"].set_value(-1)  # low
+    m.fs.state[0].flow_mol_phase_comp["p1", "c2"].set_value(0)  # min range
+    m.fs.state[0].flow_mol_phase_comp["p2", "c1"].set_value(1)  # max range
+    m.fs.state[0].flow_mol_phase_comp["p2", "c2"].set_value(10)  # high
+
+    clist = list_components_with_values_outside_valid_range(m.fs.state)
+    assert len(clist) == 3
+    for i in clist:
+        assert i.name in [
+            "fs.state[0.0].flow_vol",
+            "fs.state[0.0].flow_mol_phase_comp[p1,c1]",
+            "fs.state[0.0].flow_mol_phase_comp[p2,c2]",
+        ]
+
+
+@pytest.mark.component
+def test_ipopt_solve_halt_on_error(capsys):
+    m = pyo.ConcreteModel()
+
+    m.v = pyo.Var(initialize=-5, bounds=(None, -1))
+    m.e = pyo.Expression(expr=pyo.log(m.v))
+    m.c = pyo.Constraint(expr=m.e == 1)
+
+    try:
+        results = ipopt_solve_halt_on_error(m)
+    except Exception:  # we expect this to fail
+        pass
+
+    captured = capsys.readouterr()
+    assert "c: can't evaluate log(-5)." in captured.out

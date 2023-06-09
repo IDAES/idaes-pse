@@ -1,23 +1,24 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 import pyomo.environ as pyo
-from pyomo.common.timing import TicTocTimer
 from idaes.core.solvers import get_solver
-from idaes.core.util import from_json, to_json
+from idaes.core.util.exceptions import InitializationError
 import matplotlib.pyplot as plt
 import logging
 
 _logger = logging.getLogger(__name__)
+
+no_init_func_message = "initialization_func argument was not provided. Returning the multiperiod model without initialization."
 
 
 class MultiPeriodModel(pyo.ConcreteModel):
@@ -40,7 +41,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
                              instance of the flowsheet.
         unfix_dof_func: function that unfixes a few degrees of freedom for optimization
         flowsheet_options: dictionary containing the arguments needed for `process_model_func`
-        initialization_options: dictionary contaning the arguments needed for `initialization_func`
+        initialization_options: dictionary containing the arguments needed for `initialization_func`
         unfix_dof_options: dictionary containing the arguments needed for `unfix_dof_func`
         solver: pyomo solver object
         outlvl: logging level
@@ -61,15 +62,20 @@ class MultiPeriodModel(pyo.ConcreteModel):
         set_scenarios=None,
         initialization_func=None,
         unfix_dof_func=None,
-        flowsheet_options={},
-        initialization_options={},
-        unfix_dof_options={},
+        flowsheet_options=None,
+        initialization_options=None,
+        unfix_dof_options=None,
         solver=None,
         outlvl=logging.WARNING,
     ):  # , state_variable_func=None):
-
         super().__init__()
 
+        if flowsheet_options is None:
+            flowsheet_options = {}
+        if initialization_options is None:
+            initialization_options = {}
+        if unfix_dof_options is None:
+            unfix_dof_options = {}
         self.n_time_points = n_time_points
 
         # user provided functions
@@ -122,16 +128,16 @@ class MultiPeriodModel(pyo.ConcreteModel):
                 solver,
             )
 
-        # optional initialzation features
+        # optional initialization features
         # self.initialization_points = None   #library of possible initial points
         # self.initialize_func = None         #function to perform the initialize
 
     def build_multi_period_model(
         self,
         model_data_kwargs=None,
-        flowsheet_options={},
-        initialization_options={},
-        unfix_dof_options={},
+        flowsheet_options=None,
+        initialization_options=None,
+        unfix_dof_options=None,
         solver=None,
     ):
         """
@@ -147,34 +153,55 @@ class MultiPeriodModel(pyo.ConcreteModel):
             unfix_dof_options: dict containing the arguments needed for `unfix_dof_func`
             solver: pyomo solver object
         """
-        # use default empty dictionaries if no kwargs dict provided
-        if model_data_kwargs == None:
-            model_data_kwargs = {t: {} for t in range(self.n_time_points)}
-        assert list(range(len(model_data_kwargs))) == sorted(model_data_kwargs)
-
-        m = self
-        m.TIME = pyo.Set(initialize=range(self.n_time_points))
-
-        # Begin the formulation of the multiperiod optimization problem
-        timer = TicTocTimer()  # Create timer object
-        timer.toc("Beginning the formulation of the multiperiod optimization problem.")
-
-        # create user defined steady-state models. Each block is a multi-period capable model.
-        m.blocks = pyo.Block(m.TIME)
-        for t in m.TIME:
-            _logger.info(f"...Constructing the flowsheet model for {m.blocks[t].name}")
-            m.blocks[t].process = self.create_process_model(**model_data_kwargs[t])
-
-        timer.toc("Completed the formulation of the multiperiod optimization problem.")
-
+        if flowsheet_options is None:
+            flowsheet_options = {}
+        if initialization_options is None:
+            initialization_options = {}
+        if unfix_dof_options is None:
+            unfix_dof_options = {}
         if solver is None:
             solver = get_solver()
 
-        self.initialize_multi_period_model(
-            flowsheet_options, initialization_options, solver, False, timer
-        )
+        # Challenge: If model_data_kwargs is provided, then we cannot use
+        # the initialize_multi_period_model method because that will overwrite
+        # the parameter values. In that case, we may have to call initialization
+        # function for each instance of the flowsheet. Not sure if this method
+        # will be required or not in general, so this is what I'm going to do:
+        # If the argument is not provided, then use clone and initialize. If it
+        # is provided, then return the multiperiod model without initialization.
 
-        self.unfix_degrees_of_freedom(unfix_dof_options, False, timer)
+        m = self
+        m.TIME = pyo.Set(initialize=range(self.n_time_points))
+        m.blocks = pyo.Block(m.TIME)
+
+        if model_data_kwargs is None:
+            blk = self._construct_flowsheet_instance(
+                flowsheet_options=flowsheet_options,
+                initialization_options=initialization_options,
+                unfix_dof_options=unfix_dof_options,
+                solver=solver,
+            )
+            for t in m.TIME:
+                _logger.info(f"Constructing flowsheet model for time index {t}")
+                m.blocks[t].process = blk.clone()
+
+        else:
+            if len(model_data_kwargs) != self.n_time_points:
+                _logger.error(
+                    f"len(model_data_kwargs) != n_time_points.\n "
+                    f"len(model_data_kwargs) = {len(model_data_kwargs)}\n"
+                    f"len(n_time_points) = {self.n_time_points}\n"
+                    f"Check input data for model_data_kwargs argument."
+                )
+
+            _logger.warning(
+                f"model_data_kwargs argument is provided, so the flowsheet "
+                f"options are different for different time instances. In this case, "
+                f"the multiperiod model is returned without initialization."
+            )
+            for t in m.TIME:
+                _logger.info(f"Constructing flowsheet model for time index {t}")
+                m.blocks[t].process = self.create_process_model(**model_data_kwargs[t])
 
         # link blocks together. loop over every time index except the last one
         for t in m.TIME.data()[: self.n_time_points - 1]:
@@ -274,7 +301,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
         Create linking constraint on `b1` using `variable_pairs`
         """
         b1.link_constraints = pyo.Constraint(range(len(variable_pairs)))
-        for (i, pair) in enumerate(variable_pairs):
+        for i, pair in enumerate(variable_pairs):
             b1.link_constraints[i] = pair[0] == pair[1]
 
     def _create_periodic_constraints(self, b1, variable_pairs):
@@ -282,8 +309,44 @@ class MultiPeriodModel(pyo.ConcreteModel):
         Create periodic linking constraint on `b1` using `variable_pairs`
         """
         b1.periodic_constraints = pyo.Constraint(range(len(variable_pairs)))
-        for (i, pair) in enumerate(variable_pairs):
+        for i, pair in enumerate(variable_pairs):
             b1.periodic_constraints[i] = pair[0] == pair[1]
+
+    def _construct_flowsheet_instance(
+        self,
+        flowsheet_options,
+        initialization_options,
+        unfix_dof_options,
+        solver,
+    ):
+        # Create an instance of the flowsheet for cloning
+        blk = pyo.ConcreteModel()
+        self.create_process_model(blk, **flowsheet_options)
+
+        if self.initialization_func is None:
+            _logger.warning(no_init_func_message)
+
+        else:
+            self.initialization_func(blk, **initialization_options)
+            result = solver.solve(blk)
+
+            if not pyo.check_optimal_termination(result):
+                raise InitializationError(
+                    "Flowsheet did not converge after fixing the degrees of freedom. "
+                    "To create the multi-period model without initialization, do not provide "
+                    "initialization_func argument."
+                )
+
+        if self.unfix_dof_func is None:
+            _logger.warning(
+                "unfix_dof_func argument is not provided. "
+                "Returning the model without unfixing degrees of freedom."
+            )
+
+        else:
+            self.unfix_dof_func(blk, **unfix_dof_options)
+
+        return blk
 
     def build_stochastic_multi_period(
         self,
@@ -319,21 +382,27 @@ class MultiPeriodModel(pyo.ConcreteModel):
 
         self.set_period = pyo.Set(initialize=set_period)
 
-        # Define a function to create a multiperiod model for one scenario
-        def _build_scenario_model(m):
+        def _build_scenario_model(m, fs_blk):
+            """
+            Construct a multiperiod model for one scenario
+
+            Arguments:
+                m: pyomo concrete model for the MultiPeriod model
+                fs_blk: flowsheet block to be cloned to each time index
+            """
+
             m.period = pyo.Block(self.set_period)
 
             for i in m.period:
-                _logger.info(
-                    f"...Constructing the flowsheet model for {m.period[i].name}"
-                )
-                self.create_process_model(m.period[i], **flowsheet_options)
+                _logger.info(f"Constructing the flowsheet model for index {i}")
+
+                m.period[i].transfer_attributes_from(fs_blk.clone())
 
             # link blocks together. loop over every time index except the last one
             if self.get_linking_variable_pairs is None:
                 _logger.warning(
-                    f"linking_variable_func is not provided, so variables across"
-                    f" time periods are not linked."
+                    "linking_variable_func is not provided, so variables across"
+                    " time periods are not linked."
                 )
                 return
 
@@ -394,131 +463,31 @@ class MultiPeriodModel(pyo.ConcreteModel):
             # Check if a method for periodic constraints is given
             if self.get_periodic_variable_pairs is not None:
                 _logger.warning(
-                    f"A method is provided for get_periodic_variable_pairs. "
-                    f"build_stochastic_multi_period method does not support periodic "
-                    f"constraints, so the user needs to add them manually."
+                    "A method is provided for get_periodic_variable_pairs. "
+                    "build_stochastic_multi_period method does not support periodic "
+                    "constraints, so the user needs to add them manually."
                 )
 
-        # Begin the formulation of the multiperiod optimization problem
-        timer = TicTocTimer()  # Create timer object
-        timer.toc("Beginning the formulation of the multiperiod optimization problem.")
+        # Create an instance of the flowsheet
+        blk = self._construct_flowsheet_instance(
+            flowsheet_options=flowsheet_options,
+            initialization_options=initialization_options,
+            unfix_dof_options=unfix_dof_options,
+            solver=solver,
+        )
 
+        # Begin the formulation of the multiperiod optimization problem
         if self._stochastic_model:
             self.scenario = pyo.Block(self.set_scenarios)
+            sce_blk = pyo.ConcreteModel()
+            _build_scenario_model(sce_blk, blk)
 
             for i in self.scenario:
                 _logger.info(f"Constructing the model for scenario {i}")
-                _build_scenario_model(self.scenario[i])
+                self.scenario[i].transfer_attributes_from(sce_blk.clone())
 
         else:
-            _build_scenario_model(self)
-
-        timer.toc("Completed the formulation of the multiperiod optimization problem.")
-
-        self.initialize_multi_period_model(
-            flowsheet_options, initialization_options, solver, True, timer
-        )
-
-        self.unfix_degrees_of_freedom(unfix_dof_options, True, timer)
-
-    def initialize_multi_period_model(
-        self,
-        flowsheet_options,
-        initialization_options,
-        solver,
-        use_stochastic_build,
-        timer,
-    ):
-        """
-        This function initializes the entire multi-period model.
-
-        Args:
-            flowsheet_options: dict containing the arguments needed to create an instance of a flowsheet
-            initialization_options: dict containing the arguments needed to initialize the flowsheet
-            solver: pyomo solver object
-            use_stochastic_build: Set it to True if `build_stochastic_multi_period` method is used
-            time: Timer object
-        """
-        if self.initialization_func is None:
-            _logger.warning(
-                f"Initialization function is not provided. "
-                f"Returning the multiperiod model without initialization."
-            )
-            return
-
-        blk = pyo.ConcreteModel()
-        self.create_process_model(blk, **flowsheet_options)
-        self.initialization_func(blk, **initialization_options)
-        result = solver.solve(blk)
-
-        if not pyo.check_optimal_termination(result):
-            raise Exception(
-                f"Flowsheet did not converge to optimality after fixing the degrees of freedom. "
-                f"To create the multi-period model without initialization, do not provide "
-                f"initialization_func argument."
-            )
-
-        # Store the initialized model in `init_model` object
-        init_model = to_json(blk, return_dict=True)
-        timer.toc("Created an instance of the flowsheet and initialized it.")
-
-        # Initialize the multiperiod optimization model
-        if use_stochastic_build:
-            if self._stochastic_model:
-                for s in self.set_scenarios:
-                    for p in self.scenario[s].period:
-                        from_json(self.scenario[s].period[p], sd=init_model)
-
-            else:
-                for p in self.period:
-                    from_json(self.period[p], sd=init_model)
-
-        else:
-            blks = self.get_active_process_blocks()
-            for blk in blks:
-                from_json(blk, init_model)
-
-        timer.toc("Initialized the entire multiperiod optimization model.")
-
-    def unfix_degrees_of_freedom(
-        self,
-        unfix_dof_options,
-        use_stochastic_build,
-        timer,
-    ):
-        """
-        Unfix the degrees of freedom in each period model for optimization model
-
-        Args:
-            unfix_dof_options: dict containing the arguments needed for `unfix_dof_func`
-            use_stochastic_build: Set it to True if `build_stochastic_multi_period` method is used
-            time: Timer object
-        """
-        if self.unfix_dof_func is None:
-            _logger.warning(
-                f"unfix_dof function is not provided. "
-                f"Returning the model without unfixing degrees of freedom"
-            )
-            return
-
-        if use_stochastic_build:
-            if self._stochastic_model:
-                for s in self.set_scenarios:
-                    for p in self.scenario[s].period:
-                        self.unfix_dof_func(
-                            self.scenario[s].period[p], **unfix_dof_options
-                        )
-
-            else:
-                for p in self.period:
-                    self.unfix_dof_func(self.period[p], **unfix_dof_options)
-
-        else:
-            blks = self.get_active_process_blocks()
-            for blk in blks:
-                self.unfix_dof_func(blk, **unfix_dof_options)
-
-        timer.toc("Unfixed the degrees of freedom from each period model.")
+            _build_scenario_model(self, blk)
 
     @staticmethod
     def plot_lmp_signal(
@@ -639,7 +608,6 @@ class MultiPeriodModel(pyo.ConcreteModel):
         draw_style="steps",
         grid=None,
     ):
-
         """
         The function plots optimal operation schedule as a function of time.
 
@@ -654,7 +622,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
             x_label: x-axis label. "time (hr)" is the default
             lmp_label: lmp-axis label. "LMP ($/MWh)" is the default.
             color: dict of colors for the plots.
-            draw_style: plot sytle. Must be either "steps" or "default".
+            draw_style: plot style. Must be either "steps" or "default".
             grid: grid shape of the plost.
 
         Returns:
@@ -662,8 +630,8 @@ class MultiPeriodModel(pyo.ConcreteModel):
         """
         if len(schedule) > 4:
             raise Exception(
-                f"Number of elements in schedule exceeds four: "
-                f"the maximum number of subplots the function supports."
+                "Number of elements in schedule exceeds four: "
+                "the maximum number of subplots the function supports."
             )
 
         key_list = {index + 1: value for index, value in enumerate(schedule)}

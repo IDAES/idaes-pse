@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for Pressure Changer unit model.
@@ -26,6 +26,7 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+from pyomo.core.expr.calculus.derivatives import differentiate
 
 from idaes.core import (
     FlowsheetBlock,
@@ -41,6 +42,7 @@ from idaes.models.unit_models.pressure_changer import (
     Compressor,
     Pump,
     ThermodynamicAssumption,
+    IsentropicPressureChangerInitializer,
 )
 
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
@@ -61,6 +63,11 @@ from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_t
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError, InitializationError
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    SingleControlVolumeUnitInitializer,
+    InitializationStatus,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -99,6 +106,8 @@ class TestPressureChanger(object):
             == ThermodynamicAssumption.isothermal
         )
         assert m.fs.unit.config.property_package is m.fs.properties
+
+        assert m.fs.unit.default_initializer is SingleControlVolumeUnitInitializer
 
     @pytest.mark.unit
     def test_dynamic_build(self):
@@ -512,7 +521,7 @@ class TestIAPWS(object):
     def test_verify(self, iapws_turb):
         iapws = iapws_turb
         # Verify the turbine results against 3 known test cases
-        # Case Data (90% isentropic efficency)
+        # Case Data (90% isentropic efficiency)
         cases = {
             "F": (1000, 1000, 1000),  # mol/s
             "Tin": (500, 800, 400),  # K
@@ -704,14 +713,17 @@ class TestSaponification(object):
         assert (
             abs(
                 value(
-                    sapon.fs.unit.outlet.flow_vol[0]
-                    * sapon.fs.properties.dens_mol
-                    * sapon.fs.properties.cp_mol
-                    * (
-                        sapon.fs.unit.inlet.temperature[0]
-                        - sapon.fs.unit.outlet.temperature[0]
+                    (
+                        sapon.fs.unit.outlet.flow_vol[0]
+                        * sapon.fs.properties.dens_mol
+                        * sapon.fs.properties.cp_mol
+                        * (
+                            sapon.fs.unit.inlet.temperature[0]
+                            - sapon.fs.unit.outlet.temperature[0]
+                        )
+                        + sapon.fs.unit.work_mechanical[0]
                     )
-                    + sapon.fs.unit.work_mechanical[0]
+                    / sapon.fs.unit.work_mechanical[0]
                 )
             )
             <= 1e-4
@@ -762,6 +774,8 @@ class TestTurbine(object):
 
         assert_units_consistent(m.fs.unit)
 
+        assert m.fs.unit.default_initializer is IsentropicPressureChangerInitializer
+
 
 class TestCompressor(object):
     @pytest.mark.unit
@@ -793,6 +807,8 @@ class TestCompressor(object):
 
         assert_units_consistent(m.fs.unit)
 
+        assert m.fs.unit.default_initializer is IsentropicPressureChangerInitializer
+
 
 class TestPump(object):
     @pytest.mark.unit
@@ -820,6 +836,8 @@ class TestPump(object):
         assert m.fs.unit.config.property_package is m.fs.properties
 
         assert_units_consistent(m.fs.unit)
+
+        assert m.fs.unit.default_initializer is SingleControlVolumeUnitInitializer
 
     @pytest.mark.unit
     def test_pump_work_term_added_w_energybalancetype_none(self):
@@ -946,3 +964,84 @@ class TestTurbinePerformance(object):
 
         assert value(m.fs.unit.efficiency_isentropic[0]) == pytest.approx(0.9, rel=1e-3)
         assert value(m.fs.unit.deltaP[0]) == pytest.approx(-3e5, rel=1e-3)
+
+
+class TestInitializersTurbine1:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        def perf_callback(b):
+            unit_hd = units.J / units.kg
+            unit_vflw = units.m**3 / units.s
+
+            @b.Constraint(m.fs.time)
+            def pc_isen_eff_eqn(b, t):
+                prnt = b.parent_block()
+                vflw = prnt.control_volume.properties_in[t].flow_vol
+                return prnt.efficiency_isentropic[t] == 0.9 / 3.975 * vflw / unit_vflw
+
+            @b.Constraint(m.fs.time)
+            def pc_isen_head_eqn(b, t):
+                prnt = b.parent_block()
+                vflw = prnt.control_volume.properties_in[t].flow_vol
+                return (
+                    b.head_isentropic[t] / 1000
+                    == -75530.8 / 3.975 / 1000 * vflw / unit_vflw * unit_hd
+                )
+
+        m.fs.unit = Turbine(
+            property_package=m.fs.properties,
+            support_isentropic_performance_curves=True,
+            isentropic_performance_curves={"build_callback": perf_callback},
+        )
+
+        # set inputs
+        m.fs.unit.inlet.flow_mol[0].set_value(1000)  # mol/s
+        Tin = 500  # K
+        Pin = 1000000  # Pa
+        hin = value(iapws95.htpx(Tin * units.K, Pin * units.Pa))
+        m.fs.unit.inlet.enth_mol[0].set_value(hin)
+        m.fs.unit.inlet.pressure[0].set_value(Pin)
+
+        return m
+
+    @pytest.mark.component
+    def test_isentropic(self, model):
+        initializer = IsentropicPressureChangerInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert value(model.fs.unit.efficiency_isentropic[0]) == pytest.approx(
+            0.9, rel=1e-3
+        )
+        assert value(model.fs.unit.deltaP[0]) == pytest.approx(-3e5, rel=1e-3)
+
+        assert not model.fs.unit.inlet.flow_mol[0].fixed
+        assert not model.fs.unit.inlet.enth_mol[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
+
+    @pytest.mark.component
+    def test_block_triangularization(self, model):
+        # Need to use reverse_numeric differentiation due to ExternalFunctions
+        initializer = BlockTriangularizationInitializer(
+            constraint_tolerance=2e-5,
+            calculate_variable_options={
+                "diff_mode": differentiate.Modes.reverse_numeric
+            },
+        )
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert value(model.fs.unit.efficiency_isentropic[0]) == pytest.approx(
+            0.9, rel=1e-3
+        )
+        assert value(model.fs.unit.deltaP[0]) == pytest.approx(-3e5, rel=1e-3)
+
+        assert not model.fs.unit.inlet.flow_mol[0].fixed
+        assert not model.fs.unit.inlet.enth_mol[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed

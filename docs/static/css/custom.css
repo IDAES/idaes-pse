@@ -37,13 +37,37 @@ h2 {
     font-weight: bold;
     color: rgb(64, 64, 64);
     font-size: 110%;
+    margin-bottom: 0px;
 }
 
+/* --- Contents index-table changes --- */
+
 /* Set table values to top align & add padding in index-table*/
-.index-table.docutils tbody td {
+.rst-content .index-table.docutils tbody tr.row-even td,
+.rst-content .index-table.docutils tbody tr.row-odd td {
 	vertical-align: top;
-    padding-top: 16px;
+    padding: 0.8em;
+    background-color: #edf8e9;
+    border: 3px solid #e1e4e5;
+    font-size: 110%;
 }
+/* Reduce definition list padding inside the index table */
+.rst-content .index-table.docutils tbody tr td dl {
+    margin: 0;
+    padding: 0;
+}
+
+/* Left align definitions inside index-tables */
+.rst-content .index-table.docutils tbody tr td dl dd {
+    margin-left: 0.5em;
+}
+
+/* Make line-blocks in index tables less spaced out */
+.rst-content .index-table.docutils .line-block {
+    line-height: 1.25em;
+    margin: 0;
+}
+
 
 /* Set defined list to more generic styling in index-table*/
 .index-table dl:not(.docutils) dt {
@@ -52,7 +76,9 @@ h2 {
     color: #404040;
     border-top: none;
 }
+/* --- end: Contents index-table changes --- */
 
+ */
 .simulated-codeblock.literal-block pre{
   background: #eeffcc;
 }
@@ -104,3 +130,4 @@ h2 {
 .quickstart-toc.sidebar .sidebar-title{
     text-align: center;
 }
+

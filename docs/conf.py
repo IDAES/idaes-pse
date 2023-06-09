@@ -15,6 +15,7 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+from collections import namedtuple
 import os
 import sys
 
@@ -49,7 +50,7 @@ extensions = [
 # Put type hints in the description, not signature
 autodoc_typehints = "description"
 
-# Avoid duplicating heading labels across parallely constructed documentation
+# Avoid duplicating heading labels across parallelly constructed documentation
 autosectionlabel_prefix_document = True
 
 # Add any paths that contain templates here, relative to this directory.
@@ -134,16 +135,43 @@ pygments_style = "sphinx"
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
+# Global constants for supported Python versions
+IDAES_PV_MIN, IDAES_PV_MAX, IDAES_PV_DEFAULT = "3.8", "3.11", "3.10"
+
 # This block of text will be virtually present at the end of every file.
 # Used here to define substitutions for re-used URLs, e.g. just add "|examples-site|" to
 # any page and it will be replaced with the hyperlink and text shown below.
-rst_epilog = """
-.. |examples-site| replace:: `examples online documentation page`_
-.. _examples online documentation page: https://idaes.github.io/examples-pse/latest/index.html
 
+rst_epilog = f"""
+.. |python-min| replace:: {IDAES_PV_MIN}
+.. |python-max| replace:: {IDAES_PV_MAX}
+.. |examples-site| replace:: `examples website`_
+.. _examples website: https://idaes-examples.readthedocs.io/en/latest/
 .. |github-issues| replace:: `Github issues page`_
 .. _Github issues page: https://github.com/IDAES/idaes-pse/issues
 """
+
+
+class RobustReplacements(dict):
+    """These replacements are needed because the Sphinx replacements are
+    not expanded within code blocks.
+    """
+
+    def __call__(self, app, docname, source):
+        text = source[0]
+        for to_replace, replace_with in self.items():
+            text = text.replace(to_replace, replace_with)
+        source[0] = text
+
+
+_python_versions_replacements = RobustReplacements(
+    {
+        "|python-min|": IDAES_PV_MIN,
+        "|python-max|": IDAES_PV_MAX,
+        "|python-default|": IDAES_PV_DEFAULT,
+    }
+)
+
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -427,3 +455,7 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {"https://docs.python.org/": None}
+
+
+def setup(app):
+    app.connect("source-read", _python_versions_replacements)

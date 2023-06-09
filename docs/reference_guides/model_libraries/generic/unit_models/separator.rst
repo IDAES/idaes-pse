@@ -93,10 +93,16 @@ If `momentum_balance_type` is `pressureTotal`:
 
 Separators do not support momentum balances using the `pressurePhase`, `momentumTotal` or `momentumPhase` options.
 
-Separator Class
----------------
+Initialization
+--------------
 
 .. module:: idaes.models.unit_models.separator
+
+.. autoclass:: SeparatorInitializer
+   :members: initialization_routine
+
+Separator Class
+---------------
 
 .. autoclass:: Separator
   :members:

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Reaction property package for the oxidation of an iron-based OC.
@@ -22,6 +22,8 @@ oxygen carriers in chemical-looping combustion,
 Chem. Eng. Sci. 62 (2007) 533–549.
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -116,8 +118,6 @@ class ReactionParameterData(ReactionParameterBlock):
 
         self._reaction_block_class = ReactionBlock
 
-        self.default_scaling_factor = {}
-
         # Reaction Index
         self.rate_reaction_idx = Set(initialize=["R1"])
 
@@ -156,7 +156,7 @@ class ReactionParameterData(ReactionParameterBlock):
         )
 
         # -------------------------------------------------------------------------
-        """ Reaction properties that can be estimated"""
+        # Reaction properties that can be estimated
 
         # Particle grain radius within OC particle
         self.grain_radius = Var(
@@ -217,11 +217,15 @@ class ReactionParameterData(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
+        obj.define_custom_properties(
+            {
+                "OC_conv": {"method": "_OC_conv", "units": None},
+                "OC_conv_temp": {"method": "_OC_conv_temp", "units": None},
+            }
+        )
         obj.add_properties(
             {
                 "k_rxn": {"method": "_k_rxn"},
-                "OC_conv": {"method": "_OC_conv"},
-                "OC_conv_temp": {"method": "_OC_conv_temp"},
                 "reaction_rate": {"method": "_reaction_rate"},
             }
         )
@@ -243,7 +247,7 @@ class _ReactionBlock(ReactionBlockBase):
     whole, rather than individual elements of indexed Reaction Blocks.
     """
 
-    def initialize(blk, outlvl=idaeslog.NOTSET, optarg={"tol": 1e-8}, solver="ipopt"):
+    def initialize(blk, outlvl=idaeslog.NOTSET, optarg=None, solver="ipopt"):
         """
         Initialisation routine for reaction package.
 
@@ -257,7 +261,7 @@ class _ReactionBlock(ReactionBlockBase):
                  * 5 = Final initialization status and exceptions
                  * 6 = No output
             optarg : solver options dictionary object (default=None)
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = "ipopt")
         Returns:
             None
@@ -270,11 +274,12 @@ class _ReactionBlock(ReactionBlockBase):
         # TODO - Update in the future as needed
         # Get a single representative block for getting config arguments
         for k in blk.keys():
+            rep_key = k
             break
 
         # Fix state variables if not already fixed
         # Fix state variables of the primary (solid) state block
-        state_var_flags = fix_state_vars(blk[k].config.solid_state_block)
+        state_var_flags = fix_state_vars(blk[rep_key].config.solid_state_block)
 
         # Fix values of secondary (gas) state block variables if not fixed,
         # as well as the solid density variable.
@@ -282,48 +287,46 @@ class _ReactionBlock(ReactionBlockBase):
         Cflag = {}  # Gas concentration flag
         Dflag = {}  # Solid density flag
 
-        for k in blk.keys():
-            for j in blk[k].gas_state_ref._params.component_list:
-                if blk[k].gas_state_ref.dens_mol_comp[j].fixed is True:
+        for k, b in blk.items():
+            for j in b.gas_state_ref.params.component_list:
+                if b.gas_state_ref.dens_mol_comp[j].fixed is True:
                     Cflag[k, j] = True
                 else:
                     Cflag[k, j] = False
-                    blk[k].gas_state_ref.dens_mol_comp[j].fix(
-                        blk[k].gas_state_ref.dens_mol_comp[j].value
+                    b.gas_state_ref.dens_mol_comp[j].fix(
+                        b.gas_state_ref.dens_mol_comp[j].value
                     )
-            if blk[k].solid_state_ref.dens_mass_skeletal.fixed is True:
+            if b.solid_state_ref.dens_mass_skeletal.fixed is True:
                 Dflag[k] = True
             else:
                 Dflag[k] = False
-                blk[k].solid_state_ref.dens_mass_skeletal.fix(
-                    blk[k].solid_state_ref.dens_mass_skeletal.value
+                b.solid_state_ref.dens_mass_skeletal.fix(
+                    b.solid_state_ref.dens_mass_skeletal.value
                 )
 
         # Initialise values
-        for k in blk.keys():
-            if hasattr(blk[k], "OC_conv_eqn"):
-                calculate_variable_from_constraint(blk[k].OC_conv, blk[k].OC_conv_eqn)
+        for k in blk.values():
+            if hasattr(k, "OC_conv_eqn"):
+                calculate_variable_from_constraint(k.OC_conv, k.OC_conv_eqn)
 
-            if hasattr(blk[k], "OC_conv_temp_eqn"):
-                calculate_variable_from_constraint(
-                    blk[k].OC_conv_temp, blk[k].OC_conv_temp_eqn
-                )
+            if hasattr(k, "OC_conv_temp_eqn"):
+                calculate_variable_from_constraint(k.OC_conv_temp, k.OC_conv_temp_eqn)
 
-            for j in blk[k]._params.rate_reaction_idx:
-                if hasattr(blk[k], "rate_constant_eqn"):
+            for j in k.params.rate_reaction_idx:
+                if hasattr(k, "rate_constant_eqn"):
                     calculate_variable_from_constraint(
-                        blk[k].k_rxn[j], blk[k].rate_constant_eqn[j]
+                        k.k_rxn[j], k.rate_constant_eqn[j]
                     )
 
-                if hasattr(blk[k], "gen_rate_expression"):
+                if hasattr(k, "gen_rate_expression"):
                     calculate_variable_from_constraint(
-                        blk[k].reaction_rate[j], blk[k].gen_rate_expression[j]
+                        k.reaction_rate[j], k.gen_rate_expression[j]
                     )
 
         # Solve property block if non-empty
         free_vars = 0
-        for k in blk.keys():
-            free_vars += number_unfixed_variables_in_activated_equalities(blk[k])
+        for k in blk.values():
+            free_vars += number_unfixed_variables_in_activated_equalities(k)
 
         if free_vars > 0:
             # Create solver
@@ -339,14 +342,17 @@ class _ReactionBlock(ReactionBlockBase):
         # ---------------------------------------------------------------------
         # Revert state vars and other variables to pre-initialization states
         # Revert state variables of the primary (solid) state block
-        revert_state_vars(blk[k].config.solid_state_block, state_var_flags)
+        # TODO: I am not sure this line works as expected if there is more than one
+        # time point
+        for k in blk.values():
+            revert_state_vars(k.config.solid_state_block, state_var_flags)
 
-        for k in blk.keys():
-            for j in blk[k].gas_state_ref._params.component_list:
+        for k, b in blk.items():
+            for j in b.gas_state_ref.params.component_list:
                 if Cflag[k, j] is False:
-                    blk[k].gas_state_ref.dens_mol_comp[j].unfix()
+                    b.gas_state_ref.dens_mol_comp[j].unfix()
             if Dflag[k] is False:
-                blk[k].solid_state_ref.dens_mass_skeletal.unfix()
+                b.solid_state_ref.dens_mass_skeletal.unfix()
 
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="reactions")
         init_log.info_high("States released.")
@@ -437,7 +443,7 @@ class ReactionBlockData(ReactionBlockDataBase):
     # Rate constant method
     def _k_rxn(self):
         self.k_rxn = Var(
-            self._params.rate_reaction_idx,
+            self.params.rate_reaction_idx,
             domain=Reals,
             initialize=1,
             doc="Rate constant [mol^(1-rxn_order) * m^(3*rxn_order -2)/s]",
@@ -447,9 +453,9 @@ class ReactionBlockData(ReactionBlockDataBase):
         def rate_constant_eqn(b, j):
             if j == "R1":
                 return self.k_rxn[j] == (
-                    self._params.k0_rxn[j]
+                    self.params.k0_rxn[j]
                     * exp(
-                        -self._params.energy_activation[j]
+                        -self.params.energy_activation[j]
                         / (
                             pyunits.convert(
                                 Constants.gas_constant,  # J/mol/K
@@ -465,7 +471,7 @@ class ReactionBlockData(ReactionBlockDataBase):
         try:
             # Try to build constraint
             self.rate_constant_eqn = Constraint(
-                self._params.rate_reaction_idx, rule=rate_constant_eqn
+                self.params.rate_reaction_idx, rule=rate_constant_eqn
             )
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -488,12 +494,12 @@ class ReactionBlockData(ReactionBlockDataBase):
                 * (
                     b.solid_state_ref.mass_frac_comp["Fe2O3"]
                     + (
-                        b.solid_state_ref._params.mw_comp["Fe2O3"]
-                        / b.solid_state_ref._params.mw_comp["Fe3O4"]
+                        b.solid_state_ref.params.mw_comp["Fe2O3"]
+                        / b.solid_state_ref.params.mw_comp["Fe3O4"]
                     )
                     * (
-                        b._params.rate_reaction_stoichiometry["R1", "Sol", "Fe2O3"]
-                        / -b._params.rate_reaction_stoichiometry["R1", "Sol", "Fe3O4"]
+                        b.params.rate_reaction_stoichiometry["R1", "Sol", "Fe2O3"]
+                        / -b.params.rate_reaction_stoichiometry["R1", "Sol", "Fe3O4"]
                     )
                     * b.solid_state_ref.mass_frac_comp["Fe3O4"]
                 )
@@ -531,7 +537,7 @@ class ReactionBlockData(ReactionBlockDataBase):
     # General rate of reaction method
     def _reaction_rate(self):
         self.reaction_rate = Var(
-            self._params.rate_reaction_idx,
+            self.params.rate_reaction_idx,
             domain=Reals,
             initialize=0,
             doc="Gen. rate of reaction [mol_rxn/m3.s]",
@@ -539,30 +545,32 @@ class ReactionBlockData(ReactionBlockDataBase):
         )
 
         def rate_rule(b, r):
-            return b.reaction_rate[r] == b._params._scale_factor_rxn * (
+            return b.reaction_rate[
+                r
+            ] == b.params._scale_factor_rxn * (  # pylint: disable=protected-access
                 b.solid_state_ref.mass_frac_comp["Fe3O4"]
                 * (1 - b.solid_state_ref.particle_porosity)
                 * b.solid_state_ref.dens_mass_skeletal
-                * (b._params.a_vol / (b.solid_state_ref._params.mw_comp["Fe3O4"]))
+                * (b.params.a_vol / (b.solid_state_ref.params.mw_comp["Fe3O4"]))
                 * 3
-                * -b._params.rate_reaction_stoichiometry["R1", "Sol", "Fe3O4"]
+                * -b.params.rate_reaction_stoichiometry["R1", "Sol", "Fe3O4"]
                 * b.k_rxn[r]
                 * (
                     (
-                        (b.gas_state_ref.dens_mol_comp["O2"] ** 2 + b._params.eps**2)
+                        (b.gas_state_ref.dens_mol_comp["O2"] ** 2 + b.params.eps**2)
                         ** 0.5
                     )
-                    ** b._params.rxn_order[r]
+                    ** b.params.rxn_order[r]
                 )
                 * b.OC_conv_temp
-                / (b._params.dens_mol_sol * b._params.grain_radius)
-                / (-b._params.rate_reaction_stoichiometry["R1", "Sol", "Fe3O4"])
+                / (b.params.dens_mol_sol * b.params.grain_radius)
+                / (-b.params.rate_reaction_stoichiometry["R1", "Sol", "Fe3O4"])
             )
 
         try:
             # Try to build constraint
             self.gen_rate_expression = Constraint(
-                self._params.rate_reaction_idx, rule=rate_rule
+                self.params.rate_reaction_idx, rule=rate_rule
             )
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later

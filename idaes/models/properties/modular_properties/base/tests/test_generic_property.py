@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for generic property package core code
@@ -41,6 +41,7 @@ from idaes.core import (
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
 from idaes.core.base.property_meta import UnitSet
+from idaes.core.initialization import BlockTriangularizationInitializer
 
 import idaes.logger as idaeslog
 
@@ -105,7 +106,7 @@ class TestGenericParameterBlock(object):
         assert_units_equivalent(default_units.MASS, pyunits.kg)
         assert_units_equivalent(default_units.AMOUNT, pyunits.mol)
         assert_units_equivalent(default_units.TEMPERATURE, pyunits.K)
-        assert_units_equivalent(default_units.CURRENT, pyunits.W)
+        assert_units_equivalent(default_units.CURRENT, pyunits.ampere)
         assert_units_equivalent(default_units.LUMINOUS_INTENSITY, pyunits.candela)
 
         assert isinstance(m.params.component_list, Set)
@@ -1143,14 +1144,20 @@ class TestGenericStateBlock(object):
                 "a": {
                     "type": Solvent,
                     "diffus_phase_comp": {"p1": dummy_method, "p2": dummy_method},
+                    "visc_d_phase_comp": {"p1": dummy_method, "p2": dummy_method},
+                    "therm_cond_phase_comp": {"p1": dummy_method, "p2": dummy_method},
                     "pressure_sat_comp": dummy_method,
                 },
                 "b": {
                     "diffus_phase_comp": {"p1": dummy_method, "p2": dummy_method},
+                    "visc_d_phase_comp": {"p1": dummy_method, "p2": dummy_method},
+                    "therm_cond_phase_comp": {"p1": dummy_method, "p2": dummy_method},
                     "pressure_sat_comp": dummy_method,
                 },
                 "c": {
                     "diffus_phase_comp": {"p1": dummy_method, "p2": dummy_method},
+                    "visc_d_phase_comp": {"p1": dummy_method, "p2": dummy_method},
+                    "therm_cond_phase_comp": {"p1": dummy_method, "p2": dummy_method},
                     "pressure_sat_comp": dummy_method,
                 },
             },
@@ -1194,6 +1201,7 @@ class TestGenericStateBlock(object):
     def test_build(self, frame):
         assert isinstance(frame.props, Block)
         assert len(frame.props) == 1
+        assert frame.props.default_initializer is BlockTriangularizationInitializer
 
         # Check for expected behaviour for dummy methods
         assert frame.props[1].state_defined
@@ -1257,35 +1265,43 @@ class TestGenericStateBlock(object):
         frame.props[1].flow_mol_phase_comp = Var(frame.props[1].phase_component_set)
 
         # Call all properties in metadata and assert they exist.
-        for p in frame.params.get_metadata().properties:
-            if p.endswith(("apparent", "true")):
+        for p in frame.params.get_metadata().properties.list_supported_properties():
+            if p.name.endswith(("apparent", "true")):
                 # True and apparent properties require electrolytes, which are
                 # not tested here
                 # Check that method exists and continue
-                assert hasattr(
-                    frame.props[1], frame.params.get_metadata().properties[p]["method"]
-                )
+                if frame.params.get_metadata().properties[p.name].method is not None:
+                    assert hasattr(
+                        frame.props[1],
+                        frame.params.get_metadata().properties[p.name].method,
+                    )
                 continue
-            elif p.endswith(("bubble", "bub", "dew")):
+            elif p.name.endswith(("bubble", "bub", "dew")):
                 # Bubble and dew properties require phase equilibria, which are
                 # not tested here
                 # Check that method exists and continue
                 assert hasattr(
-                    frame.props[1], frame.params.get_metadata().properties[p]["method"]
+                    frame.props[1],
+                    frame.params.get_metadata().properties[p.name].method,
                 )
                 continue
-            elif p in ["dh_rxn", "log_k_eq"]:
+            elif p.name in ["dh_rxn", "log_k_eq"]:
                 # Not testing inherent reactions here either
                 # Check that method exists and continue
                 assert hasattr(
-                    frame.props[1], frame.params.get_metadata().properties[p]["method"]
+                    frame.props[1],
+                    frame.params.get_metadata().properties[p.name].method,
                 )
                 continue
-            elif p in ["diffus_phase_comp"]:
+            elif p.name in {
+                "diffus_phase_comp",
+            }:
                 # phase indexed properties - these will be tested separately.
                 continue
+            elif p.supported:
+                assert hasattr(frame.props[1], p.name)
             else:
-                assert hasattr(frame.props[1], p)
+                assert not hasattr(frame.props[1], p.name)
 
     @pytest.mark.unit
     def test_flows(self, frame):
@@ -1349,6 +1365,14 @@ class TestGenericStateBlock(object):
         def return_expression(*args, **kwargs):
             return 4
 
+        class visc_d_phase_comp(object):
+            def return_expression(*args, **kwargs):
+                return 5
+
+        class therm_cond_phase_comp(object):
+            def return_expression(*args, **kwargs):
+                return 7
+
     @pytest.mark.unit
     def test_diffus_phase_comp(self, frame):
         frame.params.a.config.diffus_phase_comp = {
@@ -1368,6 +1392,52 @@ class TestGenericStateBlock(object):
         assert value(frame.props[1].diffus_phase_comp["p2", "a"]) == 4
         assert value(frame.props[1].diffus_phase_comp["p2", "b"]) == 4
         assert value(frame.props[1].diffus_phase_comp["p1", "c"]) == 4
+
+    @pytest.mark.unit
+    def test_visc_d_phase_comp(self, frame):
+        frame.params.a.config.visc_d_phase_comp = {
+            "p1": TestGenericStateBlock.dummy_prop,
+            "p2": TestGenericStateBlock.dummy_prop,
+        }
+        frame.params.b.config.visc_d_phase_comp = {
+            "p2": TestGenericStateBlock.dummy_prop
+        }
+        frame.params.c.config.visc_d_phase_comp = {
+            "p1": TestGenericStateBlock.dummy_prop
+        }
+        # Have to explicitly call constructor
+        assert not hasattr(frame.props[1], "_visc_d_phase_comp")
+        frame.props[1]._make_visc_d_phase_comp()
+
+        # There should be two skipped indices, so length should be 4
+        assert len(frame.props[1]._visc_d_phase_comp) == 4
+        assert value(frame.props[1]._visc_d_phase_comp["p1", "a"]) == 5
+        assert value(frame.props[1]._visc_d_phase_comp["p2", "a"]) == 5
+        assert value(frame.props[1]._visc_d_phase_comp["p2", "b"]) == 5
+        assert value(frame.props[1]._visc_d_phase_comp["p1", "c"]) == 5
+
+    @pytest.mark.unit
+    def test_therm_cond_phase_comp(self, frame):
+        frame.params.a.config.therm_cond_phase_comp = {
+            "p1": TestGenericStateBlock.dummy_prop,
+            "p2": TestGenericStateBlock.dummy_prop,
+        }
+        frame.params.b.config.therm_cond_phase_comp = {
+            "p2": TestGenericStateBlock.dummy_prop
+        }
+        frame.params.c.config.therm_cond_phase_comp = {
+            "p1": TestGenericStateBlock.dummy_prop
+        }
+        # Have to explicitly call constructor
+        assert not hasattr(frame.props[1], "_therm_cond_phase_comp")
+        frame.props[1]._make_therm_cond_phase_comp()
+
+        # There should be two skipped indices, so length should be 4
+        assert len(frame.props[1]._therm_cond_phase_comp) == 4
+        assert value(frame.props[1]._therm_cond_phase_comp["p1", "a"]) == 7
+        assert value(frame.props[1]._therm_cond_phase_comp["p2", "a"]) == 7
+        assert value(frame.props[1]._therm_cond_phase_comp["p2", "b"]) == 7
+        assert value(frame.props[1]._therm_cond_phase_comp["p1", "c"]) == 7
 
     @pytest.mark.unit
     def test_surf_tens_phase(self, frame):

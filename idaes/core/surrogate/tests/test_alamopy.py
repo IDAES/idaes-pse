@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for Alampy SurrogateModelTrainer
@@ -22,7 +22,7 @@ from math import sin, cos, log, exp
 from pathlib import Path
 from io import StringIO
 
-from pyomo.environ import Var, Constraint
+from pyomo.environ import Var, Constraint, Expression, value
 from pyomo.common.tempfiles import TempfileManager
 
 from idaes.core.surrogate.alamopy import (
@@ -913,7 +913,7 @@ class TestAlamoTrainer:
 
         with pytest.raises(
             FileNotFoundError,
-            match="Error occured when trying to read the ALAMO trace file - "
+            match="Error occurred when trying to read the ALAMO trace file - "
             "this probably indicates that a trace file was not created by "
             "the ALAMO executable. Please check the ALAMO output logs.",
         ):
@@ -1110,7 +1110,6 @@ class TestAlamoSurrogate:
         blk = SurrogateBlock(concrete=True)
 
         blk.build_model(alm_surr1)
-        blk.display()
 
         assert isinstance(blk.inputs, Var)
         assert blk.inputs["x1"].bounds == (0, 5)
@@ -1128,6 +1127,31 @@ class TestAlamoSurrogate:
             "0.33333333332782633*inputs[x1]**6 + "
             "0.9999999999997299*inputs[x1]*inputs[x2])"
         )
+
+    @pytest.mark.unit
+    def test_populate_block_expr(self, alm_surr1):
+        blk = SurrogateBlock(concrete=True)
+
+        blk.build_model(alm_surr1, as_expression=True)
+
+        assert isinstance(blk.inputs, Var)
+        assert blk.inputs["x1"].bounds == (0, 5)
+        assert blk.inputs["x2"].bounds == (0, 10)
+        assert isinstance(blk.alamo_expression, Expression)
+        assert len(blk.alamo_expression) == 1
+        x1 = 3
+        x2 = 2
+        blk.inputs["x1"] = 3
+        blk.inputs["x2"] = 2
+        z1 = (
+            4 * x1**2
+            - 4 * x2**2
+            - 2.1 * x1**4
+            + 4 * x2**4
+            + 1 / 3.0 * x1**6
+            + 1 * x1 * x2
+        )
+        assert value(blk.alamo_expression["z1"]) == pytest.approx(z1)
 
     @pytest.fixture
     def alm_surr2(self):
@@ -1276,9 +1300,7 @@ class TestAlamoSurrogate:
     @pytest.fixture
     def alm_surr3(self):
         surrogate_expressions = {
-            "z1": (
-                " z1 == 2*sin(x1**2) - 3*cos(x2**3) - " "4*log(x1**4) + 5*exp(x2**5)"
-            )
+            "z1": (" z1 == 2*sin(x1**2) - 3*cos(x2**3) - " "4*ln(x1**4) + 5*exp(x2**5)")
         }
         input_labels = ["x1", "x2"]
         output_labels = ["z1"]
@@ -1338,14 +1360,19 @@ class TestAlamoSurrogate:
     def test_load(self):
         alm_surr = AlamoSurrogate.load(StringIO(jstring))
 
-        assert alm_surr._surrogate_expressions == {
-            "z1": " z1 == 3.9999999999925446303450 * x1**2 - "
-            "4.0000000000020765611453 * x2**2 - "
-            "2.0999999999859380039879 * x1**4 + "
-            "4.0000000000043112180492 * x2**4 + "
-            "0.33333333332782633107172 * x1**6 + "
-            "0.99999999999972988273811 * x1*x2"
-        }
+        x1 = 3
+        x2 = 2
+        z1 = (
+            4 * x1**2
+            - 4 * x2**2
+            - 2.1 * x1**4
+            + 4 * x2**4
+            + 1 / 3.0 * x1**6
+            + 1 * x1 * x2
+        )
+        model = alm_surr._surrogate_expressions["z1"].split("==")[1]
+        model_value = eval(model)
+        assert z1 == pytest.approx(model_value)
         assert alm_surr._input_labels == ["x1", "x2"]
         assert alm_surr._output_labels == ["z1"]
         assert alm_surr._input_bounds == {"x1": (0, 5), "x2": (0, 10)}
@@ -1369,14 +1396,19 @@ class TestAlamoSurrogate:
 
         # Check loaded object
         assert isinstance(alm_load, AlamoSurrogate)
-        assert alm_load._surrogate_expressions == {
-            "z1": " z1 == 3.9999999999925446303450 * x1**2 - "
-            "4.0000000000020765611453 * x2**2 - "
-            "2.0999999999859380039879 * x1**4 + "
-            "4.0000000000043112180492 * x2**4 + "
-            "0.33333333332782633107172 * x1**6 + "
-            "0.99999999999972988273811 * x1*x2"
-        }
+        x1 = 3
+        x2 = 2
+        z1 = (
+            4 * x1**2
+            - 4 * x2**2
+            - 2.1 * x1**4
+            + 4 * x2**4
+            + 1 / 3.0 * x1**6
+            + 1 * x1 * x2
+        )
+        model = alm_load._surrogate_expressions["z1"].split("==")[1]
+        model_value = eval(model)
+        assert z1 == pytest.approx(model_value)
         assert alm_load._input_labels == ["x1", "x2"]
         assert alm_load._output_labels == ["z1"]
         assert alm_load._input_bounds == {"x1": (0, 5), "x2": (0, 10)}
@@ -1454,40 +1486,78 @@ class TestWorkflow:
         assert alamo_trainer._results is not None
         assert alamo_trainer._results["NINPUTS"] == "2"
         assert alamo_trainer._results["NOUTPUTS"] == "1"
-        assert alamo_trainer._results["SSEOLR"] == {"z1": "0.373E-29"}
-        assert alamo_trainer._results["SSE"] == {"z1": "0.976E-23"}
-        assert alamo_trainer._results["RMSE"] == {"z1": "0.988E-12"}
-        assert alamo_trainer._results["R2"] == {"z1": "1.00"}
-        assert alamo_trainer._results["ModelSize"] == {"z1": "6"}
-        assert alamo_trainer._results["BIC"] == {"z1": "-539."}
-        assert alamo_trainer._results["RIC"] == {"z1": "32.5"}
-        assert alamo_trainer._results["Cp"] == {"z1": "2.00"}
-        assert alamo_trainer._results["AICc"] == {"z1": "-513."}
-        assert alamo_trainer._results["HQC"] == {"z1": "-543."}
-        assert alamo_trainer._results["MSE"] == {"z1": "0.325E-23"}
-        assert alamo_trainer._results["SSEp"] == {"z1": "0.976E-23"}
-        assert alamo_trainer._results["MADp"] == {"z1": "0.115E-07"}
-
-        assert alamo_trainer._results["Model"] == {
-            "z1": " z1 == 3.9999999999925432980774 * x1**2 - "
-            "4.0000000000020792256805 * x2**2 - "
-            "2.0999999999859380039879 * x1**4 + "
-            "4.0000000000043085535140 * x2**4 + "
-            "0.33333333332782683067208 * x1**6 + "
-            "0.99999999999973088193883 * x1*x2"
-        }
+        assert float(alamo_trainer._results["SSEOLR"]["z1"]) == pytest.approx(
+            0.373e-29, abs=1e-10
+        )
+        assert float(alamo_trainer._results["SSEOLR"]["z1"]) == pytest.approx(
+            0.373e-29, abs=1e-10
+        )
+        assert float(alamo_trainer._results["SSE"]["z1"]) == pytest.approx(
+            0.976e-23, abs=1e-10
+        )
+        assert float(alamo_trainer._results["RMSE"]["z1"]) == pytest.approx(
+            0.988e-12, abs=1e-10
+        )
+        assert float(alamo_trainer._results["R2"]["z1"]) == pytest.approx(
+            1.00, rel=1e-9
+        )
+        assert float(alamo_trainer._results["ModelSize"]["z1"]) == pytest.approx(
+            6, rel=1e-9
+        )
+        assert float(alamo_trainer._results["BIC"]["z1"]) == pytest.approx(
+            -539.0, rel=1e-9
+        )
+        assert float(alamo_trainer._results["RIC"]["z1"]) == pytest.approx(
+            32.5, rel=1e-9
+        )
+        assert float(alamo_trainer._results["Cp"]["z1"]) == pytest.approx(
+            2.00, rel=1e-9
+        )
+        assert float(alamo_trainer._results["AICc"]["z1"]) == pytest.approx(
+            -513.0, rel=1e-9
+        )
+        assert float(alamo_trainer._results["HQC"]["z1"]) == pytest.approx(
+            -543.0, rel=1e-9
+        )
+        assert float(alamo_trainer._results["MSE"]["z1"]) == pytest.approx(
+            0.325e-23, abs=1e-10
+        )
+        assert float(alamo_trainer._results["SSEp"]["z1"]) == pytest.approx(
+            0.976e-23, abs=1e-10
+        )
+        assert float(alamo_trainer._results["MADp"]["z1"]) == pytest.approx(
+            0.115e-07, abs=1e-10
+        )
+        x1 = 3
+        x2 = 2
+        z1 = (
+            4 * x1**2
+            - 4 * x2**2
+            - 2.1 * x1**4
+            + 4 * x2**4
+            + 1 / 3.0 * x1**6
+            + 1 * x1 * x2
+        )
+        model = alamo_trainer._results["Model"]["z1"].split("==")[1]
+        model_value = eval(model)
+        assert z1 == pytest.approx(model_value)
 
     def test_alamo_object(self, alamo_trainer):
         alamo_object = alamo_trainer.alamo_object
         assert isinstance(alamo_object, AlamoSurrogate)
-        assert alamo_object._surrogate_expressions == {
-            "z1": " z1 == 3.9999999999925432980774 * x1**2 - "
-            "4.0000000000020792256805 * x2**2 - "
-            "2.0999999999859380039879 * x1**4 + "
-            "4.0000000000043085535140 * x2**4 + "
-            "0.33333333332782683067208 * x1**6 + "
-            "0.99999999999973088193883 * x1*x2"
-        }
+        x1 = 3
+        x2 = 2
+        z1 = (
+            4 * x1**2
+            - 4 * x2**2
+            - 2.1 * x1**4
+            + 4 * x2**4
+            + 1 / 3.0 * x1**6
+            + 1 * x1 * x2
+        )
+        model = alamo_object._surrogate_expressions["z1"].split("==")[1]
+        model_value = eval(model)
+        assert z1 == pytest.approx(model_value)
         assert alamo_object._input_labels == ["x1", "x2"]
         assert alamo_object._output_labels == ["z1"]
         assert alamo_object._input_bounds == {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
@@ -1588,25 +1658,55 @@ class TestWorkflowValidation:
         assert alamo_trainer._results is not None
         assert alamo_trainer._results["NINPUTS"] == "2"
         assert alamo_trainer._results["NOUTPUTS"] == "1"
-        assert alamo_trainer._results["SSEOLR"] == {"z1": "0.373E-29"}
-        assert alamo_trainer._results["SSE"] == {"z1": "0.976E-23"}
-        assert alamo_trainer._results["RMSE"] == {"z1": "0.988E-12"}
-        assert alamo_trainer._results["R2"] == {"z1": "1.00"}
-        assert alamo_trainer._results["ModelSize"] == {"z1": "6"}
-        assert alamo_trainer._results["BIC"] == {"z1": "-539."}
-        assert alamo_trainer._results["RIC"] == {"z1": "32.5"}
-        assert alamo_trainer._results["Cp"] == {"z1": "2.00"}
-        assert alamo_trainer._results["AICc"] == {"z1": "-513."}
-        assert alamo_trainer._results["HQC"] == {"z1": "-543."}
-        assert alamo_trainer._results["MSE"] == {"z1": "0.325E-23"}
-        assert alamo_trainer._results["SSEp"] == {"z1": "0.976E-23"}
-        assert alamo_trainer._results["MADp"] == {"z1": "0.115E-07"}
-
-        assert alamo_trainer._results["Model"] == {
-            "z1": " z1 == 3.9999999999925432980774 * x1**2 - "
-            "4.0000000000020792256805 * x2**2 - "
-            "2.0999999999859380039879 * x1**4 + "
-            "4.0000000000043085535140 * x2**4 + "
-            "0.33333333332782683067208 * x1**6 + "
-            "0.99999999999973088193883 * x1*x2"
-        }
+        assert float(alamo_trainer._results["SSEOLR"]["z1"]) == pytest.approx(
+            0.373e-29, abs=1e-10
+        )
+        assert float(alamo_trainer._results["SSE"]["z1"]) == pytest.approx(
+            0.976e-23, abs=1e-10
+        )
+        assert float(alamo_trainer._results["RMSE"]["z1"]) == pytest.approx(
+            0.988e-12, abs=1e-10
+        )
+        assert float(alamo_trainer._results["R2"]["z1"]) == pytest.approx(
+            1.00, rel=1e-9
+        )
+        assert float(alamo_trainer._results["ModelSize"]["z1"]) == pytest.approx(
+            6, rel=1e-9
+        )
+        assert float(alamo_trainer._results["BIC"]["z1"]) == pytest.approx(
+            -539.0, rel=1e-9
+        )
+        assert float(alamo_trainer._results["RIC"]["z1"]) == pytest.approx(
+            32.5, rel=1e-9
+        )
+        assert float(alamo_trainer._results["Cp"]["z1"]) == pytest.approx(
+            2.00, rel=1e-9
+        )
+        assert float(alamo_trainer._results["AICc"]["z1"]) == pytest.approx(
+            -513.0, rel=1e-9
+        )
+        assert float(alamo_trainer._results["HQC"]["z1"]) == pytest.approx(
+            -543.0, rel=1e-9
+        )
+        assert float(alamo_trainer._results["MSE"]["z1"]) == pytest.approx(
+            0.325e-23, abs=1e-10
+        )
+        assert float(alamo_trainer._results["SSEp"]["z1"]) == pytest.approx(
+            0.976e-23, abs=1e-10
+        )
+        assert float(alamo_trainer._results["MADp"]["z1"]) == pytest.approx(
+            0.115e-07, abs=1e-10
+        )
+        x1 = 3
+        x2 = 2
+        z1 = (
+            4 * x1**2
+            - 4 * x2**2
+            - 2.1 * x1**4
+            + 4 * x2**4
+            + 1 / 3.0 * x1**6
+            + 1 * x1 * x2
+        )
+        model = alamo_trainer._results["Model"]["z1"].split("==")[1]
+        model_value = eval(model)
+        assert z1 == pytest.approx(model_value)

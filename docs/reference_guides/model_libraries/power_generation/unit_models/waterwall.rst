@@ -55,7 +55,7 @@ Model Outputs:
     :width: 800
     :align: center
     
-    Figure 2. Ilustration of a waterwall section model and its main variables
+    Figure 2. Illustration of a waterwall section model and its main variables
 
 Figure 2 illustrates the physics and main variables in a single waterwall section model. This model assumes that the net radiation and convective heat fluxes are given from the fire-side model for the corresponding zone. 
 The membrane wall geometry and slag layer thickness are the given input variables along with the fluid inlet flow rate and state conditions. 
@@ -92,7 +92,7 @@ Variable                    Symbol             Index Sets  Doc
 =========================== ================== =========== =============================================================================
 heat_duty                   :math:`Q`          time        Heat transferred from flue gas to tube side fluid
 projected_area              :math:`A`          None        Heat transfer area (total projected area based on tube shape)
-hconv, hconv_liquid         :math:`h_{conv}`   time        Overal convective heat transfer coefficient and hconv_liquid for liquid only
+hconv, hconv_liquid         :math:`h_{conv}`   time        Overall convective heat transfer coefficient and hconv_liquid for liquid only
 temp_slag_boundary          :math:`T_{w,slag}` time        Temperature of the slag
 =========================== ================== =========== =============================================================================
 
@@ -173,7 +173,7 @@ where:
 * Re : Reynolds number (liquid only)
 * V: fluid velocity (m/s, liquid only)
 * k : thermal conductivity of the fluid (W / m / K)
-* MW: molecular weigth of water (kmol/kg)
+* MW: molecular weight of water (kmol/kg)
 * :math:`\mu` : viscocity (kg/m/s)
 
 Note that at the flowsheet level first waterwall section is connected to the economizer, arcs connecting section 2 to n-1 have to be constructed by the user, and the outlet of section n is connected to the drum model or superheater (subcritical and supercritical plant, respectively)

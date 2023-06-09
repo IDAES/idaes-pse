@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 import itertools
 import math
@@ -46,6 +46,7 @@ from idaes.apps.nmpc.dynamic_data import (
     load_inputs_into_model,
     interval_data_from_time_series,
 )
+from idaes.core.solvers import get_solver
 
 """
 Test for the simple pipeline model
@@ -162,7 +163,7 @@ class TestSolvePipelineSquare(unittest.TestCase):
 
         t0 = m.fs.time.first()
 
-        ipopt = pyo.SolverFactory("ipopt")
+        ipopt = get_solver("ipopt")
 
         res = ipopt.solve(m, tee=True)
         pyo.assert_optimal_termination(res)
@@ -251,10 +252,10 @@ class TestSolvePipelineSquare(unittest.TestCase):
             param_sweeper = ParamSweeper(
                 n_scen,
                 input_values,
-                to_fix=input_values,
+                to_fix=list(input_values.keys()),
                 output_values=target_values,
             )
-            ipopt = pyo.SolverFactory("ipopt")
+            ipopt = get_solver("ipopt")
             with param_sweeper:
                 # Note that doing this in a context manager means that
                 # on error, values are reset. This is inconvenient
@@ -348,7 +349,7 @@ class TestSolveDynamicPipeline(unittest.TestCase):
         Inlet pressure and outlet flow rate will be fixed.
         """
         nxfe = 4
-        ipopt = pyo.SolverFactory("ipopt")
+        ipopt = get_solver("ipopt")
 
         m_steady = self.make_steady_model(nfe=nxfe)
         self.fix_model_inlets(m_steady)
@@ -523,7 +524,7 @@ class TestSolveDynamicPipeline(unittest.TestCase):
         and 5e5 kg/hr.
         """
         nxfe = 4
-        ipopt = pyo.SolverFactory("ipopt")
+        ipopt = get_solver("ipopt")
 
         # Steady state data
         m_steady = self.make_steady_model(nfe=nxfe)

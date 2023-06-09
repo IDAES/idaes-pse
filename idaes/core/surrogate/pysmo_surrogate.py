@@ -1,16 +1,22 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
 
 # stdlib
 import io
@@ -289,9 +295,6 @@ class PysmoPolyTrainer(PysmoTrainer):
         ),
     )
 
-    def __init__(self, **settings):
-        super().__init__(**settings)
-
     def _create_model(self, pysmo_input, output_label):
         model = pr.PolynomialRegression(
             pysmo_input,
@@ -313,6 +316,7 @@ class PysmoPolyTrainer(PysmoTrainer):
                         add_terms[k].replace(j, "variable_headers['" + str(j) + "']")
                         for k in range(0, len(add_terms))
                     ]
+                # pylint: disable=W0123
                 model.set_additional_terms(
                     [
                         eval(m, GLOBAL_FUNCS, {"variable_headers": variable_headers})
@@ -409,7 +413,7 @@ class PysmoRBFTrainer(PysmoTrainer):
             regularization=self.config.regularization,
             overwrite=True,
         )
-        variable_headers = model.get_feature_vector()
+        model.get_feature_vector()
         return model
 
     def _get_metrics(self, model) -> Dict:
@@ -452,9 +456,6 @@ class PysmoKrigingTrainer(PysmoTrainer):
         ),
     )
 
-    def __init__(self, **settings):
-        super().__init__(**settings)
-
     def _create_model(self, pysmo_input, output_label):
         model = krg.KrigingModel(
             pysmo_input,
@@ -462,7 +463,7 @@ class PysmoKrigingTrainer(PysmoTrainer):
             regularization=self.config.regularization,
             overwrite=True,
         )
-        variable_headers = model.get_feature_vector()
+        model.get_feature_vector()
         return model
 
     def _get_metrics(self, model):
@@ -716,7 +717,9 @@ class TrainedSurrogateDecoder(TSEBase):
                 if value is None:
                     d[key] = None
                 else:
-                    d[key] = {k: tuple(v) for k, v in value.items() if value != None}
+                    d[key] = {
+                        k: tuple(v) for k, v in value.items() if value is not None
+                    }
             else:
                 d[key] = value
         if model_json is None:
@@ -766,7 +769,7 @@ class TrainedSurrogateDecoder(TSEBase):
             {c: list(range(10)) for c in columns}
         )  # cls.pd_decode(attr["regression_data"])
         max_order = 1  # int(attr["final_polynomial_order"])
-        _log.debug(f"Reconstructing PolynomialRegression surrogate.")
+        _log.debug("Reconstructing PolynomialRegression surrogate.")
         model = pr.PolynomialRegression(orig_data, regr_data, max_order)
         # Set model attributes from saved attributes
         _log.debug("Setting attributes on constructed surrogate model")
@@ -791,6 +794,7 @@ class TrainedSurrogateDecoder(TSEBase):
         )
         # Re-create function objects from additional terms
         list_terms = cls._poly_decode_vars(attr["additional_term_expressions"], p)
+        # pylint: disable=W0123
         model.additional_term_expressions = [
             eval(m, GLOBAL_FUNCS, {"p": p}) for m in list_terms
         ]
@@ -822,7 +826,9 @@ class TrainedSurrogateDecoder(TSEBase):
         # Construct model with minimal arguments necessary
         columns = ["x", "y"]
         XY_data = pd.DataFrame({c: list(range(10)) for c in columns})
-        model = rbf.RadialBasisFunctions(XY_data)  # XXX
+        model = rbf.RadialBasisFunctions(
+            XY_data, basis_function=attr["basis_function"]
+        )  # XXX
         # Set model attributes from saved attributes
         for k, v in attr.items():
             setattr(model, k, decoders.get(mapping[k], null_decode)(v))

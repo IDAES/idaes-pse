@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for ControlVolumeBlockData.
@@ -310,25 +310,6 @@ def test_add_phase_fractions_single_phase():
 # -----------------------------------------------------------------------------
 # Test reaction rate conversion method
 @pytest.mark.unit
-def test_rxn_rate_conv_no_rxns():
-    m = ConcreteModel()
-    m.fs = Flowsheet(dynamic=False)
-    m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.pp.basis_switch = 3
-    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
-
-    m.fs.cv = ControlVolume0DBlock(property_package=m.fs.pp, reaction_package=m.fs.rp)
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
-
-    for t in m.fs.time:
-        for j in m.fs.pp.component_list:
-            assert m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=False) == 1
-
-
-@pytest.mark.unit
 def test_rxn_rate_conv_property_basis_other():
     m = ConcreteModel()
     m.fs = Flowsheet(dynamic=False)
@@ -345,7 +326,7 @@ def test_rxn_rate_conv_property_basis_other():
     for t in m.fs.time:
         for j in m.fs.pp.component_list:
             with pytest.raises(ConfigurationError):
-                m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True)
+                m.fs.cv._rxn_rate_conv(t, j)
 
 
 @pytest.mark.unit
@@ -365,7 +346,7 @@ def test_rxn_rate_conv_reaction_basis_other():
     for t in m.fs.time:
         for j in m.fs.pp.component_list:
             with pytest.raises(ConfigurationError):
-                m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True)
+                m.fs.cv._rxn_rate_conv(t, j)
 
 
 @pytest.mark.unit
@@ -383,7 +364,7 @@ def test_rxn_rate_conv_both_molar():
 
     for t in m.fs.time:
         for j in m.fs.pp.component_list:
-            assert m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True) == 1
+            assert m.fs.cv._rxn_rate_conv(t, j) == 1
 
 
 @pytest.mark.unit
@@ -403,7 +384,7 @@ def test_rxn_rate_conv_both_mass():
 
     for t in m.fs.time:
         for j in m.fs.pp.component_list:
-            assert m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True) == 1
+            assert m.fs.cv._rxn_rate_conv(t, j) == 1
 
 
 @pytest.mark.unit
@@ -424,7 +405,7 @@ def test_rxn_rate_conv_mole_mass_no_mw():
     for t in m.fs.time:
         for j in m.fs.pp.component_list:
             with pytest.raises(PropertyNotSupportedError):
-                m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True)
+                m.fs.cv._rxn_rate_conv(t, j)
 
 
 @pytest.mark.unit
@@ -445,7 +426,7 @@ def test_rxn_rate_conv_mass_mole_no_mw():
     for t in m.fs.time:
         for j in m.fs.pp.component_list:
             with pytest.raises(PropertyNotSupportedError):
-                m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True)
+                m.fs.cv._rxn_rate_conv(t, j)
 
 
 @pytest.mark.unit
@@ -467,8 +448,7 @@ def test_rxn_rate_conv_mole_mass():
         m.fs.cv.properties_out[t].mw_comp = {"c1": 2, "c2": 3}
         for j in m.fs.pp.component_list:
             assert (
-                m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True)
-                == 1 / m.fs.cv.properties_out[t].mw_comp[j]
+                m.fs.cv._rxn_rate_conv(t, j) == 1 / m.fs.cv.properties_out[t].mw_comp[j]
             )
 
 
@@ -490,10 +470,7 @@ def test_rxn_rate_conv_mass_mole():
     for t in m.fs.time:
         m.fs.cv.properties_out[t].mw_comp = {"c1": 2, "c2": 3}
         for j in m.fs.pp.component_list:
-            assert (
-                m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True)
-                == m.fs.cv.properties_out[t].mw_comp[j]
-            )
+            assert m.fs.cv._rxn_rate_conv(t, j) == m.fs.cv.properties_out[t].mw_comp[j]
 
 
 # -----------------------------------------------------------------------------
@@ -634,6 +611,32 @@ def test_add_material_balances_rxn_mass():
     assert_units_equivalent(m.fs.cv.inherent_reaction_generation, pp_units)
     assert_units_equivalent(m.fs.cv.inherent_reaction_extent, pp_units)
     assert_units_equivalent(m.fs.cv.phase_equilibrium_generation, pp_units)
+
+
+@pytest.mark.unit
+def test_add_material_balances_single_phase_w_equilibrium():
+    from idaes.models.properties import iapws95
+
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=False)
+    m.fs.pp = iapws95.Iapws95ParameterBlock(
+        phase_presentation=iapws95.PhaseType.MIX, state_vars=iapws95.StateVars.PH
+    )
+
+    m.fs.cv = ControlVolume0DBlock(property_package=m.fs.pp)
+
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+    with pytest.raises(
+        ConfigurationError,
+        match="Property package has only one phase; control volume cannot include phase "
+        "equilibrium terms. Some property packages support phase equilibrium "
+        "implicitly in which case additional terms are not necessary.",
+    ):
+        m.fs.cv.add_material_balances(
+            balance_type=MaterialBalanceType.useDefault,
+            has_phase_equilibrium=True,
+        )
 
 
 # -----------------------------------------------------------------------------

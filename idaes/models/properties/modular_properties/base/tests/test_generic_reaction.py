@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for generic reaction package core code
@@ -128,7 +128,7 @@ class TestGenericReactionParameterBlock(object):
         assert_units_equivalent(default_units.MASS, pyunits.kg)
         assert_units_equivalent(default_units.AMOUNT, pyunits.mol)
         assert_units_equivalent(default_units.TEMPERATURE, pyunits.K)
-        assert_units_equivalent(default_units.CURRENT, pyunits.W)
+        assert_units_equivalent(default_units.CURRENT, pyunits.ampere)
         assert_units_equivalent(default_units.LUMINOUS_INTENSITY, pyunits.candela)
 
         assert isinstance(m.rxn_params.rate_reaction_idx, Set)

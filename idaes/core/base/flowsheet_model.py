@@ -1,19 +1,21 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains the base class for constructing flowsheet models in the
 IDAES modeling framework.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 import pyomo.environ as pe
 from pyomo.dae import ContinuousSet
@@ -313,7 +315,7 @@ within this flowsheet if not otherwise specified,
                             # If default, set default end point to be 1.0
                             self.config.time_set = [0.0, 1.0]
                         else:
-                            # Invalid user input, raise Excpetion
+                            # Invalid user input, raise Exception
                             raise DynamicError(
                                 "Flowsheet provided with invalid "
                                 "time_set attribute - must have at "
@@ -332,4 +334,6 @@ within this flowsheet if not otherwise specified,
                 # Set time config argument to parent time
                 self.config.time = fs.time
                 add_object_reference(self, "_time", fs.time)
+                # We control time units
+                # pylint: disable-next=protected-access
                 self._time_units = fs._time_units

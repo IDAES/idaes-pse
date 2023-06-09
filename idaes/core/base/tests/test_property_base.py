@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for flowsheet_model.
@@ -450,7 +450,7 @@ def test_StateBlock_build_port_2index_subset():
 
     m.state_block = TestStateBlock([1, 2, 3], [10, 20])
 
-    # Need to add define_port_memebers method to all state blocks
+    # Need to add define_port_members method to all state blocks
     def define_port_members(blk):
         return {
             "ScalarVar": blk.scalar_var,
@@ -515,14 +515,14 @@ class _Parameters(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties(
+        obj.define_custom_properties(
             {
                 "a": {"method": "a_method"},
                 "recursion1": {"method": "_recursion1"},
                 "recursion2": {"method": "_recursion2"},
                 "not_callable": {"method": "test_obj"},
                 "raise_exception": {"method": "_raise_exception"},
-                "not_supported": {"method": False},
+                "not_supported": {"supported": False},
                 "does_not_create_component": {"method": "_does_not_create_component"},
             }
         )

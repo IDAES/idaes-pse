@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for flowsheet_model.
@@ -40,8 +40,11 @@ class _PropertyParameterBlock(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties(
-            {"prop1": {"method": None, "units": "m"}, "prop3": {"method": False}}
+        obj.define_custom_properties(
+            {
+                "prop1": {"method": None, "units": "m"},
+                "prop3": {"method": False, "supported": False},
+            }
         )
         obj.add_default_units(
             {
@@ -92,7 +95,7 @@ class _ReactionParameterBlock2(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties({"rxn1": {"method": None}})
+        obj.define_custom_properties({"rxn1": {"method": None}})
         obj.add_default_units(
             {
                 "time": pyunits.hr,
@@ -122,7 +125,9 @@ class _ReactionParameterBlock3(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties({"rxn1": {"method": None}})
+        obj.define_custom_properties(
+            {"rxn1": {"method": None}, "props2": {"required": True}}
+        )
         obj.add_default_units(
             {
                 "time": pyunits.s,
@@ -132,7 +137,6 @@ class _ReactionParameterBlock3(ReactionParameterBlock):
                 "temperature": pyunits.K,
             }
         )
-        obj.add_required_properties({"prop2": "some"})
 
 
 @pytest.mark.unit
@@ -153,7 +157,9 @@ class _ReactionParameterBlock4(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties({"rxn1": {"method": None}})
+        obj.define_custom_properties(
+            {"rxn1": {"method": None}, "prop3": {"required": True}}
+        )
         obj.add_default_units(
             {
                 "time": pyunits.s,
@@ -163,7 +169,6 @@ class _ReactionParameterBlock4(ReactionParameterBlock):
                 "temperature": pyunits.K,
             }
         )
-        obj.add_required_properties({"prop3": "some"})
 
 
 @pytest.mark.unit
@@ -184,7 +189,12 @@ class _ReactionParameterBlock5(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties({"rxn1": {"method": None}})
+        obj.define_custom_properties(
+            {
+                "rxn1": {"method": None},
+                "prop1": {"required": True},
+            }
+        )
         obj.add_default_units(
             {
                 "time": pyunits.s,
@@ -194,18 +204,6 @@ class _ReactionParameterBlock5(ReactionParameterBlock):
                 "temperature": pyunits.K,
             }
         )
-        obj.add_required_properties({"prop1": "km"})
-
-
-@pytest.mark.unit
-def test_validate_state_block_req_prop_wrong_units():
-    # Test validation of associated PropertyParameterBlock
-    m = ConcreteModel()
-    m.p = PropertyParameterBlock()
-    m.r = ReactionParameterBlock5(property_package=m.p)
-
-    with pytest.raises(PropertyPackageError):
-        m.r._validate_property_parameter_properties()
 
 
 @declare_process_block_class("ReactionParameterBlock6")
@@ -215,7 +213,12 @@ class _ReactionParameterBlock6(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties({"rxn1": {"method": None}})
+        obj.define_custom_properties(
+            {
+                "rxn1": {"method": None},
+                "prop1": {"required": True},
+            }
+        )
         obj.add_default_units(
             {
                 "time": pyunits.s,
@@ -225,7 +228,6 @@ class _ReactionParameterBlock6(ReactionParameterBlock):
                 "temperature": pyunits.K,
             }
         )
-        obj.add_required_properties({"prop1": "m"})
 
 
 @pytest.mark.unit
@@ -322,7 +324,7 @@ class ReactionBlockData2(ReactionBlockDataBase):
 
 @pytest.mark.unit
 def test_build():
-    # Test that ReactionBlockDataBase builds correctly with good argumnets
+    # Test that ReactionBlockDataBase builds correctly with good arguments
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
 
@@ -348,14 +350,14 @@ class _Parameters(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties(
+        obj.define_custom_properties(
             {
                 "a": {"method": "a_method"},
                 "recursion1": {"method": "_recursion1"},
                 "recursion2": {"method": "_recursion2"},
                 "not_callable": {"method": "test_obj"},
                 "raise_exception": {"method": "_raise_exception"},
-                "not_supported": {"method": False},
+                "not_supported": {"supported": False},
                 "does_not_create_component": {"method": "_does_not_create_component"},
             }
         )

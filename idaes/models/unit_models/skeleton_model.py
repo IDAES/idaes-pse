@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 The basic functionality is to allow a user to add any model of choice that
@@ -27,6 +27,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
+from idaes.core.initialization import BlockTriangularizationInitializer
 
 __author__ = "Jaffer Ghouse"
 
@@ -37,10 +38,14 @@ _log = idaeslog.getLogger(__name__)
 @declare_process_block_class("SkeletonUnitModel")
 class SkeletonUnitModelData(ProcessBlockData):
     """
-    This is the class for a skeleteon unit model. This will provide a user
+    This is the class for a skeleton unit model. This will provide a user
     with a generic skeleton to add a custom or a surrogate unit model
-    when controlvolumes are not required.
+    when control volumes are not required.
     """
+
+    # Set default initializer
+    # TODO: For now, use Block Triangularization as the default
+    default_initializer = BlockTriangularizationInitializer
 
     # This is a staticmethod that will be the default callable set for the
     # initializer flag in the config block.
@@ -81,6 +86,7 @@ class SkeletonUnitModelData(ProcessBlockData):
         ),
     )
 
+    # pylint: disable=W0235
     def build(self):
         """
         General build method for SkeletonUnitModelBlockData.
@@ -126,6 +132,21 @@ class SkeletonUnitModelData(ProcessBlockData):
         # Populate port and map names to actual variables as defined
         for k in member_dict.keys():
             p.add(member_dict[k], name=k)
+
+    def fix_initialization_states(self):
+        """
+        Attempts to fix inlet states by iterating over all Ports and looking for "inlet"
+        in the name.
+
+        Users may need to fix inlets manually if they use names which do not include "inlet".
+
+        Returns:
+            None
+        """
+        for p in self.component_objects(Port, descend_into=False):
+            if "inlet" in p.name:
+                # Assume name is correct and fix all variables inside
+                p.fix()
 
     # TODO : Work out how to make this work with new UnitModel initialization
     def initialize(

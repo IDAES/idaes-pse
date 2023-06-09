@@ -72,7 +72,7 @@ When instantiating the parameter block that uses this particular state block, 2 
 
 The ``valid_phase`` argument denotes the valid phases for a given set of inlet conditions. For example, if the user knows a priori that the it will only be a single phase (for example liquid only), then it is best not to include the complex flash equilibrium constraints in the model. If the user does not specify any option, then the package defaults to a 2 phase assumption meaning that the constraints to compute the phase equilibrium will be computed.
 
-The ``activity_coeff_model`` denotes the liquid phase assumption to be used. If the user does not specify any option, then the package defaults to asuming an ideal liquid assumption.
+The ``activity_coeff_model`` denotes the liquid phase assumption to be used. If the user does not specify any option, then the package defaults to assuming an ideal liquid assumption.
 
 The ``state_vars`` denotes the preferred set of state variables to be used. If the user does not specify any option, then the package defaults to using the total flow, mixture mole fraction, temperature and pressure as the state variables.
 
@@ -125,7 +125,7 @@ where :math:`T_{eq}` is the equilibrium temperature at which flash calculations 
 .. math:: T_{1} = 0.5{[T + T_{bubble} + \sqrt{(T-T_{bubble})^2 + \epsilon_{1}^2}]}
 .. math:: T_{eq} = 0.5{[T_{1} + T_{dew} - \sqrt{(T-T_{dew})^2 + \epsilon_{2}^2}]}
 
-where :math:`\epsilon_1` and :math:`\epsilon_2` are smoothing parameters(mutable). The default values are 0.01 and 0.0005 respectively. It is recommended that :math:`\epsilon_1` > :math:`\epsilon_2`. Please refer to reference 4 for more details. Therefore, it can be seen that if the stream temperature is less than that of the bubble point temperature, the VLE calucalations will be computed at the bubble point. Similarly, if the stream temperature is greater than the dew point temperature, then the VLE calculations are computed at the dew point temperature. For all other conditions, the equilibrium calcualtions will be computed at the actual temperature. 
+where :math:`\epsilon_1` and :math:`\epsilon_2` are smoothing parameters(mutable). The default values are 0.01 and 0.0005 respectively. It is recommended that :math:`\epsilon_1` > :math:`\epsilon_2`. Please refer to reference 4 for more details. Therefore, it can be seen that if the stream temperature is less than that of the bubble point temperature, the VLE calucalations will be computed at the bubble point. Similarly, if the stream temperature is greater than the dew point temperature, then the VLE calculations are computed at the dew point temperature. For all other conditions, the equilibrium calculations will be computed at the actual temperature. 
 
 Additional constraints are included in the model to compute the thermodynamic properties such as component saturation pressure, enthalpy, specific heat capacity. Please note that, these constraints are added only if the variable is called for when building the model. This eliminates adding unnecessary constraints to compute properties that are not needed in the model. 
 
@@ -149,7 +149,7 @@ The mixture specific enthapies (``enthalpy_liq`` & ``enthalpy_vap``) are compute
 .. math:: H^{liq} =  \sum_i{h_{i}^{liq}x_{i}}
 .. math:: H^{vap} =  \sum_i{h_{i}^{vap}y_{i}}
 
-Similarly, specific entropies are calcuated as follows. The specific entropy (``entropy_comp_liq``) for component :math:`i` is computed using the following expression for the liquid phase:
+Similarly, specific entropies are calculated as follows. The specific entropy (``entropy_comp_liq``) for component :math:`i` is computed using the following expression for the liquid phase:
 
 .. math:: s_{i}^{liq} =  \Delta s_{form,Liq,i} + \int_{298.15}^{T}(A/T+B+CT+DT^2+ET^3)dT
 
@@ -228,10 +228,13 @@ List of Variables
 
 Initialization
 --------------
+.. module:: idaes.models.properties.activity_coeff_models.activity_coeff_prop_pack
+
+.. autoclass:: ActivityCoeffInitializer
+   :members: initialization_routine
 
 Config Block Documentation
 --------------------------
-.. module:: idaes.models.properties.activity_coeff_models.activity_coeff_prop_pack
 
 .. autoclass:: ActivityCoeffParameterBlock
    :members:

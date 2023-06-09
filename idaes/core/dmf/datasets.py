@@ -1,27 +1,31 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 DMF support for standard IDAES datasets.
 
 See :mod:`idaes.core.datasets` for user-facing API.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 # stdlib
 from collections import namedtuple
 import json
 import logging
+from typing import Tuple, Dict, Union, List
 from pathlib import Path
 from pkg_resources import get_distribution
-from typing import Tuple, Dict, Union, List
 
 # package
 from idaes.core.dmf import DMF, resource
@@ -141,9 +145,11 @@ class PublicationDataset(Dataset):
             "language": pub.get("language", "english"),
         }
         if "isbn" in pub:
-            meta["source"] = f"{pub.get('authors', 'Anon.')}, "
-            f"\"{pub.get('title', 'no title')}\". "
-            f"{pub.get('publisher', '')} ({pub.get('date', '')})"
+            meta["source"] = (
+                f"{pub.get('authors', 'Anon.')}, "
+                f"\"{pub.get('title', 'no title')}\". "
+                f"{pub.get('publisher', '')} ({pub.get('date', '')})"
+            )
         else:
             meta["source"] = (
                 f"{pub.get('authors', 'Anon.')}, "

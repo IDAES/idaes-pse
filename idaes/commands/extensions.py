@@ -1,22 +1,29 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """Commandline Utilities for Managing the IDAES Data Directory"""
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: protected access issues
+# pylint: disable=protected-access
 
 __author__ = "John Eslick"
 
 import os
-import click
 import logging
+
+import click
+
 import idaes
 import idaes.commands.util.download_bin
 from idaes.commands import cb
@@ -186,9 +193,12 @@ def hash_extensions(release, path):
 @cb.command(name="bin-platform", help="Show the compatible binary build.")
 @click.option("--distro", default="auto")
 def bin_platform(distro):
-    fd, arch = idaes.commands.util.download_bin._get_file_downloader(False, None)
+    fd, _ = idaes.commands.util.download_bin._get_file_downloader(False, None)
     try:
-        platform = idaes.commands.util.download_bin._get_platform(fd, distro, arch)
+        _, platform = idaes.commands.util.download_bin._get_arch_and_platform(
+            fd, distro
+        )
+        platform = idaes.commands.util.download_bin._get_release_platform(platform)
         click.echo(platform)
     except idaes.commands.util.download_bin.UnsupportedPlatformError:
         click.echo("No supported binaries found.")

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 
 """This is an example supercritical pulverized coal (SCPC) power plant steam cycle
@@ -17,6 +17,8 @@ what could be considered a typical SCPC plant, producing around 620 MW gross.
 This model is for demonstration and tutorial purposes only. Before looking at the
 model, it may be useful to look at the process flow diagram (PFD).
 """
+# Model needs to access private flow terms
+# pylint: disable=protected-access
 
 __author__ = "John Eslick, Maojian Wang"
 
@@ -49,7 +51,7 @@ from idaes.models.unit_models import (  # basic IDAES unit models, and enum
 )
 from idaes.core.util.initialization import (
     propagate_state as _set_port,
-)  # for model intialization
+)  # for model initialization
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -163,6 +165,7 @@ def create_model():
         inlet_list=["main", "bfpt"],
         property_package=m.fs.prop_water,
     )
+
     # The pressure in the mixer comes from the connection to the condenser.  All
     # the streams coming in and going out of the mixer are equal, but we created
     # the mixer with no calculation for the unit pressure. Here a constraint that
@@ -628,13 +631,13 @@ def set_model_input(m):
     m.fs.turb.throttle_valve[3].valve_opening.fix(0.9)
     m.fs.turb.throttle_valve[4].valve_opening.fix(0.9)
     # Set the efficiency and pressure ratios of stages other than inlet and outlet
-    for i, s in m.fs.turb.hp_stages.items():
+    for s in m.fs.turb.hp_stages.values():
         s.ratioP.fix(0.80)
         s.efficiency_isentropic.fix(0.9)
-    for i, s in m.fs.turb.ip_stages.items():
+    for s in m.fs.turb.ip_stages.values():
         s.ratioP.fix(0.78)
         s.efficiency_isentropic.fix(0.9)
-    for i, s in m.fs.turb.lp_stages.items():
+    for s in m.fs.turb.lp_stages.values():
         s.ratioP[:].fix(0.76)
         s.efficiency_isentropic[:].fix(0.9)
     ############################################################################
@@ -660,7 +663,7 @@ def set_model_input(m):
     #  Low-pressure FWH section inputs                                         #
     ############################################################################
     # fwh1
-    # Heat transfer coefficent correlation constraints can be added to the
+    # Heat transfer coefficient correlation constraints can be added to the
     # feedwater heaters, but to keep this example simple, they are fixed
     # constant values here.
     m.fs.fwh1.condense.area.fix(400)
@@ -936,7 +939,7 @@ def pfd_result(m, df, svg):
         (str): SVG content.
     """
     tags = {}  # dict of tags and data to insert into SVG
-    for i in df.index:  # Create entires for streams
+    for i in df.index:  # Create entries for streams
         tags[i + "_F"] = df.loc[i, "Molar Flow"]
         tags[i + "_T"] = df.loc[i, "T"]
         tags[i + "_P"] = df.loc[i, "P"]
@@ -966,7 +969,7 @@ def pfd_result(m, df, svg):
 
 
 def main(initialize_from_file=None, store_initialization=None):
-    """Create and initalize a model and solver
+    """Create and initialize a model and solver
 
     Args:
         None
@@ -992,7 +995,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--initialize_from_file",
         help="File from which to load initialized values. If specified, the "
-        "initialization proceedure will be skipped.",
+        "initialization procedure will be skipped.",
         default=None,
     )
     parser.add_argument(

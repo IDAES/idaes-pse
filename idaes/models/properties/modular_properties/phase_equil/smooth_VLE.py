@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Implementation of the formulation proposed in:
@@ -18,6 +18,12 @@ Miller, D.C., 2018, A Smooth, Square Flash Formulation for Equation-Oriented
 Flowsheet Optimization. Proceedings of the 13th International Symposium on
 Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import Constraint, Param, Var, value
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_max, smooth_min
@@ -29,6 +35,8 @@ import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 class SmoothVLE(object):
+    """Methods for constructing equations associated with Smooth VLE formulation."""
+
     @staticmethod
     def phase_equil(b, phase_pair):
         # This method is called via StateBlock.build, thus does not need clean-up
@@ -39,8 +47,8 @@ class SmoothVLE(object):
         (
             l_phase,
             v_phase,
-            vl_comps,
-            henry_comps,
+            _,
+            _,
             l_only_comps,
             v_only_comps,
         ) = _valid_VL_component_list(b, phase_pair)

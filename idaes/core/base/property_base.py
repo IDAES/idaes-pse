@@ -1,18 +1,20 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains classes for property blocks and property parameter blocks.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 import sys
 
@@ -32,9 +34,7 @@ from idaes.core.base.phases import PhaseData
 from idaes.core.base.components import ComponentData
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import (
-    BurntToast,
     ConfigurationError,
-    PropertyNotSupportedError,
     PropertyPackageError,
 )
 from idaes.core.util.misc import add_object_reference
@@ -46,6 +46,11 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
+from idaes.core.base.util import build_on_demand
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+)
+
 
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
@@ -105,66 +110,6 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
 
         # By default, property packages do not include inherent reactions
         self._has_inherent_reactions = False
-
-        # This is a dict to store default property scaling factors. They are
-        # defined in the parameter block to provide a universal default for
-        # quantities in a particular kind of state block.  For example, you can
-        # set flow scaling once instead of for every state block. Some of these
-        # may be left for the user to set and some may be defined in a property
-        # module where reasonable defaults can be defined a priori. See
-        # set_default_scaling, get_default_scaling, and unset_default_scaling
-        self.default_scaling_factor = {}
-
-    def set_default_scaling(self, attribute, value, index=None):
-        """Set a default scaling factor for a property.
-
-        Args:
-            attribute: property attribute name
-            value: default scaling factor
-            index: for indexed properties, if this is not provied the scaling
-                factor default applies to all indexed elements where specific
-                indexes are no specifcally specified.
-
-        Returns:
-            None
-        """
-        self.default_scaling_factor[(attribute, index)] = value
-
-    def unset_default_scaling(self, attribute, index=None):
-        """Remove a previously set default value
-
-        Args:
-            attribute: property attribute name
-            index: optional index for indexed properties
-
-        Returns:
-            None
-        """
-        try:
-            del self.default_scaling_factor[(attribute, index)]
-        except KeyError:
-            pass
-
-    def get_default_scaling(self, attribute, index=None):
-        """Returns a default scale factor for a property
-
-        Args:
-            attribute: property attribute name
-            index: optional index for indexed properties
-
-        Returns:
-            None
-        """
-        try:
-            # If a specific component data index exists
-            return self.default_scaling_factor[(attribute, index)]
-        except KeyError:
-            try:
-                # indexed, but no specifc index?
-                return self.default_scaling_factor[(attribute, None)]
-            except KeyError:
-                # Can't find a default scale factor for what you asked for
-                return None
 
     @property
     def state_block_class(self):
@@ -287,6 +232,9 @@ class StateBlock(ProcessBlock):
     multiple StateBlockData objects simultaneously.
     """
 
+    # Set default initializer
+    default_initializer = BlockTriangularizationInitializer
+
     @property
     def component_list(self):
         return self._return_component_list()
@@ -351,6 +299,15 @@ class StateBlock(ProcessBlock):
                     )
             self._block_data_config_default["parameters"] = param
         return param
+
+    def fix_initialization_states(self):
+        """
+        Fixes state variables for state blocks.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError
 
     def initialize(self, *args, **kwargs):
         """
@@ -497,7 +454,7 @@ class StateBlock(ProcessBlock):
             doc - doc string or Prot object
             slice_index - Slice index (e.g. (slice(None), 0.0) that will be
                 used to index self when constructing port references. Default = None.
-            index - time index to use when calling define_port_memebers. Default = None.
+            index - time index to use when calling define_port_members. Default = None.
 
         Returns:
             Port object and list of tuples with form (Reference, member name)
@@ -604,22 +561,32 @@ should be constructed in this state block,
 
     @property
     def component_list(self):
+        # TODO: Should refactor parent so this is not private
+        # pylint: disable-next=protected-access
         return self.parent_component()._return_component_list()
 
     @property
     def phase_list(self):
+        # TODO: Should refactor parent so this is not private
+        # pylint: disable-next=protected-access
         return self.parent_component()._return_phase_list()
 
     @property
     def phase_component_set(self):
+        # TODO: Should refactor parent so this is not private
+        # pylint: disable-next=protected-access
         return self.parent_component()._return_phase_component_set()
 
     @property
     def has_inherent_reactions(self):
+        # TODO: Should refactor parent so this is not private
+        # pylint: disable-next=protected-access
         return self.parent_component()._has_inherent_reactions()
 
     @property
     def include_inherent_reactions(self):
+        # TODO: Should refactor parent so this is not private
+        # pylint: disable-next=protected-access
         return self.parent_component()._include_inherent_reactions()
 
     def build(self):
@@ -646,9 +613,9 @@ should be constructed in this state block,
         force users to overload this.
         """
         raise NotImplementedError(
-            "{} property package has not implemented the"
-            " define_state_vars method. Please contact "
-            "the property package developer."
+            f"{self.name} property package has not implemented the"
+            f" define_state_vars method. Please contact "
+            f"the property package developer."
         )
 
     def define_port_members(self):
@@ -793,14 +760,14 @@ should be constructed in this state block,
         """
         This method is used to avoid generating unnecessary property
         calculations in state blocks. __getattr__ is called whenever a
-        property is called for, and if a propery does not exist, it looks for
+        property is called for, and if a property does not exist, it looks for
         a method to create the required property, and any associated
         components.
 
         Create a property calculation if needed. Return an attribute error if
         attr == 'domain' or starts with a _ . The error for _ prevents a
         recursion error if trying to get a function to create a property and
-        that function doesn't exist.  Pyomo also ocasionally looks for things
+        that function doesn't exist.  Pyomo also occasionally looks for things
         that start with _ and may not exist.  Pyomo also looks for the domain
         attribute, and it may not exist.
         This works by creating a property calculation by calling the "_"+attr
@@ -814,191 +781,7 @@ should be constructed in this state block,
             attr: an attribute to create and return. Should be a property
                   component.
         """
-        if self._lock_attribute_creation:
-            raise AttributeError(
-                f"{attr} does not exist, and attribute creation is locked."
-            )
-
-        def clear_call_list(self, attr):
-            """Local method for cleaning up call list when a call is handled.
-
-            Args:
-                attr: attribute currently being handled
-            """
-            if self.__getattrcalls[-1] == attr:
-                if len(self.__getattrcalls) <= 1:
-                    del self.__getattrcalls
-                else:
-                    del self.__getattrcalls[-1]
-            else:
-                raise PropertyPackageError(
-                    "{} Trying to remove call {} from __getattr__"
-                    " call list, however this is not the most "
-                    "recent call in the list ({}). This indicates"
-                    " a bug in the __getattr__ calls. Please "
-                    "contact the IDAES developers with this bug.".format(
-                        self.name, attr, self.__getattrcalls[-1]
-                    )
-                )
-
-        # Check that attr is not something we shouldn't touch
-        if attr == "domain" or attr.startswith("_"):
-            # Don't interfere with anything by getting attributes that are
-            # none of my business
-            raise PropertyPackageError(
-                "{} {} does not exist, but is a protected "
-                "attribute. Check the naming of your "
-                "components to avoid any reserved names".format(self.name, attr)
-            )
-
-        if attr == "config":
-            try:
-                self._get_config_args()
-                return self.config
-            except:
-                raise BurntToast(
-                    "{} getattr method was triggered by a call "
-                    "to the config block, but _get_config_args "
-                    "failed. This should never happen."
-                )
-
-        # Check for recursive calls
-        try:
-            # Check if __getattrcalls is initialized
-            self.__getattrcalls
-        except AttributeError:
-            # Initialize it
-            self.__getattrcalls = [attr]
-        else:
-            # Check to see if attr already appears in call list
-            if attr in self.__getattrcalls:
-                # If it does, indicates a recursive loop.
-                if attr == self.__getattrcalls[-1]:
-                    # attr method is calling itself
-                    self.__getattrcalls.append(attr)
-                    raise PropertyPackageError(
-                        "{} _{} made a recursive call to "
-                        "itself, indicating a potential "
-                        "recursive loop. This is generally "
-                        "caused by the {} method failing to "
-                        "create the {} component.".format(self.name, attr, attr, attr)
-                    )
-                else:
-                    self.__getattrcalls.append(attr)
-                    raise PropertyPackageError(
-                        "{} a potential recursive loop has been "
-                        "detected whilst trying to construct {}. "
-                        "A method was called, but resulted in a "
-                        "subsequent call to itself, indicating a "
-                        "recursive loop. This may be caused by a "
-                        "method trying to access a component out "
-                        "of order for some reason (e.g. it is "
-                        "declared later in the same method). See "
-                        "the __getattrcalls object for a list of "
-                        "components called in the __getattr__ "
-                        "sequence.".format(self.name, attr)
-                    )
-            # If not, add call to list
-            self.__getattrcalls.append(attr)
-
-        # Get property information from properties metadata
-        try:
-            m = self.config.parameters.get_metadata().properties
-
-            if m is None:
-                raise PropertyPackageError(
-                    "{} property package get_metadata()"
-                    " method returned None when trying to create "
-                    "{}. Please contact the developer of the "
-                    "property package".format(self.name, attr)
-                )
-        except KeyError:
-            # If attr not in metadata, assume package does not
-            # support property
-            clear_call_list(self, attr)
-            raise PropertyNotSupportedError(
-                "{} {} is not supported by property package (property is "
-                "not listed in package metadata properties).".format(self.name, attr)
-            )
-
-        # Get method name from resulting properties
-        try:
-            if m[attr]["method"] is None:
-                # If method is none, property should be constructed
-                # by property package, so raise PropertyPackageError
-                clear_call_list(self, attr)
-                raise PropertyPackageError(
-                    "{} {} should be constructed automatically "
-                    "by property package, but is not present. "
-                    "This can be caused by methods being called "
-                    "out of order.".format(self.name, attr)
-                )
-            elif m[attr]["method"] is False:
-                # If method is False, package does not support property
-                # Raise NotImplementedError
-                clear_call_list(self, attr)
-                raise PropertyNotSupportedError(
-                    "{} {} is not supported by property package "
-                    "(property method is listed as False in "
-                    "package property metadata).".format(self.name, attr)
-                )
-            elif isinstance(m[attr]["method"], str):
-                # Try to get method name in from PropertyBlock object
-                try:
-                    f = getattr(self, m[attr]["method"])
-                except AttributeError:
-                    # If fails, method does not exist
-                    clear_call_list(self, attr)
-                    raise PropertyPackageError(
-                        "{} {} package property metadata method "
-                        "returned a name that does not correspond"
-                        " to any method in the property package. "
-                        "Please contact the developer of the "
-                        "property package.".format(self.name, attr)
-                    )
-            else:
-                # Otherwise method name is invalid
-                clear_call_list(self, attr)
-                raise PropertyPackageError(
-                    "{} {} package property metadata method "
-                    "returned invalid value for method name. "
-                    "Please contact the developer of the "
-                    "property package.".format(self.name, attr)
-                )
-        except KeyError:
-            # No method key - raise Exception
-            # Need to use an AttributeError so Pyomo.DAE will handle this
-            clear_call_list(self, attr)
-            raise PropertyNotSupportedError(
-                "{} package property metadata method "
-                "does not contain a method for {}. "
-                "Please select a package which supports "
-                "the necessary properties for your process.".format(self.name, attr)
-            )
-
-        # Call attribute if it is callable
-        # If this fails, it should return a meaningful error.
-        if callable(f):
-            try:
-                f()
-            except Exception:
-                # Clear call list and reraise error
-                clear_call_list(self, attr)
-                raise
-        else:
-            # If f is not callable, inform the user and clear call list
-            clear_call_list(self, attr)
-            raise PropertyPackageError(
-                "{} tried calling attribute {} in order to create "
-                "component {}. However the method is not callable.".format(
-                    self.name, f, attr
-                )
-            )
-
-        # Clear call list, and return
-        comp = getattr(self, attr)
-        clear_call_list(self, attr)
-        return comp
+        return build_on_demand(self, attr)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

@@ -1,19 +1,24 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Methods for setting up FTPx as the state variables in a generic property
 package
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
 
 from pyomo.environ import (
     Constraint,
@@ -39,8 +44,8 @@ from idaes.models.properties.modular_properties.phase_equil.henry import (
 )
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
-from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
 import idaes.core.util.scaling as iscale
+from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
 
 
 # Set up logger
@@ -149,13 +154,13 @@ def define_state(b):
 
     b.phase_frac = Var(
         b.phase_list,
-        initialize=1 / len(b.phase_list),
+        initialize=1.0 / len(b.phase_list),
         bounds=(0, None),
         doc="Phase fractions",
         units=pyunits.dimensionless,
     )
 
-    # Add electrolye state vars if required
+    # Add electrolyte state vars if required
     if b.params._electrolyte:
         define_electrolyte_state(b)
 
@@ -163,7 +168,7 @@ def define_state(b):
     if b.config.defined_state is False:
         # applied at outlet only
         b.sum_mole_frac_out = Constraint(
-            expr=1 == sum(b.mole_frac_comp[i] for i in b.component_list)
+            expr=1.0 == sum(b.mole_frac_comp[i] for i in b.component_list)
         )
 
     if len(b.phase_list) == 1:
@@ -183,7 +188,7 @@ def define_state(b):
         )
 
         def rule_phase_frac(b, p):
-            return b.phase_frac[p] == 1
+            return b.phase_frac[p] == 1.0
 
         b.phase_fraction_constraint = Constraint(b.phase_list, rule=rule_phase_frac)
 
@@ -709,6 +714,8 @@ do_not_initialize = ["sum_mole_frac_out"]
 
 
 class FTPx(object):
+    """Total flow, temperature, pressure, mole fraction state."""
+
     set_metadata = set_metadata
     define_state = define_state
     state_initialization = state_initialization
@@ -768,7 +775,7 @@ def _modified_rachford_rice(b, K, vl_comps, l_only_comps, v_only_comps, eps=1e-5
             2. All mole_frac_comp[j] > 0 in block b
             3. sum(mole_frac_comp[j] for j in b.component_list) == 1
         If the harmonic mean of K[j] is greater than one, the stream is pure
-        vapor. If the arithmatic mean of K[j] is less than one, the stream is
+        vapor. If the arithmetic mean of K[j] is less than one, the stream is
         pure liquid. If neither of those conditions hold, a root exists between
         zero and one and the root-finding method will converge to it.
 
@@ -790,7 +797,7 @@ def _modified_rachford_rice(b, K, vl_comps, l_only_comps, v_only_comps, eps=1e-5
             )
             return None
 
-    # Calculate harmonic and arithmatic means of the split ratios KS
+    # Calculate harmonic and arithmetic means of the split ratios KS
     if len(l_only_comps) == 0:
         tmp = sum([value(b.mole_frac_comp[j]) / K[j] for j in vl_comps])
         if tmp < 1e-14:
@@ -812,14 +819,14 @@ def _modified_rachford_rice(b, K, vl_comps, l_only_comps, v_only_comps, eps=1e-5
         # Vapor fraction is nearly zero
         return eps
 
-    # I discovered this method is a varient on solving the
+    # I discovered this method is a variant on solving the
     # Rachford-Rice equation, which has been known to ChemEs
     # since the 50s. I'm not sure if the link between Newton's
     # method and convexity was explicitly stated, though. For good
     # reason, the classic RR equation does not appear to necessarily
     # be convex
 
-    # There are varients where the flash calculation is robust
+    # There are variants where the flash calculation is robust
     # to the calculated vapor fraction being greater than 1 or
     # less than zero. Future reader, check out
     # https://doi.org/10.1016/j.fluid.2011.12.005 and

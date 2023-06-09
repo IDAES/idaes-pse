@@ -1,18 +1,21 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Dynamic sub-flowsheet for a subcritical 300MWe steam cycle system
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Python time library
 import time
 import matplotlib.pyplot as plt
@@ -30,8 +33,7 @@ from idaes.models_extra.power_generation.unit_models.helm import (
     HelmTurbineMultistage as TurbineMultistage,
     HelmMixer as Mixer,
     MomentumMixingType,
-    HelmValve as SteamValve,
-    HelmValve as WaterValve,
+    HelmValve as Valve,
     HelmIsentropicCompressor as WaterPump,
     HelmSplitter as Separator,
     HelmNtuCondenser as Condenser,
@@ -98,7 +100,7 @@ def add_unit_models(m):
     )
 
     # Unit model for regulating valve of BFPT (boiler feed pump turbine)
-    fs.bfp_turb_valve = SteamValve(dynamic=False, property_package=prop_water)
+    fs.bfp_turb_valve = Valve(dynamic=False, property_package=prop_water)
 
     # Unit model for main stage of BFPT
     fs.bfp_turb = TurbineStage(dynamic=False, property_package=prop_water)
@@ -134,7 +136,7 @@ def add_unit_models(m):
     )
 
     # Unit model for water control valve between makeup tank and hotwell
-    fs.makeup_valve = WaterValve(
+    fs.makeup_valve = Valve(
         dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
@@ -149,7 +151,7 @@ def add_unit_models(m):
 
     # Unit model for water control valve after hotwell tank
     # Used to control deaerator level
-    fs.cond_valve = WaterValve(
+    fs.cond_valve = Valve(
         dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
@@ -192,7 +194,7 @@ def add_unit_models(m):
     )
 
     # Unit model for water control valve between drain of fwh2 and fwh1
-    fs.fwh2_valve = WaterValve(
+    fs.fwh2_valve = Valve(
         dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
@@ -211,7 +213,7 @@ def add_unit_models(m):
     )
 
     # Unit model for control valve between drain of fwh3 and fwh2
-    fs.fwh3_valve = WaterValve(
+    fs.fwh3_valve = Valve(
         dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
@@ -247,7 +249,7 @@ def add_unit_models(m):
     )
 
     # Unit model for attemperator spray control valve
-    fs.spray_valve = WaterValve(
+    fs.spray_valve = Valve(
         dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
@@ -267,7 +269,7 @@ def add_unit_models(m):
     )
 
     # Unit model for water control valve drain of fwh5 and deaerator
-    fs.fwh5_valve = WaterValve(
+    fs.fwh5_valve = Valve(
         dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
@@ -287,7 +289,7 @@ def add_unit_models(m):
     )
 
     # Unit model for water control valve between drain of fwh6 and fwh5
-    fs.fwh6_valve = WaterValve(
+    fs.fwh6_valve = Valve(
         dynamic=False, has_holdup=False, phase="Liq", property_package=prop_water
     )
 
@@ -317,7 +319,7 @@ def add_unit_models(m):
         fs.fwh2_ctrl = PIDController(
             process_var=fs.fwh2.condense.level,
             manipulated_var=fs.fwh2_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -325,7 +327,7 @@ def add_unit_models(m):
         fs.fwh3_ctrl = PIDController(
             process_var=fs.fwh3.condense.level,
             manipulated_var=fs.fwh3_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -333,7 +335,7 @@ def add_unit_models(m):
         fs.fwh5_ctrl = PIDController(
             process_var=fs.fwh5.condense.level,
             manipulated_var=fs.fwh5_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -341,7 +343,7 @@ def add_unit_models(m):
         fs.fwh6_ctrl = PIDController(
             process_var=fs.fwh6.condense.level,
             manipulated_var=fs.fwh6_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -349,7 +351,7 @@ def add_unit_models(m):
         fs.da_ctrl = PIDController(
             process_var=fs.da_tank.tank_level,
             manipulated_var=fs.cond_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             calculate_initial_integral=False,
         )
 
@@ -357,7 +359,7 @@ def add_unit_models(m):
         fs.makeup_ctrl = PIDController(
             process_var=fs.hotwell_tank.tank_level,
             manipulated_var=fs.makeup_valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
             mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
             calculate_initial_integral=False,
         )
@@ -366,7 +368,7 @@ def add_unit_models(m):
         fs.spray_ctrl = PIDController(
             process_var=fs.temperature_main_steam,
             manipulated_var=fs.spray_valve.valve_opening,
-            type=ControllerType.PID,
+            controller_type=ControllerType.PID,
             mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
             calculate_initial_integral=False,
         )
@@ -507,7 +509,7 @@ def set_arcs_and_constraints(m):
             == b.condenser_hotwell.aux_condensate_state[t].pressure * 1e-4
         )
 
-    # Constrait to set the mixed state pressure equal to the pressure of
+    # Constraint to set the mixed state pressure equal to the pressure of
     # auxiliary condenser
     @fs.condenser_hotwell.Constraint(fs.time)
     def mixer_pressure_constraint(b, t):
@@ -517,7 +519,7 @@ def set_arcs_and_constraints(m):
         )
 
     # Constraint to set deaerator tank outlet enthalpy equal to
-    # saturation enthalpy at inlet - 100 (sligtly sub-cooled)
+    # saturation enthalpy at inlet - 100 (slightly sub-cooled)
     # This constraint determines the steam extraction flow rate and
     # is very important to avoid flash of deaerator tank when load is
     # ramping down, which will causes convergence issue if the flash happens
@@ -916,14 +918,14 @@ def set_inputs(m):
 
         # Set initial conditions for controller errors
         t0 = fs.time.first()
-        fs.fwh2_ctrl.integral_of_error[t0].fix(0)
-        fs.fwh3_ctrl.integral_of_error[t0].fix(0)
-        fs.fwh5_ctrl.integral_of_error[t0].fix(0)
-        fs.fwh6_ctrl.integral_of_error[t0].fix(0)
-        fs.da_ctrl.integral_of_error[t0].fix(0)
-        fs.makeup_ctrl.integral_of_error[t0].fix(0)
-        fs.spray_ctrl.integral_of_error[t0].fix(0)
-        fs.spray_ctrl.derivative_of_error[t0].fix(0)
+        fs.fwh2_ctrl.mv_integral_component[t0].fix(0)
+        fs.fwh3_ctrl.mv_integral_component[t0].fix(0)
+        fs.fwh5_ctrl.mv_integral_component[t0].fix(0)
+        fs.fwh6_ctrl.mv_integral_component[t0].fix(0)
+        fs.da_ctrl.mv_integral_component[t0].fix(0)
+        fs.makeup_ctrl.mv_integral_component[t0].fix(0)
+        fs.spray_ctrl.mv_integral_component[t0].fix(0)
+        fs.spray_ctrl.derivative_term[t0].fix(0)
 
     return m
 
@@ -1664,7 +1666,7 @@ def initialize(m):
 
         # Since the constraint to calculate flow rate based on valve opening
         # and pressure drop is based on the square of flow rate and opening,
-        # negative a valve opening is mathmatically valid.  Set valve openings
+        # negative a valve opening is mathematically valid.  Set valve openings
         # to physically valid positive numbers
         valve_open = fs.fwh2_valve.valve_opening[0].value
         if valve_open < 0:
@@ -1679,7 +1681,7 @@ def initialize(m):
         if valve_open < 0:
             fs.fwh6_valve.valve_opening[:].value = -valve_open
 
-        _log.info("Adding heat transfer coefficent correations...")
+        _log.info("Adding heat transfer coefficient correations...")
         _add_heat_transfer_correlation(fs)
 
     else:
@@ -1704,14 +1706,14 @@ def initialize(m):
 
 
 def _add_u_eq(blk, uex=0.8):
-    """Add heat transfer coefficent adjustment for feed water flow rate.
-    This is based on knowing the heat transfer coefficent at a particular flow
-    and assuming the heat transfer coefficent is porportial to feed water
+    """Add heat transfer coefficient adjustment for feed water flow rate.
+    This is based on knowing the heat transfer coefficient at a particular flow
+    and assuming the heat transfer coefficient is porportial to feed water
     flow rate raised to certain power (typically 0.8)
 
     Args:
         blk: Heat exchanger block to add correlation to
-        uex: Correlation parameter value (defalut 0.8)
+        uex: Correlation parameter value (default 0.8)
 
     Returns:
         None
@@ -1870,11 +1872,11 @@ def main_dynamic():
     m_dyn.fs_main.fs_stc.spray_ctrl.mv_ref.value = (
         m_dyn.fs_main.fs_stc.spray_valve.valve_opening[t0].value
     )
-    m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error[:].value = pyo.value(
-        m_dyn.fs_main.fs_stc.spray_ctrl.integral_of_error_ref[t0]
+    m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[:].value = pyo.value(
+        m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component_ref[t0]
     )
-    m_dyn.fs_main.fs_stc.makeup_ctrl.integral_of_error[:].value = pyo.value(
-        m_dyn.fs_main.fs_stc.makeup_ctrl.integral_of_error_ref[t0]
+    m_dyn.fs_main.fs_stc.makeup_ctrl.mv_integral_component[:].value = pyo.value(
+        m_dyn.fs_main.fs_stc.makeup_ctrl.mv_integral_component_ref[t0]
     )
 
     m_dyn.fs_main.fs_stc.fwh2.condense.level[0].fix()

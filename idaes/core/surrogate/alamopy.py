@@ -1,25 +1,30 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+"""
+Python interface for ALAMO tool.
+"""
+
 from enum import Enum
 import subprocess
 from io import StringIO
 import sys
 import os
-import numpy as np
-import pandas as pd
 import json
 
-from pyomo.environ import Constraint, value, sin, cos, log, exp, Set, Reals
+import numpy as np
+import pandas as pd
+
+from pyomo.environ import Constraint, Expression, value, sin, cos, log, exp, Set, Reals
 from pyomo.common.config import ConfigValue, In, Path, ListOf, Bool
 from pyomo.common.tee import TeeStream
 from pyomo.common.fileutils import Executable
@@ -38,11 +43,15 @@ _log = idaeslog.getLogger(__name__)
 alamo = Executable("alamo")
 
 # Define mapping of Pyomo function names for expression evaluation
-GLOBAL_FUNCS = {"sin": sin, "cos": cos, "log": log, "exp": exp}
+GLOBAL_FUNCS = {"sin": sin, "cos": cos, "ln": log, "exp": exp}
 
 
 # The values associated with these must match those expected in the .alm file
 class Modelers(Enum):
+    """
+    Enum for modelers supported by ALAMO.
+    """
+
     BIC = 1
     MallowsCp = 2
     AICc = 3
@@ -54,6 +63,10 @@ class Modelers(Enum):
 
 
 class Screener(Enum):
+    """
+    Enum for screeners supported by ALAMO.
+    """
+
     none = 0
     lasso = 1
     SIS = 2
@@ -720,6 +733,7 @@ class AlamoTrainer(SurrogateTrainer):
 
     # TODO: let's generalize this under the metrics?
     def get_alamo_results(self):
+        """Return results from trainer"""
         return self._results
 
     def _get_files(self):
@@ -798,7 +812,7 @@ class AlamoTrainer(SurrogateTrainer):
         AlamoModelTrainer are used.
 
         Args:
-            stream: stream that data should be writen to
+            stream: stream that data should be written to
             trace_fname: name for trace file (.trc) to be included in .alm file
             training_data: Pandas dataframe to use for training surrogate
             validation_data: Pandas dataframe to use for validating surrogate
@@ -833,7 +847,7 @@ class AlamoTrainer(SurrogateTrainer):
             input_max.append(b[1])
 
         # Get number of data points to build alm file
-        n_rdata, n_inputs = training_data.shape
+        n_rdata, n_inputs = training_data.shape  # pylint: disable=unused-variable
 
         if validation_data is not None:
             n_vdata, n_inputs = validation_data.shape
@@ -897,7 +911,7 @@ class AlamoTrainer(SurrogateTrainer):
             return text
 
         stream.write("\nBEGIN_DATA\n")
-        # Columns will be writen in order in input and output lists
+        # Columns will be written in order in input and output lists
         training_data_str = _df_to_data_fragment(
             training_data,
             columns=self._input_labels + self._output_labels,
@@ -906,7 +920,7 @@ class AlamoTrainer(SurrogateTrainer):
         stream.write("\nEND_DATA\n")
 
         if validation_data is not None:
-            # Add validation data defintion
+            # Add validation data definition
             stream.write("\nBEGIN_VALDATA\n")
             val_data_str = _df_to_data_fragment(
                 validation_data,
@@ -979,6 +993,7 @@ class AlamoTrainer(SurrogateTrainer):
                     stdout=t.STDOUT,
                     stderr=t.STDERR,
                     universal_newlines=True,
+                    check=False,
                 )
 
                 t.STDOUT.flush()
@@ -1000,7 +1015,7 @@ class AlamoTrainer(SurrogateTrainer):
 
         if "ALAMO terminated with termination code " in alamo_log:
             self._remove_temp_files()
-            _log.warn(
+            _log.warning(
                 "ALAMO executable returned non-zero return code. Check "
                 "the ALAMO output for more information."
             )
@@ -1031,7 +1046,7 @@ class AlamoTrainer(SurrogateTrainer):
         except FileNotFoundError:
             # Trace file does not exist
             raise FileNotFoundError(
-                "Error occured when trying to read the ALAMO trace file - this probably "
+                "Error occurred when trying to read the ALAMO trace file - this probably "
                 "indicates that a trace file was not created by the ALAMO executable. "
                 "Please check the ALAMO output logs."
             )
@@ -1041,8 +1056,8 @@ class AlamoTrainer(SurrogateTrainer):
         trace_read = {}
         # Get headers from first line in trace file
         headers = lines[0].split(", ")
-        for i in range(len(headers)):
-            header = headers[i].strip("#\n")
+        for i, v in enumerate(headers):
+            header = v.strip("#\n")
             if header in common_trace:
                 trace_read[header] = None
             else:
@@ -1056,11 +1071,11 @@ class AlamoTrainer(SurrogateTrainer):
         else:
             omult = 1
 
-        for j in range(len(output_labels)):
+        for j, ol in enumerate(output_labels):
             trace = lines[(-len(output_labels) + j) * omult].split(", ")
 
-            for i in range(len(headers)):
-                header = headers[i].strip("#\n")
+            for i, v in enumerate(headers):
+                header = v.strip("#\n")
                 trace_val = trace[i].strip("\n")
 
                 # Replace Fortran powers (^) with Python powers (**)
@@ -1074,7 +1089,7 @@ class AlamoTrainer(SurrogateTrainer):
                         # No value yet, so set value
                         trace_read[header] = trace_val
                     else:
-                        # Check that current value matches the existng value
+                        # Check that current value matches the existing value
                         if trace_read[header] != trace_val:
                             raise RuntimeError(
                                 f"Mismatch in values when reading ALAMO trace "
@@ -1082,7 +1097,7 @@ class AlamoTrainer(SurrogateTrainer):
                                 f"{trace_read[header]}, {header}"
                             )
                 else:
-                    trace_read[header][output_labels[j]] = trace_val
+                    trace_read[header][ol] = trace_val
 
                 # Do some final sanity checks
                 if header == "OUTPUT":
@@ -1105,12 +1120,12 @@ class AlamoTrainer(SurrogateTrainer):
                 elif header == "Model":
                     # Var label on LHS should match output label
                     vlabel = trace_val.split("==")[0].strip()
-                    if vlabel != output_labels[j]:
+                    if vlabel != ol:
                         raise RuntimeError(
                             f"Mismatch when reading ALAMO trace file. "
                             f"Label of output variable in expression "
                             f"({vlabel}) does not match expected label "
-                            f"({output_labels[j]})."
+                            f"({ol})."
                         )
 
         return trace_read
@@ -1187,8 +1202,7 @@ class AlamoSurrogate(SurrogateBase):
 
     def evaluate_surrogate(self, inputs):
         """
-        Method to method to evaluate the ALAMO surrogate model at a set of user
-        provided values.
+        Method to evaluate the ALAMO surrogate model at a set of user provided values.
 
         Args:
            dataframe: pandas DataFrame
@@ -1198,13 +1212,15 @@ class AlamoSurrogate(SurrogateBase):
 
         Returns:
             output: pandas Dataframe
-              Returns a dataframe of the the output values evaluated at the provided inputs.
+              Returns a dataframe of the output values evaluated at the provided inputs.
               The index of the output dataframe should match the index of the provided inputs.
         """
         # Create a set of lambda functions for evaluating the surrogate.
         if self._fcn is None:
             fcn = dict()
             for o in self._output_labels:
+                # We need to evaluate the string returned by ALAMO
+                # pylint: disable=W0123
                 fcn[o] = eval(
                     f"lambda {', '.join(self._input_labels)}: "
                     f"{self._surrogate_expressions[o].split('==')[1]}",
@@ -1217,8 +1233,7 @@ class AlamoSurrogate(SurrogateBase):
         outputs = np.zeros(shape=(inputs.shape[0], len(self._output_labels)))
 
         for i in range(inputdata.shape[0]):
-            for o in range(len(self._output_labels)):
-                o_name = self._output_labels[o]
+            for o, o_name in enumerate(self._output_labels):
                 outputs[i, o] = value(self._fcn[o_name](*inputdata[i, :]))
 
         return pd.DataFrame(
@@ -1227,12 +1242,17 @@ class AlamoSurrogate(SurrogateBase):
 
     def populate_block(self, block, additional_options=None):
         """
-        Method to populate a Pyomo Block with surrogate model constraints.
+        Method to populate a Pyomo Block with surrogate model constraints
+        or expressions.
 
         Args:
             block: Pyomo Block component to be populated with constraints.
-            additional_options: None
-               No additional options are required for this surrogate object
+            additional_options (dict): optional keyword arguments passes along
+                from build model. There is one optional argument, as_expression
+                (bool) if True, write the model as an expressions, if False or
+                not provided write model as constraints. If as_expression is
+                True, the output_variables argument to build_model() is not
+                required.
         Returns:
             None
         """
@@ -1240,12 +1260,32 @@ class AlamoSurrogate(SurrogateBase):
         # TODO: do we need to add the index_set stuff back in?
         output_set = Set(initialize=self._output_labels, ordered=True)
 
-        def alamo_rule(b, o):
-            lvars = block.input_vars_as_dict()
-            lvars.update(block.output_vars_as_dict())
-            return eval(self._surrogate_expressions[o], GLOBAL_FUNCS, lvars)
+        if additional_options is not None:
+            as_expression = additional_options.pop("as_expression", False)
+        else:
+            as_expression = False
 
-        block.alamo_constraint = Constraint(output_set, rule=alamo_rule)
+        if not as_expression:
+
+            def alamo_rule(b, o):
+                lvars = block.input_vars_as_dict()
+                lvars.update(block.output_vars_as_dict())
+                # We need to evaluate the string returned by ALAMO
+                # pylint: disable=W0123
+                return eval(self._surrogate_expressions[o], GLOBAL_FUNCS, lvars)
+
+            block.alamo_constraint = Constraint(output_set, rule=alamo_rule)
+        else:
+
+            def alamo_rule(b, o):
+                lvars = block.input_vars_as_dict()
+                # We need to evaluate the string returned by ALAMO
+                # pylint: disable=W0123
+                return eval(
+                    self._surrogate_expressions[o].split("==")[1], GLOBAL_FUNCS, lvars
+                )
+
+            block.alamo_expression = Expression(output_set, rule=alamo_rule)
 
     def save(self, strm):
         """
