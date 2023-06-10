@@ -845,7 +845,7 @@ def set_inputs(m):
     fs.fwh5.desuperheat.overall_heat_transfer_coefficient.fix(145)
     fs.fwh5.cooling.overall_heat_transfer_coefficient.fix(675)
     fs.fwh5.condense.tube.deltaP[:].fix(0)
-    # Inputs reqired for dynamic model
+    # Inputs required for dynamic model
     fs.fwh5.condense.level.fix(0.275)
     fs.fwh5.condense.heater_diameter.fix(1.4)
     fs.fwh5.condense.vol_frac_shell.fix(0.675)

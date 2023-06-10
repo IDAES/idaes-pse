@@ -209,7 +209,7 @@ def test_unit_conversion():
     assert p_pa[0] == pytest.approx(101325, rel=1e-1)
     assert unit == "kilogram / meter / second ** 2"  # AKA Pa
 
-    # Test for unit conversion of gauge pressue with different atmosperic
+    # Test for unit conversion of gauge pressure with different atmosperic
     # pressure values
     p, unit = da.unit_convert(
         p_psi, "psig", "atm", ambient_pressure=np.array([1, 1.1, 1.2])
