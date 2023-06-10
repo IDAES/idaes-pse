@@ -187,7 +187,7 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
             initialize=0.2045,
             units=units_meta("length"),
             domain=PositiveReals,
-            doc="Port diamter",
+            doc="Port diameter",
         )
 
         self.plate_therm_cond = Var(
