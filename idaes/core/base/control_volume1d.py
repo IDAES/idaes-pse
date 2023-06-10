@@ -576,7 +576,7 @@ argument).""",
         self.material_flow_dx = DerivativeVar(
             self._flow_terms,
             wrt=self.length_domain,
-            doc="Parital derivative of material flow " "wrt to normalized length",
+            doc="Partial derivative of material flow " "wrt to normalized length",
             units=flow_units,
         )
 
