@@ -39,7 +39,7 @@ class DesignModelData(SkeletonUnitModelData):
         "model_args",
         ConfigValue(
             default={},
-            doc="Dictionary containing arguements needed for model_func",
+            doc="Dictionary containing arguments needed for model_func",
         ),
     )
     CONFIG.declare(
@@ -91,7 +91,7 @@ class OperationModelData(SkeletonUnitModelData):
         "model_args",
         ConfigValue(
             default={},
-            doc="Dictionary containing arguements needed for model_func",
+            doc="Dictionary containing arguments needed for model_func",
         ),
     )
     CONFIG.declare(
