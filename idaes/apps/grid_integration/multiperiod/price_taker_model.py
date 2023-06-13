@@ -106,11 +106,12 @@ class PriceTakerModel(ConcreteModel):
         if kmax is None:
             # setting an arbitrary kmax. Maybe log warning that no kmax was set and default of 14 used?
             kmax = 14
+        if kmin > kmax:
+            _logger.error(f"kmin:{kmin} needs to be less than kmax:{kmax}.")
 
         if sample_weight is not None:
-            if len(daily_data) != len(sample_weight):
+            if daily_data.shape != sample_weight.shape:
                 _logger.error(
-                    f"len(daily_data) != len(sample_weight).\n "
                     f"Ensure that the dimensions of the datasets match or set sample_weight to None."
                 )
 
