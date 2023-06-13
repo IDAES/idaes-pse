@@ -11,6 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 
+import pytest
 import os
 import pandas as pd
 
@@ -31,6 +32,7 @@ from idaes.apps.grid_integration.multiperiod.price_taker_model import PriceTaker
 import matplotlib.pyplot as plt
 
 
+@pytest.mark.unit
 def test_daily_data_size():
     m = PriceTakerModel
 
@@ -48,6 +50,7 @@ def test_daily_data_size():
     assert all(len(row) == 365 for row in daily_data)
 
 
+@pytest.mark.unit
 def test_determine_optimal_num_clusters():
     m = PriceTakerModel
 
@@ -61,6 +64,7 @@ def test_determine_optimal_num_clusters():
     assert n_clusters == 13
 
 
+@pytest.mark.unit
 def test_elbow_plot():
     m = PriceTakerModel
 
@@ -74,6 +78,7 @@ def test_elbow_plot():
     assert plt.gcf() is not None
 
 
+@pytest.mark.unit
 def test_bad_inputs(caplog):
     with caplog.at_level(idaeslog.WARNING):
         m = PriceTakerModel
