@@ -30,5 +30,14 @@ suh = "suh"
 ther = "ther"
 # KNO3
 KNO = "KNO"
+# Equil == equilibrium
+equil = "equil"
+# Ignore astroid package
+astroid = "astroid"
+# delt == delta
+delt = "delt"
+# FOM for fixed operating and maintenance for DISPATCHES
+FOM = "FOM"
+fom = "fom"
 # TEMPORARY - Remove after example update
 upadate = "upadate"
