@@ -434,16 +434,19 @@ def test_solubility_no_order():
         m.thermo[1].flow_mol_phase_comp["sol", "c1"]
         + m.thermo[1].flow_mol_phase_comp["sol", "c2"]
     ) / (pyunits.mol / pyunits.s)
-    Q = m.rxn[1].k_eq["r1"] - (
-        m.thermo[1].mole_frac_phase_comp["p1", "c1"]
-        ** m.rparams.reaction_r1.reaction_order["p1", "c1"]
-        * m.thermo[1].mole_frac_phase_comp["p1", "c2"]
-        ** m.rparams.reaction_r1.reaction_order["p1", "c2"]
-    )
+    s = m.rparams.reaction_r1.s_scale * s / (s + m.rparams.reaction_r1.s_norm)
 
-    assert str(rform) == str(
-        s - smooth_max(0, s - Q / pyunits.dimensionless, m.rparams.reaction_r1.eps) == 0
-    )
+    Q = (
+        m.rxn[1].k_eq["r1"]
+        - (
+            m.thermo[1].mole_frac_phase_comp["p1", "c1"]
+            ** m.rparams.reaction_r1.reaction_order["p1", "c1"]
+            * m.thermo[1].mole_frac_phase_comp["p1", "c2"]
+            ** m.rparams.reaction_r1.reaction_order["p1", "c2"]
+        )
+    ) / (pyunits.dimensionless)
+
+    assert str(rform) == str(Q - smooth_max(0, Q - s, m.rparams.reaction_r1.eps) == 0)
 
 
 @pytest.mark.unit
@@ -523,24 +526,27 @@ def test_solubility_product_with_order():
         m.thermo[1].flow_mol_phase_comp["sol", "c1"]
         + m.thermo[1].flow_mol_phase_comp["sol", "c2"]
     ) / (pyunits.mol / pyunits.s)
-    Q = m.rxn[1].k_eq["r1"] - (
-        m.thermo[1].mole_frac_phase_comp["p1", "c1"]
-        ** m.rparams.reaction_r1.reaction_order["p1", "c1"]
-        * m.thermo[1].mole_frac_phase_comp["p1", "c2"]
-        ** m.rparams.reaction_r1.reaction_order["p1", "c2"]
-        * m.thermo[1].mole_frac_phase_comp["p2", "c1"]
-        ** m.rparams.reaction_r1.reaction_order["p2", "c1"]
-        * m.thermo[1].mole_frac_phase_comp["p2", "c2"]
-        ** m.rparams.reaction_r1.reaction_order["p2", "c2"]
-        * m.thermo[1].mole_frac_phase_comp["sol", "c1"]
-        ** m.rparams.reaction_r1.reaction_order["sol", "c1"]
-        * m.thermo[1].mole_frac_phase_comp["sol", "c2"]
-        ** m.rparams.reaction_r1.reaction_order["sol", "c2"]
-    )
+    s = m.rparams.reaction_r1.s_scale * s / (s + m.rparams.reaction_r1.s_norm)
 
-    assert str(rform) == str(
-        s - smooth_max(0, s - Q / pyunits.dimensionless, m.rparams.reaction_r1.eps) == 0
-    )
+    Q = (
+        m.rxn[1].k_eq["r1"]
+        - (
+            m.thermo[1].mole_frac_phase_comp["p1", "c1"]
+            ** m.rparams.reaction_r1.reaction_order["p1", "c1"]
+            * m.thermo[1].mole_frac_phase_comp["p1", "c2"]
+            ** m.rparams.reaction_r1.reaction_order["p1", "c2"]
+            * m.thermo[1].mole_frac_phase_comp["p2", "c1"]
+            ** m.rparams.reaction_r1.reaction_order["p2", "c1"]
+            * m.thermo[1].mole_frac_phase_comp["p2", "c2"]
+            ** m.rparams.reaction_r1.reaction_order["p2", "c2"]
+            * m.thermo[1].mole_frac_phase_comp["sol", "c1"]
+            ** m.rparams.reaction_r1.reaction_order["sol", "c1"]
+            * m.thermo[1].mole_frac_phase_comp["sol", "c2"]
+            ** m.rparams.reaction_r1.reaction_order["sol", "c2"]
+        )
+    ) / (pyunits.dimensionless)
+
+    assert str(rform) == str(Q - smooth_max(0, Q - s, m.rparams.reaction_r1.eps) == 0)
 
 
 @pytest.mark.unit
@@ -667,6 +673,8 @@ def test_log_solubility_no_order():
         m.thermo[1].flow_mol_phase_comp["sol", "c1"]
         + m.thermo[1].flow_mol_phase_comp["sol", "c2"]
     ) / (pyunits.mol / pyunits.s)
+    s = m.rparams.reaction_r1.s_scale * s / (s + m.rparams.reaction_r1.s_norm)
+
     Q = m.rxn[1].log_k_eq["r1"] - (
         m.thermo[1].log_mole_frac_phase_comp["p1", "c1"]
         * m.rparams.reaction_r1.reaction_order["p1", "c1"]
@@ -674,7 +682,7 @@ def test_log_solubility_no_order():
         * m.rparams.reaction_r1.reaction_order["p1", "c2"]
     )
 
-    assert str(rform) == str(s - smooth_max(0, s - Q, m.rparams.reaction_r1.eps) == 0)
+    assert str(rform) == str(Q - smooth_max(0, Q - s, m.rparams.reaction_r1.eps) == 0)
 
 
 @pytest.mark.unit
@@ -757,6 +765,8 @@ def test_log_solubility_product_with_order():
         m.thermo[1].flow_mol_phase_comp["sol", "c1"]
         + m.thermo[1].flow_mol_phase_comp["sol", "c2"]
     ) / (pyunits.mol / pyunits.s)
+    s = m.rparams.reaction_r1.s_scale * s / (s + m.rparams.reaction_r1.s_norm)
+
     Q = m.rxn[1].log_k_eq["r1"] - (
         m.thermo[1].log_mole_frac_phase_comp["p1", "c1"]
         * m.rparams.reaction_r1.reaction_order["p1", "c1"]
@@ -772,7 +782,7 @@ def test_log_solubility_product_with_order():
         * m.rparams.reaction_r1.reaction_order["sol", "c2"]
     )
 
-    assert str(rform) == str(s - smooth_max(0, s - Q, m.rparams.reaction_r1.eps) == 0)
+    assert str(rform) == str(Q - smooth_max(0, Q - s, m.rparams.reaction_r1.eps) == 0)
 
 
 @pytest.mark.unit

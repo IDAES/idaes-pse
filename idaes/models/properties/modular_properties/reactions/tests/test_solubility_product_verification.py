@@ -52,6 +52,7 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_constant i
 
 
 solver = get_solver()
+solver.options["tol"] = 1e-8
 
 
 def dummy_h(b, *args, **kwargs):
@@ -283,10 +284,10 @@ class TestUnit(object):
         assert pytest.approx(0, abs=1.1e-3) == value(
             model.fs.R101.outlet.flow_mol_phase_comp[0, "Sol", "NaCl"]
         )
-        assert pytest.approx(6.158968, rel=1e-5) == value(
+        assert pytest.approx(6.159876, rel=1e-5) == value(
             model.fs.R101.outlet.flow_mol_phase_comp[0, "Liq", "Na+"]
         )
-        assert pytest.approx(6.158968, rel=1e-5) == value(
+        assert pytest.approx(6.159876, rel=1e-5) == value(
             model.fs.R101.outlet.flow_mol_phase_comp[0, "Liq", "Cl-"]
         )
 
