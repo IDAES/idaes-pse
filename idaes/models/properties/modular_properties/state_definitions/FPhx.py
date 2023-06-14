@@ -96,7 +96,7 @@ def define_state(b):
     )
     b.mole_frac_comp = Var(
         b.component_list,
-        bounds=(1e-20, 1.001),
+        bounds=(0, 1.001),
         initialize=1 / len(b.component_list),
         doc="Mixture mole fractions",
         units=pyunits.dimensionless,
@@ -134,7 +134,7 @@ def define_state(b):
     b.mole_frac_phase_comp = Var(
         b.phase_component_set,
         initialize=1 / len(b.component_list),
-        bounds=(1e-20, 1.001),
+        bounds=(0, 1.001),
         doc="Phase mole fractions",
         units=pyunits.dimensionless,
     )
