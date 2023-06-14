@@ -131,6 +131,20 @@ class solubility_product:
             mutable=True, initialize=1e-4, doc="Smoothing parameter for smooth maximum"
         )
 
+        rblock.s_norm = Param(
+            mutable=True,
+            initialize=1e-4,
+            doc="Normalizing factor for solid precipitation term",
+        )
+        if hasattr(rblock, "k_eq_ref"):
+            rblock.s_norm.value = rblock.k_eq_ref.value
+
+        rblock.s_scale = Param(
+            mutable=True,
+            initialize=1,
+            doc="Scaling factor for solid precipitation term w.r.t saturated status Q = Ksp - f(C)",
+        )
+
     @staticmethod
     def return_expression(b, rblock, r_idx, T):
         e = None
@@ -181,6 +195,8 @@ class solubility_product:
             if sunits is not None:
                 s = s / sunits
 
+        s = rblock.s_scale * s / (s + rblock.s_norm)
+
         Q = b.k_eq[r_idx] - e
 
         # Need to remove units again
@@ -189,7 +205,7 @@ class solubility_product:
         if Qunits is not None:
             Q = Q / Qunits
 
-        return Q - smooth_max(0, Q - s / (s + b.k_eq[r_idx]), rblock.eps) == 0
+        return Q - smooth_max(0, Q - s, rblock.eps) == 0
 
     @staticmethod
     def calculate_scaling_factors(b, sf_keq):
@@ -232,6 +248,20 @@ class log_solubility_product:
     def build_parameters(rblock, config):
         rblock.eps = Param(
             mutable=True, initialize=1e-4, doc="Smoothing parameter for smooth maximum"
+        )
+
+        rblock.s_norm = Param(
+            mutable=True,
+            initialize=1e-4,
+            doc="Normalizing factor for solid precipitation term",
+        )
+        if hasattr(rblock, "k_eq_ref"):
+            rblock.s_norm.value = rblock.k_eq_ref.value
+
+        rblock.s_scale = Param(
+            mutable=True,
+            initialize=10,
+            doc="Scaling factor for solid precipitation term w.r.t saturated status Q = ln(Ksp) - ln(f(C))",
         )
 
     @staticmethod
@@ -284,10 +314,11 @@ class log_solubility_product:
             if sunits is not None:
                 s = s / sunits
 
+        s = rblock.s_scale * s / (s + rblock.s_norm)
+
         Q = b.log_k_eq[r_idx] - e
         # Q should be unitless due to log form
 
-        s = s * 10 / (s + b.k_eq[r_idx])
         return Q - smooth_max(0, Q - s, rblock.eps) == 0
 
     @staticmethod
