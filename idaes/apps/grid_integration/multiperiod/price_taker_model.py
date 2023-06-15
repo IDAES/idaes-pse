@@ -73,7 +73,7 @@ class PriceTakerModel(ConcreteModel):
         # Get column headings
         column_head = raw_data.columns.tolist()
         # Remove the date/time column
-        scenarios = column_head[1:]
+        scenarios = column_head[2:]
 
         # Creating an empty dataframe to store daily data for clustering
         day_list = list(range(1, (len(raw_data) // 24) + 1))
