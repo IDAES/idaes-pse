@@ -79,17 +79,30 @@ def test_elbow_plot():
 
 
 @pytest.mark.unit
-def test_bad_inputs(caplog):
+def test_logger_messages(caplog, kmin=None, kmax=None):
+    file_name = "FLECCS.xlsx"
+    file_path = os.path.join(os.getcwd(), file_name)
+    excel_data = pd.read_excel(file_path, sheet_name="2030 - Princeton")
+
     with caplog.at_level(idaeslog.WARNING):
         m = PriceTakerModel
 
-        file_name = "FLECCS.xlsx"
-        file_path = os.path.join(os.getcwd(), file_name)
-        excel_data = pd.read_excel(file_path, sheet_name="2030 - Princeton")
+        daily_data = m.reconfigure_raw_data(excel_data)
+        m.get_optimal_n_clusters(daily_data, kmin=kmin, kmax=kmax)
+
+        assert f"{kmax} was not set - using a default value of 14." in caplog.text
+
+    caplog.clear()
+    with caplog.at_level(idaeslog.WARNING):
+        m = PriceTakerModel
+        kmin = 1
+        kmax = 10
 
         daily_data = m.reconfigure_raw_data(excel_data)
         sample_weight = ["1", "2", "3"]
-        m.get_optimal_n_clusters(daily_data, sample_weight=sample_weight)
+        m.get_optimal_n_clusters(
+            daily_data, kmin=kmin, kmax=kmax, sample_weight=sample_weight
+        )
 
         assert (
             f"Ensure that the dimensions of the datasets match or set sample_weight to None."
@@ -99,9 +112,10 @@ def test_bad_inputs(caplog):
     caplog.clear()
     with caplog.at_level(idaeslog.WARNING):
         m = PriceTakerModel
-        daily_data = m.reconfigure_raw_data(excel_data)
         kmin = 10
         kmax = 1
+
+        daily_data = m.reconfigure_raw_data(excel_data)
         m.get_optimal_n_clusters(daily_data, kmin=kmin, kmax=kmax)
 
         assert f"kmin:{kmin} needs to be less than kmax:{kmax}." in caplog.text

@@ -104,8 +104,8 @@ class PriceTakerModel(ConcreteModel):
         if kmin is None:
             kmin = 1
         if kmax is None:
-            # setting an arbitrary kmax. Maybe log warning that no kmax was set and default of 14 used?
             kmax = 14
+            _logger.warning(f"{kmax} was not set - using a default value of 14.")
         if kmin > kmax:
             _logger.error(f"kmin:{kmin} needs to be less than kmax:{kmax}.")
 
