@@ -27,7 +27,7 @@ Available optional dependencies targets
 
 As of IDAES 2.1, the following ``extras_require`` targets are available:
 
-* ``examples``: for the :ref:`IDAES Examples <https://idaes-examples.readthedocs.org>`
+* ``examples``: for the `IDAES Examples <https://idaes-examples.readthedocs.org>`
 * ``ui``: for the :ref:`IDAES Flowsheet Visualizer <IFV>`
 * ``dmf``: for the :ref:`Data Management Framework <dmf-overview>`
 * ``grid``: for the :ref:`IDAES Grid integration <idaes-grid>`
