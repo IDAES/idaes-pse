@@ -113,7 +113,6 @@ class TestPHE(object):
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, phe):
-
         assert hasattr(phe.fs.unit, "hot_side_inlet")
         assert len(phe.fs.unit.hot_side_inlet.vars) == 4
         assert hasattr(phe.fs.unit.hot_side_inlet, "flow_mol")
@@ -163,7 +162,8 @@ class TestPHE(object):
     @pytest.mark.component
     def test_initialize(self, phe):
         initialization_tester(
-            phe, duty=(245000, pyunits.W)#, optarg={"bound_push": 1e-8, "mu_init": 1e-8}
+            phe,
+            duty=(245000, pyunits.W),  # , optarg={"bound_push": 1e-8, "mu_init": 1e-8}
         )
 
     @pytest.mark.solver
