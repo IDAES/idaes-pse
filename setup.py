@@ -105,6 +105,9 @@ class ExtraDependencies:
         "addheader",
         "pyyaml",
     ]
+    examples = [
+        "idaes-examples",
+    ]
 
     def __init__(self):
         self._data = dict(type(self).__dict__)

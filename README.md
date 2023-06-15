@@ -59,7 +59,7 @@ idaes get-extensions
 The IDAES examples can be installed by running:
 
 ```bash
-jupyter notebook examples/notebook_index.ipynb
+pip install "idaes-pse[examples]"
 ```
 
 For more information, refer to the [IDAES/examples](https://github.com/IDAES/examples) repository, as well as the online static version of the examples available at <https://idaes-examples.readthedocs.org>.
