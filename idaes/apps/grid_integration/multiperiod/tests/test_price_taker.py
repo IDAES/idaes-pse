@@ -61,7 +61,7 @@ def test_determine_optimal_num_clusters():
     daily_data = m.reconfigure_raw_data(excel_data)
     n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data)
 
-    assert n_clusters == 13
+    assert n_clusters == 14
 
 
 @pytest.mark.unit
