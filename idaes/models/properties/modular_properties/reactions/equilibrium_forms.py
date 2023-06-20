@@ -96,7 +96,7 @@ class log_power_law_equil:
 # ----------------------------------------------------------------------------
 class solubility_product:
     """
-    Complementariity formulation for solid precipitation
+    Complementarity formulation for solid precipitation
     Thanks to Larry Biegler for the formulation
 
     Like any phase equilibrium, solid precipitation is complicated by
@@ -214,7 +214,7 @@ class solubility_product:
 
 class log_solubility_product:
     """
-    Complementariity formulation for solid precipitation
+    Complementarity formulation for solid precipitation
     Thanks to Larry Biegler for the formulation
 
     Like any phase equilibrium, solid precipitation is complicated by
