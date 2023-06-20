@@ -1215,6 +1215,47 @@ class TestCommon(object):
             "Pressure": frame.props[1].pressure,
         }
 
+    @pytest.mark.unit
+    def test_cloning(self, frame):
+        """
+        This function tests modular properties are cloned correctly using pyomo's
+        clone method. In particular, it tests that all the methods point to variables
+        on the clone, and not on the original model.
+        """
+        blk = frame.clone()
+
+        # Test get_material_flow_terms method
+        for p, j in blk.params._phase_component_set:
+            assert (
+                blk.props[1].get_material_flow_terms(p, j).parent_block()
+                is blk.props[1]
+            )
+
+        # Test get_enthalpy_flow_terms method
+        for p in blk.params.phase_list:
+            assert (
+                blk.props[1].get_enthalpy_flow_terms(p).parent_block() is blk.props[1]
+            )
+
+        # Test get_material_density_terms
+        for p, j in blk.params._phase_component_set:
+            assert (
+                blk.props[1].get_material_density_terms(p, j).parent_block()
+                is blk.props[1]
+            )
+
+        # Test get_energy_Density_terms
+        for p in blk.params.phase_list:
+            assert (
+                blk.props[1].get_energy_density_terms(p).parent_block() is blk.props[1]
+            )
+
+        for i in blk.props[1].define_state_vars().values():
+            assert i.parent_block() is blk.props[1]
+
+        for i in blk.props[1].define_display_vars().values():
+            assert i.parent_block() is blk.props[1]
+
 
 # -----------------------------------------------------------------------------
 # Test example from Austin Ladshaw via WaterTAP project

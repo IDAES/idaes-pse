@@ -20,6 +20,7 @@ package
 # TODO: Look into protected access issues
 # pylint: disable=protected-access
 
+from types import MethodType
 from pyomo.environ import (
     Constraint,
     Expression,
@@ -183,13 +184,13 @@ def define_state(b):
 
     # -------------------------------------------------------------------------
     # General Methods
-    def get_material_flow_terms_FpcTP(p, j):
+    def get_material_flow_terms_FpcTP(b, p, j):
         """Create material flow terms for control volume."""
         return b.flow_mol_phase_comp[p, j]
 
-    b.get_material_flow_terms = get_material_flow_terms_FpcTP
+    b.get_material_flow_terms = MethodType(get_material_flow_terms_FpcTP, b)
 
-    def get_enthalpy_flow_terms_FpcTP(p):
+    def get_enthalpy_flow_terms_FpcTP(b, p):
         """Create enthalpy flow terms."""
         # enth_mol_phase probably does not exist when this is created
         # Use try/except to build flow term if not present
@@ -203,9 +204,9 @@ def define_state(b):
             eflow = b._enthalpy_flow_term = Expression(b.phase_list, rule=rule_eflow)
         return eflow[p]
 
-    b.get_enthalpy_flow_terms = get_enthalpy_flow_terms_FpcTP
+    b.get_enthalpy_flow_terms = MethodType(get_enthalpy_flow_terms_FpcTP, b)
 
-    def get_material_density_terms_FpcTP(p, j):
+    def get_material_density_terms_FpcTP(b, p, j):
         """Create material density terms."""
         # dens_mol_phase probably does not exist when this is created
         # Use try/except to build term if not present
@@ -221,9 +222,9 @@ def define_state(b):
             )
         return mdens[p, j]
 
-    b.get_material_density_terms = get_material_density_terms_FpcTP
+    b.get_material_density_terms = MethodType(get_material_density_terms_FpcTP, b)
 
-    def get_energy_density_terms_FpcTP(p):
+    def get_energy_density_terms_FpcTP(b, p):
         """Create energy density terms."""
         # Density and energy terms probably do not exist when this is created
         # Use try/except to build term if not present
@@ -237,7 +238,7 @@ def define_state(b):
             edens = b._energy_density_term = Expression(b.phase_list, rule=rule_edens)
         return edens[p]
 
-    b.get_energy_density_terms = get_energy_density_terms_FpcTP
+    b.get_energy_density_terms = MethodType(get_energy_density_terms_FpcTP, b)
 
     def default_material_balance_type_FpcTP():
         return MaterialBalanceType.componentTotal
@@ -254,7 +255,7 @@ def define_state(b):
 
     b.get_material_flow_basis = get_material_flow_basis_FpcTP
 
-    def define_state_vars_FpcTP():
+    def define_state_vars_FpcTP(b):
         """Define state vars."""
         return {
             "flow_mol_phase_comp": b.flow_mol_phase_comp,
@@ -262,9 +263,9 @@ def define_state(b):
             "pressure": b.pressure,
         }
 
-    b.define_state_vars = define_state_vars_FpcTP
+    b.define_state_vars = MethodType(define_state_vars_FpcTP, b)
 
-    def define_display_vars_FpcTP():
+    def define_display_vars_FpcTP(b):
         """Define display vars."""
         return {
             "Molar Flowrate": b.flow_mol_phase_comp,
@@ -272,7 +273,7 @@ def define_state(b):
             "Pressure": b.pressure,
         }
 
-    b.define_display_vars = define_display_vars_FpcTP
+    b.define_display_vars = MethodType(define_display_vars_FpcTP, b)
 
 
 def state_initialization(b):
