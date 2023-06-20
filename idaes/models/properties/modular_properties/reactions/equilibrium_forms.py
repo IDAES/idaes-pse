@@ -113,7 +113,7 @@ class solubility_product:
     Thus, only one of S and Q can be greater than zero at any time.
     This can be written in the form of a complementarity constraint as:
 
-        * S - MAX(0, S-Q) == 0
+        * Q - MAX(0, Q-S) == 0
 
     where S is assumed to be the sum of the flowrates any solids formed in the
     reaction. This allows for multiple solid products, and only applies the
@@ -232,7 +232,7 @@ class log_solubility_product:
     Thus, only one of S and Q can be greater than zero at any time.
     This can be written in the form of a complementarity constraint as:
 
-        * S - MAX(0, S-Q) == 0
+        * Q - MAX(0, Q-S) == 0
 
     where S is assumed to be the sum of the flowrates any solids formed in the
     reaction. This allows for multiple solid products, and only applies the
