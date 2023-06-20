@@ -414,6 +414,10 @@ def test_solubility_no_order():
     # Check parameter construction
     assert isinstance(m.rparams.reaction_r1.eps, Param)
     assert value(m.rparams.reaction_r1.eps) == 1e-4
+    assert isinstance(m.rparams.reaction_r1.s_norm, Param)
+    assert value(m.rparams.reaction_r1.s_norm) == 1e-4
+    assert isinstance(m.rparams.reaction_r1.s_norm, Param)
+    assert value(m.rparams.reaction_r1.s_scale) == 1
     assert isinstance(m.rparams.reaction_r1.reaction_order, Var)
     assert len(m.rparams.reaction_r1.reaction_order) == 6
 
@@ -508,6 +512,10 @@ def test_solubility_product_with_order():
     # Check parameter construction
     assert isinstance(m.rparams.reaction_r1.eps, Param)
     assert value(m.rparams.reaction_r1.eps) == 1e-4
+    assert isinstance(m.rparams.reaction_r1.s_norm, Param)
+    assert value(m.rparams.reaction_r1.s_norm) == 1e-4
+    assert isinstance(m.rparams.reaction_r1.s_norm, Param)
+    assert value(m.rparams.reaction_r1.s_scale) == 1
     assert isinstance(m.rparams.reaction_r1.reaction_order, Var)
     assert len(m.rparams.reaction_r1.reaction_order) == 6
     assert m.rparams.reaction_r1.reaction_order["p1", "c1"].value == 1
@@ -653,6 +661,10 @@ def test_log_solubility_no_order():
     # Check parameter construction
     assert isinstance(m.rparams.reaction_r1.eps, Param)
     assert value(m.rparams.reaction_r1.eps) == 1e-4
+    assert isinstance(m.rparams.reaction_r1.s_norm, Param)
+    assert value(m.rparams.reaction_r1.s_norm) == 1e-4
+    assert isinstance(m.rparams.reaction_r1.s_norm, Param)
+    assert value(m.rparams.reaction_r1.s_scale) == 10
     assert isinstance(m.rparams.reaction_r1.reaction_order, Var)
     assert len(m.rparams.reaction_r1.reaction_order) == 6
 
@@ -747,6 +759,10 @@ def test_log_solubility_product_with_order():
     # Check parameter construction
     assert isinstance(m.rparams.reaction_r1.eps, Param)
     assert value(m.rparams.reaction_r1.eps) == 1e-4
+    assert isinstance(m.rparams.reaction_r1.s_norm, Param)
+    assert value(m.rparams.reaction_r1.s_norm) == 1e-4
+    assert isinstance(m.rparams.reaction_r1.s_norm, Param)
+    assert value(m.rparams.reaction_r1.s_scale) == 10
     assert isinstance(m.rparams.reaction_r1.reaction_order, Var)
     assert len(m.rparams.reaction_r1.reaction_order) == 6
     assert m.rparams.reaction_r1.reaction_order["p1", "c1"].value == 1
