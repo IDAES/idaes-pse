@@ -12,6 +12,7 @@
 #################################################################################
 
 import pandas as pd
+import numpy as np
 
 from pyomo.environ import (
     ConcreteModel,
@@ -42,24 +43,44 @@ _logger = logging.getLogger(__name__)
 
 
 class PriceTakerModel(ConcreteModel):
-    @staticmethod
-    def generate_daily_data(raw_data, day_list):
+    def __init__(self, seed=20, horizon_length=24):
+        self._seed = seed
+        self._horizon_length = horizon_length
+
+    @property
+    def seed(self):
+        return self._seed
+
+    @seed.setter
+    def seed(self, value):
+        self._seed = value
+
+    @property
+    def horizon_length(self):
+        return self._horizon_length
+
+    @horizon_length.setter
+    def horizon_length(self, value):
+        if value <= 0:
+            raise ValueError(f"horizon_length must be > 0, but {value} is provided.")
+        self._horizon_length = value
+
+    def generate_daily_data(self, raw_data, day_list):
 
         daily_data = pd.DataFrame(columns=day_list)
 
         # Extracting data to populate empty dataframe
         i = 0
-        j = 24
+        j = self._horizon_length
         day = 1
         while j <= len(raw_data):
             daily_data[day] = raw_data[i:j].reset_index(drop=True)
             i = j
-            j = j + 24
+            j = j + self._horizon_length
             day = day + 1
 
         return daily_data
 
-    @staticmethod
     def reconfigure_raw_data(self, raw_data):
         """
         Reconfigures the raw price series data into a usable form
@@ -76,7 +97,7 @@ class PriceTakerModel(ConcreteModel):
         scenarios = column_head[2:]
 
         # Creating an empty dataframe to store daily data for clustering
-        day_list = list(range(1, (len(raw_data) // 24) + 1))
+        day_list = list(range(1, (len(raw_data) // self._horizon_length) + 1))
 
         # Generate daily data
         for i in scenarios[0:1]:
@@ -86,8 +107,9 @@ class PriceTakerModel(ConcreteModel):
 
         return daily_data
 
-    @staticmethod
-    def get_optimal_n_clusters(daily_data, kmin=None, kmax=None, sample_weight=None):
+    def get_optimal_n_clusters(
+        self, daily_data, kmin=None, kmax=None, sample_weight=None, plot=False
+    ):
         """
         Determines the appropriate number of clusters needed for a
         given price signal.
@@ -97,15 +119,16 @@ class PriceTakerModel(ConcreteModel):
             kmin: minimum number of clusters
             kmax: maximum number of clusters
             sample_weight: applies a weight to each entry in daily_data
+            plot: flag to determine if an elbow plot should be displayed
 
         Returns:
             n_clusters: the optimal number of clusters for the given data
         """
         if kmin is None:
-            kmin = 1
+            kmin = 4
         if kmax is None:
-            kmax = 14
-            _logger.warning(f"{kmax} was not set - using a default value of 14.")
+            kmax = 30
+            _logger.warning(f"{kmax} was not set - using a default value of 30.")
         if kmin > kmax:
             _logger.error(f"kmin:{kmin} needs to be less than kmax:{kmax}.")
 
@@ -117,6 +140,8 @@ class PriceTakerModel(ConcreteModel):
 
         k_values = range(kmin, kmax)
         inertia_values = []
+
+        np.random.seed(self._seed)
 
         # Compute the inertia (SSE) for k clusters
         for k in k_values:
@@ -133,46 +158,23 @@ class PriceTakerModel(ConcreteModel):
 
         print(f"Optimal # of clusters is: {n_clusters}")
 
+        if n_clusters + 2 >= kmax:
+            _logger.warning(
+                f"Optimal number of clusters is close to kmax: {kmax}. Consider increasing kmax."
+            )
+
+        if plot == True:
+            plt.show()
+            plt.plot(k_values, inertia_values)
+            plt.axvline(x=n_clusters, color="red", linestyle="--", label="Elbow")
+            plt.xlabel("Number of clusters")
+            plt.ylabel("Inertia")
+            plt.title("Elbow Method")
+            plt.xlim(kmin, kmax)
+            plt.grid()
+            plt.show()
+
         return n_clusters, inertia_values
-
-    @staticmethod
-    def get_elbow_plot(self, daily_data, kmin=None, kmax=None, sample_weight=None):
-        """
-        Determines the appropriate number of clusters needed for a
-        given price signal.
-
-        Args:
-            daily_data: reconfigured price series data
-            kmin: minimum number of clusters
-            kmax: maximum number of clusters
-            sample_weight: applies a weight to each entry in daily_data
-
-        Returns:
-            k_values: range of clusters from kmin to kmax (x-axis of elbow plot)
-            inertia_values: within-cluster sum-of-squares (y-axis of elbow plot)
-        """
-        if kmin is None:
-            kmin = 1
-        if kmax is None:
-            # setting an arbitrary kmax. Maybe log warning that no kmax was set and default of 14 used?
-            kmax = 14
-
-        k_values = range(kmin, kmax)
-        n_clusters, inertia_values = self.get_optimal_n_clusters(
-            daily_data, kmin, kmax, sample_weight
-        )
-
-        plt.show()
-        plt.plot(k_values, inertia_values)
-        plt.axvline(x=n_clusters, color="red", linestyle="--", label="Elbow")
-        plt.xlabel("Number of clusters")
-        plt.ylabel("Inertia")
-        plt.title("Elbow Method")
-        plt.xlim(kmin, kmax)
-        plt.grid()
-        plt.show()
-
-        return k_values, inertia_values
 
     @staticmethod
     def cluster_lmp_data(data, n_clusters, horizon_length):
