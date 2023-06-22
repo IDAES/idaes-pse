@@ -91,6 +91,7 @@ class PriceTakerModel(ConcreteModel):
 
         Returns:
             daily_data: reconfigured price series data
+            scenarios: header from the raw data
         """
         # Get column headings
         column_head = raw_data.columns.tolist()
@@ -172,10 +173,13 @@ class PriceTakerModel(ConcreteModel):
         techniques for clustering.
 
         Args:
+            daily_data: reconfigured price series data
+            n_clusters: the optimal number of clusters for the given data
+            scenarios: header from the raw data
 
         Returns:
-            lmp_data = {1: {1: 2, 2: 3, 3: 5}, 2: {1: 2, 2: 3, 3: 5}}
-            weights = {1: 45, 2: 56}
+            lmp_data = price series data in the following format - {1: {1: 2, 2: 3, 3: 5}, 2: {1: 2, 2: 3, 3: 5}}
+            weights = weight for each cluster in the following format - {1: 45, 2: 56}
         """
 
         # KMeans clustering with the optimal number of clusters

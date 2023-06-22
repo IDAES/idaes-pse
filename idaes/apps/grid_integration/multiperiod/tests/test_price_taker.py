@@ -13,7 +13,6 @@
 
 from pathlib import Path
 import pytest
-import numpy as np
 import pandas as pd
 
 from pyomo.environ import (
@@ -23,8 +22,6 @@ from pyomo.environ import (
     Constraint,
     Expression,
 )
-
-from idaes.apps.grid_integration import DesignModel, OperationModel
 
 import idaes.logger as idaeslog
 
@@ -138,7 +135,7 @@ def dfc_design(m, params, capacity_range=(650, 900)):
         doc="1: Plant is built, 0: Plant is not built",
     )
 
-    # Bound the capcity of the plant in the specified range
+    # Bound the capacity of the plant in the specified range
     m.capacity_lb_con = Constraint(expr=m.capacity >= m.build_unit * capacity_range[0])
     m.capacity_ub_con = Constraint(expr=m.capacity <= m.build_unit * capacity_range[1])
 
