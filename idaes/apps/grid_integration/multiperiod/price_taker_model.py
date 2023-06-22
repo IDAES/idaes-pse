@@ -44,6 +44,7 @@ _logger = logging.getLogger(__name__)
 
 class PriceTakerModel(ConcreteModel):
     def __init__(self, seed=20, horizon_length=24):
+        super().__init__()
         self._seed = seed
         self._horizon_length = horizon_length
 
@@ -65,7 +66,7 @@ class PriceTakerModel(ConcreteModel):
             raise ValueError(f"horizon_length must be > 0, but {value} is provided.")
         self._horizon_length = value
 
-    def generate_daily_data(self, raw_data, day_list):
+    def generate_daily_data(self, raw_data, raw_weight_data, day_list):
 
         daily_data = pd.DataFrame(columns=day_list)
 
@@ -79,17 +80,32 @@ class PriceTakerModel(ConcreteModel):
             j = j + self._horizon_length
             day = day + 1
 
-        return daily_data
+        # TODO: I'm not sure what the weight data would typically look like, so I have this simple check for now
+        # TODO: Should eventually add something to transform raw_weight_data into a usable format
+        if raw_weight_data is not None:
+            if daily_data.shape != raw_weight_data.shape:
+                raise AssertionError(
+                    f"Ensure that the dimensions of the datasets match or remove raw_weight_data"
+                )
+            else:
+                daily_weight_data = raw_weight_data
 
-    def reconfigure_raw_data(self, raw_data):
+        else:
+            daily_weight_data = raw_weight_data
+
+        return daily_data, daily_weight_data
+
+    def reconfigure_raw_data(self, raw_data, raw_weight_data=None):
         """
         Reconfigures the raw price series data into a usable form
 
         Args:
             raw_data: imported price series data
+            raw_weight_data: imported weights for the price series data
 
         Returns:
             daily_data: reconfigured price series data
+            daily_weight_data: reconfigured weights for price series data
         """
         # Get column headings
         column_head = raw_data.columns.tolist()
@@ -101,14 +117,14 @@ class PriceTakerModel(ConcreteModel):
 
         # Generate daily data
         for i in scenarios[0:1]:
-            daily_data = self.generate_daily_data(
-                raw_data=raw_data[i], day_list=day_list
+            daily_data, daily_weight_data = self.generate_daily_data(
+                raw_data=raw_data[i], raw_weight_data=raw_weight_data, day_list=day_list
             )
 
-        return daily_data
+        return daily_data, daily_weight_data
 
     def get_optimal_n_clusters(
-        self, daily_data, kmin=None, kmax=None, sample_weight=None, plot=False
+        self, daily_data, daily_weight_data, kmin=None, kmax=None, plot=False
     ):
         """
         Determines the appropriate number of clusters needed for a
@@ -116,27 +132,20 @@ class PriceTakerModel(ConcreteModel):
 
         Args:
             daily_data: reconfigured price series data
+            daily_weight_data: applies a weight to each entry in daily_data
             kmin: minimum number of clusters
             kmax: maximum number of clusters
-            sample_weight: applies a weight to each entry in daily_data
             plot: flag to determine if an elbow plot should be displayed
 
         Returns:
             n_clusters: the optimal number of clusters for the given data
+            inertia_values: within-cluster sum-of-squares
         """
         if kmin is None:
             kmin = 4
         if kmax is None:
             kmax = 30
-            _logger.warning(f"{kmax} was not set - using a default value of 30.")
-        if kmin > kmax:
-            _logger.error(f"kmin:{kmin} needs to be less than kmax:{kmax}.")
-
-        if sample_weight is not None:
-            if daily_data.shape != sample_weight.shape:
-                _logger.error(
-                    f"Ensure that the dimensions of the datasets match or set sample_weight to None."
-                )
+            _logger.warning(f"kmax was not set - using a default value of 30.")
 
         k_values = range(kmin, kmax)
         inertia_values = []
@@ -144,11 +153,17 @@ class PriceTakerModel(ConcreteModel):
         np.random.seed(self._seed)
 
         # Compute the inertia (SSE) for k clusters
-        for k in k_values:
-            kmeans = KMeans(n_clusters=k).fit(
-                daily_data.transpose(), sample_weight=sample_weight
-            )
-            inertia_values.append(kmeans.inertia_)
+        if daily_weight_data == None:
+            for k in k_values:
+                kmeans = KMeans(n_clusters=k).fit(daily_data.transpose())
+                inertia_values.append(kmeans.inertia_)
+
+        elif daily_data.shape == daily_weight_data.shape:
+            for k in k_values:
+                kmeans = KMeans(n_clusters=k).fit(
+                    daily_data.transpose(), sample_weight=daily_weight_data.transpose()
+                )
+                inertia_values.append(kmeans.inertia_)
 
         # Identify the "elbow point"
         elbow_point = KneeLocator(
