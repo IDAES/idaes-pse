@@ -46,7 +46,7 @@ def test_daily_data_size(excel_data):
     m = PriceTakerModel()
 
     # Generate price data for each hour of every day in the data
-    daily_data, daily_weight_data = m.reconfigure_raw_data(excel_data)
+    daily_data, scenarios = m.reconfigure_raw_data(excel_data)
 
     # Check that there is a row for each horizon length in a representative day
     assert len(daily_data) == m.horizon_length
@@ -56,8 +56,8 @@ def test_daily_data_size(excel_data):
 def test_determine_optimal_num_clusters(excel_data):
     m = PriceTakerModel()
 
-    daily_data, daily_weight_data = m.reconfigure_raw_data(excel_data)
-    n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, daily_weight_data)
+    daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+    n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data)
 
     assert n_clusters == 10
 
@@ -66,10 +66,26 @@ def test_determine_optimal_num_clusters(excel_data):
 def test_elbow_plot(excel_data):
     m = PriceTakerModel()
 
-    daily_data, daily_weight_data = m.reconfigure_raw_data(excel_data)
-    m.get_optimal_n_clusters(daily_data, daily_weight_data, plot=True)
+    daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+    m.get_optimal_n_clusters(daily_data, plot=True)
 
     assert plt.gcf() is not None
+
+
+@pytest.mark.unit
+def test_cluster_lmp_data(excel_data):
+    m = PriceTakerModel()
+
+    daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+    n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data)
+    lmp_data, weights = m.cluster_lmp_data(daily_data, n_clusters, scenarios)
+
+    sum_of_weights = 0
+    for i in range(0, n_clusters):
+        sum_of_weights = sum_of_weights + weights[0][i]
+    assert sum_of_weights == 365
+
+    assert len(lmp_data) == n_clusters
 
 
 @pytest.mark.unit
@@ -77,8 +93,8 @@ def test_logger_messages(excel_data, caplog):
     with caplog.at_level(idaeslog.WARNING):
         m = PriceTakerModel()
 
-        daily_data, daily_weight_data = m.reconfigure_raw_data(excel_data)
-        m.get_optimal_n_clusters(daily_data, daily_weight_data)
+        daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+        m.get_optimal_n_clusters(daily_data)
 
         assert f"kmax was not set - using a default value of 30." in caplog.text
 
@@ -89,8 +105,8 @@ def test_logger_messages(excel_data, caplog):
     #     kmin = 1
     #     kmax = 7
     #
-    #     daily_data, daily_weight_data = m.reconfigure_raw_data(excel_data)
-    #     m.get_optimal_n_clusters(daily_data, daily_weight_data, kmin=kmin, kmax=kmax)
+    #     daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+    #     m.get_optimal_n_clusters(daily_data, kmin=kmin, kmax=kmax)
     #
     #     assert f"Optimal number of clusters is close to kmax: {kmax}. Consider increasing kmax." in caplog.text
 
@@ -101,20 +117,6 @@ def test_logger_messages(excel_data, caplog):
     ):
         m = PriceTakerModel()
         m.horizon_length = value
-
-    with pytest.raises(
-        AssertionError,
-        match=(
-            f"Ensure that the dimensions of the datasets match or remove raw_weight_data"
-        ),
-    ):
-        m = PriceTakerModel()
-        raw_weight_data = np.array([1, 2, 3])
-
-        daily_data, daily_weight_data = m.reconfigure_raw_data(
-            excel_data, raw_weight_data=raw_weight_data
-        )
-        m.get_optimal_n_clusters(daily_data, daily_weight_data)
 
 
 def dfc_design(m, params, capacity_range=(650, 900)):

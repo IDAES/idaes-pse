@@ -66,7 +66,7 @@ class PriceTakerModel(ConcreteModel):
             raise ValueError(f"horizon_length must be > 0, but {value} is provided.")
         self._horizon_length = value
 
-    def generate_daily_data(self, raw_data, raw_weight_data, day_list):
+    def generate_daily_data(self, raw_data, day_list):
 
         daily_data = pd.DataFrame(columns=day_list)
 
@@ -80,32 +80,17 @@ class PriceTakerModel(ConcreteModel):
             j = j + self._horizon_length
             day = day + 1
 
-        # TODO: I'm not sure what the weight data would typically look like, so I have this simple check for now
-        # TODO: Should eventually add something to transform raw_weight_data into a usable format
-        if raw_weight_data is not None:
-            if daily_data.shape != raw_weight_data.shape:
-                raise AssertionError(
-                    f"Ensure that the dimensions of the datasets match or remove raw_weight_data"
-                )
-            else:
-                daily_weight_data = raw_weight_data
+        return daily_data
 
-        else:
-            daily_weight_data = raw_weight_data
-
-        return daily_data, daily_weight_data
-
-    def reconfigure_raw_data(self, raw_data, raw_weight_data=None):
+    def reconfigure_raw_data(self, raw_data):
         """
         Reconfigures the raw price series data into a usable form
 
         Args:
             raw_data: imported price series data
-            raw_weight_data: imported weights for the price series data
 
         Returns:
             daily_data: reconfigured price series data
-            daily_weight_data: reconfigured weights for price series data
         """
         # Get column headings
         column_head = raw_data.columns.tolist()
@@ -117,22 +102,19 @@ class PriceTakerModel(ConcreteModel):
 
         # Generate daily data
         for i in scenarios[0:1]:
-            daily_data, daily_weight_data = self.generate_daily_data(
-                raw_data=raw_data[i], raw_weight_data=raw_weight_data, day_list=day_list
+            daily_data = self.generate_daily_data(
+                raw_data=raw_data[i], day_list=day_list
             )
 
-        return daily_data, daily_weight_data
+        return daily_data, scenarios
 
-    def get_optimal_n_clusters(
-        self, daily_data, daily_weight_data, kmin=None, kmax=None, plot=False
-    ):
+    def get_optimal_n_clusters(self, daily_data, kmin=None, kmax=None, plot=False):
         """
         Determines the appropriate number of clusters needed for a
         given price signal.
 
         Args:
             daily_data: reconfigured price series data
-            daily_weight_data: applies a weight to each entry in daily_data
             kmin: minimum number of clusters
             kmax: maximum number of clusters
             plot: flag to determine if an elbow plot should be displayed
@@ -153,17 +135,10 @@ class PriceTakerModel(ConcreteModel):
         np.random.seed(self._seed)
 
         # Compute the inertia (SSE) for k clusters
-        if daily_weight_data == None:
-            for k in k_values:
-                kmeans = KMeans(n_clusters=k).fit(daily_data.transpose())
-                inertia_values.append(kmeans.inertia_)
 
-        elif daily_data.shape == daily_weight_data.shape:
-            for k in k_values:
-                kmeans = KMeans(n_clusters=k).fit(
-                    daily_data.transpose(), sample_weight=daily_weight_data.transpose()
-                )
-                inertia_values.append(kmeans.inertia_)
+        for k in k_values:
+            kmeans = KMeans(n_clusters=k).fit(daily_data.transpose())
+            inertia_values.append(kmeans.inertia_)
 
         # Identify the "elbow point"
         elbow_point = KneeLocator(
@@ -191,8 +166,7 @@ class PriceTakerModel(ConcreteModel):
 
         return n_clusters, inertia_values
 
-    @staticmethod
-    def cluster_lmp_data(data, n_clusters, horizon_length):
+    def cluster_lmp_data(self, daily_data, n_clusters, scenarios):
         """
         Clusters the given price signal in n_clusters. This method supports k-means, k-meteiod,...
         techniques for clustering.
@@ -200,9 +174,39 @@ class PriceTakerModel(ConcreteModel):
         Args:
 
         Returns:
+            lmp_data = {1: {1: 2, 2: 3, 3: 5}, 2: {1: 2, 2: 3, 3: 5}}
+            weights = {1: 45, 2: 56}
         """
-        lmp_data = {1: {1: 2, 2: 3, 3: 5}, 2: {1: 2, 2: 3, 3: 5}}
-        weights = {1: 45, 2: 56}
+
+        # KMeans clustering with the optimal number of clusters
+        kmeans = KMeans(n_clusters=n_clusters).fit(daily_data.transpose())
+        centroids = kmeans.cluster_centers_
+        labels = kmeans.labels_
+
+        # Set any centroid values that are < 1e-4 to 0 to avoid noise
+        for d in range(n_clusters):
+            for t in range(24):
+                if centroids[d][t] < 1e-4:
+                    centroids[d][t] = 0
+
+        n_clusters_list = range(0, n_clusters)
+        weights_counter = np.zeros(n_clusters)
+
+        # Compute weight for each cluster by counting its occurrences in the dataset
+        for j in range(0, len(labels)):
+            for k in n_clusters_list:
+                if labels[j] == k:
+                    weights_counter[k] += 1
+
+        # Create dicts for lmp data and the weight of each cluster
+        rep_days_data = {}
+        weights_data = {}
+
+        for i in scenarios[0:1]:
+            rep_days_data[i] = pd.DataFrame(centroids.transpose())
+            lmp_data = rep_days_data[i].to_dict()
+            weights_data[i] = pd.DataFrame(weights_counter)
+            weights = weights_data[i].to_dict()
 
         return lmp_data, weights
 
