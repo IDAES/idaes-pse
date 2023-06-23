@@ -574,9 +574,9 @@ calculated for the resulting mixed stream,
 is not used for when ideal_separation == True.
 **default** - EnergySplittingType.equal_temperature.
 **Valid values:** {
-**EnergySplittingType.none** - do energy balance constraints,
+**EnergySplittingType.none** - no energy balance constraints,
 **EnergySplittingType.equal_temperature** - outlet temperatures equal inlet,
-**EnergySplittingType.equal_molar_enthalpy** - oulet molar enthalpies equal
+**EnergySplittingType.equal_molar_enthalpy** - outlet molar enthalpies equal
 inlet,
 **EnergySplittingType.enthalpy_split** - apply split fractions to enthalpy
 flows. Does not work with component or phase-component splitting.}""",
