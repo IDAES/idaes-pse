@@ -26,6 +26,7 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_component_object as cobj,
 )
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import ConfigurationError
 
 # _valid_VL_component_list return variables that are not need in all cases
 # pylint: disable=W0612
@@ -42,6 +43,7 @@ class IdealBubbleDew:
     # calculate concentrations at the bubble and dew points
     @staticmethod
     def temperature_bubble(b):
+        _non_vle_phase_check(b)
         try:
 
             def rule_bubble_temp(b, p1, p2):
@@ -161,6 +163,7 @@ class IdealBubbleDew:
     # Dew temperature methods
     @staticmethod
     def temperature_dew(b):
+        _non_vle_phase_check(b)
         try:
 
             def rule_dew_temp(b, p1, p2):
@@ -282,6 +285,7 @@ class IdealBubbleDew:
     # Bubble pressure methods
     @staticmethod
     def pressure_bubble(b):
+        _non_vle_phase_check(b)
         try:
 
             def rule_bubble_press(b, p1, p2):
@@ -386,6 +390,7 @@ class IdealBubbleDew:
     # Dew pressure methods
     @staticmethod
     def pressure_dew(b):
+        _non_vle_phase_check(b)
         try:
 
             def rule_dew_press(b, p1, p2):
@@ -887,3 +892,11 @@ def _valid_VL_component_list(blk, pp):
                 v_only_comps.append(j)
 
     return l_phase, v_phase, vl_comps, henry_comps, l_only_comps, v_only_comps
+
+
+def _non_vle_phase_check(blk):
+    if len(blk.phase_list) > 2:
+        raise ConfigurationError(
+            "Ideal assumption for calculating bubble and/or dew points is only valid "
+            "for systems with two phases. Please use LogBubbleDew approach instead."
+        )
