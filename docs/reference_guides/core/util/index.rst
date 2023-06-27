@@ -6,6 +6,7 @@
 
     dyn_utils
     initialization
+    math
     misc
     model_diagnostics
     model_serializer
