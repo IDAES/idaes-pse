@@ -454,7 +454,7 @@ def petsc_dae_by_time_element(
             calculated. This can be useful, for example, if you read initial
             conditions from a separately solved steady state problem, or
             otherwise know the initial conditions.
-        snes_solver (str): default=petsc_nes, the nonlinear equations solver
+        snes_solver (str): default=petsc_snes, the nonlinear equations solver
             to use for the initial conditions (e.g. petsc_snes, ipopt, ...).
         snes_options (dict): nonlinear equation solver options
         ts_options (dict): PETSc time-stepping solver options
