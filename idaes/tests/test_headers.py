@@ -19,8 +19,8 @@ import os
 
 # third-party
 import pytest
-import yaml
 
+yaml = pytest.importorskip("yaml", reason="`yaml` package is not available")
 
 addheader_add = pytest.importorskip(
     "addheader.add", reason="`addheader` package is not available"
