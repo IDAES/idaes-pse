@@ -82,6 +82,7 @@ class EnergySplittingType(Enum):
     Enum of support energy split types.
     """
 
+    none = 0
     equal_temperature = 1
     equal_molar_enthalpy = 2
     enthalpy_split = 3
@@ -573,8 +574,9 @@ calculated for the resulting mixed stream,
 is not used for when ideal_separation == True.
 **default** - EnergySplittingType.equal_temperature.
 **Valid values:** {
-**EnergySplittingType.equal_temperature** - outlet temperatures equal inlet
-**EnergySplittingType.equal_molar_enthalpy** - oulet molar enthalpies equal
+**EnergySplittingType.none** - no energy balance constraints,
+**EnergySplittingType.equal_temperature** - outlet temperatures equal inlet,
+**EnergySplittingType.equal_molar_enthalpy** - outlet molar enthalpies equal
 inlet,
 **EnergySplittingType.enthalpy_split** - apply split fractions to enthalpy
 flows. Does not work with component or phase-component splitting.}""",
@@ -1059,10 +1061,12 @@ objects linked the mixed state and all outlet states,
 
     def add_energy_splitting_constraints(self, mixed_block):
         """
-        Creates constraints for splitting the energy flows - done by equating
-        temperatures in outlets.
+        Creates constraints for splitting the energy flows.
         """
-        if self.config.energy_split_basis == EnergySplittingType.equal_temperature:
+        if self.config.energy_split_basis == EnergySplittingType.none:
+            # Do nothing and return
+            return
+        elif self.config.energy_split_basis == EnergySplittingType.equal_temperature:
 
             @self.Constraint(
                 self.flowsheet().time,

@@ -29,6 +29,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterData,
 )
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
+from idaes.core.util.exceptions import ConfigurationError
 
 
 # Dummy class to use for Psat calls
@@ -142,6 +143,43 @@ class TestBubbleTempIdeal(object):
                         frame.props[1].eq_mole_frac_tbub[pp[0], pp[1], k].body
                     ) == pytest.approx(0, abs=1e-8)
 
+    @pytest.mark.unit
+    def test_inert_phases(self):
+        m = ConcreteModel()
+
+        # Dummy params block
+        m.params = DummyParameterBlock(
+            components={
+                "H2O": {"pressure_sat_comp": pressure_sat_comp},
+                "EtOH": {"pressure_sat_comp": pressure_sat_comp},
+            },
+            phases={
+                "Liq": {"equation_of_state": DummyEoS},
+                "Vap": {"equation_of_state": DummyEoS},
+                "Sold": {"equation_of_state": DummyEoS},
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units={
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+        )
+        m.params._pe_pairs = Set(initialize=[("Vap", "Liq")])
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        with pytest.raises(
+            ConfigurationError,
+            match="Ideal assumption for calculating bubble and/or dew points is only valid "
+            "for systems with two phases. Please use LogBubbleDew approach instead.",
+        ):
+            IdealBubbleDew.temperature_bubble(m.props[1])
+
 
 class TestDewTempIdeal(object):
     @pytest.mark.unit
@@ -191,6 +229,43 @@ class TestDewTempIdeal(object):
                         frame.props[1].eq_mole_frac_tdew[pp[0], pp[1], k].body
                     ) == pytest.approx(0, abs=1e-8)
 
+    @pytest.mark.unit
+    def test_inert_phases(self):
+        m = ConcreteModel()
+
+        # Dummy params block
+        m.params = DummyParameterBlock(
+            components={
+                "H2O": {"pressure_sat_comp": pressure_sat_comp},
+                "EtOH": {"pressure_sat_comp": pressure_sat_comp},
+            },
+            phases={
+                "Liq": {"equation_of_state": DummyEoS},
+                "Vap": {"equation_of_state": DummyEoS},
+                "Sold": {"equation_of_state": DummyEoS},
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units={
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+        )
+        m.params._pe_pairs = Set(initialize=[("Vap", "Liq")])
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        with pytest.raises(
+            ConfigurationError,
+            match="Ideal assumption for calculating bubble and/or dew points is only valid "
+            "for systems with two phases. Please use LogBubbleDew approach instead.",
+        ):
+            IdealBubbleDew.temperature_bubble(m.props[1])
+
 
 class TestBubblePresIdeal(object):
     @pytest.mark.unit
@@ -238,6 +313,43 @@ class TestBubblePresIdeal(object):
                     assert value(
                         frame.props[1].eq_mole_frac_pbub[pp[0], pp[1], k].body
                     ) == pytest.approx(0, abs=1e-8)
+
+    @pytest.mark.unit
+    def test_inert_phases(self):
+        m = ConcreteModel()
+
+        # Dummy params block
+        m.params = DummyParameterBlock(
+            components={
+                "H2O": {"pressure_sat_comp": pressure_sat_comp},
+                "EtOH": {"pressure_sat_comp": pressure_sat_comp},
+            },
+            phases={
+                "Liq": {"equation_of_state": DummyEoS},
+                "Vap": {"equation_of_state": DummyEoS},
+                "Sold": {"equation_of_state": DummyEoS},
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units={
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+        )
+        m.params._pe_pairs = Set(initialize=[("Vap", "Liq")])
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        with pytest.raises(
+            ConfigurationError,
+            match="Ideal assumption for calculating bubble and/or dew points is only valid "
+            "for systems with two phases. Please use LogBubbleDew approach instead.",
+        ):
+            IdealBubbleDew.temperature_bubble(m.props[1])
 
 
 class TestDewPressureIdeal(object):
@@ -287,3 +399,40 @@ class TestDewPressureIdeal(object):
                     assert value(
                         frame.props[1].eq_mole_frac_pdew[pp[0], pp[1], k].body
                     ) == pytest.approx(0, abs=1e-8)
+
+    @pytest.mark.unit
+    def test_inert_phases(self):
+        m = ConcreteModel()
+
+        # Dummy params block
+        m.params = DummyParameterBlock(
+            components={
+                "H2O": {"pressure_sat_comp": pressure_sat_comp},
+                "EtOH": {"pressure_sat_comp": pressure_sat_comp},
+            },
+            phases={
+                "Liq": {"equation_of_state": DummyEoS},
+                "Vap": {"equation_of_state": DummyEoS},
+                "Sold": {"equation_of_state": DummyEoS},
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units={
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+        )
+        m.params._pe_pairs = Set(initialize=[("Vap", "Liq")])
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        with pytest.raises(
+            ConfigurationError,
+            match="Ideal assumption for calculating bubble and/or dew points is only valid "
+            "for systems with two phases. Please use LogBubbleDew approach instead.",
+        ):
+            IdealBubbleDew.temperature_bubble(m.props[1])
