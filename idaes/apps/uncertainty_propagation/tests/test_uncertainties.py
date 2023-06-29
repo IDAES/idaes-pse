@@ -1,37 +1,40 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
-import sys
 import os
-from unittest.mock import patch
-
-sys.path.append(os.path.abspath(".."))  # current folder is ~/tests
 import numpy as np
 import pandas as pd
-from scipy import sparse
 import pytest
-from pytest import approx
+
+from pyomo.environ import (
+    ConcreteModel,
+    Constraint,
+    exp,
+    Objective,
+    SolverFactory,
+    Suffix,
+    Var,
+)
+import pyomo.contrib.parmest.parmest as parmest
+
 from idaes.apps.uncertainty_propagation.uncertainties import (
     quantify_propagate_uncertainty,
     propagate_uncertainty,
     clean_variable_name,
 )
-from pyomo.opt import SolverFactory
-from pyomo.environ import *
-import pyomo.contrib.parmest.parmest as parmest
 
-ipopt_available = SolverFactory("ipopt").available()
-kaug_available = SolverFactory("k_aug").available()
-dotsens_available = SolverFactory("dot_sens").available()
+ipopt_available = SolverFactory("ipopt").available(exception_flag=False)
+kaug_available = SolverFactory("k_aug").available(exception_flag=False)
+dotsens_available = SolverFactory("dot_sens").available(exception_flag=False)
 
 
 @pytest.mark.skipif(not ipopt_available, reason="The 'ipopt' command is not available")
@@ -67,7 +70,7 @@ class TestUncertaintyPropagation:
             rooney_biegler_model, rooney_biegler_model_opt, data, variable_name, SSE
         )
 
-        assert results.obj == approx(4.331711213656886)
+        assert results.obj == pytest.approx(4.331711213656886, abs=1e-8, rel=1e-8)
         np.testing.assert_array_almost_equal(
             results.theta, [19.142575284617866, 0.53109137696521]
         )
@@ -80,7 +83,9 @@ class TestUncertaintyPropagation:
         np.testing.assert_array_almost_equal(
             results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]])
         )
-        assert results.propagation_f == pytest.approx(5.45439337747349)
+        assert results.propagation_f == pytest.approx(
+            5.45439337747349, abs=1e-8, rel=1e-8
+        )
 
     @pytest.mark.component
     def test_quantify_propagate_uncertainty2(self):
@@ -111,14 +116,13 @@ class TestUncertaintyPropagation:
         model_uncertain.obj = Objective(
             expr=model_uncertain.asymptote
             * (1 - exp(-model_uncertain.rate_constant * 10)),
-            sense=minimize,
         )
 
         results = quantify_propagate_uncertainty(
             rooney_biegler_model, model_uncertain, data, variable_name, SSE
         )
 
-        assert results.obj == approx(4.331711213656886)
+        assert results.obj == pytest.approx(4.331711213656886, abs=1e-8, rel=1e-8)
         np.testing.assert_array_almost_equal(
             results.theta, [19.142575284617866, 0.53109137696521]
         )
@@ -165,7 +169,6 @@ class TestUncertaintyPropagation:
         model_uncertain.obj = Objective(
             expr=model_uncertain.asymptote
             * (1 - exp(-model_uncertain.rate_constant * 10)),
-            sense=minimize,
         )
 
         propagate_results = propagate_uncertainty(
@@ -215,9 +218,7 @@ class TestUncertaintyPropagation:
         m.con2 = Constraint(expr=m.x2 + m.x3 - m.p2 == 0)
 
         # Define objective
-        m.obj = Objective(
-            expr=m.p1 * m.x1 + m.p2 * (m.x2**2) + m.p1 * m.p2, sense=minimize
-        )
+        m.obj = Objective(expr=m.p1 * m.x1 + m.p2 * (m.x2**2) + m.p1 * m.p2)
 
         ### Solve optimization model
         opt = SolverFactory("ipopt", tee=True)
@@ -243,7 +244,7 @@ class TestUncertaintyPropagation:
         """
         Using the analytic solution above, we can compute the sensitivies of x and v to
         perturbations in p1 and p2.
-        The matrix dx_dp constains the sensitivities of x to perturbations in p
+        The matrix dx_dp constrains the sensitivities of x to perturbations in p
         """
 
         # Initialize sensitivity matrix Nx x Np
@@ -393,7 +394,7 @@ class TestUncertaintyPropagation:
     @pytest.mark.component
     def test_propagate_uncertainty_error(self):
         """
-        It tests a TypeError when the modle_uncertian of function propagate_uncertainty is neither python function nor Pyomo ConcreteModel
+        It tests a TypeError when the model_uncertain of function propagate_uncertainty is neither python function nor Pyomo ConcreteModel
         """
         from idaes.apps.uncertainty_propagation.examples.rooney_biegler import (
             rooney_biegler_model,
@@ -422,7 +423,6 @@ class TestUncertaintyPropagation:
         model_uncertain.obj = Objective(
             expr=model_uncertain.asymptote
             * (1 - exp(-model_uncertain.rate_constant * 10)),
-            sense=minimize,
         )
         with pytest.raises(TypeError):
             propagate_results = propagate_uncertainty(1, theta, cov, variable_name)

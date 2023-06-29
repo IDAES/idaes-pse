@@ -1,0 +1,71 @@
+{
+    "nl_file": "r134a_expressions_eos.nl",
+    "expr_map": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        13,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        11
+    ],
+    "var_map": [
+        0,
+        1,
+        1000,
+        1000
+    ],
+    "param": {
+        "R": 0.0814888564372,
+        "MW": 102.032,
+        "T_star": 374.18,
+        "rho_star": 508.0,
+        "Tc": 374.21,
+        "rhoc": 511.89995169599996,
+        "Pc": 4059.1115387813106,
+        "Tt": 169.85,
+        "Pt": 0.391,
+        "rhot_l": 1591.1,
+        "rhot_v": 0.028172,
+        "P_min": 1e-09,
+        "P_max": 70000.0,
+        "rho_max": 2500.0,
+        "T_min": 168,
+        "T_max": 460,
+        "reference_state_offset": [
+            0.0,
+            0.0
+        ]
+    },
+    "nl_file_tcx": "r134a_expressions_tcx.nl",
+    "var_map_tcx": [
+        1,
+        0,
+        1000,
+        1000
+    ],
+    "have_tcx": true,
+    "nl_file_st": "r134a_expressions_st.nl",
+    "var_map_st": [
+        1,
+        1000,
+        1000,
+        1000
+    ],
+    "have_st": true,
+    "nl_file_visc": "r134a_expressions_visc.nl",
+    "var_map_visc": [
+        0,
+        1,
+        1000,
+        1000
+    ],
+    "have_visc": true
+}

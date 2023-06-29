@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for Shell and Tube 1D unit model.
@@ -34,7 +34,10 @@ from idaes.core import (
     MomentumBalanceType,
     useDefault,
 )
-from idaes.models.unit_models.shell_and_tube_1d import ShellAndTube1D as HX1D
+from idaes.models.unit_models.shell_and_tube_1d import (
+    ShellAndTube1D as HX1D,
+    ShellAndTubeInitializer,
+)
 from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 
 from idaes.models.properties.modular_properties.base.generic_property import (
@@ -45,7 +48,10 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
     BTXParameterBlock,
 )
 from idaes.models.properties import iapws95
-
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    InitializationStatus,
+)
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
@@ -67,6 +73,7 @@ from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
 )
 from idaes.models.properties.modular_properties.phase_equil.forms import log_fugacity
 import idaes.models.properties.modular_properties.pure.RPP4 as RPP
+from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -255,6 +262,8 @@ def test_config():
     assert not m.fs.unit.config.cold_side.has_phase_equilibrium
     assert m.fs.unit.config.cold_side.transformation_method == "dae.finite_difference"
     assert m.fs.unit.config.cold_side.transformation_scheme == "BACKWARD"
+
+    assert m.fs.unit.default_initializer is ShellAndTubeInitializer
 
 
 @pytest.mark.unit
@@ -508,7 +517,6 @@ class TestBTX_cocurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx):
-        btx.fs.unit.temperature_wall.display()
         assert pytest.approx(5, rel=1e-5) == value(
             btx.fs.unit.hot_side_outlet.flow_mol[0]
         )
@@ -1320,6 +1328,7 @@ class TestIAPWS_countercurrent(object):
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 class TestBT_Generic_cocurrent(object):
     @pytest.fixture(scope="class")
     def btx(self):
@@ -1695,3 +1704,398 @@ class TestBT_Generic_cocurrent(object):
         with idaes.temporary_config_ctx():
             with pytest.raises(InitializationError):
                 btx.fs.unit.initialize(optarg={"max_iter": 1})
+
+
+class TestInitializersBTXCoCurrent:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = BTXParameterBlock(valid_phase="Liq")
+
+        m.fs.unit = HX1D(
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            hot_side_name="Shell",
+            cold_side_name="Tube",
+            flow_type=HeatExchangerFlowPattern.cocurrent,
+        )
+
+        m.fs.unit.length.fix(4.85)
+
+        m.fs.unit.shell_diameter.fix(1.04)
+        m.fs.unit.tube_outer_diameter.fix(0.01167)
+        m.fs.unit.tube_inner_diameter.fix(0.01067)
+        m.fs.unit.number_of_tubes.fix(10)
+        m.fs.unit.length.fix(4.85)
+        m.fs.unit.hot_side_heat_transfer_coefficient.fix(2000)
+        m.fs.unit.cold_side_heat_transfer_coefficient.fix(51000)
+
+        m.fs.unit.hot_side_inlet.flow_mol[0].fix(5)  # mol/s
+        m.fs.unit.hot_side_inlet.temperature[0].fix(365)  # K
+        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.cold_side_inlet.flow_mol[0].fix(10)  # mol/s
+        m.fs.unit.cold_side_inlet.temperature[0].fix(300)  # K
+        m.fs.unit.cold_side_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        iscale.calculate_scaling_factors(m)
+
+        return m
+
+    @pytest.mark.integration
+    def test_general_hierarchical(self, model):
+        initializer = ShellAndTubeInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(322.669, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+
+        assert pytest.approx(10, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(322.463, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit, exclude_unused_vars=True)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(322.669, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+
+        assert pytest.approx(10, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(322.463, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+
+class TestInitializersBTXCounterCurrent:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = BTXParameterBlock(valid_phase="Liq")
+
+        m.fs.unit = HX1D(
+            shell_is_hot=False,
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            flow_type=HeatExchangerFlowPattern.countercurrent,
+        )
+
+        m.fs.unit.length.fix(4.85)
+
+        m.fs.unit.shell_diameter.fix(1.04)
+        m.fs.unit.tube_outer_diameter.fix(0.01167)
+        m.fs.unit.tube_inner_diameter.fix(0.01067)
+        m.fs.unit.number_of_tubes.fix(10)
+        m.fs.unit.length.fix(4.85)
+        m.fs.unit.hot_side_heat_transfer_coefficient.fix(2000)
+        m.fs.unit.cold_side_heat_transfer_coefficient.fix(51000)
+
+        m.fs.unit.hot_side_inlet.flow_mol[0].fix(5)  # mol/s
+        m.fs.unit.hot_side_inlet.temperature[0].fix(365)  # K
+        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.cold_side_inlet.flow_mol[0].fix(10)  # mol/s
+        m.fs.unit.cold_side_inlet.temperature[0].fix(300)  # K
+        m.fs.unit.cold_side_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        iscale.calculate_scaling_factors(m.fs.unit)
+
+        return m
+
+    @pytest.mark.integration
+    def test_general_hierarchical(self, model):
+        initializer = ShellAndTubeInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(304.292, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+
+        assert pytest.approx(10, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(331.436, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit, exclude_unused_vars=True)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(304.292, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+
+        assert pytest.approx(10, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(331.436, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+
+class TestInitializersIAPWSCoCurrent:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock(
+            phase_presentation=iapws95.PhaseType.LG
+        )
+
+        m.fs.unit = HX1D(
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            flow_type=HeatExchangerFlowPattern.cocurrent,
+        )
+
+        m.fs.unit.length.fix(4.85)
+
+        m.fs.unit.shell_diameter.fix(1.04)
+        m.fs.unit.tube_outer_diameter.fix(0.01167)
+        m.fs.unit.tube_inner_diameter.fix(0.01067)
+        m.fs.unit.number_of_tubes.fix(10)
+        m.fs.unit.length.fix(4.85)
+        m.fs.unit.hot_side_heat_transfer_coefficient.fix(2000)
+        m.fs.unit.cold_side_heat_transfer_coefficient.fix(51000)
+
+        m.fs.unit.hot_side_inlet.flow_mol[0].fix(5)
+        m.fs.unit.hot_side_inlet.enth_mol[0].fix(50000)
+        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)
+
+        m.fs.unit.cold_side_inlet.flow_mol[0].fix(5)
+        m.fs.unit.cold_side_inlet.enth_mol[0].fix(7000)
+        m.fs.unit.cold_side_inlet.pressure[0].fix(101325)
+
+        return m
+
+    @pytest.mark.integration
+    def test_general_hierarchical(self, model):
+        initializer = ShellAndTubeInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, rel=1e-4) == value(
+            model.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(5, rel=1e-4) == value(
+            model.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+
+        assert pytest.approx(48200.5, rel=1e-4) == value(
+            model.fs.unit.hot_side_outlet.enth_mol[0]
+        )
+        assert pytest.approx(8799.463, rel=1e-4) == value(
+            model.fs.unit.cold_side_outlet.enth_mol[0]
+        )
+
+        assert pytest.approx(101325, rel=1e-4) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+        assert pytest.approx(101325, rel=1e-4) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit, exclude_unused_vars=True)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, rel=1e-4) == value(
+            model.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(5, rel=1e-4) == value(
+            model.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+
+        assert pytest.approx(48200.5, rel=1e-4) == value(
+            model.fs.unit.hot_side_outlet.enth_mol[0]
+        )
+        assert pytest.approx(8799.463, rel=1e-4) == value(
+            model.fs.unit.cold_side_outlet.enth_mol[0]
+        )
+
+        assert pytest.approx(101325, rel=1e-4) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+        assert pytest.approx(101325, rel=1e-4) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+
+class TestInitializersIAPWSCounterCurrent:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock(
+            phase_presentation=iapws95.PhaseType.LG
+        )
+
+        m.fs.unit = HX1D(
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            flow_type=HeatExchangerFlowPattern.countercurrent,
+        )
+
+        m.fs.unit.length.fix(4.85)
+
+        m.fs.unit.shell_diameter.fix(1.04)
+        m.fs.unit.tube_outer_diameter.fix(0.01167)
+        m.fs.unit.tube_inner_diameter.fix(0.01067)
+        m.fs.unit.number_of_tubes.fix(10)
+        m.fs.unit.length.fix(4.85)
+        m.fs.unit.hot_side_heat_transfer_coefficient.fix(2000)
+        m.fs.unit.cold_side_heat_transfer_coefficient.fix(51000)
+
+        m.fs.unit.hot_side_inlet.flow_mol[0].set_value(5)
+        m.fs.unit.hot_side_inlet.enth_mol[0].set_value(50000)
+        m.fs.unit.hot_side_inlet.pressure[0].set_value(101325)
+
+        m.fs.unit.cold_side_inlet.flow_mol[0].set_value(5)
+        m.fs.unit.cold_side_inlet.enth_mol[0].set_value(7000)
+        m.fs.unit.cold_side_inlet.pressure[0].set_value(101325)
+
+        return m
+
+    @pytest.mark.component
+    def test_general_hierarchical(self, model):
+        initializer = ShellAndTubeInitializer(always_estimate_states=True)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(5, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+
+        assert pytest.approx(47654.1, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.enth_mol[0]
+        )
+        assert pytest.approx(9345.86, rel=1e-4) == value(
+            model.fs.unit.cold_side_outlet.enth_mol[0]
+        )
+
+        assert pytest.approx(101325, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+        assert not model.fs.unit.hot_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.enth_mol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.pressure[0].fixed
+
+        assert not model.fs.unit.cold_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.enth_mol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.pressure[0].fixed
+
+    @pytest.mark.component
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit, exclude_unused_vars=True)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(5, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+
+        assert pytest.approx(47654.1, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.enth_mol[0]
+        )
+        assert pytest.approx(9345.86, rel=1e-4) == value(
+            model.fs.unit.cold_side_outlet.enth_mol[0]
+        )
+
+        assert pytest.approx(101325, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+        assert not model.fs.unit.hot_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.enth_mol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.pressure[0].fixed
+
+        assert not model.fs.unit.cold_side_inlet.flow_mol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.enth_mol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.pressure[0].fixed

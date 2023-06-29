@@ -1,16 +1,16 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
-"""This module containts utility classes that allow users to tag model quantities
+"""This module contains utility classes that allow users to tag model quantities
 and group them, for easy display, formatting, and input.
 """
 import xml.dom.minidom
@@ -588,7 +588,7 @@ class ModelTagGroup(dict):
 
         tag_list = []
         indexes = []
-        for i, tag in enumerate(tags):
+        for i, tag in enumerate(tags):  # pylint: disable=unused-variable
             if not isinstance(tag, collections.abc.Hashable):
                 if len(tag) == 2:
                     tag_list.append(tag[0])
@@ -742,21 +742,21 @@ def svg_tag(
             new_tag = new_tag.replace(" ", "_")
             tag_map[new_tag] = tag
 
-    # Ture SVG string into XML document
+    # Turn SVG string into XML document
     doc = xml.dom.minidom.parseString(svg)
     # Get the text elements of the SVG
     texts = doc.getElementsByTagName("text")
 
     # Add some text
     for t in texts:
-        id = t.attributes["id"].value
-        if id in tag_map:
+        _id = t.attributes["id"].value
+        if _id in tag_map:
             # if it's multiline change last line
             try:
                 tspan = t.getElementsByTagName("tspan")[-1]
             except IndexError:
-                _log.warning(f"Text object but no tspan for tag {tag_map[id]}.")
-                _log.warning(f"Skipping output for {tag_map[id]}.")
+                _log.warning(f"Text object but no tspan for tag {tag_map[_id]}.")
+                _log.warning(f"Skipping output for {tag_map[_id]}.")
                 continue
             try:
                 tspan = tspan.childNodes[0]
@@ -766,12 +766,12 @@ def svg_tag(
                 tspan = tspan.childNodes[0]
 
             if show_tags:
-                val = tag_map[id]
+                val = tag_map[_id]
             else:
-                if tag_group[tag_map[id]].is_indexed:
-                    val = tag_group[tag_map[id]][idx]
+                if tag_group[tag_map[_id]].is_indexed:
+                    val = tag_group[tag_map[_id]][idx]
                 else:
-                    val = tag_group[tag_map[id]]
+                    val = tag_group[tag_map[_id]]
 
             tspan.nodeValue = str(val)
 

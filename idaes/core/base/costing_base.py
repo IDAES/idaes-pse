@@ -1,18 +1,24 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Base classes for process costing
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# This plays with some private attributes - most are necessary
+# pylint: disable=protected-access
+
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock, ConfigValue
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -89,6 +95,10 @@ def register_idaes_currency_units():
 
 
 class DefaultCostingComponents(StrEnum):
+    """
+    Costing components Enum
+    """
+
     capital = "capital_cost"
     fixed = "fixed_operating_cost"
     variable = "variable_operating_cost"
@@ -177,10 +187,10 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         """
         This is where any global parameters, such as Lang factors or
         coefficients for costing methods that should be shared across the
-        process, should be declared. Sub-Blocks may be used ot help organize
-        parameters if requried.
+        process, should be declared. Sub-Blocks may be used to help organize
+        parameters if required.
 
-        Dervied class must overload this method.
+        Derived class must overload this method.
         """
         raise NotImplementedError(
             "Derived class has not defined a build_global_params method."
@@ -197,7 +207,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         3. self.aggregate_variable_operating_cost
         4. self.aggregate_flow_costs (indexed by flow type)
 
-        Dervied class must overload this method.
+        Derived class must overload this method.
         """
         raise NotImplementedError(
             "Derived class has not defined a build_process_costs method."
@@ -208,7 +218,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         This is where custom initialization procedures can be implemented for
         flowsheet level costing components.
 
-        Dervied class must overload this method.
+        Derived class must overload this method.
         """
         raise NotImplementedError(
             "Derived class has not defined an initialize_build method."
@@ -527,7 +537,7 @@ class UnitModelCostingBlockData(ProcessBlockData):
         "flowsheet_costing_block",
         ConfigValue(
             domain=assert_flowsheet_costing_block,
-            doc="Reference to assoicated FlowsheetCostingBlock to use.",
+            doc="Reference to associated FlowsheetCostingBlock to use.",
         ),
     )
     CONFIG.declare(
@@ -583,7 +593,7 @@ class UnitModelCostingBlockData(ProcessBlockData):
         if method is None:
             method = fcb._get_costing_method_for(unit_model)
 
-        # Assign obejct references for costing package and unit model
+        # Assign object references for costing package and unit model
         add_object_reference(self, "costing_package", fcb)
         add_object_reference(self, "unit_model", unit_model)
 
@@ -603,7 +613,7 @@ class UnitModelCostingBlockData(ProcessBlockData):
                         "variables."
                     )
                 elif cvar.lb is None or cvar.lb < 0:
-                    _log.warn(
+                    _log.warning(
                         f"{unit_model.name} {v} component has a lower bound "
                         "less than zero. Be aware that this may result in "
                         "negative costs during optimization."
@@ -616,7 +626,7 @@ class UnitModelCostingBlockData(ProcessBlockData):
         Placeholder method for initialization
         """
         # TODO: Implement an initialization method
-        # TODO: Need to have a general pupose method (block triangularisation?)
+        # TODO: Need to have a general purpose method (block triangularisation?)
         # TODO: Should also allow registering custom methods
 
         # Vars and Constraints

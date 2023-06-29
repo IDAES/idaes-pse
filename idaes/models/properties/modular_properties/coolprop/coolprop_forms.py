@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains functions for constructing CoolProp expressions.
@@ -153,7 +153,7 @@ def expression_nonexponential(cobj, prop, T, yc):
         yc: value of property at critical point
 
     Returns:
-        Pyomo expression mathcing CoolProp non-exponential sum form
+        Pyomo expression matching CoolProp non-exponential sum form
     """
     # y = yc * (1 + sum(ni*theta^ti))
     Tc = cobj.temperature_crit
@@ -210,7 +210,7 @@ def expression_polynomial(cobj, prop, T):
         T: temperature to use in expression
 
     Returns:
-        Pyomo expression mathcing CoolProp rational polynomial form
+        Pyomo expression matching CoolProp rational polynomial form
     """
     i = 0
     asum = 0

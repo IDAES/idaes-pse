@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 IDAES Homotopy meta-solver routine.
@@ -94,14 +94,13 @@ def homotopy(
     if degrees_of_freedom(model) != 0:
         raise ConfigurationError(
             "Degrees of freedom in model are not equal to zero. Homotopy "
-            "should not be used on probelms which are not well-defined."
+            "should not be used on problems which are not well-defined."
         )
 
     # Validate variables and targets
     if len(variables) != len(targets):
         raise ConfigurationError("Number of variables and targets do not match.")
-    for i in range(len(variables)):
-        v = variables[i]
+    for i, v in enumerate(variables):
         t = targets[i]
 
         if not isinstance(v, _VarData):
@@ -190,9 +189,9 @@ def homotopy(
             "Invalid value for min_step ({}). Must lie "
             "between 0.01 and 0.1.".format(min_step)
         )
-    if not min_step <= max_step:
+    if min_step > max_step:
         raise ConfigurationError(
-            "Invalid argumnets: step_min must be less " "or equal to step_max."
+            "Invalid arguments: step_min must be less " "or equal to step_max."
         )
     if not min_step <= step_init <= max_step:
         raise ConfigurationError(
@@ -213,7 +212,13 @@ def homotopy(
     solver_obj = SolverFactory("ipopt")
 
     # Perform initial solve of model to confirm feasible initial solution
-    results, solved, sol_iter, sol_time, sol_reg = ipopt_solve_with_stats(
+    (
+        results,  # pylint: disable=unused-variable
+        solved,
+        sol_iter,
+        sol_time,  # pylint: disable=unused-variable
+        sol_reg,
+    ) = ipopt_solve_with_stats(
         model, solver_obj, max_solver_iterations, max_solver_time
     )
 
@@ -229,8 +234,8 @@ def homotopy(
     # Set up homotopy variables
     # Get initial values and deltas for all variables
     v_init = []
-    for i in range(len(variables)):
-        v_init.append(variables[i].value)
+    for i, v in enumerate(variables):
+        v_init.append(v.value)
 
     n_0 = 0.0  # Homotopy progress variable
     s = step_init  # Set step size to step_init
@@ -249,15 +254,11 @@ def homotopy(
         else:
             n_1 = n_0 + s
 
-        _log.info(
-            "Homotopy Iteration {}. Next Step: {} (Current: {})".format(
-                iter_count, n_1, n_0
-            )
-        )
+        _log.info(f"Homotopy Iteration {iter_count}. Next Step: {n_1} (Current: {n_0})")
 
         # Update values for all variables using n_1
-        for i in range(len(variables)):
-            variables[i].fix(targets[i] * n_1 + v_init[i] * (1 - n_1))
+        for i, v in enumerate(variables):
+            v.fix(targets[i] * n_1 + v_init[i] * (1 - n_1))
 
         # Solve model at new state
         results, solved, sol_iter, sol_time, sol_reg = ipopt_solve_with_stats(
@@ -292,27 +293,26 @@ def homotopy(
             else:
                 # Step is already at minimum size, terminate homotopy
                 _log.exception(
-                    "Homotopy failed - could not converge at minimum step "
-                    "size. Current progress is {}".format(n_0)
+                    f"Homotopy failed - could not converge at minimum step "
+                    f"size. Current progress is {n_0}"
                 )
                 return TerminationCondition.minStepLength, n_0, iter_count
 
         if iter_count >= max_eval:  # Use greater than or equal to to be safe
             _log.exception(
-                "Homotopy failed - maximum homotopy iterations "
-                "exceeded. Current progress is {}".format(n_0)
+                f"Homotopy failed - maximum homotopy iterations "
+                f"exceeded. Current progress is {n_0}"
             )
             return TerminationCondition.maxEvaluations, n_0, iter_count
 
     if sol_reg == "-":
         _log.info(
-            "Homotopy successful - converged at target values in {} "
-            "iterations.".format(iter_count)
+            f"Homotopy successful - converged at target values in {iter_count} iterations."
         )
         return TerminationCondition.optimal, n_0, iter_count
     else:
         _log.exception(
-            "Homotopy failed - converged at target values with "
-            "regularization in {} iterations.".format(iter_count)
+            f"Homotopy failed - converged at target values with "
+            f"regularization in {iter_count} iterations."
         )
         return TerminationCondition.other, n_0, iter_count

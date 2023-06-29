@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Methods for calculating fugacity of Henry's Law components
@@ -16,6 +16,12 @@ Methods for calculating fugacity of Henry's Law components
 For now, only mole fraction basis (Kpx) form is fully supported. The remainder
 is prototype code
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from enum import Enum
 
 from pyomo.environ import log, Var
@@ -27,7 +33,7 @@ from idaes.core.util.exceptions import ConfigurationError
 class HenryType(Enum):
     """
     'Henry Constant' types are numbered 1-50 (i.e. H = conc/pressure)
-    'Henry Volatiltiy' types are numbered 51-100 (i.e. K = pressure/conc)
+    'Henry Volatility' types are numbered 51-100 (i.e. K = pressure/conc)
     We use this fact to simplify determining wheterh to multiply or divide
     by Henry's constant
     Any different forms can use values 101+, but will need to add the custom
@@ -181,6 +187,8 @@ def henry_units(henry_type, units):
 
 
 class ConstantH:
+    """Methods for invariant Henry constant"""
+
     @staticmethod
     def build_parameters(cobj, p, h_type):
         b = cobj.parent_block()

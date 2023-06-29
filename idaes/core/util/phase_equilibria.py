@@ -1,22 +1,22 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
-
 """
 This module contains utility functions to generate phase equilibrium data and
 plots.
 """
-
-__author__ = "Alejandro Garciadiego"
+# Import plotting functions
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Import objects from pyomo package
 from pyomo.environ import (
@@ -24,14 +24,12 @@ from pyomo.environ import (
     value,
     units as pyunits,
 )
-import idaes.logger as idaeslog
+
 from idaes.core.solvers import get_solver
-
 import idaes.logger as idaeslog
 
-# Import plotting functions
-import matplotlib.pyplot as plt
-import numpy as np
+
+__author__ = "Alejandro Garciadiego"
 
 
 def Txy_diagram(
@@ -61,7 +59,7 @@ def Txy_diagram(
         temperature: Temperature at which to initialize state block
         num_points: Number of data point to be calculated
         properties: property package which contains parameters to calculate bubble
-        and dew temperatures for the mixture of the compnents specified.
+        and dew temperatures for the mixture of the components specified.
         figure_name: if a figure name is included the plot will save with the name
         figure_name.png
         print_legend (bool): = If True, include legend to distinguish between
@@ -75,7 +73,7 @@ def Txy_diagram(
     Returns:
         Plot
     """
-    # Run txy_ data funtion to obtain bubble and dew twmperatures
+    # Run txy_ data function to obtain bubble and dew twmperatures
     Txy_data_to_plot = Txy_data(
         model,
         component_1,
@@ -115,7 +113,7 @@ def Txy_data(
         pressure: Pressure at which the bubble and drew temperatures will be calculates
         temperature: Temperature at which to initialize state block
         num_points: Number of data point to be calculated
-        model: Model wit intialized Property package which contains data to calculate
+        model: Model wit initialized Property package which contains data to calculate
         bubble and dew temperatures for  component 1 and component 2
         print_level: printing level from initialization
         solver: solver to use (default=None, use IDAES default solver)
@@ -134,7 +132,7 @@ def Txy_data(
 
     model.props = model.params.build_state_block([1], defined_state=True)
 
-    # Set intial concentration of component 1 close to 1
+    # Set initial concentration of component 1 close to 1
     x = 0.99
 
     # Set conditions for flash unit model
@@ -171,17 +169,15 @@ def Txy_data(
 
     count = 1
     # Create and run loop to calculate temperatures at every composition
-    for i in range(len(x_d)):
-        model.props[1].mole_frac_comp[component_1].fix(x_d[i])
-        model.props[1].mole_frac_comp[component_2].fix(1 - x_d[i] - xs)
+    for i, v in enumerate(x_d):
+        model.props[1].mole_frac_comp[component_1].fix(v)
+        model.props[1].mole_frac_comp[component_2].fix(1 - v - xs)
         # solve the model
         status = solver.solve(model, tee=False)
         # If solution is optimal store the concentration, and calculated temperatures in the created arrays
         if check_optimal_termination(status):
 
-            print(
-                "Case: ", count, " Optimal. ", component_1, "x = {:.2f}".format(x_d[i])
-            )
+            print(f"Case: {count} Optimal. {component_1} x = {v:.2f}")
 
             if hasattr(model.props[1], "_mole_frac_tdew") and hasattr(
                 model.props[1], "_mole_frac_tbub"
@@ -197,13 +193,11 @@ def Txy_data(
                 print("One of the components only exists in liquid phase.")
                 Tbubb.append(value(model.props[1].temperature_bubble["Vap", "Liq"]))
 
-            X.append(x_d[i])
+            X.append(v)
 
         # If the solver did not solve to an optimal solution, do not store the data point
         else:
-            print(
-                "Case: ", count, " No Result", component_1, "x = {:.2f}".format(x_d[i])
-            )
+            print(f"Case: {count} No Result {component_1} x = {x_d[i]:.2f}")
         count += 1
 
     # Call TXYData function and store the data in TD class
@@ -302,10 +296,10 @@ def build_txy_diagrams(
     """
 
     # Declare a plot and it's size
-    ig, ax = plt.subplots(figsize=(12, 8))
+    ig, ax = plt.subplots(figsize=(12, 8))  # pylint: disable=unused-variable
 
     if len(txy_data.TBubb) and len(txy_data.TDew) > 0:
-        if include_pressure == True:
+        if include_pressure is True:
             # Plot results for bubble temperature
 
             ax.plot(
@@ -342,7 +336,7 @@ def build_txy_diagrams(
 
     elif len(txy_data.TDew) == 0:
 
-        if include_pressure == True:
+        if include_pressure is True:
             # Plot results for bubble temperature
 
             # Plot results for dew temperature
@@ -363,7 +357,7 @@ def build_txy_diagrams(
 
     elif len(txy_data.TBubb) == 0:
 
-        if include_pressure == True:
+        if include_pressure is True:
             # Plot results for bubble temperature
 
             # Plot results for dew temperature
@@ -399,7 +393,7 @@ def build_txy_diagrams(
     plt.xlim(0.0, 1)
 
     # Declare legend and fontsize
-    if print_legend == True:
+    if print_legend is True:
         plt.legend(fontsize=16)
 
     if figure_name:

@@ -2,14 +2,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains utility functions for mathematical operators of use in
@@ -35,7 +35,7 @@ def smooth_abs(a, eps=1e-4):
         An expression for the smoothed absolute value operation.
     """
     # Check type of eps
-    if not (isinstance(eps, (float, int, Param))):
+    if not isinstance(eps, (float, int, Param)):
         raise TypeError(
             "smooth_abs eps argument must be a float, int or " "Pyomo Param"
         )
@@ -68,7 +68,7 @@ def smooth_minmax(a, b, eps=1e-4, sense="max"):
         An expression for the smoothed minimum or maximum operation.
     """
     # Check type of eps
-    if not (isinstance(eps, (float, int, Param))):
+    if not isinstance(eps, (float, int, Param)):
         raise TypeError(
             "Smooth {} eps argument must be a float, int or "
             "Pyomo Param".format(sense)
@@ -131,14 +131,14 @@ def smooth_min(a, b, eps=1e-4):
 
 
 def smooth_bound(val, lb, ub, eps=1e-4, eps_lb=None, eps_ub=None):
-    """Returns a smooth expression that returns approximatly the value of val
+    """Returns a smooth expression that returns approximately the value of val
     between lb and ub, the value of ub if val > ub and the value of lb if
     val < lb. The expression returned is
 
     ..math:: smooth_min(smooth_max(val, lb, eps_lb), ub, eps_ub)
 
     **Example Usage** This function is useful when calculating the value of a
-    quantitiy with physical limitations that may not be otherwise captured. A
+    quantity with physical limitations that may not be otherwise captured. A
     good example of this is using a controller to manipulate a valve to maintain,
     for example, a set flow rate. Under some process conditions the controller
     may indicate the valve should be more than fully opened or closed. In this
@@ -175,7 +175,7 @@ def safe_sqrt(a, eps=1e-4):
         eps: epsilon parameter for smooth max
 
     Returns:
-        approximatly sqrt(max(a, 0))
+        approximately sqrt(max(a, 0))
     """
     return sqrt(smooth_max(a, 0, eps))
 
@@ -190,6 +190,6 @@ def safe_log(a, eps=1e-4):
         eps: epsilon parameter for smooth max
 
     Returns:
-        approximatly log(max(a, eps))
+        approximately log(max(a, eps))
     """
     return log(smooth_max(a, eps, eps=eps))

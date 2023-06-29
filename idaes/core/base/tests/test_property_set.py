@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 import pytest
 
@@ -48,12 +48,14 @@ class Test_PropertyMetadataIndex:
             method="foo",
             supported=True,
             required=True,
+            valid_range=(0, 1),
         )
         assert meta.method == "foo"
         assert meta._parent is p
         assert meta._idx == "bar"
         assert meta.supported
         assert meta.required
+        assert meta.valid_range == (0, 1)
 
     @pytest.mark.unit
     def test_default_value(self, meta):
@@ -62,6 +64,7 @@ class Test_PropertyMetadataIndex:
         assert not meta.required
 
         assert meta._idx == "baz"
+        assert meta.valid_range is None
 
     @pytest.mark.unit
     def test_set_method(self, meta):
@@ -82,22 +85,78 @@ class Test_PropertyMetadataIndex:
         assert meta.supported
 
     @pytest.mark.unit
+    def test_valid_range_verification_invalid(self):
+        p = DummyMeta()
+
+        with pytest.raises(
+            ValueError, match="valid_range must be a tuple of length 2 \(got foo\)"
+        ):
+            meta = _PropertyMetadataIndex(
+                parent=p,
+                idx="bar",
+                method="foo",
+                supported=True,
+                required=True,
+                valid_range="foo",
+            )
+
+    @pytest.mark.unit
+    def test_valid_range_verification_length(self):
+        p = DummyMeta()
+
+        with pytest.raises(
+            ValueError,
+            match="valid_range must be a tuple of length 2 \(got \(1, 2, 3\)\)",
+        ):
+            meta = _PropertyMetadataIndex(
+                parent=p,
+                idx="bar",
+                method="foo",
+                supported=True,
+                required=True,
+                valid_range=(1, 2, 3),
+            )
+
+    @pytest.mark.unit
+    def test_valid_range_verification_values(self):
+        p = DummyMeta()
+
+        with pytest.raises(
+            ValueError,
+            match="valid_range must be a 2-tuple with form \(lower, upper\): first value "
+            "was greater than second value: \(1, 0\)",
+        ):
+            meta = _PropertyMetadataIndex(
+                parent=p,
+                idx="bar",
+                method="foo",
+                supported=True,
+                required=True,
+                valid_range=(1, 0),
+            )
+
+    @pytest.mark.unit
     def test_update_property_args(self, meta):
         assert meta.method is None
         assert not meta.supported
         assert not meta.required
+        assert meta.valid_range is None
 
         meta.update_property(method="foo", required=True, supported=False)
 
         assert meta.method == "foo"
         assert not meta.supported
         assert meta.required
+        assert meta.valid_range is None
 
-        meta.update_property(method="foo", required=False, supported=True)
+        meta.update_property(
+            method="foo", required=False, supported=True, valid_range=(0, 10)
+        )
 
         assert meta.method == "foo"
         assert meta.supported
         assert not meta.required
+        assert meta.valid_range == (0, 10)
 
 
 class TestPropertyMetadata:

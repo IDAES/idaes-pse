@@ -1,19 +1,18 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 import sys, os
 from unittest.mock import patch
 
-sys.path.append(os.path.abspath(".."))  # current folder is ~/tests
 from idaes.core.surrogate.pysmo.polynomial_regression import (
     PolynomialRegression,
     FeatureScaling,
@@ -1663,14 +1662,17 @@ class TestPolynomialRegression:
         beta = np.array([[0], [0], [0]])
         expected_df = pd.Series()
         row_list = np.array([["k"], ["(x_1)^1"], ["(x_2)^1"]])
-        expected_df = expected_df.append(
-            pd.Series(
-                {
-                    row_list[0, 0]: beta[0, 0],
-                    row_list[1, 0]: beta[1, 0],
-                    row_list[2, 0]: beta[2, 0],
-                }
-            )
+        expected_df = pd.concat(
+            [
+                expected_df,
+                pd.Series(
+                    {
+                        row_list[0, 0]: beta[0, 0],
+                        row_list[1, 0]: beta[1, 0],
+                        row_list[2, 0]: beta[2, 0],
+                    }
+                ),
+            ]
         )
         output_df = data_feed.results_generation(beta, order)
         assert output_df.index.to_list() == expected_df.index.to_list()
@@ -1702,18 +1704,21 @@ class TestPolynomialRegression:
                 ["(x_2)^3"],
             ]
         )
-        expected_df = expected_df.append(
-            pd.Series(
-                {
-                    row_list[0, 0]: beta[0, 0],
-                    row_list[1, 0]: beta[1, 0],
-                    row_list[2, 0]: beta[2, 0],
-                    row_list[3, 0]: beta[3, 0],
-                    row_list[4, 0]: beta[4, 0],
-                    row_list[5, 0]: beta[5, 0],
-                    row_list[6, 0]: beta[6, 0],
-                }
-            )
+        expected_df = pd.concat(
+            [
+                expected_df,
+                pd.Series(
+                    {
+                        row_list[0, 0]: beta[0, 0],
+                        row_list[1, 0]: beta[1, 0],
+                        row_list[2, 0]: beta[2, 0],
+                        row_list[3, 0]: beta[3, 0],
+                        row_list[4, 0]: beta[4, 0],
+                        row_list[5, 0]: beta[5, 0],
+                        row_list[6, 0]: beta[6, 0],
+                    }
+                ),
+            ]
         )
         output_df = data_feed.results_generation(beta, order)
         assert output_df.index.to_list() == expected_df.index.to_list()
@@ -1737,17 +1742,20 @@ class TestPolynomialRegression:
         row_list = np.array(
             [["k"], ["(x_1)^1"], ["(x_2)^1"], ["(x_1)^2"], ["(x_2)^2"], ["(x_1).(x_2)"]]
         )
-        expected_df = expected_df.append(
-            pd.Series(
-                {
-                    row_list[0, 0]: beta[0, 0],
-                    row_list[1, 0]: beta[1, 0],
-                    row_list[2, 0]: beta[2, 0],
-                    row_list[3, 0]: beta[3, 0],
-                    row_list[4, 0]: beta[4, 0],
-                    row_list[5, 0]: beta[5, 0],
-                }
-            )
+        expected_df = pd.concat(
+            [
+                expected_df,
+                pd.Series(
+                    {
+                        row_list[0, 0]: beta[0, 0],
+                        row_list[1, 0]: beta[1, 0],
+                        row_list[2, 0]: beta[2, 0],
+                        row_list[3, 0]: beta[3, 0],
+                        row_list[4, 0]: beta[4, 0],
+                        row_list[5, 0]: beta[5, 0],
+                    }
+                ),
+            ]
         )
         output_df = data_feed.results_generation(beta, order)
         assert output_df.index.to_list() == expected_df.index.to_list()
@@ -2072,10 +2080,7 @@ class TestPolynomialRegression:
         p = data_feed.get_feature_vector()
         data_feed.training()
 
-        lv = []
-        for i in p.keys():
-            lv.append(p[i])
-        poly_expr = data_feed.generate_expression((lv))
+        poly_expr = data_feed.generate_expression((p.keys()))
 
     @pytest.mark.unit
     @pytest.fixture(scope="module")

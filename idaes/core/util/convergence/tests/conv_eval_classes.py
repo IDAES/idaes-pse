@@ -1,28 +1,27 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Test classes for the convergence evaluation testing module
 
 Author: Carl Laird
 """
+# pylint: disable=missing-class-docstring
+
 import pyomo.environ as pe
 import idaes.core.util.convergence.convergence_base as cb
 
 
 class ConvEvalFixedVarMutableParam(cb.ConvergenceEvaluation):
-    def __init__(self):
-        super(ConvEvalFixedVarMutableParam, self).__init__()
-
     def get_specification(self):
         s = cb.ConvergenceEvaluationSpecification()
 
@@ -59,9 +58,6 @@ class ConvEvalFixedVarMutableParam(cb.ConvergenceEvaluation):
 
 
 class ConvEvalFixedVarImmutableParam(ConvEvalFixedVarMutableParam):
-    def __init__(self):
-        super(ConvEvalFixedVarImmutableParam, self).__init__()
-
     def get_initialized_model(self):
         # create a model with two inputs for the convergence evaluation
         # one that is a fixed variable and one that is a mutable param
@@ -82,9 +78,6 @@ class ConvEvalFixedVarImmutableParam(ConvEvalFixedVarMutableParam):
 
 
 class ConvEvalUnfixedVarMutableParam(ConvEvalFixedVarMutableParam):
-    def __init__(self):
-        super(ConvEvalUnfixedVarMutableParam, self).__init__()
-
     def get_initialized_model(self):
         # create a model with two inputs for the convergence evaluation
         # one that is a fixed variable and one that is a mutable param

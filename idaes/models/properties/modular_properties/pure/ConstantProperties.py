@@ -1,19 +1,23 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Method to set constant pure component properties:
 
 """
+# TODO: Missing doc strings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import log, Var
 
 from idaes.core.util.misc import set_param_from_config
@@ -259,3 +263,38 @@ class Constant(object):
         def return_expression(b, cobj, T):
             # Molar density
             return cobj.dens_mol_sol_comp_coeff
+
+    class visc_d_phase_comp(object):
+        @staticmethod
+        def build_parameters(cobj, p):
+            units = cobj.parent_block().get_metadata().derived_units
+            # Calling this a "coefficient" doesn't make much sense, but want to be consistent with other methods
+            cobj.add_component(
+                f"visc_d_{p}_comp_coeff",
+                Var(
+                    doc=f"Parameter for {p} phase dynamic viscosity",
+                    units=units["dynamic_viscosity"],
+                ),
+            )
+            set_param_from_config(cobj, param=f"visc_d_{p}_comp_coeff")
+
+        @staticmethod
+        def return_expression(b, cobj, p, T):
+            return getattr(cobj, f"visc_d_{p}_comp_coeff")
+
+    class therm_cond_phase_comp(object):
+        @staticmethod
+        def build_parameters(cobj, p):
+            units = cobj.parent_block().get_metadata().derived_units
+            cobj.add_component(
+                f"therm_cond_{p}_comp_coeff",
+                Var(
+                    doc=f"Parameter for {p} phase thermal conductivity",
+                    units=units["thermal_conductivity"],
+                ),
+            )
+            set_param_from_config(cobj, param=f"therm_cond_{p}_comp_coeff")
+
+        @staticmethod
+        def return_expression(b, cobj, p, T):
+            return getattr(cobj, f"therm_cond_{p}_comp_coeff")

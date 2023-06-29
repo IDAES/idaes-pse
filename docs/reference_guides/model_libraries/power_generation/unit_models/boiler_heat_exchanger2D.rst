@@ -158,7 +158,7 @@ where:
 * :math:`\mu` : viscocity (kg/m/s)
 * tube_r_fouling : tube side fouling resistance (K m^2 / W)
 * shell_r_fouling : shell side fouling resistance (K m^2 / W)
-* fcorrection_htc: correction factor for overall heat trasnfer
+* fcorrection_htc: correction factor for overall heat transfer
 * f_arrangement: tube arrangement factor
 
 Note:
@@ -167,7 +167,7 @@ by default fcorrection_htc is set to 1, however, this variable can be used to ma
 Tube arrangement factor is a config argument with two different type of arrangements supported at the moment:
 1.- In-line tube arrangement factor (f_arrangement = 0.788), and 2.- Staggered tube arrangement factor (f_arrangement = 1). f_arrangement is a parameter that can be adjusted by the user.
 
-The ``HeatExchangerCrossFlow2D_Header`` model includes an argument to compute heat tranfer due to radiation of the flue gases. If has_radiation = True the model builds additional heat transfer calculations that will be added to the hconv_shell resistances.
+The ``HeatExchangerCrossFlow2D_Header`` model includes an argument to compute heat transfer due to radiation of the flue gases. If has_radiation = True the model builds additional heat transfer calculations that will be added to the hconv_shell resistances.
 Radiation effects are calculated based on the gas gray fraction and gas-surface radiation (between gas and shell).
 
 .. math::
@@ -196,7 +196,7 @@ Tube side:
 
 where:
 
-* :math:`k_{loss uturn}` : pressure loss coeficient of a tube u-turn
+* :math:`k_{loss uturn}` : pressure loss coefficient of a tube u-turn
 * g : is the acceleration of gravity 9.807 (m/s^2)
 
 Shell side:

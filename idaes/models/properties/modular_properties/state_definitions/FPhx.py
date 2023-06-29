@@ -1,19 +1,26 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Methods for setting up FPhx as the state variables in a generic property
 package
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
+from types import MethodType
 from pyomo.environ import (
     Constraint,
     Expression,
@@ -29,10 +36,10 @@ from idaes.models.properties.modular_properties.base.utility import (
 from idaes.models.properties.modular_properties.state_definitions.FTPx import (
     state_initialization,
 )
-from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -150,13 +157,13 @@ def define_state(b):
 
     b.phase_frac = Var(
         b.phase_list,
-        initialize=1 / len(b.phase_list),
+        initialize=1.0 / len(b.phase_list),
         bounds=(0, None),
         doc="Phase fractions",
         units=pyunits.dimensionless,
     )
 
-    # Add electrolye state vars if required
+    # Add electrolyte state vars if required
     # This must occur before adding the enthalpy constraint, as it needs true
     # species mole fractions
     if b.params._electrolyte:
@@ -195,7 +202,7 @@ def define_state(b):
         )
 
         def rule_phase_frac(b, p):
-            return b.phase_frac[p] == 1
+            return b.phase_frac[p] == 1.0
 
         b.phase_fraction_constraint = Constraint(b.phase_list, rule=rule_phase_frac)
 
@@ -271,13 +278,13 @@ def define_state(b):
 
     # -------------------------------------------------------------------------
     # General Methods
-    def get_material_flow_terms_FTPx(p, j):
+    def get_material_flow_terms_FTPx(b, p, j):
         """Create material flow terms for control volume."""
         return b.flow_mol_phase_comp[p, j]
 
-    b.get_material_flow_terms = get_material_flow_terms_FTPx
+    b.get_material_flow_terms = MethodType(get_material_flow_terms_FTPx, b)
 
-    def get_enthalpy_flow_terms_FTPx(p):
+    def get_enthalpy_flow_terms_FTPx(b, p):
         """Create enthalpy flow terms."""
         # enth_mol_phase probably does not exist when this is created
         # Use try/except to build flow term if not present
@@ -291,9 +298,9 @@ def define_state(b):
             eflow = b._enthalpy_flow_term = Expression(b.phase_list, rule=rule_eflow)
         return eflow[p]
 
-    b.get_enthalpy_flow_terms = get_enthalpy_flow_terms_FTPx
+    b.get_enthalpy_flow_terms = MethodType(get_enthalpy_flow_terms_FTPx, b)
 
-    def get_material_density_terms_FTPx(p, j):
+    def get_material_density_terms_FTPx(b, p, j):
         """Create material density terms."""
         # dens_mol_phase probably does not exist when this is created
         # Use try/except to build term if not present
@@ -309,9 +316,9 @@ def define_state(b):
             )
         return mdens[p, j]
 
-    b.get_material_density_terms = get_material_density_terms_FTPx
+    b.get_material_density_terms = MethodType(get_material_density_terms_FTPx, b)
 
-    def get_energy_density_terms_FTPx(p):
+    def get_energy_density_terms_FTPx(b, p):
         """Create energy density terms."""
         # Density and energy terms probably do not exist when this is created
         # Use try/except to build term if not present
@@ -325,7 +332,7 @@ def define_state(b):
             edens = b._energy_density_term = Expression(b.phase_list, rule=rule_edens)
         return edens[p]
 
-    b.get_energy_density_terms = get_energy_density_terms_FTPx
+    b.get_energy_density_terms = MethodType(get_energy_density_terms_FTPx, b)
 
     def default_material_balance_type_FTPx():
         return MaterialBalanceType.componentTotal
@@ -342,7 +349,7 @@ def define_state(b):
 
     b.get_material_flow_basis = get_material_flow_basis_FTPx
 
-    def define_state_vars_FPhx():
+    def define_state_vars_FPhx(b):
         """Define state vars."""
         return {
             "flow_mol": b.flow_mol,
@@ -351,9 +358,9 @@ def define_state(b):
             "pressure": b.pressure,
         }
 
-    b.define_state_vars = define_state_vars_FPhx
+    b.define_state_vars = MethodType(define_state_vars_FPhx, b)
 
-    def define_display_vars_FPhx():
+    def define_display_vars_FPhx(b):
         """Define display vars."""
         return {
             "Total Molar Flowrate": b.flow_mol,
@@ -362,7 +369,7 @@ def define_state(b):
             "Pressure": b.pressure,
         }
 
-    b.define_display_vars = define_display_vars_FPhx
+    b.define_display_vars = MethodType(define_display_vars_FPhx, b)
 
 
 def define_default_scaling_factors(b):
@@ -515,6 +522,8 @@ do_not_initialize = ["sum_mole_frac_out"]
 
 
 class FPhx(object):
+    """Total flow, pressure, enthalpy, mole fraction state."""
+
     set_metadata = set_metadata
     define_state = define_state
     state_initialization = state_initialization

@@ -8,3 +8,4 @@ Property Models
     activity_coefficient
     helmholtz
     interrogator
+    ../../../../explanations/components/property_package/general/index

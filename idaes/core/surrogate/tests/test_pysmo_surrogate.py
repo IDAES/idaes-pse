@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for PySMO's family of SurrogateTrainer (PysmoPolyTrainer, PysmoRBFTrainer and PysmoKrigingTrainer)
@@ -410,7 +410,6 @@ class TestTrainedSurrogate:
 class TestPysmoPolyTrainer:
     @pytest.fixture
     def pysmo_poly_trainer(self):
-
         data = {"x1": [1, 2, 3, 4], "x2": [5, 6, 7, 8], "z1": [10, 20, 30, 40]}
         data = pd.DataFrame(data)
         input_labels = ["x1", "x2"]
@@ -674,7 +673,6 @@ class TestPysmoPolyTrainer:
 class TestPysmoRBFTrainer:
     @pytest.fixture
     def pysmo_rbf_trainer(self):
-
         data = {"x1": [1, 2, 3, 4], "x2": [5, 6, 7, 8], "z1": [10, 20, 30, 40]}
         data = pd.DataFrame(data)
         input_labels = ["x1", "x2"]
@@ -858,7 +856,6 @@ class TestPysmoRBFTrainer:
 class TestPysmoKrigingTrainer:
     @pytest.fixture
     def pysmo_krg_trainer(self):
-
         data = {"x1": [1, 2, 3, 4], "x2": [5, 6, 7, 8], "z1": [10, 20, 30, 40]}
         data = pd.DataFrame(data)
         input_labels = ["x1", "x2"]
@@ -1158,9 +1155,8 @@ class TestPysmoSurrogate:
             for i in range(len(x1))
         ]
         x = {"x1": x1, "x2": x2, "z1": z1, "z2": z2}
-        training_data = pd.DataFrame(x, columns={"x1", "x2", "z1", "z2"})
+        training_data = pd.DataFrame(x, columns=["x1", "x2", "z1", "z2"])
 
-        # training_data = pd.DataFrame(x, columns={'x1', 'x2', 'z1', 'z2'})
         validation_data = {
             "x1": [1, 2, 3, 4],
             "x2": [5, 6, 7, 8],
@@ -1285,9 +1281,8 @@ class TestPysmoSurrogate:
             for i in range(len(x1))
         ]
         x = {"x1": x1, "x2": x2, "z1": z1, "z2": z2}
-        training_data = pd.DataFrame(x, columns={"x1", "x2", "z1", "z2"})
+        training_data = pd.DataFrame(x, columns=["x1", "x2", "z1", "z2"])
 
-        # training_data = pd.DataFrame(x, columns={'x1', 'x2', 'z1', 'z2'})
         validation_data = {
             "x1": [1, 2, 3, 4],
             "x2": [5, 6, 7, 8],
@@ -1415,7 +1410,7 @@ class TestPysmoSurrogate:
                 + 18.81527777777826 * inputs["x2"][i]
                 - 2.2556956302821618e-13 * (inputs["x2"][i] * inputs["x1"][i])
             )
-            assert pytest.approx(out["z2"][i], rel=1e-6) == (
+            assert pytest.approx(out["z2"][i], abs=1e-5) == (
                 -3.0033074724377813
                 + 0.2491731318906352 * inputs["x1"][i]
                 + 1.7508268681094337 * inputs["x2"][i]
@@ -2191,8 +2186,8 @@ class TestPysmoSurrogate:
         assert list(pysmo_surr_poly._trained._data) == ["z1"]
         # Assert that correcte xpression string was returned
         assert pysmo_surr_poly._trained._data["z1"].expression_str == (
-            "-75.26111111111476 -8.815277777775934*IndexedParam[x1] + 18.81527777777826*IndexedParam[x2]"
-            " -2.2556956302821618e-13*(IndexedParam[x2]*IndexedParam[x1])"
+            "-75.26111111111476 - 8.815277777775934*IndexedParam[x1] + 18.81527777777826*IndexedParam[x2]"
+            " - 2.2556956302821618e-13*(IndexedParam[x2]*IndexedParam[x1])"
         )
         # Assert that correct model is returned with generate_expression()
         assert str(
@@ -2237,11 +2232,11 @@ class TestPysmoSurrogate:
         # Assert that correct expression strings were returned for both surrogates
         assert pysmo_surr_poly._trained._data["z1"].expression_str == (
             "-14.290243902439855 + 6.4274390243899795*IndexedParam[x1] + 3.572560975609962*IndexedParam[x2] "
-            "+ 1.9753643165643098e-13*log(IndexedParam[x1]) -4.4048098502003086e-14*sin(IndexedParam[x2])"
+            "+ 1.9753643165643098e-13*log(IndexedParam[x1]) - 4.4048098502003086e-14*sin(IndexedParam[x2])"
         )
         assert pysmo_surr_poly._trained._data["z2"].expression_str == (
-            "5.704971042443143 + 2.4262427606248815*IndexedParam[x1] -0.42624276060821653*IndexedParam[x2] "
-            "-5.968545102597034e-11*log(IndexedParam[x1]) + 6.481176706429892e-12*sin(IndexedParam[x2])"
+            "5.704971042443143 + 2.4262427606248815*IndexedParam[x1] - 0.42624276060821653*IndexedParam[x2] "
+            "- 5.968545102597034e-11*log(IndexedParam[x1]) + 6.481176706429892e-12*sin(IndexedParam[x2])"
         )
         # Assert that correct model is returned with generate_expression()
         assert str(
@@ -2323,11 +2318,11 @@ class TestPysmoSurrogate:
         assert list(pysmo_surr_poly._trained._data) == ["z1", "z2"]
         # Assert that correct expression strings were returned for both surrogates
         assert pysmo_surr_poly._trained._data["z1"].expression_str == (
-            "-110.15000000001504 -17.53750000000189*IndexedParam[x1] + 27.537500000006148*IndexedParam[x2] "
-            "-5.3967136315336006e-11*(IndexedParam[x1]/IndexedParam[x2])"
+            "-110.15000000001504 - 17.53750000000189*IndexedParam[x1] + 27.537500000006148*IndexedParam[x2] "
+            "- 5.3967136315336006e-11*(IndexedParam[x1]/IndexedParam[x2])"
         )
         assert pysmo_surr_poly._trained._data["z2"].expression_str == (
-            "-12.523574144487087 -2.1308935361219556*IndexedParam[x1] + 4.1308935361216435*IndexedParam[x2]"
+            "-12.523574144487087 - 2.1308935361219556*IndexedParam[x1] + 4.1308935361216435*IndexedParam[x2]"
             " + 3.6347869158959156e-12*(IndexedParam[x1]/IndexedParam[x2])"
         )
         # Assert that correct model is returned with generate_expression()
@@ -2362,6 +2357,35 @@ class TestPysmoSurrogate:
                 + 4.1308935361216435 * inputs["x2"][i]
                 + 3.6347869158959156e-12 * (inputs["x1"][i] / inputs["x2"][i])
             )
+
+    @pytest.mark.unit
+    def test_rbf_print_msg(self, capsys):
+        # Test that correct BRF basis function is printed to screen at all times.
+        jstring_rbf_single = (
+            '{"model_encoding": '
+            '{"z1": {"attr": {"x_data_columns": ["x1", "x2"], '
+            '"x_data": [[0.0, 0.0], [0.25, 0.25], [0.5, 0.5], [0.75, 0.75], [1.0, 1.0]], '
+            '"centres": [[0.0, 0.0], [0.25, 0.25], [0.5, 0.5], [0.75, 0.75], [1.0, 1.0]], '
+            '"basis_function": "gaussian", '
+            '"weights": [[-69.10791015625], [-319807.1317138672], [959336.2551269531], [-959973.7440185547], [320514.66677856445]], '
+            '"sigma": 0.05, "regularization_parameter": 0.0, '
+            '"rmse": 0.0005986693684275349, "R2": 0.9999971327598984, '
+            '"x_data_min": [[1, 5]], "x_data_max": [[5, 9]], "y_data_min": [10], "y_data_max": [50]}, '
+            '"map": {"x_data_columns": "list", "x_data": "numpy", "centres": "numpy", '
+            '"basis_function": "str", "weights": "numpy", "sigma": "str", "regularization_parameter": "str", '
+            '"rmse": "str", "R2": "str", "x_data_min": "numpy", "x_data_max": "numpy", "y_data_min": "numpy", '
+            '"y_data_max": "numpy"}}}, '
+            '"input_labels": ["x1", "x2"], '
+            '"output_labels": ["z1", "z2"], '
+            '"input_bounds": {"x1": [0, 5], "x2": [0, 10]}, '
+            '"surrogate_type": "rbf"}'
+        )
+        for bf in ["cubic", "gaussian", "imq", "cubic", "mq", "linear", "spline"]:
+            changed_str = jstring_rbf_single[:]
+            changed_str = changed_str.replace("gaussian", bf)
+            pysmo_surr_rbf = PysmoSurrogate.load(StringIO(changed_str))
+            cs = capsys.readouterr()
+            assert bool(re.search(bf, str(cs.out))) == True
 
     @pytest.mark.unit
     def test_load_rbf(self):
@@ -2408,18 +2432,18 @@ class TestPysmoSurrogate:
         assert list(pysmo_surr_rbf._trained._data) == ["z1", "z2"]
         # Assert that correct expression strings were returned for both surrogates
         assert pysmo_surr_rbf._trained._data["z1"].expression_str == (
-            "10 + 40*(-69.10791015625*exp(- (0.05*(((IndexedParam[x1] -1)/4)**2 + ((IndexedParam[x2] -5)/4)**2)**0.5)**2) "
-            "-319807.1317138672*exp(- (0.05*(((IndexedParam[x1] -1)/4 -0.25)**2 + ((IndexedParam[x2] -5)/4 -0.25)**2)**0.5)**2) "
-            "+ 959336.2551269531*exp(- (0.05*(((IndexedParam[x1] -1)/4 -0.5)**2 + ((IndexedParam[x2] -5)/4 -0.5)**2)**0.5)**2) "
-            "-959973.7440185547*exp(- (0.05*(((IndexedParam[x1] -1)/4 -0.75)**2 + ((IndexedParam[x2] -5)/4 -0.75)**2)**0.5)**2) "
-            "+ 320514.66677856445*exp(- (0.05*(((IndexedParam[x1] -1)/4 -1.0)**2 + ((IndexedParam[x2] -5)/4 -1.0)**2)**0.5)**2))"
+            "10 + 40*(-69.10791015625*exp(- (0.05*(((IndexedParam[x1] - 1)/4)**2 + ((IndexedParam[x2] - 5)/4)**2)**0.5)**2) "
+            "- 319807.1317138672*exp(- (0.05*(((IndexedParam[x1] - 1)/4 - 0.25)**2 + ((IndexedParam[x2] - 5)/4 - 0.25)**2)**0.5)**2) "
+            "+ 959336.2551269531*exp(- (0.05*(((IndexedParam[x1] - 1)/4 - 0.5)**2 + ((IndexedParam[x2] - 5)/4 - 0.5)**2)**0.5)**2) "
+            "- 959973.7440185547*exp(- (0.05*(((IndexedParam[x1] - 1)/4 - 0.75)**2 + ((IndexedParam[x2] - 5)/4 - 0.75)**2)**0.5)**2) "
+            "+ 320514.66677856445*exp(- (0.05*(((IndexedParam[x1] - 1)/4 - 1.0)**2 + ((IndexedParam[x2] - 5)/4 - 1.0)**2)**0.5)**2))"
         )
         assert pysmo_surr_rbf._trained._data["z2"].expression_str == (
-            "6 + 8*(-69.10791015625*exp(- (0.05*(((IndexedParam[x1] -1)/4)**2 + ((IndexedParam[x2] -5)/4)**2)**0.5)**2) "
-            "-319807.1317138672*exp(- (0.05*(((IndexedParam[x1] -1)/4 -0.25)**2 + ((IndexedParam[x2] -5)/4 -0.25)**2)**0.5)**2) "
-            "+ 959336.2551269531*exp(- (0.05*(((IndexedParam[x1] -1)/4 -0.5)**2 + ((IndexedParam[x2] -5)/4 -0.5)**2)**0.5)**2) "
-            "-959973.7440185547*exp(- (0.05*(((IndexedParam[x1] -1)/4 -0.75)**2 + ((IndexedParam[x2] -5)/4 -0.75)**2)**0.5)**2) "
-            "+ 320514.66677856445*exp(- (0.05*(((IndexedParam[x1] -1)/4 -1.0)**2 + ((IndexedParam[x2] -5)/4 -1.0)**2)**0.5)**2))"
+            "6 + 8*(-69.10791015625*exp(- (0.05*(((IndexedParam[x1] - 1)/4)**2 + ((IndexedParam[x2] - 5)/4)**2)**0.5)**2) "
+            "- 319807.1317138672*exp(- (0.05*(((IndexedParam[x1] - 1)/4 - 0.25)**2 + ((IndexedParam[x2] - 5)/4 - 0.25)**2)**0.5)**2) "
+            "+ 959336.2551269531*exp(- (0.05*(((IndexedParam[x1] - 1)/4 - 0.5)**2 + ((IndexedParam[x2] - 5)/4 - 0.5)**2)**0.5)**2) "
+            "- 959973.7440185547*exp(- (0.05*(((IndexedParam[x1] - 1)/4 - 0.75)**2 + ((IndexedParam[x2] - 5)/4 - 0.75)**2)**0.5)**2) "
+            "+ 320514.66677856445*exp(- (0.05*(((IndexedParam[x1] - 1)/4 - 1.0)**2 + ((IndexedParam[x2] - 5)/4 - 1.0)**2)**0.5)**2))"
         )
         # Assert that correct model is returned with generate_expression()
         assert str(

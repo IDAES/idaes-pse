@@ -1,18 +1,15 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
-from collections import OrderedDict
-import importlib
-
 """
 This module is a collection of classes that provide a
 friendlier interface to MPI (through mpi4py). They help
@@ -23,6 +20,12 @@ Although general, this module was only implemented to
 work with the convergence evaluation framework. More work
 is needed to make this appropriate for general use.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
+from collections import OrderedDict
+import importlib
 
 
 class MPIInterface:
@@ -40,7 +43,7 @@ class MPIInterface:
                 globals()["MPI"] = importlib.import_module("mpi4py.MPI")
                 # import succeeded
                 MPIInterface.__have_mpi__ = True
-            except:
+            except ImportError:
                 # import failed (e.g., no mpi4py installed)
                 MPIInterface.__have_mpi__ = False
 
@@ -82,7 +85,6 @@ class ParallelTaskManager:
         if not self._mpi_interface.have_mpi:
             self._local_map = range(n_total_tasks)
         else:
-            rank = self._mpi_interface.rank
             size = self._mpi_interface.size
 
             # there must be a better way to do this
@@ -112,13 +114,13 @@ class ParallelTaskManager:
 
     # ToDo: fix the parallel task manager to handle dictionaries as well as lists
     def global_to_local_data(self, global_data):
-        if type(global_data) is list:
+        if isinstance(global_data, list):
             local_data = list()
             assert len(global_data) == self._n_total_tasks
             for i in self._local_map:
                 local_data.append(global_data[i])
             return local_data
-        elif type(global_data) is OrderedDict:
+        elif isinstance(global_data, OrderedDict):
             local_data = OrderedDict()
             assert len(global_data) == self._n_total_tasks
             idx = 0
@@ -136,9 +138,6 @@ class ParallelTaskManager:
         if not self._mpi_interface.have_mpi:
             return list(local_data)
 
-        comm = self._mpi_interface.comm
-        global_data_list = comm.allgather(local_data)
-
         # PYLINT-TODO-FIX fix the error due to the
         # non-existing global_data_list_of_lists variable
         # pylint: disable=undefined-variable
@@ -155,7 +154,7 @@ class ParallelTaskManager:
         if global_data_list_of_lists is not None:
             return self._stack_global_data(global_data_list_of_lists)
 
-        assert self.is_root() == False
+        assert self.is_root() is False
         return None
 
     def _stack_global_data(self, global_data_list_of_lists):

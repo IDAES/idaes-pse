@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Reference state sub-methods for eNRTL activity coefficient method.
@@ -24,6 +24,9 @@ Reference:
 Song, Y. and Chen, C.-C., Symmetric Electrolyte Nonrandom Two-Liquid Activity
 Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import Expression
 
 from idaes.models.properties.modular_properties.base.utility import (
@@ -64,7 +67,7 @@ class Unsymmetric(object):
     @staticmethod
     def ndIdn(b, pname, i):
         # Eqn 71
-        return 0
+        return 0.0
 
 
 class Symmetric(object):
@@ -81,7 +84,7 @@ class Symmetric(object):
                     b.mole_frac_phase_comp_true[pname, j] for j in b.params.ion_set
                 )
             else:
-                return 0
+                return 0.0
 
         b.add_component(
             pname + "_x_ref", Expression(b.params.true_species_set, rule=rule_x_ref)
@@ -101,9 +104,9 @@ def ndxdn(b, pname, i, j):
 
     # Delta function used in Eqns 73-76 (not defined in paper)
     if i == j:
-        delta = 1
+        delta = 1.0
     else:
-        delta = 0
+        delta = 0.0
 
     # Eqn 76
     return (delta - x0[j]) / sum(

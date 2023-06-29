@@ -1,15 +1,24 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+"""
+Modular methods for calculating bubble and dew points
+"""
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import Constraint
 
 from idaes.models.properties.modular_properties.base.utility import (
@@ -17,17 +26,24 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_component_object as cobj,
 )
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import ConfigurationError
+
+# _valid_VL_component_list return variables that are not need in all cases
+# pylint: disable=W0612
 
 
 class IdealBubbleDew:
+    """Bubble and dew point calculations for ideal systems."""
+
     # -------------------------------------------------------------------------
     # Bubble temperature methods
     # This approach can only be used when both liquid and vapor phases use
     # Ideal properties
     # Henry's Law components also cause issues due to the need to (potentially)
-    # calcualte concentrations at the bubble and dew points
+    # calculate concentrations at the bubble and dew points
     @staticmethod
     def temperature_bubble(b):
+        _non_vle_phase_check(b)
         try:
 
             def rule_bubble_temp(b, p1, p2):
@@ -147,6 +163,7 @@ class IdealBubbleDew:
     # Dew temperature methods
     @staticmethod
     def temperature_dew(b):
+        _non_vle_phase_check(b)
         try:
 
             def rule_dew_temp(b, p1, p2):
@@ -268,6 +285,7 @@ class IdealBubbleDew:
     # Bubble pressure methods
     @staticmethod
     def pressure_bubble(b):
+        _non_vle_phase_check(b)
         try:
 
             def rule_bubble_press(b, p1, p2):
@@ -372,6 +390,7 @@ class IdealBubbleDew:
     # Dew pressure methods
     @staticmethod
     def pressure_dew(b):
+        _non_vle_phase_check(b)
         try:
 
             def rule_dew_press(b, p1, p2):
@@ -470,6 +489,8 @@ class IdealBubbleDew:
 
 
 class LogBubbleDew:
+    """General bubble and dew point calculations (log formulation)."""
+
     # -------------------------------------------------------------------------
     # Bubble temperature methods
     @staticmethod
@@ -871,3 +892,11 @@ def _valid_VL_component_list(blk, pp):
                 v_only_comps.append(j)
 
     return l_phase, v_phase, vl_comps, henry_comps, l_only_comps, v_only_comps
+
+
+def _non_vle_phase_check(blk):
+    if len(blk.phase_list) > 2:
+        raise ConfigurationError(
+            "Ideal assumption for calculating bubble and/or dew points is only valid "
+            "for systems with two phases. Please use LogBubbleDew approach instead."
+        )

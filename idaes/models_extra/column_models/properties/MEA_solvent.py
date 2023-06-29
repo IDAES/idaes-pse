@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Ideal Liquid Phase properties for aqueous MEA solvent with CO2.
@@ -20,7 +20,7 @@ the method used to calculate their vapor pressure:
     Monoethanolamine (MEA) - non-volatile,
     Water (H2O) - Raoult's Law
 
-Additionally, the following true ionic species are requried for calculating
+Additionally, the following true ionic species are required for calculating
 transport properties:
 
     MEA+, MEACOO-, HCO3-
@@ -34,6 +34,10 @@ References:
     [2] Morgan et.al (2015)
     [3] NIST Webbook, https://webbook.nist.gov/
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo units
 from pyomo.environ import exp, log, units as pyunits, Var, Expression
 
@@ -329,7 +333,7 @@ class VolMolSolvent:
 
 
 class VolMolCO2:
-    # Weiland Method for calculating molar volume of disolved CO2 [2]
+    # Weiland Method for calculating molar volume of dissolved CO2 [2]
 
     @staticmethod
     def build_parameters(cobj):

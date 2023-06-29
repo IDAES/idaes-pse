@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Main Assumptions:
@@ -70,6 +70,17 @@ The surrogate models are typically a function of:
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 
+# TODO: log is reauired for eval - need to work out how to make this explicit
+# pylint: disable=W0611
+from pyomo.environ import (
+    Var,
+    Param,
+    exp,
+    RangeSet,
+    Constraint,
+    log,
+)
+
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 
@@ -78,10 +89,6 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
-
-
-# Additional import for the unit operation
-from pyomo.environ import Var, Param, exp, RangeSet, Constraint, log
 import idaes.core.util.scaling as iscale
 from idaes.core.util.constants import Constants as const
 from idaes.core.solvers import get_solver
@@ -269,6 +276,8 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
             doc="Surrogate model for heat loss" " to water wall zones",
         )
         def eq_surr_waterwall_heat(b, t, z):
+            # Evaluating surrogate expression
+            # pylint: disable=W0123
             return b.waterwall_heat[t, z] * b.fcorrection_heat_ww[t] == eval(
                 data_dict[z]
             )
@@ -280,6 +289,8 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                 doc="Surrogate model for heat loss" " to platen superheater",
             )
             def eq_surr_platen_heat(b, t):
+                # Evaluating surrogate expression
+                # pylint: disable=W0123
                 return b.platen_heat[t] * b.fcorrection_heat_platen[t] == eval(
                     data_dict["pl"]
                 )
@@ -291,6 +302,8 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                 doc="Surrogate model for heat loss in " " the roof and backpass heater",
             )
             def eq_surr_roof_heat(b, t):
+                # Evaluating surrogate expression
+                # pylint: disable=W0123
                 return b.roof_heat[t] * b.fcorrection_heat_ww[t] == eval(
                     data_dict["roof"]
                 )
@@ -301,6 +314,8 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
             doc="Surrogate model for" " mass fraction of unburned carbon",
         )
         def eq_surr_ln_ubc(b, t):
+            # Evaluating surrogate expression
+            # pylint: disable=W0123
             return b.ubc_in_flyash[t] == eval(data_dict["flyash"])
 
         # Constraints for NOx in mol fraction, surrogate model in PPM,
@@ -310,6 +325,8 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
             doc="NOx in mol fraction" "surrogate model must be in PPM",
         )
         def eq_surr_nox(b, t):
+            # Evaluating surrogate expression
+            # pylint: disable=W0123
             return b.frac_mol_NOx_fluegas[t] * 1e6 == eval(data_dict["NOx"])
 
         #                    # 1e6 conversion factor from PPM to mol fract
@@ -507,7 +524,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
             initialize=0.2, doc="Mass fraction of Ash on dry basis"
         )
 
-        # High heating value of dry coal, usally as a fixed user input
+        # High heating value of dry coal, usually as a fixed user input
         self.hhv_coal_dry = Var(
             initialize=1e7, doc="High heating value (HHV)" "of coal on dry basis J/kg"
         )
@@ -1020,7 +1037,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
             )
 
     def _make_energy_balance(self):
-        # temperature of primary_air_moist is equal to coal temparature
+        # temperature of primary_air_moist is equal to coal temperature
         # leaving mill, ignore the temperature of primary_air_inlet in energy
         # balance equation
         @self.Constraint(
