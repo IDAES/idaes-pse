@@ -26,7 +26,7 @@
       },
       {
         "name": "Standard Cp",
-        "description": "Standard heat capacities, Debye-Huckel A_J parameter, and virial coeffiCients for the NaCl(aq) heat capacity",
+        "description": "Standard heat capacities, Debye-Huckel A_J parameter, and virial coefficients for the NaCl(aq) heat capacity",
         "datafile": "pitzer_4.csv"
       },
       {
