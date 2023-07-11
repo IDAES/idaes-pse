@@ -19,7 +19,7 @@ Methods for defining equilibrium reactions
 # TODO: Look into protected access issues
 # pylint: disable=protected-access
 
-from pyomo.environ import Param, units as pyunits
+from pyomo.environ import Param, units as pyunits, value
 
 from idaes.core.util.math import smooth_max
 from idaes.core.util.exceptions import ConfigurationError
@@ -137,7 +137,7 @@ class solubility_product:
             doc="Normalizing factor for solid precipitation term",
         )
         if hasattr(rblock, "k_eq_ref"):
-            rblock.s_norm.value = rblock.k_eq_ref.value
+            rblock.s_norm.set_value(value(rblock.k_eq_ref))
 
         rblock.s_scale = Param(
             mutable=True,
@@ -256,7 +256,7 @@ class log_solubility_product:
             doc="Normalizing factor for solid precipitation term",
         )
         if hasattr(rblock, "k_eq_ref"):
-            rblock.s_norm.value = rblock.k_eq_ref.value
+            rblock.s_norm.set_value(value(rblock.k_eq_ref))
 
         rblock.s_scale = Param(
             mutable=True,
