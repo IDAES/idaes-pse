@@ -97,11 +97,14 @@ def test_DiagnosticsToolbox():
 
     dt.report_structural_issues()
 
-    m.b.v3.fix(5)
+    dt.display_constraints_with_inconsistent_units()
 
-    dt.report_structural_issues()
-    for c in dt._uc_con:
-        print(c.name)
+    dt.display_underconstrained_set()
+    dt.display_overconstrained_set()
+
+    dt.display_external_variables()
+    dt.display_unused_variables()
+    dt.display_variables_fixed_to_zero()
 
     # TODO: Current checks do not detect linearly dependent equation
     assert False

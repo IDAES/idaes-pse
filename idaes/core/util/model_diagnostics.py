@@ -68,6 +68,10 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
+MAX_STR_LENGTH = 84
+TAB = " " * 4
+
+
 class DiagnosticsToolbox:
     def __init__(self, model: Block):
         if not isinstance(model, Block):
@@ -144,6 +148,7 @@ class DiagnosticsToolbox:
             if v.fixed:
                 self._fixed_variables_in_activated_constraints_set.add(v)
                 if not var_in_block(v, self.model):
+                    # TODO: Should we track which constraints these appear in too?
                     self._external_fixed_variables_in_activated_constraints_set.add(v)
             else:
                 self._unfixed_variables_in_activated_constraints_set.add(v)
@@ -169,6 +174,40 @@ class DiagnosticsToolbox:
         # Calculate DoF
         self._degrees_of_freedom = degrees_of_freedom(self.model)
 
+    # TODO: deactivated blocks, constraints, objectives,
+    def display_external_variables(self, stream=stdout):
+        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+        stream.write(
+            "The following external variables appear in constraint within the model:\n\n"
+        )
+
+        for v in self._external_fixed_variables_in_activated_constraints_set:
+            stream.write(f"{TAB}{v.name}\n")
+        for v in self._external_unfixed_variables_in_activated_constraints_set:
+            stream.write(f"{TAB}{v.name}\n")
+
+        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+
+    def display_unused_variables(self, stream=stdout):
+        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+        stream.write(
+            "The following variables do not appear in activated constraints:\n\n"
+        )
+
+        for v in self._variables_not_in_activated_constraints_set:
+            stream.write(f"{TAB}{v.name}\n")
+
+        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+
+    def display_variables_fixed_to_zero(self, stream=stdout):
+        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+        stream.write("The following variables are fixed to zero:\n\n")
+
+        for v in self._variables_fixed_to_zero_set:
+            stream.write(f"{TAB}{v.name}\n")
+
+        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+
     def check_unit_consistency(self):
         # Check unit consistency of each constraint
         self._constraints_with_inconsistent_units = ComponentSet()
@@ -177,6 +216,15 @@ class DiagnosticsToolbox:
                 assert_units_consistent(c)
             except UnitsError:
                 self._constraints_with_inconsistent_units.add(c)
+
+    def display_constraints_with_inconsistent_units(self, stream=stdout):
+        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+        stream.write("The following constraints have unit consistency issues:\n\n")
+
+        for c in self._constraints_with_inconsistent_units:
+            stream.write(f"{TAB}{c.name}\n")
+
+        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
 
     def check_dulmage_mendelsohn_partition(self):
         self._var_dm_partition = None
@@ -199,6 +247,34 @@ class DiagnosticsToolbox:
             self._con_dm_partition.overconstrained + self._con_dm_partition.unmatched
         )
 
+    def display_underconstrained_set(self, stream=stdout):
+        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+        stream.write("Dulmage_Mendelsohn Under-Constrained Set\n\n")
+
+        stream.write(f"{TAB}Variables:\n\n")
+        for v in self._uc_var:
+            stream.write(f"{2*TAB}{v.name}\n")
+
+        stream.write(f"\n{TAB}Constraints:\n\n")
+        for c in self._uc_con:
+            stream.write(f"{2*TAB}{c.name}\n")
+
+        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+
+    def display_overconstrained_set(self, stream=stdout):
+        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+        stream.write("Dulmage_Mendelsohn Over-Constrained Set\n\n")
+
+        stream.write(f"{TAB}Variables:\n\n")
+        for v in self._oc_var:
+            stream.write(f"{2*TAB}{v.name}\n")
+
+        stream.write(f"\n{TAB}Constraints:\n\n")
+        for c in self._oc_con:
+            stream.write(f"{2*TAB}{c.name}\n")
+
+        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+
     # TODO: Block triangularization analysis
     # Number and size of blocks, polynomial degree of 1x1 blocks, simple pivot check of moderate sized sub-blocks?
 
@@ -213,31 +289,30 @@ class DiagnosticsToolbox:
             self.check_dulmage_mendelsohn_partition()
 
         # Collect warnings
-        tab = " " * 4
         warnings = []
         if self._degrees_of_freedom != 0:
             dstring = "Degrees"
             if self._degrees_of_freedom == abs(1):
                 dstring = "Degree"
             warnings.append(
-                f"\n{tab}WARNING: {self._degrees_of_freedom} {dstring} of Freedom"
+                f"\n{TAB}WARNING: {self._degrees_of_freedom} {dstring} of Freedom"
             )
         if len(self._constraints_with_inconsistent_units) > 0:
             cstring = "Constraints"
             if len(self._constraints_with_inconsistent_units) == 1:
                 cstring = "Constraint"
             warnings.append(
-                f"\n{tab}WARNING: {len(self._constraints_with_inconsistent_units)} "
+                f"\n{TAB}WARNING: {len(self._constraints_with_inconsistent_units)} "
                 f"{cstring} with inconsistent units"
             )
         if any(
             len(x) > 0 for x in [self._uc_var, self._uc_con, self._oc_var, self._oc_con]
         ):
             warnings.append(
-                f"\n{tab}WARNING: Structural singularity found\n"
-                f"{tab*2}Under-Constrained Set: {len(self._uc_var)} "
+                f"\n{TAB}WARNING: Structural singularity found\n"
+                f"{TAB*2}Under-Constrained Set: {len(self._uc_var)} "
                 f"variables, {len(self._uc_con)} constraints\n"
-                f"{tab * 2}Over-Constrained Set: {len(self._oc_var)} "
+                f"{TAB * 2}Over-Constrained Set: {len(self._oc_var)} "
                 f"variables, {len(self._oc_con)} constraints"
             )
 
@@ -248,7 +323,7 @@ class DiagnosticsToolbox:
             if len(self._variables_fixed_to_zero_set) == 1:
                 vstring = "variable"
             cautions.append(
-                f"\n{tab}Caution: {len(self._variables_fixed_to_zero_set)} "
+                f"\n{TAB}Caution: {len(self._variables_fixed_to_zero_set)} "
                 f"{vstring} fixed to 0"
             )
         if len(self._variables_not_in_activated_constraints_set) > 0:
@@ -256,43 +331,42 @@ class DiagnosticsToolbox:
             if len(self._variables_not_in_activated_constraints_set) == 1:
                 vstring = "variable"
             cautions.append(
-                f"\n{tab}Caution: {len(self._variables_not_in_activated_constraints_set)} "
+                f"\n{TAB}Caution: {len(self._variables_not_in_activated_constraints_set)} "
                 f"unused {vstring} "
                 f"({len(self._fixed_variables_not_in_activated_constraints_set)} fixed)"
             )
 
         # Generate report
-        max_str_length = 84
-        stream.write("\n" + "=" * max_str_length + "\n")
+        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
         stream.write("Model Statistics\n\n")
         stream.write(
-            f"{tab}Activated Blocks: {len(self._activated_block_set)} "
+            f"{TAB}Activated Blocks: {len(self._activated_block_set)} "
             f"(Deactivated: {len(self._deactivated_block_set)})\n"
         )
         stream.write(
-            f"{tab}Free Variables in Activated Constraints: "
+            f"{TAB}Free Variables in Activated Constraints: "
             f"{len(self._unfixed_variables_in_activated_constraints_set)} "
             f"(External: {len(self._external_unfixed_variables_in_activated_constraints_set)})\n"
         )
         stream.write(
-            f"{tab}Fixed Variables in Activated Constraints: "
+            f"{TAB}Fixed Variables in Activated Constraints: "
             f"{len(self._fixed_variables_in_activated_constraints_set)} "
             f"(External: {len(self._external_fixed_variables_in_activated_constraints_set)})\n"
         )
         stream.write(
-            f"{tab}Activated Equality Constraints: {len(self._activated_equalities_set)} "
+            f"{TAB}Activated Equality Constraints: {len(self._activated_equalities_set)} "
             f"(Deactivated: {len(self._deactivated_equalities_set)})\n"
         )
         stream.write(
-            f"{tab}Activated Inequality Constraints: {len(self._activated_inequalities_set)} "
+            f"{TAB}Activated Inequality Constraints: {len(self._activated_inequalities_set)} "
             f"(Deactivated: {len(self._deactivated_inequalities_set)})\n"
         )
         stream.write(
-            f"{tab}Activated Objectives: {len(self._activated_objectives_set)} "
+            f"{TAB}Activated Objectives: {len(self._activated_objectives_set)} "
             f"(Deactivated: {len(self._deactivated_objectives_set)})\n"
         )
 
-        stream.write("\n" + "-" * max_str_length + "\n")
+        stream.write("\n" + "-" * MAX_STR_LENGTH + "\n")
         if len(warnings) > 0:
             stream.write(f"{len(warnings)} WARNINGS\n")
             for w in warnings:
@@ -300,7 +374,7 @@ class DiagnosticsToolbox:
         else:
             stream.write("No warnings found!\n")
 
-        stream.write("\n\n" + "-" * max_str_length + "\n")
+        stream.write("\n\n" + "-" * MAX_STR_LENGTH + "\n")
         if len(cautions) > 0:
             stream.write(f"{len(cautions)} Cautions\n")
             for c in cautions:
@@ -308,7 +382,7 @@ class DiagnosticsToolbox:
         else:
             stream.write("No cautions found!\n")
 
-        stream.write("\n\n" + "=" * max_str_length + "\n")
+        stream.write("\n\n" + "=" * MAX_STR_LENGTH + "\n")
 
 
 class DegeneracyHunter:
