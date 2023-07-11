@@ -31,6 +31,7 @@ from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
     Constraint,
+    Expression,
     Objective,
     Param,
     Set,
@@ -40,6 +41,8 @@ from pyomo.environ import (
 )
 from pyomo.core.base.block import _BlockData
 from pyomo.common.collections import ComponentSet
+
+# from pyomo.util.check_units import identify_inconsistent_units
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.core.base.units_container import UnitsError
 from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
@@ -72,205 +75,125 @@ MAX_STR_LENGTH = 84
 TAB = " " * 4
 
 
+def _var_in_block(var, block):
+    parent = var.parent_block()
+    while parent is not None:
+        if parent is block:
+            return True
+        parent = parent.parent_block()
+    return False
+
+
 class DiagnosticsToolbox:
     def __init__(self, model: Block):
         if not isinstance(model, Block):
             raise ValueError("model argument must be an instance of a Pyomo Block.")
         self.model = model
 
-        # Create placeholders for data
-        self._activated__block_set = ComponentSet()
-        self._deactivated_block_set = ComponentSet()
-        self._activated_equalities_set = ComponentSet()
-        self._deactivated_equalities_set = ComponentSet()
-        self._activated_inequalities_set = ComponentSet()
-        self._deactivated_inequalities_set = ComponentSet()
-        self._activated_objectives_set = ComponentSet()
-        self._deactivated_objectives_set = ComponentSet()
-        self._variables_fixed_to_zero_set = ComponentSet()
-        self._variables_in_activated_constraints_set = ComponentSet()
-        self._fixed_variables_in_activated_constraints_set = ComponentSet()
-        self._unfixed_variables_in_activated_constraints_set = ComponentSet()
-        self._external_fixed_variables_in_activated_constraints_set = ComponentSet()
-        self._external_unfixed_variables_in_activated_constraints_set = ComponentSet()
-        self._variables_not_in_activated_constraints_set = ComponentSet()
-        self._fixed_variables_not_in_activated_constraints_set = ComponentSet()
-        self._degrees_of_freedom = None
-
-        self._constraints_with_inconsistent_units = ComponentSet()
-
-        self._var_dm_partition = None
-        self._con_dm_partition = None
-        self._uc_var = None
-        self._uc_con = None
-        self._oc_var = None
-        self._oc_con = None
-
-    def collect_model_statistics(self):
-        # For now, just use model_statistics tools.
-        # In future, we may want to look at reworking these to avoid repeatedly
-        # iterating over the model.
-
-        # TODO: Variables with bounds
-
-        # Block Statistics
-        self._activated_block_set = activated_blocks_set(self.model)
-        self._deactivated_block_set = deactivated_blocks_set(self.model)
-
-        # # Constraint statistics
-        self._activated_equalities_set = activated_equalities_set(self.model)
-        self._deactivated_equalities_set = deactivated_equalities_set(self.model)
-        self._activated_inequalities_set = activated_inequalities_set(self.model)
-        self._deactivated_inequalities_set = deactivated_inequalities_set(self.model)
-
-        # # Objective statistics
-        self._activated_objectives_set = activated_objectives_set(self.model)
-        self._deactivated_objectives_set = deactivated_objectives_set(self.model)
-
-        # Variable statistics
-        self._variables_in_activated_constraints_set = (
-            variables_in_activated_constraints_set(self.model)
-        )
-        self._fixed_variables_in_activated_constraints_set = ComponentSet()
-        self._unfixed_variables_in_activated_constraints_set = ComponentSet()
-        self._external_fixed_variables_in_activated_constraints_set = ComponentSet()
-        self._external_unfixed_variables_in_activated_constraints_set = ComponentSet()
-
-        def var_in_block(var, block):
-            parent = var.parent_block()
-            while parent is not None:
-                if parent is block:
-                    return True
-                parent = parent.parent_block()
-            return False
-
-        for v in self._variables_in_activated_constraints_set:
-            if v.fixed:
-                self._fixed_variables_in_activated_constraints_set.add(v)
-                if not var_in_block(v, self.model):
-                    # TODO: Should we track which constraints these appear in too?
-                    self._external_fixed_variables_in_activated_constraints_set.add(v)
-            else:
-                self._unfixed_variables_in_activated_constraints_set.add(v)
-                if not var_in_block(v, self.model):
-                    self._external_unfixed_variables_in_activated_constraints_set.add(v)
-
+    def _vars_fixed_to_zero(self):
         # Set of variables fixed to 0
-        self._variables_fixed_to_zero_set = ComponentSet()
+        zero_vars = ComponentSet()
         for v in self.model.component_data_objects(Var, descend_into=True):
             if v.fixed and value(v) == 0:
-                self._variables_fixed_to_zero_set.add(v)
-
-        # TODO: Need to see if this includes inequalities or not
-        self._variables_not_in_activated_constraints_set = (
-            variables_not_in_activated_constraints_set(self.model)
-        )
-        # Set of Unused fixed variables
-        self._fixed_variables_not_in_activated_constraints_set = ComponentSet()
-        for v in self._variables_not_in_activated_constraints_set:
-            if v.fixed:
-                self._fixed_variables_not_in_activated_constraints_set.add(v)
-
-        # Calculate DoF
-        self._degrees_of_freedom = degrees_of_freedom(self.model)
+                zero_vars.add(v)
+        return zero_vars
 
     # TODO: deactivated blocks, constraints, objectives,
     def display_external_variables(self, stream=stdout):
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
         stream.write(
-            "The following external variables appear in constraint within the model:\n\n"
+            "The following external variable(s) appear in constraints within the model:\n\n"
         )
 
-        for v in self._external_fixed_variables_in_activated_constraints_set:
-            stream.write(f"{TAB}{v.name}\n")
-        for v in self._external_unfixed_variables_in_activated_constraints_set:
-            stream.write(f"{TAB}{v.name}\n")
+        for v in variables_in_activated_constraints_set(self.model):
+            if not _var_in_block(v, self.model):
+                stream.write(f"{TAB}{v.name}\n")
 
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
 
     def display_unused_variables(self, stream=stdout):
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
         stream.write(
-            "The following variables do not appear in activated constraints:\n\n"
+            "The following variable(s) do not appear in activated constraints:\n\n"
         )
 
-        for v in self._variables_not_in_activated_constraints_set:
+        for v in variables_not_in_activated_constraints_set(self.model):
             stream.write(f"{TAB}{v.name}\n")
 
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
 
     def display_variables_fixed_to_zero(self, stream=stdout):
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
-        stream.write("The following variables are fixed to zero:\n\n")
+        stream.write("The following variable(s) are fixed to zero:\n\n")
 
-        for v in self._variables_fixed_to_zero_set:
+        for v in self._vars_fixed_to_zero():
             stream.write(f"{TAB}{v.name}\n")
 
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
 
     def check_unit_consistency(self):
-        # Check unit consistency of each constraint
-        self._constraints_with_inconsistent_units = ComponentSet()
-        for c in self.model.component_data_objects(Constraint, descend_into=True):
+        # Check unit consistency
+        # TODO: replace once Pyomo method ready
+        # return identify_inconsistent_units(self.model)
+        inconsistent_units = ComponentSet()
+        for o in self.model.component_data_objects(
+            [Constraint, Expression, Objective], descend_into=True
+        ):
             try:
-                assert_units_consistent(c)
+                assert_units_consistent(o)
             except UnitsError:
-                self._constraints_with_inconsistent_units.add(c)
+                inconsistent_units.add(o)
+        return inconsistent_units
 
-    def display_constraints_with_inconsistent_units(self, stream=stdout):
+    def display_components_with_inconsistent_units(self, stream=stdout):
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
-        stream.write("The following constraints have unit consistency issues:\n\n")
+        stream.write("The following component(s) have unit consistency issues:\n\n")
 
-        for c in self._constraints_with_inconsistent_units:
+        for c in self.check_unit_consistency():
             stream.write(f"{TAB}{c.name}\n")
 
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
 
     def check_dulmage_mendelsohn_partition(self):
-        self._var_dm_partition = None
-        self._con_dm_partition = None
-        self._uc_var = None
-        self._uc_con = None
-        self._oc_var = None
-        self._oc_con = None
-
         igraph = IncidenceGraphInterface(self.model)
-        self._var_dm_partition, self._con_dm_partition = igraph.dulmage_mendelsohn()
+        var_dm_partition, con_dm_partition = igraph.dulmage_mendelsohn()
 
         # Collect under- and order-constrained sub-system
-        self._uc_var = (
-            self._var_dm_partition.unmatched + self._var_dm_partition.underconstrained
-        )
-        self._uc_con = self._con_dm_partition.underconstrained
-        self._oc_var = self._var_dm_partition.overconstrained
-        self._oc_con = (
-            self._con_dm_partition.overconstrained + self._con_dm_partition.unmatched
-        )
+        uc_var = var_dm_partition.unmatched + var_dm_partition.underconstrained
+        uc_con = con_dm_partition.underconstrained
+        oc_var = var_dm_partition.overconstrained
+        oc_con = con_dm_partition.overconstrained + con_dm_partition.unmatched
+
+        return uc_var, uc_con, oc_var, oc_con
 
     def display_underconstrained_set(self, stream=stdout):
+        uc_var, uc_con, _, _ = self.check_dulmage_mendelsohn_partition()
+
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
         stream.write("Dulmage_Mendelsohn Under-Constrained Set\n\n")
 
         stream.write(f"{TAB}Variables:\n\n")
-        for v in self._uc_var:
+        for v in uc_var:
             stream.write(f"{2*TAB}{v.name}\n")
 
         stream.write(f"\n{TAB}Constraints:\n\n")
-        for c in self._uc_con:
+        for c in uc_con:
             stream.write(f"{2*TAB}{c.name}\n")
 
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
 
     def display_overconstrained_set(self, stream=stdout):
+        _, _, oc_var, oc_con = self.check_dulmage_mendelsohn_partition()
+
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
         stream.write("Dulmage_Mendelsohn Over-Constrained Set\n\n")
 
         stream.write(f"{TAB}Variables:\n\n")
-        for v in self._oc_var:
+        for v in oc_var:
             stream.write(f"{2*TAB}{v.name}\n")
 
         stream.write(f"\n{TAB}Constraints:\n\n")
-        for c in self._oc_con:
+        for c in oc_con:
             stream.write(f"{2*TAB}{c.name}\n")
 
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
@@ -278,92 +201,105 @@ class DiagnosticsToolbox:
     # TODO: Block triangularization analysis
     # Number and size of blocks, polynomial degree of 1x1 blocks, simple pivot check of moderate sized sub-blocks?
 
-    def report_structural_issues(self, rerun_analysis=True, stream=stdout):
+    def report_structural_issues(self, stream=stdout):
         # Potential evaluation errors
         # High Index
 
-        # Run checks unless told not to
-        if rerun_analysis:
-            self.collect_model_statistics()
-            self.check_unit_consistency()
-            self.check_dulmage_mendelsohn_partition()
+        vars_in_constraints = variables_in_activated_constraints_set(self.model)
+        fixed_vars_in_constraints = ComponentSet()
+        free_vars_in_constraints = ComponentSet()
+        ext_fixed_vars_in_constraints = ComponentSet()
+        ext_free_vars_in_constraints = ComponentSet()
+        for v in vars_in_constraints:
+            if v.fixed:
+                fixed_vars_in_constraints.add(v)
+                if not _var_in_block(v, self.model):
+                    ext_fixed_vars_in_constraints.add(v)
+            else:
+                free_vars_in_constraints.add(v)
+                if not _var_in_block(v, self.model):
+                    ext_free_vars_in_constraints.add(v)
+
+        uc = self.check_unit_consistency()
+        uc_var, uc_con, oc_var, oc_con = self.check_dulmage_mendelsohn_partition()
 
         # Collect warnings
         warnings = []
-        if self._degrees_of_freedom != 0:
+        dof = degrees_of_freedom(self.model)
+        if dof != 0:
             dstring = "Degrees"
-            if self._degrees_of_freedom == abs(1):
+            if dof == abs(1):
                 dstring = "Degree"
+            warnings.append(f"\n{TAB}WARNING: {dof} {dstring} of Freedom")
+        if len(uc) > 0:
+            cstring = "Components"
+            if len(uc) == 1:
+                cstring = "Component"
             warnings.append(
-                f"\n{TAB}WARNING: {self._degrees_of_freedom} {dstring} of Freedom"
+                f"\n{TAB}WARNING: {len(uc)} " f"{cstring} with inconsistent units"
             )
-        if len(self._constraints_with_inconsistent_units) > 0:
-            cstring = "Constraints"
-            if len(self._constraints_with_inconsistent_units) == 1:
-                cstring = "Constraint"
-            warnings.append(
-                f"\n{TAB}WARNING: {len(self._constraints_with_inconsistent_units)} "
-                f"{cstring} with inconsistent units"
-            )
-        if any(
-            len(x) > 0 for x in [self._uc_var, self._uc_con, self._oc_var, self._oc_con]
-        ):
+        if any(len(x) > 0 for x in [uc_var, uc_con, oc_var, oc_con]):
             warnings.append(
                 f"\n{TAB}WARNING: Structural singularity found\n"
-                f"{TAB*2}Under-Constrained Set: {len(self._uc_var)} "
-                f"variables, {len(self._uc_con)} constraints\n"
-                f"{TAB * 2}Over-Constrained Set: {len(self._oc_var)} "
-                f"variables, {len(self._oc_con)} constraints"
+                f"{TAB*2}Under-Constrained Set: {len(uc_var)} "
+                f"variables, {len(uc_con)} constraints\n"
+                f"{TAB * 2}Over-Constrained Set: {len(oc_var)} "
+                f"variables, {len(oc_con)} constraints"
             )
 
         # Collect cautions
         cautions = []
-        if len(self._variables_fixed_to_zero_set) > 0:
+        zero_vars = self._vars_fixed_to_zero()
+        if len(zero_vars) > 0:
             vstring = "variables"
-            if len(self._variables_fixed_to_zero_set) == 1:
+            if len(zero_vars) == 1:
                 vstring = "variable"
             cautions.append(
-                f"\n{TAB}Caution: {len(self._variables_fixed_to_zero_set)} "
-                f"{vstring} fixed to 0"
+                f"\n{TAB}Caution: {len(zero_vars)} " f"{vstring} fixed to 0"
             )
-        if len(self._variables_not_in_activated_constraints_set) > 0:
+        unused_vars = variables_not_in_activated_constraints_set(self.model)
+        unused_vars_fixed = 0
+        for v in unused_vars:
+            if v.fixed:
+                unused_vars_fixed += 1
+        if len(unused_vars) > 0:
             vstring = "variables"
-            if len(self._variables_not_in_activated_constraints_set) == 1:
+            if len(unused_vars) == 1:
                 vstring = "variable"
             cautions.append(
-                f"\n{TAB}Caution: {len(self._variables_not_in_activated_constraints_set)} "
-                f"unused {vstring} "
-                f"({len(self._fixed_variables_not_in_activated_constraints_set)} fixed)"
+                f"\n{TAB}Caution: {len(unused_vars)} "
+                f"unused {vstring} ({unused_vars_fixed} fixed)"
             )
 
         # Generate report
+        # TODO: Variables with bounds
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
         stream.write("Model Statistics\n\n")
         stream.write(
-            f"{TAB}Activated Blocks: {len(self._activated_block_set)} "
-            f"(Deactivated: {len(self._deactivated_block_set)})\n"
+            f"{TAB}Activated Blocks: {len(activated_blocks_set(self.model))} "
+            f"(Deactivated: {len(deactivated_blocks_set(self.model))})\n"
         )
         stream.write(
             f"{TAB}Free Variables in Activated Constraints: "
-            f"{len(self._unfixed_variables_in_activated_constraints_set)} "
-            f"(External: {len(self._external_unfixed_variables_in_activated_constraints_set)})\n"
+            f"{len(free_vars_in_constraints)} "
+            f"(External: {len(ext_free_vars_in_constraints)})\n"
         )
         stream.write(
             f"{TAB}Fixed Variables in Activated Constraints: "
-            f"{len(self._fixed_variables_in_activated_constraints_set)} "
-            f"(External: {len(self._external_fixed_variables_in_activated_constraints_set)})\n"
+            f"{len(fixed_vars_in_constraints)} "
+            f"(External: {len(ext_fixed_vars_in_constraints)})\n"
         )
         stream.write(
-            f"{TAB}Activated Equality Constraints: {len(self._activated_equalities_set)} "
-            f"(Deactivated: {len(self._deactivated_equalities_set)})\n"
+            f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(self.model))} "
+            f"(Deactivated: {len(deactivated_equalities_set(self.model))})\n"
         )
         stream.write(
-            f"{TAB}Activated Inequality Constraints: {len(self._activated_inequalities_set)} "
-            f"(Deactivated: {len(self._deactivated_inequalities_set)})\n"
+            f"{TAB}Activated Inequality Constraints: {len(activated_inequalities_set(self.model))} "
+            f"(Deactivated: {len(deactivated_inequalities_set(self.model))})\n"
         )
         stream.write(
-            f"{TAB}Activated Objectives: {len(self._activated_objectives_set)} "
-            f"(Deactivated: {len(self._deactivated_objectives_set)})\n"
+            f"{TAB}Activated Objectives: {len(activated_objectives_set(self.model))} "
+            f"(Deactivated: {len(deactivated_objectives_set(self.model))})\n"
         )
 
         stream.write("\n" + "-" * MAX_STR_LENGTH + "\n")

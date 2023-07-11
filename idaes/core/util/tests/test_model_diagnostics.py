@@ -97,7 +97,7 @@ def test_DiagnosticsToolbox():
 
     dt.report_structural_issues()
 
-    dt.display_constraints_with_inconsistent_units()
+    dt.display_components_with_inconsistent_units()
 
     dt.display_underconstrained_set()
     dt.display_overconstrained_set()
@@ -106,7 +106,7 @@ def test_DiagnosticsToolbox():
     dt.display_unused_variables()
     dt.display_variables_fixed_to_zero()
 
-    # TODO: Current checks do not detect linearly dependent equation
+    # TODO: Current checks do not detect linearly dependent constraints
     assert False
 
 
