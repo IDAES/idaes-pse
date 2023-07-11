@@ -17,27 +17,298 @@ This module contains a collection of tools for diagnosing modeling issues.
 
 __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee"
 
-
 from operator import itemgetter
+from sys import stdout
 
-import pyomo.environ as pyo
-from pyomo.core.expr.visitor import identify_variables
-from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
-from pyomo.contrib.pynumero.asl import AmplInterface
-from pyomo.core.base.block import _BlockData
 import numpy as np
 from scipy.linalg import svd
 from scipy.sparse.linalg import svds, norm
 from scipy.sparse import issparse, find
 
+from pyomo.environ import (
+    Binary,
+    Block,
+    check_optimal_termination,
+    ConcreteModel,
+    Constraint,
+    Objective,
+    Param,
+    Set,
+    SolverFactory,
+    value,
+    Var,
+)
+from pyomo.core.base.block import _BlockData
+from pyomo.common.collections import ComponentSet
+from pyomo.util.check_units import assert_units_consistent
+from pyomo.core.base.units_container import UnitsError
+from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
+from pyomo.core.expr.visitor import identify_variables
+from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+from pyomo.contrib.pynumero.asl import AmplInterface
+
+import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import (
+    activated_blocks_set,
+    deactivated_blocks_set,
+    activated_equalities_set,
+    deactivated_equalities_set,
+    activated_inequalities_set,
+    deactivated_inequalities_set,
+    activated_objectives_set,
+    deactivated_objectives_set,
+    variables_in_activated_constraints_set,
+    variables_not_in_activated_constraints_set,
+    degrees_of_freedom,
     large_residuals_set,
     variables_near_bounds_set,
 )
-import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
+
+
+class DiagnosticsToolbox:
+    def __init__(self, model: Block):
+        if not isinstance(model, Block):
+            raise ValueError("model argument must be an instance of a Pyomo Block.")
+        self.model = model
+
+        # Create placeholders for data
+        self._activated__block_set = ComponentSet()
+        self._deactivated_block_set = ComponentSet()
+        self._activated_equalities_set = ComponentSet()
+        self._deactivated_equalities_set = ComponentSet()
+        self._activated_inequalities_set = ComponentSet()
+        self._deactivated_inequalities_set = ComponentSet()
+        self._activated_objectives_set = ComponentSet()
+        self._deactivated_objectives_set = ComponentSet()
+        self._variables_fixed_to_zero_set = ComponentSet()
+        self._variables_in_activated_constraints_set = ComponentSet()
+        self._fixed_variables_in_activated_constraints_set = ComponentSet()
+        self._unfixed_variables_in_activated_constraints_set = ComponentSet()
+        self._external_fixed_variables_in_activated_constraints_set = ComponentSet()
+        self._external_unfixed_variables_in_activated_constraints_set = ComponentSet()
+        self._variables_not_in_activated_constraints_set = ComponentSet()
+        self._fixed_variables_not_in_activated_constraints_set = ComponentSet()
+        self._degrees_of_freedom = None
+
+        self._constraints_with_inconsistent_units = ComponentSet()
+
+        self._var_dm_partition = None
+        self._con_dm_partition = None
+        self._uc_var = None
+        self._uc_con = None
+        self._oc_var = None
+        self._oc_con = None
+
+    def collect_model_statistics(self):
+        # For now, just use model_statistics tools.
+        # In future, we may want to look at reworking these to avoid repeatedly
+        # iterating over the model.
+
+        # TODO: Variables with bounds
+
+        # Block Statistics
+        self._activated_block_set = activated_blocks_set(self.model)
+        self._deactivated_block_set = deactivated_blocks_set(self.model)
+
+        # # Constraint statistics
+        self._activated_equalities_set = activated_equalities_set(self.model)
+        self._deactivated_equalities_set = deactivated_equalities_set(self.model)
+        self._activated_inequalities_set = activated_inequalities_set(self.model)
+        self._deactivated_inequalities_set = deactivated_inequalities_set(self.model)
+
+        # # Objective statistics
+        self._activated_objectives_set = activated_objectives_set(self.model)
+        self._deactivated_objectives_set = deactivated_objectives_set(self.model)
+
+        # Variable statistics
+        self._variables_in_activated_constraints_set = (
+            variables_in_activated_constraints_set(self.model)
+        )
+        self._fixed_variables_in_activated_constraints_set = ComponentSet()
+        self._unfixed_variables_in_activated_constraints_set = ComponentSet()
+        self._external_fixed_variables_in_activated_constraints_set = ComponentSet()
+        self._external_unfixed_variables_in_activated_constraints_set = ComponentSet()
+
+        def var_in_block(var, block):
+            parent = var.parent_block()
+            while parent is not None:
+                if parent is block:
+                    return True
+                parent = parent.parent_block()
+            return False
+
+        for v in self._variables_in_activated_constraints_set:
+            if v.fixed:
+                self._fixed_variables_in_activated_constraints_set.add(v)
+                if not var_in_block(v, self.model):
+                    self._external_fixed_variables_in_activated_constraints_set.add(v)
+            else:
+                self._unfixed_variables_in_activated_constraints_set.add(v)
+                if not var_in_block(v, self.model):
+                    self._external_unfixed_variables_in_activated_constraints_set.add(v)
+
+        # Set of variables fixed to 0
+        self._variables_fixed_to_zero_set = ComponentSet()
+        for v in self.model.component_data_objects(Var, descend_into=True):
+            if v.fixed and value(v) == 0:
+                self._variables_fixed_to_zero_set.add(v)
+
+        # TODO: Need to see if this includes inequalities or not
+        self._variables_not_in_activated_constraints_set = (
+            variables_not_in_activated_constraints_set(self.model)
+        )
+        # Set of Unused fixed variables
+        self._fixed_variables_not_in_activated_constraints_set = ComponentSet()
+        for v in self._variables_not_in_activated_constraints_set:
+            if v.fixed:
+                self._fixed_variables_not_in_activated_constraints_set.add(v)
+
+        # Calculate DoF
+        self._degrees_of_freedom = degrees_of_freedom(self.model)
+
+    def check_unit_consistency(self):
+        # Check unit consistency of each constraint
+        self._constraints_with_inconsistent_units = ComponentSet()
+        for c in self.model.component_data_objects(Constraint, descend_into=True):
+            try:
+                assert_units_consistent(c)
+            except UnitsError:
+                self._constraints_with_inconsistent_units.add(c)
+
+    def check_dulmage_mendelsohn_partition(self):
+        self._var_dm_partition = None
+        self._con_dm_partition = None
+        self._uc_var = None
+        self._uc_con = None
+        self._oc_var = None
+        self._oc_con = None
+
+        igraph = IncidenceGraphInterface(self.model)
+        self._var_dm_partition, self._con_dm_partition = igraph.dulmage_mendelsohn()
+
+        # Collect under- and order-constrained sub-system
+        self._uc_var = (
+            self._var_dm_partition.unmatched + self._var_dm_partition.underconstrained
+        )
+        self._uc_con = self._con_dm_partition.underconstrained
+        self._oc_var = self._var_dm_partition.overconstrained
+        self._oc_con = (
+            self._con_dm_partition.overconstrained + self._con_dm_partition.unmatched
+        )
+
+    # TODO: Block triangularization analysis
+    # Number and size of blocks, polynomial degree of 1x1 blocks, simple pivot check of moderate sized sub-blocks?
+
+    def report_structural_issues(self, rerun_analysis=True, stream=stdout):
+        # Potential evaluation errors
+        # High Index
+
+        # Run checks unless told not to
+        if rerun_analysis:
+            self.collect_model_statistics()
+            self.check_unit_consistency()
+            self.check_dulmage_mendelsohn_partition()
+
+        # Collect warnings
+        tab = " " * 4
+        warnings = []
+        if self._degrees_of_freedom != 0:
+            dstring = "Degrees"
+            if self._degrees_of_freedom == abs(1):
+                dstring = "Degree"
+            warnings.append(
+                f"\n{tab}WARNING: {self._degrees_of_freedom} {dstring} of Freedom"
+            )
+        if len(self._constraints_with_inconsistent_units) > 0:
+            cstring = "Constraints"
+            if len(self._constraints_with_inconsistent_units) == 1:
+                cstring = "Constraint"
+            warnings.append(
+                f"\n{tab}WARNING: {len(self._constraints_with_inconsistent_units)} "
+                f"{cstring} with inconsistent units"
+            )
+        if any(
+            len(x) > 0 for x in [self._uc_var, self._uc_con, self._oc_var, self._oc_con]
+        ):
+            warnings.append(
+                f"\n{tab}WARNING: Structural singularity found\n"
+                f"{tab*2}Under-Constrained Set: {len(self._uc_var)} "
+                f"variables, {len(self._uc_con)} constraints\n"
+                f"{tab * 2}Over-Constrained Set: {len(self._oc_var)} "
+                f"variables, {len(self._oc_con)} constraints"
+            )
+
+        # Collect cautions
+        cautions = []
+        if len(self._variables_fixed_to_zero_set) > 0:
+            vstring = "variables"
+            if len(self._variables_fixed_to_zero_set) == 1:
+                vstring = "variable"
+            cautions.append(
+                f"\n{tab}Caution: {len(self._variables_fixed_to_zero_set)} "
+                f"{vstring} fixed to 0"
+            )
+        if len(self._variables_not_in_activated_constraints_set) > 0:
+            vstring = "variables"
+            if len(self._variables_not_in_activated_constraints_set) == 1:
+                vstring = "variable"
+            cautions.append(
+                f"\n{tab}Caution: {len(self._variables_not_in_activated_constraints_set)} "
+                f"unused {vstring} "
+                f"({len(self._fixed_variables_not_in_activated_constraints_set)} fixed)"
+            )
+
+        # Generate report
+        max_str_length = 84
+        stream.write("\n" + "=" * max_str_length + "\n")
+        stream.write("Model Statistics\n\n")
+        stream.write(
+            f"{tab}Activated Blocks: {len(self._activated_block_set)} "
+            f"(Deactivated: {len(self._deactivated_block_set)})\n"
+        )
+        stream.write(
+            f"{tab}Free Variables in Activated Constraints: "
+            f"{len(self._unfixed_variables_in_activated_constraints_set)} "
+            f"(External: {len(self._external_unfixed_variables_in_activated_constraints_set)})\n"
+        )
+        stream.write(
+            f"{tab}Fixed Variables in Activated Constraints: "
+            f"{len(self._fixed_variables_in_activated_constraints_set)} "
+            f"(External: {len(self._external_fixed_variables_in_activated_constraints_set)})\n"
+        )
+        stream.write(
+            f"{tab}Activated Equality Constraints: {len(self._activated_equalities_set)} "
+            f"(Deactivated: {len(self._deactivated_equalities_set)})\n"
+        )
+        stream.write(
+            f"{tab}Activated Inequality Constraints: {len(self._activated_inequalities_set)} "
+            f"(Deactivated: {len(self._deactivated_inequalities_set)})\n"
+        )
+        stream.write(
+            f"{tab}Activated Objectives: {len(self._activated_objectives_set)} "
+            f"(Deactivated: {len(self._deactivated_objectives_set)})\n"
+        )
+
+        stream.write("\n" + "-" * max_str_length + "\n")
+        if len(warnings) > 0:
+            stream.write(f"{len(warnings)} WARNINGS\n")
+            for w in warnings:
+                stream.write(w)
+        else:
+            stream.write("No warnings found!\n")
+
+        stream.write("\n\n" + "-" * max_str_length + "\n")
+        if len(cautions) > 0:
+            stream.write(f"{len(cautions)} Cautions\n")
+            for c in cautions:
+                stream.write(c)
+        else:
+            stream.write("No cautions found!\n")
+
+        stream.write("\n\n" + "=" * max_str_length + "\n")
 
 
 class DegeneracyHunter:
@@ -60,7 +331,7 @@ class DegeneracyHunter:
 
         block_like = False
         try:
-            block_like = issubclass(block_or_jac.ctype, pyo.Block)
+            block_like = issubclass(block_or_jac.ctype, Block)
         except AttributeError:
             pass
 
@@ -103,7 +374,7 @@ class DegeneracyHunter:
         # Initialize solver
         if solver is None:
             # TODO: Test performance with open solvers such as cbc
-            self.solver = pyo.SolverFactory("gurobi")
+            self.solver = SolverFactory("gurobi")
             self.solver.options = {"NumericFocus": 3}
 
         else:
@@ -273,16 +544,16 @@ class DegeneracyHunter:
         n_var = jac_eq.shape[1]
 
         # Create Pyomo model for irreducible degenerate set
-        m_dh = pyo.ConcreteModel()
+        m_dh = ConcreteModel()
 
         # Create index for constraints
-        m_dh.C = pyo.Set(initialize=range(n_eq))
+        m_dh.C = Set(initialize=range(n_eq))
 
-        m_dh.V = pyo.Set(initialize=range(n_var))
+        m_dh.V = Set(initialize=range(n_var))
 
         # Add variables
-        m_dh.nu = pyo.Var(m_dh.C, bounds=(-M, M), initialize=1.0)
-        m_dh.y = pyo.Var(m_dh.C, domain=pyo.Binary)
+        m_dh.nu = Var(m_dh.C, bounds=(-M, M), initialize=1.0)
+        m_dh.y = Var(m_dh.C, domain=Binary)
 
         # Constraint to enforce set is degenerate
         if issparse(jac_eq):
@@ -299,19 +570,19 @@ class DegeneracyHunter:
             def eq_degenerate(m_dh, v):
                 return sum(m_dh.J[c, v] * m_dh.nu[c] for c in m_dh.C) == 0
 
-        m_dh.degenerate = pyo.Constraint(m_dh.V, rule=eq_degenerate)
+        m_dh.degenerate = Constraint(m_dh.V, rule=eq_degenerate)
 
         def eq_lower(m_dh, c):
             return -M * m_dh.y[c] <= m_dh.nu[c]
 
-        m_dh.lower = pyo.Constraint(m_dh.C, rule=eq_lower)
+        m_dh.lower = Constraint(m_dh.C, rule=eq_lower)
 
         def eq_upper(m_dh, c):
             return m_dh.nu[c] <= M * m_dh.y[c]
 
-        m_dh.upper = pyo.Constraint(m_dh.C, rule=eq_upper)
+        m_dh.upper = Constraint(m_dh.C, rule=eq_upper)
 
-        m_dh.obj = pyo.Objective(expr=sum(m_dh.y[c] for c in m_dh.C))
+        m_dh.obj = Objective(expr=sum(m_dh.y[c] for c in m_dh.C))
 
         return m_dh
 
@@ -335,23 +606,23 @@ class DegeneracyHunter:
         n_var = jac_eq.shape[1]
 
         # Create Pyomo model for irreducible degenerate set
-        m_dh = pyo.ConcreteModel()
+        m_dh = ConcreteModel()
 
         # Create index for constraints
-        m_dh.C = pyo.Set(initialize=range(n_eq))
+        m_dh.C = Set(initialize=range(n_eq))
 
-        m_dh.V = pyo.Set(initialize=range(n_var))
+        m_dh.V = Set(initialize=range(n_var))
 
         # Specify minimum size for nu to be considered non-zero
         m_dh.m_small = m_small
 
         # Add variables
-        m_dh.nu = pyo.Var(m_dh.C, bounds=(-M - m_small, M + m_small), initialize=1.0)
-        m_dh.y_pos = pyo.Var(m_dh.C, domain=pyo.Binary)
-        m_dh.y_neg = pyo.Var(m_dh.C, domain=pyo.Binary)
-        m_dh.abs_nu = pyo.Var(m_dh.C, bounds=(0, M + m_small))
+        m_dh.nu = Var(m_dh.C, bounds=(-M - m_small, M + m_small), initialize=1.0)
+        m_dh.y_pos = Var(m_dh.C, domain=Binary)
+        m_dh.y_neg = Var(m_dh.C, domain=Binary)
+        m_dh.abs_nu = Var(m_dh.C, bounds=(0, M + m_small))
 
-        m_dh.pos_xor_neg = pyo.Constraint(m_dh.C)
+        m_dh.pos_xor_neg = Constraint(m_dh.C)
 
         # Constraint to enforce set is degenerate
         if issparse(jac_eq):
@@ -364,7 +635,7 @@ class DegeneracyHunter:
                     return sum(m_dh.J[c, v] * m_dh.nu[c] for c in C_) == 0
                 else:
                     # This variable does not appear in any constraint
-                    return pyo.Constraint.Skip
+                    return Constraint.Skip
 
         else:
             m_dh.J = jac_eq
@@ -374,58 +645,58 @@ class DegeneracyHunter:
                     return sum(m_dh.J[c, v] * m_dh.nu[c] for c in m_dh.C) == 0
                 else:
                     # This variable does not appear in any constraint
-                    return pyo.Constraint.Skip
+                    return Constraint.Skip
 
         m_dh.pprint()
 
-        m_dh.degenerate = pyo.Constraint(m_dh.V, rule=eq_degenerate)
+        m_dh.degenerate = Constraint(m_dh.V, rule=eq_degenerate)
 
         # When y_pos = 1, nu >= m_small
         # When y_pos = 0, nu >= - m_small
         def eq_pos_lower(m_dh, c):
             return m_dh.nu[c] >= -m_small + 2 * m_small * m_dh.y_pos[c]
 
-        m_dh.pos_lower = pyo.Constraint(m_dh.C, rule=eq_pos_lower)
+        m_dh.pos_lower = Constraint(m_dh.C, rule=eq_pos_lower)
 
         # When y_pos = 1, nu <= M + m_small
         # When y_pos = 0, nu <= m_small
         def eq_pos_upper(m_dh, c):
             return m_dh.nu[c] <= M * m_dh.y_pos[c] + m_small
 
-        m_dh.pos_upper = pyo.Constraint(m_dh.C, rule=eq_pos_upper)
+        m_dh.pos_upper = Constraint(m_dh.C, rule=eq_pos_upper)
 
         # When y_neg = 1, nu <= -m_small
         # When y_neg = 0, nu <= m_small
         def eq_neg_upper(m_dh, c):
             return m_dh.nu[c] <= m_small - 2 * m_small * m_dh.y_neg[c]
 
-        m_dh.neg_upper = pyo.Constraint(m_dh.C, rule=eq_neg_upper)
+        m_dh.neg_upper = Constraint(m_dh.C, rule=eq_neg_upper)
 
         # When y_neg = 1, nu >= -M - m_small
         # When y_neg = 0, nu >= - m_small
         def eq_neg_lower(m_dh, c):
             return m_dh.nu[c] >= -M * m_dh.y_neg[c] - m_small
 
-        m_dh.neg_lower = pyo.Constraint(m_dh.C, rule=eq_neg_lower)
+        m_dh.neg_lower = Constraint(m_dh.C, rule=eq_neg_lower)
 
         # Absolute value
         def eq_abs_lower(m_dh, c):
             return -m_dh.abs_nu[c] <= m_dh.nu[c]
 
-        m_dh.abs_lower = pyo.Constraint(m_dh.C, rule=eq_abs_lower)
+        m_dh.abs_lower = Constraint(m_dh.C, rule=eq_abs_lower)
 
         def eq_abs_upper(m_dh, c):
             return m_dh.nu[c] <= m_dh.abs_nu[c]
 
-        m_dh.abs_upper = pyo.Constraint(m_dh.C, rule=eq_abs_upper)
+        m_dh.abs_upper = Constraint(m_dh.C, rule=eq_abs_upper)
 
         # At least one constraint must be in the degenerate set
-        m_dh.degenerate_set_nonempty = pyo.Constraint(
+        m_dh.degenerate_set_nonempty = Constraint(
             expr=sum(m_dh.y_pos[c] + m_dh.y_neg[c] for c in m_dh.C) >= 1
         )
 
         # Minimize the L1-norm of nu
-        m_dh.obj = pyo.Objective(expr=sum(m_dh.abs_nu[c] for c in m_dh.C))
+        m_dh.obj = Objective(expr=sum(m_dh.abs_nu[c] for c in m_dh.C))
 
         return m_dh
 
@@ -455,7 +726,7 @@ class DegeneracyHunter:
 
         ids_milp.nu[c].unfix()
 
-        if pyo.check_optimal_termination(results):
+        if check_optimal_termination(results):
             # We found an irreducible degenerate set
 
             # Create empty dictionary
@@ -493,7 +764,7 @@ class DegeneracyHunter:
 
         results = solver.solve(candidates_milp, tee=tee)
 
-        if pyo.check_optimal_termination(results):
+        if check_optimal_termination(results):
             # We found a degenerate set
 
             # Create empty dictionary
@@ -774,7 +1045,7 @@ def set_bounds_from_valid_range(component, descend_into=True):
             set_bounds_from_valid_range(component[k])
     elif isinstance(component, _BlockData):
         for i in component.component_data_objects(
-            ctype=[pyo.Var, pyo.Param], descend_into=descend_into
+            ctype=[Var, Param], descend_into=descend_into
         ):
             set_bounds_from_valid_range(i)
     elif not hasattr(component, "bounds"):
@@ -815,14 +1086,14 @@ def list_components_with_values_outside_valid_range(component, descend_into=True
             )
     elif isinstance(component, _BlockData):
         for i in component.component_data_objects(
-            ctype=[pyo.Var, pyo.Param], descend_into=descend_into
+            ctype=[Var, Param], descend_into=descend_into
         ):
             comp_list.extend(list_components_with_values_outside_valid_range(i))
     else:
         valid_range = get_valid_range_of_component(component)
 
         if valid_range is not None:
-            cval = pyo.value(component)
+            cval = value(component)
             if cval is not None and (cval < valid_range[0] or cval > valid_range[1]):
                 comp_list.append(component)
 
@@ -847,7 +1118,7 @@ def ipopt_solve_halt_on_error(model, options=None):
     if options is None:
         options = {}
 
-    solver = pyo.SolverFactory("ipopt")
+    solver = SolverFactory("ipopt")
     solver.options = options
     solver.options["halt_on_ampl_error"] = "yes"
 
