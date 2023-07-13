@@ -114,13 +114,15 @@ class MSContactorInitializer(ModularInitializerBase):
         # First, build list of names for known constraints
         const_names = []
         for s in model.config.streams.keys():
-            const_names.append(s + "_rate_reaction_constraint")
-            const_names.append(s + "_equilibrium_reaction_constraint")
-            const_names.append(s + "_inherent_reaction_constraint")
-            const_names.append(s + "_material_balance")
-            const_names.append(s + "_energy_balance")
-            const_names.append(s + "_pressure_balance")
-            const_names.append(s + "_side_stream_pressure_balance")
+            const_names.append(model.name + "." + s + "_rate_reaction_constraint")
+            const_names.append(
+                model.name + "." + s + "_equilibrium_reaction_constraint"
+            )
+            const_names.append(model.name + "." + s + "_inherent_reaction_constraint")
+            const_names.append(model.name + "." + s + "_material_balance")
+            const_names.append(model.name + "." + s + "_energy_balance")
+            const_names.append(model.name + "." + s + "_pressure_balance")
+            const_names.append(model.name + "." + s + "_side_stream_pressure_balance")
 
         # Iterate through all constraints attached to model - do not search sub-blocks
         for c in model.component_objects(Constraint, descend_into=False):
