@@ -66,6 +66,7 @@ from idaes.core.util.model_statistics import (
     large_residuals_set,
     variables_near_bounds_set,
 )
+from idaes.core.util.scaling import list_badly_scaled_variables
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -89,6 +90,10 @@ class DiagnosticsToolbox:
         if not isinstance(model, Block):
             raise ValueError("model argument must be an instance of a Pyomo Block.")
         self.model = model
+        # TODO: Work out how to manage and document these
+        self.residual_tolerance = 1e-5
+        self.zero_tolerance = 1e-6
+        # TODO: Add scaling tolerance parameters
 
     def _vars_fixed_to_zero(self):
         # Set of variables fixed to 0
@@ -98,38 +103,111 @@ class DiagnosticsToolbox:
                 zero_vars.add(v)
         return zero_vars
 
+    def _vars_near_zero(self):
+        # Set of variables with values close to 0
+        near_zero_vars = ComponentSet()
+        for v in self.model.component_data_objects(Var, descend_into=True):
+            if v.value is not None and abs(value(v)) <= self.zero_tolerance:
+                near_zero_vars.add(v)
+        return near_zero_vars
+
+    def _vars_outside_bounds(self):
+        violated_bounds = ComponentSet()
+        for v in self.model.component_data_objects(Var, descend_into=True):
+            if v.value is not None:
+                if v.lb is not None and v.value < v.lb:
+                    violated_bounds.add(v)
+                elif v.ub is not None and v.value > v.lb:
+                    violated_bounds.add(v)
+
+        return violated_bounds
+
+    def _vars_with_none_value(self):
+        none_value = ComponentSet()
+        for v in self.model.component_data_objects(Var, descend_into=True):
+            if v.value is None:
+                none_value.add(v)
+
+        return none_value
+
     # TODO: deactivated blocks, constraints, objectives,
     def display_external_variables(self, stream=stdout):
-        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
-        stream.write(
-            "The following external variable(s) appear in constraints within the model:\n\n"
-        )
-
+        ext_vars = []
         for v in variables_in_activated_constraints_set(self.model):
             if not _var_in_block(v, self.model):
-                stream.write(f"{TAB}{v.name}\n")
+                ext_vars.append(v.name)
 
-        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
-
-    def display_unused_variables(self, stream=stdout):
-        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
-        stream.write(
-            "The following variable(s) do not appear in activated constraints:\n\n"
+        self._write_report_section(
+            stream=stream,
+            lines_list=ext_vars,
+            title=f"The following external variable(s) appear in constraints within the model:",
+            else_line="No warnings found!",
+            header="=",
+            footer="=",
         )
 
-        for v in variables_not_in_activated_constraints_set(self.model):
-            stream.write(f"{TAB}{v.name}\n")
-
-        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+    def display_unused_variables(self, stream=stdout):
+        self._write_report_section(
+            stream=stream,
+            lines_list=variables_not_in_activated_constraints_set(self.model),
+            title=f"The following external variable(s) appear in constraints within the model:",
+            header="=",
+            footer="=",
+        )
 
     def display_variables_fixed_to_zero(self, stream=stdout):
-        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
-        stream.write("The following variable(s) are fixed to zero:\n\n")
+        self._write_report_section(
+            stream=stream,
+            lines_list=self._vars_fixed_to_zero(),
+            title=f"The following variable(s) are fixed to zero:",
+            header="=",
+            footer="=",
+        )
 
-        for v in self._vars_fixed_to_zero():
-            stream.write(f"{TAB}{v.name}\n")
+    def display_variables_outside_bounds(self, stream=stdout):
+        self._write_report_section(
+            stream=stream,
+            lines_list=self._vars_outside_bounds(),
+            title=f"The following variable(s) have values outside their bounds:",
+            header="=",
+            footer="=",
+        )
 
-        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+    def display_variables_with_none_value(self, stream=stdout):
+        self._write_report_section(
+            stream=stream,
+            lines_list=self._vars_with_none_value(),
+            title=f"The following variable(s) have a value of None:",
+            header="=",
+            footer="=",
+        )
+
+    def display_variables_with_value_near_zero(self, stream=stdout):
+        self._write_report_section(
+            stream=stream,
+            lines_list=self._vars_near_zero(),
+            title=f"The following variable(s) have a value close to zero:",
+            header="=",
+            footer="=",
+        )
+
+    def display_poorly_scaled_variables(self, stream=stdout):
+        self._write_report_section(
+            stream=stream,
+            lines_list=list_badly_scaled_variables(self.model),
+            title=f"The following variable(s) are poorly scaled:",
+            header="=",
+            footer="=",
+        )
+
+    def display_variables_near_bounds(self, stream=stdout):
+        self._write_report_section(
+            stream=stream,
+            lines_list=variables_near_bounds_set(self.model),
+            title=f"The following variable(s) have values close to their bounds:",
+            header="=",
+            footer="=",
+        )
 
     def check_unit_consistency(self):
         # Check unit consistency
@@ -146,13 +224,22 @@ class DiagnosticsToolbox:
         return inconsistent_units
 
     def display_components_with_inconsistent_units(self, stream=stdout):
-        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
-        stream.write("The following component(s) have unit consistency issues:\n\n")
+        self._write_report_section(
+            stream=stream,
+            lines_list=self.check_unit_consistency(),
+            title=f"The following component(s) have unit consistency issues:",
+            header="=",
+            footer="=",
+        )
 
-        for c in self.check_unit_consistency():
-            stream.write(f"{TAB}{c.name}\n")
-
-        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+    def display_constraints_with_large_residuals(self, stream=stdout):
+        self._write_report_section(
+            stream=stream,
+            lines_list=large_residuals_set(self.model, tol=self.residual_tolerance),
+            title=f"The following constraint(s) have large residuals:",
+            header="=",
+            footer="=",
+        )
 
     def check_dulmage_mendelsohn_partition(self):
         igraph = IncidenceGraphInterface(self.model)
@@ -218,7 +305,7 @@ class DiagnosticsToolbox:
             cstring = "Components"
             if len(uc) == 1:
                 cstring = "Component"
-            warnings.append(f"WARNING: {len(uc)} " f"{cstring} with inconsistent units")
+            warnings.append(f"WARNING: {len(uc)} {cstring} with inconsistent units")
             next_steps.append("display_components_with_inconsistent_units()")
         if any(len(x) > 0 for x in [uc_var, uc_con, oc_var, oc_con]):
             warnings.append(
@@ -244,7 +331,7 @@ class DiagnosticsToolbox:
             vstring = "variables"
             if len(zero_vars) == 1:
                 vstring = "variable"
-            cautions.append(f"Caution: {len(zero_vars)} " f"{vstring} fixed to 0")
+            cautions.append(f"Caution: {len(zero_vars)} {vstring} fixed to 0")
         unused_vars = variables_not_in_activated_constraints_set(self.model)
         unused_vars_fixed = 0
         for v in unused_vars:
@@ -261,13 +348,88 @@ class DiagnosticsToolbox:
 
         return cautions
 
+    def _collect_numerical_warnings(self):
+        warnings = []
+        next_steps = []
+
+        # Large residuals
+        large_residuals = large_residuals_set(self.model, tol=self.residual_tolerance)
+        if len(large_residuals) > 0:
+            cstring = "Constraints"
+            if len(large_residuals) == 1:
+                cstring = "Constraint"
+            warnings.append(
+                f"WARNING: {len(large_residuals)} {cstring} with large residuals"
+            )
+            next_steps.append("display_constraints_with_large_residuals()")
+
+        # Variables outside bounds
+        violated_bounds = self._vars_outside_bounds()
+        if len(violated_bounds) > 0:
+            cstring = "Variables"
+            if len(violated_bounds) == 1:
+                cstring = "Variable"
+            warnings.append(
+                f"WARNING: {len(violated_bounds)} {cstring} with bounds violations"
+            )
+            next_steps.append("display_variables_outside_bounds()")
+
+        # Poor scaling
+        var_scaling = list_badly_scaled_variables(self.model)
+        if len(var_scaling) > 0:
+            cstring = "Variables"
+            if len(var_scaling) == 1:
+                cstring = "Variable"
+            warnings.append(f"WARNING: {len(var_scaling)} {cstring} with poor scaling")
+            next_steps.append("display_poorly_scaled_variables()")
+
+        return warnings, next_steps
+
+    def _collect_numerical_cautions(self):
+        cautions = []
+
+        # Variables near bounds
+        near_bounds = variables_near_bounds_set(self.model)
+        if len(near_bounds) > 0:
+            cstring = "Variables"
+            if len(near_bounds) == 1:
+                cstring = "Variable"
+            cautions.append(
+                f"Caution: {len(near_bounds)} {cstring} with value close to their bounds"
+            )
+
+        # Variables near zero
+        near_zero = self._vars_near_zero()
+        if len(near_zero) > 0:
+            cstring = "Variables"
+            if len(near_zero) == 1:
+                cstring = "Variable"
+            cautions.append(
+                f"Caution: {len(near_zero)} {cstring} with value close to zero"
+            )
+
+        # Variables with value None
+        none_value = self._vars_with_none_value()
+        if len(none_value) > 0:
+            cstring = "Variables"
+            if len(none_value) == 1:
+                cstring = "Variable"
+            cautions.append(f"Caution: {len(none_value)} {cstring} with None value")
+
+        return cautions
+
     def assert_no_structural_warnings(self):
         warnings, _ = self._collect_structural_warnings()
         if len(warnings) > 0:
             raise AssertionError(f"Structural issues found ({len(warnings)}).")
 
+    def assert_no_numerical_warnings(self):
+        warnings, _ = self._collect_numerical_warnings()
+        if len(warnings) > 0:
+            raise AssertionError(f"Numerical issues found ({len(warnings)}).")
+
     def _write_report_section(
-        self, stream, lines_list, title=None, else_line=None, header="-"
+        self, stream, lines_list, title=None, else_line=None, header="-", footer=None
     ):
         stream.write(f"\n{header * MAX_STR_LENGTH}\n")
         if title is not None:
@@ -277,6 +439,8 @@ class DiagnosticsToolbox:
                 stream.write(f"{TAB}{i}\n")
         elif else_line is not None:
             stream.write(f"{TAB}{else_line}\n")
+        if footer is not None:
+            stream.write(f"\n{footer * MAX_STR_LENGTH}\n")
 
     def report_structural_issues(self, stream=stdout):
         # Potential evaluation errors
@@ -350,8 +514,34 @@ class DiagnosticsToolbox:
             lines_list=next_steps,
             title="Suggested next steps:",
             else_line="report_numerical_issues()",
+            footer="=",
         )
-        self._write_report_section(stream=stream, lines_list=[], title=None, header="=")
+
+    def report_numerical_issues(self, stream=stdout):
+        warnings, next_steps = self._collect_numerical_warnings()
+        cautions = self._collect_numerical_cautions()
+
+        self._write_report_section(
+            stream=stream,
+            lines_list=warnings,
+            title=f"{len(warnings)} WARNINGS",
+            else_line="No warnings found!",
+            header="=",
+        )
+        self._write_report_section(
+            stream=stream,
+            lines_list=cautions,
+            title=f"{len(warnings)} Cautions",
+            else_line="No cautions found!",
+        )
+        self._write_report_section(
+            stream=stream,
+            lines_list=next_steps,
+            title="Suggested next steps:",
+            else_line=f"If you still have issues converging your model consider:\n"
+            f"{TAB*2}svd_analysis(TBA)\n{TAB*2}degeneracy_hunter (TBA)",
+            footer="=",
+        )
 
 
 class DegeneracyHunter:

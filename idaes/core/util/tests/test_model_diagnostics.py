@@ -97,14 +97,48 @@ def test_DiagnosticsToolbox():
 
     dt.report_structural_issues()
 
-    dt.display_components_with_inconsistent_units()
+    m.b.v3.fix(1)
 
-    dt.display_underconstrained_set()
-    dt.display_overconstrained_set()
+    dt.report_structural_issues()
 
     dt.display_external_variables()
-    dt.display_unused_variables()
-    dt.display_variables_fixed_to_zero()
+
+    # TODO: Current checks do not detect linearly dependent constraints
+    assert False
+
+
+@pytest.mark.integration
+def test_DiagnosticsToolbox2():
+    m = ConcreteModel()
+
+    # A var outside the model
+    m.v = Var(initialize=10, units=units.s, bounds=(0, 1))
+
+    # Model to be tested
+    m.b = Block()
+
+    m.b.v1 = Var(initialize=1, units=units.s)
+    m.b.v2 = Var(initialize=2, units=units.s)
+    m.b.v3 = Var(initialize=3, units=units.s, bounds=(10, 20))
+    m.b.v4 = Var(units=units.s)
+    m.b.v5 = Var(initialize=1e-8, bounds=(0, 1))
+
+    # Equality constraints
+    m.b.c1 = Constraint(expr=2 * m.b.v1 == m.b.v2)  # OK
+    m.b.c2 = Constraint(expr=m.b.v3 == m.v)  # Not Converged
+
+    # Inequality constraints
+    m.b.c3 = Constraint(expr=m.b.v2 <= 10)  # OK
+    m.b.c4 = Constraint(expr=m.b.v2 <= 0)  # Not OK
+
+    # Create instance of Diagnostics Toolbox
+    dt = DiagnosticsToolbox(model=m.b)
+
+    # dt.report_structural_issues()
+
+    dt.report_numerical_issues()
+    dt.display_constraints_with_large_residuals()
+    dt.display_variables_near_bounds()
 
     # TODO: Current checks do not detect linearly dependent constraints
     assert False
