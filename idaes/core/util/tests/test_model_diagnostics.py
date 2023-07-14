@@ -140,6 +140,8 @@ def test_DiagnosticsToolbox2():
     dt.display_constraints_with_large_residuals()
     dt.display_variables_near_bounds()
 
+    help(DiagnosticsToolbox)
+
     # TODO: Current checks do not detect linearly dependent constraints
     assert False
 

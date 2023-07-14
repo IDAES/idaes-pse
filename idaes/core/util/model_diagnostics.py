@@ -86,6 +86,21 @@ def _var_in_block(var, block):
 
 
 class DiagnosticsToolbox:
+    """
+    The IDAES Model DiagnosticsToolbox.
+
+    To get started:
+
+      1. Create an instance of the toolbox the model to debug as the model argument.
+      2. Call the report_structural_issues() method.
+
+    Model diagnostics is an iterative process and you will likely need to run these
+    tools multiple times to resolve all issues. After making a change to your model,
+    you should always start from the beginning again to ensure hte change did not
+    introduce any new issues; i.e., always start from the report_structural_issues()
+    method.
+    """
+
     def __init__(self, model: Block):
         if not isinstance(model, Block):
             raise ValueError("model argument must be an instance of a Pyomo Block.")
