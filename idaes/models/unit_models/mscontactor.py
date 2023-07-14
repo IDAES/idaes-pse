@@ -324,6 +324,22 @@ class MSContactorData(UnitModelBlockData):
             doc="List of interacting stream pairs as 2-tuples ('stream1', 'stream2').",
         ),
     )
+    CONFIG.declare(
+        "heterogeneous_reactions",
+        ConfigValue(
+            default=None,
+            # domain=list,
+            doc="Heterogeneous reaction package to use in contactor.",
+        ),
+    )
+    CONFIG.declare(
+        "heterogeneous_reactions_args",
+        ConfigDict(
+            implicit=True,
+            description="Arguments to use for constructing reaction packages",
+            doc="ConfigBlock with arguments to be passed to heterogeneous reaction block(s)",
+        ),
+    )
 
     def build(self):
         """
@@ -340,6 +356,10 @@ class MSContactorData(UnitModelBlockData):
 
         self._verify_inputs()
         flow_basis, uom = self._build_state_blocks()
+
+        if self.config.heterogeneous_reactions is not None:
+            self._build_heterogeneous_reaction_blocks()
+
         self._build_material_balance_constraints(flow_basis, uom)
         self._build_energy_balance_constraints(uom)
         self._build_pressure_balance_constraints(uom)
@@ -388,10 +408,14 @@ class MSContactorData(UnitModelBlockData):
                 ):
                     # Common component, assume interaction
                     self.stream_component_interactions.add((stream1, stream2, j))
-        if len(self.stream_component_interactions) == 0:
+        if (
+            len(self.stream_component_interactions) == 0
+            and self.config.heterogeneous_reactions is None
+        ):
             raise ConfigurationError(
-                "No common components found in property packages. MSContactor model assumes "
-                "mass transfer occurs between components with the same name in different streams."
+                "No common components found in property packages and no heterogeneous reactions "
+                "specified. The MSContactor model assumes that mass transfer occurs between "
+                "components with the same name in different streams or due to heterogeneous reactions."
             )
 
         # Check that reaction block was provided if reactions requested
@@ -489,6 +513,16 @@ class MSContactorData(UnitModelBlockData):
 
         return flow_basis, uom
 
+    def _build_heterogeneous_reaction_blocks(self):
+        rpack = self.config.heterogeneous_reactions
+        rpack_args = self.config.heterogeneous_reactions_args
+        self.heterogeneous_reactions = rpack.build_reaction_block(
+            self.flowsheet().time,
+            self.elements,
+            doc=f"Heterogeneous reaction block for contactor.",
+            **rpack_args,
+        )
+
     def _build_material_balance_constraints(self, flow_basis, uom):
         # Get units for transfer terms
         if flow_basis is MaterialFlowBasis.molar:
@@ -511,6 +545,25 @@ class MSContactorData(UnitModelBlockData):
             doc="Inter-stream mass transfer term",
         )
 
+        if self.config.heterogeneous_reactions is not None:
+            if not hasattr(self.config.heterogeneous_reactions, "reaction_idx"):
+                raise PropertyNotSupportedError(
+                    f"Heterogeneous reaction package does not contain a list of "
+                    "reactions (reaction_idx)."
+                )
+
+            # Add extents of reaction and stoichiometric constraints
+            # We will assume the user will define how extent will be calculated
+            self.heterogeneous_reaction_extent = Var(
+                self.flowsheet().time,
+                self.elements,
+                self.config.heterogeneous_reactions.reaction_idx,
+                domain=Reals,
+                initialize=0.0,
+                doc=f"Extent of heterogeneous reactions",
+                units=mb_units,
+            )
+
         # Build balance equations
         for stream, sconfig in self.config.streams.items():
             state_block = getattr(self, stream)
@@ -522,7 +575,7 @@ class MSContactorData(UnitModelBlockData):
             if hasattr(self, stream + "_reactions"):
                 reaction_block = getattr(self, stream + "_reactions")
 
-            # Add equilibrium reaction terms (if required)
+            # Add homogeneous rate reaction terms (if required)
             if sconfig.has_rate_reactions:
                 if not hasattr(sconfig.reaction_package, "rate_reaction_idx"):
                     raise PropertyNotSupportedError(
@@ -702,6 +755,51 @@ class MSContactorData(UnitModelBlockData):
                     stream + "_inherent_reaction_constraint",
                     inherent_reaction_constraint,
                 )
+
+                # Add heterogeneous reaction terms (if required)
+                if self.config.heterogeneous_reactions is not None:
+                    heterogeneous_reactions_generation = Var(
+                        self.flowsheet().time,
+                        self.elements,
+                        pc_set,
+                        domain=Reals,
+                        initialize=0.0,
+                        doc=f"Generation due to heterogeneous reactions",
+                        units=mb_units,
+                    )
+                    self.add_component(
+                        stream + "_heterogeneous_reactions_generation",
+                        heterogeneous_reactions_generation,
+                    )
+
+                    def heterogeneous_reaction_rule(b, t, s, p, j):
+                        if (p, j) in pc_set:
+                            return heterogeneous_reactions_generation[t, s, p, j] == (
+                                sum(
+                                    self.heterogeneous_reactions[
+                                        t, s
+                                    ].params.reaction_stoichiometry[r, p, j]
+                                    * b.heterogeneous_reaction_extent[t, s, r]
+                                    for r in self.config.heterogeneous_reactions.reaction_idx
+                                    if (r, p, j)
+                                    in self.heterogeneous_reactions[
+                                        t, s
+                                    ].params.reaction_stoichiometry
+                                )
+                            )
+                        return Constraint.Skip
+
+                    heterogeneous_reaction_constraint = Constraint(
+                        self.flowsheet().time,
+                        self.elements,
+                        pc_set,
+                        doc=f"Heterogeneous reaction stoichiometry constraint",
+                        rule=heterogeneous_reaction_rule,
+                    )
+                    self.add_component(
+                        stream + "_heterogeneous_reaction_constraint",
+                        heterogeneous_reaction_constraint,
+                    )
 
             # Material balance for stream
             def material_balance_rule(b, t, s, j):
