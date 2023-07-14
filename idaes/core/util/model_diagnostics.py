@@ -201,6 +201,83 @@ class DiagnosticsToolbox:
     # TODO: Block triangularization analysis
     # Number and size of blocks, polynomial degree of 1x1 blocks, simple pivot check of moderate sized sub-blocks?
 
+    def _collect_structural_warnings(self):
+        uc = self.check_unit_consistency()
+        uc_var, uc_con, oc_var, oc_con = self.check_dulmage_mendelsohn_partition()
+
+        # Collect warnings
+        warnings = []
+        next_steps = []
+        dof = degrees_of_freedom(self.model)
+        if dof != 0:
+            dstring = "Degrees"
+            if dof == abs(1):
+                dstring = "Degree"
+            warnings.append(f"WARNING: {dof} {dstring} of Freedom")
+        if len(uc) > 0:
+            cstring = "Components"
+            if len(uc) == 1:
+                cstring = "Component"
+            warnings.append(f"WARNING: {len(uc)} " f"{cstring} with inconsistent units")
+            next_steps.append("display_components_with_inconsistent_units()")
+        if any(len(x) > 0 for x in [uc_var, uc_con, oc_var, oc_con]):
+            warnings.append(
+                f"WARNING: Structural singularity found\n"
+                f"{TAB*2}Under-Constrained Set: {len(uc_var)} "
+                f"variables, {len(uc_con)} constraints\n"
+                f"{TAB*2}Over-Constrained Set: {len(oc_var)} "
+                f"variables, {len(oc_con)} constraints"
+            )
+
+        if any(len(x) > 0 for x in [uc_var, uc_con]):
+            next_steps.append("display_underconstrained_set()")
+        if any(len(x) > 0 for x in [oc_var, oc_con]):
+            next_steps.append("display_overconstrained_set()")
+
+        return warnings, next_steps
+
+    def _collect_structural_cautions(self):
+        # Collect cautions
+        cautions = []
+        zero_vars = self._vars_fixed_to_zero()
+        if len(zero_vars) > 0:
+            vstring = "variables"
+            if len(zero_vars) == 1:
+                vstring = "variable"
+            cautions.append(f"Caution: {len(zero_vars)} " f"{vstring} fixed to 0")
+        unused_vars = variables_not_in_activated_constraints_set(self.model)
+        unused_vars_fixed = 0
+        for v in unused_vars:
+            if v.fixed:
+                unused_vars_fixed += 1
+        if len(unused_vars) > 0:
+            vstring = "variables"
+            if len(unused_vars) == 1:
+                vstring = "variable"
+            cautions.append(
+                f"Caution: {len(unused_vars)} "
+                f"unused {vstring} ({unused_vars_fixed} fixed)"
+            )
+
+        return cautions
+
+    def assert_no_structural_warnings(self):
+        warnings, _ = self._collect_structural_warnings()
+        if len(warnings) > 0:
+            raise AssertionError(f"Structural issues found ({len(warnings)}).")
+
+    def _write_report_section(
+        self, stream, lines_list, title=None, else_line=None, header="-"
+    ):
+        stream.write(f"\n{header * MAX_STR_LENGTH}\n")
+        if title is not None:
+            stream.write(f"{title}\n\n")
+        if len(lines_list) > 0:
+            for i in lines_list:
+                stream.write(f"{TAB}{i}\n")
+        elif else_line is not None:
+            stream.write(f"{TAB}{else_line}\n")
+
     def report_structural_issues(self, stream=stdout):
         # Potential evaluation errors
         # High Index
@@ -220,105 +297,61 @@ class DiagnosticsToolbox:
                 if not _var_in_block(v, self.model):
                     ext_free_vars_in_constraints.add(v)
 
-        uc = self.check_unit_consistency()
-        uc_var, uc_con, oc_var, oc_con = self.check_dulmage_mendelsohn_partition()
-
-        # Collect warnings
-        warnings = []
-        dof = degrees_of_freedom(self.model)
-        if dof != 0:
-            dstring = "Degrees"
-            if dof == abs(1):
-                dstring = "Degree"
-            warnings.append(f"\n{TAB}WARNING: {dof} {dstring} of Freedom")
-        if len(uc) > 0:
-            cstring = "Components"
-            if len(uc) == 1:
-                cstring = "Component"
-            warnings.append(
-                f"\n{TAB}WARNING: {len(uc)} " f"{cstring} with inconsistent units"
-            )
-        if any(len(x) > 0 for x in [uc_var, uc_con, oc_var, oc_con]):
-            warnings.append(
-                f"\n{TAB}WARNING: Structural singularity found\n"
-                f"{TAB*2}Under-Constrained Set: {len(uc_var)} "
-                f"variables, {len(uc_con)} constraints\n"
-                f"{TAB * 2}Over-Constrained Set: {len(oc_var)} "
-                f"variables, {len(oc_con)} constraints"
-            )
-
-        # Collect cautions
-        cautions = []
-        zero_vars = self._vars_fixed_to_zero()
-        if len(zero_vars) > 0:
-            vstring = "variables"
-            if len(zero_vars) == 1:
-                vstring = "variable"
-            cautions.append(
-                f"\n{TAB}Caution: {len(zero_vars)} " f"{vstring} fixed to 0"
-            )
-        unused_vars = variables_not_in_activated_constraints_set(self.model)
-        unused_vars_fixed = 0
-        for v in unused_vars:
-            if v.fixed:
-                unused_vars_fixed += 1
-        if len(unused_vars) > 0:
-            vstring = "variables"
-            if len(unused_vars) == 1:
-                vstring = "variable"
-            cautions.append(
-                f"\n{TAB}Caution: {len(unused_vars)} "
-                f"unused {vstring} ({unused_vars_fixed} fixed)"
-            )
-
         # Generate report
         # TODO: Variables with bounds
-        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
-        stream.write("Model Statistics\n\n")
-        stream.write(
+        stats = []
+        stats.append(
             f"{TAB}Activated Blocks: {len(activated_blocks_set(self.model))} "
-            f"(Deactivated: {len(deactivated_blocks_set(self.model))})\n"
+            f"(Deactivated: {len(deactivated_blocks_set(self.model))})"
         )
-        stream.write(
+        stats.append(
             f"{TAB}Free Variables in Activated Constraints: "
             f"{len(free_vars_in_constraints)} "
-            f"(External: {len(ext_free_vars_in_constraints)})\n"
+            f"(External: {len(ext_free_vars_in_constraints)})"
         )
-        stream.write(
+        stats.append(
             f"{TAB}Fixed Variables in Activated Constraints: "
             f"{len(fixed_vars_in_constraints)} "
-            f"(External: {len(ext_fixed_vars_in_constraints)})\n"
+            f"(External: {len(ext_fixed_vars_in_constraints)})"
         )
-        stream.write(
+        stats.append(
             f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(self.model))} "
-            f"(Deactivated: {len(deactivated_equalities_set(self.model))})\n"
+            f"(Deactivated: {len(deactivated_equalities_set(self.model))})"
         )
-        stream.write(
+        stats.append(
             f"{TAB}Activated Inequality Constraints: {len(activated_inequalities_set(self.model))} "
-            f"(Deactivated: {len(deactivated_inequalities_set(self.model))})\n"
+            f"(Deactivated: {len(deactivated_inequalities_set(self.model))})"
         )
-        stream.write(
+        stats.append(
             f"{TAB}Activated Objectives: {len(activated_objectives_set(self.model))} "
-            f"(Deactivated: {len(deactivated_objectives_set(self.model))})\n"
+            f"(Deactivated: {len(deactivated_objectives_set(self.model))})"
         )
 
-        stream.write("\n" + "-" * MAX_STR_LENGTH + "\n")
-        if len(warnings) > 0:
-            stream.write(f"{len(warnings)} WARNINGS\n")
-            for w in warnings:
-                stream.write(w)
-        else:
-            stream.write("No warnings found!\n")
+        warnings, next_steps = self._collect_structural_warnings()
+        cautions = self._collect_structural_cautions()
 
-        stream.write("\n\n" + "-" * MAX_STR_LENGTH + "\n")
-        if len(cautions) > 0:
-            stream.write(f"{len(cautions)} Cautions\n")
-            for c in cautions:
-                stream.write(c)
-        else:
-            stream.write("No cautions found!\n")
-
-        stream.write("\n\n" + "=" * MAX_STR_LENGTH + "\n")
+        self._write_report_section(
+            stream=stream, lines_list=stats, title="Model Statistics", header="="
+        )
+        self._write_report_section(
+            stream=stream,
+            lines_list=warnings,
+            title=f"{len(warnings)} WARNINGS",
+            else_line="No warnings found!",
+        )
+        self._write_report_section(
+            stream=stream,
+            lines_list=cautions,
+            title=f"{len(warnings)} Cautions",
+            else_line="No cautions found!",
+        )
+        self._write_report_section(
+            stream=stream,
+            lines_list=next_steps,
+            title="Suggested next steps:",
+            else_line="report_numerical_issues()",
+        )
+        self._write_report_section(stream=stream, lines_list=[], title=None, header="=")
 
 
 class DegeneracyHunter:
