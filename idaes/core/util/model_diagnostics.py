@@ -91,14 +91,19 @@ class DiagnosticsToolbox:
 
     To get started:
 
-      1. Create an instance of the toolbox the model to debug as the model argument.
-      2. Call the report_structural_issues() method.
+      1. Create an instance of your model - this does not need to be initialized yet.
+      2. Create an instance of the toolbox the model to debug as the model argument.
+      3. Call the report_structural_issues() method.
 
     Model diagnostics is an iterative process and you will likely need to run these
     tools multiple times to resolve all issues. After making a change to your model,
-    you should always start from the beginning again to ensure hte change did not
+    you should always start from the beginning again to ensure the change did not
     introduce any new issues; i.e., always start from the report_structural_issues()
     method.
+
+    Note that structural checks do not require the model to be initialized, thus users
+    should start with these. Numerical checks require at least a partial solution to the
+    model and should only be run once all structural issues have been resolved.
     """
 
     def __init__(self, model: Block):
@@ -147,6 +152,17 @@ class DiagnosticsToolbox:
 
     # TODO: deactivated blocks, constraints, objectives,
     def display_external_variables(self, stream=stdout):
+        """
+        Prints a list of variables that appear within Constraints in the model
+        but are not contained within the model themselves.
+
+        Args:
+            stream: an I/O object to write the list to (default = stdout)
+
+        Returns:
+            None
+
+        """
         ext_vars = []
         for v in variables_in_activated_constraints_set(self.model):
             if not _var_in_block(v, self.model):
@@ -162,6 +178,16 @@ class DiagnosticsToolbox:
         )
 
     def display_unused_variables(self, stream=stdout):
+        """
+        Prints a list of variables that do not appear in any activated Constraints.
+
+        Args:
+            stream: an I/O object to write the list to (default = stdout)
+
+        Returns:
+            None
+
+        """
         self._write_report_section(
             stream=stream,
             lines_list=variables_not_in_activated_constraints_set(self.model),
@@ -171,6 +197,16 @@ class DiagnosticsToolbox:
         )
 
     def display_variables_fixed_to_zero(self, stream=stdout):
+        """
+        Prints a list of variables that are fixed to an absolute value of 0.
+
+        Args:
+            stream: an I/O object to write the list to (default = stdout)
+
+        Returns:
+            None
+
+        """
         self._write_report_section(
             stream=stream,
             lines_list=self._vars_fixed_to_zero(),
@@ -180,6 +216,17 @@ class DiagnosticsToolbox:
         )
 
     def display_variables_outside_bounds(self, stream=stdout):
+        """
+        Prints a list of variables with values that fall outside the bounds
+        on the variable.
+
+        Args:
+            stream: an I/O object to write the list to (default = stdout)
+
+        Returns:
+            None
+
+        """
         self._write_report_section(
             stream=stream,
             lines_list=self._vars_outside_bounds(),
@@ -189,6 +236,16 @@ class DiagnosticsToolbox:
         )
 
     def display_variables_with_none_value(self, stream=stdout):
+        """
+        Prints a list of variables with a value of None.
+
+        Args:
+            stream: an I/O object to write the list to (default = stdout)
+
+        Returns:
+            None
+
+        """
         self._write_report_section(
             stream=stream,
             lines_list=self._vars_with_none_value(),
@@ -198,6 +255,18 @@ class DiagnosticsToolbox:
         )
 
     def display_variables_with_value_near_zero(self, stream=stdout):
+        """
+        Prints a list of variables with a value close to zero. The tolerance
+        for determining what is close to zero can be set in the class configuration
+        options.
+
+        Args:
+            stream: an I/O object to write the list to (default = stdout)
+
+        Returns:
+            None
+
+        """
         self._write_report_section(
             stream=stream,
             lines_list=self._vars_near_zero(),
@@ -207,6 +276,18 @@ class DiagnosticsToolbox:
         )
 
     def display_poorly_scaled_variables(self, stream=stdout):
+        """
+        Prints a list of variables with poor scaling based on their current values.
+        Tolerances for determining poor scaling can be set in the class configuration
+        options.
+
+        Args:
+            stream: an I/O object to write the list to (default = stdout)
+
+        Returns:
+            None
+
+        """
         self._write_report_section(
             stream=stream,
             lines_list=list_badly_scaled_variables(self.model),
@@ -216,6 +297,17 @@ class DiagnosticsToolbox:
         )
 
     def display_variables_near_bounds(self, stream=stdout):
+        """
+        Prints a list of variables with values close to their bounds. Tolerance can
+        be set in the class configuration options.
+
+        Args:
+            stream: an I/O object to write the list to (default = stdout)
+
+        Returns:
+            None
+
+        """
         self._write_report_section(
             stream=stream,
             lines_list=variables_near_bounds_set(self.model),
@@ -224,7 +316,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def check_unit_consistency(self):
+    def _check_unit_consistency(self):
         # Check unit consistency
         # TODO: replace once Pyomo method ready
         # return identify_inconsistent_units(self.model)
@@ -239,15 +331,37 @@ class DiagnosticsToolbox:
         return inconsistent_units
 
     def display_components_with_inconsistent_units(self, stream=stdout):
+        """
+        Prints a list of all Constraints, Expressions and Objectives in the
+        model with inconsistent units of measurement.
+
+        Args:
+            stream: an I/O object to write the list to (default = stdout)
+
+        Returns:
+            None
+
+        """
         self._write_report_section(
             stream=stream,
-            lines_list=self.check_unit_consistency(),
+            lines_list=self._check_unit_consistency(),
             title=f"The following component(s) have unit consistency issues:",
             header="=",
             footer="=",
         )
 
     def display_constraints_with_large_residuals(self, stream=stdout):
+        """
+        Prints a list of Constraints with residuals greater than a specified tolerance.
+        Tolerance can be set in the class configuration options.
+
+        Args:
+            stream: an I/O object to write the list to (default = stdout)
+
+        Returns:
+            None
+
+        """
         self._write_report_section(
             stream=stream,
             lines_list=large_residuals_set(self.model, tol=self.residual_tolerance),
@@ -257,6 +371,17 @@ class DiagnosticsToolbox:
         )
 
     def check_dulmage_mendelsohn_partition(self):
+        """
+        Performs a Dulmage-Mendelsohn partioning on the model and returns
+        the over- and under-constraint sub-problems..
+
+        Returns:
+            list of variables in the under-constrained set
+            list of constraints in the under-constrained set
+            list of variables in the over-constrained set
+            list of constraints in the over-constrained set
+
+        """
         igraph = IncidenceGraphInterface(self.model)
         var_dm_partition, con_dm_partition = igraph.dulmage_mendelsohn()
 
@@ -269,6 +394,20 @@ class DiagnosticsToolbox:
         return uc_var, uc_con, oc_var, oc_con
 
     def display_underconstrained_set(self, stream=stdout):
+        """
+        Prints the variables and constraints in the under-constrained sub-problem
+        from a Dulmage-Mendelsohn partitioning.
+
+        This cane be used to indentify the under-defined part of a model and thus
+        where additional information (fixed variables or constraints) are required.
+
+        Args:
+            stream: an I/O object to write the list to (default = stdout)
+
+        Returns:
+            None
+
+        """
         uc_var, uc_con, _, _ = self.check_dulmage_mendelsohn_partition()
 
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
@@ -285,6 +424,20 @@ class DiagnosticsToolbox:
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
 
     def display_overconstrained_set(self, stream=stdout):
+        """
+        Prints the variables and constraints in the over-constrained sub-problem
+        from a Dulmage-Mendelsohn partitioning.
+
+        This cane be used to indentify the over-defined part of a model and thus
+        where constraints must be removed or variables unfixed.
+
+        Args:
+            stream: an I/O object to write the list to (default = stdout)
+
+        Returns:
+            None
+
+        """
         _, _, oc_var, oc_con = self.check_dulmage_mendelsohn_partition()
 
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
@@ -304,7 +457,15 @@ class DiagnosticsToolbox:
     # Number and size of blocks, polynomial degree of 1x1 blocks, simple pivot check of moderate sized sub-blocks?
 
     def _collect_structural_warnings(self):
-        uc = self.check_unit_consistency()
+        """
+        Runs checks for structural warnings and returns two lists.
+
+        Returns:
+            warnings - list of warning messages from structural analysis
+            next_steps - list of suggested next steps to further investigate warnings
+
+        """
+        uc = self._check_unit_consistency()
         uc_var, uc_con, oc_var, oc_con = self.check_dulmage_mendelsohn_partition()
 
         # Collect warnings
@@ -339,6 +500,13 @@ class DiagnosticsToolbox:
         return warnings, next_steps
 
     def _collect_structural_cautions(self):
+        """
+        Runs checks for structural cautions and returns a list.
+
+        Returns:
+            cautions - list of caution messages from structural analysis
+
+        """
         # Collect cautions
         cautions = []
         zero_vars = self._vars_fixed_to_zero()
@@ -364,6 +532,14 @@ class DiagnosticsToolbox:
         return cautions
 
     def _collect_numerical_warnings(self):
+        """
+        Runs checks for numerical warnings and returns two lists.
+
+        Returns:
+            warnings - list of warning messages from numerical analysis
+            next_steps - list of suggested next steps to further investigate warnings
+
+        """
         warnings = []
         next_steps = []
 
@@ -401,6 +577,13 @@ class DiagnosticsToolbox:
         return warnings, next_steps
 
     def _collect_numerical_cautions(self):
+        """
+        Runs checks for numerical cautions and returns a list.
+
+        Returns:
+            cautions - list of caution messages from numerical analysis
+
+        """
         cautions = []
 
         # Variables near bounds
@@ -434,11 +617,27 @@ class DiagnosticsToolbox:
         return cautions
 
     def assert_no_structural_warnings(self):
+        """
+        Checks for structural warnings in the model and raises an AssertionError
+        if any are found.
+
+        Raises:
+            AssertionError if any warnings are identified by structural analysis.
+
+        """
         warnings, _ = self._collect_structural_warnings()
         if len(warnings) > 0:
             raise AssertionError(f"Structural issues found ({len(warnings)}).")
 
     def assert_no_numerical_warnings(self):
+        """
+        Checks for numerical warnings in the model and raises an AssertionError
+        if any are found.
+
+        Raises:
+            AssertionError if any warnings are identified by numerical analysis.
+
+        """
         warnings, _ = self._collect_numerical_warnings()
         if len(warnings) > 0:
             raise AssertionError(f"Numerical issues found ({len(warnings)}).")
@@ -446,6 +645,21 @@ class DiagnosticsToolbox:
     def _write_report_section(
         self, stream, lines_list, title=None, else_line=None, header="-", footer=None
     ):
+        """
+        Writes output in standard format for report and display methods.
+
+        Args:
+            stream: stream to write to
+            lines_list: list containing lines ot be writen in body of report
+            title: title to be put at top of report
+            else_line: line ot be written if lines_list is empty
+            header: character to use to write header separation line
+            footer: character to use to write footer separation line
+
+        Returns:
+            None
+
+        """
         stream.write(f"\n{header * MAX_STR_LENGTH}\n")
         if title is not None:
             stream.write(f"{title}\n\n")
@@ -458,6 +672,21 @@ class DiagnosticsToolbox:
             stream.write(f"\n{footer * MAX_STR_LENGTH}\n")
 
     def report_structural_issues(self, stream=stdout):
+        """
+        Generates a summary report of any structural issues identified in the model provided
+        and suggest next steps for debugging model.
+
+        This should be the first method called when debugging a model and after any change
+        is made to the model. These checks can be run before trying to initialize and solve
+        the model.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
         # Potential evaluation errors
         # High Index
 
@@ -533,6 +762,20 @@ class DiagnosticsToolbox:
         )
 
     def report_numerical_issues(self, stream=stdout):
+        """
+        Generates a summary report of any numerical issues identified in the model provided
+        and suggest next steps for debugging model.
+
+        Numerical checks should only be performed once all structural issues have been resolved,
+        and require that at least a partial solution to the model is available.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
         warnings, next_steps = self._collect_numerical_warnings()
         cautions = self._collect_numerical_cautions()
 
