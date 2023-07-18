@@ -786,7 +786,6 @@ should be constructed in this state block,
         except AttributeError:
             return build_on_demand(self, attr)
 
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
         # Get scaling factor defaults, if no scaling factor set
