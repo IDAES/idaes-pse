@@ -92,8 +92,12 @@ class DiagnosticsToolbox:
     To get started:
 
       1. Create an instance of your model - this does not need to be initialized yet.
-      2. Create an instance of the toolbox the model to debug as the model argument.
-      3. Call the report_structural_issues() method.
+      2. Fix variables until you have 0 degrees of freedom - many of these tools presume
+        a square model, and a square model should always be the foundation of any more
+        advanced model.
+      3. Create an instance of the DiagnosticsToolbox and provide the model to debug as
+        the model argument.
+      4. Call the report_structural_issues() method.
 
     Model diagnostics is an iterative process and you will likely need to run these
     tools multiple times to resolve all issues. After making a change to your model,
@@ -104,6 +108,21 @@ class DiagnosticsToolbox:
     Note that structural checks do not require the model to be initialized, thus users
     should start with these. Numerical checks require at least a partial solution to the
     model and should only be run once all structural issues have been resolved.
+
+    Report methods will print a summary containing three parts:
+
+    1. Warnings - these are critical issues that should be resolved before continuing.
+      For each warning, a method will be suggested in the Next Steps section to get
+      additional information.
+    2. Cautions - these are things that could be correct but could also be hte source of
+      solver issues. Not all cautions need ot be addressed, but users should investigate
+      each one to ensure that the behavior is correct and that they will not be hte source
+      of difficulties later. Methods exist to provide more information on all cautions,
+      but these will not appear in the Next Steps section.
+    3. Next Steps - these are recommended methods to call from the DiagnosticsToolbox to
+      get further information on warnings. If no warnings are found, this will suggest
+      the next report method to call.
+
     """
 
     def __init__(self, model: Block):
@@ -135,9 +154,9 @@ class DiagnosticsToolbox:
         violated_bounds = ComponentSet()
         for v in self.model.component_data_objects(Var, descend_into=True):
             if v.value is not None:
-                if v.lb is not None and v.value < v.lb:
+                if v.lb is not None and v.value <= v.lb:
                     violated_bounds.add(v)
-                elif v.ub is not None and v.value > v.lb:
+                elif v.ub is not None and v.value >= v.ub:
                     violated_bounds.add(v)
 
         return violated_bounds
@@ -172,7 +191,6 @@ class DiagnosticsToolbox:
             stream=stream,
             lines_list=ext_vars,
             title=f"The following external variable(s) appear in constraints within the model:",
-            else_line="No warnings found!",
             header="=",
             footer="=",
         )
@@ -191,7 +209,7 @@ class DiagnosticsToolbox:
         self._write_report_section(
             stream=stream,
             lines_list=variables_not_in_activated_constraints_set(self.model),
-            title=f"The following external variable(s) appear in constraints within the model:",
+            title=f"The following variable(s) do not appear in any activated constraints within the model:",
             header="=",
             footer="=",
         )
@@ -229,7 +247,10 @@ class DiagnosticsToolbox:
         """
         self._write_report_section(
             stream=stream,
-            lines_list=self._vars_outside_bounds(),
+            lines_list=[
+                f"{v.name} ({'fixed' if v.fixed else 'free'}): value={value(v)} bounds={v.bounds}"
+                for v in self._vars_outside_bounds()
+            ],
             title=f"The following variable(s) have values outside their bounds:",
             header="=",
             footer="=",
@@ -269,7 +290,7 @@ class DiagnosticsToolbox:
         """
         self._write_report_section(
             stream=stream,
-            lines_list=self._vars_near_zero(),
+            lines_list=[f"{v.name}: value={value(v)}" for v in self._vars_near_zero()],
             title=f"The following variable(s) have a value close to zero:",
             header="=",
             footer="=",
@@ -290,7 +311,9 @@ class DiagnosticsToolbox:
         """
         self._write_report_section(
             stream=stream,
-            lines_list=list_badly_scaled_variables(self.model),
+            lines_list=[
+                f"{i.name}: {j}" for i, j in list_badly_scaled_variables(self.model)
+            ],
             title=f"The following variable(s) are poorly scaled:",
             header="=",
             footer="=",
@@ -310,7 +333,10 @@ class DiagnosticsToolbox:
         """
         self._write_report_section(
             stream=stream,
-            lines_list=variables_near_bounds_set(self.model),
+            lines_list=[
+                f"{v.name}: value={value(v)} bounds={v.bounds}"
+                for v in variables_near_bounds_set(self.model)
+            ],
             title=f"The following variable(s) have values close to their bounds:",
             header="=",
             footer="=",
@@ -346,6 +372,8 @@ class DiagnosticsToolbox:
             stream=stream,
             lines_list=self._check_unit_consistency(),
             title=f"The following component(s) have unit consistency issues:",
+            end_line="For more details on constraint violations, import the "
+            "assert_units_consistent method\nfrom pyomo.util.check_units",
             header="=",
             footer="=",
         )
@@ -411,7 +439,7 @@ class DiagnosticsToolbox:
         uc_var, uc_con, _, _ = self.check_dulmage_mendelsohn_partition()
 
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
-        stream.write("Dulmage_Mendelsohn Under-Constrained Set\n\n")
+        stream.write("Dulmage-Mendelsohn Under-Constrained Set\n\n")
 
         stream.write(f"{TAB}Variables:\n\n")
         for v in uc_var:
@@ -441,7 +469,7 @@ class DiagnosticsToolbox:
         _, _, oc_var, oc_con = self.check_dulmage_mendelsohn_partition()
 
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
-        stream.write("Dulmage_Mendelsohn Over-Constrained Set\n\n")
+        stream.write("Dulmage-Mendelsohn Over-Constrained Set\n\n")
 
         stream.write(f"{TAB}Variables:\n\n")
         for v in oc_var:
@@ -643,7 +671,14 @@ class DiagnosticsToolbox:
             raise AssertionError(f"Numerical issues found ({len(warnings)}).")
 
     def _write_report_section(
-        self, stream, lines_list, title=None, else_line=None, header="-", footer=None
+        self,
+        stream,
+        lines_list,
+        title=None,
+        else_line=None,
+        end_line=None,
+        header="-",
+        footer=None,
     ):
         """
         Writes output in standard format for report and display methods.
@@ -652,7 +687,8 @@ class DiagnosticsToolbox:
             stream: stream to write to
             lines_list: list containing lines ot be writen in body of report
             title: title to be put at top of report
-            else_line: line ot be written if lines_list is empty
+            else_line: line to be written if lines_list is empty
+            end_line: line to be written at end of report
             header: character to use to write header separation line
             footer: character to use to write footer separation line
 
@@ -660,7 +696,7 @@ class DiagnosticsToolbox:
             None
 
         """
-        stream.write(f"\n{header * MAX_STR_LENGTH}\n")
+        stream.write(f"{header * MAX_STR_LENGTH}\n")
         if title is not None:
             stream.write(f"{title}\n\n")
         if len(lines_list) > 0:
@@ -668,8 +704,11 @@ class DiagnosticsToolbox:
                 stream.write(f"{TAB}{i}\n")
         elif else_line is not None:
             stream.write(f"{TAB}{else_line}\n")
+        stream.write("\n")
+        if end_line is not None:
+            stream.write(f"{end_line}\n")
         if footer is not None:
-            stream.write(f"\n{footer * MAX_STR_LENGTH}\n")
+            stream.write(f"{footer * MAX_STR_LENGTH}\n")
 
     def report_structural_issues(self, stream=stdout):
         """
@@ -693,6 +732,9 @@ class DiagnosticsToolbox:
         vars_in_constraints = variables_in_activated_constraints_set(self.model)
         fixed_vars_in_constraints = ComponentSet()
         free_vars_in_constraints = ComponentSet()
+        free_vars_lb = ComponentSet()
+        free_vars_ub = ComponentSet()
+        free_vars_lbub = ComponentSet()
         ext_fixed_vars_in_constraints = ComponentSet()
         ext_free_vars_in_constraints = ComponentSet()
         for v in vars_in_constraints:
@@ -704,6 +746,13 @@ class DiagnosticsToolbox:
                 free_vars_in_constraints.add(v)
                 if not _var_in_block(v, self.model):
                     ext_free_vars_in_constraints.add(v)
+                if v.lb is not None:
+                    if v.ub is not None:
+                        free_vars_lbub.add(v)
+                    else:
+                        free_vars_lb.add(v)
+                elif v.ub is not None:
+                    free_vars_ub.add(v)
 
         # Generate report
         # TODO: Variables with bounds
@@ -716,6 +765,16 @@ class DiagnosticsToolbox:
             f"{TAB}Free Variables in Activated Constraints: "
             f"{len(free_vars_in_constraints)} "
             f"(External: {len(ext_free_vars_in_constraints)})"
+        )
+        stats.append(
+            f"{TAB*2}Free Variables with only lower bounds: " f"{len(free_vars_lb)} "
+        )
+        stats.append(
+            f"{TAB * 2}Free Variables with only upper bounds: " f"{len(free_vars_ub)} "
+        )
+        stats.append(
+            f"{TAB * 2}Free Variables with upper and lower bounds: "
+            f"{len(free_vars_lbub)} "
         )
         stats.append(
             f"{TAB}Fixed Variables in Activated Constraints: "
@@ -750,14 +809,14 @@ class DiagnosticsToolbox:
         self._write_report_section(
             stream=stream,
             lines_list=cautions,
-            title=f"{len(warnings)} Cautions",
+            title=f"{len(cautions)} Cautions",
             else_line="No cautions found!",
         )
         self._write_report_section(
             stream=stream,
             lines_list=next_steps,
             title="Suggested next steps:",
-            else_line="report_numerical_issues()",
+            else_line="Try to initialize/solve your model and then call report_numerical_issues()",
             footer="=",
         )
 
@@ -789,7 +848,7 @@ class DiagnosticsToolbox:
         self._write_report_section(
             stream=stream,
             lines_list=cautions,
-            title=f"{len(warnings)} Cautions",
+            title=f"{len(cautions)} Cautions",
             else_line="No cautions found!",
         )
         self._write_report_section(
