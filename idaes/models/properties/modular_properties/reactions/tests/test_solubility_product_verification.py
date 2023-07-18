@@ -40,6 +40,7 @@ from idaes.core import (
     SolidPhase,
 )
 from idaes.core.solvers import get_solver
+import idaes.core.util.scaling as iscale
 
 from idaes.models.properties.modular_properties.state_definitions import FpcTP
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
@@ -52,7 +53,6 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_constant i
 
 
 solver = get_solver()
-solver.options["tol"] = 1e-8
 
 
 def dummy_h(b, *args, **kwargs):
@@ -141,6 +141,7 @@ class TestSingleState(object):
         m.rxn = m.rparams.build_reaction_block(
             [0], state_block=m.state, has_equilibrium=True
         )
+        m.rxn[0].eps = 1e-14
 
         return m
 
@@ -192,9 +193,6 @@ class TestSingleState(object):
         # For subsaturated systems, fix the Na and Cl flows and check that no
         # solid is formed.
         model.state[0].flow_mol_phase_comp["Liq", "H2O"].fix(55.56)
-        model.state[0].flow_mol_phase_comp["Liq", "Na+"].fix(0)
-        model.state[0].flow_mol_phase_comp["Liq", "Cl-"].fix(0)
-        model.state[0].flow_mol_phase_comp["Sol", "NaCl"].set_value(0)
 
         for i in range(11):
             for j in range(11):
@@ -204,9 +202,19 @@ class TestSingleState(object):
                         i = 1e-8
                     if j == 0:
                         j = 1e-8
-
+                    
+                    # reinitialize after each iteration
+                    model.state[0].mole_frac_phase_comp["Liq", "H2O"].set_value(0.25)
+                    model.state[0].mole_frac_phase_comp["Sol", "NaCl"].set_value(0.25)
+                    model.state[0].mole_frac_phase_comp["Liq", "Na+"].set_value(0.25)
+                    model.state[0].mole_frac_phase_comp["Liq", "Cl-"].set_value(0.25)
+                    
                     model.state[0].flow_mol_phase_comp["Liq", "Na+"].fix(i)
                     model.state[0].flow_mol_phase_comp["Liq", "Cl-"].fix(j)
+                    model.state[0].flow_mol_phase_comp["Sol", "NaCl"].set_value(0)
+                    
+                    
+                    iscale.constraint_scaling_transform(model.rxn[0].equilibrium_constraint['S1'], 10)
 
                     results = solver.solve(model)
 
@@ -239,6 +247,7 @@ class TestUnit(object):
             energy_balance_type=EnergyBalanceType.none,
         )
 
+        m.fs.rparams.reaction_S1.eps = 1e-14
         m.fs.R101.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix(55.56)
         m.fs.R101.inlet.flow_mol_phase_comp[0, "Liq", "Na+"].fix(1e-8)
         m.fs.R101.inlet.flow_mol_phase_comp[0, "Liq", "Cl-"].fix(1e-8)
@@ -258,6 +267,7 @@ class TestUnit(object):
                 i == 1e-8
 
             model.fs.R101.inlet.flow_mol_phase_comp[0, "Sol", "NaCl"].fix(i)
+            iscale.constraint_scaling_transform(model.fs.R101.control_volume.reactions[0.0].equilibrium_constraint["S1"], 10)
 
             results = solver.solve(model)
 
