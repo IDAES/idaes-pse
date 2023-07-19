@@ -782,8 +782,8 @@ should be constructed in this state block,
                   component.
         """
         try:
-            # try the Pyomo Block's __getattr__ method first which will return 
-            # decorators for creating components on the block (e.g. Expression, 
+            # try the Pyomo Block's __getattr__ method first which will return
+            # decorators for creating components on the block (e.g. Expression,
             # Constraint, ...).
             return super().__getattr__(attr)
         except AttributeError:
