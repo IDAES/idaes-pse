@@ -202,19 +202,20 @@ class TestSingleState(object):
                         i = 1e-8
                     if j == 0:
                         j = 1e-8
-                    
+
                     # reinitialize after each iteration
                     model.state[0].mole_frac_phase_comp["Liq", "H2O"].set_value(0.25)
                     model.state[0].mole_frac_phase_comp["Sol", "NaCl"].set_value(0.25)
                     model.state[0].mole_frac_phase_comp["Liq", "Na+"].set_value(0.25)
                     model.state[0].mole_frac_phase_comp["Liq", "Cl-"].set_value(0.25)
-                    
+
                     model.state[0].flow_mol_phase_comp["Liq", "Na+"].fix(i)
                     model.state[0].flow_mol_phase_comp["Liq", "Cl-"].fix(j)
                     model.state[0].flow_mol_phase_comp["Sol", "NaCl"].set_value(0)
-                    
-                    
-                    iscale.constraint_scaling_transform(model.rxn[0].equilibrium_constraint['S1'], 10)
+
+                    iscale.constraint_scaling_transform(
+                        model.rxn[0].equilibrium_constraint["S1"], 10
+                    )
 
                     results = solver.solve(model)
 
@@ -267,7 +268,12 @@ class TestUnit(object):
                 i == 1e-8
 
             model.fs.R101.inlet.flow_mol_phase_comp[0, "Sol", "NaCl"].fix(i)
-            iscale.constraint_scaling_transform(model.fs.R101.control_volume.reactions[0.0].equilibrium_constraint["S1"], 10)
+            iscale.constraint_scaling_transform(
+                model.fs.R101.control_volume.reactions[0.0].equilibrium_constraint[
+                    "S1"
+                ],
+                10,
+            )
 
             results = solver.solve(model)
 
