@@ -63,7 +63,10 @@ jobs:
         uses: ./.github/actions/setup-idaes
         with:
           install-target: -r requirements-dev.txt
+      - name: Create empty pytest.ini file
+        run: |
+          echo "" > pytest.ini
       - name: Install and run compatibility tests
         run: |
           pip install "git+https://github.com/IDAES/idaes-compatibility@main"
-          pytest -c /dev/null --pyargs idaes_compatibility
+          pytest --pyargs idaes_compatibility
