@@ -119,10 +119,16 @@ class MSContactorInitializer(ModularInitializerBase):
                 model.name + "." + s + "_equilibrium_reaction_constraint"
             )
             const_names.append(model.name + "." + s + "_inherent_reaction_constraint")
+            const_names.append(
+                model.name + "." + s + "_heterogeneous_reaction_constraint"
+            )
             const_names.append(model.name + "." + s + "_material_balance")
             const_names.append(model.name + "." + s + "_energy_balance")
             const_names.append(model.name + "." + s + "_pressure_balance")
             const_names.append(model.name + "." + s + "_side_stream_pressure_balance")
+
+            # TODO: This constraint is added at the flowsheet
+            const_names.append(model.name + ".heterogeneous_reaction_extent_constraint")
 
         # Iterate through all constraints attached to model - do not search sub-blocks
         for c in model.component_objects(Constraint, descend_into=False):
@@ -756,50 +762,50 @@ class MSContactorData(UnitModelBlockData):
                     inherent_reaction_constraint,
                 )
 
-                # Add heterogeneous reaction terms (if required)
-                if self.config.heterogeneous_reactions is not None:
-                    heterogeneous_reactions_generation = Var(
-                        self.flowsheet().time,
-                        self.elements,
-                        pc_set,
-                        domain=Reals,
-                        initialize=0.0,
-                        doc=f"Generation due to heterogeneous reactions",
-                        units=mb_units,
-                    )
-                    self.add_component(
-                        stream + "_heterogeneous_reactions_generation",
-                        heterogeneous_reactions_generation,
-                    )
+            # Add heterogeneous reaction terms (if required)
+            if self.config.heterogeneous_reactions is not None:
+                heterogeneous_reactions_generation = Var(
+                    self.flowsheet().time,
+                    self.elements,
+                    pc_set,
+                    domain=Reals,
+                    initialize=0.0,
+                    doc=f"Generation due to heterogeneous reactions",
+                    units=mb_units,
+                )
+                self.add_component(
+                    stream + "_heterogeneous_reactions_generation",
+                    heterogeneous_reactions_generation,
+                )
 
-                    def heterogeneous_reaction_rule(b, t, s, p, j):
-                        if (p, j) in pc_set:
-                            return heterogeneous_reactions_generation[t, s, p, j] == (
-                                sum(
-                                    self.heterogeneous_reactions[
-                                        t, s
-                                    ].params.reaction_stoichiometry[r, p, j]
-                                    * b.heterogeneous_reaction_extent[t, s, r]
-                                    for r in self.config.heterogeneous_reactions.reaction_idx
-                                    if (r, p, j)
-                                    in self.heterogeneous_reactions[
-                                        t, s
-                                    ].params.reaction_stoichiometry
-                                )
+                def heterogeneous_reaction_rule(b, t, s, p, j):
+                    if (p, j) in pc_set:
+                        return heterogeneous_reactions_generation[t, s, p, j] == (
+                            sum(
+                                self.heterogeneous_reactions[
+                                    t, s
+                                ].params.reaction_stoichiometry[r, p, j]
+                                * b.heterogeneous_reaction_extent[t, s, r]
+                                for r in self.config.heterogeneous_reactions.reaction_idx
+                                if (r, p, j)
+                                in self.heterogeneous_reactions[
+                                    t, s
+                                ].params.reaction_stoichiometry
                             )
-                        return Constraint.Skip
+                        )
+                    return Constraint.Skip
 
-                    heterogeneous_reaction_constraint = Constraint(
-                        self.flowsheet().time,
-                        self.elements,
-                        pc_set,
-                        doc=f"Heterogeneous reaction stoichiometry constraint",
-                        rule=heterogeneous_reaction_rule,
-                    )
-                    self.add_component(
-                        stream + "_heterogeneous_reaction_constraint",
-                        heterogeneous_reaction_constraint,
-                    )
+                heterogeneous_reaction_constraint = Constraint(
+                    self.flowsheet().time,
+                    self.elements,
+                    pc_set,
+                    doc=f"Heterogeneous reaction stoichiometry constraint",
+                    rule=heterogeneous_reaction_rule,
+                )
+                self.add_component(
+                    stream + "_heterogeneous_reaction_constraint",
+                    heterogeneous_reaction_constraint,
+                )
 
             # Material balance for stream
             def material_balance_rule(b, t, s, j):
@@ -858,6 +864,13 @@ class MSContactorData(UnitModelBlockData):
                 if state_block.include_inherent_reactions:
                     rhs += sum(
                         inherent_reaction_generation[t, s, p, j] for p in phase_list
+                    )
+
+                # Add heterogeneous reactions (if required)
+                if self.config.heterogeneous_reactions is not None:
+                    rhs += sum(
+                        heterogeneous_reactions_generation[t, s, p, j]
+                        for p in phase_list
                     )
 
                 return 0 == rhs
