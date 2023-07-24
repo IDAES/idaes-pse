@@ -525,6 +525,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         CE_index_year="2018",
         additional_costing_params=None,
         use_additional_costing_params=False,
+        number_parallel_trains=1,
     ):
         """
         Power Plant Costing Method
@@ -590,7 +591,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             blk: A unit-level costing block where costing variables and
                 constraints can be added to
             cost_accounts: A list of accounts to be included in the total cost
-            scaled_param: the process parameter for the system(s) being costed
+            scaled_param: the process parameter for the system(s) being costed;
+                this is the total flow for all parallel trains of the system(s)
             tech: integer 1-7 representing the above categories
             ccs: 'A' or 'B' representing no CCS or CCS
             CE_index_year: year for cost basis, e.g. "2018" to use 2018 dollars
@@ -598,6 +600,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 existing cost accounts dictionary
             use_additional_costing_params: Boolean flag to use additional costing
                 parameters when account names conflict with existing accounts data
+            number_parallel_trains: Integer number of parallel trains for unit 
+                operations; for example, enter '5' if a feed will be split 
+                among 5 identical units and then re-mixed
 
         The appropriate scaling parameters for various cost accounts can be
         found in the QGESS on capital cost scaling (Report
@@ -1086,13 +1091,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             if isinstance(process_params[i], list):
                 if len(process_params[i]) > 1:
                     return costing.bare_erected_cost[i] == (
-                        pyunits.convert(
+                        number_parallel_trains * pyunits.convert(
                             costing.ref_cost[i] * ref_cost_units, CE_index_units
                         )
                         * sum(
                             costing.cost_scaling_fracs[i, p]
                             * (
-                                pyunits.convert(scaled_param[j], ref_units)
+                                pyunits.convert(scaled_param[j],
+                                                ref_units)
                                 / (costing.ref_param[i, p] * ref_units)
                             )
                             ** costing.exp[i]
@@ -1101,11 +1107,12 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     )
             elif isinstance(process_params[i], str):
                 return costing.bare_erected_cost[i] == (
-                    pyunits.convert(
+                    number_parallel_trains * pyunits.convert(
                         costing.ref_cost[i] * ref_cost_units, CE_index_units
                     )
                     * (
-                        pyunits.convert(scaled_param, ref_units)
+                        pyunits.convert(scaled_param,
+                                        ref_units)
                         / (costing.ref_param[i] * ref_units)
                     )
                     ** costing.exp[i]

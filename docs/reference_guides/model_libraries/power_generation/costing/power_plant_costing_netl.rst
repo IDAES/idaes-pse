@@ -101,7 +101,7 @@ reference parameter, reference cost, and scaling
 exponent determined by NETL in [1]. This equation is similar to a six tenth factor approach, 
 however, the exponents have been trained using several vendor quotes.
 
-.. math:: scaled\_cost = reference\_cost*(\frac{scaled\_param}{reference\_param})^\alpha
+.. math:: scaled\_cost = reference\_cost*number\_parallel\_trains*(\frac{scaled\_param}{reference\_param})^\alpha
 
 where:
 
@@ -110,6 +110,7 @@ where:
 * scaled_param - the value of the system's process parameter
 * reference_param - the value of the reference system's process parameter
 * alpha - scaling exponent
+* number_parallel_trains - the number of parallel units used to split the system (defaults to 1)
 
 .. note:: The capital cost scaling equation can be applied to any capital cost stage. In the power plant costing library it is applied to the bare erected cost, while in the sCO2 library it is applied to the equipment cost.
 
@@ -123,6 +124,7 @@ The Power Plant costing method has the following arguments:
 * CE_index_year : Chemical Engineering Cost Index base year, defaults to 2018; calling the registered Pyomo currency units dictionary of plant cost index values will allow conversion between base years within the flowsheet
 * additional_costing_params : option to add a costing parameter dictionary to supplement existing account data
 * use_additional_costing_params : True/False flag whether IDAES should use new data when additional account names match existing account names, or fail with a useful error message; defaults to False, meaning pre-installed accounts in BB_costing_params and generic_ccs_costing will never be bypassed or overwritten by duplicated additional accounts unless this flag is set to True on the unit costing block argument level
+* number_parallel_trains : Integer number of parallel trains used to split the system; for example, enter '5' if the system feed will be split among 5 identical units in parallel and then re-mixed downstream
 
  1. Supercritical PC,
  2. Subcritical PC, 
