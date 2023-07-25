@@ -42,6 +42,7 @@ from pyomo.environ import (
 from pyomo.core.base.block import _BlockData
 from pyomo.common.collections import ComponentSet
 
+# TODO: Switch to this once the Pyomo PR is merged
 # from pyomo.util.check_units import identify_inconsistent_units
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.core.base.units_container import UnitsError
@@ -150,7 +151,7 @@ class DiagnosticsToolbox:
                 near_zero_vars.add(v)
         return near_zero_vars
 
-    def _vars_outside_bounds(self):
+    def _vars_violating_bounds(self):
         violated_bounds = ComponentSet()
         for v in self.model.component_data_objects(Var, descend_into=True):
             if v.value is not None:
@@ -233,9 +234,9 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_variables_outside_bounds(self, stream=stdout):
+    def display_variables_with_bounds_violations(self, stream=stdout):
         """
-        Prints a list of variables with values that fall outside the bounds
+        Prints a list of variables with values that fall at or outside the bounds
         on the variable.
 
         Args:
@@ -249,9 +250,9 @@ class DiagnosticsToolbox:
             stream=stream,
             lines_list=[
                 f"{v.name} ({'fixed' if v.fixed else 'free'}): value={value(v)} bounds={v.bounds}"
-                for v in self._vars_outside_bounds()
+                for v in self._vars_violating_bounds()
             ],
-            title=f"The following variable(s) have values outside their bounds:",
+            title=f"The following variable(s) have values at or outside their bounds:",
             header="=",
             footer="=",
         )
@@ -583,7 +584,7 @@ class DiagnosticsToolbox:
             next_steps.append("display_constraints_with_large_residuals()")
 
         # Variables outside bounds
-        violated_bounds = self._vars_outside_bounds()
+        violated_bounds = self._vars_violating_bounds()
         if len(violated_bounds) > 0:
             cstring = "Variables"
             if len(violated_bounds) == 1:
@@ -591,7 +592,7 @@ class DiagnosticsToolbox:
             warnings.append(
                 f"WARNING: {len(violated_bounds)} {cstring} with bounds violations"
             )
-            next_steps.append("display_variables_outside_bounds()")
+            next_steps.append("display_variables_with_bounds_violations()")
 
         # Poor scaling
         var_scaling = list_badly_scaled_variables(self.model)
