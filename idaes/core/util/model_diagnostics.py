@@ -115,9 +115,9 @@ class DiagnosticsToolbox:
     1. Warnings - these are critical issues that should be resolved before continuing.
       For each warning, a method will be suggested in the Next Steps section to get
       additional information.
-    2. Cautions - these are things that could be correct but could also be hte source of
-      solver issues. Not all cautions need ot be addressed, but users should investigate
-      each one to ensure that the behavior is correct and that they will not be hte source
+    2. Cautions - these are things that could be correct but could also be the source of
+      solver issues. Not all cautions need to be addressed, but users should investigate
+      each one to ensure that the behavior is correct and that they will not be the source
       of difficulties later. Methods exist to provide more information on all cautions,
       but these will not appear in the Next Steps section.
     3. Next Steps - these are recommended methods to call from the DiagnosticsToolbox to
@@ -401,7 +401,7 @@ class DiagnosticsToolbox:
 
     def check_dulmage_mendelsohn_partition(self):
         """
-        Performs a Dulmage-Mendelsohn partioning on the model and returns
+        Performs a Dulmage-Mendelsohn partitioning on the model and returns
         the over- and under-constraint sub-problems..
 
         Returns:
@@ -427,7 +427,7 @@ class DiagnosticsToolbox:
         Prints the variables and constraints in the under-constrained sub-problem
         from a Dulmage-Mendelsohn partitioning.
 
-        This cane be used to indentify the under-defined part of a model and thus
+        This cane be used to identify the under-defined part of a model and thus
         where additional information (fixed variables or constraints) are required.
 
         Args:
@@ -457,7 +457,7 @@ class DiagnosticsToolbox:
         Prints the variables and constraints in the over-constrained sub-problem
         from a Dulmage-Mendelsohn partitioning.
 
-        This cane be used to indentify the over-defined part of a model and thus
+        This cane be used to identify the over-defined part of a model and thus
         where constraints must be removed or variables unfixed.
 
         Args:
@@ -686,7 +686,7 @@ class DiagnosticsToolbox:
 
         Args:
             stream: stream to write to
-            lines_list: list containing lines ot be writen in body of report
+            lines_list: list containing lines to be written in body of report
             title: title to be put at top of report
             else_line: line to be written if lines_list is empty
             end_line: line to be written at end of report
