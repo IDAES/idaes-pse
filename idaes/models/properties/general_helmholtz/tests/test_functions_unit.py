@@ -1657,6 +1657,90 @@ def test_r1234ze_transport():
 
 @pytest.mark.unit
 @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_propane_transport():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="propane", amount_basis=AmountBasis.MASS
+    )
+    te = HelmholtzThermoExpressions(m, m.hparam)
+
+    # Test viscosity with data from
+    #
+    # Vogel E, C Küchenmeister, E Bich, A Laesecke, Reference Correlation of the
+    #     Viscosity of Propane. Journal of Physical and Chemical Reference Data
+    #     27, 947–970 (1998)
+    assert pytest.approx(8.731, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.viscosity(
+                T=320.0 * pyo.units.K,
+                p=1e5 * pyo.units.Pa,
+                x=1,
+            ),
+            pyo.units.uPa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(78.97826, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.viscosity(
+                T=320.0 * pyo.units.K,
+                p=2.5e6 * pyo.units.Pa,
+                x=0,
+            ),
+            pyo.units.uPa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(82.16, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity(
+                T=320.0 * pyo.units.K,
+                p=4.0e6 * pyo.units.Pa,
+                x=0,
+            ),
+            pyo.units.uPa * pyo.units.s,
+        )
+    )
+
+    # Test thermal conductivity with data from
+    #
+    # NIST Chemistry WebBook
+    assert pytest.approx(20.78, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity(
+                T=320.0 * pyo.units.K,
+                p=1e5 * pyo.units.Pa,
+                x=1,
+            ),
+            pyo.units.mW / pyo.units.m / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(85.215, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity(
+                T=320.0 * pyo.units.K,
+                p=2.5e6 * pyo.units.Pa,
+                x=0,
+            ),
+            pyo.units.mW / pyo.units.m / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(87.159, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity(
+                T=320.0 * pyo.units.K,
+                p=4.0e6 * pyo.units.Pa,
+                x=0,
+            ),
+            pyo.units.mW / pyo.units.m / pyo.units.K,
+        )
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
 def test_initialize_param_block():
     # this should do absolutely nothing, so just make sure there is no exception
     m = pyo.ConcreteModel()

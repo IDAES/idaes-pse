@@ -8,4 +8,5 @@ How-To-Guides
     vis/index
     workflow/index
     data_management_framework/index
+    opt_dependencies
     versioned_idaes_install

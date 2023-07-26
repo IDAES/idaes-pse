@@ -33,8 +33,6 @@ def rglob(path, glob):
     return list(map(str, p.rglob(glob)))
 
 
-DEPENDENCIES_FOR_PRERELEASE_VERSION = []
-
 # For included DMF data
 DMF_DATA_ROOT = "data"
 
@@ -57,6 +55,69 @@ def dmf_data_files(root: str = DMF_DATA_ROOT) -> List[Tuple[str, List[str]]]:
     return file_list
 
 
+class ExtraDependencies:
+    """
+    A convenience shorthand to define and combine dependencies for ``extras_require``.
+
+    >>> extras = ExtraDependencies()
+    >>> extras["ui"]
+    ['requests', 'pint']
+    >>> list(extras)
+    ['ui', 'dmf', 'omlt', 'grid', 'coolprop', 'testing']
+    >>> dict(extras)
+    {'ui': ['requests', 'pint'], 'dmf': ['jsonschema', 'setuptools', 'traitlets', ...], ...}
+    """
+
+    ui = [
+        "requests",
+        "pint",
+    ]
+    _ipython = [
+        'ipython <= 8.12; python_version == "3.8"',
+    ]
+    dmf = [
+        # all modules relative to idaes.core.dmf
+        "jsonschema",  # commands, resource, workspace
+        "setuptools",  # provides pkg_resources?
+        "traitlets",  # dmfbase
+        "lxml",  # help
+        "seaborn",  # model_data (optional^2)
+        "PyPDF2",  # model_data (optional^2)
+        "colorama",  # util
+        *_ipython,  # magics
+        "pyyaml",  # workspace
+        "tinydb",  # resourcedb
+        "xlrd",  # tables (implicitly by pandas.read_excel())
+        "openpyxl",  # tables (implicitly by pandas.read_excel())
+    ]
+    omlt = [
+        "omlt==1.1",  # fix the version for now as package evolves
+        "tensorflow",
+    ]
+    grid = [
+        "gridx-prescient>=2.2.1",  # idaes.tests.prescient
+    ]
+    coolprop = [
+        "coolprop",  # idaes.generic_models.properties.general.coolprop
+    ]
+    testing = [
+        "pytest",
+        "addheader",
+        "pyyaml",
+    ]
+
+    def __init__(self):
+        self._data = dict(type(self).__dict__)
+
+    def keys(self):
+        for name, attr in self._data.items():
+            if not name.startswith("_") and isinstance(attr, list):
+                yield name
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+
 kwargs = dict(
     zip_safe=False,
     name=NAME,
@@ -65,29 +126,15 @@ kwargs = dict(
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        # idaes core / dmf
-        "click>=8",
-        "colorama",
-        "jupyter",
-        "lxml",
-        "matplotlib",
-        "nbconvert",
-        "nbformat",
+        "pyomo>=6.6.1",
+        "pint",  # required to use Pyomo units
+        "networkx",  # required to use Pyomo network
         "numpy",
-        "omlt==1.1",  # fix the version for now as package evolves
         "pandas",
-        "pyomo @ https://github.com/IDAES/pyomo/archive/6.5.1.idaes.2023.03.28.zip",
-        "sympy",  # pyomo differentiation
-        "pint",  # pyomo units
-        "networkx",  # pyomo network
-        "pytest",
-        "pyyaml",
-        "requests",  # for ui/fsvis
         "scipy",
-        "tinydb",
-        "xlrd",  # for DMF read of old .xls Excel files
-        "openpyxl",  # for DMF read of new .xls Excel files
-        'ipython <= 8.12; python_version == "3.8"',
+        "sympy",  # idaes.core.util.expr_doc
+        "matplotlib",
+        "click>=8",
     ],
     entry_points={
         "console_scripts": [
@@ -96,16 +143,7 @@ kwargs = dict(
         ]
     },
     # Only installed if [<key>] is added to package name
-    extras_require={
-        "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
-        "optional": [
-            "sympy",  # idaes.core.util.expr_doc
-            "tensorflow",  # idaes.core.surrogate.keras_surrogate
-            "gridx-prescient>=2.2.2",  # idaes.tests.prescient
-            # A Lee 11-Jan-22: no precompiled version of CoolProp available for Python 3.9
-            "coolprop; python_version < '3.9'",  # idaes.generic_models.properties.general.coolprop
-        ],
-    },
+    extras_require=dict(ExtraDependencies()),
     package_data={
         # If any package contains these files, include them:
         "": [
