@@ -537,7 +537,7 @@ class MSContactorData(UnitModelBlockData):
             self.heterogeneous_reactions = rpack.build_reaction_block(
                 self.flowsheet().time,
                 self.elements,
-                doc=f"Heterogeneous reaction block for contactor.",
+                doc="Heterogeneous reaction block for contactor.",
                 **rpack_args,
             )
         except AttributeError:
@@ -549,7 +549,7 @@ class MSContactorData(UnitModelBlockData):
 
         if not hasattr(self.config.heterogeneous_reactions, "reaction_idx"):
             raise PropertyNotSupportedError(
-                f"Heterogeneous reaction package does not contain a list of "
+                "Heterogeneous reaction package does not contain a list of "
                 "reactions (reaction_idx)."
             )
 
@@ -584,7 +584,7 @@ class MSContactorData(UnitModelBlockData):
                 self.config.heterogeneous_reactions.reaction_idx,
                 domain=Reals,
                 initialize=0.0,
-                doc=f"Extent of heterogeneous reactions",
+                doc="Extent of heterogeneous reactions",
                 units=mb_units,
             )
 
@@ -788,7 +788,7 @@ class MSContactorData(UnitModelBlockData):
                     pc_set,
                     domain=Reals,
                     initialize=0.0,
-                    doc=f"Generation due to heterogeneous reactions",
+                    doc="Generation due to heterogeneous reactions",
                     units=mb_units,
                 )
                 self.add_component(
@@ -817,7 +817,7 @@ class MSContactorData(UnitModelBlockData):
                     self.flowsheet().time,
                     self.elements,
                     pc_set,
-                    doc=f"Heterogeneous reaction stoichiometry constraint",
+                    doc="Heterogeneous reaction stoichiometry constraint",
                     rule=heterogeneous_reaction_rule,
                 )
                 self.add_component(
