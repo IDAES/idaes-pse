@@ -745,11 +745,6 @@ class StandardPropertySet(PropertySetBase):
         doc="Specific Gibbs Energy (Molar Basis)",
         units="ENERGY_MOLE",
     )
-    ionic_strength = PropertyMetadata(
-        name="ionic_strength",
-        doc="Ionic Strength (Molality Basis)",
-        units="MOLALITY",
-    )
     isentropic_speed_sound_phase = PropertyMetadata(
         name="isentropic_speed_sound_phase",
         doc="Isentropic Speed of Sound",
@@ -947,80 +942,6 @@ class StandardPropertySet(PropertySetBase):
         units=pyunits.dimensionless,
     )
 
-    # Log10 terms
-    log10_act = PropertyMetadata(
-        name="log10_act",
-        doc="Log of Activity",
-        units=pyunits.dimensionless,
-    )
-    log10_act_coeff = PropertyMetadata(
-        name="log10_act_coeff",
-        doc="Log of Activity Coefficient",
-        units=pyunits.dimensionless,
-    )
-    log10_conc_mol = PropertyMetadata(
-        name="log10_conc_mol",
-        doc="Log of Molar Concentration",
-        units=pyunits.dimensionless,
-    )
-    log10_mass_frac = PropertyMetadata(
-        name="log10_mass_frac_phase_comp",
-        doc="Log of Mass Fractions",
-        units=pyunits.dimensionless,
-    )
-    log10_molality = PropertyMetadata(
-        name="log10_molality",
-        doc="Log of Molality",
-        units=pyunits.dimensionless,
-    )
-    log10_mole_frac = PropertyMetadata(
-        name="log10_mole_frac",
-        doc="Log of Mole Fractions",
-        units=pyunits.dimensionless,
-    )
-    log10_mole_frac_pbub = PropertyMetadata(
-        name="log10_mole_frac_pbub",
-        doc="Log of Mole Fractions at Bubble Point Pressure",
-        units=pyunits.dimensionless,
-    )
-    log10_mole_frac_pdew = PropertyMetadata(
-        name="log10_mole_frac_pdew",
-        doc="Log of Mole Fractions at Dew Point Pressure",
-        units=pyunits.dimensionless,
-    )
-    log10_mole_frac_tbub = PropertyMetadata(
-        name="log10_mole_frac_tbub",
-        doc="Log of Mole Fractions at Bubble Point Temperature",
-        units=pyunits.dimensionless,
-    )
-    log10_mole_frac_tdew = PropertyMetadata(
-        name="log10_mole_frac_tdew",
-        doc="Log of Mole Fractions at Dew Point Temperature",
-        units=pyunits.dimensionless,
-    )
-    log10_pressure = PropertyMetadata(
-        name="log10_pressure",
-        doc="Log of Pressure",
-        units=pyunits.dimensionless,
-    )
-
-    # p*
-    pH = PropertyMetadata(
-        name="pH",
-        doc="pH, -log10([H+])",
-        units=pyunits.dimensionless,
-    )
-    pOH = PropertyMetadata(
-        name="pOH",
-        doc="pOH, -log10([OH-])",
-        units=pyunits.dimensionless,
-    )
-    pK = PropertyMetadata(
-        name="pK",
-        doc="pK, -log10(equilibrium constant)",
-        units=pyunits.dimensionless,
-    )
-
     # Reaction Properties
     # TODO: Units are also problematic here - no single definition
     dh_rxn = PropertyMetadata(
@@ -1035,11 +956,6 @@ class StandardPropertySet(PropertySetBase):
     )
     log_k_eq = PropertyMetadata(
         name="log_k_eq",
-        doc="Log of Equilibrium Coefficient",
-        units=pyunits.dimensionless,
-    )
-    log10_k_eq = PropertyMetadata(
-        name="log10_k_eq",
         doc="Log of Equilibrium Coefficient",
         units=pyunits.dimensionless,
     )
@@ -1079,5 +995,40 @@ class ElectrolytePropertySet(StandardPropertySet):
     log_act_phase_solvents = PropertyMetadata(
         name="log_act_phase_solvents",
         doc="Log of Activity of Solvents",
+        units=pyunits.dimensionless,
+    )
+    ionic_strength = PropertyMetadata(
+        name="ionic_strength",
+        doc="Ionic Strength (Molality Basis)",
+        units="MOLALITY",
+    )
+    pH = PropertyMetadata(
+        name="pH",
+        doc="pH, -log10(a_H+)",
+        units=pyunits.dimensionless,
+    )
+    pK = PropertyMetadata(
+        name="pK",
+        doc="pK, -log10(equilibrium constant)",
+        units=pyunits.dimensionless,
+    )
+    pOH = PropertyMetadata(
+        name="pOH",
+        doc="pOH, -log10(a_OH-)",
+        units=pyunits.dimensionless,
+    )
+    log10_act_coeff = PropertyMetadata(
+        name="log10_act_coeff",
+        doc="Log of Activity Coefficient",
+        units=pyunits.dimensionless,
+    )
+    log10_molality = PropertyMetadata(
+        name="log10_molality",
+        doc="Log of Molality",
+        units=pyunits.dimensionless,
+    )
+    log10_k_eq = PropertyMetadata(
+        name="log10_k_eq",
+        doc="Log of equilibrium coefficient",
         units=pyunits.dimensionless,
     )
