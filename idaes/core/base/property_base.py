@@ -781,7 +781,13 @@ should be constructed in this state block,
             attr: an attribute to create and return. Should be a property
                   component.
         """
-        return build_on_demand(self, attr)
+        try:
+            # try the Pyomo Block's __getattr__ method first which will return
+            # decorators for creating components on the block (e.g. Expression,
+            # Constraint, ...).
+            return super().__getattr__(attr)
+        except AttributeError:
+            return build_on_demand(self, attr)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
