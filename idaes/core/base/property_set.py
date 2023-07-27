@@ -1061,6 +1061,11 @@ class StandardPropertySet(PropertySetBase):
         doc="Reaction Rate",
         units=pyunits.dimensionless,
     )
+    saturation_index = PropertyMetadata(
+        name="saturation_index",
+        doc="Saturation Index = log(IAP/Ksp)",
+        units=pyunits.dimensionless,
+    )
 
 
 class ElectrolytePropertySet(StandardPropertySet):
