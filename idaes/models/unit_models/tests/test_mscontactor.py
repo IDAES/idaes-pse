@@ -1964,7 +1964,79 @@ class TestReactions:
                 )
                 assert str(c.body) == expr
 
-        assert False
+        for j in [
+            "c1",
+            "c2",
+        ]:  # has +ve mass transfer, forward flow, heterogeneous reactions
+            assert str(model.fs.unit.stream1_material_balance[0, 1, j]._expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream1_inlet_state[0].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream1[0, 1].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                + model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
+                + sum(
+                    model.fs.unit.stream1_heterogeneous_reactions_generation[0, 1, p, j]
+                    for p in ["p1", "p2"]
+                )
+            )
+            assert str(model.fs.unit.stream1_material_balance[0, 2, j]._expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream1[0, 1].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream1[0, 2].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                + model.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
+                + sum(
+                    model.fs.unit.stream1_heterogeneous_reactions_generation[0, 2, p, j]
+                    for p in ["p1", "p2"]
+                )
+            )
+
+        for j in [
+            "c1",
+            "c2",
+        ]:  # has -ve mass transfer, forward flow, heterogeneous reactions
+            assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream2_inlet_state[0].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream2[0, 2].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - model.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
+                + sum(
+                    model.fs.unit.stream2_heterogeneous_reactions_generation[0, 2, p, j]
+                    for p in ["p1", "p2"]
+                )
+            )
+            assert str(model.fs.unit.stream2_material_balance[0, 1, j]._expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream2[0, 2].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream2[0, 1].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
+                + sum(
+                    model.fs.unit.stream2_heterogeneous_reactions_generation[0, 1, p, j]
+                    for p in ["p1", "p2"]
+                )
+            )
 
     @pytest.mark.unit
     def test_rate_reactions(self, model):
