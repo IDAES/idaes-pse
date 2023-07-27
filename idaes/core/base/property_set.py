@@ -54,11 +54,9 @@ class _PropertyMetadataIndex:
         # TODO: Could also define default bounds, nominal values, etc.
 
     def __setattr__(self, key, value):
-        try:
-            assert self._lock_setattr == True
+        if hasattr(self, "_lock_setattr") and self._lock_setattr == True:
             raise TypeError("Property metadata does not support assignment.")
-        except (AssertionError, AttributeError):
-            super().__setattr__(key, value)
+        super().__setattr__(key, value)
 
     def __repr__(self):
         return f"{self._parent._doc} ({self._parent._units}%s%s)" % (
@@ -313,11 +311,9 @@ class PropertyMetadata:
         return f"{self._doc} ({self._units})"
 
     def __setattr__(self, key, value):
-        try:
-            assert self._lock_setattr == True
+        if hasattr(self, "_lock_setattr") and self._lock_setattr == True:
             raise TypeError("Property metadata does not support assignment.")
-        except (AssertionError, AttributeError):
-            super().__setattr__(key, value)
+        super().__setattr__(key, value)
 
     @property
     def name(self):
@@ -370,13 +366,11 @@ class PropertySetBase:
                     )
 
     def __setattr__(self, key, value):
-        try:
-            assert self._lock_setattr == True
+        if hasattr(self, "_lock_setattr") and self._lock_setattr == True:
             raise TypeError(
                 "PropertySets do not support direct assignment. Please use define_property"
             )
-        except (AssertionError, AttributeError):
-            super().__setattr__(key, value)
+        super().__setattr__(key, value)
 
     def __getitem__(self, key: str):
         n, i = self.get_name_and_index(key)
@@ -623,6 +617,11 @@ class StandardPropertySet(PropertySetBase):
     act = PropertyMetadata(
         name="act",
         doc="Chemical Activity",
+        units=pyunits.dimensionless,
+    )
+    act_coeff = PropertyMetadata(
+        name="act_coeff",
+        doc="Chemical Activity Coefficient",
         units=pyunits.dimensionless,
     )
     compress_fact = PropertyMetadata(
@@ -994,7 +993,6 @@ class ElectrolytePropertySet(StandardPropertySet):
         "phase_comp_apparent",
         "phase_comp_true",
     ]
-
     # Definition of additional properties required for electrolyte applications
     # Log terms
     log_act_phase_solvents = PropertyMetadata(
