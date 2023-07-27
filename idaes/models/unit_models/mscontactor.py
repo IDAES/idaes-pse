@@ -342,7 +342,10 @@ class MSContactorData(UnitModelBlockData):
         ConfigValue(
             default=None,
             # domain=list,
-            doc="Heterogeneous reaction package to use in contactor.",
+            description="Heterogeneous reaction package to use in contactor.",
+            doc="Heterogeneous reaction package to use in contactor. Heterogeneous "
+            "reaction packages are expected to have a certain structure and methods; "
+            "please refer to the documentation for more details.",
         ),
     )
     CONFIG.declare(
