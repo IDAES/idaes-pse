@@ -305,7 +305,7 @@ class PropertyMetadata:
             raise KeyError(f"Property {self._name} does not have index {key}.")
 
     def __repr__(self):
-        return f"{self._doc} ({self._units})" 
+        return f"{self._doc} ({self._units})"
 
     def __setattr__(self, key, value):
         raise TypeError("Property metadata does not support assignment.")
@@ -315,7 +315,7 @@ class PropertyMetadata:
         """
         Doc string for property
         """
-        return self._name  
+        return self._name
 
     @property
     def units(self):
@@ -477,7 +477,7 @@ class PropertySetBase:
                 initialize=initialize,
             ),
         )
-        self._defined_properties.append(name) 
+        self._defined_properties.append(name)
 
     def check_required_properties(self, other: "PropertySetBase"):
         """
@@ -595,7 +595,9 @@ class PropertySetBase:
                     root_name = property_name[:-nchar]
                     break
 
-        if sep_point is None or (root_name is not None and root_name not in self._defined_properties):
+        if sep_point is None or (
+            root_name is not None and root_name not in self._defined_properties
+        ):
             raise ValueError(
                 f"Unhandled property: {property_name}. This is mostly likely due to the "
                 "property not being defined in this PropertySet."
