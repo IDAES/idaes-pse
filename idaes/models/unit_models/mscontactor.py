@@ -43,7 +43,6 @@ import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee"
 
-# TODO: Initializer object
 # TODO: Could look at using Pyomo DAE for the length domain, but this would make
 # it harder to do side feeds.
 
@@ -127,8 +126,15 @@ class MSContactorInitializer(ModularInitializerBase):
             const_names.append(model.name + "." + s + "_pressure_balance")
             const_names.append(model.name + "." + s + "_side_stream_pressure_balance")
 
-            # TODO: This constraint is added at the flowsheet
-            const_names.append(model.name + ".heterogeneous_reaction_extent_constraint")
+            try:
+                # If has rate reactions ,fi extent to 0 for first pass
+                getattr(model, s + "_rate_reaction_extent").fix(0)
+            except AttributeError:
+                pass
+
+        # Fix extents for heterogeneous reactions to 0 for first pass if present
+        if hasattr(model, "heterogeneous_reaction_extent"):
+            model.heterogeneous_reaction_extent.fix(0)
 
         # Iterate through all constraints attached to model - do not search sub-blocks
         for c in model.component_objects(Constraint, descend_into=False):
@@ -330,6 +336,7 @@ class MSContactorData(UnitModelBlockData):
             doc="List of interacting stream pairs as 2-tuples ('stream1', 'stream2').",
         ),
     )
+    # TODO: Consider a base call for heterogeneous reactions and set domain
     CONFIG.declare(
         "heterogeneous_reactions",
         ConfigValue(
@@ -522,12 +529,26 @@ class MSContactorData(UnitModelBlockData):
     def _build_heterogeneous_reaction_blocks(self):
         rpack = self.config.heterogeneous_reactions
         rpack_args = self.config.heterogeneous_reactions_args
-        self.heterogeneous_reactions = rpack.build_reaction_block(
-            self.flowsheet().time,
-            self.elements,
-            doc=f"Heterogeneous reaction block for contactor.",
-            **rpack_args,
-        )
+
+        try:
+            self.heterogeneous_reactions = rpack.build_reaction_block(
+                self.flowsheet().time,
+                self.elements,
+                doc=f"Heterogeneous reaction block for contactor.",
+                **rpack_args,
+            )
+        except AttributeError:
+            raise ConfigurationError(
+                "Heterogeneous reaction package has not implemented a "
+                "build_reaction_block method. Please ensure that your "
+                "reaction block conforms to the required standards."
+            )
+
+        if not hasattr(self.config.heterogeneous_reactions, "reaction_idx"):
+            raise PropertyNotSupportedError(
+                f"Heterogeneous reaction package does not contain a list of "
+                "reactions (reaction_idx)."
+            )
 
     def _build_material_balance_constraints(self, flow_basis, uom):
         # Get units for transfer terms
@@ -551,13 +572,7 @@ class MSContactorData(UnitModelBlockData):
             doc="Inter-stream mass transfer term",
         )
 
-        if self.config.heterogeneous_reactions is not None:
-            if not hasattr(self.config.heterogeneous_reactions, "reaction_idx"):
-                raise PropertyNotSupportedError(
-                    f"Heterogeneous reaction package does not contain a list of "
-                    "reactions (reaction_idx)."
-                )
-
+        if hasattr(self, "heterogeneous_reactions"):
             # Add extents of reaction and stoichiometric constraints
             # We will assume the user will define how extent will be calculated
             self.heterogeneous_reaction_extent = Var(
@@ -763,7 +778,7 @@ class MSContactorData(UnitModelBlockData):
                 )
 
             # Add heterogeneous reaction terms (if required)
-            if self.config.heterogeneous_reactions is not None:
+            if hasattr(self, "heterogeneous_reactions"):
                 heterogeneous_reactions_generation = Var(
                     self.flowsheet().time,
                     self.elements,
