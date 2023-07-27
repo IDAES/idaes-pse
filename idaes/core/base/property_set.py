@@ -575,20 +575,16 @@ class PropertySetBase:
             name, index: strings indicating the name of the base property and indexing set.
         """
         root_name = None
+        index_name = None
+        _defined_indices = {"phase_comp" "phase" "comp"} | set(self._defined_indices)
+
+        _defined_indices = list(reversed(sorted(_defined_indices, key=len)))
+
         if property_name in self._defined_properties:
             root_name = property_name
             index_name = None
-        elif property_name.endswith("_phase_comp"):
-            root_name = property_name[:-11]
-            index_name = "phase_comp"
-        elif property_name.endswith("_comp"):
-            root_name = property_name[:-5]
-            index_name = "comp"
-        elif property_name.endswith("_phase"):
-            root_name = property_name[:-6]
-            index_name = "phase"
         else:
-            for i in self._defined_indices:
+            for i in _defined_indices:
                 if property_name.endswith("_" + i):
                     nchar = len(i) + 1
                     root_name = property_name[:-nchar]
@@ -597,8 +593,8 @@ class PropertySetBase:
 
         if root_name is None or root_name not in self._defined_properties:
             raise ValueError(
-                f"Unhandled property: {property_name}. This is mostly likely due to the "
-                "property not being defined in this PropertySet."
+                f"Unhandled property: {property_name}. This is mostly likely due to"
+                " the property not being defined in this PropertySet."
             )
 
         return root_name, index_name

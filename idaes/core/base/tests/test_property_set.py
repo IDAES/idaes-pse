@@ -581,7 +581,11 @@ class TestPropertySetBase:
         p.default_units = "foo"
 
         pset = PropertySetBase(parent=p)
+        pset._defined_properties.append("foo")
         pset._defined_indices.append("bar")
+        pset._defined_indices.append("bar_phase")
+        pset._defined_indices.append("bar_comp")
+        pset._defined_indices.append("bar_phase_comp")
 
         n, i = pset.get_name_and_index("foo_bar")
         assert n == "foo"
@@ -702,7 +706,7 @@ class TestElectrolytePropertySet:
         p = DummyMeta()
         p.default_units = UnitSet()
 
-        pset = PropertySetBase(parent=p)
+        pset = ElectrolytePropertySet(parent=p)
         pset._defined_properties.append("foo_bar")
 
         n, i = pset.get_name_and_index("foo_bar")
