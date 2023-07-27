@@ -278,14 +278,16 @@ class PropertyMetadata:
         if doc is None:
             doc = name
 
-        super().__setattr__("_name", name)
-        super().__setattr__("_doc", doc)
+        self._name = name
+        self._doc = doc
 
         # TODO: Validate units are from UnitSet or dimensionless - needs deprecation
-        super().__setattr__("_units", units)
+        self._units = units
 
         # Record indices - needed for building instance specific cases
-        super().__setattr__("_indices", indices)
+        self._indices = indices
+
+        self._lock_setattr = True
 
         # Create entries for indexed sub-properties
         if indices is None or indices is False:
@@ -311,7 +313,11 @@ class PropertyMetadata:
         return f"{self._doc} ({self._units})"
 
     def __setattr__(self, key, value):
-        raise TypeError("Property metadata does not support assignment.")
+        try:
+            assert self._lock_setattr == True
+            raise TypeError("Property metadata does not support assignment.")
+        except (AssertionError, AttributeError):
+            super().__setattr__(key, value)
 
     @property
     def name(self):
@@ -342,10 +348,10 @@ class PropertySetBase:
     _defined_indices = ["comp", "phase", "phase_comp"]
 
     def __init__(self, parent):
-        super().__setattr__("_parent_block", parent)
-        super().__setattr__("_defined_properties", [])
-        super().__setattr__("_defined_indices", copy(self.__class__._defined_indices))
-
+        self._parent_block = parent
+        self._defined_properties = []
+        self._defined_indices = copy(self.__class__._defined_indices)
+        self._lock_setattr = True
         # Find standard properties defined in class and create instance versions
         for i in dir(self.__class__):
             if not i.startswith("_"):
@@ -364,9 +370,13 @@ class PropertySetBase:
                     )
 
     def __setattr__(self, key, value):
-        raise TypeError(
-            "PropertySets do not support direct assignment. Please use define_property"
-        )
+        try:
+            assert self._lock_setattr == True
+            raise TypeError(
+                "PropertySets do not support direct assignment. Please use define_property"
+            )
+        except (AssertionError, AttributeError):
+            super().__setattr__(key, value)
 
     def __getitem__(self, key: str):
         n, i = self.get_name_and_index(key)
@@ -576,7 +586,7 @@ class PropertySetBase:
         """
         root_name = None
         index_name = None
-        _defined_indices = {"phase_comp" "phase" "comp"} | set(self._defined_indices)
+        _defined_indices = {"phase_comp", "phase", "comp"} | set(self._defined_indices)
 
         _defined_indices = list(reversed(sorted(_defined_indices, key=len)))
 
@@ -591,7 +601,7 @@ class PropertySetBase:
                     index_name = i
                     break
 
-        if root_name not in self._defined_properties:
+        if root_name is None or root_name not in self._defined_properties:
             raise ValueError(
                 f"Unhandled property: {property_name}. This is mostly likely due to"
                 " the property not being defined in this PropertySet."
