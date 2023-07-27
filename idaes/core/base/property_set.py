@@ -589,20 +589,18 @@ class PropertySetBase:
             root_name = property_name[:-6]
         else:
             for i in self._defined_indices:
-                if i in property_name:
+                if property_name.endswith("_" + i):
+                    nchar = len(i) + 1
                     sep_point = property_name.rindex(i)
+                    root_name = property_name[:-nchar]
+                    break
 
-        if root_name is not None and root_name not in self._defined_properties:
+        if sep_point is None or (root_name is not None and root_name not in self._defined_properties):
             raise ValueError(
                 f"Unhandled property: {property_name}. This is mostly likely due to the "
                 "property not being defined in this PropertySet."
             )
 
-        if sep_point is None:
-            raise ValueError(
-                f"Unhandled property: {property_name}. This is mostly likely due to the "
-                "property not being defined in this PropertySet."
-            )
         if sep_point > 0:
             name = property_name[: sep_point - 1]
             index = property_name[sep_point:]
@@ -757,6 +755,11 @@ class StandardPropertySet(PropertySetBase):
         name="gibbs_mol",
         doc="Specific Gibbs Energy (Molar Basis)",
         units="ENERGY_MOLE",
+    )
+    ionic_strength = PropertyMetadata(
+        name="ionic_strength",
+        doc="Ionic Strength (Molality Basis)",
+        units="MOLALITY",
     )
     isentropic_speed_sound_phase = PropertyMetadata(
         name="isentropic_speed_sound_phase",
