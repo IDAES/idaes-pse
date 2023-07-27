@@ -474,6 +474,10 @@ class PropertySetBase:
         elif indices is False:
             indices = ["none"]
 
+        for idx in set(self._defined_indices) | {"phase", "comp", "phase_comp"}:
+            if name.endswith("_" + idx):
+                raise ValueError(f"Property name {name} ends with a defined index.")
+
         super().__setattr__(
             name,
             PropertyMetadata(
@@ -679,8 +683,8 @@ class StandardPropertySet(PropertySetBase):
         doc="Molar Density at Critical Point",
         units="DENSITY_MOLE",
     )
-    diffus_comp = PropertyMetadata(
-        name="diffus_comp",
+    diffus = PropertyMetadata(
+        name="diffus",
         doc="Diffusivity Coefficient",
         units="DIFFUSIVITY",
     )
@@ -754,13 +758,13 @@ class StandardPropertySet(PropertySetBase):
         doc="Specific Gibbs Energy (Molar Basis)",
         units="ENERGY_MOLE",
     )
-    isentropic_speed_sound_phase = PropertyMetadata(
-        name="isentropic_speed_sound_phase",
+    isentropic_speed_sound = PropertyMetadata(
+        name="isentropic_speed_sound",
         doc="Isentropic Speed of Sound",
         units="VELOCITY",
     )
-    isothermal_speed_sound_phase = PropertyMetadata(
-        name="isothermal_speed_sound_phase",
+    isothermal_speed_sound = PropertyMetadata(
+        name="isothermal_speed_sound",
         doc="Isothermal Speed of Sound",
         units="VELOCITY",
     )
@@ -911,7 +915,7 @@ class StandardPropertySet(PropertySetBase):
         units=pyunits.dimensionless,
     )
     log_mass_frac = PropertyMetadata(
-        name="log_mass_frac_phase_comp",
+        name="log_mass_frac",
         doc="Log of Mass Fractions",
         units=pyunits.dimensionless,
     )
