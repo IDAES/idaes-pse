@@ -40,22 +40,25 @@ class _PropertyMetadataIndex:
         required: bool = False,
         valid_range=None,
     ):
-        super().__setattr__("_parent", parent)
-        super().__setattr__("_idx", idx)
-        super().__setattr__("_method", method)
-        super().__setattr__("_supported", supported)
-        super().__setattr__("_required", required)
-
-        super().__setattr__("_valid_range", None)
+        self._parent = parent
+        self._idx = idx
+        self._method = method
+        self._supported = supported
+        self._required = required
+        self._valid_range = None
         self._set_valid_range(
             valid_range
         )  # This method does some basic validation of input
-
+        self._lock_setattr = True
         # TODO: For future, this would be the place to store default scaling information, etc.
         # TODO: Could also define default bounds, nominal values, etc.
 
     def __setattr__(self, key, value):
-        raise TypeError("Property metadata does not support assignment.")
+        try:
+            assert self._lock_setattr == True
+            raise TypeError("Property metadata does not support assignment.")
+        except (AssertionError, AttributeError):
+            super().__setattr__(key, value)
 
     def __repr__(self):
         return f"{self._parent._doc} ({self._parent._units}%s%s)" % (
@@ -571,46 +574,34 @@ class PropertySetBase:
         Returns:
             name, index: strings indicating the name of the base property and indexing set.
         """
-        name = None
-        index = None
-
-        sep_point = None
         root_name = None
         if property_name in self._defined_properties:
-            sep_point = 0
+            root_name = property_name
+            index_name = None
         elif property_name.endswith("_phase_comp"):
-            sep_point = property_name.rindex("phase_comp")
             root_name = property_name[:-11]
+            index_name = "phase_comp"
         elif property_name.endswith("_comp"):
-            sep_point = property_name.rindex("comp")
             root_name = property_name[:-5]
+            index_name = "comp"
         elif property_name.endswith("_phase"):
-            sep_point = property_name.rindex("phase")
             root_name = property_name[:-6]
+            index_name = "phase"
         else:
             for i in self._defined_indices:
                 if property_name.endswith("_" + i):
                     nchar = len(i) + 1
-                    sep_point = property_name.rindex(i)
                     root_name = property_name[:-nchar]
+                    index_name = i
                     break
 
-        if sep_point is None or (
-            root_name is not None and root_name not in self._defined_properties
-        ):
+        if root_name is None or root_name not in self._defined_properties:
             raise ValueError(
                 f"Unhandled property: {property_name}. This is mostly likely due to the "
                 "property not being defined in this PropertySet."
             )
 
-        if sep_point > 0:
-            name = property_name[: sep_point - 1]
-            index = property_name[sep_point:]
-        else:
-            name = property_name
-            index = None
-
-        return name, index
+        return root_name, index_name
 
 
 class StandardPropertySet(PropertySetBase):
