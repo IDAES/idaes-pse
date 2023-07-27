@@ -19,7 +19,7 @@ Methods for defining equilibrium reactions
 # TODO: Look into protected access issues
 # pylint: disable=protected-access
 
-from pyomo.environ import Param, units as pyunits
+from pyomo.environ import Param, units as pyunits, value
 
 from idaes.core.util.math import smooth_max
 from idaes.core.util.exceptions import ConfigurationError
@@ -96,7 +96,7 @@ class log_power_law_equil:
 # ----------------------------------------------------------------------------
 class solubility_product:
     """
-    Complementariity formulation for solid precipitation
+    Complementarity formulation for solid precipitation
     Thanks to Larry Biegler for the formulation
 
     Like any phase equilibrium, solid precipitation is complicated by
@@ -113,7 +113,7 @@ class solubility_product:
     Thus, only one of S and Q can be greater than zero at any time.
     This can be written in the form of a complementarity constraint as:
 
-        * S - MAX(0, S-Q) == 0
+        * Q - MAX(0, Q-S) == 0
 
     where S is assumed to be the sum of the flowrates any solids formed in the
     reaction. This allows for multiple solid products, and only applies the
@@ -129,6 +129,20 @@ class solubility_product:
     def build_parameters(rblock, config):
         rblock.eps = Param(
             mutable=True, initialize=1e-4, doc="Smoothing parameter for smooth maximum"
+        )
+
+        rblock.s_norm = Param(
+            mutable=True,
+            initialize=1e-4,
+            doc="Normalizing factor for solid precipitation term",
+        )
+        if hasattr(rblock, "k_eq_ref"):
+            rblock.s_norm.set_value(value(rblock.k_eq_ref))
+
+        rblock.s_scale = Param(
+            mutable=True,
+            initialize=1,
+            doc="Scaling factor for solid precipitation term w.r.t saturated status Q = Ksp - f(C)",
         )
 
     @staticmethod
@@ -181,6 +195,8 @@ class solubility_product:
             if sunits is not None:
                 s = s / sunits
 
+        s = rblock.s_scale * s / (s + rblock.s_norm)
+
         Q = b.k_eq[r_idx] - e
 
         # Need to remove units again
@@ -189,7 +205,7 @@ class solubility_product:
         if Qunits is not None:
             Q = Q / Qunits
 
-        return s - smooth_max(0, s - Q, rblock.eps) == 0
+        return Q - smooth_max(0, Q - s, rblock.eps) == 0
 
     @staticmethod
     def calculate_scaling_factors(b, sf_keq):
@@ -198,7 +214,7 @@ class solubility_product:
 
 class log_solubility_product:
     """
-    Complementariity formulation for solid precipitation
+    Complementarity formulation for solid precipitation
     Thanks to Larry Biegler for the formulation
 
     Like any phase equilibrium, solid precipitation is complicated by
@@ -216,7 +232,7 @@ class log_solubility_product:
     Thus, only one of S and Q can be greater than zero at any time.
     This can be written in the form of a complementarity constraint as:
 
-        * S - MAX(0, S-Q) == 0
+        * Q - MAX(0, Q-S) == 0
 
     where S is assumed to be the sum of the flowrates any solids formed in the
     reaction. This allows for multiple solid products, and only applies the
@@ -232,6 +248,20 @@ class log_solubility_product:
     def build_parameters(rblock, config):
         rblock.eps = Param(
             mutable=True, initialize=1e-4, doc="Smoothing parameter for smooth maximum"
+        )
+
+        rblock.s_norm = Param(
+            mutable=True,
+            initialize=1e-4,
+            doc="Normalizing factor for solid precipitation term",
+        )
+        if hasattr(rblock, "k_eq_ref"):
+            rblock.s_norm.set_value(value(rblock.k_eq_ref))
+
+        rblock.s_scale = Param(
+            mutable=True,
+            initialize=10,
+            doc="Scaling factor for solid precipitation term w.r.t saturated status Q = ln(Ksp) - ln(f(C))",
         )
 
     @staticmethod
@@ -284,10 +314,12 @@ class log_solubility_product:
             if sunits is not None:
                 s = s / sunits
 
+        s = rblock.s_scale * s / (s + rblock.s_norm)
+
         Q = b.log_k_eq[r_idx] - e
         # Q should be unitless due to log form
 
-        return s - smooth_max(0, s - Q, rblock.eps) == 0
+        return Q - smooth_max(0, Q - s, rblock.eps) == 0
 
     @staticmethod
     def calculate_scaling_factors(b, sf_keq):
