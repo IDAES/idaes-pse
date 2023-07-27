@@ -591,7 +591,7 @@ class PropertySetBase:
                     index_name = i
                     break
 
-        if root_name is None or root_name not in self._defined_properties:
+        if root_name not in self._defined_properties:
             raise ValueError(
                 f"Unhandled property: {property_name}. This is mostly likely due to"
                 " the property not being defined in this PropertySet."

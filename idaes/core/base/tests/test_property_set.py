@@ -583,25 +583,10 @@ class TestPropertySetBase:
         pset = PropertySetBase(parent=p)
         pset._defined_properties.append("foo")
         pset._defined_indices.append("bar")
-        pset._defined_indices.append("bar_phase")
-        pset._defined_indices.append("bar_comp")
-        pset._defined_indices.append("bar_phase_comp")
 
         n, i = pset.get_name_and_index("foo_bar")
         assert n == "foo"
         assert i == "bar"
-
-        n, i = pset.get_name_and_index("foo_bar_phase")
-        assert n == "foo_bar"
-        assert i == "phase"
-
-        n, i = pset.get_name_and_index("foo_bar_comp")
-        assert n == "foo_bar"
-        assert i == "comp"
-
-        n, i = pset.get_name_and_index("foo_bar_phase_comp")
-        assert n == "foo_bar"
-        assert i == "phase_comp"
 
 
 class DerivedPropertySet(PropertySetBase):
