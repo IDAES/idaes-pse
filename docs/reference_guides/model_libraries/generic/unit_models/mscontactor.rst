@@ -74,7 +74,7 @@ Variable                      Name                                           Des
 :math:`X_{rate,t,x,s,r}`      stream + "_rate_reaction_extent"               Extent of rate reaction ``r`` in stream ``s`` at ``x`` and ``t``                                              Only if rate reactions present for stream
 :math:`X_{equil,t,x,s,r}`     stream + "_equilibrium_reaction_extent"        Extent of equilibrium reaction ``r`` in stream ``s`` at ``x`` and ``t``                                       Only if equilibrium reactions present for stream
 :math:`X_{inher,t,x,s,r}`     stream + "_inherent_reaction_extent"           Extent of inherent reaction ``r`` in stream ``s`` at ``x`` and ``t``                                          Only if inherent reactions present for stream
-:math:`X_{hetero,t,x,r}`      heterogeneous_reaction_extent"                 Extent of heterogeneous reaction ``r`` at ``x`` and ``t``                                                     Only if heterogeneous reactions present
+:math:`X_{hetero,t,x,r}`      heterogeneous_reaction_extent                  Extent of heterogeneous reaction ``r`` at ``x`` and ``t``                                                     Only if heterogeneous reactions present
 ============================= ============================================== ============================================================================================================= =========================================
 
 Constraints
@@ -149,7 +149,7 @@ Heterogeneous reaction blocks are a new feature in IDAES, and are currently stil
 
 Currently, the requirements for are similar to those for ReactionBlocks and are demonstrated in the example outline below:
 
-.. comment::
+.. code-block::
 
     from pyomo.environ import Constraint, Set, units, Var
     from pyomo.common.config import ConfigValue
@@ -243,7 +243,7 @@ Currently, the requirements for are similar to those for ReactionBlocks and are 
         Block associated with this property package.""",
             ),
         )
-        # Add any addiitonal configuration arguments you want
+        # Add any additional configuration arguments you want
 
         def build(self):
             super().build()
