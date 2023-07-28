@@ -22,7 +22,7 @@ import sys
 
 from pyomo.environ import Block, Constraint, Expression, Objective, Var, value
 from pyomo.dae import DerivativeVar
-from pyomo.core.expr.current import identify_variables
+from pyomo.core.expr import identify_variables
 from pyomo.common.collections import ComponentSet
 
 
