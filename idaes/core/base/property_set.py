@@ -799,6 +799,11 @@ class StandardPropertySet(PropertySetBase):
         doc="Phase Fraction",
         units=pyunits.dimensionless,
     )
+    prandtl_number = PropertyMetadata(
+        name="prandtl_number",
+        doc="Prandtl Number",
+        units=pyunits.dimensionless,
+    )
     pressure = PropertyMetadata(
         name="pressure",
         doc="Pressure",
