@@ -54,7 +54,7 @@ class _PropertyMetadataIndex:
         # TODO: Could also define default bounds, nominal values, etc.
 
     def __setattr__(self, key, value):
-        if hasattr(self, "_lock_setattr") and self._lock_setattr == True:
+        if hasattr(self, "_lock_setattr") and self._lock_setattr is True:
             raise TypeError("Property metadata does not support assignment.")
         super().__setattr__(key, value)
 
@@ -311,7 +311,7 @@ class PropertyMetadata:
         return f"{self._doc} ({self._units})"
 
     def __setattr__(self, key, value):
-        if hasattr(self, "_lock_setattr") and self._lock_setattr == True:
+        if hasattr(self, "_lock_setattr") and self._lock_setattr is True:
             raise TypeError("Property metadata does not support assignment.")
         super().__setattr__(key, value)
 
@@ -366,7 +366,7 @@ class PropertySetBase:
                     )
 
     def __setattr__(self, key, value):
-        if hasattr(self, "_lock_setattr") and self._lock_setattr == True:
+        if hasattr(self, "_lock_setattr") and self._lock_setattr is True:
             raise TypeError(
                 "PropertySets do not support direct assignment. Please use define_property"
             )
