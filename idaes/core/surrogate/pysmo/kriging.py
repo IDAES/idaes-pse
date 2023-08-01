@@ -401,7 +401,9 @@ class KrigingModel:
         initial_value_list = initial_value_list.tolist()
         initial_value_list.append(1e-4)
         initial_value = np.array(initial_value_list)
-        initial_value = initial_value.reshape(initial_value.shape[0], 1)
+        initial_value = initial_value.reshape(
+            initial_value.shape[0],
+        )
         # Create bounds for variables. All logthetas btw (-4, 4), reg param between (1e-9, 0.1)
         bounds = []
         for i in range(0, len(initial_value_list)):

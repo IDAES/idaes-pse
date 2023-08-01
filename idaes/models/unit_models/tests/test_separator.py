@@ -42,6 +42,7 @@ from idaes.core import (
     PhysicalParameterBlock,
     Phase,
     Component,
+    MaterialFlowBasis,
 )
 from idaes.models.unit_models.separator import (
     Separator,
@@ -54,6 +55,10 @@ from idaes.core.util.exceptions import (
     BurntToast,
     ConfigurationError,
     InitializationError,
+)
+from idaes.core.util.initialization import (
+    fix_state_vars,
+    revert_state_vars,
 )
 
 from idaes.models.properties.examples.saponification_thermo import (
@@ -725,6 +730,17 @@ class TestSplitConstruction(object):
 
         assert isinstance(build.fs.sep.molar_enthalpy_equality_eqn, Constraint)
         assert len(build.fs.sep.molar_enthalpy_equality_eqn) == 2
+
+    @pytest.mark.unit
+    def test_add_energy_splitting_constraints_none(self, build):
+        build.fs.sep.config.energy_split_basis = EnergySplittingType.none
+        assert build.fs.sep.config.energy_split_basis == EnergySplittingType.none
+
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        build.fs.sep.add_energy_splitting_constraints(build.fs.sep.mixed_state)
+
+        assert not hasattr(build.fs.sep, "temperature_equality_eqn")
+        assert not hasattr(build.fs.sep, "molar_enthalpy_equality_eqn")
 
     @pytest.mark.unit
     def test_add_momentum_splitting_constraints(self, build):
@@ -3628,3 +3644,119 @@ class TestInitializersIAPWS:
         assert not model.fs.unit.inlet.flow_mol[0].fixed
         assert not model.fs.unit.inlet.enth_mol[0].fixed
         assert not model.fs.unit.inlet.pressure[0].fixed
+
+
+# -----------------------------------------------------------------------------
+# Li-Co Diafiltration example - only material balances
+@declare_process_block_class("LiCoParameters")
+class LiCoParameterData(PhysicalParameterBlock):
+    def build(self):
+        super().build()
+
+        self.phase1 = Phase()
+
+        self.solvent = Component()
+        self.Li = Component()
+        self.Co = Component()
+
+        self._state_block_class = LiCoStateBlock
+
+    @classmethod
+    def define_metadata(cls, obj):
+        obj.add_default_units(
+            {
+                "time": pyunits.hour,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            }
+        )
+
+
+class LiCoSBlockBase(StateBlock):
+    def fix_initialization_states(blk):
+        return fix_state_vars(blk)
+
+
+@declare_process_block_class("LiCoStateBlock", block_class=LiCoSBlockBase)
+class LiCoStateBlock1Data(StateBlockData):
+    CONFIG = ConfigBlock(implicit=True)
+
+    def build(self):
+        super().build()
+
+        self.flow_vol = Var(
+            units=pyunits.m**3 / pyunits.hour,
+            bounds=(1e-8, None),
+        )
+        self.conc_mass_solute = Var(
+            ["Li", "Co"],
+            units=pyunits.kg / pyunits.m**3,
+            bounds=(1e-8, None),
+        )
+
+    def get_material_flow_terms(self, p, j):
+        if j == "solvent":
+            # Assume constant density of pure water
+            return self.flow_vol * 1000 * pyunits.kg / pyunits.m**3
+        else:
+            return self.flow_vol * self.conc_mass_solute[j]
+
+    def get_material_flow_basis(self):
+        return MaterialFlowBasis.mass
+
+    def define_state_vars(self):
+        return {
+            "flow_vol": self.flow_vol,
+            "conc_mass_solute": self.conc_mass_solute,
+        }
+
+
+@pytest.mark.integration
+def test_material_only():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = LiCoParameters()
+
+    m.fs.sep = Separator(
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentPhase,
+        split_basis=SplittingType.totalFlow,
+        num_outlets=2,
+        energy_split_basis=EnergySplittingType.none,
+        momentum_balance_type=MomentumBalanceType.none,
+        ideal_separation=False,
+        has_phase_equilibrium=False,
+    )
+
+    m.fs.sep.inlet.flow_vol[0].fix(10)
+    m.fs.sep.inlet.conc_mass_solute[0, "Li"].fix(2)
+    m.fs.sep.inlet.conc_mass_solute[0, "Co"].fix(3)
+
+    m.fs.sep.split_fraction[0, "outlet_1"].fix(0.4)
+
+    assert degrees_of_freedom(m) == 0
+
+    initializer = SeparatorInitializer()
+    initializer.initialize(m.fs.sep)
+
+    assert initializer.summary[m.fs.sep]["status"] == InitializationStatus.Ok
+
+    assert value(m.fs.sep.outlet_1.flow_vol[0]) == pytest.approx(4, rel=1e-6)
+    assert value(m.fs.sep.outlet_2.flow_vol[0]) == pytest.approx(6, rel=1e-6)
+
+    assert value(m.fs.sep.outlet_1.conc_mass_solute[0, "Li"]) == pytest.approx(
+        2, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_1.conc_mass_solute[0, "Co"]) == pytest.approx(
+        3, rel=1e-6
+    )
+
+    assert value(m.fs.sep.outlet_2.conc_mass_solute[0, "Li"]) == pytest.approx(
+        2, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_2.conc_mass_solute[0, "Co"]) == pytest.approx(
+        3, rel=1e-6
+    )
