@@ -84,7 +84,7 @@ In all cases, the multi-stage contactor model writes a set of material balances 
 
 .. math:: 0 = \sum_p{F_{t,x-,s,p,j}} - \sum_p{F_{t,x,s,p,j}} + \left[ \sum_p{F_{side,t,x,s,p,j}} \right] + \sum_o{M_{t,x,s,o,j}} + \left[ \sum_p{G_{rate,t,x,s,p,j}} + \sum_p{G_{equil,t,x,s,p,j}} + \sum_p{G_{inher,t,x,s,p,j}} + \sum_p{G_{hetero,t,x,s,p,j}} \right]
 
-where ``F`` is the material flow term, ``x-`` represents the the previous finite element (``x-1`` in the case of co-current flow and ``x+1`` in the case of counter-current flow), ``F_side`` is the material flow term for a side stream (if present) and ``o`` represents all other streams in the model (for cases where ``s`` is the second index (i.e., M_{t,x,o,s,j}) the term is multiplied by -1). The reaction generation terms are only included if the appropriate reaction type is supported by the reaction or property package for the stream.
+where ``F`` is the material flow term, ``x-`` represents the previous finite element (``x-1`` in the case of co-current flow and ``x+1`` in the case of counter-current flow), ``F_side`` is the material flow term for a side stream (if present) and ``o`` represents all other streams in the model (for cases where ``s`` is the second index (i.e., M_{t,x,o,s,j}) the term is multiplied by -1). The reaction generation terms are only included if the appropriate reaction type is supported by the reaction or property package for the stream.
 
 For systems including rate reactions, the following constraint, names ``stream + "_rate_reaction_constraint"``, is written to relate the generation of component ``j`` in phase ``p`` to the extent of each rate reaction as shown below where :math:`\alpha_{r,p,j}` is the stoichiometric coefficient for component ``j`` in phase ``p`` for reaction ``r``.
 
@@ -258,7 +258,7 @@ Currently, the requirements for are similar to those for ReactionBlocks and are 
                 units=#units
                 )
 
-            # Define rule for calcuating reaction rate
+            # Define rule for calculating reaction rate
             def rule_reaction_rate_eq(b, r):
                 return b.reaction_rate[r] == #rate expression
 
