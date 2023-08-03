@@ -10,10 +10,10 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
 import pandas as pd
 import numpy as np
-
+from importlib import resources
+from pathlib import Path
 from pyomo.environ import (
     ConcreteModel,
     Block,
@@ -66,7 +66,7 @@ class PriceTakerModel(ConcreteModel):
             raise ValueError(f"horizon_length must be > 0, but {value} is provided.")
         self._horizon_length = value
 
-    def generate_daily_data(self, raw_data, day_list):
+    def generate_daily_data(self,raw_data,day_list):
 
         daily_data = pd.DataFrame(columns=day_list)
 
@@ -79,7 +79,7 @@ class PriceTakerModel(ConcreteModel):
             i = j
             j = j + self._horizon_length
             day = day + 1
-
+        
         return daily_data
 
     def reconfigure_raw_data(self, raw_data):
@@ -92,6 +92,7 @@ class PriceTakerModel(ConcreteModel):
         Returns:
             daily_data: reconfigured price series data
         """
+
         # Get column headings
         column_head = raw_data.columns.tolist()
         # Remove the date/time column
@@ -166,7 +167,7 @@ class PriceTakerModel(ConcreteModel):
 
         return n_clusters, inertia_values
 
-    def cluster_lmp_data(self, daily_data, n_clusters, scenarios):
+    def cluster_lmp_data(self, raw_data, n_clusters, scenarios):
         """
         Clusters the given price signal in n_clusters. This method supports k-means, k-meteiod,...
         techniques for clustering.
@@ -177,7 +178,9 @@ class PriceTakerModel(ConcreteModel):
             lmp_data = {1: {1: 2, 2: 3, 3: 5}, 2: {1: 2, 2: 3, 3: 5}}
             weights = {1: 45, 2: 56}
         """
-
+        # reconfiguring raw data 
+        daily_data,scenarios  = self.reconfigure_raw_data(raw_data)
+        
         # KMeans clustering with the optimal number of clusters
         kmeans = KMeans(n_clusters=n_clusters).fit(daily_data.transpose())
         centroids = kmeans.cluster_centers_
@@ -202,27 +205,33 @@ class PriceTakerModel(ConcreteModel):
         rep_days_data = {}
         weights_data = {}
 
-        for i in scenarios[0:1]:
-            rep_days_data[i] = pd.DataFrame(centroids.transpose())
-            lmp_data = rep_days_data[i].to_dict()
-            weights_data[i] = pd.DataFrame(weights_counter)
-            weights = weights_data[i].to_dict()
+        
+        rep_days_data = pd.DataFrame(centroids.transpose(), columns = range(1,n_clusters+1))
+        lmp_data = rep_days_data.to_dict()
+        weights_data = pd.DataFrame(weights_counter)
+        weights_data.index = np.arange(1, len(weights_data) + 1)
+        weights = weights_data.to_dict()
 
         return lmp_data, weights
 
     def append_lmp_data(
         self,
-        filename,
+        file_path,
+        file_name,
+        sheet = None,
         column_name="price",
         n_clusters=None,
         horizon_length=None,
     ):
-        full_data = pd.read_csv(filename)
-
+        with resources.path(file_path, file_name) as p:
+            path_to_file = Path(p).resolve()
+        
+        full_data = pd.read_excel( path_to_file, sheet_name=[sheet])[sheet]
+        # editing the data
         if isinstance(column_name, list) and n_clusters is not None:
             # Multiple years and representative days
             self.set_years = [int(y) for y in column_name]
-            self.set_days = RangeSet(n_clusters)
+            self.set_days = RangeSet(1,n_clusters)
             self._n_time_points = horizon_length if horizon_length is not None else 24
             self.set_time = RangeSet(self._n_time_points)
 
@@ -230,7 +239,7 @@ class PriceTakerModel(ConcreteModel):
             self.WEIGHTS = {}
 
             for year in column_name:
-                price_data = full_data[year].to_list()
+                price_data = full_data[year]
                 lmp_data, weights = self.cluster_lmp_data(
                     price_data, n_clusters, horizon_length
                 )
@@ -239,7 +248,7 @@ class PriceTakerModel(ConcreteModel):
                 for d in self.set_days:
                     for t in self.set_time:
                         self.LMP[t, d, y] = lmp_data[d][t]
-                        self.WEIGHTS[d, y] = weights[d]
+                        self.WEIGHTS[d, y] = weights[0][d]
 
             return
 
@@ -253,7 +262,7 @@ class PriceTakerModel(ConcreteModel):
             self.LMP = {}
 
             for year in column_name:
-                price_data = full_data[year].to_list()
+                price_data = full_data[year]
                 y = int(year)
 
                 for t in self.set_time:
@@ -264,23 +273,23 @@ class PriceTakerModel(ConcreteModel):
         elif n_clusters is not None:
             # Single price signal, use reprentative days
             self.set_years = None
-            self.set_days = RangeSet(n_clusters)
+            self.set_days = RangeSet(1,n_clusters)
             self._n_time_points = horizon_length if horizon_length is not None else 24
-            self.set_time = RangeSet(self._n_time_points)
+            self.set_time = RangeSet(self._n_time_points-1)
 
             self.LMP = {}
             self.WEIGHTS = {}
 
-            price_data = full_data[year].to_list()
+            price_data = full_data
             lmp_data, weights = self.cluster_lmp_data(
                 price_data, n_clusters, horizon_length
             )
-
+            
             for d in self.set_days:
                 for t in self.set_time:
                     self.LMP[t, d] = lmp_data[d][t]
-                    self.WEIGHTS[d] = weights[d]
-
+                    self.WEIGHTS[d] = weights[0][d]
+                    
             return
 
         else:
@@ -297,10 +306,10 @@ class PriceTakerModel(ConcreteModel):
 
     def build_multiperiod_model(self, **kwargs):
 
-        if not self.model_sets_available:
-            raise Exception(
-                "Model sets have not been defined. Run get_lmp_data to construct model sets"
-            )
+        # if not self.model_sets_available:
+        #     raise Exception(
+        #         "Model sets have not been defined. Run get_lmp_data to construct model sets"
+        #     )
 
         self.mp_model = MultiPeriodModel(
             n_time_points=self._n_time_points,
@@ -387,8 +396,8 @@ class PriceTakerModel(ConcreteModel):
         self.NET_CASH_INFLOW = Var(doc="Net cash inflow")
         self.net_cash_inflow_calculation = Constraint(
             expr=self.NET_CASH_INFLOW
-            == sum(self.mp_model[p].net_cash_inflow for p in self.mp_model)
-        )
+            == sum(self.mp_model.period[p].net_cash_inflow for p in self.mp_model.period) # added period block name to the net_cash_inflow callout
+        ) # added period block name to mp_model, to kthe len, and made a range list to loop over
 
         self.CORP_TAX = Var(within=NonNegativeReals, doc="Corporate tax")
         self.corp_tax_calculation = Constraint(
