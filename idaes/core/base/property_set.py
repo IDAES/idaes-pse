@@ -21,7 +21,6 @@ from copy import copy
 
 from pyomo.environ import units as pyunits
 from pyomo.core.base.units_container import _PyomoUnit
-from pyomo.common.deprecation import deprecation_warning
 
 from idaes.core.util.exceptions import PropertyPackageError
 import idaes.logger as idaeslog
@@ -348,9 +347,6 @@ class PropertySetBase:
         self._parent_block = parent
         self._defined_properties = []
         self._defined_indices = copy(self.__class__._defined_indices)
-        # if strict property name checking is enforced a ValueError is raised when getting an
-        # undefined property name, otherwise just log a deprecation warning
-        self._strict = False
         self._lock_setattr = True
         # Find standard properties defined in class and create instance versions
         for i in dir(self.__class__):
@@ -386,22 +382,6 @@ class PropertySetBase:
     def __iter__(self):
         for a in self._defined_properties:
             yield getattr(self, a)
-
-    def strict(self, strict_checking: bool = None):
-        """
-        Set or get whether strict property name checking is used.  Strict checking
-        raises a ValueError when getting an undefined property name, otherwise it
-        logs a deprecation error.
-
-        Args:
-            strict_checking (bool):
-
-        Returns:
-            (bool): Strict checking setting
-        """
-        if strict_checking is not None:
-            super().__setattr__("_strict", strict_checking)
-        return self._strict
 
     def define_property(
         self,
@@ -493,10 +473,6 @@ class PropertySetBase:
             indices.append("none")
         elif indices is False:
             indices = ["none"]
-
-        for idx in set(self._defined_indices) | {"phase", "comp", "phase_comp"}:
-            if name.endswith("_" + idx):
-                raise ValueError(f"Property name {name} ends with a defined index.")
 
         super().__setattr__(
             name,
@@ -619,19 +595,9 @@ class PropertySetBase:
                     break
 
         if root_name not in self._defined_properties:
-            msg = (
-                f"The property name {property_name} in property metadata is not a recognized standard "
-                "property name defined in this PropertySet. Please refer to IDAES standard names in "
-                "the IDAES documentation. You can use the define_custom_properties() rather than the "
-                "add_properties() method to define metadata for this property.  You can also use a "
-                "different property set by calling the define_property_set() method."
+            raise ValueError(
+                f"Unhandled property: {property_name}. This is mostly likely due to the property not being defined in this PropertySet."
             )
-            if self.strict():
-                raise ValueError(msg)
-            else:
-                deprecation_warning(
-                    msg=msg, logger=_log, version="2.0.0", remove_in="3.0.0"
-                )
 
         return root_name, index_name
 
