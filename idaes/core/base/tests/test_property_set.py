@@ -411,6 +411,7 @@ class TestPropertySetBase:
             required=True,
             units=units.dimensionless,
         )
+        pset.strict(True)
 
         assert pset["FOO"] is pset.FOO._none
         assert pset["FOO_comp"] is pset.FOO._comp
@@ -419,12 +420,22 @@ class TestPropertySetBase:
 
     @pytest.mark.unit
     def test_getitem_no_present(self, pset):
+        pset.strict(True)
         with pytest.raises(
             ValueError,
-            match="Unhandled property: foo. This is mostly likely due "
-            "to the property not being defined in this PropertySet.",
+            match=r"The property name foo in",
         ):
             pset["foo"]
+
+    @pytest.mark.unit
+    def test_getitem_no_present_warning(self, pset, caplog):
+        pset.strict(False)
+        assert not pset.strict()
+        with pytest.raises(KeyError):
+            pset["foo"]
+        caplog.records[0].message.startswith(
+            "The property name foo in property metadata"
+        )
 
     @pytest.mark.unit
     def test_iter(self, pset):
@@ -527,6 +538,7 @@ class TestPropertySetBase:
 
         pset = PropertySetBase(parent=p)
         pset._defined_properties.append("foo_bar")
+        pset.strict(True)
 
         n, i = pset.get_name_and_index("foo_bar")
         assert n == "foo_bar"
@@ -546,8 +558,7 @@ class TestPropertySetBase:
 
         with pytest.raises(
             ValueError,
-            match="Unhandled property: baz. This is mostly likely due to the "
-            "property not being defined in this PropertySet.",
+            match=r"The property name baz in",
         ):
             pset.get_name_and_index("baz")
 
@@ -645,6 +656,7 @@ class TestStandardPropertySet:
 
         pset = PropertySetBase(parent=p)
         pset._defined_properties.append("foo_bar")
+        pset.strict(True)
 
         n, i = pset.get_name_and_index("foo_bar")
         assert n == "foo_bar"
@@ -664,8 +676,7 @@ class TestStandardPropertySet:
 
         with pytest.raises(
             ValueError,
-            match="Unhandled property: baz. This is mostly likely due to the "
-            "property not being defined in this PropertySet.",
+            match=r"The property name baz in",
         ):
             pset.get_name_and_index("baz")
 
@@ -693,6 +704,7 @@ class TestElectrolytePropertySet:
 
         pset = ElectrolytePropertySet(parent=p)
         pset._defined_properties.append("foo_bar")
+        pset.strict(True)
 
         n, i = pset.get_name_and_index("foo_bar")
         assert n == "foo_bar"
@@ -720,7 +732,6 @@ class TestElectrolytePropertySet:
 
         with pytest.raises(
             ValueError,
-            match="Unhandled property: baz. This is mostly likely due to the "
-            "property not being defined in this PropertySet.",
+            match=r"The property name baz in",
         ):
             pset.get_name_and_index("baz")
