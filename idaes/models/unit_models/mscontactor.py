@@ -43,7 +43,6 @@ import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee"
 
-# TODO: Initializer object
 # TODO: Could look at using Pyomo DAE for the length domain, but this would make
 # it harder to do side feeds.
 
@@ -114,13 +113,28 @@ class MSContactorInitializer(ModularInitializerBase):
         # First, build list of names for known constraints
         const_names = []
         for s in model.config.streams.keys():
-            const_names.append(s + "_rate_reaction_constraint")
-            const_names.append(s + "_equilibrium_reaction_constraint")
-            const_names.append(s + "_inherent_reaction_constraint")
-            const_names.append(s + "_material_balance")
-            const_names.append(s + "_energy_balance")
-            const_names.append(s + "_pressure_balance")
-            const_names.append(s + "_side_stream_pressure_balance")
+            const_names.append(model.name + "." + s + "_rate_reaction_constraint")
+            const_names.append(
+                model.name + "." + s + "_equilibrium_reaction_constraint"
+            )
+            const_names.append(model.name + "." + s + "_inherent_reaction_constraint")
+            const_names.append(
+                model.name + "." + s + "_heterogeneous_reaction_constraint"
+            )
+            const_names.append(model.name + "." + s + "_material_balance")
+            const_names.append(model.name + "." + s + "_energy_balance")
+            const_names.append(model.name + "." + s + "_pressure_balance")
+            const_names.append(model.name + "." + s + "_side_stream_pressure_balance")
+
+            try:
+                # If has rate reactions ,fi extent to 0 for first pass
+                getattr(model, s + "_rate_reaction_extent").fix(0)
+            except AttributeError:
+                pass
+
+        # Fix extents for heterogeneous reactions to 0 for first pass if present
+        if hasattr(model, "heterogeneous_reaction_extent"):
+            model.heterogeneous_reaction_extent.fix(0)
 
         # Iterate through all constraints attached to model - do not search sub-blocks
         for c in model.component_objects(Constraint, descend_into=False):
@@ -322,6 +336,26 @@ class MSContactorData(UnitModelBlockData):
             doc="List of interacting stream pairs as 2-tuples ('stream1', 'stream2').",
         ),
     )
+    # TODO: Consider a base call for heterogeneous reactions and set domain
+    CONFIG.declare(
+        "heterogeneous_reactions",
+        ConfigValue(
+            default=None,
+            # domain=list,
+            description="Heterogeneous reaction package to use in contactor.",
+            doc="Heterogeneous reaction package to use in contactor. Heterogeneous "
+            "reaction packages are expected to have a certain structure and methods; "
+            "please refer to the documentation for more details.",
+        ),
+    )
+    CONFIG.declare(
+        "heterogeneous_reactions_args",
+        ConfigDict(
+            implicit=True,
+            description="Arguments to use for constructing reaction packages",
+            doc="ConfigBlock with arguments to be passed to heterogeneous reaction block(s)",
+        ),
+    )
 
     def build(self):
         """
@@ -338,6 +372,10 @@ class MSContactorData(UnitModelBlockData):
 
         self._verify_inputs()
         flow_basis, uom = self._build_state_blocks()
+
+        if self.config.heterogeneous_reactions is not None:
+            self._build_heterogeneous_reaction_blocks()
+
         self._build_material_balance_constraints(flow_basis, uom)
         self._build_energy_balance_constraints(uom)
         self._build_pressure_balance_constraints(uom)
@@ -386,10 +424,14 @@ class MSContactorData(UnitModelBlockData):
                 ):
                     # Common component, assume interaction
                     self.stream_component_interactions.add((stream1, stream2, j))
-        if len(self.stream_component_interactions) == 0:
+        if (
+            len(self.stream_component_interactions) == 0
+            and self.config.heterogeneous_reactions is None
+        ):
             raise ConfigurationError(
-                "No common components found in property packages. MSContactor model assumes "
-                "mass transfer occurs between components with the same name in different streams."
+                "No common components found in property packages and no heterogeneous reactions "
+                "specified. The MSContactor model assumes that mass transfer occurs between "
+                "components with the same name in different streams or due to heterogeneous reactions."
             )
 
         # Check that reaction block was provided if reactions requested
@@ -487,6 +529,30 @@ class MSContactorData(UnitModelBlockData):
 
         return flow_basis, uom
 
+    def _build_heterogeneous_reaction_blocks(self):
+        rpack = self.config.heterogeneous_reactions
+        rpack_args = self.config.heterogeneous_reactions_args
+
+        try:
+            self.heterogeneous_reactions = rpack.build_reaction_block(
+                self.flowsheet().time,
+                self.elements,
+                doc="Heterogeneous reaction block for contactor.",
+                **rpack_args,
+            )
+        except AttributeError:
+            raise ConfigurationError(
+                "Heterogeneous reaction package has not implemented a "
+                "build_reaction_block method. Please ensure that your "
+                "reaction block conforms to the required standards."
+            )
+
+        if not hasattr(self.config.heterogeneous_reactions, "reaction_idx"):
+            raise PropertyNotSupportedError(
+                "Heterogeneous reaction package does not contain a list of "
+                "reactions (reaction_idx)."
+            )
+
     def _build_material_balance_constraints(self, flow_basis, uom):
         # Get units for transfer terms
         if flow_basis is MaterialFlowBasis.molar:
@@ -509,6 +575,19 @@ class MSContactorData(UnitModelBlockData):
             doc="Inter-stream mass transfer term",
         )
 
+        if hasattr(self, "heterogeneous_reactions"):
+            # Add extents of reaction and stoichiometric constraints
+            # We will assume the user will define how extent will be calculated
+            self.heterogeneous_reaction_extent = Var(
+                self.flowsheet().time,
+                self.elements,
+                self.config.heterogeneous_reactions.reaction_idx,
+                domain=Reals,
+                initialize=0.0,
+                doc="Extent of heterogeneous reactions",
+                units=mb_units,
+            )
+
         # Build balance equations
         for stream, sconfig in self.config.streams.items():
             state_block = getattr(self, stream)
@@ -520,7 +599,7 @@ class MSContactorData(UnitModelBlockData):
             if hasattr(self, stream + "_reactions"):
                 reaction_block = getattr(self, stream + "_reactions")
 
-            # Add equilibrium reaction terms (if required)
+            # Add homogeneous rate reaction terms (if required)
             if sconfig.has_rate_reactions:
                 if not hasattr(sconfig.reaction_package, "rate_reaction_idx"):
                     raise PropertyNotSupportedError(
@@ -701,6 +780,51 @@ class MSContactorData(UnitModelBlockData):
                     inherent_reaction_constraint,
                 )
 
+            # Add heterogeneous reaction terms (if required)
+            if hasattr(self, "heterogeneous_reactions"):
+                heterogeneous_reactions_generation = Var(
+                    self.flowsheet().time,
+                    self.elements,
+                    pc_set,
+                    domain=Reals,
+                    initialize=0.0,
+                    doc="Generation due to heterogeneous reactions",
+                    units=mb_units,
+                )
+                self.add_component(
+                    stream + "_heterogeneous_reactions_generation",
+                    heterogeneous_reactions_generation,
+                )
+
+                def heterogeneous_reaction_rule(b, t, s, p, j):
+                    if (p, j) in pc_set:
+                        return heterogeneous_reactions_generation[t, s, p, j] == (
+                            sum(
+                                self.heterogeneous_reactions[
+                                    t, s
+                                ].params.reaction_stoichiometry[r, p, j]
+                                * b.heterogeneous_reaction_extent[t, s, r]
+                                for r in self.config.heterogeneous_reactions.reaction_idx
+                                if (r, p, j)
+                                in self.heterogeneous_reactions[
+                                    t, s
+                                ].params.reaction_stoichiometry
+                            )
+                        )
+                    return Constraint.Skip
+
+                heterogeneous_reaction_constraint = Constraint(
+                    self.flowsheet().time,
+                    self.elements,
+                    pc_set,
+                    doc="Heterogeneous reaction stoichiometry constraint",
+                    rule=heterogeneous_reaction_rule,
+                )
+                self.add_component(
+                    stream + "_heterogeneous_reaction_constraint",
+                    heterogeneous_reaction_constraint,
+                )
+
             # Material balance for stream
             def material_balance_rule(b, t, s, j):
                 in_state, out_state, side_state = _get_state_blocks(b, t, s, stream)
@@ -758,6 +882,13 @@ class MSContactorData(UnitModelBlockData):
                 if state_block.include_inherent_reactions:
                     rhs += sum(
                         inherent_reaction_generation[t, s, p, j] for p in phase_list
+                    )
+
+                # Add heterogeneous reactions (if required)
+                if self.config.heterogeneous_reactions is not None:
+                    rhs += sum(
+                        heterogeneous_reactions_generation[t, s, p, j]
+                        for p in phase_list
                     )
 
                 return 0 == rhs
