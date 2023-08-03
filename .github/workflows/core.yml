@@ -68,5 +68,5 @@ jobs:
           echo "" > pytest.ini
       - name: Install and run compatibility tests
         run: |
-          pip install "git+https://github.com/IDAES/idaes-compatibility@refs/pull/9/merge"
+          pip install "git+https://github.com/IDAES/idaes-compatibility@main"
           pytest --pyargs idaes_compatibility
