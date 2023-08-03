@@ -163,7 +163,7 @@ Currently, the requirements for are similar to those for ReactionBlocks and are 
     from idaes.core.util.misc import add_object_reference
 
     # -----------------------------------------------------------------------------
-    # Heterogeenosu Reaction Parameter Block
+    # Heterogeneous Reaction Parameter Block
     @declare_process_block_class("MyHeterogeneousReactionParameters")
     class MyHeterogeneousReactionParametersData(ProcessBlockData, property_meta.HasPropertyClassMetadata):
         def build(self):
