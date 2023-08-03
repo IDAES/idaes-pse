@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Generic template for a translator block.
@@ -23,6 +23,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
+from idaes.core.initialization import BlockTriangularizationInitializer
 
 __author__ = "Andrew Lee"
 
@@ -36,6 +37,10 @@ class TranslatorData(UnitModelBlockData):
     """
     Standard Translator Block Class
     """
+
+    # Set default initializer
+    # TODO: For now, use Block Triangularization as the default
+    default_initializer = BlockTriangularizationInitializer
 
     CONFIG = ConfigBlock()
     CONFIG.declare(
@@ -153,10 +158,10 @@ see property package for documentation.}""",
         # Call UnitModel.build to setup dynamics
         super(TranslatorData, self).build()
 
-        # Check construction argumnet consistency
+        # Check construction argument consistency
         if self.config.outlet_state_defined and self.config.has_phase_equilibrium:
             raise ConfigurationError(
-                "{} cannot calcuate phase equilibrium (has_phase_equilibrium "
+                "{} cannot calculate phase equilibrium (has_phase_equilibrium "
                 "= True) when outlet state is set to be fully defined ("
                 "outlet_state_defined = True).".format(self.name)
             )

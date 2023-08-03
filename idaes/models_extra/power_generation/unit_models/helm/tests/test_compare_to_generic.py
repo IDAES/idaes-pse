@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """Tests that helmholtz specific models match generic models"""
 import pytest
@@ -17,10 +17,11 @@ import pyomo.environ as pyo
 import idaes.core
 import idaes.models.unit_models as cmodels
 import idaes.models_extra.power_generation.unit_models.helm as hmodels
-
+from idaes.models.properties.general_helmholtz import helmholtz_available
 from idaes.models.properties import iapws95
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_pump():
     m = pyo.ConcreteModel()
@@ -58,6 +59,7 @@ def test_pump():
     )
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_turbine():
     m = pyo.ConcreteModel()
@@ -96,6 +98,7 @@ def test_turbine():
     )
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_compressor():
     m = pyo.ConcreteModel()
@@ -135,6 +138,7 @@ def test_compressor():
     )
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_compressor_pump_compare():
     m = pyo.ConcreteModel()

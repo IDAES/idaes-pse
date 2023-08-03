@@ -1,18 +1,21 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Framework for generic reaction packages
 """
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from math import log
 
 # Import Pyomo libraries
@@ -26,6 +29,7 @@ from idaes.core import (
     ReactionBlockDataBase,
     ReactionBlockBase,
     MaterialFlowBasis,
+    ElectrolytePropertySet,
 )
 from idaes.models.properties.modular_properties.base.utility import ConcentrationForm
 from idaes.core.util.exceptions import (
@@ -43,8 +47,11 @@ _log = idaeslog.getLogger(__name__)
 
 
 class GenericReactionPackageError(PropertyPackageError):
+    """Modular reaction package class."""
+
     # Error message for when a property is called for but no option provided
     def __init__(self, block, prop):
+        super().__init__()
         self.prop = prop
         self.block = block
 
@@ -191,12 +198,11 @@ class GenericReactionParameterData(ReactionParameterBlock):
         # The super.build tries to validate units, but they have not been set
         # and cannot be set until the config block is created by super.build
         super(ReactionParameterBlock, self).build()
-        self.default_scaling_factor = {}
 
         # Set base units of measurement
         self.get_metadata().add_default_units(self.config.base_units)
 
-        # TODO: Need way to tie reaction package to a specfic property package
+        # TODO: Need way to tie reaction package to a specific property package
         self._validate_property_parameter_units()
         self._validate_property_parameter_properties()
 
@@ -452,7 +458,6 @@ class GenericReactionParameterData(ReactionParameterBlock):
         Returns:
             None
         """
-        pass
 
     def parameters(self):
         """
@@ -466,11 +471,11 @@ class GenericReactionParameterData(ReactionParameterBlock):
         Returns:
             None
         """
-        pass
 
     @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
+        obj.define_property_set(ElectrolytePropertySet)
         obj.add_properties(
             {
                 "dh_rxn": {"method": "_dh_rxn"},
@@ -504,6 +509,10 @@ class _GenericReactionBlock(ReactionBlockBase):
 
 @declare_process_block_class("GenericReactionBlock", block_class=_GenericReactionBlock)
 class GenericReactionBlockData(ReactionBlockDataBase):
+    """
+    Modular Reaction Block class.
+    """
+
     def build(self):
         # TODO: Need a different error here
         super(GenericReactionBlockData, self).build()
@@ -528,7 +537,7 @@ class GenericReactionBlockData(ReactionBlockDataBase):
         self._lock_attribute_creation = True
 
         # Due to the exponential relationship between most reaction properties
-        # and temeprature, it is very hard to calculate good scaling factors
+        # and temperature, it is very hard to calculate good scaling factors
         # from order-of-magnitude guesses. Thus ,reaction scaling will always
         # require a lot of user input. Here we will calculate scaling factors
         # for those properties that have non-exponential relationships to T.

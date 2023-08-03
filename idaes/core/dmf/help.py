@@ -1,26 +1,32 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Find documentation for modules and classes in the
 generated Sphinx documentation and return its location.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: protected access issues
+# pylint: disable=protected-access
+
 # stdlib
 import logging
 import os
 from pathlib import Path
-import requests
 import types
 from urllib.parse import urlparse
+import requests
 
 # third-party
 from lxml import html
@@ -45,9 +51,11 @@ def find_html_docs(dmf, obj=None, obj_name=None, **kw):
         else:
             try:
                 module_, name = obj_name.rsplit(".", 1)
+            # pylint: disable=W0706
             except ValueError:
+                # TODO: Is this try/expect necessary?
                 raise
-    _log.debug("Find docs for object. module=/{}/ name=/{}/".format(module_, name))
+    _log.debug(f"Find docs for object. module=/{module_}/ name=/{name}/")
     return get_html_docs(dmf, module_, name, **kw)
 
 
@@ -76,7 +84,7 @@ def get_html_docs(dmf, module_, name, sphinx_version=(1, 5, 5)):
         html_content = None
         is_web = parsed.scheme in ("http", "https")
         if is_web:
-            _log.debug(f"Get help from online documentation")
+            _log.debug("Get help from online documentation")
             url = p + "/genindex.html"
             _log.debug(f"(Help) reading index file: {url}")
             try:
@@ -90,7 +98,7 @@ def get_html_docs(dmf, module_, name, sphinx_version=(1, 5, 5)):
             except requests.RequestException as err:
                 _log.debug(f"Error getting documentation index from '{url}': {err}")
         else:
-            _log.debug(f"Get help from local documentation files")
+            _log.debug("Get help from local documentation files")
             index_path = Path(p) / "genindex.html"
             if index_path.exists():
                 _log.debug(f"(Help) reading index file: {index_path}")
@@ -143,11 +151,11 @@ def _find_refs(tree, module, name, sphinx_version):
     # There are 3 types of refs we are looking for
     # 1. manually added with index directive
     xpath_expr = '//li[contains(.,"{m}")]/ul/li/a'.format(m=module)
-    _log.debug("manually indexed: xpath expr={}".format(xpath_expr))
+    _log.debug(f"manually indexed: xpath expr={xpath_expr}")
     elements = tree.xpath(xpath_expr)
     hrefs = [e.get("href") for e in elements if e.text.strip() == name]
     if hrefs:
-        _log.debug("found manually indexed docs at: {}".format(hrefs[0]))
+        _log.debug(f"found manually indexed docs at: {hrefs[0]}")
         return hrefs  # found something; stop
     if name:
         # 2a. embedded in the page
@@ -158,10 +166,10 @@ def _find_refs(tree, module, name, sphinx_version):
         target = "module-{}".format(module)  # how Sphinx names these
         subtype = "autodoc"  # for logging
     xpath_expr = '//li/a[contains(@href,"#{}")]/@href'.format(target)
-    _log.debug("{}: xpath expr={}".format(subtype, xpath_expr))
+    _log.debug(f"{subtype}: xpath expr={xpath_expr}")
     hrefs = [p for p in tree.xpath(xpath_expr) if p.endswith(target)]
     if hrefs:
-        _log.debug("found {} docs at: {}".format(subtype, hrefs[0]))
+        _log.debug(f"found {subtype} docs at: {hrefs[0]}")
     return hrefs
 
 

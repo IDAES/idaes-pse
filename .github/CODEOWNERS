@@ -1,0 +1,45 @@
+# Code owners will be used to identify maintainers, notably
+# for developmental and contributed code
+
+# Overall (non-specific)
+* @lbianchi-lbl @ksbeattie
+# packaging
+setup.py @lbianchi-lbl @ksbeattie
+requirements*.txt @lbianchi-lbl @ksbeattie 
+
+# CI infra
+.github/ @lbianchi-lbl @ksbeattie 
+
+# testing
+pytest*.ini @lbianchi-lbl
+conftest.py @lbianchi-lbl
+# Docs - need to identify owner(s)
+
+# Commands
+/idaes/commands/ @eslickj @dangunter
+
+# Core
+/idaes/core/ @andrewlee94 @eslickj @lbianchi-lbl
+/idaes/core/dmf/ @dangunter
+/idaes/core/surrogate/ @andrewlee94 @carldlaird @bpaul4
+/idaes/core/ui/ @dangunter
+
+# Models
+/idaes/models/ @andrewlee94 @eslickj
+
+# Apps - each package needs a maintainer
+/idaes/apps/caprese/ @Robbybp
+/idaes/apps/grid_integration/ @jsiirola @adowling2
+#     /idaes/apps/matopt/ TBD
+/idaes/apps/nmpc/ @Robbybp
+/idaes/apps/uncertainty_propagation/ @adowling2
+
+# Models Extra - each package needs a maintainer
+#     /idaes/models_extra/carbon_capture TBD
+/idaes/models_extra/column_models/ @aostace01 @agarciadiego
+/idaes/models_extra/gas_distribution/ @Robbybp
+/idaes/models_extra/gas_solids_contactors/ @aostace01
+/idaes/models_extra/power_generation/ @eslickj @MAZamarripa
+/idaes/models_extra/power_generation/costing/ @MAZamarripa @AlexNoring
+/idaes/models_extra/power_generation/properties/ @eslickj @AlexNoring
+/idaes/models_extra/power_generation/unit_models/soc_submodels/ @eslickj @dallan-keylogic

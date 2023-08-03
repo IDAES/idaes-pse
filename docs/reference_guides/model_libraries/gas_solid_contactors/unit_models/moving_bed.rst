@@ -33,6 +33,16 @@ Model Structure
 The core MBR unit model consists of two ControlVolume1DBlock Blocks (named gas_phase and solid_phase), each with one 
 Inlet Port (named gas_inlet and solid_inlet) and one Outlet Port (named gas_outlet and solid_outlet).
 
+Discretization
+--------------
+
+The default spatial discretization is a backward finite difference with respect
+to increasing :math:`x` coordinate. For dynamic operation, we recommend a
+discretization that is backward with respect to direction of flow, i.e.
+backward for the gas phase and forward for the solid phase. Discretizations may
+be set for gas and solid phases individually using the
+``gas_transformation_scheme`` and ``solid_transformation_scheme`` config options.
+
 Constraints
 -----------
 

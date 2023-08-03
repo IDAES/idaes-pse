@@ -1,0 +1,230 @@
+{
+    "comp": "propane",
+    "basic": {
+        "R": 0.188555507,
+        "MW": 44.09562,
+        "T_star": 369.89,
+        "rho_star": 220.4781,
+        "Tc": 369.89,
+        "rhoc": 220.4781,
+        "Pc": 4251.2,
+        "Tt": 85.525,
+        "Pt": 0.00000017,
+        "rhot_l": 733.1337781,
+        "rhot_v": 1.06E-08,
+        "P_min": 1e-9,
+        "P_max": 1.4e6,
+        "rho_max": 1000.0,
+        "T_min": 70,
+        "T_max": 700
+    },
+    "eos": {
+        "reference": [
+            "Lemmon, E. , McLinden, M. and Wagner, W. (2009), Thermodynamic Properties of",
+            "Propane. III. A Reference Equation of State for Temperatures from the Melting",
+            "Line to 650 K and Pressures up to 1000 MPa, Journal of Chemical and Engineering",
+            "Data, [online], https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=832438",
+            "(Accessed April 14, 2023)"
+        ],
+        "c": {
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1,
+            "10": 2,
+            "11": 2
+        },
+        "d": {
+            "1": 4,
+            "2": 1,
+            "3": 1,
+            "4": 2,
+            "5": 2,
+            "6": 1,
+            "7": 3,
+            "8": 6,
+            "9": 6,
+            "10": 2,
+            "11": 3,
+            "12": 1,
+            "13": 1,
+            "14": 1,
+            "15": 2,
+            "16": 2,
+            "17": 4,
+            "18": 1
+        },
+        "t": {
+            "1": 1.00,
+            "2": 0.33,
+            "3": 0.80,
+            "4": 0.43,
+            "5": 0.90,
+            "6": 2.46,
+            "7": 2.09,
+            "8": 0.88,
+            "9": 1.09,
+            "10": 3.25,
+            "11": 4.62,
+            "12": 0.76,
+            "13": 2.50,
+            "14": 2.75,
+            "15": 3.05,
+            "16": 2.55,
+            "17": 8.40,
+            "18": 6.75
+        },
+        "n": {
+            "1": 0.042910051,
+            "2": 1.7313671,
+            "3": -2.4516524,
+            "4":0.34157466, 
+            "5": -0.46047898, 
+            "6": -0.66847295,
+            "7": 0.20889705,
+            "8": 0.19421381, 
+            "9": -0.22917851, 
+            "10": -0.60405866,
+            "11": 0.066680654,
+            "12": 0.017534618, 
+            "13": 0.33874242,
+            "14": 0.22228777,
+            "15": -0.23219062,
+            "16": -0.092206940,
+            "17": -0.47575718,
+            "18": -0.017486824
+        },
+        "a": {
+            "12": 0.963, 
+            "13": 1.977,
+            "14": 1.917,
+            "15": 2.307,
+            "16": 2.546,
+            "17": 3.28,
+            "18": 14.6
+        },
+        "b": {
+            "12": 2.33, 
+            "13": 3.47,
+            "14": 3.15,
+            "15": 3.19,
+            "16": 0.92,
+            "17": 18.8,
+            "18": 547.8
+        },
+        "g": {
+            "12": 0.684, 
+            "13": 0.829,
+            "14": 1.419,
+            "15": 0.817,
+            "16": 1.500,
+            "17": 1.426,
+            "18": 1.093
+        },
+        "e": {
+            "12": 1.283, 
+            "13": 0.6936,
+            "14": 0.788,
+            "15": 0.473,
+            "16": 0.8577,
+            "17": 0.271,
+            "18": 0.948
+        },
+        "n0": {
+            "1": -4.970583,
+            "2": 4.29352,
+            "3": 3.0,
+            "4": 3.043,
+            "5": 5.874,
+            "6": 9.337,
+            "7": 7.922
+        },
+        "g0": {
+            "4": 1.062478,
+            "5": 3.344237,
+            "6": 5.363757,
+            "7": 11.762957
+        },
+        "last_term_ideal": 7,
+        "last_term_residual": [5, 11, 18],
+        "phi_ideal_type": 1,
+        "phi_residual_type": 2
+    },
+    "aux": {
+        "reference": [
+            "Lemmon, E. , McLinden, M. and Wagner, W. (2009), Thermodynamic Properties of",
+            "Propane. III. A Reference Equation of State for Temperatures from the Melting",
+            "Line to 650 K and Pressures up to 1000 MPa, Journal of Chemical and Engineering",
+            "Data, [online], https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=832438",
+            "(Accessed April 14, 2023)"
+        ],
+        "delta_l_sat_approx": {
+            "c": 1.0,
+            "n": {
+                "1": 1.82205,
+                "2": 0.65802,
+                "3": 0.21109,
+                "4": 0.083973
+            },
+            "t": {
+                "1": 0.345,
+                "2": 0.74,
+                "3": 2.6,
+                "4": 7.2
+            },
+            "type": 1
+        },
+        "delta_v_sat_approx": {
+            "c": 1,
+            "n": {
+                "1": -2.4887,
+                "2": -5.1069,
+                "3": -12.174,
+                "4": -30.495,
+                "5": -52.192,
+                "6": -134.89
+            },
+            "t": {
+                "1": 0.3785,
+                "2": 1.07,
+                "3": 2.7,
+                "4": 5.5,
+                "5": 10.0,
+                "6": 20.0
+            },
+            "type": 2
+        }
+    },
+    "transport": {
+        "thermal_conductivity": {
+            "reference": [
+                "Marsh, K., Perkins, R., and Ramires, M.L.V., Measurement and Correlation",
+                "    of the Thermal Conductivity of Propane from 86 to 600 K at Pressures",
+                "    to 70 MPa, J. Chem. Eng. Data, 47(4):932-940, 2002."
+            ]
+        },
+        "viscosity": {
+            "reference": [
+                "Vogel E, C Küchenmeister, E Bich, A Laesecke, Reference Correlation of the",
+                "    Viscosity of Propane. Journal of Physical and Chemical Reference Data ",
+                "    27, 947–970 (1998) "
+            ]
+        },
+        "surface_tension": {
+            "reference": [
+                "Mulero, A., I. Cachadina, Parra, M., Recommended Correlations for the Surface ",
+                "    Tension of Common Fluids, J. Phys. Chem. Ref. Data 41, 043105, (2012)."
+            ],
+            "Tc": 369.89,
+            "s": {
+                "0": 53.34, 
+                "1": -17.48
+            },
+            "n": {
+                "0": 1.235,
+                "1": 4.404
+            },
+            "type": 1
+        }
+    }
+}

@@ -1,17 +1,19 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 
-__author__ = "Costing Team (A. Noring, B. Paul, D. Caballero, and M. Zamarripa)"
+__author__ = (
+    "Costing Team (A. Noring, A. Deshpande, B. Paul, D. Caballero, and M. Zamarripa)"
+)
 __version__ = "1.0.0"
 
 import pytest
@@ -19,6 +21,7 @@ import pytest
 import pyomo.environ as pyo
 from pyomo.core.base.constraint import ScalarConstraint, IndexedConstraint
 from pyomo.core.base.expression import ScalarExpression
+from pyomo.core.expr.numeric_expr import MonomialTermExpression, NPV_ProductExpression
 from pyomo.core.base.var import IndexedVar
 from pyomo.environ import units as pyunits
 from pyomo.core.base.units_container import UnitsError
@@ -491,6 +494,438 @@ def test_PP_costing():
 
 
 @pytest.mark.component
+def test_PP_costing_CE_index_year():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    # check that the model solved properly and has 0 degrees of freedom
+    assert degrees_of_freedom(m) == 0
+
+    ###########################################################################
+    #  Create costing constraints                                             #
+    ###########################################################################
+
+    # coal flow rate
+    # accounts 1.x and 2.x are coal handling, preparation and feed
+    # accounts 4.x are for boiler BOP and foundations
+    coal_accounts = ["1.1", "1.2", "1.3", "1.4", "2.1", "2.2", "4.11", "4.15", "4.16"]
+    m.fs.boiler_2018 = UnitModelBlock()
+    m.fs.boiler_2018.coal_mass_flow = pyo.Var(
+        initialize=7238.95, units=pyunits.ton / pyunits.day
+    )
+    m.fs.boiler_2018.coal_mass_flow.fix()
+    m.fs.boiler_2018.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": coal_accounts,
+            "scaled_param": m.fs.boiler_2018.coal_mass_flow,
+            "tech": 2,
+            "ccs": "A",
+            # the default is 2018
+        },
+    )
+
+    m.fs.boiler_2019_Sep = UnitModelBlock()
+    m.fs.boiler_2019_Sep.coal_mass_flow = pyo.Var(
+        initialize=7238.95, units=pyunits.ton / pyunits.day
+    )
+    m.fs.boiler_2019_Sep.coal_mass_flow.fix()
+    m.fs.boiler_2019_Sep.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": coal_accounts,
+            "scaled_param": m.fs.boiler_2019_Sep.coal_mass_flow,
+            "tech": 2,
+            "ccs": "A",
+            "CE_index_year": "2019_Sep",
+        },
+    )
+
+    m.fs.boiler_2020 = UnitModelBlock()
+    m.fs.boiler_2020.coal_mass_flow = pyo.Var(
+        initialize=7238.95, units=pyunits.ton / pyunits.day
+    )
+    m.fs.boiler_2020.coal_mass_flow.fix()
+    m.fs.boiler_2020.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": coal_accounts,
+            "scaled_param": m.fs.boiler_2020.coal_mass_flow,
+            "tech": 2,
+            "ccs": "A",
+            "CE_index_year": "2020",
+        },
+    )
+
+    m.fs.boiler_CE500 = UnitModelBlock()
+    m.fs.boiler_CE500.coal_mass_flow = pyo.Var(
+        initialize=7238.95, units=pyunits.ton / pyunits.day
+    )
+    m.fs.boiler_CE500.coal_mass_flow.fix()
+    m.fs.boiler_CE500.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": coal_accounts,
+            "scaled_param": m.fs.boiler_CE500.coal_mass_flow,
+            "tech": 2,
+            "ccs": "A",
+            "CE_index_year": "CE500",
+        },
+    )
+
+    # add initialize
+    QGESSCostingData.costing_initialization(m.fs.costing)
+
+    # try solving
+    solver = get_solver()
+    results = solver.solve(m, tee=True)
+
+    # check unit consistency
+    assert_units_consistent(m)
+
+    # check that total plant cost ratios match expected currency conversions
+    for account in coal_accounts:
+        # USD_2018 = CE 603.1
+        assert (
+            pytest.approx(
+                pyo.value(
+                    m.fs.boiler_2018.costing.total_plant_cost[account]
+                    / m.fs.boiler_CE500.costing.total_plant_cost[account]
+                ),
+                abs=1e-1,
+            )
+            == 603.1 / 500
+        )
+
+        # USD_2019_Sep = CE 599.3
+        assert (
+            pytest.approx(
+                pyo.value(
+                    m.fs.boiler_2019_Sep.costing.total_plant_cost[account]
+                    / m.fs.boiler_CE500.costing.total_plant_cost[account]
+                ),
+                abs=1e-1,
+            )
+            == 599.3 / 500
+        )
+
+        # USD_2020 = CE 596.2
+        assert (
+            pytest.approx(
+                pyo.value(
+                    m.fs.boiler_2020.costing.total_plant_cost[account]
+                    / m.fs.boiler_CE500.costing.total_plant_cost[account]
+                ),
+                abs=1e-1,
+            )
+            == 596.2 / 500
+        )
+
+
+@pytest.mark.component
+def test_PP_costing_additional_costing_params_no_conflicts():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    # check that the model solved properly and has 0 degrees of freedom
+    assert degrees_of_freedom(m) == 0
+
+    # create new account to test, this doesn't match any existing accounts
+    # this is just a test, so just change year on 1.1 for new "data"
+    additional_costing_params = {
+        "1": {
+            "A": {
+                "1.1.newaccount": {
+                    "Account Name": "Coal Receive & Unload",
+                    "BEC": 1504.0143517610745,
+                    "BEC_units": "K$2020",
+                    "Eng Fee": 0.175,
+                    "Exponent": 0.62,
+                    "Process Contingency": 0.0,
+                    "Process Parameter": "Coal Feed Rate",
+                    "Project Contingency": 0.15,
+                    "RP Value": 5904.5598,
+                    "Units": "ton/d",
+                },
+            }
+        }
+    }
+
+    ###########################################################################
+    #  Create costing constraints                                             #
+    ###########################################################################
+
+    # coal flow rate
+    # accounts 1.x and 2.x are coal handling, preparation and feed
+    # accounts 4.x are for boiler BOP and foundations
+    coal_accounts = ["1.1", "1.1.newaccount"]
+    m.fs.boiler = UnitModelBlock()
+    m.fs.boiler.coal_mass_flow = pyo.Var(
+        initialize=7238.95, units=pyunits.ton / pyunits.day
+    )
+    m.fs.boiler.coal_mass_flow.fix()
+    m.fs.boiler.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": coal_accounts,
+            "scaled_param": m.fs.boiler.coal_mass_flow,
+            "tech": 1,
+            "ccs": "A",
+            "additional_costing_params": additional_costing_params,
+            # default to no overwrite, should matter since it doesn't match
+        },
+    )
+
+    # add initialize
+    QGESSCostingData.costing_initialization(m.fs.costing)
+
+    # try solving
+    solver = get_solver()
+    results = solver.solve(m, tee=True)
+
+    # check unit consistency
+    assert_units_consistent(m)
+
+    # check that the two accounts have expected, different values
+    assert (
+        pytest.approx(pyo.value(m.fs.boiler.costing.total_plant_cost["1.1"]), abs=1e-1)
+        == 2306 / 1e3
+    )
+    assert (
+        pytest.approx(
+            pyo.value(m.fs.boiler.costing.total_plant_cost["1.1.newaccount"]), abs=1e-1
+        )
+        == 2333 / 1e3
+    )
+
+
+@pytest.mark.component
+def test_PP_costing_additional_costing_params_no_overwrite():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    # check that the model solved properly and has 0 degrees of freedom
+    assert degrees_of_freedom(m) == 0
+
+    # create new account to test, this is a "new" entry for 1.1
+    additional_costing_params = {
+        "1": {
+            "A": {
+                "1.1": {
+                    "Account Name": "Coal Receive & Unload",
+                    "BEC": 1504.0143517610745,
+                    "BEC_units": "K$2020",
+                    "Eng Fee": 0.175,
+                    "Exponent": 0.62,
+                    "Process Contingency": 0.0,
+                    "Process Parameter": "Coal Feed Rate",
+                    "Project Contingency": 0.15,
+                    "RP Value": 5904.5598,
+                    "Units": "ton/d",
+                },
+            }
+        }
+    }
+
+    ###########################################################################
+    #  Create costing constraints                                             #
+    ###########################################################################
+
+    # coal flow rate
+    # accounts 1.x and 2.x are coal handling, preparation and feed
+    # accounts 4.x are for boiler BOP and foundations
+    coal_accounts = ["1.1"]
+    m.fs.boiler = UnitModelBlock()
+    m.fs.boiler.coal_mass_flow = pyo.Var(
+        initialize=7238.95, units=pyunits.ton / pyunits.day
+    )
+    m.fs.boiler.coal_mass_flow.fix()
+    # check that existing account was not replaced, and duplicate throws error
+    with pytest.raises(
+        ValueError,
+        match="Data already exists for Account 1.1 "
+        "using technology 1 with CCS A. "
+        "Please confirm that the custom "
+        "account dictionary is correct, or "
+        "add the new parameters as a new "
+        "account. To use the custom account "
+        "dictionary for all conflicts, please "
+        "pass the argument use_additional_costing_params "
+        "as True.",
+    ):
+        m.fs.boiler.costing = UnitModelCostingBlock(
+            flowsheet_costing_block=m.fs.costing,
+            costing_method=QGESSCostingData.get_PP_costing,
+            costing_method_arguments={
+                "cost_accounts": coal_accounts,
+                "scaled_param": m.fs.boiler.coal_mass_flow,
+                "tech": 1,
+                "ccs": "A",
+                "additional_costing_params": additional_costing_params,
+                "use_additional_costing_params": False,
+            },
+        )
+
+
+@pytest.mark.component
+def test_PP_costing_additional_costing_params_no_overwrite_different_account():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    # check that the model solved properly and has 0 degrees of freedom
+    assert degrees_of_freedom(m) == 0
+
+    # create new account to test, this is a "new" entry for 1.1
+    additional_costing_params = {
+        "1": {
+            "A": {
+                "1.1": {
+                    "Account Name": "Coal Receive & Unload",
+                    "BEC": 1504.0143517610745,
+                    "BEC_units": "K$2020",
+                    "Eng Fee": 0.175,
+                    "Exponent": 0.62,
+                    "Process Contingency": 0.0,
+                    "Process Parameter": "Coal Feed Rate",
+                    "Project Contingency": 0.15,
+                    "RP Value": 5904.5598,
+                    "Units": "ton/d",
+                },
+            }
+        }
+    }
+
+    ###########################################################################
+    #  Create costing constraints                                             #
+    ###########################################################################
+
+    # coal flow rate
+    # accounts 1.x and 2.x are coal handling, preparation and feed
+    # accounts 4.x are for boiler BOP and foundations
+    coal_accounts = ["1.2"]
+    m.fs.boiler = UnitModelBlock()
+    m.fs.boiler.coal_mass_flow = pyo.Var(
+        initialize=7238.95, units=pyunits.ton / pyunits.day
+    )
+    m.fs.boiler.coal_mass_flow.fix()
+    # check that error is not thrown because this is not account 1.1
+    m.fs.boiler.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": coal_accounts,
+            "scaled_param": m.fs.boiler.coal_mass_flow,
+            "tech": 1,
+            "ccs": "A",
+            "additional_costing_params": additional_costing_params,
+            "use_additional_costing_params": False,
+        },
+    )
+
+    # adding a check just to make sure everything works as expected
+    assert (
+        pytest.approx(pyo.value(m.fs.boiler.costing.total_plant_cost["1.2"]), abs=1e-1)
+        == 4165 / 1e3
+    )
+
+
+@pytest.mark.component
+def test_PP_costing_additional_costing_params_allow_overwrite():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    # check that the model solved properly and has 0 degrees of freedom
+    assert degrees_of_freedom(m) == 0
+
+    # create new account to test, this is a "new" entry for 1.1
+    additional_costing_params = {
+        "1": {
+            "A": {
+                "1.1": {
+                    "Account Name": "Coal Receive & Unload",
+                    "BEC": 1504.0143517610745,
+                    "BEC_units": "K$2020",
+                    "Eng Fee": 0.175,
+                    "Exponent": 0.62,
+                    "Process Contingency": 0.0,
+                    "Process Parameter": "Coal Feed Rate",
+                    "Project Contingency": 0.15,
+                    "RP Value": 5904.5598,
+                    "Units": "ton/d",
+                },
+            }
+        }
+    }
+
+    ###########################################################################
+    #  Create costing constraints                                             #
+    ###########################################################################
+
+    # coal flow rate
+    # accounts 1.x and 2.x are coal handling, preparation and feed
+    # accounts 4.x are for boiler BOP and foundations
+    coal_accounts = ["1.1"]
+    m.fs.boiler = UnitModelBlock()
+    m.fs.boiler.coal_mass_flow = pyo.Var(
+        initialize=7238.95, units=pyunits.ton / pyunits.day
+    )
+    m.fs.boiler.coal_mass_flow.fix()
+    m.fs.boiler.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=m.fs.costing,
+        costing_method=QGESSCostingData.get_PP_costing,
+        costing_method_arguments={
+            "cost_accounts": coal_accounts,
+            "scaled_param": m.fs.boiler.coal_mass_flow,
+            "tech": 1,
+            "ccs": "A",
+            "additional_costing_params": additional_costing_params,
+            "use_additional_costing_params": True,
+        },
+    )
+
+    # add initialize
+    QGESSCostingData.costing_initialization(m.fs.costing)
+
+    # try solving
+    solver = get_solver()
+    results = solver.solve(m, tee=True)
+
+    # check unit consistency
+    assert_units_consistent(m)
+
+    # check that existing account was replaced, and the new data was used
+    assert (
+        pytest.approx(pyo.value(m.fs.boiler.costing.total_plant_cost["1.1"]), abs=1e-1)
+        == 2333 / 1e3
+    )
+
+
+@pytest.mark.component
 def test_build_process_costs_emptymodel():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
@@ -802,7 +1237,7 @@ def test_build_process_costs_variableonly_nonearguments():
             variable_OM=True,
             resources=resources,
             rates=rates,
-            prices=None,
+            prices="foo",
             fuel=None,
         )
 
@@ -865,6 +1300,7 @@ def test_build_process_costs_allOM():
         expr=156000 * (30 / 120) ** (0.78)
     )  # 30 is a fixed value, 30 must be replaced by a model variable
     m.fs.tonne_CO2_capture = pyo.Var(initialize=1, units=pyunits.ton)
+    m.fs.transport_cost = pyo.Var(initialize=10e-6)  # $MM/ton
 
     m.fs.costing.build_process_costs(
         net_power=m.fs.net_power,
@@ -876,7 +1312,9 @@ def test_build_process_costs_allOM():
         fuel="natural_gas",
         waste=["waste_sorbent"],
         chemicals=["sorbent"],
+        chemicals_inventory=["solvent"],
         land_cost=m.fs.costing.land_cost,
+        transport_cost=m.fs.transport_cost,
         tonne_CO2_capture=m.fs.tonne_CO2_capture,
     )
 
@@ -921,9 +1359,17 @@ def test_build_process_costs_allOM():
     assert hasattr(m.fs.costing, "waste_costs_OC")
     assert type(m.fs.costing.waste_costs_OC) is ScalarExpression
     assert hasattr(m.fs.costing, "chemical_costs_OC")
-    assert type(m.fs.costing.waste_costs_OC) is ScalarExpression
+    assert type(m.fs.costing.chemical_costs_OC) is ScalarExpression
+    assert hasattr(m.fs.costing, "chemical_inventory_costs_OC")
+    assert type(m.fs.costing.chemical_inventory_costs_OC) is ScalarExpression
+    assert hasattr(m.fs.costing, "land_cost")
+    assert type(m.fs.costing.land_cost) is ScalarExpression
+    assert hasattr(m.fs.costing, "transport_cost")
+    assert type(m.fs.costing.transport_cost) is MonomialTermExpression
     assert hasattr(m.fs.costing, "cost_of_capture")
     assert type(m.fs.costing.cost_of_capture) is ScalarExpression
+    assert hasattr(m.fs.costing, "total_TPC")
+    assert type(m.fs.costing.total_TPC) is pyo.ScalarVar
 
 
 @pytest.mark.component
@@ -987,7 +1433,7 @@ def test_build_process_costs_allOM_nonearguments():
             variable_OM=True,
             resources=resources,
             rates=rates,
-            prices=None,
+            prices="foo",
             fuel=None,
         )
 
@@ -1002,6 +1448,215 @@ def test_build_process_costs_allOM_nonearguments():
         prices=prices,
         fuel=None,
     )
+
+
+@pytest.mark.component
+def test_build_process_costs_inventory_with_tpc():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    # check that the model solved properly and has 0 degrees of freedom
+    assert degrees_of_freedom(m) == 0
+
+    # Fixed and Variable Costs:
+    # build variable costs components
+    m.fs.net_power = pyo.Var(m.fs.time, initialize=650, units=pyunits.MW)
+    m.fs.net_power.fix()
+
+    m.fs.NG_rate = pyo.Var(m.fs.time, initialize=1.2, units=pyunits.MBtu / pyunits.s)
+    m.fs.NG_rate.fix()
+
+    m.fs.solvent_rate = pyo.Var(
+        m.fs.time, initialize=40, units=pyunits.ton / pyunits.day
+    )
+    m.fs.solvent_rate.fix()
+
+    m.fs.costing.sorbent = pyo.Var(
+        m.fs.time, initialize=1.0, units=pyunits.ft**3 / pyunits.d
+    )  # ft**3/day (EPAT: 6971.75)
+
+    resources = ["natural_gas", "solvent", "waste_sorbent", "sorbent"]
+    rates = [
+        m.fs.NG_rate,
+        m.fs.solvent_rate,
+        m.fs.costing.sorbent,
+        m.fs.costing.sorbent,
+    ]
+    prices = {
+        "solvent": 500 * pyunits.USD_2018 / pyunits.ton,
+        "sorbent": 4 * pyunits.USD_2018 / pyunits.ft**3,
+        "waste_sorbent": 0.86 * pyunits.USD_2018 / pyunits.ft**3,
+    }
+
+    m.fs.costing.land_cost = pyo.Expression(
+        expr=156000 * (30 / 120) ** (0.78)
+    )  # 30 is a fixed value, 30 must be replaced by a model variable
+    m.fs.tonne_CO2_capture = pyo.Var(initialize=1, units=pyunits.ton)
+    m.fs.transport_cost = pyo.Var(initialize=10e-6)  # $MM/ton
+
+    m.fs.costing.build_process_costs(
+        total_plant_cost=100,
+        net_power=m.fs.net_power,
+        fixed_OM=True,
+        variable_OM=True,
+        resources=resources,
+        rates=rates,
+        prices=prices,
+        fuel="natural_gas",
+        waste=["waste_sorbent"],
+        chemicals=["sorbent"],
+        chemicals_inventory=["solvent"],
+        land_cost=m.fs.costing.land_cost,
+        transport_cost=m.fs.transport_cost,
+        tonne_CO2_capture=m.fs.tonne_CO2_capture,
+    )
+
+    assert hasattr(m.fs.costing, "chemical_inventory_costs_OC")
+    assert type(m.fs.costing.chemical_inventory_costs_OC) is ScalarExpression
+    assert hasattr(m.fs.costing, "total_TPC")
+    assert type(m.fs.costing.total_TPC) is pyo.ScalarVar
+
+
+@pytest.mark.component
+def test_build_process_costs_scalar_transportcost():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    # check that the model solved properly and has 0 degrees of freedom
+    assert degrees_of_freedom(m) == 0
+
+    # Fixed and Variable Costs:
+    # build variable costs components
+    m.fs.net_power = pyo.Var(m.fs.time, initialize=650, units=pyunits.MW)
+    m.fs.net_power.fix()
+
+    m.fs.NG_rate = pyo.Var(m.fs.time, initialize=1.2, units=pyunits.MBtu / pyunits.s)
+    m.fs.NG_rate.fix()
+
+    m.fs.solvent_rate = pyo.Var(
+        m.fs.time, initialize=40, units=pyunits.ton / pyunits.day
+    )
+    m.fs.solvent_rate.fix()
+
+    m.fs.costing.sorbent = pyo.Var(
+        m.fs.time, initialize=1.0, units=pyunits.ft**3 / pyunits.d
+    )  # ft**3/day (EPAT: 6971.75)
+
+    resources = ["natural_gas", "solvent", "waste_sorbent", "sorbent"]
+    rates = [
+        m.fs.NG_rate,
+        m.fs.solvent_rate,
+        m.fs.costing.sorbent,
+        m.fs.costing.sorbent,
+    ]
+    prices = {
+        "solvent": 500 * pyunits.USD_2018 / pyunits.ton,
+        "sorbent": 4 * pyunits.USD_2018 / pyunits.ft**3,
+        "waste_sorbent": 0.86 * pyunits.USD_2018 / pyunits.ft**3,
+    }
+
+    m.fs.costing.land_cost = pyo.Expression(
+        expr=156000 * (30 / 120) ** (0.78)
+    )  # 30 is a fixed value, 30 must be replaced by a model variable
+    m.fs.tonne_CO2_capture = pyo.Var(initialize=1, units=pyunits.ton)
+    m.fs.costing.transport_cost = 10e-6  # $MM/ton
+
+    m.fs.costing.build_process_costs(
+        net_power=m.fs.net_power,
+        fixed_OM=True,
+        variable_OM=True,
+        resources=resources,
+        rates=rates,
+        prices=prices,
+        fuel="natural_gas",
+        waste=["waste_sorbent"],
+        chemicals=["sorbent"],
+        chemicals_inventory=["solvent"],
+        land_cost=m.fs.costing.land_cost,
+        transport_cost=m.fs.costing.transport_cost,
+        tonne_CO2_capture=m.fs.tonne_CO2_capture,
+    )
+
+    assert hasattr(m.fs.costing, "transport_cost")
+    assert type(m.fs.costing.transport_cost) is NPV_ProductExpression
+    assert hasattr(m.fs.costing, "total_TPC")
+    assert type(m.fs.costing.total_TPC) is pyo.ScalarVar
+
+
+@pytest.mark.component
+def test_build_process_costs_transportcost_notonnesofcapture():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.costing = QGESSCosting()
+
+    # check that the model solved properly and has 0 degrees of freedom
+    assert degrees_of_freedom(m) == 0
+
+    # Fixed and Variable Costs:
+    # build variable costs components
+    m.fs.net_power = pyo.Var(m.fs.time, initialize=650, units=pyunits.MW)
+    m.fs.net_power.fix()
+
+    m.fs.NG_rate = pyo.Var(m.fs.time, initialize=1.2, units=pyunits.MBtu / pyunits.s)
+    m.fs.NG_rate.fix()
+
+    m.fs.solvent_rate = pyo.Var(
+        m.fs.time, initialize=40, units=pyunits.ton / pyunits.day
+    )
+    m.fs.solvent_rate.fix()
+
+    m.fs.costing.sorbent = pyo.Var(
+        m.fs.time, initialize=1.0, units=pyunits.ft**3 / pyunits.d
+    )  # ft**3/day (EPAT: 6971.75)
+
+    resources = ["natural_gas", "solvent", "waste_sorbent", "sorbent"]
+    rates = [
+        m.fs.NG_rate,
+        m.fs.solvent_rate,
+        m.fs.costing.sorbent,
+        m.fs.costing.sorbent,
+    ]
+    prices = {
+        "solvent": 500 * pyunits.USD_2018 / pyunits.ton,
+        "sorbent": 4 * pyunits.USD_2018 / pyunits.ft**3,
+        "waste_sorbent": 0.86 * pyunits.USD_2018 / pyunits.ft**3,
+    }
+
+    m.fs.costing.land_cost = pyo.Expression(
+        expr=156000 * (30 / 120) ** (0.78)
+    )  # 30 is a fixed value, 30 must be replaced by a model variable
+    m.fs.costing.transport_cost = 10e-6  # $MM/ton
+
+    with pytest.raises(
+        Exception,
+        match="If a transport_cost is not None, tonne_CO2_capture cannot be None.",
+    ):
+        m.fs.costing.build_process_costs(
+            net_power=m.fs.net_power,
+            fixed_OM=True,
+            variable_OM=True,
+            resources=resources,
+            rates=rates,
+            prices=prices,
+            fuel="natural_gas",
+            waste=["waste_sorbent"],
+            chemicals=["sorbent"],
+            chemicals_inventory=["solvent"],
+            land_cost=m.fs.costing.land_cost,
+            transport_cost=m.fs.costing.transport_cost,
+            tonne_CO2_capture=None,
+        )
 
 
 @pytest.mark.component
@@ -1656,6 +2311,7 @@ def test_OM_costing():
     QGESSCostingData.get_fixed_OM_costs(
         m.fs.costing,
         nameplate_capacity=nameplate_capacity,
+        capacity_factor=0.85,
         labor_rate=labor_rate,
         labor_burden=labor_burden,
         operators_per_shift=operators_per_shift,

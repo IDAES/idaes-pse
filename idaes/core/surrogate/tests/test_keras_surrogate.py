@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for KerasSurrogate
@@ -56,7 +56,7 @@ def create_keras_model(name="T_data_1_10_10_2_sigmoid", return_keras_model_only=
         outputs_scaler = OffsetScaler(
             expected_columns=["EnthMol", "VapFrac"],
             offset_series=pd.Series({"EnthMol": 59519.621464, "VapFrac": 0.556033}),
-            factor_series=pd.Series({"EnthMol": 14805.370235, "VapFrac": 0.432934}),
+            factor_series=pd.Series({"EnthMol": 14805.365235, "VapFrac": 0.432934}),
         )
         input_labels = ["Temperature_K"]
         output_labels = ["EnthMol", "VapFrac"]
@@ -226,7 +226,7 @@ def test_keras_surrogate_auto_creating_variables():
     keras_surrogate = create_keras_model(
         name="T_data_1_10_10_2_sigmoid", return_keras_model_only=False
     )
-    x_test = pd.DataFrame({"Temperature_K": [370]})
+    x_test = pd.DataFrame({"Temperature_K": [365]})
     y_test = keras_surrogate.evaluate_surrogate(x_test)
 
     # Test full-space
@@ -237,7 +237,7 @@ def test_keras_surrogate_auto_creating_variables():
         surrogate_object=keras_surrogate,
         formulation=KerasSurrogate.Formulation.FULL_SPACE,
     )
-    m.surrogate.inputs["Temperature_K"].fix(370)
+    m.surrogate.inputs["Temperature_K"].fix(365)
     solver = SolverFactory("ipopt")
     status = solver.solve(m, tee=True)
     assert_optimal_termination(status)
@@ -258,7 +258,7 @@ def test_keras_surrogate_auto_creating_variables():
         surrogate_object=keras_surrogate,
         formulation=KerasSurrogate.Formulation.REDUCED_SPACE,
     )
-    m.surrogate.inputs["Temperature_K"].fix(370)
+    m.surrogate.inputs["Temperature_K"].fix(365)
     solver = SolverFactory("ipopt")
     status = solver.solve(m, tee=True)
     assert_optimal_termination(status)
@@ -277,7 +277,7 @@ def test_keras_surrogate_auto_creating_variables():
     keras_surrogate = create_keras_model(
         name="T_data_1_10_10_2_relu", return_keras_model_only=False
     )
-    x_test = pd.DataFrame({"Temperature_K": [370]})
+    x_test = pd.DataFrame({"Temperature_K": [365]})
     y_test = keras_surrogate.evaluate_surrogate(x_test)
 
     # Test relu complementarity
@@ -288,7 +288,7 @@ def test_keras_surrogate_auto_creating_variables():
         surrogate_object=keras_surrogate,
         formulation=KerasSurrogate.Formulation.RELU_COMPLEMENTARITY,
     )
-    m.surrogate.inputs["Temperature_K"].fix(370)
+    m.surrogate.inputs["Temperature_K"].fix(365)
     solver = SolverFactory("ipopt")
     status = solver.solve(m, tee=True)
     assert_optimal_termination(status)
@@ -307,7 +307,7 @@ def test_keras_surrogate_auto_creating_variables():
     keras_surrogate = create_keras_model(
         name="PT_data_2_10_10_2_sigmoid", return_keras_model_only=False
     )
-    x_test = pd.DataFrame({"Temperature_K": [370], "Pressure_Pa": [1.1 * 101325]})
+    x_test = pd.DataFrame({"Temperature_K": [365], "Pressure_Pa": [1.1 * 101325]})
     y_test = keras_surrogate.evaluate_surrogate(x_test)
 
     # Test full-space
@@ -318,7 +318,7 @@ def test_keras_surrogate_auto_creating_variables():
         surrogate_object=keras_surrogate,
         formulation=KerasSurrogate.Formulation.FULL_SPACE,
     )
-    m.surrogate.inputs["Temperature_K"].fix(370)
+    m.surrogate.inputs["Temperature_K"].fix(365)
     m.surrogate.inputs["Pressure_Pa"].fix(1.1 * 101325)
     solver = SolverFactory("ipopt")
     status = solver.solve(m, tee=True)
@@ -340,7 +340,7 @@ def test_keras_surrogate_auto_creating_variables():
         surrogate_object=keras_surrogate,
         formulation=KerasSurrogate.Formulation.REDUCED_SPACE,
     )
-    m.surrogate.inputs["Temperature_K"].fix(370)
+    m.surrogate.inputs["Temperature_K"].fix(365)
     m.surrogate.inputs["Pressure_Pa"].fix(1.1 * 101325)
     solver = SolverFactory("ipopt")
     status = solver.solve(m, tee=True)
@@ -360,7 +360,7 @@ def test_keras_surrogate_auto_creating_variables():
     keras_surrogate = create_keras_model(
         name="PT_data_2_10_10_2_relu", return_keras_model_only=False
     )
-    x_test = pd.DataFrame({"Temperature_K": [370], "Pressure_Pa": [1.1 * 101325]})
+    x_test = pd.DataFrame({"Temperature_K": [365], "Pressure_Pa": [1.1 * 101325]})
     y_test = keras_surrogate.evaluate_surrogate(x_test)
 
     # Test relu complementarity
@@ -371,7 +371,7 @@ def test_keras_surrogate_auto_creating_variables():
         surrogate_object=keras_surrogate,
         formulation=KerasSurrogate.Formulation.RELU_COMPLEMENTARITY,
     )
-    m.surrogate.inputs["Temperature_K"].fix(370)
+    m.surrogate.inputs["Temperature_K"].fix(365)
     m.surrogate.inputs["Pressure_Pa"].fix(1.1 * 101325)
     solver = SolverFactory("ipopt")
     status = solver.solve(m, tee=True)
@@ -395,7 +395,7 @@ def test_keras_surrogate_auto_creating_variables_glpk():
     keras_surrogate = create_keras_model(
         name="T_data_1_10_10_2_relu", return_keras_model_only=False
     )
-    x_test = pd.DataFrame({"Temperature_K": [370]})
+    x_test = pd.DataFrame({"Temperature_K": [365]})
     y_test = keras_surrogate.evaluate_surrogate(x_test)
 
     # Test relu bigm
@@ -406,7 +406,7 @@ def test_keras_surrogate_auto_creating_variables_glpk():
         surrogate_object=keras_surrogate,
         formulation=KerasSurrogate.Formulation.RELU_BIGM,
     )
-    m.surrogate.inputs["Temperature_K"].fix(370)
+    m.surrogate.inputs["Temperature_K"].fix(365)
     solver = SolverFactory("glpk")
     status = solver.solve(m, tee=True)
     assert_optimal_termination(status)
@@ -425,7 +425,7 @@ def test_keras_surrogate_auto_creating_variables_glpk():
     keras_surrogate = create_keras_model(
         name="PT_data_2_10_10_2_relu", return_keras_model_only=False
     )
-    x_test = pd.DataFrame({"Temperature_K": [370], "Pressure_Pa": [1.1 * 101325]})
+    x_test = pd.DataFrame({"Temperature_K": [365], "Pressure_Pa": [1.1 * 101325]})
     y_test = keras_surrogate.evaluate_surrogate(x_test)
 
     # Test relu bigm
@@ -436,7 +436,7 @@ def test_keras_surrogate_auto_creating_variables_glpk():
         surrogate_object=keras_surrogate,
         formulation=KerasSurrogate.Formulation.RELU_BIGM,
     )
-    m.surrogate.inputs["Temperature_K"].fix(370)
+    m.surrogate.inputs["Temperature_K"].fix(365)
     m.surrogate.inputs["Pressure_Pa"].fix(1.1 * 101325)
     solver = SolverFactory("glpk")
     status = solver.solve(m, tee=True)
@@ -457,7 +457,7 @@ def test_keras_surrogate_with_variables():
     keras_surrogate = create_keras_model(
         name="PT_data_2_10_10_2_sigmoid", return_keras_model_only=False
     )
-    x_test = pd.DataFrame({"Temperature_K": [370], "Pressure_Pa": [1.1 * 101325]})
+    x_test = pd.DataFrame({"Temperature_K": [365], "Pressure_Pa": [1.1 * 101325]})
     y_test = keras_surrogate.evaluate_surrogate(x_test)
 
     # Test provide scalar inputs, auto create outputs
@@ -471,7 +471,7 @@ def test_keras_surrogate_with_variables():
         input_vars=[m.T, m.P],
         formulation=KerasSurrogate.Formulation.FULL_SPACE,
     )
-    m.T.fix(370)
+    m.T.fix(365)
     m.P.fix(1.1 * 101325)
     solver = SolverFactory("ipopt")
     status = solver.solve(m, tee=True)
@@ -495,7 +495,7 @@ def test_keras_surrogate_with_variables():
         input_vars=[m.inputs],
         formulation=KerasSurrogate.Formulation.FULL_SPACE,
     )
-    m.inputs["T"].fix(370)
+    m.inputs["T"].fix(365)
     m.inputs["P"].fix(1.1 * 101325)
     solver = SolverFactory("ipopt")
     status = solver.solve(m, tee=True)
@@ -520,7 +520,7 @@ def test_keras_surrogate_with_variables():
         output_vars=[m.H, m.V],
         formulation=KerasSurrogate.Formulation.FULL_SPACE,
     )
-    m.surrogate.inputs["Temperature_K"].fix(370)
+    m.surrogate.inputs["Temperature_K"].fix(365)
     m.surrogate.inputs["Pressure_Pa"].fix(1.1 * 101325)
     solver = SolverFactory("ipopt")
     status = solver.solve(m, tee=True)
@@ -539,7 +539,7 @@ def test_keras_surrogate_with_variables():
         output_vars=[m.outputs],
         formulation=KerasSurrogate.Formulation.FULL_SPACE,
     )
-    m.surrogate.inputs["Temperature_K"].fix(370)
+    m.surrogate.inputs["Temperature_K"].fix(365)
     m.surrogate.inputs["Pressure_Pa"].fix(1.1 * 101325)
     solver = SolverFactory("ipopt")
     status = solver.solve(m, tee=True)
@@ -563,7 +563,7 @@ def test_keras_surrogate_with_variables():
         output_vars=[m.outputs],
         formulation=KerasSurrogate.Formulation.FULL_SPACE,
     )
-    m.T.fix(370)
+    m.T.fix(365)
     m.P.fix(1.1 * 101325)
     solver = SolverFactory("ipopt")
     status = solver.solve(m, tee=True)
@@ -648,7 +648,7 @@ def test_save_load():
     pd.testing.assert_frame_equal(y_test, expected_y, rtol=rtol, atol=atol)
 
     # check solve with pyomo
-    x_test = pd.DataFrame({"Temperature_K": [370], "Pressure_Pa": [1.1 * 101325]})
+    x_test = pd.DataFrame({"Temperature_K": [365], "Pressure_Pa": [1.1 * 101325]})
     y_test = keras_surrogate.evaluate_surrogate(x_test)
 
     m = ConcreteModel()
@@ -658,7 +658,7 @@ def test_save_load():
         surrogate_object=keras_surrogate,
         formulation=KerasSurrogate.Formulation.FULL_SPACE,
     )
-    m.surrogate.inputs["Temperature_K"].fix(370)
+    m.surrogate.inputs["Temperature_K"].fix(365)
     m.surrogate.inputs["Pressure_Pa"].fix(1.1 * 101325)
     solver = SolverFactory("ipopt")
     status = solver.solve(m, tee=True)

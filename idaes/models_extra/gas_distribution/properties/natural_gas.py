@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Natural gas property package with a single (pseudo) component for use
@@ -19,13 +19,15 @@ Data sources:
         Operations. V. Zavala, 2014, Comp. Chem. Eng.
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
 
 from pyomo.core.base.units_container import units as pyunits
 from pyomo.core.base.var import Var
 from pyomo.core.base.constraint import Constraint
 from pyomo.core.base.expression import Expression
 from pyomo.core.base.param import Param
-from pyomo.core.expr.current import sqrt
+from pyomo.core.expr import sqrt
 
 # Import IDAES cores
 from idaes.core import (
@@ -49,7 +51,9 @@ _log = idaeslog.getLogger(__name__)
 
 @declare_process_block_class("NaturalGasParameterBlock")
 class NaturalGasParameterBlockData(PhysicalParameterBlock):
-    """ """
+    """
+    Property package for natural gas with a single pseudo-component.
+    """
 
     def build(self):
         super(NaturalGasParameterBlockData, self).build()
@@ -92,7 +96,6 @@ class NaturalGasParameterBlockData(PhysicalParameterBlock):
         kgkmolK = pyunits.kg / pyunits.kmol / pyunits.K
         kmolm3 = pyunits.kmol / pyunits.m**3
         kgm3 = pyunits.kg / pyunits.m**3
-        mps = pyunits.m / pyunits.s
         kmolhr = pyunits.kmol / pyunits.hr
         obj.add_properties(
             {
@@ -120,15 +123,23 @@ class NaturalGasParameterBlockData(PhysicalParameterBlock):
                     "method": "_heat_capacity_ratio_phase",
                     "units": nondim,
                 },
-                "compressibility": {"method": "_compressibility", "units": nondim},
+                "compress_fact": {"method": "_compress_fact", "units": nondim},
                 "dens_mol": {"method": "_dens_mol", "units": kmolm3},
                 "dens_mol_comp": {"method": "_dens_mol_comp", "units": kmolm3},
                 "dens_mass": {"method": "_dens_mass", "units": kgm3},
-                "speed_of_sound": {"method": "_speed_of_sound", "units": mps},
             }
         )
         # NOTE: We do not implement enthalpy as we are not yet using this
         # property package with a non-isothermal pipeline.
+
+        obj.define_custom_properties(
+            {
+                "speed_of_sound": {
+                    "method": "_speed_of_sound",
+                    "units": obj.derived_units.VELOCITY,
+                },
+            }
+        )
 
         obj.add_default_units(
             {
@@ -333,11 +344,11 @@ class NaturalGasStateBlockData(StateBlockData):
             ),
         )
 
-    def _compressibility(self):
-        # Compressibility is a param because here it is constant.
+    def _compress_fact(self):
+        # compress_fact is a param because here it is constant.
         # It could be a variable/expression, however, in a more complicated
         # model.
-        self.compressibility = Param(
+        self.compress_fact = Param(
             initialize=0.80,
             doc="Compressibility factor of the gas",
         )
@@ -352,10 +363,10 @@ class NaturalGasStateBlockData(StateBlockData):
         )
         pressure = self.pressure
         gas_const = Constants.gas_constant
-        compressibility = self.compressibility
+        compress_fact = self.compress_fact
         temperature = self.temperature
         dens_mol_expr = pyunits.convert(
-            pressure / gas_const / compressibility / temperature,
+            pressure / gas_const / compress_fact / temperature,
             pyunits.kmol / pyunits.m**3,
         )
         self.dens_mol_eq = Constraint(
@@ -393,7 +404,7 @@ class NaturalGasStateBlockData(StateBlockData):
         speed_of_sound_expr = pyunits.convert(
             sqrt(
                 self.heat_capacity_ratio
-                * self.compressibility
+                * self.compress_fact
                 * gas_const
                 * self.temperature
                 / self.mw

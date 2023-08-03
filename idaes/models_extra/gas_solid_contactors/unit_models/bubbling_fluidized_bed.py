@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 IDAES Bubbling Fluidized Bed Model.
@@ -27,6 +27,8 @@ Gas emulsion is at minimum fluidization conditions
 Gas feeds into emulsion region before the excess enters into the bubble region
 Solid superficial velocity is constant throughout the bed
 """
+# Pylint doesn't like the fact that the reformulated variables are private
+# pylint: disable=protected-access
 
 # Import Python libraries
 import matplotlib.pyplot as plt
@@ -425,8 +427,7 @@ see reaction package for documentation.}""",
         )
 
         # =========================================================================
-        """ Build Control volume 1D for the bubble region and
-            populate its control volume"""
+        # Build Control volume 1D for the bubble region and populate its control volume
 
         self.bubble = ControlVolume1DBlock(
             transformation_method=self.config.transformation_method,
@@ -474,8 +475,7 @@ see reaction package for documentation.}""",
         )
 
         # =========================================================================
-        """ Build Control volume 1D for the gas_emulsion region and
-            populate its control volume"""
+        # Build Control volume 1D for the gas_emulsion region and populate its control volume
 
         self.gas_emulsion = ControlVolume1DBlock(
             transformation_method=self.config.transformation_method,
@@ -524,8 +524,7 @@ see reaction package for documentation.}""",
         )
 
         # =========================================================================
-        """ Build Control volume 1D for solid emulsion region and
-            populate solid control volume"""
+        # Build Control volume 1D for solid emulsion region and populate solid control volume
 
         self.solid_emulsion = ControlVolume1DBlock(
             transformation_method=self.config.transformation_method,
@@ -592,7 +591,8 @@ see reaction package for documentation.}""",
         )
 
         # =========================================================================
-        """ Add Ports for gas and solid inlets and outlets"""
+        # Add Ports for gas and solid inlets and outlets
+
         # Build inlet and outlet state blocks for model to be attached to ports
         # Extra state blocks are included at the inlet and outlets to model
         # the mass and energy balances (splitting and mixing) that takes place
@@ -633,7 +633,7 @@ see reaction package for documentation.}""",
         self.add_outlet_port(name="solid_outlet", block=self.solid_outlet_block)
 
         # =========================================================================
-        """ Apply transformation and add performace equation method"""
+        # Apply transformation and add performance equation method
         self._make_vars_params()
         self._apply_transformation()
         self._make_performance()
@@ -995,7 +995,7 @@ see reaction package for documentation.}""",
         # Add performance equations
 
         # ---------------------------------------------------------------------
-        # Geometry contraints
+        # Geometry constraints
 
         # Distributor design - Area of orifice
         @self.Constraint(doc="Area of Orifice")
@@ -1042,7 +1042,7 @@ see reaction package for documentation.}""",
             )
 
         # ---------------------------------------------------------------------
-        # Hydrodynamic contraints
+        # Hydrodynamic constraints
 
         # Emulsion region volume fraction
         @self.Constraint(
@@ -1077,7 +1077,7 @@ see reaction package for documentation.}""",
             return (
                 b.bubble_growth_coeff[t, x]
                 * pyunits.convert(
-                    b.solid_emulsion.properties[t, x]._params.velocity_mf,
+                    b.solid_emulsion.properties[t, x].params.velocity_mf,
                     to_units=units_meta_gas("velocity"),
                 )
             ) ** 2 == (bub_grow_const**2) * (
@@ -1170,7 +1170,7 @@ see reaction package for documentation.}""",
         def emulsion_voidage(b, t, x):
             return (
                 b.voidage_emulsion[t, x]
-                == b.solid_emulsion.properties[t, x]._params.voidage_mf
+                == b.solid_emulsion.properties[t, x].params.voidage_mf
             )
 
         # Bubble velocity - Davidson model
@@ -1182,7 +1182,7 @@ see reaction package for documentation.}""",
                 b.velocity_bubble[t, x]
                 == b.velocity_superficial_gas[t, x]
                 - pyunits.convert(
-                    b.solid_emulsion.properties[t, x]._params.velocity_mf,
+                    b.solid_emulsion.properties[t, x].params.velocity_mf,
                     to_units=units_meta_gas("velocity"),
                 )
                 + b.velocity_bubble_rise[t, x]
@@ -1231,7 +1231,7 @@ see reaction package for documentation.}""",
             return b.velocity_superficial_gas[t, x] == b.velocity_bubble[
                 t, x
             ] * b.delta[t, x] + pyunits.convert(
-                b.solid_emulsion.properties[t, x]._params.velocity_mf,
+                b.solid_emulsion.properties[t, x].params.velocity_mf,
                 to_units=units_meta_gas("velocity"),
             )
 
@@ -1296,7 +1296,7 @@ see reaction package for documentation.}""",
                 == 34.2225
                 * (
                     pyunits.convert(
-                        b.gas_emulsion.properties[t, x].diffusion_comp[j],
+                        b.gas_emulsion.properties[t, x].diffus_comp[j],
                         to_units=units_meta_gas("area") / units_meta_gas("time"),
                     )
                 )
@@ -1329,7 +1329,7 @@ see reaction package for documentation.}""",
                 * 4.5
                 * b._reform_var_3[t, x]
                 * pyunits.convert(
-                    b.solid_emulsion.properties[t, x]._params.velocity_mf,
+                    b.solid_emulsion.properties[t, x].params.velocity_mf,
                     to_units=units_meta_gas("velocity"),
                 )
                 + b._reform_var_2[t, x, j]
@@ -1400,7 +1400,7 @@ see reaction package for documentation.}""",
                     b._reform_var_5[t, x] * b.gas_emulsion.properties[t, x].visc_d
                     == b.velocity_emulsion_gas[t, x]
                     * pyunits.convert(
-                        b.solid_emulsion.properties[t, x]._params.particle_dia,
+                        b.solid_emulsion.properties[t, x].params.particle_dia,
                         to_units=units_meta_gas("length"),
                     )
                     * b.gas_emulsion.properties[t, x].dens_mol
@@ -1420,7 +1420,7 @@ see reaction package for documentation.}""",
                     b.Hbe[t, x] * b._reform_var_3[t, x] ** 5
                     == bub_cloud_heat_const
                     * pyunits.convert(
-                        b.solid_emulsion.properties[t, x]._params.velocity_mf,
+                        b.solid_emulsion.properties[t, x].params.velocity_mf,
                         to_units=units_meta_gas("velocity"),
                     )
                     * b.bubble.properties[t, x].enth_mol
@@ -1446,7 +1446,7 @@ see reaction package for documentation.}""",
                     b.htc_conv[t, x]
                     / conv_heat_const_1
                     * pyunits.convert(
-                        b.solid_emulsion.properties[t, x]._params.particle_dia,
+                        b.solid_emulsion.properties[t, x].params.particle_dia,
                         to_units=units_meta_gas("length"),
                     )
                     == b.gas_emulsion.properties[t, x].therm_cond
@@ -1462,7 +1462,7 @@ see reaction package for documentation.}""",
             )
             def convective_heat_transfer(b, t, x):
                 return b.ht_conv[t, x] * pyunits.convert(
-                    b.solid_emulsion.properties[t, x]._params.particle_dia,
+                    b.solid_emulsion.properties[t, x].params.particle_dia,
                     to_units=units_meta_gas("length"),
                 ) == 6 * b.delta_e[t, x] * (1 - b.voidage_emulsion[t, x]) * b.htc_conv[
                     t, x
@@ -1587,7 +1587,7 @@ see reaction package for documentation.}""",
                 )
 
         # ---------------------------------------------------------------------
-        # Reaction  contraints
+        # Reaction  constraints
 
         # Build homogeneous reaction constraints
 
@@ -1674,7 +1674,7 @@ see reaction package for documentation.}""",
             )
 
         # Emulsion gas flowrate - this eqn indirectly calcs bubble voidage
-        # (delta) in conjuction with the mass conservation eqns in the
+        # (delta) in conjunction with the mass conservation eqns in the
         # gas_emulsion CV1D.
         # This eqn arises because the emulsion region gas is assumed to be at
         # minimum fluidization conditions (delta varies to account for this)
@@ -1732,7 +1732,7 @@ see reaction package for documentation.}""",
         def emulsion_gas_velocity_in(b, t):
             x = self.length_domain.first()
             return b.velocity_emulsion_gas[t, x] == pyunits.convert(
-                b.solid_emulsion.properties[t, x]._params.velocity_mf,
+                b.solid_emulsion.properties[t, x].params.velocity_mf,
                 to_units=units_meta_gas("velocity"),
             )
 
@@ -2008,7 +2008,7 @@ see reaction package for documentation.}""",
         units_meta_gas = gas_phase.property_package.get_metadata().get_derived_units
 
         # Keep all unit model geometry constraints, derivative_var constraints,
-        # and property block constraints active. Additionaly, in control
+        # and property block constraints active. Additionally, in control
         # volumes - keep conservation linking constraints and
         # holdup calculation (for dynamic flowsheets) constraints active
 
@@ -2096,7 +2096,7 @@ see reaction package for documentation.}""",
         # ---------------------------------------------------------------------
         # Initialize geometric constraints, property block constraints
         # and reaction block constraints
-        # Fix delta, delta_e and void_emul to inital values for square problem
+        # Fix delta, delta_e and void_emul to initial values for square problem
         blk.delta.fix()
         blk.delta_e.fix()
         blk.voidage_emulsion.fix()
@@ -2130,7 +2130,7 @@ see reaction package for documentation.}""",
                     value(
                         3
                         * pyunits.convert(
-                            blk.solid_inlet_block[t]._params.velocity_mf,
+                            blk.solid_inlet_block[t].params.velocity_mf,
                             to_units=units_meta_gas("velocity"),
                         )
                     )
@@ -2144,7 +2144,7 @@ see reaction package for documentation.}""",
                 blk.velocity_emulsion_gas[t, x].fix(
                     value(
                         pyunits.convert(
-                            blk.solid_inlet_block[t]._params.velocity_mf,
+                            blk.solid_inlet_block[t].params.velocity_mf,
                             to_units=units_meta_gas("velocity"),
                         )
                     )
@@ -2206,7 +2206,7 @@ see reaction package for documentation.}""",
                             to_units=units_meta_gas("acceleration"),
                         )
                     )
-                    / blk.solid_inlet_block[t]._params.velocity_mf
+                    / blk.solid_inlet_block[t].params.velocity_mf
                 )
                 blk.velocity_bubble_rise[t, x] = value(
                     0.711
@@ -2223,7 +2223,7 @@ see reaction package for documentation.}""",
                         blk.velocity_superficial_gas[t, x]
                         + blk.velocity_bubble_rise[t, x]
                         - pyunits.convert(
-                            blk.solid_inlet_block[t]._params.velocity_mf,
+                            blk.solid_inlet_block[t].params.velocity_mf,
                             to_units=units_meta_gas("velocity"),
                         )
                     )
@@ -2238,7 +2238,7 @@ see reaction package for documentation.}""",
                 blk.delta_e[t, x] = 1 - blk.delta[t, x].value
                 blk.voidage_emulsion[t, x] = blk.solid_inlet_block[
                     t
-                ]._params.voidage_mf.value
+                ].params.voidage_mf.value
                 blk.voidage_average[t, x] = 1 - (
                     1 - blk.voidage_emulsion[t, x].value
                 ) * (1 - blk.delta[t, x].value)
@@ -2257,7 +2257,7 @@ see reaction package for documentation.}""",
         blk.voidage_emulsion.unfix()
         blk.bubble_diameter.unfix()
 
-        # Activate relavant constraints
+        # Activate relevant constraints
         blk.bubble_vol_frac_eqn.activate()  # delta
         blk.average_gas_density_eqn.activate()
 
@@ -2692,7 +2692,7 @@ see reaction package for documentation.}""",
             for (t, x), v in self.velocity_emulsion_gas.items():
                 if iscale.get_scaling_factor(self.velocity_emulsion_gas) is None:
                     sf = 1 / value(
-                        self.solid_emulsion.properties[t, x]._params.velocity_mf
+                        self.solid_emulsion.properties[t, x].params.velocity_mf
                     )
                     iscale.set_scaling_factor(v, sf)
 
@@ -2734,7 +2734,7 @@ see reaction package for documentation.}""",
                         / value(
                             34.2225
                             * pyunits.convert(
-                                self.gas_emulsion.properties[t, x].diffusion_comp[j],
+                                self.gas_emulsion.properties[t, x].diffus_comp[j],
                                 to_units=units_meta_gas("area")
                                 / units_meta_gas("time"),
                             )
@@ -2818,7 +2818,7 @@ see reaction package for documentation.}""",
                             pyunits.convert(
                                 self.solid_emulsion.properties[
                                     t, x
-                                ]._params.particle_dia,
+                                ].params.particle_dia,
                                 to_units=units_meta_gas("length"),
                             )
                         )
@@ -3202,7 +3202,11 @@ see reaction package for documentation.}""",
                 )
 
         if hasattr(self, "gas_material_balance_out"):
-            for (t, p, j), c in self.gas_material_balance_out.items():
+            for (
+                t,
+                p,  # pylint: disable=unused-variable
+                j,
+            ), c in self.gas_material_balance_out.items():
                 iscale.constraint_scaling_transform(
                     c,
                     iscale.get_scaling_factor(

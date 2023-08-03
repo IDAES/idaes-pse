@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for 0D lumped capacitance heat exchanger model
@@ -55,8 +55,13 @@ from idaes.models.unit_models import (
     HeatExchangerLumpedCapacitance,
     HeatExchangerFlowPattern,
 )
-
+from idaes.models.unit_models.heat_exchanger import HX0DInitializer
 from idaes.models.unit_models.heat_exchanger import delta_temperature_lmtd_callback
+from idaes.models.properties.general_helmholtz import helmholtz_available
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    InitializationStatus,
+)
 
 # Get default solver for testing
 solver = get_solver()
@@ -133,6 +138,8 @@ class TestHXRegression(object):
         assert not m.fs.unit.config.tube.has_pressure_change
         assert m.fs.unit.config.tube.property_package is m.fs.properties
 
+        assert m.fs.unit.default_initializer is HX0DInitializer
+
     @pytest.fixture(scope="class")
     def sapon(self):
         m = ConcreteModel()
@@ -180,7 +187,6 @@ class TestHXRegression(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_sapon_solution(self, sapon):
-
         results = solver.solve(sapon)
         check_optimal_termination(results)
 
@@ -238,6 +244,7 @@ class TestHXRegression(object):
         )
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 class TestHXLCGeneric(object):
     @pytest.fixture()
     def static_flowsheet_model(self):
@@ -271,7 +278,6 @@ class TestHXLCGeneric(object):
 
     @pytest.fixture()
     def model(self, unconstrained_model):
-
         m = unconstrained_model
         m.discretizer = TransformationFactory("dae.finite_difference")
         m.discretizer.apply_to(m, nfe=1, wrt=m.fs.time, scheme="BACKWARD")
@@ -301,7 +307,6 @@ class TestHXLCGeneric(object):
 
     @pytest.mark.unit
     def test_units_unconstrained(self, unconstrained_model):
-
         # ...but without the discretizer, the units are fine
         assert_units_consistent(unconstrained_model)
 
@@ -356,7 +361,6 @@ class TestHXLCGeneric(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
-
         model.fs.unit.initialize()
         results = solver.solve(model)
 
@@ -416,3 +420,128 @@ class TestHXLCGeneric(object):
                 "Delta T Out": model.fs.unit.delta_temperature_out[0],
             },
         }
+
+
+class TestInitializers:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = SaponificationParameterBlock()
+
+        m.fs.unit = HeatExchangerLumpedCapacitance(
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            flow_pattern=HeatExchangerFlowPattern.crossflow,
+            dynamic_heat_balance=False,
+        )
+
+        m.fs.unit.hot_side_inlet.flow_vol[0].set_value(1e-3)
+        m.fs.unit.hot_side_inlet.temperature[0].set_value(320)
+        m.fs.unit.hot_side_inlet.pressure[0].set_value(101325)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"].set_value(55388.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"].set_value(100.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"].set_value(100.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].set_value(0.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].set_value(0.0)
+
+        m.fs.unit.cold_side_inlet.flow_vol[0].set_value(1e-3)
+        m.fs.unit.cold_side_inlet.temperature[0].set_value(300)
+        m.fs.unit.cold_side_inlet.pressure[0].set_value(101325)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"].set_value(55388.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"].set_value(100.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"].set_value(100.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].set_value(0.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].set_value(0.0)
+
+        m.fs.unit.area.fix(1000)
+
+        # Modified from the original:
+        # m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+        m.fs.unit.ua_hot_side.fix(200 * 1000)
+        m.fs.unit.ua_cold_side.fix(200 * 1000)
+
+        m.fs.unit.crossflow_factor.fix(0.6)
+
+        return m
+
+    @pytest.mark.component
+    def test_hx_initializer(self, model):
+        initializer = HX0DInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(1e-3, abs=1e-6) == value(
+            model.fs.unit.hot_side_outlet.flow_vol[0]
+        )
+        assert pytest.approx(1e-3, abs=1e-6) == value(
+            model.fs.unit.cold_side_outlet.flow_vol[0]
+        )
+
+        assert pytest.approx(55388.0, rel=1e-3) == value(
+            model.fs.unit.hot_side_outlet.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, rel=1e-3) == value(
+            model.fs.unit.hot_side_outlet.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, rel=1e-3) == value(
+            model.fs.unit.hot_side_outlet.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.hot_side_outlet.conc_mol_comp[0, "SodiumAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.hot_side_outlet.conc_mol_comp[0, "Ethanol"]
+        )
+
+        assert pytest.approx(55388.0, rel=1e-3) == value(
+            model.fs.unit.cold_side_outlet.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, rel=1e-3) == value(
+            model.fs.unit.cold_side_outlet.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, rel=1e-3) == value(
+            model.fs.unit.cold_side_outlet.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.cold_side_outlet.conc_mol_comp[0, "SodiumAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.cold_side_outlet.conc_mol_comp[0, "Ethanol"]
+        )
+
+        assert pytest.approx(301.3, abs=1e-1) == value(
+            model.fs.unit.hot_side_outlet.temperature[0]
+        )
+        assert pytest.approx(318.7, abs=1e-1) == value(
+            model.fs.unit.cold_side_outlet.temperature[0]
+        )
+
+        assert pytest.approx(101325, abs=1e2) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+        assert pytest.approx(101325, abs=1e2) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+        assert not model.fs.unit.hot_side_inlet.flow_vol[0].fixed
+        assert not model.fs.unit.hot_side_inlet.temperature[0].fixed
+        assert not model.fs.unit.hot_side_inlet.pressure[0].fixed
+        assert not model.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"].fixed
+        assert not model.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"].fixed
+        assert not model.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"].fixed
+        assert not model.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
+        assert not model.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].fixed
+
+        assert not model.fs.unit.cold_side_inlet.flow_vol[0].fixed
+        assert not model.fs.unit.cold_side_inlet.temperature[0].fixed
+        assert not model.fs.unit.cold_side_inlet.pressure[0].fixed
+        assert not model.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"].fixed
+        assert not model.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"].fixed
+        assert not model.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"].fixed
+        assert not model.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
+        assert not model.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].fixed
+
+    # TODO: BT initializer runs into a Max Iter failure on Windows

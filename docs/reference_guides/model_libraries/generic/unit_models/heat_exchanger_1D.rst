@@ -106,10 +106,15 @@ Finally, the following Constraints are written to describe the unit geometry:
 
 where :math:`L_{hot}` and :math:`L_{cold}` are the length of the hot and cold side respectively.
 
+Initialization
+--------------
+.. module:: idaes.models.unit_models.heat_exchanger_1D
+
+.. autoclass:: HX1DInitializer
+   :members: initialization_routine
+
 HeatExchanger1d Class
 ---------------------
-
-.. module:: idaes.models.unit_models.heat_exchanger_1D
 
 .. autoclass:: HeatExchanger1D
   :members:

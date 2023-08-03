@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 from copy import deepcopy
 from math import sqrt
@@ -104,7 +104,7 @@ class DiamondLattice(UnitCellLattice):
 
     # === CONSTRUCTOR - Aligned with {110}
     @classmethod
-    def aligndWith110(cls, IAD):
+    def alignedWith110(cls, IAD):
         result = cls(IAD)
         thetaX = 0
         thetaY = np.pi * 0.25
@@ -129,7 +129,7 @@ class DiamondLattice(UnitCellLattice):
             if MI in ["100", "010", "001"]:
                 return cls(IAD)
             elif MI in ["110", "101", "011"]:
-                return cls.aligndWith110(IAD)
+                return cls.alignedWith110(IAD)
             elif MI == "111":
                 return cls.alignedWith111(IAD)
             else:

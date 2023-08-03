@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Verification tests for solubility product
@@ -40,6 +40,7 @@ from idaes.core import (
     SolidPhase,
 )
 from idaes.core.solvers import get_solver
+import idaes.core.util.scaling as iscale
 
 from idaes.models.properties.modular_properties.state_definitions import FpcTP
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
@@ -140,6 +141,7 @@ class TestSingleState(object):
         m.rxn = m.rparams.build_reaction_block(
             [0], state_block=m.state, has_equilibrium=True
         )
+        m.rxn[0].eps = 1e-14
 
         return m
 
@@ -191,9 +193,6 @@ class TestSingleState(object):
         # For subsaturated systems, fix the Na and Cl flows and check that no
         # solid is formed.
         model.state[0].flow_mol_phase_comp["Liq", "H2O"].fix(55.56)
-        model.state[0].flow_mol_phase_comp["Liq", "Na+"].fix(0)
-        model.state[0].flow_mol_phase_comp["Liq", "Cl-"].fix(0)
-        model.state[0].flow_mol_phase_comp["Sol", "NaCl"].set_value(0)
 
         for i in range(11):
             for j in range(11):
@@ -204,8 +203,19 @@ class TestSingleState(object):
                     if j == 0:
                         j = 1e-8
 
+                    # reinitialize after each iteration
+                    model.state[0].mole_frac_phase_comp["Liq", "H2O"].set_value(0.25)
+                    model.state[0].mole_frac_phase_comp["Sol", "NaCl"].set_value(0.25)
+                    model.state[0].mole_frac_phase_comp["Liq", "Na+"].set_value(0.25)
+                    model.state[0].mole_frac_phase_comp["Liq", "Cl-"].set_value(0.25)
+
                     model.state[0].flow_mol_phase_comp["Liq", "Na+"].fix(i)
                     model.state[0].flow_mol_phase_comp["Liq", "Cl-"].fix(j)
+                    model.state[0].flow_mol_phase_comp["Sol", "NaCl"].set_value(0)
+
+                    iscale.constraint_scaling_transform(
+                        model.rxn[0].equilibrium_constraint["S1"], 10
+                    )
 
                     results = solver.solve(model)
 
@@ -238,6 +248,7 @@ class TestUnit(object):
             energy_balance_type=EnergyBalanceType.none,
         )
 
+        m.fs.rparams.reaction_S1.eps = 1e-14
         m.fs.R101.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix(55.56)
         m.fs.R101.inlet.flow_mol_phase_comp[0, "Liq", "Na+"].fix(1e-8)
         m.fs.R101.inlet.flow_mol_phase_comp[0, "Liq", "Cl-"].fix(1e-8)
@@ -252,11 +263,17 @@ class TestUnit(object):
     @pytest.mark.integration
     def test_subsaturated(self, model):
         for i in range(0, 6):
-            # Values of zero cause probelms, use a small number instead
+            # Values of zero cause problems, use a small number instead
             if i == 0:
                 i == 1e-8
 
             model.fs.R101.inlet.flow_mol_phase_comp[0, "Sol", "NaCl"].fix(i)
+            iscale.constraint_scaling_transform(
+                model.fs.R101.control_volume.reactions[0.0].equilibrium_constraint[
+                    "S1"
+                ],
+                10,
+            )
 
             results = solver.solve(model)
 
@@ -283,10 +300,10 @@ class TestUnit(object):
         assert pytest.approx(0, abs=1.1e-3) == value(
             model.fs.R101.outlet.flow_mol_phase_comp[0, "Sol", "NaCl"]
         )
-        assert pytest.approx(6.158968, rel=1e-5) == value(
+        assert pytest.approx(6.159876, rel=1e-5) == value(
             model.fs.R101.outlet.flow_mol_phase_comp[0, "Liq", "Na+"]
         )
-        assert pytest.approx(6.158968, rel=1e-5) == value(
+        assert pytest.approx(6.159876, rel=1e-5) == value(
             model.fs.R101.outlet.flow_mol_phase_comp[0, "Liq", "Cl-"]
         )
 

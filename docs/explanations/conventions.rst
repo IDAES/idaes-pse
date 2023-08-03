@@ -7,7 +7,7 @@
 Units of Measurement and Reference States
 -----------------------------------------
 
-Due to the flexibility provided by the IDAES Integrated Platform, there is no standard set of units of measurement or standard reference state that should be used in models. Units of measurement are defined by the modeler for the 7 base quantities (time, length, mass, amount, temperature, current and luminous intensity) in each property package, and the platform makes use of this and Pyomo's Units container to automatically determine the units of all variables and expressions within a model. Thus, all components within a model using a given property package must use units based on the units chosen for the base quantities (to ensure consistency of units). However, flowsheets may contain property packages which use different sets of base units, however users should be careful to ensure units are converted correctly where property packages interact. For more detail on defining units of measurement see :ref:`Defining Units of Measurement<explanations/components/property_package/uom:Defining Units of Measurement>`.
+Due to the flexibility provided by the IDAES Integrated Platform, there is no standard set of units of measurement or standard reference state that should be used in models. Units of measurement are defined by the modeler for the 7 base quantities (time, length, mass, amount, temperature, current and luminous intensity) in each property package, and the platform makes use of this and Pyomo's Units container to automatically determine the units of all variables and expressions within a model. Thus, all components within a model using a given property package must use units based on the units chosen for the base quantities (to ensure consistency of units). However, flowsheets may contain property packages that use different sets of base units, however users should be careful to ensure units are converted correctly where property packages interact. For more detail on defining units of measurement see :ref:`Defining Units of Measurement<reference_guides/core/uom:Unit Sets>`.
 
 Pyomo also provides convenient tools for converting between different units of measurement and checking for unit consistency, of which a few are highlighted below:
 
@@ -26,7 +26,7 @@ in specialized PropertyBlocks, is used in others parts of the model.
 
 Standard Naming Format
 ^^^^^^^^^^^^^^^^^^^^^^
-There are a wide range of different variables which may be of interest to modelers, and a 
+There are a wide range of different variables that may be of interest to modelers, and a 
 number of different ways in which these quantities can be expressed. In order to facilitate 
 communication between different parts of models, a naming convention has been established to 
 standardize the naming of variables across models. Variable names within IDAES follow to the 
@@ -38,7 +38,7 @@ Here, property_name is the name of the quantity in question, and should be drawn
 of standard variable names given later in this document. If a particular quantity is not 
 included in the list of standard names, users are encouraged to contact the IDAES developers 
 so that it can be included in a future release. This is followed by a number of qualifiers 
-which further indicate the specific conditions under which the quantity is being calculated. 
+that further indicate the specific conditions under which the quantity is being calculated. 
 These qualifiers are described below, and some examples are given at the end of this document.
 
 Basis Qualifier
@@ -132,7 +132,7 @@ Acceleration due to gravity, gravitational constant and electron mass are source
 
 Thermophysical and Transport Properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Below is a list of all the thermophysical properties which have standardized names.
+Below is a list of all the thermophysical properties that have standardized names.
 
 =============================== =====================
 Variable                        Standard Name
@@ -180,7 +180,7 @@ Volume Fraction                 vol_frac
 
 Reaction Properties
 ^^^^^^^^^^^^^^^^^^^
-Below is a list of all the reaction properties which have standardized names.
+Below is a list of all the reaction properties that have standardized names.
 
 ======================= =================
 Variable                Standard Name
@@ -197,7 +197,7 @@ Solubility Constant     k_sol
 
 Solid Properties
 ^^^^^^^^^^^^^^^^
-Below is a list of all the properties of solid materials which have standardized names.
+Below is a list of all the properties of solid materials that have standardized names.
 
 ============================ =================
 Variable                     Standard Name

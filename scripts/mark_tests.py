@@ -1,4 +1,16 @@
 #!/usr/bin/env python
+###############################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES).
+#
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
+###############################################################################
 """
 Fill in missing pytest mark decorators to test functions.
 
@@ -50,8 +62,8 @@ def process_testfile(filename):
             _log.debug("")
 
         if not pytest_imported:  # we're at/near the top of the file still
-            # look for import statments; when we hit something that isn't
-            # an import, whitepsace, comment, or docstring
+            # look for import statements; when we hit something that isn't
+            # an import, whitespace, comment, or docstring
             if re.match(r"import pytest", lines[line_ind]):
                 pytest_imported = True
             elif re.match(r"(import|from).*,\n$", lines[line_ind]):

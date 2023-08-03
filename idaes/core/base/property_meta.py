@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 These classes handle the metadata aspects of classes representing
@@ -46,10 +46,14 @@ Example::
         # do the work of the class.
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import units
 from pyomo.core.base.units_container import _PyomoUnit, InconsistentUnitsError
 
 from idaes.core.util.exceptions import PropertyPackageError
+from idaes.core.base.property_set import StandardPropertySet, PropertySetBase
 import idaes.logger as idaeslog
 
 __author__ = "Dan Gunter <dkgunter@lbl.gov>, Andrew Lee"
@@ -78,6 +82,14 @@ class HasPropertyClassMetadata(object):
             pcm = PropertyClassMetadata()
             cls.define_metadata(pcm)
             cls._metadata = pcm
+
+            # Check that the metadata was actually populated
+            # Check requires looking at private attributes
+            # pylint: disable-next=protected-access
+            if pcm._properties is None or pcm._default_units is None:
+                raise PropertyPackageError(
+                    "Property package did not populate all expected metadata."
+                )
         return cls._metadata
 
     @classmethod
@@ -112,7 +124,7 @@ class UnitSet(object):
 
     _base_quantities = {
         "AMOUNT": units.mol,
-        "CURRENT": units.watt,
+        "CURRENT": units.ampere,
         "LENGTH": units.meter,
         "LUMINOUS_INTENSITY": units.candela,
         "MASS": units.kilogram,
@@ -120,16 +132,40 @@ class UnitSet(object):
         "TIME": units.seconds,
     }
 
-    def __init__(
+    def __init__(self):
+        self._time = units.seconds
+        self._length = units.meter
+        self._mass = units.kilogram
+        self._amount = units.mole
+        self._temperature = units.kelvin
+        self._current = units.ampere
+        self._luminous_intensity = units.candela
+
+    def set_units(
         self,
         amount: _PyomoUnit = units.mol,
-        current: _PyomoUnit = units.watt,
+        current: _PyomoUnit = units.ampere,
         length: _PyomoUnit = units.meter,
         luminous_intensity: _PyomoUnit = units.candela,
         mass: _PyomoUnit = units.kilogram,
         temperature: _PyomoUnit = units.kelvin,
         time: _PyomoUnit = units.seconds,
     ):
+        """
+        Set desired units of measurement for the seven base quantities.
+
+        Args:
+            amount: units for amount (default = moles)
+            current: units for current (default = Amperes)
+            length: units for length (default = meters)
+            luminous_intensity: units for luminous intensity (default = candela)
+            mass: units for mass (default = kilograms)
+            temperature: units for temperature (default = Kelvins)
+            time: units for time (default = seconds)
+
+        Returns:
+            None
+        """
         self._time = time
         self._length = length
         self._mass = mass
@@ -159,7 +195,7 @@ class UnitSet(object):
                     "use the Pyomo unit registry."
                 )
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str):
         try:
             # Check to catch cases where luminous intensity has a space
             return getattr(self, key.upper().replace(" ", "_"))
@@ -169,7 +205,17 @@ class UnitSet(object):
                 "defined in idaes.core.base.property_meta.UnitSet."
             )
 
-    def unitset_is_consistent(self, other):
+    def unitset_is_consistent(self, other: "UnitSet"):
+        """
+        Checks that defined units of measurement for base quantities are consistent with those
+        in other UnitSet.
+
+        Args:
+            other: UnitSet to check for consistency with
+
+        Returns:
+            Bool indicating whether units are consistent
+        """
         return all(getattr(self, q) is getattr(other, q) for q in self._base_quantities)
 
     @property
@@ -209,6 +255,10 @@ class UnitSet(object):
     def VOLUME(self):
         return self._length**3
 
+    @property
+    def MOLAR_VOLUME(self):
+        return self._length**3 * self._amount**-1
+
     # Flows
     @property
     def FLOW_MASS(self):
@@ -234,7 +284,7 @@ class UnitSet(object):
     def FLUX_ENERGY(self):
         return self._mass * self._time**-3
 
-    # Velocity and Acceleration
+    # Velocity, Acceleration and Force
     @property
     def VELOCITY(self):
         return self._length * self._time**-1
@@ -242,6 +292,10 @@ class UnitSet(object):
     @property
     def ACCELERATION(self):
         return self._length * self._time**-2
+
+    @property
+    def FORCE(self):
+        return self._length * self._mass * self._time**-2
 
     # Pressures
     @property
@@ -258,7 +312,7 @@ class UnitSet(object):
             * self._amount**-1
         )
 
-    # Densities
+    # Densities & Concentrations
     @property
     def DENSITY_MASS(self):
         return self._mass * self._length**-3
@@ -266,6 +320,10 @@ class UnitSet(object):
     @property
     def DENSITY_MOLE(self):
         return self._amount * self._length**-3
+
+    @property
+    def MOLALITY(self):
+        return self._amount * self._mass
 
     @property
     def MOLECULAR_WEIGHT(self):
@@ -287,6 +345,10 @@ class UnitSet(object):
     @property
     def POWER(self):
         return self._mass * self._length**2 * self._time**-3
+
+    @property
+    def VOLTAGE(self):
+        return self._mass * self._length**2 * self._time**-3 * self._current**-1
 
     # Heat Related
     @property
@@ -330,8 +392,20 @@ class UnitSet(object):
 
     # Transport Properties
     @property
+    def DIFFUSIVITY(self):
+        return self._length**2 * self._time**-1
+
+    @property
     def DYNAMIC_VISCOSITY(self):
         return self._mass * self._length**-1 * self._time**-1
+
+    @property
+    def KINEMATIC_VISCOSITY(self):
+        return self._length**2 * self._time**-1
+
+    @property
+    def SURFACE_TENSION(self):
+        return self._mass * self._time**-2
 
     @property
     def THERMAL_CONDUCTIVITY(self):
@@ -339,26 +413,42 @@ class UnitSet(object):
 
 
 class PropertyClassMetadata(object):
-    """Container for metadata about the property class, which includes
-       default units and properties.
+    """
+    Container for metadata about the property class, which includes
+    default units and properties.
 
     Example usage::
 
-            foo = PropertyClassMetadata()
-            foo.add_default_units(time = pyo.units.fortnights,
-                                  mass = pyo.units.stones)
-            foo.add_properties({'under_sea': {'units': 'leagues'},
-                                'tentacle_size': {'units': 'yards'}})
-            foo.add_required_properties({'under_sea': 'leagues',
-                                        'tentacle_size': 'yards'})
+        foo = PropertyClassMetadata()
+        foo.add_default_units(time = pyo.units.fortnights,
+                              mass = pyo.units.stones)
+        foo.add_properties({'under_sea': {'method': 'submarine', 'units': 'leagues', 'required': False, 'supported': True},
+                            'tentacle_size': {'method': 'kraken', 'units': 'yards', 'required': True, 'supported': True}})
 
     """
 
     def __init__(self):
         # TODO: Deprecate in favour of common units property
-        self._default_units = None
-        self._properties = {}
-        self._required_properties = {}
+        self._default_units = UnitSet()
+        # Assume a default PropertySet to begin with. Property packages can replace this
+        # with more specialized forms if required
+        self._properties = StandardPropertySet(parent=self)
+
+    def define_property_set(self, propset: PropertySetBase):
+        """
+        Define the type of property set to use for this package.
+
+        Args:
+            propset: PropertySet class (must derive from PropertySetBase)
+
+        Returns:
+            None
+        """
+        if not issubclass(propset, PropertySetBase):
+            raise PropertyPackageError(
+                f"{propset} does not derive from IDAES PropertySetBase class."
+            )
+        self._properties = propset(parent=self)
 
     @property
     def default_units(self):
@@ -374,93 +464,113 @@ class PropertyClassMetadata(object):
     def properties(self):
         return self._properties
 
-    @property
-    def required_properties(self):
-        return self._required_properties
-
-    def add_default_units(self, u):
-        """Add a dict with keys for the base quantities used in the
-        property package (as strings) and values of their default units as Pyomo unit objects.
-
-        If units are not provided for a quantity, it will be assumed to use base SI unites.
+    def add_default_units(self, u: dict):
+        """
+        Set units of measurement for base quantities used in this property package. Units
+        should be provided as a dict with keys being the seven base quantities and values
+        being Pyomo unit expressions. These will be used to update the UnitSet associated
+        with this property package.
 
         Args:
             u (dict): Key=property, Value=units
 
         Returns:
             None
+
+        Raises:
+            TypeError if definitions for unexpected quantities are found
         """
         # TODO: Could look at replacing dict with defined arguments
         # This would be a big API change
         try:
-            self._default_units = UnitSet(**u)
+            self._default_units.set_units(**u)
         except TypeError:
             raise TypeError(
-                f"Unexpected argument for base quantities found when creating UnitSet. "
+                "Unexpected argument for base quantities found when creating UnitSet. "
                 "Please ensure that units are only defined for the seven base quantities."
             )
 
-    def add_properties(self, p):
+    def add_properties(self, p: dict):
         """Add properties to the metadata.
 
         For each property, the value should be another dict which may contain
         the following keys:
 
-        - 'method': (required) the name of a method to construct the
+        - 'units': (optional) units of measurement for the property.
+        - 'indices': (optional) list of sub-property indices for this property. If None, use default set, if False unindexed.
+        - 'method': (optional, only if 'indices' is None or False) the name of a method to construct the
                     property as a str, or None if the property will be
                     constructed by default.
-        - 'units': (optional) units of measurement for the property.
+        - 'supported': (optional, only if 'indices' is None or False) bool indicating if this property is
+                       supported by this package.
+        - 'required': (optional, only if 'indices' is None or False) bool indicating if this property is
+                      required by this package.
+        - 'valid_range': (optional, only if 'indices' is None or False) 2-tuple containing range of validity for
+                      property values (lower, upper).
+        - 'initialize': (optional) dict indicating 'method', 'required', 'supported' and 'valid_range' values for sub-properties by index.
 
         Args:
-            p (dict): Key=property, Value=PropertyMetadata or equiv. dict
+            p (dict): Key=property, Value=dict
+
+        Returns:
+            None
+        """
+        # TODO: Deprecate in favour of directly updating or adding metadata
+        for k, v in p.items():
+            units = v.pop("units", None)
+            try:
+                n, i = self._properties.get_name_and_index(k)
+                getattr(self._properties, n)[i].update_property(**v)
+            except AttributeError:
+                # TODO: Deprecate this and make it raise an exception if an unknown property is encountered
+                # Force users to explicitly declare new/custom properties
+                self._properties.define_property(name=k, **v, units=units)
+
+    def define_custom_properties(self, p: dict):
+        """Add custom properties to the metadata.
+
+        For each property, the value should be another dict which may contain
+        the following keys:
+
+        - 'units': (optional) units of measurement for the property.
+        - 'indices': (optional) list of sub-property indices for this property. If None, use default set, if False unindexed.
+        - 'method': (optional, only if 'indices' is None or False) the name of a method to construct the
+                    property as a str, or None if the property will be
+                    constructed by default.
+        - 'supported': (optional, only if 'indices' is None or False) bool indicating if this property is
+                       supported by this package.
+        - 'required': (optional, only if 'indices' is None or False bool indicating if this property is
+                      required by this package.
+        - 'initialize': (optional) dict indicating 'method', 'required' and 'supported' values for sub-properties by index.
+
+        Args:
+            p (dict): Key=property, Value=dict
 
         Returns:
             None
         """
         for k, v in p.items():
-            if not isinstance(v, PropertyMetadata):
-                v = PropertyMetadata(name=k, **v)
-            self._properties[k] = v
+            self._properties.define_property(name=k, **v)
 
-    def add_required_properties(self, p):
+    def add_required_properties(self, p: str):
+        # TODO: Deprecate
         """Add required properties to the metadata.
 
-        For each property, the value should be the expected units of
-        measurement for the property.
+        Update 'required' attribute of specified properties.
+        Note that argument must be a dict for backwards compatibility.
 
         Args:
-            p (dict): Key=property, Value=units
+            p (dict): Key=property, Value=(ignored)
 
         Returns:
             None
         """
-        # Using the same PropertyMetadata class as for units, but 'method'
-        # will always be none
-        for k, v in p.items():
-            if not isinstance(v, PropertyMetadata):
-                v = PropertyMetadata(name=k, units=v)
-            self._required_properties[k] = v
+        for k in p.keys():
+            try:
+                self._properties[k].set_required(True)
+            except KeyError:
+                self._properties.define_property(name=k, supported=False, required=True)
 
-    def get_derived_units(self, units):
+    def get_derived_units(self, units: str):
         # TODO: Deprecate in favour of common units property
         return self.derived_units[units]
-
-
-class PropertyMetadata(dict):
-    """Container for property parameter metadata.
-
-    Instances of this class are exactly dictionaries, with the
-    only difference being some guidance on the values expected in the
-    dictionary from the constructor.
-    """
-
-    def __init__(self, name=None, method=None, units=None):
-        if name is None:
-            raise TypeError('"name" is required')
-        d = {"name": name, "method": method}
-        if units is not None:
-            d["units"] = units
-        else:
-            # Adding a default "null" unit in case it is not provided by user
-            d["units"] = "-"
-        super(PropertyMetadata, self).__init__(d)
