@@ -27,7 +27,7 @@ from pyomo.core.base.var import Var
 from pyomo.core.base.constraint import Constraint
 from pyomo.core.base.expression import Expression
 from pyomo.core.base.param import Param
-from pyomo.core.expr.current import sqrt
+from pyomo.core.expr import sqrt
 
 # Import IDAES cores
 from idaes.core import (
