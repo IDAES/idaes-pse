@@ -24,6 +24,7 @@ __author__ = "Andrew Lee"
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Reals, units as pyunits, Var, value
 from pyomo.dae import DerivativeVar
+from pyomo.common.deprecation import deprecation_warning
 
 # Import IDAES cores
 from idaes.core import (
@@ -228,29 +229,35 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_phase_equilibrium:
             # First, check that phase equilibrium makes sense
             if len(self.config.property_package.phase_list) < 2:
-                raise ConfigurationError(
+                msg = (
                     "Property package has only one phase; control volume cannot include phase "
                     "equilibrium terms. Some property packages support phase equilibrium "
-                    "implicitly in which case additional terms are not necessary."
+                    "implicitly in which case additional terms are not necessary. "
+                    "You should set has_phase_equilibrium=False."
                 )
-            # Check that state blocks are set to calculate equilibrium
-            for t in self.flowsheet().time:
-                if not self.properties_out[t].config.has_phase_equilibrium:
-                    raise ConfigurationError(
-                        "{} material balance was set to include phase "
-                        "equilibrium, however the associated outlet "
-                        "StateBlock was not set to include equilibrium "
-                        "constraints (has_phase_equilibrium=False). Please"
-                        " correct your configuration arguments.".format(self.name)
-                    )
-                if not self.properties_in[t].config.has_phase_equilibrium:
-                    raise ConfigurationError(
-                        "{} material balance was set to include phase "
-                        "equilibrium, however the associated inlet "
-                        "StateBlock was not set to include equilibrium "
-                        "constraints (has_phase_equilibrium=False). Please"
-                        " correct your configuration arguments.".format(self.name)
-                    )
+                deprecation_warning(
+                    msg=msg, logger=_log, version="2.0.0", remove_in="3.0.0"
+                )
+                has_phase_equilibrium = False
+            else:
+                # Check that state blocks are set to calculate equilibrium
+                for t in self.flowsheet().time:
+                    if not self.properties_out[t].config.has_phase_equilibrium:
+                        raise ConfigurationError(
+                            "{} material balance was set to include phase "
+                            "equilibrium, however the associated outlet "
+                            "StateBlock was not set to include equilibrium "
+                            "constraints (has_phase_equilibrium=False). Please"
+                            " correct your configuration arguments.".format(self.name)
+                        )
+                    if not self.properties_in[t].config.has_phase_equilibrium:
+                        raise ConfigurationError(
+                            "{} material balance was set to include phase "
+                            "equilibrium, however the associated inlet "
+                            "StateBlock was not set to include equilibrium "
+                            "constraints (has_phase_equilibrium=False). Please"
+                            " correct your configuration arguments.".format(self.name)
+                        )
 
         # Get units from property package
         units = self.config.property_package.get_metadata().get_derived_units
