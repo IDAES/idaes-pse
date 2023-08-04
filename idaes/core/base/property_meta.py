@@ -524,13 +524,12 @@ class PropertyClassMetadata(object):
                     n, i = self._properties.get_name_and_index(k)
                 except ValueError:
                     msg = (
-                        f"The property name {property_name} in property metadata is not "
-                        "a recognized standard property name defined in this PropertySet. "
-                        "Please refer to IDAES standard names in the IDAES documentation. "
-                        "You can use the define_custom_properties() rather than the "
-                        "add_properties() method to define metadata for this property. "
-                        "You can also use a different property set by calling the "
-                        "define_property_set() method."
+                        f"The property name {k} in property metadata is not a recognized "
+                        "standard property name defined in this PropertySet. Please refer "
+                        "to IDAES standard names in the IDAES documentation. You can use "
+                        "the define_custom_properties() rather than the add_properties() "
+                        "method to define metadata for this property. You can also use a "
+                        "different property set by calling the define_property_set() method."
                     )
                     deprecation_warning(
                         msg=msg, logger=_log, version="2.0.0", remove_in="3.0.0"
